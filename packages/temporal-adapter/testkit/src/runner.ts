@@ -7,7 +7,7 @@ import type {
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import {
-  CanonicalObservationKind, StimulusKind, COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID, TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
+  CanonicalObservationKind, StimulusKind,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -194,13 +194,11 @@ export class TemporalScenarioRunner {
     semanticProcess: SemanticProcessProgram,
     options: TemporalScenarioExecutionOptions,
   ): Promise<TemporalScenarioExecution> {
-    if ((scenario.profile === COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID ||
-        (scenario.profile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
-          scenario.stimuli.some((stimulus) => stimulus.kind === StimulusKind.CompleteEffect))) &&
+    if (scenario.stimuli.some((stimulus) => stimulus.kind === StimulusKind.CompleteEffect) &&
       options.executionSchedule === TemporalExecutionSchedule.StimulusOrder) {
       validateExecutionOptions(scenario, options);
       if (options.effectExecutionSchedule !== null) {
-        throw new TypeError("Ordered Compensation requires neutral Activity results without a legacy effect schedule");
+        throw new TypeError("Ordered effects require neutral Activity results without a legacy effect schedule");
       }
       return new OrderedEffectExecution(scenario, semanticProcess).run(
         this.effectProbeRegistry,

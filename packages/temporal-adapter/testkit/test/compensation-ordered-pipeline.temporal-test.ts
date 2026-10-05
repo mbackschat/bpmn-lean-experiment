@@ -7,7 +7,7 @@ import { StimulusKind, runScenario } from "@bpmn-lean/semantic-core";
 import type { Scenario } from "@bpmn-lean/semantic-core";
 import {
   TemporalCompletionDelivery, TemporalExecutionSchedule, TemporalScenarioRunner,
-  asArray, asRecord, decodeJsonPayload, historyEvents, requireOrderedCompensationHistory,
+  asArray, asRecord, decodeJsonPayload, historyEvents, requireOrderedEffectHistory,
   processTerminalReceiptFormatV1, productionBpmnWorkflowInitialHostInput,
 } from "@bpmn-lean/temporal-testkit";
 import { temporalCacheDirectory } from "./temporal-test-support.ts";
@@ -37,7 +37,7 @@ test("registered Compensation schedules execute real ordered Activities through 
         events: execution.history.events.filter((event) =>
           asRecord(event, "event").activityTaskScheduledEventAttributes == null),
       };
-      assert.throws(() => requireOrderedCompensationHistory(withoutSchedules, scenario, compiled.semanticProcess),
+      assert.throws(() => requireOrderedEffectHistory(withoutSchedules, scenario, compiled.semanticProcess),
         /Every reached intent must schedule/);
       const changedRequest = structuredClone(execution.history);
       const scheduled = historyEvents(changedRequest, "activityTaskScheduledEventAttributes");
@@ -46,7 +46,7 @@ test("registered Compensation schedules execute real ordered Activities through 
         metadata: { encoding: Buffer.from("json/plain") },
         data: Buffer.from(JSON.stringify({ protocol: "wrong", operation: "wrong", idempotencyKey: "wrong", arguments: [] })),
       }]);
-      assert.throws(() => requireOrderedCompensationHistory(changedRequest, scenario, compiled.semanticProcess),
+      assert.throws(() => requireOrderedEffectHistory(changedRequest, scenario, compiled.semanticProcess),
         /Activity request must match/);
       const changedResult = structuredClone(execution.history);
       const completed = historyEvents(changedResult, "activityTaskCompletedEventAttributes");
@@ -54,12 +54,12 @@ test("registered Compensation schedules execute real ordered Activities through 
         metadata: { encoding: Buffer.from("json/plain") },
         data: Buffer.from(JSON.stringify({ kind: "success", localPatch: [{ name: "forged", value: { kind: "string", value: "changed" } }] })),
       }] });
-      assert.throws(() => requireOrderedCompensationHistory(changedResult, scenario, compiled.semanticProcess),
+      assert.throws(() => requireOrderedEffectHistory(changedResult, scenario, compiled.semanticProcess),
         /no exact typed result/);
       if (name.startsWith("failure-")) {
         const withoutDrain = { events: execution.history.events.filter((event) =>
           asRecord(event, "event").activityTaskCanceledEventAttributes == null) };
-        assert.throws(() => requireOrderedCompensationHistory(withoutDrain, scenario, compiled.semanticProcess));
+        assert.throws(() => requireOrderedEffectHistory(withoutDrain, scenario, compiled.semanticProcess));
       }
       await runner.replayHistory(execution.history, `ordered-${scenario.id}-replay`);
     }
@@ -120,14 +120,40 @@ test("registered Transaction cancellation schedules retain production hosting an
         ]) assert.equal(historyEvents(execution.history, attributes).length, 0, attributes);
       } else {
         assert.equal(historyEvents(execution.history, "activityTaskScheduledEventAttributes").length, 1);
-        requireOrderedCompensationHistory(execution.history, scenario, compiled.semanticProcess);
+        requireOrderedEffectHistory(execution.history, scenario, compiled.semanticProcess);
         const withoutSchedule = { events: execution.history.events.filter((event) =>
           asRecord(event, "event").activityTaskScheduledEventAttributes == null) };
-        assert.throws(() => requireOrderedCompensationHistory(withoutSchedule, scenario, compiled.semanticProcess),
+        assert.throws(() => requireOrderedEffectHistory(withoutSchedule, scenario, compiled.semanticProcess),
           /Every reached intent must schedule/);
       }
       await runner.replayHistory(execution.history, `ordered-${scenario.id}-replay`);
     }
+  } finally {
+    await runner.shutdown();
+  }
+});
+
+test("ordered neutral Activity delivery preserves the registered ordinary Service Task contract", async () => {
+  const root = new URL("../../../../scenarios/mapped-success-service-task/", import.meta.url);
+  const scenario: Scenario = JSON.parse(await readFile(new URL("scenario.json", root), "utf8"));
+  const compiled = await compileBpmnToSemanticProcess({
+    bytes: await readFile(new URL("process.bpmn", root)), sourceId: scenario.bpmn.id,
+    expectedSha256: scenario.bpmn.sha256, sourceOverlay: null, semanticProfile: scenario.profile,
+    limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  });
+  assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
+  if (compiled.status !== BpmnCompilationStatus.Accepted) throw new Error("Mapped Service source refused");
+  const runner = await TemporalScenarioRunner.create({ downloadDirectory: temporalCacheDirectory });
+  try {
+    const execution = await runner.runScenario(scenario, compiled.semanticProcess, {
+      workflowId: `ordered-${scenario.id}`, completionDelivery: TemporalCompletionDelivery.Ordered,
+      executionSchedule: TemporalExecutionSchedule.StimulusOrder, effectExecutionSchedule: null,
+    });
+    assert.deepEqual(execution.result, runScenario(scenario, compiled.semanticProcess));
+    assert.ok(execution.receipt);
+    assert.deepEqual(execution.receipt.finalState, execution.result.trace.at(-1));
+    requireOrderedEffectHistory(execution.history, scenario, compiled.semanticProcess);
+    await runner.replayHistory(execution.history, `ordered-${scenario.id}-replay`);
   } finally {
     await runner.shutdown();
   }

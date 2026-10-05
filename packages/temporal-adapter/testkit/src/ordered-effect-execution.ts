@@ -4,10 +4,10 @@ import { isDeepStrictEqual } from "node:util";
 import { Context } from "@temporalio/activity";
 import {
   CommandOutcome, ControlStateKind, StimulusKind, applyStimulus, initialState,
-  projectCompensationEffectTransportMaterial,
+  projectCompensationEffectTransportMaterial, projectEffectTransportMaterial, projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
 import type { CompleteEffectStimulus, Scenario, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
-import { completeEffectCommandId, compensationEffectTransportKey } from "@bpmn-lean/temporal-protocol";
+import { completeEffectCommandId, compensationEffectTransportKey, effectTransportKey } from "@bpmn-lean/temporal-protocol";
 import type { EffectRequest } from "@bpmn-lean/temporal-protocol";
 import type { TemporalHistory, TemporalScenarioExecution } from "./contracts.js";
 import { EffectProbeActivityRegistry } from "./effect-probe.js";
@@ -19,12 +19,13 @@ import {
 type EffectEntry = {
   request: EffectRequest;
   activationCommandId: string;
+  heartbeatTimeoutMs: number;
   completion?: CompleteEffectStimulus;
   started: boolean;
   released: boolean;
 };
 
-/** Drives neutral Compensation results through real Activities, including cancelled frontier members. */
+/** Drives neutral effect results through real Activities, including cancelled Compensation frontier members. */
 export class OrderedEffectExecution {
   private readonly entries = new Map<string, EffectEntry>();
   private readonly frontiers = new Map<string, readonly EffectEntry[]>();
@@ -40,27 +41,37 @@ export class OrderedEffectExecution {
           throw new TypeError("Ordered effect completion is not content-bound to one committed intent");
         }
         entry.completion = stimulus;
-        this.frontiers.set(stimulus.commandId, (state.compensationHandlerEffectWaits ?? []).map(({ id }) => {
+        this.frontiers.set(stimulus.commandId, projectOpenEffects(state).map(({ id }) => {
           const member = this.entries.get(JSON.stringify(id));
           if (member === undefined) throw new TypeError("Ordered effect frontier lost its committed intent");
           return member;
         }));
       }
       const step = applyStimulus(program, state, stimulus);
+      if (stimulus.kind === StimulusKind.CompleteEffect && step.outcome !== CommandOutcome.Committed) {
+        throw new TypeError(`Ordered Activity completion did not commit: ${stimulus.commandId}`);
+      }
       if (step.outcome !== CommandOutcome.Committed && step.outcome !== CommandOutcome.Rejected) {
         throw new TypeError(`Ordered effect prefix is not executable: ${stimulus.commandId}`);
       }
       state = step.state;
-      for (const wait of state.compensationHandlerEffectWaits ?? []) {
-        const material = projectCompensationEffectTransportMaterial(program, wait);
-        const request = {
-          ...material.descriptor, arguments: material.arguments,
-          idempotencyKey: compensationEffectTransportKey(material),
-        };
-        const key = JSON.stringify(wait.id);
+      const pending = [
+        ...state.effectWaits.map(wait => {
+          const material = projectEffectTransportMaterial(program, wait);
+          return { id: wait.id, heartbeatTimeoutMs: 0, request: { ...material.descriptor,
+            arguments: material.arguments, idempotencyKey: effectTransportKey(material) } };
+        }),
+        ...(state.compensationHandlerEffectWaits ?? []).map(wait => {
+          const material = projectCompensationEffectTransportMaterial(program, wait);
+          return { id: wait.id, heartbeatTimeoutMs: 1_000, request: { ...material.descriptor,
+            arguments: material.arguments, idempotencyKey: compensationEffectTransportKey(material) } };
+        }),
+      ];
+      for (const { id, request, heartbeatTimeoutMs } of pending) {
+        const key = JSON.stringify(id);
         const prior = this.entries.get(key);
         if (prior === undefined) {
-          this.entries.set(key, { request, activationCommandId: stimulus.commandId, started: false, released: false });
+          this.entries.set(key, { request, heartbeatTimeoutMs, activationCommandId: stimulus.commandId, started: false, released: false });
         } else {
           assert.deepEqual(prior.request, request, "A retained effect intent changed before completion");
         }
@@ -68,7 +79,7 @@ export class OrderedEffectExecution {
     }
     if (this.entries.size === 0 ||
       (state.control.kind !== ControlStateKind.Completed && state.control.kind !== ControlStateKind.Failed)) {
-      throw new TypeError("Ordered Compensation input must reach a terminal Process");
+      throw new TypeError("Ordered effect input must reach a terminal Process");
     }
   }
 
@@ -109,7 +120,7 @@ export class OrderedEffectExecution {
     }
     const deadline = Date.now() + 5_000;
     while (frontier.some((member) => !member.started)) {
-      if (Date.now() >= deadline) throw new Error("Compensation frontier Activities did not all start");
+      if (Date.now() >= deadline) throw new Error("Effect frontier Activities did not all start");
       await delay(10);
     }
     entry.released = true;
@@ -145,7 +156,7 @@ export class OrderedEffectExecution {
         assert.equal(cancelled.length, 0);
         assert.equal(completed.length, 1);
         requireDurableEffectActivityHistory({ events: [matches[0]!.event, started[0]!.event, completed[0]!.event] },
-          entry.request, 1, entry.completion.result, { heartbeatTimeoutMs: 1_000 });
+          entry.request, 1, entry.completion.result, { heartbeatTimeoutMs: entry.heartbeatTimeoutMs });
         completedByCommand.set(entry.completion.commandId, integerToBigInt(completed[0]!.event.eventId));
       } else {
         assert.equal(completed.length, 0);
@@ -175,7 +186,7 @@ export class OrderedEffectExecution {
 }
 
 /** Checks Activity requests, result content, dependency order and cancellation drain against neutral inputs. */
-export function requireOrderedCompensationHistory(
+export function requireOrderedEffectHistory(
   history: TemporalHistory,
   scenario: Scenario,
   program: SemanticProcessProgram,

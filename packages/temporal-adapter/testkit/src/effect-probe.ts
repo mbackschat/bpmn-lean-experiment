@@ -4,6 +4,9 @@ import {
   EffectExecutionResultKind,
   isDenseArray,
   isVariableBinding,
+  isVariablePatch,
+  isSerialBusinessIdentifier,
+  serialBusinessBindingsAdmitted,
   sameVariablePatch,
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
@@ -57,6 +60,15 @@ export class EffectProbeStore {
     request: EffectRequest,
     schedule: EffectExecutionSchedule,
   ): Promise<EffectActivityImplementationResult> {
+    switch (request.operation) {
+      case EffectOperation.Probe:
+      case EffectOperation.MappedSuccess:
+      case EffectOperation.MappedBoundaryError:
+      case EffectOperation.CompensationSingleEffect:
+        break;
+      default:
+        throw new TypeError("The built-in effect probe requires a calibration operation");
+    }
     requireEffectRequest(request);
     const priorInvocations =
       this.invocationCountByKey.get(request.idempotencyKey) ?? 0;
@@ -186,9 +198,8 @@ function requireEffectRequest(
       requireArguments(hasCompensationSingleEffectArguments(request.arguments));
       break;
     default:
-      throw new TypeError(
-        "Effect request must contain one admitted protocol, operation, and argument contract",
-      );
+      requireArguments(isSerialBusinessIdentifier(request.operation) && request.operation.length <= 1_024 &&
+        isVariablePatch(request.arguments) && serialBusinessBindingsAdmitted(request.arguments, new Set([request.operation])));
   }
   if (
     !/^effect-transport-sha256:[0-9a-f]{64}$/u.test(

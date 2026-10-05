@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { EffectExecutionResultKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { EffectRequest } from "@bpmn-lean/temporal-protocol";
-import { createInvoiceEffectActivities } from "../../runner/examples/invoice-effect-activities.ts";
+import { createInvoiceEffectActivities, createInvoiceRecoveryEffectActivities } from "../../runner/examples/invoice-effect-activities.ts";
 
 const request = (operation: string, value: string): EffectRequest => ({
   protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation,
@@ -59,4 +59,31 @@ test("a retried invoice Activity returns the same value without mutating its req
   const first = await activities.executeBpmnEffect(original);
   assert.deepEqual(await activities.executeBpmnEffect(original), first);
   assert.deepEqual(original, before);
+});
+
+test("invoice recovery handlers return modeled failures from business input", async () => {
+  const activities = createInvoiceRecoveryEffectActivities();
+  const review = { kind: EffectExecutionResultKind.BpmnError, code: "REVIEW_REQUIRED",
+    message: "Invoice requires correction", localPatch: [{ name: "result", value: { kind: VariableValueKind.String, value: "correct" } }] };
+  for (const [operation, input, expected] of [
+    ["invoiceValidator", "missing-reference", review], ["invoiceValidator", "policy-review", result("valid")],
+    ["policyChecker", "policy-review", review], ["invoiceValidator", "INV-42", result("valid")],
+    ["policyChecker", "INV-42", result("valid")],
+  ] as const) {
+    const inputRequest = request(operation, input);
+    const saved = structuredClone(inputRequest);
+    assert.deepEqual(await activities.executeBpmnEffect(inputRequest), expected);
+    assert.deepEqual(await activities.executeBpmnEffect(inputRequest), expected);
+    assert.deepEqual(inputRequest, saved);
+  }
+});
+
+test("invoice recovery bindings distinguish malformed requests from modeled failures", async () => {
+  const activities = createInvoiceRecoveryEffectActivities();
+  await assert.rejects(activities.executeBpmnEffect(request("unknown", "policy-review")), /operation/u);
+  await assert.rejects(activities.executeBpmnEffect({ ...request("invoiceValidator", "missing-reference"), protocol: "unknown" }), /protocol/u);
+  for (const args of [[], [{ name: "payload", value: { kind: VariableValueKind.Null } }],
+    [...request("invoiceValidator", "missing-reference").arguments, ...request("invoiceValidator", "missing-reference").arguments]] as const) {
+    await assert.rejects(activities.executeBpmnEffect({ ...request("invoiceValidator", "missing-reference"), arguments: args }), /payload/u);
+  }
 });

@@ -1,14 +1,44 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CanonicalObservationKind, ProcessStatus, StimulusKind, runScenario } from "@bpmn-lean/semantic-core";
+import { CanonicalObservationKind, CommandOutcome, ProcessStatus, StimulusKind, applyStimulus, initialState,
+  projectEffectTransportMaterial, runScenario } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
-import { completeEffectCommandId, assessTemporalHostCapability, TemporalHostCapabilityResultKind } from "@bpmn-lean/temporal-protocol";
+import { completeEffectCommandId, effectTransportKey, assessTemporalHostCapability, TemporalHostCapabilityResultKind } from "@bpmn-lean/temporal-protocol";
 import { TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
 import { businessTaskCompositionPipelineCases } from "./business-task-composition-pipeline-cases.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import type { MutableScenarioResult } from "./pipeline-types.ts";
+import { createInvoiceEffectActivities, createInvoiceRecoveryEffectActivities } from "../../temporal-adapter/runner/examples/invoice-effect-activities.ts";
+
+test("retained business journeys agree with their caller-supplied invoice handlers", async context => {
+  for (const { scenario, semanticProcess: program } of await loadAndCompileCases(businessTaskCompositionPipelineCases)) {
+    await context.test(scenario.id, async () => {
+      const activities = scenario.id === "invoice-business-error-recovery"
+        ? createInvoiceRecoveryEffectActivities() : createInvoiceEffectActivities();
+      let state = initialState;
+      const actual = [];
+      const expected = [];
+      for (const stimulus of scenario.stimuli) {
+        if (stimulus.kind === StimulusKind.CompleteEffect) {
+          const [wait] = state.effectWaits;
+          assert.equal(state.effectWaits.length, 1);
+          assert.ok(wait !== undefined);
+          assert.deepEqual(wait.id, stimulus.effectId);
+          const material = projectEffectTransportMaterial(program, wait);
+          actual.push(await activities.executeBpmnEffect({ ...material.descriptor,
+            arguments: material.arguments, idempotencyKey: effectTransportKey(material) }));
+          expected.push(stimulus.result);
+        }
+        const step = applyStimulus(program, state, stimulus);
+        assert.equal(step.outcome, CommandOutcome.Committed, stimulus.commandId);
+        state = step.state;
+      }
+      assert.deepEqual(actual, expected);
+    });
+  }
+});
 
 test("business pipeline candidates bind retained inputs without claiming public admission", async context => {
   const loaded = await loadAndCompileCases(businessTaskCompositionPipelineCases);

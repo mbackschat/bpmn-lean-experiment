@@ -109,7 +109,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
     sourceOverlay: { ...retained.bpmn.sourceOverlay, bytes: overlayBytes }, limits: semanticProcessTestLimits });
   assert.equal(retainedCompilation.status, BpmnCompilationStatus.Accepted);
   if (retainedCompilation.status !== BpmnCompilationStatus.Accepted) throw new Error("Retained business Error journey rejected");
-  inputs.push({ id: retained.id, xml: retainedXml, prefix: "", nullable: false, patch: [scalar("result", "assessed")],
+  inputs.push({ id: retained.id, xml: retainedXml, prefix: "", nullable: false, patch: [scalar("result", "correct")],
     scenario: retained, program: retainedCompilation.semanticProcess, checkedProcess: retainedCompilation.checkedProcess });
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-business-error-parity-"));
   try {
@@ -160,7 +160,9 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
           const activation = stimulus.commandId === "review-2" ? 2 : 3;
           assert.deepEqual(state.effectWaits.map(wait => ({ id: wait.id, arguments: wait.arguments })), [{
             id: { processInstanceId: instanceId, elementId: prefix + "Validate", activation },
-            arguments: [scalar("payload", activation === 2 ? "corrected-data" : "corrected-policy")],
+            arguments: [scalar("payload", scenario.id === retained.id
+              ? (activation === 2 ? "policy-review" : "INV-42")
+              : (activation === 2 ? "corrected-data" : "corrected-policy"))],
           }]);
         }
         return { commandId: stimulus.commandId, outcome: traced.result.outcome, stateUnchanged: isDeepStrictEqual(state, before),
@@ -176,7 +178,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
         assert.deepEqual(scenario.stimuli.filter(stimulus => stimulus.kind === StimulusKind.CompleteUserTaskInstance)
           .map(stimulus => [stimulus.taskId.elementId, stimulus.taskId.activation]),
         [["Review", 1], ["CorrectData", 1], ["Review", 2], ["ReviewPolicy", 1], ["Review", 3], ["Finalize", 1]]);
-        assert.deepEqual(state.variables.process.bindings, [scalar("decision", "assessed"), scalar("request", "corrected-policy"), scalar("result", "parent-result")]);
+        assert.deepEqual(state.variables.process.bindings, [scalar("decision", "valid"), scalar("request", "INV-42"), scalar("result", "parent-result")]);
       }
     }
     await writeFile(definitions, JSON.stringify({ scenarioId: baseline.scenario.id, checkedProcess: baseline.checkedProcess, semanticProcess: baseline.program }) + "\n");

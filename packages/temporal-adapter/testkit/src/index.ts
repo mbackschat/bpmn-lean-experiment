@@ -13,7 +13,7 @@ export * from "./incident-scenario-execution.js";
 export * from "./incident-operations-query-live-evidence.js";
 export * from "./ephemeral-server.js";
 export * from "./harness-evidence.js";
-export { requireOrderedCompensationHistory } from "./ordered-effect-execution.js";
+export { requireOrderedEffectHistory } from "./ordered-effect-execution.js";
 export * from "./history-evidence-decoding.js";
 export * from "./mapped-boundary-error-scenario-execution.js";
 export * from "./mutation-probes.js";
