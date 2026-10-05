@@ -10,6 +10,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [contract.ts](src/contract.ts) | Scenario, stimulus, outcome, and public identity wire shapes |
 | [wire.ts](src/wire.ts) | Exact non-normalized wire strings, rejecting lone UTF-16 surrogates |
 | [parallel-scope-population.ts](src/parallel-scope-population.ts) | Parallel Sub-Process membership validation and exact body retirement; runtime integration is owned by the [capsule](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) |
+| [parallel-scope-runtime.ts](src/parallel-scope-runtime.ts) | Private atomic population entry, occurrence-addressed quiescent retirement and sibling cancellation; no admitted IL producer |
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
 | [pristine-runtime-state.ts](src/pristine-runtime-state.ts) | Exhaustive field comparison with the initial state for capsules requiring pristine starts |

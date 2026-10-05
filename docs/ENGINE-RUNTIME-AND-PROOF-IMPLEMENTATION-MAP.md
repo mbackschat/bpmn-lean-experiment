@@ -4,7 +4,7 @@ This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeS
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#controller-storage-integration): ownership approved; private controller integration unqualified.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#atomic-lifecycle-implementation): ownership approved; private lifecycle implemented; execution unqualified.
 
 Lean and TypeScript execute reviewed, profile-bounded semantics over immutable serializable state. General BPMN execution and cross-target correspondence remain unproved.
 
