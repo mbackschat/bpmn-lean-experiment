@@ -313,9 +313,9 @@ private def cohortProgram : Program :=
         process := { bindings := entered.variables.process.bindings.filter (·.name != "tenant") } } }
     unless (deriveInternalOccurrenceFrontier? cohortProgram missingInput).isNone do
       throw (IO.userError "failed Service input disappeared from the complete frontier")
-    let some batch := prepareInternalOccurrenceArmingBatch? cohortProgram entered
+    let some batch := prepareInternalOccurrenceBatch? cohortProgram entered
       | throw (IO.userError s!"{count}-body occurrence cohort preparation refused")
-    let some successors := applyInternalOccurrenceArmingBatch? cohortProgram entered batch
+    let some successors := applyInternalOccurrenceBatch? cohortProgram entered batch
       | throw (IO.userError "occurrence cohort application refused")
     unless successors.length == count do throw (IO.userError "cohort lost individual steps")
     let some final := successors.getLast? | throw (IO.userError "cohort has no final state")
@@ -328,28 +328,28 @@ private def cohortProgram : Program :=
     let reordered := { entered with
       scopeOccurrences := entered.scopeOccurrences.reverse
       variables := { entered.variables with scopes := entered.variables.scopes.reverse } }
-    let some reorderedBatch := prepareInternalOccurrenceArmingBatch? cohortProgram reordered
+    let some reorderedBatch := prepareInternalOccurrenceBatch? cohortProgram reordered
       | throw (IO.userError "cohort depends on storage order")
-    unless reorderedBatch.members.map (·.write.occurrence) == batch.members.map (·.write.occurrence) do
+    unless reorderedBatch.members.filterMap (·.waitOccurrence?) == batch.members.filterMap (·.waitOccurrence?) do
       throw (IO.userError "storage order changed reservation slots")
     for changed in [
         { entered with parallelScopeControllers := [] },
         { entered with variables := { entered.variables with scopes := entered.variables.scopes.drop 1 } },
         { entered with scopeOccurrences := entered.scopeOccurrences.filter (·.id != probeBody 5) },
         { entered with effectActivations := [⟨⟨"Check"⟩, 1⟩] }] do
-      unless (applyInternalOccurrenceArmingBatch? cohortProgram changed batch).isNone do
+      unless (applyInternalOccurrenceBatch? cohortProgram changed batch).isNone do
         throw (IO.userError "cohort rebound stale predecessor")
     let forged := { batch with members := batch.members.reverse }
-    unless (applyInternalOccurrenceArmingBatch? cohortProgram entered forged).isNone do
+    unless (applyInternalOccurrenceBatch? cohortProgram entered forged).isNone do
       throw (IO.userError "cohort accepted forged allocation order")
     let overflow := { entered with effectActivations := [⟨⟨"Check"⟩, 9007199254740990⟩] }
-    unless (prepareInternalOccurrenceArmingBatch? cohortProgram overflow).isNone do
+    unless (prepareInternalOccurrenceBatch? cohortProgram overflow).isNone do
       throw (IO.userError "cohort allocated beyond the safe wire limit")
     let duplicates := { entered with effectActivations := [⟨⟨"Check"⟩, 0⟩, ⟨⟨"Check"⟩, 0⟩] }
-    unless (prepareInternalOccurrenceArmingBatch? cohortProgram duplicates).isNone do
+    unless (prepareInternalOccurrenceBatch? cohortProgram duplicates).isNone do
       throw (IO.userError "cohort accepted duplicate counter rows")
     let some occupied := final.effectWaits.head? | throw (IO.userError "cohort missing collision witness")
-    unless (prepareInternalOccurrenceArmingBatch? cohortProgram
+    unless (prepareInternalOccurrenceBatch? cohortProgram
         { entered with effectWaits := [occupied] }).isNone do
       throw (IO.userError "cohort reused an issued anchor above its high-water mark")
     let humanOperations : List SemanticOperation := cohortProgram.operations.map fun operation =>
@@ -358,9 +358,9 @@ private def cohortProgram : Program :=
           .awaitUserTask id ⟨⟨"Review"⟩⟩ input output ⟨⟨"Review"⟩, none, none⟩
       | _ => operation
     let humanProgram := { cohortProgram with operations := humanOperations }
-    let some humanBatch := prepareInternalOccurrenceArmingBatch? humanProgram entered
+    let some humanBatch := prepareInternalOccurrenceBatch? humanProgram entered
       | throw (IO.userError "human cohort preparation refused")
-    let some humanStates := applyInternalOccurrenceArmingBatch? humanProgram entered humanBatch
+    let some humanStates := applyInternalOccurrenceBatch? humanProgram entered humanBatch
       | throw (IO.userError "human cohort application refused")
     let some humanFinal := humanStates.getLast? | throw (IO.userError "human cohort has no successor")
     unless humanFinal.waits.map (fun wait => (wait.owner.activation, wait.activation)) ==

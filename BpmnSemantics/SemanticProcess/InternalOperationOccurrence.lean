@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 import BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.TransitionRecord
 
@@ -161,10 +162,50 @@ def deriveInternalOccurrenceFrontier? (program : Program) (state : RuntimeState)
     program.operations).mapM (internalOperationOccurrenceOffers? program state)
   pure pieces.flatten
 
-structure InternalOccurrenceArmingBatch where
+/-- PMIS-SELECT-01 token-only edits share a certificate with fixed-slot wait issuance. -/
+structure InternalOccurrenceTokenPatch where
+  operation : SemanticOperation
+  tokens : TokenPatch
+  endIncrement : Nat
+  deriving Repr, DecidableEq
+
+inductive InternalOccurrencePatch where
+  | arm (patch : InternalArmingPatch)
+  | token (patch : InternalOccurrenceTokenPatch)
+  deriving Repr, DecidableEq
+
+def InternalOccurrencePatch.operation : InternalOccurrencePatch → SemanticOperation
+  | .arm patch => patch.operation
+  | .token patch => patch.operation
+
+def InternalOccurrencePatch.owner : InternalOccurrencePatch → ScopeOccurrenceId
+  | .arm patch => patch.owner
+  | .token patch => patch.tokens.owner
+
+def InternalOccurrencePatch.waitOccurrence? : InternalOccurrencePatch → Option OccurrenceId
+  | .arm patch => some patch.write.occurrence
+  | .token _ => none
+
+def InternalOccurrencePatch.tokenKeys (patch : InternalOccurrencePatch) : List (ScopeOccurrenceId × ControlPlaceId) :=
+  match patch with
+  | .arm patch => [(patch.owner, patch.input)]
+  | .token patch => (patch.tokens.consumed ++ patch.tokens.produced).map (patch.tokens.owner, ·)
+
+def InternalOccurrencePatch.endIncrement : InternalOccurrencePatch → Nat
+  | .arm _ => 0
+  | .token patch => patch.endIncrement
+
+def InternalOccurrencePatch.apply (state : RuntimeState) : InternalOccurrencePatch → RuntimeState
+  | .arm patch => applyInternalArmingPatch state patch
+  | .token patch =>
+      { state with
+        tokens := patch.tokens.apply state.tokens
+        endOccurrences := state.endOccurrences + patch.endIncrement }
+
+structure InternalOccurrenceBatch where
   program : Program
   predecessor : RuntimeState
-  members : List InternalArmingPatch
+  members : List InternalOccurrencePatch
   deriving Repr, DecidableEq
 
 private def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
@@ -259,71 +300,113 @@ def prepareReservedOccurrenceArm? (program : Program) (state : RuntimeState)
       owner := owner
       write := write }
 
-private def reserveOccurrenceArms? (program : Program) (state : RuntimeState)
-    (reserved : List InternalArmingPatch) : List InternalOperationOccurrence → Option (List InternalArmingPatch)
+/-- Exact-owner token controls retain immutable provenance and check every affected bucket. -/
+def prepareOccurrenceTokenPatch? (program : Program) (state : RuntimeState)
+    (candidate : InternalOperationOccurrence) : Option InternalOccurrenceTokenPatch := do
+  let .running runtimeId := state.control | none
+  let operation ← resolveInternalOperationOccurrence? program state candidate
+  let (consumed, produced, endIncrement) ← match operation with
+    | .duplicate _ _ input outputs => if outputs.isEmpty then none else some ([input], outputs, 0)
+    | .synchronize _ _ inputs output => if inputs.isEmpty then none else some (inputs, [output], 0)
+    | .reachNoneEnd _ _ input => some ([input], [], 1)
+    | _ => none
+  let owner := candidate.owner
+  if owner.processInstanceId != runtimeId || !exactLiveOccurrence state owner ||
+      !exactProgramSelection program operation owner || operation.origin.elementId.value.isEmpty ||
+      !SemanticProcessJson.isSafeWireNat state.logicalTimeMs ||
+      !occurrenceOwnerRootValid program state (state.scopeOccurrences.length + 1) owner ||
+      !decide consumed.Nodup || !decide produced.Nodup ||
+      !(consumed.all fun input => (state.tokens.filter fun token => token.placeId == input && token.owner == owner).length == 1) ||
+      !(endIncrement == 0 || SemanticProcessJson.isSafeWireNat (state.endOccurrences + endIncrement)) then none
+  else pure ()
+  let tokens : TokenPatch := { owner, consumed, produced }
+  if !(consumed ++ produced).all (fun place =>
+      let count := (state.tokens.filter fun token => token.placeId == place && token.owner == owner).length
+      SemanticProcessJson.isSafeWireNat count &&
+        SemanticProcessJson.isSafeWireNat (count - consumed.count place + produced.count place)) then none
+  else pure ()
+  let _ ← internalLocalControlPositionDelta? program tokens
+  some { operation, tokens, endIncrement }
+
+private def reserveOccurrenceMembers? (program : Program) (state : RuntimeState)
+    (reserved : List InternalOccurrencePatch) : List InternalOperationOccurrence → Option (List InternalOccurrencePatch)
   | [] => some reserved
   | candidate :: rest => do
       let operation ← resolveInternalOperationOccurrence? program state candidate
-      let base ← occurrenceCounterBase? state operation
-      let (kind, element) ← match operation with
-        | .awaitUserTask _ _ _ _ task => some (InternalWaitKind.userTask, task.id.value)
-        | .awaitEffect _ _ _ _ effect _ => some (InternalWaitKind.effect, effect.elementId.value)
-        | _ => none
-      let offset := (reserved.filter fun patch => patch.write.kind == kind && patch.write.elementId.value == element).length
-      let patch ← prepareReservedOccurrenceArm? program state candidate (base + offset + 1)
-      reserveOccurrenceArms? program state (reserved ++ [patch]) rest
+      let member ← match operation with
+        | .awaitUserTask .. | .awaitEffect .. => do
+            let base ← occurrenceCounterBase? state operation
+            let (kind, element) ← match operation with
+              | .awaitUserTask _ _ _ _ task => some (InternalWaitKind.userTask, task.id.value)
+              | .awaitEffect _ _ _ _ effect _ => some (InternalWaitKind.effect, effect.elementId.value)
+              | _ => none
+            let offset := (reserved.filter fun member => match member with
+              | .arm patch => patch.write.kind == kind && patch.write.elementId.value == element
+              | .token _ => false).length
+            let patch ← prepareReservedOccurrenceArm? program state candidate (base + offset + 1)
+            pure (InternalOccurrencePatch.arm patch)
+        | _ => InternalOccurrencePatch.token <$> prepareOccurrenceTokenPatch? program state candidate
+      reserveOccurrenceMembers? program state (reserved ++ [member]) rest
 
 private def acceptOccurrenceBatch? (program : Program) (state : RuntimeState)
-    (members : List InternalArmingPatch) : Option InternalOccurrenceArmingBatch :=
+    (members : List InternalOccurrencePatch) : Option InternalOccurrenceBatch :=
+  let increments := (members.map (·.endIncrement)).sum
   if 2 ≤ members.length &&
-      decide (members.map (fun patch => (patch.owner, patch.input))).Nodup &&
-      decide (members.map (fun patch => patch.write.occurrence)).Nodup &&
-      members.all (fun patch => 0 < patch.write.occurrence.activation &&
-        SemanticProcessJson.isSafeWireNat patch.write.occurrence.activation) then
+      decide (members.Pairwise fun left right => ∀ key ∈ left.tokenKeys, key ∉ right.tokenKeys) &&
+      decide (members.filterMap (·.waitOccurrence?)).Nodup &&
+      (members.filterMap (·.waitOccurrence?)).all (fun id => 0 < id.activation &&
+        SemanticProcessJson.isSafeWireNat id.activation) &&
+      (increments == 0 || SemanticProcessJson.isSafeWireNat (state.endOccurrences + increments)) then
     some { program, predecessor := state, members }
   else none
 
 /-- Complete-frontier certificates preserve legacy preparation and bind all consulted state conservatively. -/
-def prepareInternalOccurrenceArmingBatch? (program : Program) (state : RuntimeState) :
-    Option InternalOccurrenceArmingBatch := do
+def prepareInternalOccurrenceBatch? (program : Program) (state : RuntimeState) :
+    Option InternalOccurrenceBatch := do
   if program.identity.semanticProfile.value != "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
       !occurrenceReservationStateValid state then none
   else
     let offers ← deriveInternalOccurrenceFrontier? program state
-    let members ← reserveOccurrenceArms? program state [] (offers.map Prod.fst)
+    let members ← reserveOccurrenceMembers? program state [] (offers.map Prod.fst)
     acceptOccurrenceBatch? program state members
 
+private def occurrenceMemberRevalidated (program : Program) (state : RuntimeState) : InternalOccurrencePatch → Bool
+  | .arm patch =>
+      occurrenceCounterBase? state patch.operation == some (patch.write.occurrence.activation - 1) &&
+      patch.write.occurrence.activation > 0 &&
+      prepareReservedOccurrenceArm? program state ⟨patch.operation.id, patch.owner⟩
+        patch.write.occurrence.activation == some patch
+  | .token patch =>
+      prepareOccurrenceTokenPatch? program state ⟨patch.operation.id, patch.tokens.owner⟩ == some patch
+
 private def applyReservedOccurrencePrefix? (program : Program) (state : RuntimeState) :
-    List InternalArmingPatch → Option (List RuntimeState)
+    List InternalOccurrencePatch → Option (List RuntimeState)
   | [] => some []
   | patch :: rest => do
-      let base ← occurrenceCounterBase? state patch.operation
-      if base + 1 != patch.write.occurrence.activation then none else do
-        let fresh ← prepareReservedOccurrenceArm? program state ⟨patch.operation.id, patch.owner⟩
-          patch.write.occurrence.activation
-        if fresh != patch then none else do
-          let next := applyInternalArmingPatch state patch
-          let successors ← applyReservedOccurrencePrefix? program next rest
-          some (next :: successors)
+      if !occurrenceMemberRevalidated program state patch then none else do
+        let next := patch.apply state
+        let successors ← applyReservedOccurrencePrefix? program next rest
+        some (next :: successors)
 
 /-- A failed prefix returns no partial successor. Frozen slots are revalidated, never freshly allocated. -/
-def applyInternalOccurrenceArmingBatch? (program : Program) (state : RuntimeState)
-    (batch : InternalOccurrenceArmingBatch) : Option (List RuntimeState) :=
+def applyInternalOccurrenceBatch? (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch) : Option (List RuntimeState) :=
   if batch.program != program || batch.predecessor != state ||
-      prepareInternalOccurrenceArmingBatch? program state != some batch then none
+      prepareInternalOccurrenceBatch? program state != some batch then none
   else applyReservedOccurrencePrefix? program state batch.members
 
 /-- Successful reservation rejects repeated public anchors before any member is applied. -/
-theorem prepareInternalOccurrenceArmingBatch_distinct_anchors (program : Program) (state : RuntimeState)
-    (batch : InternalOccurrenceArmingBatch)
-    (prepared : prepareInternalOccurrenceArmingBatch? program state = some batch) :
-    (batch.members.map (fun patch => patch.write.occurrence)).Nodup := by
-  unfold prepareInternalOccurrenceArmingBatch? at prepared
+theorem prepareInternalOccurrenceBatch_distinct_anchors (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch)
+    (prepared : prepareInternalOccurrenceBatch? program state = some batch) :
+    (batch.members.filterMap (·.waitOccurrence?)).Nodup := by
+  unfold prepareInternalOccurrenceBatch? at prepared
   split at prepared
   · contradiction
   · obtain ⟨offers, _, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     obtain ⟨members, _, prepared⟩ := Option.bind_eq_some_iff.mp prepared
     unfold acceptOccurrenceBatch? at prepared
+    dsimp only at prepared
     split at prepared
     · rename_i valid
       cases prepared
@@ -331,11 +414,11 @@ theorem prepareInternalOccurrenceArmingBatch_distinct_anchors (program : Program
     · contradiction
 
 /-- Applying a certificate cannot silently rebind its complete predecessor or Program. -/
-theorem applyInternalOccurrenceArmingBatch_requires_predecessor (program : Program) (state : RuntimeState)
-    (batch : InternalOccurrenceArmingBatch) (successors : List RuntimeState)
-    (applied : applyInternalOccurrenceArmingBatch? program state batch = some successors) :
+theorem applyInternalOccurrenceBatch_requires_predecessor (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
     batch.program = program ∧ batch.predecessor = state := by
-  unfold applyInternalOccurrenceArmingBatch? at applied
+  unfold applyInternalOccurrenceBatch? at applied
   split at applied
   · contradiction
   · rename_i valid
@@ -346,12 +429,14 @@ theorem applyInternalOccurrenceArmingBatch_requires_predecessor (program : Progr
     · simp [sameProgram] at valid
 
 
-private theorem reservedPatch_preserves_body_data (state : RuntimeState) (patch : InternalArmingPatch) :
-    (applyInternalArmingPatch state patch).variables.process = state.variables.process ∧
-    (applyInternalArmingPatch state patch).variables.scopes = state.variables.scopes := by
-  cases writeEq : patch.write <;> simp [applyInternalArmingPatch, writeEq]
+private theorem reservedPatch_preserves_body_data (state : RuntimeState) (patch : InternalOccurrencePatch) :
+    (patch.apply state).variables.process = state.variables.process ∧
+    (patch.apply state).variables.scopes = state.variables.scopes := by
+  cases patch with
+  | arm patch => cases writeEq : patch.write <;> simp [InternalOccurrencePatch.apply, applyInternalArmingPatch, writeEq]
+  | token patch => exact ⟨rfl, rfl⟩
 
-private theorem reservedPrefix_steps_and_frames (program : Program) (members : List InternalArmingPatch)
+private theorem reservedPrefix_steps_and_frames (program : Program) (members : List InternalOccurrencePatch)
     (state : RuntimeState) (successors : List RuntimeState)
     (applied : applyReservedOccurrencePrefix? program state members = some successors) :
     successors.length = members.length ∧ ∀ successor ∈ successors,
@@ -363,31 +448,27 @@ private theorem reservedPrefix_steps_and_frames (program : Program) (members : L
       simp
   | cons patch rest ih =>
       simp only [applyReservedOccurrencePrefix?] at applied
-      obtain ⟨base, _, applied⟩ := Option.bind_eq_some_iff.mp applied
       split at applied
       · contradiction
-      · obtain ⟨fresh, _, applied⟩ := Option.bind_eq_some_iff.mp applied
-        split at applied
-        · contradiction
-        · obtain ⟨tail, tailApplied, applied⟩ := Option.bind_eq_some_iff.mp applied
-          cases applied
-          have tailFacts := ih _ _ tailApplied
-          have stepFrames := reservedPatch_preserves_body_data state patch
-          refine ⟨congrArg Nat.succ tailFacts.1, ?_⟩
-          intro successor member
-          rcases List.mem_cons.mp member with same | later
-          · subst successor
-            exact stepFrames
-          · have frames := tailFacts.2 successor later
-            exact ⟨frames.1.trans stepFrames.1, frames.2.trans stepFrames.2⟩
+      · obtain ⟨tail, tailApplied, applied⟩ := Option.bind_eq_some_iff.mp applied
+        cases applied
+        have tailFacts := ih _ _ tailApplied
+        have stepFrames := reservedPatch_preserves_body_data state patch
+        refine ⟨congrArg Nat.succ tailFacts.1, ?_⟩
+        intro successor member
+        rcases List.mem_cons.mp member with same | later
+        · subst successor
+          exact stepFrames
+        · have frames := tailFacts.2 successor later
+          exact ⟨frames.1.trans stepFrames.1, frames.2.trans stepFrames.2⟩
 
 /-- Every successful batch retains one successor per fuel charge and preserves all Process/body bindings at every prefix. -/
-theorem applyInternalOccurrenceArmingBatch_steps_and_frames (program : Program) (state : RuntimeState)
-    (batch : InternalOccurrenceArmingBatch) (successors : List RuntimeState)
-    (applied : applyInternalOccurrenceArmingBatch? program state batch = some successors) :
+theorem applyInternalOccurrenceBatch_steps_and_frames (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
     successors.length = batch.members.length ∧ ∀ successor ∈ successors,
       successor.variables.process = state.variables.process ∧ successor.variables.scopes = state.variables.scopes := by
-  unfold applyInternalOccurrenceArmingBatch? at applied
+  unfold applyInternalOccurrenceBatch? at applied
   split at applied
   · contradiction
   · exact reservedPrefix_steps_and_frames program batch.members state successors applied

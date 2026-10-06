@@ -15,12 +15,20 @@ private def ownerJson (owner : ScopeOccurrenceId) : Json :=
 private def bindingsJson (bindings : List VariableBinding) : Json :=
   toJson (bindings.map fun binding => Json.mkObj [("name", toJson binding.name), ("value", encodeVariableValue binding.value)])
 
+/-- Compare the complete wait multiset by public identity; RuntimeState uses owner-first private storage. -/
 private def prefixJson (before state : RuntimeState) : Json :=
+  let waits := InternalCommutation.sortBy (fun left right : UserTaskWait =>
+    if left.task.id.value != right.task.id.value then left.task.id.value < right.task.id.value
+    else left.activation < right.activation) state.waits
+  let effects := InternalCommutation.sortBy (fun left right : EffectWait =>
+    if left.elementId.value != right.elementId.value then left.elementId.value < right.elementId.value
+    else left.activation < right.activation) state.effectWaits
   Json.mkObj [
+    ("endOccurrences", toJson state.endOccurrences),
     ("tokens", toJson (state.tokens.map fun token => toJson [toJson token.placeId.value, ownerJson token.owner])),
-    ("tasks", toJson (state.waits.map fun wait => toJson [ownerJson wait.owner, toJson wait.task.id.value,
+    ("tasks", toJson (waits.map fun wait => toJson [ownerJson wait.owner, toJson wait.task.id.value,
       toJson wait.activation, toJson wait.output.value])),
-    ("effects", toJson (state.effectWaits.map fun wait => toJson [ownerJson wait.owner, toJson wait.elementId.value,
+    ("effects", toJson (effects.map fun wait => toJson [ownerJson wait.owner, toJson wait.elementId.value,
       toJson wait.activation, toJson wait.output.value, bindingsJson wait.arguments])),
     ("taskCounters", toJson (state.activations.map fun row => toJson [toJson row.taskId.value, toJson row.count])),
     ("effectCounters", toJson (state.effectActivations.map fun row => toJson [toJson row.elementId.value, toJson row.count])),
@@ -30,6 +38,7 @@ private def prefixJson (before state : RuntimeState) : Json :=
       | _ => none)),
     ("otherStateUnchanged", toJson (decide ({ state with
       tokens := before.tokens
+      endOccurrences := before.endOccurrences
       waits := before.waits
       effectWaits := before.effectWaits
       activations := before.activations
@@ -121,7 +130,7 @@ private def integrityJson (program : Program) (stimulus : Stimulus) : Option Jso
 private def reservationJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let entered ← enteredReservationState? program stimulus
   let batch ← (deriveInternalExecutionFrontier program entered).occurrenceBatch
-  let successors ← applyInternalOccurrenceArmingBatch? program entered batch
+  let successors ← applyInternalOccurrenceBatch? program entered batch
   let final ← successors.getLast?
   let closed := closeScheduledTraced batch.members.length program ⟨"batch"⟩ 0 0 [] entered
   let short := closeScheduledTraced (batch.members.length - 1) program ⟨"batch"⟩ 0 0 [] entered
@@ -129,35 +138,75 @@ private def reservationJson (program : Program) (stimulus : Stimulus) : Option J
   pure (Json.mkObj [
     ("programWellFormed", toJson (programWellFormed program)),
     ("slots", toJson (batch.members.map fun member => toJson [toJson member.operation.id.value,
-      ownerJson member.owner, toJson member.write.occurrence.activation])),
+      ownerJson member.owner, toJson (member.waitOccurrence?.map (·.activation))])),
     ("publications", (publicationJson? program entered successors closed).getD Json.null),
     ("prefixes", toJson (successors.map (prefixJson entered))) ])
+
+private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : Nat) : Option Json := do
+  let .startProcess commandId _ instanceId bindings := stimulus | none
+  let admitted ← runningProgramStartState? program instanceId bindings
+  let closed := closeScheduledTraced fuel program commandId 0 0 [] admitted
+  let state := (StimulusResult.ofScheduledClosure admitted closed).state
+  let publications : Option Json := do
+    let records ← closed.records
+    let lifecycles ← closed.lifecycles
+    let mut previous := admitted
+    let mut encoded := []
+    for record in records do
+      let next ← replayInternalOperationOccurrence? program previous record
+      let transition ← Publication.internalTransitionJson record
+      let position ← controlPositionDelta? program instanceId previous next
+      encoded := encoded ++ [Json.mkObj [("logicalTimeMs", toJson previous.logicalTimeMs),
+        ("transition", transition), ("positionDelta", Publication.positionDeltaJson position)]]
+      previous := next
+    if previous != state then none else pure ()
+    pure (Json.mkObj [("records", toJson encoded),
+      ("lifecycles", toJson (lifecycles.map Publication.occurrenceDeltaJson))])
+  pure (Json.mkObj [
+    ("failed", toJson closed.failed), ("prefix", prefixJson admitted state),
+    ("process", bindingsJson state.variables.process.bindings),
+    ("scopeFrames", toJson (state.variables.scopes.map fun frame => toJson [ownerJson frame.owner, bindingsJson frame.bindings])),
+    ("scopes", toJson (state.scopeOccurrences.map fun scope => toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])),
+    ("publications", publications.getD Json.null) ])
 
 private inductive DiagnosticMode where
   | reservation
   | refusal
   | integrity
+  | startFrontier
+
+private def printInput (mode : DiagnosticMode) (programPath startPath : String) (fuel : Nat) : IO Unit := do
+  let programText ← IO.FS.readFile programPath
+  let startText ← IO.FS.readFile startPath
+  let result := do
+    let program ← parseWireJson programText >>= decodeProgram
+    let stimulus ← parseWireJson startText >>= decodeStimulus
+    pure ((match mode with
+      | .reservation => reservationJson program stimulus
+      | .refusal => refusalJson program stimulus
+      | .integrity => integrityJson program stimulus
+      | .startFrontier => startFrontierJson program stimulus fuel).getD Json.null)
+  match result with
+  | .error error => throw (IO.userError error)
+  | .ok value => IO.println value.compress
 
 private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
   | [] => pure 0
-  | programPath :: startPath :: rest => do
-      let programText ← IO.FS.readFile programPath
-      let startText ← IO.FS.readFile startPath
-      let result := do
-        let program ← parseWireJson programText >>= decodeProgram
-        let stimulus ← parseWireJson startText >>= decodeStimulus
-        pure ((match mode with
-          | .reservation => reservationJson program stimulus
-          | .refusal => refusalJson program stimulus
-          | .integrity => integrityJson program stimulus).getD Json.null)
-      match result with
-      | .error error => throw (IO.userError error)
-      | .ok value => IO.println value.compress
-      runInputs mode rest
+  | programPath :: startPath :: rest => match mode with
+      | .startFrontier => match rest with
+          | value :: remaining => do
+              let some fuel := value.toNat? | throw (IO.userError "expected natural closure fuel")
+              printInput mode programPath startPath fuel
+              runInputs mode remaining
+          | [] => throw (IO.userError "missing closure fuel")
+      | _ => do
+          printInput mode programPath startPath 0
+          runInputs mode rest
   | _ => throw (IO.userError "expected Program/Start path pairs")
 
 def main (paths : List String) : IO UInt32 :=
   match paths with
   | "--refusal" :: rest => runInputs .refusal rest
   | "--integrity" :: rest => runInputs .integrity rest
+  | "--start-frontier" :: rest => runInputs .startFrontier rest
   | _ => runInputs .reservation paths

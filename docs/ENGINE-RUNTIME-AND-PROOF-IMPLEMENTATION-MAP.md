@@ -1,10 +1,10 @@
 # Engine runtime and proof implementation map
 
-This detail map owns the exact current cross-cutting runtime, scope, Lean, TypeScript semantic-core, and BPMN-conformance boundary. Per-family capsule-delegated status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md). Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
+This map owns cross-cutting runtime, scope, Lean, TypeScript semantic-core, and BPMN-conformance status. Per-family capsule-delegated status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md). Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): private lifecycle/IL approved; issuance corrections pass paired checks, audit pending; public/hosted qualification open.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): private occurrence checkpoint approved; mixed controls/Start closure pass, review pending. Command/public/hosted acceptance remains open.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 

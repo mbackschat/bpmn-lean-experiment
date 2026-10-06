@@ -217,11 +217,24 @@ private def acceptOccurrencePublicationPrefixes? (program : Program) (state : Ru
   | _, _ => none
 
 private def occurrenceBatchPublications? (program : Program) (commandId : SemanticId)
-    (first : Nat) (state : RuntimeState) (batch : InternalOccurrenceArmingBatch)
+    (first : Nat) (state : RuntimeState) (batch : InternalOccurrenceBatch)
     (successors : List RuntimeState) : Option (List InstantiatedInternalTransitionPublication) := do
   if !programWellFormed program then none else pure ()
-  let templates ← batch.members.mapM fun patch =>
-    internalArmingPublicationTemplate? program state patch.operation patch
+  let templates ← batch.members.mapM fun member => match member with
+    | .arm patch => internalArmingPublicationTemplate? program state patch.operation patch
+    | .token patch => do
+        let owner := patch.tokens.owner
+        let identity ← candidateOperationFlowNodeIdentity? program patch.operation owner owner patch.operation.origin.elementId
+        let delta ← internalLocalControlPositionDelta? program patch.tokens
+        pure ({
+          record := {
+            operationId := patch.operation.id
+            operationKind := patch.operation.kind
+            origin := patch.operation.origin
+            owner := owner }
+          logicalTimeMs := state.logicalTimeMs
+          positionDelta := delta
+          lifecycle := .instantaneous identity } : InternalTransitionPublicationTemplate)
   -- The reservation certificate already orders complete operation/owner identities (PMIS-SELECT-01).
   let publications := numberTransitionPublicationTemplates commandId first templates
   acceptOccurrencePublicationPrefixes? program state publications successors
@@ -235,7 +248,7 @@ private def executeSelectedFrontier? (program : Program) (commandId : SemanticId
       let alternatives := batch.members.map fun patch =>
         InternalAlternative.operationOccurrence patch.operation.id patch.owner
       if offers.map (·.alternative) != alternatives then none else pure ()
-      let successors ← applyInternalOccurrenceArmingBatch? program state batch
+      let successors ← applyInternalOccurrenceBatch? program state batch
       let final ← successors.getLast?
       let publications := occurrenceBatchPublications? program commandId first state batch successors
       pure {

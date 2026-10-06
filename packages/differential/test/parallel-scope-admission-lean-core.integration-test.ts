@@ -4,14 +4,30 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { initialState, SemanticOperationKind, LocalDataOwnerKind, CommandOutcome } from "@bpmn-lean/semantic-core";
+import { initialState, SemanticOperationKind, LocalDataOwnerKind, CommandOutcome, ActivityBodyKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, StartProcessStimulus } from "@bpmn-lean/semantic-core";
-import { reservationInputs, wholeModelReservationInputs } from "./parallel-scope-reservation-fixture.ts";
+import { reservationInputs, controlClosureInputs, wholeModelReservationInputs, wholeModelStartClosureInputs } from "./parallel-scope-reservation-fixture.ts";
 import { parallelAdmissionCases } from "../../bpmn-source/test/parallel-scope-admission-fixture.ts";
 import { parallelStartBoundCases, parallelStartFrontierCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 const { parallelScopeCheckedSourceAdmitted } = await import(new URL("../../bpmn-source/dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../../bpmn-source/src/multi-instance-scope-source-compiler.ts");
 const { parallelScopeStartClosureBound, parallelScopeStartFrontierCapacity } = await import(new URL("../../bpmn-source/dist/parallel-scope-start-bound.js", import.meta.url).href) as typeof import("../../bpmn-source/src/parallel-scope-start-bound.ts");
+
+const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
+const prefix = (before: RuntimeState, state: RuntimeState) => ({
+  tokens: state.controlTokens.flatMap(token => Array.from({ length: token.multiplicity }, () => [token.placeId, owner(token.owner)])),
+  tasks: state.userTaskWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output]),
+  effects: state.effectWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output, wait.arguments]),
+  taskCounters: state.taskActivations.map(row => [row.elementId, row.count]),
+  effectCounters: state.effectActivations.map(row => [row.elementId, row.count]),
+  endOccurrences: state.endOccurrences,
+  effectFrames: state.variables.activities.flatMap(frame => frame.owner.kind === LocalDataOwnerKind.EffectOccurrence
+    ? [[frame.owner.id.processInstanceId, frame.owner.id.elementId, frame.owner.id.activation, frame.bindings]] : []),
+  otherStateUnchanged: isDeepStrictEqual({ ...state, controlTokens: before.controlTokens,
+    userTaskWaits: before.userTaskWaits, effectWaits: before.effectWaits, taskActivations: before.taskActivations,
+    effectActivations: before.effectActivations, endOccurrences: before.endOccurrences,
+    variables: { ...state.variables, activities: before.variables.activities } }, before),
+});
 
 test("Lean and TypeScript agree on shared-input reservation slots and every applied prefix", async () => {
   const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
@@ -28,19 +44,6 @@ test("Lean and TypeScript agree on shared-input reservation slots and every appl
   ) as typeof import("../../semantic-core/src/semantic-process-admission.ts");
   const { projectInternalExecutionBatch, replayInternalTransitionRecord } = await import(new URL("../../semantic-core/dist/semantic-transition-trace.js", import.meta.url).href
   ) as typeof import("../../semantic-core/src/semantic-transition-trace.ts");
-  const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
-  const prefix = (before: RuntimeState, state: RuntimeState) => ({
-    tokens: state.controlTokens.flatMap(token => Array.from({ length: token.multiplicity }, () => [token.placeId, owner(token.owner)])),
-    tasks: state.userTaskWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output]),
-    effects: state.effectWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output, wait.arguments]),
-    taskCounters: state.taskActivations.map(row => [row.elementId, row.count]),
-    effectCounters: state.effectActivations.map(row => [row.elementId, row.count]),
-    effectFrames: state.variables.activities.flatMap(frame => frame.owner.kind === LocalDataOwnerKind.EffectOccurrence
-      ? [[frame.owner.id.processInstanceId, frame.owner.id.elementId, frame.owner.id.activation, frame.bindings]] : []),
-    otherStateUnchanged: isDeepStrictEqual({ ...state, controlTokens: before.controlTokens,
-      userTaskWaits: before.userTaskWaits, effectWaits: before.effectWaits, taskActivations: before.taskActivations,
-      effectActivations: before.effectActivations, variables: { ...state.variables, activities: before.variables.activities } }, before),
-  });
   const directory = await mkdtemp(path.join(tmpdir(), "parallel-reservation-"));
   try {
     const files: string[] = [];
@@ -285,6 +288,202 @@ test("Lean and TypeScript agree on shared-input wait issuance integrity and atom
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--integrity", ...files], inputs.length * 7);
     assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), inputs.map(input => input.results));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("source-derived parallel invoice Start closure reaches every concrete stable frontier", async t => {
+  const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { deriveInternalExecutionFrontier } = await import(new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-transition-preparation.ts");
+  const { evaluateScheduledClosure } = await import(new URL("../../semantic-core/dist/internal-choice-schedule.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-choice-schedule.ts");
+  const { isWellFormedSemanticProcessProgram } = await import(new URL("../../semantic-core/dist/semantic-process-admission.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-admission.ts");
+  const inputs = await wholeModelStartClosureInputs();
+  assert.equal(inputs.length, 24);
+  for (const { shape, source, program, start, count, reverse } of inputs) {
+    await t.test(`${shape} ${count} ${reverse ? "reverse" : "forward"}`, () => {
+      assert.equal(parallelScopeCheckedSourceAdmitted(source), true, "setup requires an already admitted invoice source shape");
+      assert.equal(isWellFormedSemanticProcessProgram(program), true, "setup requires canonical whole-Process IL");
+      const limit = parallelScopeStartClosureBound(source, start.initialVariables);
+      assert.ok(limit !== undefined, "setup requires the source-derived Start closure bound");
+      const admitted = admitProcessStart(program, initialState, start);
+      assert.ok(admitted, "private Start admission must retain the complete source-bound inputs");
+      let lastFrontier: unknown;
+      const frontierAt = (state: RuntimeState) => {
+        const frontier = deriveInternalExecutionFrontier(program, state, () => assert.fail("legacy dispatch"));
+        lastFrontier = { offers: frontier.offers.length, kinds: [...new Set(frontier.offers.map(offer => offer.step.operation.kind))],
+          preparationFailed: frontier.preparationFailed, reserved: frontier.occurrenceBatch !== undefined };
+        return frontier;
+      };
+      const closed = evaluateScheduledClosure(program, initialState, { outcome: CommandOutcome.Committed, state: admitted }, [], limit, frontierAt);
+      assert.equal(closed.result.outcome, CommandOutcome.Committed, `Start closure must reach the source frontier: ${JSON.stringify({
+        limit, hitBound: closed.result.internalStepBoundExceeded, ambiguous: closed.result.ambiguousInternalChoice, lastFrontier })}`);
+      const state = closed.result.state;
+      const rootDefinition = source.definitionScopes.find(scope => scope.parentScopeId === null)!;
+      const childDefinition = source.definitionScopes.find(scope => scope.originElementId === "ReviewInvoice")!;
+      const root = { processInstanceId: start.instanceId, definitionScopeId: rootDefinition.id, activation: 1 };
+      const bodies = Array.from({ length: count }, (_, index) => ({ processInstanceId: start.instanceId,
+        definitionScopeId: childDefinition.id, activation: index + 1 }));
+      const humanElements = count === 0 ? ["PublishBatch"] : shape === "serial" ? ["Review"]
+        : shape === "fork-join" ? ["Branch0", "Branch1", "Branch2"] : ["Branch0", "Branch1"];
+      const waitOwners = count === 0 ? [root] : bodies;
+      assert.deepEqual(state.userTaskWaits.map(wait => [wait.id.elementId, wait.owner, wait.id.activation]),
+        humanElements.flatMap(elementId => waitOwners.map(owner => [elementId, owner, owner.activation])),
+        "every body must expose exactly the first human waits dictated by its concrete graph");
+      const effectOwners = shape === "separate-ends" ? bodies : [];
+      assert.deepEqual(state.effectWaits.map(wait => ({ elementId: wait.id.elementId, owner: wait.owner,
+        activation: wait.id.activation, arguments: wait.arguments })), effectOwners.map(owner => ({ elementId: "Validate", owner,
+        activation: owner.activation, arguments: [
+          { name: "payload", value: { kind: VariableValueKind.String, value: `invoice-${owner.activation}` } },
+          { name: "status", value: { kind: VariableValueKind.String, value: "pending" } },
+        ] })), "separate Ends retain both human branches and the independent Validate effect for each body");
+      assert.deepEqual(state.controlTokens, []);
+      assert.equal(state.initiationPending, false);
+      assert.deepEqual(state.scopeOccurrences.filter(scope => scope.parent === null), [{ id: root, parent: null }]);
+      assert.deepEqual(state.scopeOccurrences.filter(scope => scope.parent !== null), bodies.map(id => ({ id, parent: root })));
+      assert.deepEqual(state.variables.process.bindings, start.initialVariables, "Start closure preserves the complete Process input snapshot");
+      assert.deepEqual(state.variables.scopes, bodies.map(owner => ({ owner, bindings: [
+        { name: "decision", value: { kind: VariableValueKind.String, value: "unset" } },
+        { name: "reviewStatus", value: { kind: VariableValueKind.String, value: "pending" } },
+      ] })), "every body receives both declared local input snapshots");
+      assert.deepEqual(state.variables.activities, state.effectWaits.map(wait => ({
+        owner: { kind: LocalDataOwnerKind.EffectOccurrence, id: wait.id }, bindings: wait.arguments,
+      })), "only armed effects own Activity-local frames");
+      assert.deepEqual(state.taskActivations, humanElements.map(elementId => ({ elementId, count: Math.max(1, count) })));
+      assert.deepEqual(state.effectActivations, effectOwners.length === 0 ? [] : [{ elementId: "Validate", count }]);
+      assert.deepEqual(state.parallelScopeControllers ?? [], count === 0 ? [] : [{
+        id: { processInstanceId: start.instanceId, activityElementId: "ReviewInvoice", activation: 1 }, total: count, completed: 0,
+      }]);
+      const activities = state.activityOccurrences.filter(activity => activity.id.activityElementId === "ReviewInvoice");
+      assert.equal(activities.length, count === 0 ? 0 : 1);
+      if (count > 0) {
+        const activity = activities[0]!;
+        assert.deepEqual(activity.owner, root);
+        assert.deepEqual(activity.body, { kind: ActivityBodyKind.ParallelChildScopes,
+          iterations: bodies.map((scope, loopCounter) => ({ scope, loopCounter, item: `invoice-${loopCounter + 1}` })) });
+      }
+      const stable = frontierAt(state);
+      assert.equal(stable.preparationFailed, false);
+      assert.deepEqual(stable.offers, []);
+    });
+  }
+});
+
+test("Lean and TypeScript agree on source-derived invoice Start frontiers and reserved publications", async () => {
+  const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { deriveInternalExecutionFrontier } = await import(new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-transition-preparation.ts");
+  const { evaluateScheduledClosure } = await import(new URL("../../semantic-core/dist/internal-choice-schedule.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-choice-schedule.ts");
+  const { projectInternalExecutionBatch } = await import(new URL("../../semantic-core/dist/semantic-transition-trace.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-transition-trace.ts");
+  const directory = await mkdtemp(path.join(tmpdir(), "parallel-start-frontier-"));
+  try {
+    const files: string[] = [];
+    const results: unknown[] = [];
+    for (const { source, program, start } of await wholeModelStartClosureInputs()) {
+      const limit = parallelScopeStartClosureBound(source, start.initialVariables);
+      const admitted = admitProcessStart(program, initialState, start);
+      assert.ok(limit !== undefined && admitted);
+      const closed = evaluateScheduledClosure(program, initialState, { outcome: CommandOutcome.Committed, state: admitted }, [], limit,
+        state => deriveInternalExecutionFrontier(program, state, () => assert.fail("legacy dispatch")));
+      assert.equal(closed.result.outcome, CommandOutcome.Committed);
+      const state = closed.result.state;
+      let previous = admitted;
+      let index = 0;
+      const publications = [];
+      for (const [position, batch] of closed.selectedInternalBatches.entries()) {
+        const publication = projectInternalExecutionBatch(program, previous, batch,
+          closed.selectedInternalPreparations[position] ?? null, start.commandId, index);
+        if (batch.length > 1) assert.ok(publication, "every reserved control/wait batch must publish all members");
+        publications.push(publication);
+        previous = batch.at(-1)!.successor;
+        index += batch.length;
+      }
+      results.push({ failed: false, prefix: prefix(admitted, state), process: state.variables.process.bindings,
+        scopeFrames: state.variables.scopes.map(frame => [owner(frame.owner), frame.bindings]),
+        scopes: state.scopeOccurrences.map(scope => [owner(scope.id), scope.parent === null ? null : owner(scope.parent)]),
+        publications: publications.some(value => value === null) ? null : {
+          records: publications.flatMap(value => value!.records), lifecycles: publications.flatMap(value => value!.lifecycles),
+        } });
+      const programPath = path.join(directory, `${results.length}.program.json`);
+      const startPath = path.join(directory, `${results.length}.start.json`);
+      await writeFile(programPath, JSON.stringify(program));
+      await writeFile(startPath, JSON.stringify(start));
+      files.push(programPath, startPath, String(limit));
+    }
+    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--start-frontier", ...files], results.length);
+    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("Lean and TypeScript agree on mixed fork/join/End closure and fuel refusal", async () => {
+  const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { deriveInternalExecutionFrontier } = await import(new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-transition-preparation.ts");
+  const { evaluateScheduledClosure } = await import(new URL("../../semantic-core/dist/internal-choice-schedule.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-choice-schedule.ts");
+  const directory = await mkdtemp(path.join(tmpdir(), "parallel-control-closure-"));
+  try {
+    const files: string[] = [];
+    const results: unknown[] = [];
+    for (const count of [2, 16]) for (const reverse of [false, true]) for (const short of [false, true]) {
+      const { program, start } = controlClosureInputs(count, reverse);
+      const admitted = admitProcessStart(program, initialState, start);
+      assert.ok(admitted);
+      const fuel = 2 + 4 * count - (short ? 1 : 0);
+      const frontierAt = (state: RuntimeState) => deriveInternalExecutionFrontier(program, state, () => assert.fail("legacy dispatch"));
+      const closed = evaluateScheduledClosure(program, admitted, { outcome: CommandOutcome.Committed, state: admitted }, [], fuel, frontierAt);
+      assert.equal(closed.result.outcome, short ? CommandOutcome.RolledBack : CommandOutcome.Committed);
+      assert.equal(closed.result.internalStepBoundExceeded, short);
+      const state = closed.result.state;
+      assert.deepEqual(state.variables.process.bindings, start.initialVariables, "control closure preserves all captured Process values");
+      if (short) {
+        assert.deepEqual(state, admitted, "one-short fuel rolls back every control/wait prefix to the exact admitted Start state");
+        assert.deepEqual(closed.selectedInternalSteps, []);
+        assert.deepEqual(closed.selectedInternalBatches, []);
+        assert.deepEqual(closed.selectedInternalPreparations, []);
+        assert.equal(closed.admittedState, null);
+      } else {
+        assert.equal(closed.selectedInternalSteps.length, fuel, "fuel counts initiation, population entry and all four steps per body");
+        assert.equal(state.endOccurrences, count, "each independently owned End contributes exactly one relative increment");
+        assert.deepEqual(state.controlTokens, []);
+        const root = admitted.scopeOccurrences[0]!.id;
+        const bodies = Array.from({ length: count }, (_, index) => ({ processInstanceId: start.instanceId,
+          definitionScopeId: "body", activation: index + 1 }));
+        assert.deepEqual(state.userTaskWaits.map(wait => [wait.id.elementId, wait.owner, wait.id.activation, wait.output]),
+          bodies.map(body => ["Hold", body, body.activation, "later"]), "the waiting branch preserves every body's exact live occurrence");
+        assert.deepEqual(state.effectWaits, []);
+        assert.deepEqual(state.taskActivations, [{ elementId: "Hold", count }]);
+        assert.deepEqual(state.effectActivations, []);
+        assert.deepEqual(state.scopeOccurrences.filter(scope => scope.parent === null), [{ id: root, parent: null }]);
+        assert.deepEqual(state.scopeOccurrences.filter(scope => scope.parent !== null), bodies.map(id => ({ id, parent: root })));
+        assert.deepEqual(state.variables.scopes, bodies.map(owner => ({ owner,
+          bindings: [{ name: "status", value: { kind: VariableValueKind.Null } }] })), "fork, join, wait and End preserve every body input snapshot");
+        assert.deepEqual(state.variables.activities, []);
+        assert.deepEqual(state.parallelScopeControllers, [{
+          id: { processInstanceId: start.instanceId, activityElementId: "Checks", activation: 1 }, total: count, completed: 0,
+        }], "a live waiting branch prevents the paired completion from retiring any body");
+        const stable = frontierAt(state);
+        assert.equal(stable.preparationFailed, false);
+        assert.deepEqual(stable.offers, []);
+      }
+      results.push({ failed: short, prefix: prefix(admitted, state), process: state.variables.process.bindings,
+        scopeFrames: state.variables.scopes.map(frame => [owner(frame.owner), frame.bindings]),
+        scopes: state.scopeOccurrences.map(scope => [owner(scope.id), scope.parent === null ? null : owner(scope.parent)]),
+        publications: null });
+      const programPath = path.join(directory, `${results.length}.program.json`);
+      const startPath = path.join(directory, `${results.length}.start.json`);
+      await writeFile(programPath, JSON.stringify(program));
+      await writeFile(startPath, JSON.stringify(start));
+      files.push(programPath, startPath, String(fuel));
+    }
+    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--start-frontier", ...files], results.length);
+    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

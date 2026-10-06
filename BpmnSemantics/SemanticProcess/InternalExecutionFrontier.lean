@@ -17,7 +17,7 @@ structure InternalExecutionOffer where
 structure InternalExecutionFrontier where
   offers : List InternalExecutionOffer := []
   preparationFailed : Bool := false
-  occurrenceBatch : Option InternalOccurrenceArmingBatch := none
+  occurrenceBatch : Option InternalOccurrenceBatch := none
   deriving Repr
 
 def ordinaryExecutionFrontier (program : Program) (state : RuntimeState)
@@ -74,7 +74,7 @@ def deriveInternalExecutionFrontier (program : Program) (state : RuntimeState) :
       let offers := sortBy (fun left right => internalAlternativeBefore left.alternative right.alternative) discovered.offers
       { offers
         occurrenceBatch := if offers.length < 2 || discovered.preparationFailed then none
-          else prepareInternalOccurrenceArmingBatch? program state
+          else prepareInternalOccurrenceBatch? program state
         preparationFailed := discovered.preparationFailed ||
           !decide (offers.Pairwise (fun left right => left.alternative ≠ right.alternative)) }
 

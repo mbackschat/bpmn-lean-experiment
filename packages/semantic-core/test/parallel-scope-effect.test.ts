@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { initialState, ControlStateKind, SemanticOperationKind as Op, SemanticOriginKind,
   MappingExpressionKind as Mapping, VariableValueKind as Value, EffectExecutionResultKind, StimulusKind, CommandOutcome, LocalDataOwnerKind } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, ScopeOccurrenceId, VariableMapping } from "@bpmn-lean/semantic-core";
+import type { RuntimeState, ScopeOccurrenceId, VariableMapping, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { program as baseProgram } from "./embedded-subprocess-fixture.ts";
 const { enterParallelScope } = await import(new URL("../dist/parallel-scope-runtime.js", import.meta.url).href
 ) as typeof import("../src/parallel-scope-runtime.ts");
@@ -387,7 +387,9 @@ test("reservation certificates freeze slots, snapshots and per-step publications
   const saved = structuredClone(before);
   const certificate = prepareInternalOccurrenceBatch(reservationProgram, before);
   assert.ok(certificate);
-  assert.ok(Object.isFrozen(certificate.members[1]!.patch.wait));
+  const secondPatch = certificate.members[1]!.patch;
+  assert.ok(secondPatch.kind === "effect");
+  assert.ok(Object.isFrozen(secondPatch.wait));
   assert.deepEqual(certificate.members.map(member => [member.base, member.slot]), [[0, 1], [0, 2]]);
   const steps = applyInternalOccurrenceBatch(reservationProgram, before, certificate);
   assert.ok(steps);
@@ -480,9 +482,10 @@ test("human cohorts validate the whole sibling population and mixed arming keeps
     .map(wait => [wait.owner, wait.id.activation]), [[body(1), 1], [body(2), 2]]);
   assert.equal(prepareInternalOccurrenceBatch(selected, { ...before, variables: { ...before.variables,
     scopes: before.variables.scopes.slice(0, 1) } }), null);
-  const mixed = { ...reservationProgram, operations: [entry, effect, { ...task, input: "human" }], operationScopes: [
+  const mixed: SemanticProcessProgram = { ...reservationProgram, operations: [entry, effect, { ...task, input: "human" }], operationScopes: [
     ...reservationProgram.operationScopes, { operationId: task.id, scopeId: "body" }],
-    controlPlaces: [...reservationProgram.controlPlaces, { ...reservationProgram.controlPlaces[0]!, id: "human" }],
+    controlPlaces: [...reservationProgram.controlPlaces, { ...reservationProgram.controlPlaces[0]!, id: "human",
+      origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: "HumanInput" } }],
     controlPlaceScopes: [...reservationProgram.controlPlaceScopes, { controlPlaceId: "human", scopeId: "body" }] };
   const mixedState = { ...before, controlTokens: [before.controlTokens[0]!, { placeId: "human", owner: body(2), multiplicity: 1 }] };
   const reserved = prepareInternalOccurrenceBatch(mixed, mixedState);
@@ -490,8 +493,10 @@ test("human cohorts validate the whole sibling population and mixed arming keeps
   assert.deepEqual(reserved.members.map(member => member.slot), [1, 1]);
   assert.equal(applyInternalOccurrenceBatch(mixed, mixedState, reserved)?.length, 2);
   const ending = { kind: Op.ReachNoneEnd, id: "end", origin: origin("End"), input: "human" } as const;
-  assert.equal(prepareInternalOccurrenceBatch({ ...mixed, operations: [entry, effect, ending], operationScopes: [
-    ...reservationProgram.operationScopes, { operationId: ending.id, scopeId: "body" }] }, mixedState), null);
+  const withEnd = prepareInternalOccurrenceBatch({ ...mixed, operations: [entry, effect, ending], operationScopes: [
+    ...reservationProgram.operationScopes, { operationId: ending.id, scopeId: "body" }] }, mixedState);
+  assert.ok(withEnd);
+  assert.deepEqual(withEnd.members.map(member => member.slot), [1, null]);
 });
 
 test("the scheduler discards every retained step when a cohort or its complete candidate frontier is forged", async () => {
@@ -549,3 +554,121 @@ test("reservation refuses unsafe or negative publication time", () => {
     assert.equal(prepareInternalOccurrenceBatch(reservationProgram, { ...before, logicalTimeMs }) === null, true);
   assert.ok(prepareInternalOccurrenceBatch(reservationProgram, { ...before, logicalTimeMs: Number.MAX_SAFE_INTEGER }));
 });
+
+function tokenControlProgram(operations: readonly SemanticOperation[], places: readonly string[]): SemanticProcessProgram {
+  return { ...reservationProgram, operations: [entry, ...operations],
+    operationScopes: [{ operationId: entry.id, scopeId: "root" }, ...operations.map(operation => ({ operationId: operation.id, scopeId: "body" }))],
+    controlPlaces: places.map(id => ({ id, origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: `Flow_${id}` } })),
+    controlPlaceScopes: places.map(controlPlaceId => ({ controlPlaceId, scopeId: "body" })) };
+}
+const reservedFork = { kind: Op.Duplicate, id: "fork", origin: origin("Fork"), input: "check", outputs: ["left", "right"] } as const;
+const reservedJoin = { kind: Op.Synchronize, id: "join", origin: origin("Join"), inputs: ["left", "right"], output: "finished" } as const;
+const reservedEnd = { kind: Op.ReachNoneEnd, id: "end", origin: origin("End"), input: "finished" } as const;
+
+for (const count of [2, 16]) test(`reserved controls close ${count} forks, joins and Ends with exact fuel`, async () => {
+  const { deriveInternalExecutionFrontier } = await import(new URL("../dist/internal-transition-preparation.js", import.meta.url).href
+  ) as typeof import("../src/internal-transition-preparation.ts");
+  const { evaluateScheduledClosure } = await import(new URL("../dist/internal-choice-schedule.js", import.meta.url).href
+  ) as typeof import("../src/internal-choice-schedule.ts");
+  const selected = tokenControlProgram([reservedFork, reservedJoin, reservedEnd], ["check", "left", "right", "finished"]);
+  const before = active(Array.from({ length: count }, () => "same"));
+  const run = (definition: SemanticProcessProgram, state: RuntimeState, fuel: number) => evaluateScheduledClosure(definition, state,
+    { outcome: CommandOutcome.Committed, state }, [], fuel,
+    current => deriveInternalExecutionFrontier(definition, current, () => assert.fail("legacy dispatch")));
+  const closed = run(selected, before, count * 3);
+  assert.equal(closed.result.outcome, CommandOutcome.Committed);
+  assert.deepEqual(closed.selectedInternalBatches.map(batch => batch.length), [count, count, count]);
+  assert.equal(closed.result.state.endOccurrences, count);
+  assert.deepEqual(closed.result.state.controlTokens, []);
+  assert.deepEqual(closed.result.state.variables, before.variables);
+  const reversed = run({ ...selected, operations: [...selected.operations].reverse() }, { ...before,
+    controlTokens: [...before.controlTokens].reverse(), scopeOccurrences: [...before.scopeOccurrences].reverse() }, count * 3);
+  assert.deepEqual(reversed.selectedInternalSteps.map(step => [step.operation.id, step.owner]),
+    closed.selectedInternalSteps.map(step => [step.operation.id, step.owner]));
+  assert.deepEqual(reversed.result.state.controlTokens, closed.result.state.controlTokens);
+  const first = prepareInternalOccurrenceBatch(selected, before);
+  assert.ok(first);
+  const reversedCertificate = prepareInternalOccurrenceBatch({ ...selected, operations: [...selected.operations].reverse() },
+    { ...before, controlTokens: [...before.controlTokens].reverse(), scopeOccurrences: [...before.scopeOccurrences].reverse() });
+  assert.ok(reversedCertificate);
+  assert.deepEqual(reversedCertificate.members, first.members);
+  assert.equal(reversed.result.state.endOccurrences, closed.result.state.endOccurrences);
+  assert.ok(first.members.every(member => member.base === null && member.slot === null &&
+    member.patch.kind === "tokenControl" && member.publicationTemplate.lifecycle.started[0]!.anchor.kind === "transitionTemplate" &&
+    member.publicationTemplate.lifecycle.ended[0]!.terminal === "completed"));
+  const exhausted = run(selected, before, count * 3 - 1);
+  assert.equal(exhausted.result.outcome, CommandOutcome.RolledBack);
+  assert.equal(exhausted.result.internalStepBoundExceeded, true);
+  assert.deepEqual(exhausted.result.state, before);
+  assert.deepEqual([exhausted.selectedInternalSteps, exhausted.selectedInternalBatches, exhausted.selectedInternalPreparations], [[], [], []]);
+});
+
+test("mixed wait/control reservations preserve slots and refuse every cross-member token dependency", () => {
+  const fork = { ...reservedFork, input: "forkIn" };
+  const selected = tokenControlProgram([effect, fork], ["check", "forkIn", "left", "right"]);
+  const before = { ...active(), controlTokens: [{ placeId: "check", owner: body(1), multiplicity: 1 },
+    { placeId: "forkIn", owner: body(1), multiplicity: 1 }] };
+  const certificate = prepareInternalOccurrenceBatch(selected, before);
+  assert.ok(certificate);
+  assert.deepEqual(certificate.members.map(member => member.slot), [1, null]);
+  const applied = applyInternalOccurrenceBatch(selected, before, certificate);
+  assert.ok(applied);
+  assert.equal(applied.at(-1)!.successor.effectWaits.length, 1);
+  assert.deepEqual(applied.at(-1)!.successor.controlTokens.map(token => token.placeId), ["left", "right"]);
+  for (const conflicted of [{ ...fork, input: "check" }, { ...fork, outputs: ["check"] }])
+    assert.equal(prepareInternalOccurrenceBatch(tokenControlProgram([effect, conflicted], ["check", "forkIn", "left", "right"]), before), null);
+  const second = { ...fork, id: "fork2", origin: origin("Fork2"), input: "otherIn" };
+  const bothReady = { ...before, controlTokens: [...before.controlTokens, { placeId: "otherIn", owner: body(1), multiplicity: 1 }] };
+  assert.equal(prepareInternalOccurrenceBatch(tokenControlProgram([fork, second], ["check", "forkIn", "otherIn", "left", "right"]), bothReady), null);
+  const complete = { kind: Op.CompleteParallelMultiInstanceScope, id: "complete", origin: entry.origin, entryOperationId: entry.id } as const;
+  const retirement = tokenControlProgram([effect, complete], ["check"]);
+  const oneReady = { ...active(), controlTokens: [active().controlTokens[0]!] };
+  assert.equal(prepareInternalOccurrenceBatch(retirement, oneReady), null);
+});
+
+test("control reservations validate provenance, output arithmetic and collective End headroom before any prefix", () => {
+  const selected = tokenControlProgram([reservedFork], ["check", "left", "right"]);
+  const before = active();
+  const saturated = { ...before, controlTokens: [...before.controlTokens,
+    { placeId: "left", owner: body(2), multiplicity: Number.MAX_SAFE_INTEGER }] };
+  assert.equal(prepareInternalOccurrenceBatch(selected, saturated), null);
+  const exact = { ...before, controlTokens: [...before.controlTokens,
+    { placeId: "left", owner: body(2), multiplicity: Number.MAX_SAFE_INTEGER - 1 }] };
+  const fitting = prepareInternalOccurrenceBatch(selected, exact);
+  assert.ok(fitting);
+  assert.equal(applyInternalOccurrenceBatch(selected, exact, fitting)?.at(-1)!.successor.controlTokens
+    .find(token => token.placeId === "left" && token.owner.activation === 2)?.multiplicity, Number.MAX_SAFE_INTEGER);
+  assert.equal(prepareInternalOccurrenceBatch({ ...selected, controlPlaceScopes: [] }, before), null);
+  assert.equal(prepareInternalOccurrenceBatch({ ...selected, controlPlaces: selected.controlPlaces.map(place =>
+    ({ ...place, origin: { ...place.origin, elementId: "Alias" } })) }, before), null);
+  const ends = tokenControlProgram([{ ...reservedEnd, input: "check" }], ["check"]);
+  for (const endOccurrences of [-1, 0.5, Number.MAX_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER])
+    assert.equal(prepareInternalOccurrenceBatch(ends, { ...before, endOccurrences }), null);
+  const exactEnds = { ...before, endOccurrences: Number.MAX_SAFE_INTEGER - 2 };
+  const preparedEnds = prepareInternalOccurrenceBatch(ends, exactEnds);
+  assert.ok(preparedEnds);
+  assert.equal(applyInternalOccurrenceBatch(ends, exactEnds, preparedEnds)?.at(-1)!.successor.endOccurrences, Number.MAX_SAFE_INTEGER);
+});
+
+test("control certificate forgery at the final member returns no partial successor", () => {
+  const selected = tokenControlProgram([reservedFork], ["check", "left", "right"]);
+  const before = active();
+  const saved = structuredClone(before);
+  const certificate = prepareInternalOccurrenceBatch(selected, before);
+  assert.ok(certificate);
+  const last = certificate.members[1]!;
+  assert.ok(last.patch.kind === "tokenControl");
+  for (const invalid of [
+    { ...certificate, members: [certificate.members[0]!, { ...last, slot: 1 }] },
+    { ...certificate, members: [certificate.members[0]!, { ...last, patch: { ...last.patch, produced: ["missing"] } }] },
+    { ...certificate, members: [certificate.members[0]!, { ...last, patch: { ...last.patch, consumed: ["missing"] } }] },
+    { ...certificate, members: [certificate.members[0]!, { ...last, patch: { ...last.patch, endIncrement: 1 as const } }] },
+  ]) assert.equal(applyInternalOccurrenceBatch(selected, before, invalid), null);
+  assert.deepEqual(before, saved);
+});
+
+for (const [label, outputs] of [["empty outputs", []], ["duplicate outputs", ["left", "left"]]] as const)
+  test(`control reservations refuse Duplicate with ${label}`, () => {
+    const selected = tokenControlProgram([{ ...reservedFork, outputs }], ["check", "left", "right"]);
+    assert.equal(prepareInternalOccurrenceBatch(selected, active()), null);
+  });

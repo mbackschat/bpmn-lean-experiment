@@ -6,7 +6,7 @@ The private [mixed-task control-flow checkpoint](../../docs/capsules/MIXED-TASK-
 
 The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) has private topology/burst analysis and occurrence-owned data storage. Source admission and repeated-body execution remain open.
 
-The [Parallel MI Sub-Process ownership account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation) owns internal population retirement. Its [reservation account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-bound-occurrence-batches) governs private exact-owner human/effect batches; complete scheduler agreement, public registration and hosting qualification remain open.
+The [Parallel MI Sub-Process ownership account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation) owns internal population retirement. Its [reservation account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-bound-occurrence-batches) governs private exact-owner wait and Fork/Join/None End batches; complete command agreement, public registration and hosting qualification remain open.
 
 ## What you can do
 

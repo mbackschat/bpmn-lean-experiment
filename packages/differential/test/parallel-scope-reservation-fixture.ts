@@ -1,6 +1,7 @@
-import { SemanticOperationKind as Op, SemanticOriginKind, VariableValueKind as Value,
+import assert from "node:assert/strict";
+import { CheckedNodeKind, SemanticOperationKind as Op, SemanticOriginKind, VariableValueKind as Value,
   MappingExpressionKind as Mapping, StimulusKind } from "@bpmn-lean/semantic-core";
-import type { SemanticProcessProgram, StartProcessStimulus } from "@bpmn-lean/semantic-core";
+import type { CheckedProcess, SemanticProcessProgram, StartProcessStimulus } from "@bpmn-lean/semantic-core";
 import { program as base } from "../../semantic-core/test/embedded-subprocess-fixture.ts";
 import { parallelAdmissionCases } from "../../bpmn-source/test/parallel-scope-admission-fixture.ts";
 
@@ -46,6 +47,31 @@ export function reservationInputs(count: number, human: boolean, reverse: boolea
   };
 }
 
+/** Private component wires retain the paired completion while a waiting branch prevents body retirement. */
+export function controlClosureInputs(count: number, reverse: boolean): {
+  program: SemanticProcessProgram; start: StartProcessStimulus;
+} {
+  const { program, start } = reservationInputs(count, true, false);
+  const origin = (elementId: string) => ({ kind: SemanticOriginKind.BpmnElement, elementId } as const);
+  const operations: SemanticProcessProgram["operations"] = [
+    ...program.operations.filter(operation => operation.kind === Op.Initiate ||
+      operation.kind === Op.EnterParallelMultiInstanceScope || operation.kind === Op.CompleteParallelMultiInstanceScope),
+    { kind: Op.Duplicate, id: "fork", origin: origin("Fork"), input: "check", outputs: ["left", "right", "hold"] },
+    { kind: Op.Synchronize, id: "join", origin: origin("Join"), inputs: ["left", "right"], output: "finished" },
+    { kind: Op.ReachNoneEnd, id: "end", origin: origin("End"), input: "finished" },
+    { kind: Op.AwaitUserTask, id: "hold", origin: origin("Hold"), input: "hold", output: "later",
+      task: { elementId: "Hold", name: null } },
+  ];
+  const places = ["check", "finished", "hold", "in", "later", "left", "out", "right"];
+  return { start, program: { ...program, operations: reverse ? [...operations].reverse() : operations,
+    operationScopes: operations.map(operation => ({ operationId: operation.id,
+      scopeId: operation.kind === Op.Initiate || operation.kind === Op.EnterParallelMultiInstanceScope ? "root" : "body" })),
+    controlPlaces: places.map(id => ({ id, origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: id } })),
+    controlPlaceScopes: places.map(controlPlaceId => ({ controlPlaceId,
+      scopeId: controlPlaceId === "in" || controlPlaceId === "out" ? "root" : "body" })),
+  } };
+}
+
 /** The existing invoice model supplies canonical whole-Process inputs for publication acceptance. */
 export async function wholeModelReservationInputs() {
   const { lowerCheckedProcess } = await import(new URL("../../bpmn-source/dist/semantic-process-lowering.js", import.meta.url).href
@@ -62,6 +88,38 @@ export async function wholeModelReservationInputs() {
     for (const count of [2, 16]) inputs.push({ program, count,
       start: { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId, instanceId: "invoices",
         initialVariables: [{ name: "items", value: { kind: Value.StringList, value: Array.from({ length: count }, () => "same") } }] } });
+  }
+  return inputs;
+}
+
+export async function wholeModelStartClosureInputs() {
+  const { lowerCheckedProcess } = await import(new URL("../../bpmn-source/dist/semantic-process-lowering.js", import.meta.url).href
+  ) as typeof import("../../bpmn-source/src/semantic-process-lowering.ts");
+  const admission = await parallelAdmissionCases();
+  const selected = [
+    { shape: "serial", source: admission[0]!.source },
+    { shape: "fork-join", source: admission.find(({ expected, source }) => expected &&
+      source.nodes.some(node => node.id === "Joined" && node.kind === CheckedNodeKind.ParallelGateway) &&
+      ["Branch0", "Branch1", "Branch2"].every(id => source.nodes.some(node => node.id === id && node.kind === CheckedNodeKind.UserTask)))?.source },
+    { shape: "separate-ends", source: admission.find(({ expected, source }) => expected &&
+      source.nodes.some(node => node.id === "Review" && node.kind === CheckedNodeKind.ParallelGateway) &&
+      ["End0", "End1"].every(id => source.nodes.some(node => node.id === id && node.kind === CheckedNodeKind.NoneEndEvent)))?.source },
+  ] as const;
+  const inputs: { shape: typeof selected[number]["shape"]; source: CheckedProcess; program: SemanticProcessProgram;
+    start: StartProcessStimulus; count: number; reverse: boolean }[] = [];
+  for (const selectedSource of selected) {
+    assert.ok(selectedSource.source, `missing admitted ${selectedSource.shape} invoice source`);
+    for (const reverse of [false, true]) {
+      const source = reverse ? { ...selectedSource.source, nodes: [...selectedSource.source.nodes].reverse(),
+        sequenceFlows: [...selectedSource.source.sequenceFlows].reverse() } : selectedSource.source;
+      const lowered = lowerCheckedProcess(source);
+      const program = { ...lowered, controlPlaces: [...lowered.controlPlaces].sort((left, right) =>
+        left.id < right.id ? -1 : left.id > right.id ? 1 : 0) };
+      for (const count of [0, 1, 2, 16]) inputs.push({ shape: selectedSource.shape, source, program, count, reverse,
+        start: { kind: StimulusKind.StartProcess, commandId: "start", processId: source.processId, instanceId: "invoices",
+          initialVariables: [{ name: "items", value: { kind: Value.StringList,
+            value: Array.from({ length: count }, (_, index) => `invoice-${index + 1}`) } }] } });
+    }
   }
   return inputs;
 }
