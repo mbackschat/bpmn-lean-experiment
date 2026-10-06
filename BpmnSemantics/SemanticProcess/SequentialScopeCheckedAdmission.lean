@@ -18,7 +18,12 @@ def bodyVertex? (source : CheckedProcess) (node : CheckedNode) : Option Structur
     | _ => none
   return ⟨node.id.value, kind, (successors source node.id).map (·.value)⟩
 
-def parentPath : Nat → CheckedProcess → List CheckedNode → NodeId → Bool → Nat → Nat → Option (Nat × Nat)
+inductive RepetitionMode where
+  | sequential
+  | parallel
+  deriving DecidableEq
+
+def parentPath (mode : RepetitionMode) : Nat → CheckedProcess → List CheckedNode → NodeId → Bool → Nat → Nat → Option (Nat × Nat)
   | 0, _, _, _, _, _, _ => none
   | fuel + 1, source, nodes, current, entered, before, after => do
       let node ← nodes.find? (·.id == current)
@@ -30,11 +35,13 @@ def parentPath : Nat → CheckedProcess → List CheckedNode → NodeId → Bool
           let [next] := successors source current | none
           match node with
           | .noneStartEvent _ =>
-              if entered || before != 0 then none else parentPath fuel source rest next false before after
+              if entered || before != 0 then none else parentPath mode fuel source rest next false before after
           | .sequentialMultiInstanceSubProcess .. =>
-              if entered then none else parentPath fuel source rest next true before after
+              if entered || mode != .sequential then none else parentPath mode fuel source rest next true before after
+          | .parallelMultiInstanceSubProcess .. =>
+              if entered || mode != .parallel then none else parentPath mode fuel source rest next true before after
           | .userTask _ _ none | .serviceTask _ _ _ _ none =>
-              parentPath fuel source rest next entered (before + if entered then 0 else 1) (after + if entered then 1 else 0)
+              parentPath mode fuel source rest next entered (before + if entered then 0 else 1) (after + if entered then 1 else 0)
           | _ => none
 
 def dataValid (source : CheckedProcess) (collection item : String)
@@ -79,7 +86,7 @@ def analyze (source : CheckedProcess) : Option Nat := do
         if !(child.any fun node => match node with | .userTask _ _ none => true | _ => false) ||
             !(child.any fun node => match node with | .serviceTask _ _ _ _ none => true | _ => false) then none
         else do
-          let (before, after) ← parentPath parent.length source parent start.id false 0 0
+          let (before, after) ← parentPath .sequential parent.length source parent start.id false 0 0
           let bursts ← StructuredParallelBody.analyze (← child.mapM (bodyVertex? source))
           let maximum := SequentialScopeControl.maximumBurst bursts before after
           if maximum > scenarioClosureLimit then none else some maximum

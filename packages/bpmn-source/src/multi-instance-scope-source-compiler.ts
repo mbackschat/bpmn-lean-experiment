@@ -101,6 +101,8 @@ function compileRepeatedScopeSource(root: unknown, source: BpmnSourceIdentity,
       .sort((a, b) => compareCanonicalStrings(a.sequenceFlowId, b.sequenceFlowId)),
     nodes: nodes.sort((a, b) => compareCanonicalStrings(a.id, b.id)), sequenceFlows: [...flows].sort((a, b) => compareCanonicalStrings(a.id, b.id)),
   };
+  if (mode === RepetitionMode.Parallel) return parallelScopeCheckedSourceAdmitted(checkedProcess)
+    ? { checkedProcess, diagnostics: [] } : unsupported("Parallel repeated-scope structure or data dependencies exceed admission.");
   const entries = nodes.filter(node => (node.kind === Kind.SequentialMultiInstanceSubProcess || node.kind === Kind.ParallelMultiInstanceSubProcess)).filter(node => node.kind === nodeKind);
   const entry = entries[0];
   if (entries.length !== 1 || entry === undefined ||
@@ -109,14 +111,39 @@ function compileRepeatedScopeSource(root: unknown, source: BpmnSourceIdentity,
   if (![Kind.UserTask, Kind.ServiceTask].every(kind => nodes.some(node => childIds.has(node.id) && node.kind === kind)))
     return unsupported("The repeated body requires both a User Task and a mapped Service Task.");
   const program = lowerCheckedProcess(checkedProcess);
-  if (mode === RepetitionMode.Parallel) {
-    const control = analyzeRepeatedScopeStructure(program, profile, Op.EnterParallelMultiInstanceScope);
-    return program.operations.length <= 1024 && control !== undefined && isStructuredParallelBody(control.body) &&
-      analyzeParallelScopeData(program) !== undefined ? { checkedProcess, diagnostics: [] }
-      : unsupported("Parallel repeated-scope structure or data dependencies exceed admission.");
-  }
   return analyzeSequentialScopeControl(program) !== undefined && analyzeSequentialScopeData(program) !== undefined
     ? { checkedProcess, diagnostics: [] } : unsupported("Repeated-scope control bursts or data dependencies exceed admission.");
+}
+
+/** PMIS-ADMIT-01 checks the typed source graph separately from XML projection and runtime admission. */
+export function parallelScopeCheckedSourceAdmitted(source: CheckedProcess): boolean {
+  const profile = PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID;
+  const { interruptingMessageEventSubProcesses: messageHandlers, ...ordinarySource } = source;
+  const identities = [source.processId, ...source.nodes.map(node => node.id), ...source.sequenceFlows.map(flow => flow.id)];
+  if (source.identity.semanticProfile !== profile || source.identity.sourceOverlay === null ||
+      source.definitionScopes.length !== 2 || source.compensation !== undefined || source.transactionCancellation !== undefined ||
+      (messageHandlers?.length ?? 0) !== 0 || new Set(identities).size !== identities.length ||
+      source.sequenceFlows.some(flow => flow.condition !== null) || !source.nodes.every(node => {
+        switch (node.kind) {
+          case Kind.NoneStartEvent: case Kind.NoneEndEvent: case Kind.ParallelGateway: case Kind.ParallelMultiInstanceSubProcess: return true;
+          case Kind.UserTask: return node.metadata === undefined;
+          case Kind.ServiceTask: return node.bpmnErrorRoute === null;
+          default: return false;
+        }
+      })) return false;
+  const roots = source.definitionScopes.filter(scope => scope.parentScopeId === null);
+  const entries = source.nodes.filter(node => node.kind === Kind.ParallelMultiInstanceSubProcess);
+  const root = roots[0];
+  const entry = entries[0];
+  if (roots.length !== 1 || root?.originElementId !== source.processId || entries.length !== 1 || entry === undefined ||
+      !source.definitionScopes.some(scope => scope.id === entry.childScopeId && scope.parentScopeId === root.id && scope.originElementId === entry.id) ||
+      !resolveAdmittedCheckedProcessGraph({ ...ordinarySource, flows: source.sequenceFlows }, profile)) return false;
+  const childIds = new Set(source.nodeScopes.filter(owner => owner.scopeId === entry.childScopeId).map(owner => owner.nodeId));
+  if (![Kind.UserTask, Kind.ServiceTask].every(kind => source.nodes.some(node => childIds.has(node.id) && node.kind === kind))) return false;
+  const program = lowerCheckedProcess(ordinarySource);
+  const control = analyzeRepeatedScopeStructure(program, profile, Op.EnterParallelMultiInstanceScope);
+  return program.operations.length <= 1024 && control !== undefined && isStructuredParallelBody(control.body) &&
+    analyzeParallelScopeData(program) !== undefined;
 }
 
 function parallelGateway(element: ElementRecord, id: string, flows: readonly CheckedSequenceFlow[]): CheckedNode | undefined {

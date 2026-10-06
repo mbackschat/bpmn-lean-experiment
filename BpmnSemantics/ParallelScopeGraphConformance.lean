@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcessJson.CheckedProcess
+import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 
@@ -118,6 +119,23 @@ theorem checked_parallel_lowering_keeps_pair_and_data :
   · decide +kernel
   · decide +kernel
   · decide +kernel
+
+private def checkedMixed : CheckedProcess :=
+  { checkedParallel with
+    identity := { checkedParallel.identity with sourceOverlay := some { id := ⟨"handlers"⟩, sha256 := "private-overlay" } }
+    nodes := checkedParallel.nodes ++ [.serviceTask ⟨"Validate"⟩
+      ⟨"urn:bpmn-lean:effect-protocol:activity-v1", "validateInvoice"⟩ [] [] none]
+    nodeScopes := checkedParallel.nodeScopes ++ [⟨⟨"Validate"⟩, ⟨"body"⟩⟩]
+    sequenceFlows := (checkedParallel.sequenceFlows.map fun flow =>
+      if flow.id.value == "body-out" then { flow with targetId := ⟨"Validate"⟩ } else flow) ++
+      [⟨⟨"validated"⟩, ⟨"Validate"⟩, ⟨"ChildEnd"⟩, none⟩]
+    sequenceFlowScopes := checkedParallel.sequenceFlowScopes ++ [⟨⟨"validated"⟩, ⟨"body"⟩⟩] }
+
+theorem private_checked_admission_retains_both_task_kinds_and_execution_refusal :
+    ParallelScopeChecked.admitted checkedMixed = true ∧
+    ParallelScopeChecked.admitted { checkedMixed with nodes := checkedMixed.nodes.reverse } = true ∧
+    ParallelScopeChecked.admitted checkedParallel = false ∧
+    programProfileCapabilitiesValid (lowerCheckedProcess checkedMixed) = false := by decide +kernel
 
 private def parallelScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),

@@ -38,13 +38,19 @@ def aritiesValid (vertices : List Vertex) : Bool :=
       | .join => inputs ≥ 2 && outputs == 1
       | .finish => inputs == 1 && outputs == 0
 
-def topologicalOrder : Nat → List Vertex → Option (List Vertex)
-  | 0, vertices => if vertices.isEmpty then some [] else none
-  | fuel + 1, vertices => do
-      if vertices.isEmpty then return []
-      let first ← vertices.find? (fun vertex => incomingCount vertices vertex.id == 0)
-      let rest ← topologicalOrder fuel (vertices.filter (·.id != first.id))
+private def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
+  | 0, pending => if pending.isEmpty then some [] else none
+  | fuel + 1, pending => do
+      if pending.isEmpty then return []
+      let (first, _) ← pending.find? (·.2 == 0)
+      let remaining := (pending.filter (·.1.id != first.id)).map fun (vertex, incoming) =>
+        (vertex, incoming - first.outputs.count vertex.id)
+      let rest ← orderPending fuel remaining
       return first :: rest
+
+/-- Kahn's indegree update preserves edge multiplicity without recounting the graph for each candidate. -/
+def topologicalOrder (fuel : Nat) (vertices : List Vertex) : Option (List Vertex) :=
+  orderPending fuel (vertices.map fun vertex => (vertex, incomingCount vertices vertex.id))
 
 def replaceTarget (vertices : List Vertex) (removed replacement : String) : List Vertex :=
   vertices.map fun vertex =>
@@ -107,19 +113,22 @@ def afterTask (vertices ordered : List Vertex) (task : Vertex) : Closure :=
         vertices.any (fun vertex => vertex.id == edge.target && vertex.kind == .join) then some edge.target else none
   close vertices ordered (prior ++ task.outputs)
 
-def analyze (vertices : List Vertex) : Option Bursts := do
+/-- A complete acyclic contraction certifies the selected body independently of burst limits. -/
+def structureOrder (vertices : List Vertex) : Option (List Vertex) := do
   if !(vertices.all (fun vertex => !vertex.id.isEmpty) &&
       (vertices.map (·.id)).eraseDups.length == vertices.length && aritiesValid vertices &&
       (vertices.filter (·.kind == .start)).length == 1 && vertices.any (·.kind == .task)) then none
   else do
     let ordered ← topologicalOrder vertices.length vertices
-    if !paired (vertices.length + 1) vertices then none
-    else do
-      let start ← vertices.find? (·.kind == .start)
-      let resumed := (vertices.filter (·.kind == .task)).map (afterTask vertices ordered)
-      return {
-        entry := (close vertices ordered [start.id]).steps
-        resumption := resumed.foldl (fun maximum result => max maximum result.steps) 0
-        terminal := resumed.foldl (fun maximum result => if result.waits == 0 then max maximum result.steps else maximum) 0 }
+    if !paired (vertices.length + 1) vertices then none else some ordered
+
+def analyze (vertices : List Vertex) : Option Bursts := do
+  let ordered ← structureOrder vertices
+  let start ← vertices.find? (·.kind == .start)
+  let resumed := (vertices.filter (·.kind == .task)).map (afterTask vertices ordered)
+  return {
+    entry := (close vertices ordered [start.id]).steps
+    resumption := resumed.foldl (fun maximum result => max maximum result.steps) 0
+    terminal := resumed.foldl (fun maximum result => if result.waits == 0 then max maximum result.steps else maximum) 0 }
 
 end BpmnSemantics.SemanticProcess.StructuredParallelBody

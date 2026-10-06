@@ -1,0 +1,14 @@
+import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
+import BpmnSemantics.SemanticProcessJson.CheckedProcess
+import BpmnSemantics.StrictJson
+
+/-! Diagnostic admission over the existing checked-process wire; inputs contain no expected results. -/
+
+def main (paths : List String) : IO UInt32 := do
+  for path in paths do
+    let contents ← IO.FS.readFile path
+    let accepted := match BpmnSemantics.StrictJson.parse contents >>= BpmnSemantics.SemanticProcessJson.decodeCheckedProcess with
+      | .ok source => BpmnSemantics.SemanticProcess.ParallelScopeChecked.admitted source
+      | .error _ => false
+    IO.println (toString accepted)
+  return 0
