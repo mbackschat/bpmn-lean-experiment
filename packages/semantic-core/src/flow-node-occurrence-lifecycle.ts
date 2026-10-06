@@ -30,6 +30,7 @@ import type {
 } from "./semantic-process-state.js";
 import { compareCanonicalStrings } from "./wire.js";
 import { candidateLongLivedStarts } from "./flow-node-occurrence-boundary-starts.js";
+import { parallelScopeRetirementEnds } from "./flow-node-occurrence-parallel-scope.js";
 import { sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
 import {
   candidateElementOccurrence,
@@ -447,6 +448,7 @@ function internalLifecycle(
       return starts === null || gateway === null ? null : pieces(starts, [], [gateway]);
     }
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.EnterBoundedScope: {
@@ -502,9 +504,11 @@ function internalLifecycle(
         terminal: FlowNodeOccurrenceTerminalKind.Completed,
       }]);
     }
-    case SemanticOperationKind.EnterParallelMultiInstanceScope:
-    case SemanticOperationKind.CompleteParallelMultiInstanceScope:
-      return null;
+    case SemanticOperationKind.CompleteParallelMultiInstanceScope: {
+      const ends = parallelScopeRetirementEnds(program, before, operation, owner,
+        scope => cancelledRegion(program, before, scope, false));
+      return ends === null ? null : pieces([], ends);
+    }
     default:
       return assertNever(operation);
   }

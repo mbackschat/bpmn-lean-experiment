@@ -2,6 +2,8 @@ import BpmnSemantics.SemanticProcessJson.InternalAlternative
 import BpmnSemantics.SemanticProcess.OpenWaitProjection
 import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! PMIS lifecycle fixtures distinguish exact body retirement from whole-Activity cancellation and retain unrelated ownership. -/
 
@@ -300,6 +302,155 @@ private def cohortProgram : Program :=
       semanticProfile := ⟨"cibseven-2.2.0-parallel-multi-instance-subprocess-draft"⟩ },
     controlPlaces := [⟨⟨"check"⟩, ⟨⟨"CheckInput"⟩⟩⟩],
     controlPlaceScopes := [⟨⟨"check"⟩, ⟨"body"⟩⟩] }
+
+private def entryPublicationFixtureValid (count : Nat) : Bool := Id.run do
+  let some operation := cohortProgram.operations.find? (·.id == ⟨"enter"⟩) | return false
+  let bindings := effectReady.variables.process.bindings.map fun binding => if binding.name == "applicants" then
+    ⟨"applicants", .stringList (List.replicate count "same")⟩ else binding
+  let before := { effectReady with variables := { effectReady.variables with process := { bindings } } }
+  let some after := applyInternalOperationOccurrence? cohortProgram before ⟨⟨"enter"⟩, probeParent⟩ | return false
+  let some starts := candidateParallelScopeStarts? cohortProgram operation probeParent before after | return false
+  if starts.length != count || !(starts.all fun start => start.owner == probeParent) then return false
+  if count > 0 then
+    let invalid := [
+      { after with variables := { after.variables with scopes := [] } },
+      { after with parallelScopeControllers := [] },
+      { after with parallelScopeControllers := after.parallelScopeControllers ++ after.parallelScopeControllers },
+      { after with parallelScopeControllers := after.parallelScopeControllers.map fun row => { row with completed := 1 } },
+      { after with scopeOccurrences := after.scopeOccurrences.filter (·.id != probeBody 5) },
+      { after with activityOccurrences := after.activityOccurrences ++ after.activityOccurrences } ]
+    let staleBefore := { before with scopeActivations := [⟨⟨"body"⟩, 5⟩] }
+    return invalid.all (fun state => (candidateParallelScopeStarts? cohortProgram operation probeParent before state).isNone) &&
+      (candidateParallelScopeStarts? cohortProgram operation probeParent staleBefore after).isNone
+  else
+    let polluted := { after with scopeOccurrences := ⟨probeBody 5, some probeParent⟩ :: after.scopeOccurrences }
+    return (candidateParallelScopeStarts? cohortProgram operation probeParent before polluted).isNone
+
+theorem parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures :
+    [0, 1, 2, 16].all entryPublicationFixtureValid = true := by decide +kernel
+
+private def completionPublicationOperation : SemanticOperation :=
+  .completeParallelMultiInstanceScope ⟨"complete"⟩ ⟨⟨"Checks"⟩⟩ ⟨"enter"⟩
+
+private def completionPublicationEntryOperation : SemanticOperation :=
+  .enterParallelMultiInstanceScope probeEntry.id ⟨probeEntry.elementId⟩ probeEntry.input probeEntry.childEntry
+    probeEntry.childScopeId probeEntry.normalOutput probeEntry.collectionName probeEntry.itemName
+    probeEntry.bodyInputs probeEntry.completionBooleanName
+
+private def completionPublicationDelta (activation : Nat) : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := [], ended := [{ anchor := .scope (probeBody activation), terminal := .completed }] }
+
+theorem parallel_partial_retirement_publishes_only_exact_completed_body :
+    candidateFlowNodeOccurrenceDeltaForOwnedOperation? cohortProgram probeSettled probeRetired
+      completionPublicationOperation (probeBody 5) ⟨"retire"⟩ 0 =
+      some (completionPublicationDelta 5) := by decide +kernel
+
+theorem parallel_natural_exhaustion_publishes_completed_body_even_with_true_condition :
+    let before := { probeRetired with tokens := [], variables :=
+      { probeRetired.variables with process := probeEarly.variables.process } }
+    let after := (completeParallelScope? probeEntry before (probeBody 6)).getD initialState
+    candidateFlowNodeOccurrenceDeltaForOwnedOperation? cohortProgram before after
+      completionPublicationOperation (probeBody 6) ⟨"retire"⟩ 1 =
+      some (completionPublicationDelta 6) := by decide +kernel
+
+private def retirementPublicationOperations : List SemanticOperation :=
+  [ completionPublicationOperation,
+    .awaitEffect ⟨"effect"⟩ ⟨⟨"Check"⟩⟩ ⟨"effect-in"⟩ ⟨"effect-out"⟩
+      { scopedEffect with inputMappings := [] } none,
+    .reachNoneEnd ⟨"end"⟩ ⟨⟨"BodyEnd"⟩⟩ ⟨"done"⟩,
+    completionPublicationEntryOperation,
+    .duplicate ⟨"fork"⟩ ⟨⟨"Fork"⟩⟩ ⟨"check"⟩ [⟨"effect-in"⟩, ⟨"human-in"⟩],
+    .awaitUserTask ⟨"human"⟩ ⟨⟨"Review"⟩⟩ ⟨"human-in"⟩ ⟨"human-out"⟩ ⟨⟨"Review"⟩, none, none⟩,
+    .synchronize ⟨"join"⟩ ⟨⟨"Join"⟩⟩ [⟨"effect-out"⟩, ⟨"human-out"⟩] ⟨"done"⟩,
+    .reachNoneEnd ⟨"parent-end"⟩ ⟨⟨"ParentEnd"⟩⟩ ⟨"finished"⟩,
+    .completeScope ⟨"root-complete"⟩ ⟨⟨"applicants"⟩⟩ ⟨"root"⟩ none,
+    .initiate ⟨"start"⟩ ⟨⟨"Start"⟩⟩ ⟨"in"⟩,
+    .awaitUserTask ⟨"unrelated"⟩ ⟨⟨"OtherReview"⟩⟩ ⟨"out"⟩ ⟨"finished"⟩ ⟨⟨"OtherReview"⟩, none, none⟩ ]
+
+private def retirementPublicationPlaces : List String :=
+  ["check", "done", "effect-in", "effect-out", "finished", "human-in", "human-out", "in", "out"]
+
+private def retirementPublicationProgram : Program :=
+  { cohortProgram with
+    identity := { cohortProgram.identity with sourceSha256 := String.ofList (List.replicate 64 'a') },
+    definitionScopes := cohortProgram.definitionScopes.reverse,
+    operations := retirementPublicationOperations,
+    operationScopes := retirementPublicationOperations.map fun operation =>
+      ⟨operation.id, ⟨if ["complete", "effect", "end", "fork", "human", "join"].contains operation.id.value
+        then "body" else "root"⟩⟩,
+    controlPlaces := retirementPublicationPlaces.map fun place => ⟨⟨place⟩, ⟨⟨place⟩⟩⟩,
+    controlPlaceScopes := retirementPublicationPlaces.map fun place =>
+      ⟨⟨place⟩, ⟨if ["in", "out", "finished"].contains place then "root" else "body"⟩⟩ }
+
+private def retirementPublicationBefore : RuntimeState :=
+  let base := { probeEarly with
+    tokens := [],
+    scopeOccurrences := probeEarly.scopeOccurrences.filter (·.id.definitionScopeId != ⟨"other"⟩),
+    activityOccurrences := probeEarly.activityOccurrences.filter (· != probeOther) }
+  let human := activateUserTask base ⟨"applicants"⟩ (probeBody 6) ⟨"human-in"⟩ ⟨"human-out"⟩ ⟨⟨"Review"⟩, none, none⟩
+  let effect := activateEffect human ⟨"applicants"⟩ (probeBody 6) ⟨"effect-in"⟩ ⟨"effect-out"⟩
+    { scopedEffect with inputMappings := [] } none
+  activateUserTask effect ⟨"applicants"⟩ probeParent ⟨"out"⟩ ⟨"finished"⟩ ⟨⟨"OtherReview"⟩, none, none⟩
+
+private def retirementPublicationAfter : RuntimeState :=
+  (completeParallelScope? probeEntry retirementPublicationBefore (probeBody 5)).getD initialState
+
+private def retirementPublicationDelta : UnnumberedFlowNodeOccurrenceDelta :=
+  { started := [], ended := [
+      ⟨.wait ⟨⟨"applicants"⟩, ⟨"Check"⟩, 1⟩, .cancelled⟩,
+      ⟨.wait ⟨⟨"applicants"⟩, ⟨"Review"⟩, 1⟩, .cancelled⟩,
+      ⟨.scope (probeBody 5), .completed⟩, ⟨.scope (probeBody 6), .cancelled⟩ ] }
+
+private def retirementCandidate (program : Program) (before after : RuntimeState)
+    (owner : ScopeOccurrenceId := probeBody 5) : Option UnnumberedFlowNodeOccurrenceDelta :=
+  candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after
+    completionPublicationOperation owner ⟨"retire"⟩ 0
+
+theorem parallel_retirement_publication_fixture_has_independent_open_projection :
+    programWellFormed retirementPublicationProgram = true ∧
+    (projectOpenFlowNodeOccurrences? retirementPublicationProgram retirementPublicationBefore).isSome = true ∧
+    (projectOpenFlowNodeOccurrences? retirementPublicationProgram retirementPublicationAfter).isSome = true := by
+  decide +kernel
+
+theorem parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work :
+    retirementCandidate retirementPublicationProgram retirementPublicationBefore retirementPublicationAfter =
+      some retirementPublicationDelta ∧
+    retirementPublicationAfter.waits = retirementPublicationBefore.waits.filter (·.owner == probeParent) ∧
+    retirementPublicationAfter.effectWaits = [] ∧ retirementPublicationAfter.variables.activities = [] ∧
+    retirementPublicationAfter.variables.process = retirementPublicationBefore.variables.process := by
+  decide +kernel
+
+theorem parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent :
+    retirementCandidate retirementPublicationProgram retirementPublicationBefore initialState =
+      some retirementPublicationDelta ∧
+    acceptFlowNodeOccurrenceCandidate? retirementPublicationProgram retirementPublicationBefore
+      retirementPublicationAfter retirementPublicationDelta = some retirementPublicationDelta ∧
+    acceptFlowNodeOccurrenceCandidate? retirementPublicationProgram retirementPublicationBefore
+      retirementPublicationBefore retirementPublicationDelta = none := by decide +kernel
+
+theorem parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings :
+    let candidate := fun program before => retirementCandidate program before probeRetired
+    retirementCandidate cohortProgram probeSettled probeRetired (probeBody 6) = none ∧
+    retirementCandidate cohortProgram probeRetired probeRetired (probeBody 5) = none ∧
+    candidate cohortProgram { probeSettled with parallelScopeControllers := [] } = none ∧
+    candidate cohortProgram { probeSettled with activityOccurrences :=
+      probeSettled.activityOccurrences ++ probeSettled.activityOccurrences } = none ∧
+    candidate cohortProgram { probeSettled with variables := { probeSettled.variables with
+      scopes := probeSettled.variables.scopes.filter (·.owner != probeBody 6) } } = none ∧
+    candidate cohortProgram { probeSettled with scopeOccurrences :=
+      ⟨probeBody 7, some probeParent⟩ :: probeSettled.scopeOccurrences } = none ∧
+    candidate cohortProgram { probeSettled with variables := { probeSettled.variables with
+      scopes := ⟨probeBody 7, []⟩ :: probeSettled.variables.scopes } } = none ∧
+    candidate cohortProgram { probeSettled with parallelScopeControllers :=
+      probeSettled.parallelScopeControllers ++ probeSettled.parallelScopeControllers.map fun row =>
+        { row with id := { row.id with activation := 99 } } } = none ∧
+    candidate { cohortProgram with operations := cohortProgram.operations ++ [completionPublicationOperation] }
+      probeSettled = none ∧
+    candidate { cohortProgram with operationScopes := cohortProgram.operationScopes.filter (·.operationId != ⟨"complete"⟩) }
+      probeSettled = none ∧
+    candidate { cohortProgram with definitionScopes := cohortProgram.definitionScopes.map fun definition =>
+      if definition.id == ⟨"body"⟩ then { definition with originElementId := ⟨"Other"⟩ } else definition }
+      probeSettled = none := by decide +kernel
 
 #eval show IO Unit from do
   for count in [2, 16] do

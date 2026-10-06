@@ -57,7 +57,7 @@ theorem prepared_timer_task_candidate_singleton
       filter_insertUserTaskWait_eq_singleton wait state.waits rfl ownerIds.1 fresh
   cases kind : contract.kind
   all_goals
-    simp only [InternalTimerTaskContract.operation, kind, candidateFlowNodeOccurrenceDeltaForOperation?,
+    simp only [InternalTimerTaskContract.operation, kind, candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
       flowNodeSelectedOperationOwner?, owned, Option.bind_eq_bind, Option.bind_some,
       applyInternalTimerTaskPatch, makeInternalTimerTaskPatch, applyInternalArmingPatch,
       Bool.decide_coe]

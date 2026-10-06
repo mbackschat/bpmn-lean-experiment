@@ -48,7 +48,7 @@ theorem prepareInternalEnd_candidate_lifecycle (program : Program) (state after 
   obtain ⟨_, selected, origin, instanceId, identity, delta, selection, originFound, _, _, _, _,
     identityFound, _, rfl⟩ := prepareInternalEnd_facts program state operation prepared found
   have owned := selectInternalEnd_owner state operation selected selection
-  unfold candidateFlowNodeOccurrenceDeltaForOperation?
+  unfold candidateFlowNodeOccurrenceDeltaForOperation? candidateFlowNodeOccurrenceDeltaForOwnedOperation?
   rw [owned]
   cases operation <;> simp only [internalEndOrigin?] at originFound <;> (try contradiction)
   cases originFound

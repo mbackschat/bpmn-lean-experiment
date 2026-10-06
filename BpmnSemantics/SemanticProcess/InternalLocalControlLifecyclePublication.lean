@@ -59,7 +59,7 @@ theorem internalLocalControl_candidate_lifecycle (program : Program) (state afte
   have singleton : instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [identity] =
       (makeInternalLocalControlPreparation state selected instanceId identity delta).publicationTemplate.lifecycle
         commandId transitionIndex := rfl
-  unfold candidateFlowNodeOccurrenceDeltaForOperation?
+  unfold candidateFlowNodeOccurrenceDeltaForOperation? candidateFlowNodeOccurrenceDeltaForOwnedOperation?
   rw [owned]
   cases operation <;> simp only [internalLocalControlOrigin?] at originFound <;>
     (try contradiction)

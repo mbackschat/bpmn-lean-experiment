@@ -66,7 +66,7 @@ theorem prepared_data_arm_candidate_singleton
       filter_insertUserTaskWait_eq_singleton wait state.waits rfl ownerIds.1 fresh
   cases dataEq : contract.data
   all_goals
-    simp only [InternalDataArmingContract.operation, dataEq, candidateFlowNodeOccurrenceDeltaForOperation?,
+    simp only [InternalDataArmingContract.operation, dataEq, candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
       flowNodeSelectedOperationOwner?, owned, Option.bind_eq_bind, Option.bind_some,
       applyInternalDataArmingPatch, makeInternalDataArmingPatch, applyInternalArmingPatch,
       Bool.decide_coe]

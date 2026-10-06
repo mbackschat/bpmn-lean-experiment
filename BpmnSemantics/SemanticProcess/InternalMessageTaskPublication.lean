@@ -95,7 +95,7 @@ theorem prepared_message_task_candidate_pair
   cases kind : contract.kind
   all_goals
     simp only [InternalMessageTaskContract.operation, kind] at identity
-    simp only [InternalMessageTaskContract.operation, kind, candidateFlowNodeOccurrenceDeltaForOperation?,
+    simp only [InternalMessageTaskContract.operation, kind, candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
       flowNodeSelectedOperationOwner?, owned, Option.bind_eq_bind, Option.bind_some,
       patchEq, applyInternalMessageTaskPatch, makeInternalMessageTaskPatch, applyInternalArmingPatch]
     dsimp only [task] at taskFiltered

@@ -4,7 +4,7 @@ This map owns cross-cutting runtime, scope, Lean, TypeScript semantic-core, and 
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): private occurrence checkpoint approved; mixed controls/Start closure pass, review pending. Command/public/hosted acceptance remains open.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): mixed-control approved; paired entry/retirement publication passes, review pending. Command/public/hosted acceptance remains open.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 

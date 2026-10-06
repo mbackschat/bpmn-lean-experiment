@@ -147,7 +147,7 @@ theorem regionalLifecycleTemplate_candidate (program : Program) (before after : 
   have owned := regionalSelection_lifecycle_owner program before operation selected selection
   have facts := regionalSelection_lifecycle_facts program before operation selected selection
   have selectedOperation := regionalSelection_operation program before operation selected selection
-  unfold candidateFlowNodeOccurrenceDeltaForOperation?
+  unfold candidateFlowNodeOccurrenceDeltaForOperation? candidateFlowNodeOccurrenceDeltaForOwnedOperation?
   rw [owned]
   simp only [Option.bind_eq_bind, Option.bind_some]
   cases operation with

@@ -187,6 +187,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [flow-node-occurrence-publication-compensation-completeness.ts](src/flow-node-occurrence-publication-compensation-completeness.ts) | Exact source-checkpoint Compensation trigger, frontier, completion, and failure lifecycle completeness from the Program and retained anchors |
 | [flow-node-occurrence-sequential-multi-instance.ts](src/flow-node-occurrence-sequential-multi-instance.ts) | Sequential Multi-Instance inner-instance occurrence accounting |
 | [flow-node-occurrence-boundary-starts.ts](src/flow-node-occurrence-boundary-starts.ts) | Candidate lifecycle starts derived independently at one evaluator transition boundary |
+| [flow-node-occurrence-parallel-scope.ts](src/flow-node-occurrence-parallel-scope.ts) | Exact predecessor-derived Sub-Process body completion and early sibling cancellation terminals |
 | [flow-node-occurrence-retained-pairing.ts](src/flow-node-occurrence-retained-pairing.ts) | The retained half of the Activity occurrence record for state-free consumers |
 | [sequential-multi-instance-contract.ts](src/sequential-multi-instance-contract.ts) | Registered sequential Multi-Instance profile identity across source, IL, runtime, and host |
 | [sequential-multi-instance-controller.ts](src/sequential-multi-instance-controller.ts) | The outer sequential controller, storing generators rather than counters |

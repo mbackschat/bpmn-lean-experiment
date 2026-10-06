@@ -20,6 +20,7 @@ import {
 import type {
   SemanticFlowNodeOccurrenceAnchor,
   UnnumberedFlowNodeOccurrenceDelta,
+  UnnumberedFlowNodeOccurrenceEnd,
   UnnumberedFlowNodeOccurrenceStart,
 } from "./flow-node-occurrence-lifecycle.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -321,6 +322,7 @@ function internalDelta(
         commandId,
         transitionIndex,
       );
+    case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
       if (positions.exitedScopes.length !== 0) failCompleteness();
       return lifecycleDelta(repeatedScopeStarts(program, positions, operation, owner));
@@ -337,25 +339,70 @@ function internalDelta(
           anchor.id.activation <= owner.activation)) failCompleteness();
       return lifecycleDelta(starts, [lifecycleEnd(scope, FlowNodeOccurrenceTerminalKind.Completed)]);
     }
-    case SemanticOperationKind.EnterParallelMultiInstanceScope:
-      return failCompleteness();
     case SemanticOperationKind.CompleteParallelMultiInstanceScope:
-      return failCompleteness();
+      return lifecycleDelta([], parallelScopeRetirementEnds(program, open, positions, operation, owner));
     default:
       return assertNever(operation);
   }
+}
+
+/** PMIS retirement's E1 exit set distinguishes one completed body from complete sibling cancellation. */
+function parallelScopeRetirementEnds(
+  program: SemanticProcessProgram, open: readonly OpenOccurrence[], positions: PublicControlPositionDelta,
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.CompleteParallelMultiInstanceScope }>,
+  owner: ScopeOccurrenceId,
+): UnnumberedFlowNodeOccurrenceEnd[] {
+  const entry = requireUnique(program.operations.filter(candidate => candidate.id === operation.entryOperationId));
+  const paired = requireUnique(program.operations.filter(candidate => candidate.kind === SemanticOperationKind.CompleteParallelMultiInstanceScope &&
+    candidate.entryOperationId === entry.id));
+  const completed = requireAnchor(open, { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: owner });
+  const definition = uniqueDefinition(program, owner.definitionScopeId);
+  if (entry.kind !== SemanticOperationKind.EnterParallelMultiInstanceScope || paired.id !== operation.id ||
+      !sameJson(entry.origin, operation.origin) || entry.childScopeId !== owner.definitionScopeId ||
+      definition?.originElementId !== entry.origin.elementId || definition.parentScopeId !== completed.owner.definitionScopeId ||
+      completed.elementId !== entry.origin.elementId || !operationOwnedBy(program, entry, completed.owner) ||
+      positions.enteredScopes.length !== 0 || !positions.exitedScopes.some(scope => sameScope(scope.id, owner)) ||
+      cancelledRegion(program, open, owner, false).length !== 1) failCompleteness();
+  const siblings = open.filter(candidate => candidate.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope &&
+    candidate.anchor.id.definitionScopeId === entry.childScopeId && sameScope(candidate.owner, completed.owner) &&
+    !sameScope(candidate.anchor.id, owner));
+  const ends = [lifecycleEnd(completed, FlowNodeOccurrenceTerminalKind.Completed)];
+  if (positions.exitedScopes.some(scope => !sameScope(scope.id, owner))) {
+    if (entry.completionBooleanName === null || siblings.length === 0) failCompleteness();
+    for (const sibling of siblings) {
+      if (sibling.anchor.kind !== SemanticFlowNodeOccurrenceAnchorKind.Scope || sibling.elementId !== entry.origin.elementId)
+        failCompleteness();
+      ends.push(...cancelledRegion(program, open, sibling.anchor.id, false));
+    }
+  }
+  const scopeEnds = ends.filter(end => end.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope);
+  if (positions.exitedScopes.length !== scopeEnds.length || positions.exitedScopes.some((scope, index) =>
+      positions.exitedScopes.slice(0, index).some(previous => sameScope(previous.id, scope.id)))) failCompleteness();
+  for (const exited of positions.exitedScopes) {
+    const retained = requireAnchor(open, { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: exited.id });
+    const exitedDefinition = uniqueDefinition(program, exited.id.definitionScopeId);
+    if (exited.parent === null || !sameScope(exited.parent, retained.owner) ||
+        exited.bpmnElementId !== retained.elementId || exitedDefinition?.originElementId !== retained.elementId ||
+        exitedDefinition.parentScopeId !== retained.owner.definitionScopeId ||
+        !scopeEnds.some(end => end.anchor.kind === SemanticFlowNodeOccurrenceAnchorKind.Scope && sameScope(end.anchor.id, exited.id)))
+      failCompleteness();
+  }
+  return ends;
 }
 
 /** FNOM-OCCURRENCE-01 pairs each generated body using E1 scope facts, independently of supplied E2 starts. */
 function repeatedScopeStarts(
   program: SemanticProcessProgram,
   positions: PublicControlPositionDelta,
-  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope }>,
+  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope | SemanticOperationKind.EnterParallelMultiInstanceScope }>,
   parent: ScopeOccurrenceId,
 ): UnnumberedFlowNodeOccurrenceStart[] {
   const definition = uniqueDefinition(program, entry.childScopeId);
   if (definition?.parentScopeId !== parent.definitionScopeId || definition.originElementId !== entry.origin.elementId ||
-      !operationOwnedBy(program, entry, parent) || positions.enteredScopes.length > 1) failCompleteness();
+      !operationOwnedBy(program, entry, parent) ||
+      (entry.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope && positions.enteredScopes.length > 1) ||
+      positions.enteredScopes.some((scope, index) => positions.enteredScopes.slice(0, index).some(previous =>
+        sameScope(previous.id, scope.id)))) failCompleteness();
   return positions.enteredScopes.map(scope => {
     if (scope.parent === null || !sameScope(scope.parent, parent) || scope.bpmnElementId !== entry.origin.elementId ||
         scope.id.definitionScopeId !== entry.childScopeId || scope.id.processInstanceId !== parent.processInstanceId ||

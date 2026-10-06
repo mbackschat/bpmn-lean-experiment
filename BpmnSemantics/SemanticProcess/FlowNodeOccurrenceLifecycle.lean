@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
 
 /-! # Flow-node occurrence lifecycle -/
 
@@ -643,10 +644,9 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
       let branch ← incidentRootCancellationDelta? program before processInstanceId incidentId
       pure branch.2
 
-def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before after : RuntimeState)
-    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat) :
+def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId) (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
-  let owner ← flowNodeSelectedOperationOwner? before operation
   let identityFor := candidateOperationFlowNodeIdentity? program operation owner owner
   match operation with
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _ =>
@@ -791,7 +791,11 @@ def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before af
       let starts ← parallelEntryFlowNodeStarts? program operation owner before after
       pure (canonicalFlowNodeOccurrenceDelta starts [])
   | .completeParallelMultiInstanceUserTask .. => none
-  | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. => none
+  | .enterParallelMultiInstanceScope .. =>
+      pure (canonicalFlowNodeOccurrenceDelta (← candidateParallelScopeStarts? program operation owner before after) [])
+  | .completeParallelMultiInstanceScope .. =>
+      pure (canonicalFlowNodeOccurrenceDelta [] (← candidateParallelScopeCompletionEnds?
+        program operation owner before (fun root => ownedSubtreeCancellationEnds? program before root)))
   | .enterSequentialMultiInstanceScope .. =>
       pure (canonicalFlowNodeOccurrenceDelta (← candidateSequentialScopeStarts? program operation owner after) [])
   | .completeSequentialMultiInstanceScope .. =>
@@ -845,6 +849,12 @@ def flowNodeOccurrenceDeltaForStimulus? (program : Program) (before after : Runt
   candidateFlowNodeOccurrenceDeltaForStimulus? program before stimulus
       (stimulusCommandId stimulus) transitionIndex >>= fun candidate =>
     acceptFlowNodeOccurrenceCandidate? program before after candidate
+
+def candidateFlowNodeOccurrenceDeltaForOperation? (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat) :
+    Option UnnumberedFlowNodeOccurrenceDelta := do
+  let owner ← flowNodeSelectedOperationOwner? before operation
+  candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after operation owner commandId transitionIndex
 
 /-- Internal lifecycle from one fired operation and its supplied committed successor. -/
 def flowNodeOccurrenceDeltaForOperation? (program : Program) (before after : RuntimeState)

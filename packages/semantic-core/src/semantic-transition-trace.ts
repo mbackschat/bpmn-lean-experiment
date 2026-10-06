@@ -215,6 +215,10 @@ export function projectInternalExecutionBatch(
     if (batch.length !== 1) return null;
     const step = batch[0]!;
     const unit = internalPublicationUnit(program, before, step);
+    // PMIS-SELECT-01 binds unpublished controller/data state as well as the visible lifecycle.
+    if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID &&
+        (unit === null || !isWellFormedSemanticProcessProgram(program) ||
+          !sameJson(replayInternalTransitionRecord(program, before, unit.record), step.successor))) return null;
     const lifecycle = unit?.lifecycleAt(commandId, first);
     return unit === null || lifecycle === undefined || lifecycle === null ? null
       : { state: step.successor, records: [unit.record], lifecycles: [lifecycle] };

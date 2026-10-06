@@ -182,19 +182,40 @@ structure InternalClosureStep where
   records : Option (List InternalTransitionRecord)
   lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
+/-- PMIS-SELECT-01 publishes a singleton only after exact-owner replay and lifecycle acceptance. -/
+def singletonOccurrencePublication? (program : Program) (commandId : SemanticId)
+    (first : Nat) (state : RuntimeState) (offer : InternalExecutionOffer) (owner : ScopeOccurrenceId) :
+    Option (InternalTransitionRecord × UnnumberedFlowNodeOccurrenceDelta) := do
+  if !programWellFormed program || !SemanticProcessJson.isSafeWireNat state.logicalTimeMs then none else pure ()
+  let record : InternalTransitionRecord := {
+    operationId := offer.operation.id
+    operationKind := offer.operation.kind
+    origin := offer.operation.origin
+    owner := owner }
+  if replayInternalOperationOccurrence? program state record != some offer.successor then none else pure ()
+  let instanceId ← hostingInstanceId? state
+  let _ ← controlPositionDelta? program instanceId state offer.successor
+  let candidate ← candidateFlowNodeOccurrenceDeltaForOwnedOperation? program state offer.successor
+    offer.operation owner commandId first
+  let lifecycle ← acceptFlowNodeOccurrenceCandidate? program state offer.successor candidate
+  pure (record, lifecycle)
+
 /-- Result-only singletons must not acquire publication admission: the Configured Task
 pass-through mutation deliberately executes a wrong lowering without a publishable trace.
 -/
 private def singletonClosureStep (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (offer : InternalExecutionOffer) : InternalClosureStep :=
+  let occurrence := match offer.alternative with
+    | .operationOccurrence _ owner => singletonOccurrencePublication? program commandId first state offer owner
+    | _ => none
   { state := offer.successor
     records := match offer.alternative with
-      | .operationOccurrence .. => none
+      | .operationOccurrence .. => occurrence.map (fun publication => [publication.1])
       | .operation _ => (internalTransitionRecord? program state offer.operation).map List.singleton
       | .mergeInput .. => (selectInternalMerge? state offer.operation offer.alternative).map
           (fun selected => [selected.record])
     lifecycles := match offer.alternative with
-      | .operationOccurrence .. => none
+      | .operationOccurrence .. => occurrence.map (fun publication => [publication.2])
       | .operation _ => (flowNodeOccurrenceDeltaForOperationWithMessageHandler? program state offer.successor
           offer.operation commandId first).map List.singleton
       | .mergeInput .. => do

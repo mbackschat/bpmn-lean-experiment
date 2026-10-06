@@ -1,4 +1,6 @@
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import BpmnSemantics.WireNatural
 
 /-! # Flow-node occurrence boundary starts
 
@@ -302,6 +304,7 @@ def candidateScopeStart? (program : Program) (operation : SemanticOperation)
   let origin ← match operation with
     | .enterScope _ origin _ _ childScopeId
     | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
+    | .enterParallelMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
     | .enterBoundedScope _ origin _ _ childScopeId _
     | .enterMonitoredScope _ origin _ _ childScopeId _ =>
         if occurrence.parent ≠ some owner || occurrence.id.definitionScopeId ≠ childScopeId ||
@@ -359,6 +362,57 @@ def candidateSequentialScopeStarts? (program : Program) (operation : SemanticOpe
           after.sequentialScopeControllers.any (fun controller => controller.id.activityElementId.value == entry.elementId.value)
         then none
       else pure []
+
+/-- PMIS-ENTER-01 publishes the exact captured population, including a genuinely empty collection. -/
+def candidateParallelScopeStarts? (program : Program) (operation : SemanticOperation)
+    (owner : ScopeOccurrenceId) (before after : RuntimeState) : Option (List UnnumberedFlowNodeOccurrenceStart) := do
+  let entry ← parallelScopeEntry? operation
+  let _ ← processIdForSelectedOperation? program operation owner
+  let definition ← definitionScope? program entry.childScopeId
+  if definition.parentScopeId != some owner.definitionScopeId || definition.originElementId != entry.elementId then none else pure ()
+  let [source] := before.variables.process.bindings.filter (·.name == entry.collectionName) | none
+  let .stringList items := source.value | none
+  let bodies := after.scopeOccurrences.filter (·.id.definitionScopeId == entry.childScopeId)
+  let activities := after.activityOccurrences.filter (·.activityElementId == entry.elementId)
+  let controllers := after.parallelScopeControllers.filter (fun controller =>
+    controller.id.activityElementId.value == entry.elementId.value)
+  if before.scopeOccurrences.any (fun scope => scope.id.definitionScopeId == entry.childScopeId) ||
+      before.activityOccurrences.any (fun record => record.activityElementId == entry.elementId) ||
+      before.parallelScopeControllers.any (fun row => row.id.activityElementId.value == entry.elementId.value) ||
+      before.variables.scopes.any (fun frame => frame.owner.definitionScopeId == entry.childScopeId) then none
+  else match items with
+  | [] => if before.scopeOccurrences == after.scopeOccurrences &&
+      before.activityOccurrences == after.activityOccurrences && before.parallelScopeControllers == after.parallelScopeControllers &&
+      before.variables.scopes == after.variables.scopes && before.scopeActivations == after.scopeActivations &&
+      before.activityActivations == after.activityActivations then some [] else none
+  | _ :: _ => do
+      let [activity] := activities | none
+      let .parallelChildScopes first _ := activity.body | none
+      let binding ← parallelScopeBinding? entry after first.scope
+      let scopeBase := before.scopeActivations.filter (·.scopeId == entry.childScopeId)
+      let activityBase := before.activityActivations.filter (fun row => row.taskId.value == entry.elementId.value)
+      if scopeBase.length > 1 || activityBase.length > 1 ||
+          !(scopeBase.all fun row => SemanticProcessJson.isSafeWireNat row.count) ||
+          !(activityBase.all fun row => SemanticProcessJson.isSafeWireNat row.count) then none else pure ()
+      let activityCount := activityActivationCount before ⟨entry.elementId.value⟩ + 1
+      let scopeCount := scopeActivationCount before entry.childScopeId + items.length
+      let [activityCounter] := after.activityActivations.filter (fun row => row.taskId.value == entry.elementId.value) | none
+      let [scopeCounter] := after.scopeActivations.filter (·.scopeId == entry.childScopeId) | none
+      if !SemanticProcessJson.isSafeWireNat activityCount || !SemanticProcessJson.isSafeWireNat scopeCount ||
+          activityCounter.count != activityCount || scopeCounter.count != scopeCount ||
+          (after.variables.scopes.filter fun frame => frame.owner.definitionScopeId == entry.childScopeId).length != items.length ||
+          binding.activity.owner != owner || binding.activity != activity ||
+          controllers != [binding.controller] || binding.controller.total != items.length ||
+          binding.controller.completed != 0 || binding.iterations.length != bodies.length ||
+          binding.iterations.map (·.item) != items ||
+          binding.iterations.map (·.loopCounter) != List.range items.length ||
+          activity.activation != activityActivationCount before ⟨entry.elementId.value⟩ + 1 ||
+          binding.iterations.map (·.scope.activation) !=
+            (List.range items.length).map (fun index => scopeActivationCount before entry.childScopeId + index + 1)
+        then none
+      else binding.iterations.mapM fun iteration => do
+        let [body] := bodies.filter (·.id == iteration.scope) | none
+        candidateScopeStart? program operation owner body
 
 /-- SMIS-END-01 closes the selected old body before optionally starting its fresh successor. -/
 def candidateSequentialScopeCompletionStarts? (program : Program) (operation : SemanticOperation)

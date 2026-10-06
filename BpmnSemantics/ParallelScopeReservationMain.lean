@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcessJson.Program
 import BpmnSemantics.SemanticProcessJson.Scenario
 import BpmnSemantics.SemanticProcessJson.Publication
 
-/-! Private reservation agreement reads existing Program/Start wires and projects each applied prefix.
+/-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes and exact body retirements.
 This diagnostic does not admit a command or assert full publication/refinement agreement. -/
 
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcess.InternalCommutation
@@ -15,7 +15,7 @@ private def ownerJson (owner : ScopeOccurrenceId) : Json :=
 private def bindingsJson (bindings : List VariableBinding) : Json :=
   toJson (bindings.map fun binding => Json.mkObj [("name", toJson binding.name), ("value", encodeVariableValue binding.value)])
 
-/-- Compare the complete wait multiset by public identity; RuntimeState uses owner-first private storage. -/
+/-- Compare projected wait fields and multiplicity by public identity; RuntimeState uses owner-first private storage. -/
 private def prefixJson (before state : RuntimeState) : Json :=
   let waits := InternalCommutation.sortBy (fun left right : UserTaskWait =>
     if left.task.id.value != right.task.id.value then left.task.id.value < right.task.id.value
@@ -45,10 +45,9 @@ private def prefixJson (before state : RuntimeState) : Json :=
       effectActivations := before.effectActivations
       variables := { state.variables with activities := before.variables.activities } } = before))) ]
 
-private def publicationJson? (program : Program) (before : RuntimeState)
-    (successors : List RuntimeState) (closed : ScheduledClosureResult) : Option Json := do
-  let records ← closed.records
-  let lifecycles ← closed.lifecycles
+private def publicationRecordsJson? (program : Program) (before : RuntimeState)
+    (successors : List RuntimeState) (records : List InternalTransitionRecord)
+    (lifecycles : List UnnumberedFlowNodeOccurrenceDelta) : Option Json := do
   if records.length != successors.length || lifecycles.length != successors.length then none else pure ()
   let instanceId ← hostingInstanceId? before
   let mut state := before
@@ -68,6 +67,10 @@ private def publicationJson? (program : Program) (before : RuntimeState)
     state := next
   pure (Json.mkObj [("records", toJson encoded),
     ("lifecycles", toJson (lifecycles.map Publication.occurrenceDeltaJson))])
+
+private def publicationJson? (program : Program) (before : RuntimeState)
+    (successors : List RuntimeState) (closed : ScheduledClosureResult) : Option Json := do
+  publicationRecordsJson? program before successors (← closed.records) (← closed.lifecycles)
 
 private def enteredReservationState? (program : Program) (stimulus : Stimulus) : Option RuntimeState := do
   let .startProcess _ _ instanceId bindings := stimulus | none
@@ -142,9 +145,11 @@ private def reservationJson (program : Program) (stimulus : Stimulus) : Option J
     ("publications", (publicationJson? program entered successors closed).getD Json.null),
     ("prefixes", toJson (successors.map (prefixJson entered))) ])
 
-private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : Nat) : Option Json := do
+private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : Nat)
+    (afterEntry : Bool) : Option Json := do
   let .startProcess commandId _ instanceId bindings := stimulus | none
-  let admitted ← runningProgramStartState? program instanceId bindings
+  let admitted ← if afterEntry then enteredReservationState? program stimulus
+    else runningProgramStartState? program instanceId bindings
   let closed := closeScheduledTraced fuel program commandId 0 0 [] admitted
   let state := (StimulusResult.ofScheduledClosure admitted closed).state
   let publications : Option Json := do
@@ -169,11 +174,92 @@ private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : 
     ("scopes", toJson (state.scopeOccurrences.map fun scope => toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])),
     ("publications", publications.getD Json.null) ])
 
+private def applyElementOccurrence? (program : Program) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (kind : SemanticOperationKind) (elementId : String) : Option RuntimeState := do
+  let [operation] := program.operations.filter (fun operation =>
+    operation.kind == kind && operation.origin.elementId.value == elementId) | none
+  applyInternalOperationOccurrence? program state ⟨operation.id, owner⟩
+
+private def completeBodyTask? (program : Program) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (elementId : String) (values : List VariableBinding := []) : Option RuntimeState := do
+  let [wait] := state.waits.filter (fun wait => wait.owner == owner && wait.task.id.value == elementId) | none
+  completeParallelScopeUserTask? program state ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ values
+
+private def completeBodyEffect? (program : Program) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) : Option RuntimeState := do
+  let [wait] := state.effectWaits.filter (fun wait => wait.owner == owner && wait.elementId.value == "Validate") | none
+  completeParallelScopeEffect? program state ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩
+    (.success [⟨"result", .string "ok"⟩])
+
+private def retireBodyJson? (program : Program) (entryId : OperationId) (commandId : SemanticId)
+    (index : Nat) (before : RuntimeState) (owner : ScopeOccurrenceId) : Option (RuntimeState × Json) := do
+  let [operation] := program.operations.filter (fun operation => match operation with
+    | .completeParallelMultiInstanceScope _ _ paired => paired == entryId
+    | _ => false) | none
+  let after ← applyInternalOperationOccurrence? program before ⟨operation.id, owner⟩
+  let offer : InternalExecutionOffer := {
+    alternative := .operationOccurrence operation.id owner, operation, successor := after, preparation := none }
+  let (record, lifecycle) ← singletonOccurrencePublication? program commandId index before offer owner
+  let publications ← publicationRecordsJson? program before [after] [record] [lifecycle]
+  pure (after, Json.mkObj [
+    ("failed", toJson false), ("prefix", prefixJson before after),
+    ("process", bindingsJson after.variables.process.bindings),
+    ("scopeFrames", toJson (after.variables.scopes.map fun frame => toJson [ownerJson frame.owner, bindingsJson frame.bindings])),
+    ("scopes", toJson (after.scopeOccurrences.map fun scope => toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])),
+    ("publications", publications) ])
+
+/-- The finite invoice witness drives real waits and exact operations; each retirement alone crosses the replay/lifecycle/position boundary. -/
+private def retirementFrontierJson (program : Program) (stimulus : Stimulus) : Option Json := do
+  let .startProcess commandId _ _ _ := stimulus | none
+  let entered ← enteredReservationState? program stimulus
+  let [entry] := program.operations.filterMap parallelScopeEntry? | none
+  let [activity] := entered.activityOccurrences.filter (·.activityElementId == entry.elementId) | none
+  let .parallelChildScopes first _ := activity.body | none
+  let binding ← parallelScopeBinding? entry entered first.scope
+  if binding.controller.total != 2 || binding.controller.completed != 0 || binding.iterations.length != 2
+    then none else pure ()
+  let early ← match entry.completionBooleanName with
+    | none => some false
+    | some "approved" => some true
+    | _ => none
+  let mut state := entered
+  for iteration in binding.iterations do
+    let owner := iteration.scope
+    if early then
+      state := (← applyElementOccurrence? program state owner .duplicate "Review")
+      state := (← applyElementOccurrence? program state owner .awaitUserTask "Branch0")
+      state := (← applyElementOccurrence? program state owner .awaitUserTask "Branch1")
+      state := (← applyElementOccurrence? program state owner .awaitEffect "Validate")
+    else
+      state := (← applyElementOccurrence? program state owner .awaitUserTask "Review")
+  let selected := if early then [first] else binding.iterations
+  let mut outputs := []
+  for (iteration, index) in selected.zipIdx do
+    let owner := iteration.scope
+    if early then
+      state := (← completeBodyTask? program state owner "Branch0" [⟨"approved", .boolean true⟩])
+      state := (← applyElementOccurrence? program state owner .reachNoneEnd "End0")
+      state := (← completeBodyTask? program state owner "Branch1")
+      state := (← applyElementOccurrence? program state owner .reachNoneEnd "End1")
+    else
+      state := (← completeBodyTask? program state owner "Review")
+      state := (← applyElementOccurrence? program state owner .awaitEffect "Validate")
+    state := (← completeBodyEffect? program state owner)
+    state := (← applyElementOccurrence? program state owner .awaitUserTask "Confirm")
+    state := (← completeBodyTask? program state owner "Confirm")
+    state := (← applyElementOccurrence? program state owner .reachNoneEnd "ItemEnd")
+    let (after, output) ← retireBodyJson? program entry.id commandId index state owner
+    outputs := outputs ++ [output]
+    state := after
+  pure (toJson outputs)
+
 private inductive DiagnosticMode where
   | reservation
   | refusal
   | integrity
   | startFrontier
+  | enteredFrontier
+  | retirementFrontier
 
 private def printInput (mode : DiagnosticMode) (programPath startPath : String) (fuel : Nat) : IO Unit := do
   let programText ← IO.FS.readFile programPath
@@ -185,7 +271,9 @@ private def printInput (mode : DiagnosticMode) (programPath startPath : String) 
       | .reservation => reservationJson program stimulus
       | .refusal => refusalJson program stimulus
       | .integrity => integrityJson program stimulus
-      | .startFrontier => startFrontierJson program stimulus fuel).getD Json.null)
+      | .startFrontier => startFrontierJson program stimulus fuel false
+      | .enteredFrontier => startFrontierJson program stimulus fuel true
+      | .retirementFrontier => retirementFrontierJson program stimulus).getD Json.null)
   match result with
   | .error error => throw (IO.userError error)
   | .ok value => IO.println value.compress
@@ -193,7 +281,7 @@ private def printInput (mode : DiagnosticMode) (programPath startPath : String) 
 private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
   | [] => pure 0
   | programPath :: startPath :: rest => match mode with
-      | .startFrontier => match rest with
+      | .startFrontier | .enteredFrontier => match rest with
           | value :: remaining => do
               let some fuel := value.toNat? | throw (IO.userError "expected natural closure fuel")
               printInput mode programPath startPath fuel
@@ -209,4 +297,6 @@ def main (paths : List String) : IO UInt32 :=
   | "--refusal" :: rest => runInputs .refusal rest
   | "--integrity" :: rest => runInputs .integrity rest
   | "--start-frontier" :: rest => runInputs .startFrontier rest
+  | "--entered-frontier" :: rest => runInputs .enteredFrontier rest
+  | "--retirement-frontier" :: rest => runInputs .retirementFrontier rest
   | _ => runInputs .reservation paths

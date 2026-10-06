@@ -241,7 +241,7 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
           change candidateFlowNodeOccurrenceDeltaForOperation? program state
             (_ : RuntimeState) (.enterScope id selectedOrigin input entry childScope) commandId transitionIndex =
               some { started := [start], ended := [] }
-          simp only [candidateFlowNodeOccurrenceDeltaForOperation?, flowNodeSelectedOperationOwner?, owned,
+          simp only [candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?, flowNodeSelectedOperationOwner?, owned,
             bind, Option.bind, InternalScopeCreationSelection.apply]
           change (do
             let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keep with
@@ -286,7 +286,7 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
                 (fun candidate => decide (candidate.id = record.id))
               simpa only [List.filter_cons, decide_true, ↓reduceIte, absent] using permutation
             simp only [internalScopeCreationStart?] at startFound
-            simp only [makeInternalScopeCreationPreparation, candidateFlowNodeOccurrenceDeltaForOperation?,
+            simp only [makeInternalScopeCreationPreparation, candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
               flowNodeSelectedOperationOwner?, owned, bind, Option.bind, InternalScopeCreationSelection.apply]
             change (do
               let actual ← match (sortCallRecords (record :: state.calledProcessOccurrences)).filter

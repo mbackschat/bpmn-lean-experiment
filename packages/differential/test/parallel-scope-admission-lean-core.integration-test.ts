@@ -4,8 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { initialState, SemanticOperationKind, LocalDataOwnerKind, CommandOutcome, ActivityBodyKind, VariableValueKind } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, StartProcessStimulus } from "@bpmn-lean/semantic-core";
+import { initialState, SemanticOperationKind, LocalDataOwnerKind, CommandOutcome, ActivityBodyKind, VariableValueKind,
+  StimulusKind, EffectExecutionResultKind, SemanticFlowNodeOccurrenceAnchorKind as Anchor,
+  FlowNodeOccurrenceTerminalKind as Terminal } from "@bpmn-lean/semantic-core";
+import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, StartProcessStimulus,
+  UnnumberedFlowNodeOccurrenceDelta } from "@bpmn-lean/semantic-core";
 import { reservationInputs, controlClosureInputs, wholeModelReservationInputs, wholeModelStartClosureInputs } from "./parallel-scope-reservation-fixture.ts";
 import { parallelAdmissionCases } from "../../bpmn-source/test/parallel-scope-admission-fixture.ts";
 import { parallelStartBoundCases, parallelStartFrontierCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
@@ -371,9 +374,13 @@ test("source-derived parallel invoice Start closure reaches every concrete stabl
   }
 });
 
-test("Lean and TypeScript agree on source-derived invoice Start frontiers and reserved publications", async () => {
+for (const afterEntry of [false, true]) test(afterEntry
+  ? "Lean and TypeScript agree on source-derived invoice frontiers and complete publications after exact-owner entry"
+  : "Lean and TypeScript agree on source-derived invoice Start frontiers and reserved publications", async () => {
   const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
   ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { applyInternalOperationOccurrence } = await import(new URL("../../semantic-core/dist/internal-operation-occurrence.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-operation-occurrence.ts");
   const { deriveInternalExecutionFrontier } = await import(new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href
   ) as typeof import("../../semantic-core/src/internal-transition-preparation.ts");
   const { evaluateScheduledClosure } = await import(new URL("../../semantic-core/dist/internal-choice-schedule.js", import.meta.url).href
@@ -384,38 +391,58 @@ test("Lean and TypeScript agree on source-derived invoice Start frontiers and re
   try {
     const files: string[] = [];
     const results: unknown[] = [];
-    for (const { source, program, start } of await wholeModelStartClosureInputs()) {
-      const limit = parallelScopeStartClosureBound(source, start.initialVariables);
+    const inputs = (await wholeModelStartClosureInputs()).filter(input => !afterEntry || input.count >= 2);
+    assert.equal(inputs.length, afterEntry ? 12 : 24);
+    for (const { source, program, start } of inputs) {
+      const bound = parallelScopeStartClosureBound(source, start.initialVariables);
       const admitted = admitProcessStart(program, initialState, start);
-      assert.ok(limit !== undefined && admitted);
-      const closed = evaluateScheduledClosure(program, initialState, { outcome: CommandOutcome.Committed, state: admitted }, [], limit,
+      assert.ok(bound !== undefined && admitted);
+      let predecessor = admitted;
+      if (afterEntry) {
+        const root = admitted.scopeOccurrences[0]!.id;
+        for (const kind of [SemanticOperationKind.Initiate, SemanticOperationKind.EnterParallelMultiInstanceScope]) {
+          const operation = program.operations.find(candidate => candidate.kind === kind)!;
+          const successor = applyInternalOperationOccurrence(program, predecessor, { operationId: operation.id, owner: root });
+          assert.ok(successor, "the after-entry probe uses actual exact-owner initiation and population entry");
+          predecessor = successor;
+        }
+      }
+      const limit = bound - (afterEntry ? 2 : 0);
+      const closed = evaluateScheduledClosure(program, afterEntry ? predecessor : initialState,
+        { outcome: CommandOutcome.Committed, state: predecessor }, [], limit,
         state => deriveInternalExecutionFrontier(program, state, () => assert.fail("legacy dispatch")));
       assert.equal(closed.result.outcome, CommandOutcome.Committed);
       const state = closed.result.state;
-      let previous = admitted;
+      let previous = predecessor;
       let index = 0;
       const publications = [];
       for (const [position, batch] of closed.selectedInternalBatches.entries()) {
         const publication = projectInternalExecutionBatch(program, previous, batch,
           closed.selectedInternalPreparations[position] ?? null, start.commandId, index);
-        if (batch.length > 1) assert.ok(publication, "every reserved control/wait batch must publish all members");
+        assert.ok(publication, "every selected singleton or reserved batch must publish all members");
+        assert.equal(publication.records.length, batch.length);
+        assert.equal(publication.lifecycles.length, batch.length);
         publications.push(publication);
         previous = batch.at(-1)!.successor;
         index += batch.length;
       }
-      results.push({ failed: false, prefix: prefix(admitted, state), process: state.variables.process.bindings,
+      const published = { records: publications.flatMap(value => value.records),
+        lifecycles: publications.flatMap(value => value.lifecycles) };
+      assert.equal(published.records.length, closed.selectedInternalSteps.length, "the complete closure publishes every selected transition");
+      assert.equal(published.lifecycles.length, closed.selectedInternalSteps.length, "the complete closure publishes every selected lifecycle");
+      assert.deepEqual(previous, state);
+      results.push({ failed: false, prefix: prefix(predecessor, state), process: state.variables.process.bindings,
         scopeFrames: state.variables.scopes.map(frame => [owner(frame.owner), frame.bindings]),
         scopes: state.scopeOccurrences.map(scope => [owner(scope.id), scope.parent === null ? null : owner(scope.parent)]),
-        publications: publications.some(value => value === null) ? null : {
-          records: publications.flatMap(value => value!.records), lifecycles: publications.flatMap(value => value!.lifecycles),
-        } });
+        publications: published });
       const programPath = path.join(directory, `${results.length}.program.json`);
       const startPath = path.join(directory, `${results.length}.start.json`);
       await writeFile(programPath, JSON.stringify(program));
       await writeFile(startPath, JSON.stringify(start));
       files.push(programPath, startPath, String(limit));
     }
-    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--start-frontier", ...files], results.length);
+    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean",
+      [afterEntry ? "--entered-frontier" : "--start-frontier", ...files], results.length);
     assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
@@ -483,6 +510,145 @@ test("Lean and TypeScript agree on mixed fork/join/End closure and fuel refusal"
       files.push(programPath, startPath, String(fuel));
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--start-frontier", ...files], results.length);
+    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("Lean and TypeScript agree on source-derived natural retirement and private early-condition publications", async () => {
+  const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { applyInternalOperationOccurrence } = await import(new URL("../../semantic-core/dist/internal-operation-occurrence.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-operation-occurrence.ts");
+  const { completeOrdinaryUserTask } = await import(new URL("../../semantic-core/dist/semantic-process-user-task-runtime.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-user-task-runtime.ts");
+  const { completeParallelScopeEffect } = await import(new URL("../../semantic-core/dist/parallel-scope-data.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/parallel-scope-data.ts");
+  const { projectInternalExecutionBatch, replayInternalTransitionRecord } = await import(new URL("../../semantic-core/dist/semantic-transition-trace.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-transition-trace.ts");
+  const directory = await mkdtemp(path.join(tmpdir(), "parallel-retirement-publication-"));
+  try {
+    const files: string[] = [];
+    const results: unknown[] = [];
+    const inputs = (await wholeModelStartClosureInputs()).filter(input => input.count === 2 &&
+      (input.shape === "serial" || input.shape === "separate-ends"));
+    assert.equal(inputs.length, 4);
+    for (const input of inputs) {
+      const early = input.shape === "separate-ends";
+      const program: SemanticProcessProgram = early ? { ...input.program, operations: input.program.operations.map(operation =>
+        operation.kind === SemanticOperationKind.EnterParallelMultiInstanceScope ? { ...operation, completionBooleanName: "approved" } : operation) } : input.program;
+      const start: StartProcessStimulus = early ? { ...input.start, initialVariables: [
+        { name: "approved", value: { kind: VariableValueKind.Boolean, value: false } }, ...input.start.initialVariables,
+      ] } : input.start;
+      const admitted = admitProcessStart(program, initialState, start);
+      assert.ok(admitted);
+      let state: RuntimeState = admitted;
+      const root = state.scopeOccurrences[0]!.id;
+      const entry = program.operations.find(operation => operation.kind === SemanticOperationKind.EnterParallelMultiInstanceScope)!;
+      assert.ok(entry.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
+      const body = (activation: number): ScopeOccurrenceId => ({ processInstanceId: start.instanceId, definitionScopeId: entry.childScopeId, activation });
+      const step = (kind: SemanticOperationKind, elementId: string, target: ScopeOccurrenceId) => {
+        const operation = program.operations.find(candidate => candidate.kind === kind && candidate.origin.elementId === elementId);
+        assert.ok(operation);
+        const successor = applyInternalOperationOccurrence(program, state, { operationId: operation.id, owner: target });
+        assert.ok(successor, `exact ${kind} ${elementId} in body ${target.activation}`);
+        state = successor;
+        return operation;
+      };
+      const human = (elementId: string, activation: number, approved = false) => {
+        const wait = state.userTaskWaits.find(candidate => candidate.id.elementId === elementId && isDeepStrictEqual(candidate.owner, body(activation)));
+        assert.ok(wait);
+        const successor = completeOrdinaryUserTask(program, state, { kind: StimulusKind.CompleteUserTaskInstance,
+          commandId: `finish-${elementId}-${activation}`, taskId: wait.id,
+          submittedValues: approved ? [{ name: "approved", value: { kind: VariableValueKind.Boolean, value: true } }] : [] });
+        assert.ok(successor);
+        state = successor;
+      };
+      const effect = (activation: number) => {
+        const wait = state.effectWaits.find(candidate => candidate.id.elementId === "Validate" && isDeepStrictEqual(candidate.owner, body(activation)));
+        assert.ok(wait);
+        const successor = completeParallelScopeEffect(program, state, wait.id, { kind: EffectExecutionResultKind.Success,
+          localPatch: [{ name: "result", value: { kind: VariableValueKind.String, value: "ok" } }] });
+        assert.ok(successor);
+        state = successor;
+      };
+      step(SemanticOperationKind.Initiate, "Start", root);
+      step(SemanticOperationKind.EnterParallelMultiInstanceScope, "ReviewInvoice", root);
+      for (const activation of [1, 2]) {
+        if (early) {
+          step(SemanticOperationKind.Duplicate, "Review", body(activation));
+          for (const elementId of ["Branch0", "Branch1"]) step(SemanticOperationKind.AwaitUserTask, elementId, body(activation));
+          step(SemanticOperationKind.AwaitEffect, "Validate", body(activation));
+        } else step(SemanticOperationKind.AwaitUserTask, "Review", body(activation));
+      }
+      const checkpoints = [];
+      for (const activation of early ? [1] : [1, 2]) {
+        if (early) {
+          human("Branch0", activation, true);
+          step(SemanticOperationKind.ReachNoneEnd, "End0", body(activation));
+          human("Branch1", activation);
+          step(SemanticOperationKind.ReachNoneEnd, "End1", body(activation));
+        } else {
+          human("Review", activation);
+          step(SemanticOperationKind.AwaitEffect, "Validate", body(activation));
+        }
+        effect(activation);
+        step(SemanticOperationKind.AwaitUserTask, "Confirm", body(activation));
+        human("Confirm", activation);
+        step(SemanticOperationKind.ReachNoneEnd, "ItemEnd", body(activation));
+        const before = state;
+        const operation = step(SemanticOperationKind.CompleteParallelMultiInstanceScope, "ReviewInvoice", body(activation));
+        const after = state;
+        const published = projectInternalExecutionBatch(program, before, [{ operation, owner: body(activation), successor: after }], null,
+          start.commandId, checkpoints.length);
+        assert.ok(published, "actual exact-owner singleton retirement must publish complete E1 and E2 records");
+        assert.equal(published.records.length, 1);
+        assert.equal(published.lifecycles.length, 1);
+        assert.deepEqual(replayInternalTransitionRecord(program, before, published.records[0]!), after);
+        assert.equal(replayInternalTransitionRecord(program, after, published.records[0]!), null);
+        const expectedEnds: UnnumberedFlowNodeOccurrenceDelta["ended"] = [
+          { anchor: { kind: Anchor.Scope, id: body(activation) }, terminal: Terminal.Completed },
+          ...(early ? [{ anchor: { kind: Anchor.Scope, id: body(2) }, terminal: Terminal.Cancelled } as const] : []),
+          ...(early ? [...before.userTaskWaits, ...before.effectWaits].map(wait => ({
+            anchor: { kind: Anchor.Wait, id: wait.id }, terminal: Terminal.Cancelled } as const)) : []),
+        ];
+        assert.deepEqual(published.lifecycles[0]!.started, []);
+        const ordered = (ends: UnnumberedFlowNodeOccurrenceDelta["ended"]) => ends.map(end => JSON.stringify(end)).sort();
+        assert.deepEqual(ordered(published.lifecycles[0]!.ended), ordered(expectedEnds));
+        assert.deepEqual(published.records[0]!.positionDelta.exitedScopes.map(scope => scope.id.activation).sort((a, b) => a - b),
+          early ? [1, 2] : [activation]);
+        assert.deepEqual(after.variables.process, before.variables.process);
+        assert.deepEqual([after.taskActivations, after.effectActivations, after.scopeActivations, after.activityActivations, after.endOccurrences],
+          [before.taskActivations, before.effectActivations, before.scopeActivations, before.activityActivations, before.endOccurrences]);
+        const final = early || activation === 2;
+        assert.deepEqual(after.variables.scopes, final ? [] : before.variables.scopes.filter(frame => !isDeepStrictEqual(frame.owner, body(activation))));
+        assert.deepEqual(after.scopeOccurrences, final ? before.scopeOccurrences.filter(scope => scope.parent === null)
+          : before.scopeOccurrences.filter(scope => !isDeepStrictEqual(scope.id, body(activation))));
+        assert.deepEqual(after.controlTokens, final ? [{ placeId: entry.normalOutput, owner: root, multiplicity: 1 }] : []);
+        assert.deepEqual(after.parallelScopeControllers?.map(controller => [controller.total, controller.completed]), final ? [] : [[2, 1]]);
+        if (early) {
+          assert.equal(before.userTaskWaits.length, 2);
+          assert.equal(before.effectWaits.length, 1);
+          assert.deepEqual(after.userTaskWaits, []);
+          assert.deepEqual(after.effectWaits, []);
+          assert.deepEqual(after.variables.activities, []);
+          for (const wait of before.userTaskWaits) assert.equal(completeOrdinaryUserTask(program, after,
+            { kind: StimulusKind.CompleteUserTaskInstance, commandId: "stale", taskId: wait.id, submittedValues: [] }), null);
+          for (const wait of before.effectWaits) assert.equal(completeParallelScopeEffect(program, after, wait.id,
+            { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "result", value: { kind: VariableValueKind.String, value: "late" } }] }), null);
+        } else assert.deepEqual(after.userTaskWaits, before.userTaskWaits);
+        checkpoints.push({ failed: false, prefix: prefix(before, after), process: after.variables.process.bindings,
+          scopeFrames: after.variables.scopes.map(frame => [owner(frame.owner), frame.bindings]),
+          scopes: after.scopeOccurrences.map(scope => [owner(scope.id), scope.parent === null ? null : owner(scope.parent)]),
+          publications: { records: published.records, lifecycles: published.lifecycles } });
+      }
+      results.push(checkpoints);
+      const programPath = path.join(directory, `${results.length}.program.json`);
+      const startPath = path.join(directory, `${results.length}.start.json`);
+      await writeFile(programPath, JSON.stringify(program));
+      await writeFile(startPath, JSON.stringify(start));
+      files.push(programPath, startPath);
+    }
+    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--retirement-frontier", ...files], 6);
     assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

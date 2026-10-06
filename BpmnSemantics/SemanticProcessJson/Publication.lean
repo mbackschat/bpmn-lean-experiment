@@ -39,9 +39,9 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .initiateMessage => some (toJson "initiateMessage")
   | .initiateTimer => some (toJson "initiateTimer")
   | .enterSequentialMultiInstanceScope => some (toJson "enterSequentialMultiInstanceScope")
-  | .enterParallelMultiInstanceScope => none
+  | .enterParallelMultiInstanceScope => some (toJson "enterParallelMultiInstanceScope")
   | .completeSequentialMultiInstanceScope => some (toJson "completeSequentialMultiInstanceScope")
-  | .completeParallelMultiInstanceScope => none
+  | .completeParallelMultiInstanceScope => some (toJson "completeParallelMultiInstanceScope")
   | .enterScope => some (toJson "enterScope")
   | .enterBoundedScope => some (toJson "enterBoundedScope")
   | .enterMonitoredScope => some (toJson "enterMonitoredScope")

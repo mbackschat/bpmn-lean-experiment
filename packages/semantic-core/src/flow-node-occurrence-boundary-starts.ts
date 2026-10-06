@@ -5,6 +5,8 @@
  * Current-open projection is a later oracle and is deliberately absent from this owner.
  */
 import type { OccurrenceId } from "./contract.js";
+import { VariableValueKind } from "./contract.js";
+import { parallelScopeBinding } from "./parallel-scope-runtime.js";
 import {
   ActivityBodyKind,
   ActivityHandlerKind,
@@ -212,11 +214,63 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
       return null;
     case SemanticOperationKind.EnterParallelMultiInstanceScope:
+      return parallelScopeEntryStarts(program, before, after, operation, owner, processId);
     case SemanticOperationKind.CompleteParallelMultiInstanceScope:
       return null;
     default:
       return assertNever(operation);
   }
+}
+
+/** PMIS-ENTER-01 publishes the exact generated population; an empty source collection issues no identity. */
+function parallelScopeEntryStarts(
+  program: SemanticProcessProgram, before: RuntimeState, after: RuntimeState,
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterParallelMultiInstanceScope }>,
+  owner: ScopeOccurrenceId, processId: string,
+): UnnumberedFlowNodeOccurrenceStart[] | null {
+  const definition = only(program.definitionScopes.filter(({ id }) => id === operation.childScopeId));
+  const collection = only(before.variables.process.bindings.filter(({ name }) => name === operation.collectionName))?.value;
+  if (candidateProcessId(program, before, owner) !== processId ||
+      program.operations.filter(({ id }) => id === operation.id).length !== 1 ||
+      definition?.parentScopeId !== owner.definitionScopeId || definition.originElementId !== operation.origin.elementId ||
+      collection?.kind !== VariableValueKind.StringList ||
+      before.scopeOccurrences.some(({ id }) => id.definitionScopeId === operation.childScopeId) ||
+      before.activityOccurrences.some(({ id }) => id.activityElementId === operation.origin.elementId) ||
+      (before.parallelScopeControllers ?? []).some(({ id }) => id.activityElementId === operation.origin.elementId) ||
+      before.variables.scopes.some(({ owner: frame }) => frame.definitionScopeId === operation.childScopeId)) return null;
+  if (collection.value.length === 0) {
+    return sameJson(before.scopeOccurrences, after.scopeOccurrences) &&
+      sameJson(before.activityOccurrences, after.activityOccurrences) &&
+      sameJson(before.parallelScopeControllers, after.parallelScopeControllers) &&
+      sameJson(before.variables.scopes, after.variables.scopes) &&
+      sameJson(before.scopeActivations, after.scopeActivations) &&
+      sameJson(before.activityActivations, after.activityActivations) ? [] : null;
+  }
+  const activity = only(after.activityOccurrences.filter(candidate => candidate.operationId === operation.id ||
+    candidate.id.activityElementId === operation.origin.elementId));
+  if (activity?.body.kind !== ActivityBodyKind.ParallelChildScopes || !sameScopeOccurrence(activity.owner, owner)) return null;
+  const first = activity.body.iterations[0];
+  if (first === undefined) return null;
+  const binding = parallelScopeBinding({ ...operation, elementId: operation.origin.elementId }, after, first.scope);
+  if (binding === null || binding.activity !== activity || binding.controller.completed !== 0 ||
+      binding.controller.total !== collection.value.length || binding.iterations.length !== collection.value.length ||
+      after.scopeOccurrences.filter(({ id }) => id.definitionScopeId === operation.childScopeId).length !== collection.value.length ||
+      after.variables.scopes.filter(({ owner: frame }) => frame.definitionScopeId === operation.childScopeId).length !== collection.value.length ||
+      (after.parallelScopeControllers ?? []).filter(({ id }) => id.activityElementId === operation.origin.elementId).length !== 1) return null;
+  const scopeBase = before.scopeActivations.filter(({ elementId }) => elementId === operation.childScopeId);
+  const activityBase = before.activityActivations.filter(({ elementId }) => elementId === operation.origin.elementId);
+  if (scopeBase.length > 1 || activityBase.length > 1 || [...scopeBase, ...activityBase].some(({ count }) =>
+      !Number.isSafeInteger(count) || count < 0)) return null;
+  const firstActivation = nextActivation(before.scopeActivations, operation.childScopeId);
+  const activityActivation = nextActivation(before.activityActivations, operation.origin.elementId);
+  if (!Number.isSafeInteger(activityActivation) || activity.id.activation !== activityActivation ||
+      only(after.activityActivations.filter(({ elementId }) => elementId === operation.origin.elementId))?.count !== activityActivation ||
+      only(after.scopeActivations.filter(({ elementId }) => elementId === operation.childScopeId))?.count !==
+        firstActivation + collection.value.length - 1 || binding.iterations.some(({ scope, item, loopCounter }, index) =>
+        !validScopeId(scope) || scope.processInstanceId !== owner.processInstanceId ||
+        scope.activation !== firstActivation + index || loopCounter !== index || item !== collection.value[index])) return null;
+  return binding.iterations.map(({ scope }) => ({ anchor: { kind: ScopeAnchorKind, id: scope },
+    processId, elementId: operation.origin.elementId, owner }));
 }
 
 function messageBoundedUserTaskStarts(

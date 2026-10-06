@@ -524,7 +524,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
           · simp_all
           · simp_all
             obtain ⟨_, unique, _, _, patchEq⟩ := prepared
-            simp_all [candidateFlowNodeOccurrenceDeltaForOperation?,
+            simp_all [candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
               flowNodeSelectedOperationOwner?, applyInternalArmingPatch,
               InternalArmingWrite.elementId, InternalArmingWrite.occurrence,
               messageWaitOccurrence, candidateMessageStart?]
@@ -566,7 +566,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
     cases controlEq : state.control <;> simp_all
   all_goals
     obtain ⟨unique, absent, available, patchEq⟩ := prepared
-    simp_all [candidateFlowNodeOccurrenceDeltaForOperation?, flowNodeSelectedOperationOwner?,
+    simp_all [candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?, flowNodeSelectedOperationOwner?,
       applyInternalArmingPatch, InternalArmingWrite.elementId,
       InternalArmingWrite.occurrence, userTaskWaitOccurrence, messageWaitOccurrence,
       timerWaitOccurrence, effectWaitOccurrence, candidateUserTaskStart?,
