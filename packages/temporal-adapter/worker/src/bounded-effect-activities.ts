@@ -54,7 +54,7 @@ function boundImplementationFailure(error: unknown): Error {
 
 function normalizeImplementationFailure(error: unknown): Error {
   const message = boundedDiagnostic(
-    error instanceof Error ? error.message : error,
+    () => error instanceof Error ? error.message : error,
     "Effect implementation failed",
   );
   let failure: Error;
@@ -63,7 +63,7 @@ function normalizeImplementationFailure(error: unknown): Error {
   } else if (error instanceof ApplicationFailure) {
     failure = new ApplicationFailure(
       message,
-      boundedDiagnostic(error.type, "Error"),
+      boundedDiagnostic(() => error.type, "Error"),
       error.nonRetryable,
       undefined,
       undefined,
@@ -77,14 +77,21 @@ function normalizeImplementationFailure(error: unknown): Error {
   } else {
     failure = ApplicationFailure.create({
       message,
-      type: boundedDiagnostic(error instanceof Error ? error.constructor.name : undefined, "Error"),
+      type: boundedDiagnostic(() => error instanceof Error ? error.constructor.name : undefined, "Error"),
       nonRetryable: false,
     });
   }
   return failure;
 }
 
-function boundedDiagnostic(value: unknown, fallback: string): string {
+function boundedDiagnostic(read: () => unknown, fallback: string): string {
+  let value: unknown;
+  try {
+    value = read();
+  } catch {
+    // Diagnostic accessors cannot change readable retry controls or SDK cancellation classification.
+    return fallback;
+  }
   if (typeof value !== "string") return fallback;
   let result = "";
   let bytes = 0;

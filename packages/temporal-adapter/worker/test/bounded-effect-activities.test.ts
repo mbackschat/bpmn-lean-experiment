@@ -201,3 +201,35 @@ test("bounds a failure even when reading its diagnostic fields throws", async ()
   });
   assertBoundedFailure(await rejectedImplementation(error));
 });
+
+test("unreadable diagnostics preserve native retry controls and cancellation identity", async () => {
+  for (const diagnostic of ["message", "type"]) {
+    const original = ApplicationFailure.create({ message: "failed", type: "TransportFailure",
+      nonRetryable: true, nextRetryDelay: "1200ms", category: "BENIGN" });
+    Object.defineProperty(original, diagnostic, {
+      get() { throw new Error("unreadable diagnostic"); },
+    });
+    const failure = await rejectedImplementation(original);
+    assertBoundedFailure(failure);
+    assert.ok(failure instanceof ApplicationFailure);
+    assert.equal(failure.nonRetryable, true);
+    assert.equal(failure.nextRetryDelay, "1200ms");
+    assert.equal(failure.category, "BENIGN");
+    const encoded = new DefaultFailureConverter().errorToFailure(failure, defaultPayloadConverter);
+    assert.equal(encoded.applicationFailureInfo?.nonRetryable, true);
+    assert.ok(proto.temporal.api.failure.v1.Failure.encode(encoded).finish().length <= 1024);
+  }
+  const abort = new Error("aborted");
+  abort.name = "AbortError";
+  for (const original of [new CancelledFailure("cancelled"), abort]) {
+    Object.defineProperty(original, "message", {
+      get() { throw new Error("unreadable diagnostic"); },
+    });
+    const failure = await rejectedImplementation(original);
+    assertBoundedFailure(failure);
+    if (original instanceof CancelledFailure) assert.ok(failure instanceof CancelledFailure);
+    else assert.equal(failure.name, "AbortError");
+    const encoded = new DefaultFailureConverter().errorToFailure(failure, defaultPayloadConverter);
+    assert.ok(proto.temporal.api.failure.v1.Failure.encode(encoded).finish().length <= 1024);
+  }
+});

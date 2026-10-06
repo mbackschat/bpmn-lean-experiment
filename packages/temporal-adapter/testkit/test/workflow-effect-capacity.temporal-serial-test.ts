@@ -176,6 +176,11 @@ test("oversized Activity failures retain retry policy, bounded History and repla
           nextRetryDelay: "10ms",
         });
         error.failure = { message: "serialized".repeat(100_000) };
+        if (nonRetryable) {
+          Object.defineProperty(error, "message", {
+            get() { throw new Error("unreadable diagnostic"); },
+          });
+        }
         throw error;
       });
       try {
