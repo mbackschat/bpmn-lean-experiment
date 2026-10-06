@@ -27,7 +27,26 @@ test("admits exact remaining headroom and requests rollover one byte or Event be
   assert.equal(assessOrdinaryEffectHistoryReservation({ ...input, history: exact }).kind, Kind.Ready);
   for (const beyond of [{ ...exact, historyLength: exact.historyLength + 1 }, { ...exact, historySize: exact.historySize + 1 }]) {
     assert.equal(assessOrdinaryEffectHistoryReservation({ ...input, history: beyond }).kind, Kind.Rollover);
-    assert.equal(assessOrdinaryEffectHistoryReservation({ ...input, history: beyond, hasRetainedWork: false }).kind, Kind.CapacityExceeded);
+    assert.equal(assessOrdinaryEffectHistoryReservation({ ...input, history: beyond, hasRetainedWork: false }).kind, Kind.Ready);
+  }
+});
+
+test("fresh-Run headroom is finite and reports the configured trigger with the projected total", () => {
+  const cost = assessOrdinaryEffectHistoryReservation(input);
+  const exact = { historyLength: 10_240 - cost.reservedEvents, historySize: 10 * 1024 * 1024 - cost.reservedBytes };
+  const fresh = { ...input, history: exact, hasRetainedWork: false };
+  assert.equal(assessOrdinaryEffectHistoryReservation(fresh).kind, Kind.Ready);
+  for (const [budget, history] of [
+    [WorkflowChainBudgetKind.EventHistoryEvents, { ...exact, historyLength: exact.historyLength + 1 }],
+    [WorkflowChainBudgetKind.EventHistoryBytes, { ...exact, historySize: exact.historySize + 1 }],
+  ] as const) {
+    const result = assessOrdinaryEffectHistoryReservation({ ...fresh, history });
+    assert.equal(result.kind, Kind.CapacityExceeded);
+    if (result.kind !== Kind.CapacityExceeded) assert.fail();
+    assert.equal(result.failure.budget, budget);
+    assert.equal(result.failure.configuredBound, workflowChainProductionLimit(budget));
+    assert.equal(result.failure.observedValue, budget === WorkflowChainBudgetKind.EventHistoryEvents
+      ? 10_241 : 10 * 1024 * 1024 + 1);
   }
 });
 
@@ -45,6 +64,17 @@ test("drains issued work under pressure even before the fresh Run has committed 
   const result = assessOrdinaryEffectHistoryReservation({ ...input, issuedActivities: 2, requestBytes: [],
     hasRetainedWork: false, history: { historyLength: 8_000, historySize: 0 } });
   assert.equal(result.kind, Kind.Rollover);
+});
+
+test("a fresh Run can use the declared overshoot reserve beyond a lowered rollover trigger", () => {
+  for (const lowered of [
+    { ...limits, eventHistoryEventLimit: 4 },
+    { ...limits, eventHistoryByteLimit: 48 * 1024 },
+  ]) {
+    const result = assessOrdinaryEffectHistoryReservation({ ...input, limits: lowered,
+      history: { historyLength: 5, historySize: 1024 }, hasRetainedWork: false });
+    assert.equal(result.kind, Kind.Ready);
+  }
 });
 
 test("rejects malformed measurements and ceilings above the production contract", () => {

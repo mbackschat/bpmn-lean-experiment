@@ -1,6 +1,6 @@
 import { WorkflowChainBudgetKind, workflowChainProductionLimit } from "@bpmn-lean/temporal-protocol";
 import type { WorkflowChainObservedCapacityBound } from "./workflow-chain-capacity.js";
-import { workflowChainHistoryEventEnvelopeBytes } from "./workflow-event-history-capacity.js";
+import { requireWorkflowChainEventHistoryMargin, workflowChainHistoryEventEnvelopeBytes } from "./workflow-event-history-capacity.js";
 import type { WorkflowChainEventHistoryLimits } from "./workflow-event-history-capacity.js";
 
 export enum OrdinaryEffectHistoryReservationKind {
@@ -54,9 +54,15 @@ export function assessOrdinaryEffectHistoryReservation(input: Readonly<{
   const bytes = history.historySize + reservedBytes;
   for (const value of [activities, reservedEvents, reservedBytes, events, bytes]) requireCount(value);
   const cost = { reservedEvents, reservedBytes };
-  const failure = events > limits.eventHistoryEventLimit
+  // The lifecycle contract separates rollover triggers from the protected overshoot reserve.
+  // A fresh Run must be able to make progress within that reserve; continuing it cannot shrink its start History.
+  const fresh = !hasRetainedWork && issuedActivities === 0;
+  const margin = requireWorkflowChainEventHistoryMargin();
+  const eventCeiling = limits.eventHistoryEventLimit + (fresh ? margin.reservedEvents : 0);
+  const byteCeiling = limits.eventHistoryByteLimit + (fresh ? margin.reservedBytes : 0);
+  const failure = events > eventCeiling
     ? { budget: WorkflowChainBudgetKind.EventHistoryEvents, configuredBound: limits.eventHistoryEventLimit, observedValue: events }
-    : bytes > limits.eventHistoryByteLimit
+    : bytes > byteCeiling
     ? { budget: WorkflowChainBudgetKind.EventHistoryBytes, configuredBound: limits.eventHistoryByteLimit, observedValue: bytes }
     : null;
   if (failure === null) return { kind: OrdinaryEffectHistoryReservationKind.Ready, ...cost };

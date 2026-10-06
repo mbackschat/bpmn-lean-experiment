@@ -18,7 +18,7 @@ export const bpmnWorkflowChainCommandRecoveryQueryName =
 export const bpmnWorkflowChainCapacityExhaustedFailureType =
   "BPMN_WORKFLOW_CHAIN_CAPACITY_EXHAUSTED";
 
-/** Every count or canonical-byte ceiling selected by the v1 Workflow-chain contract. */
+/** Resource dimensions selected by the v1 Workflow-chain contract. */
 export enum WorkflowChainBudgetKind {
   EventHistoryEvents = "eventHistoryEvents",
   EventHistoryBytes = "eventHistoryBytes",
@@ -54,7 +54,7 @@ export enum WorkflowChainBudgetKind {
   WorkflowChainRuns = "workflowChainRuns",
 }
 
-/** The production ceiling. Test configuration may lower it but cannot raise it. */
+/** Production settings: History rollover triggers, otherwise hard ceilings. Tests may only lower them. */
 export function workflowChainProductionLimit(
   kind: WorkflowChainBudgetKind,
 ): number {

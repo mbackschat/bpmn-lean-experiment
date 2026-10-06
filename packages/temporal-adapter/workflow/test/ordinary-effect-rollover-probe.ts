@@ -107,6 +107,7 @@ for (const [label, size, issued, phases, remainingElement] of [
     const carried = successor;
     successor = undefined;
     runId = "effect-drain-successor";
+    historySize = 9.5 * 1024 * 1024;
     await assert.rejects(runBpmnProcessWithHostEffects(carried[0], carried[1],
       async () => { assert.fail("No Timer belongs to this body"); },
       request => { requests.push(request); return activity.promise; }, ActivationDrain.Required,

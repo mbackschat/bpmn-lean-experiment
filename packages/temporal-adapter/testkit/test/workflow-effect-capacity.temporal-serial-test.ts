@@ -8,6 +8,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
 import proto from "@temporalio/proto";
+import { CompleteAsyncError, Context } from "@temporalio/activity";
 import {
   BpmnProcessStartResultKind,
   EffectProbeActivityRegistry,
@@ -209,6 +210,45 @@ test("oversized Activity failures retain retry policy, bounded History and repla
         registry.unregister(request.idempotencyKey);
       }
     }
+  } finally {
+    if (worker !== undefined) await stopBpmnTestWorker(worker);
+    await environment.teardown();
+  }
+});
+
+test("bounded effects preserve native asynchronous completion and replay", async () => {
+  const input = serviceTaskEffectInput("AsyncEffectCapacity");
+  const start = input.scenario.stimuli[0];
+  assert.ok(start?.kind === StimulusKind.StartProcess);
+  const taskToken = Promise.withResolvers<Uint8Array>();
+  let invocations = 0;
+  const environment = await withDeadline(createCachedLocalEnvironment({
+    identity: "bpmn-lean-workflow-effect-async-capacity",
+    downloadDirectory: temporalCacheDirectory,
+  }), 40_000, "Workflow async-effect Temporal environment startup");
+  let worker: WorkerLease | undefined;
+  try {
+    const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, "workflow-effect-async-capacity", {
+      executeBpmnEffect: async () => {
+        invocations += 1;
+        taskToken.resolve(Context.current().info.taskToken);
+        throw new CompleteAsyncError();
+      },
+    });
+    const started = await startBpmnProcess(environment.client.workflow, start, input.semanticProcess,
+      { taskQueue: bpmnSemanticTaskQueue });
+    assert.equal(started.kind, BpmnProcessStartResultKind.Started);
+    const token = await withDeadline(taskToken.promise, operationDeadlineMs, "asynchronous Activity start");
+    await environment.client.connection.withDeadline(Date.now() + 5_000,
+      () => environment.client.activity.complete(token, { kind: EffectExecutionResultKind.Success, localPatch: [] }));
+    const handle = getTestProcessHandle(environment.client.workflow, start.instanceId);
+    await withDeadline(handle.result(), operationDeadlineMs, "asynchronous Activity completion");
+    assert.equal(invocations, 1);
+    const history = await handle.fetchHistory();
+    assert.equal(historyEvents(history as TemporalHistory, "activityTaskCompletedEventAttributes").length, 1);
+    assert.equal(historyEvents(history as TemporalHistory, "activityTaskFailedEventAttributes").length, 0);
+    await replayBpmnHistory(bundle, history, processWorkflowId(start.instanceId));
   } finally {
     if (worker !== undefined) await stopBpmnTestWorker(worker);
     await environment.teardown();

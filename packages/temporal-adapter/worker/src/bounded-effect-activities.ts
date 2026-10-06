@@ -1,4 +1,4 @@
-import { ApplicationFailure, CancelledFailure } from "@temporalio/common";
+import { ApplicationFailure, CancelledFailure, CompleteAsyncError } from "@temporalio/common";
 import {
   EffectActivityCapacityPreflightKind,
   boundEffectActivityResult,
@@ -11,7 +11,10 @@ import type {
   EffectActivityImplementations,
 } from "@bpmn-lean/temporal-protocol";
 
-/** Applies the host contract around every caller-supplied effect implementation. */
+/**
+ * Bounds Activity-returned payloads while preserving native SDK control signals.
+ * Payloads submitted directly through asynchronous-completion RPCs bypass this wrapper.
+ */
 export function boundEffectActivities(
   activities: EffectActivityImplementations,
   limits?: EffectActivityCapacityLimits,
@@ -29,7 +32,7 @@ export function boundEffectActivities(
               limits,
             );
           } catch (error) {
-            throw boundImplementationFailure(error);
+            throw boundImplementationRejection(error);
           }
         default:
           return assertNever(requestPreflight);
@@ -38,10 +41,10 @@ export function boundEffectActivities(
   };
 }
 
-function boundImplementationFailure(error: unknown): Error {
+function boundImplementationRejection(error: unknown): Error {
   let failure: Error;
   try {
-    failure = normalizeImplementationFailure(error);
+    failure = normalizeImplementationRejection(error);
   } catch {
     // Rejected values are caller-owned: a throwing accessor must not escape the same capacity boundary.
     failure = ApplicationFailure.retryable("Effect implementation failed", "Error");
@@ -52,7 +55,9 @@ function boundImplementationFailure(error: unknown): Error {
   return failure;
 }
 
-function normalizeImplementationFailure(error: unknown): Error {
+function normalizeImplementationRejection(error: unknown): Error {
+  // SDK 1.21.0 Activity.run consumes this control signal before failure serialization.
+  if (error instanceof CompleteAsyncError) return new CompleteAsyncError();
   const message = boundedDiagnostic(
     () => error instanceof Error ? error.message : error,
     "Effect implementation failed",

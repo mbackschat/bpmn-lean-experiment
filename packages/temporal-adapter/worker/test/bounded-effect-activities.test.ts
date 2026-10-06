@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ApplicationFailure,
   CancelledFailure,
+  CompleteAsyncError,
   DefaultFailureConverter,
   defaultPayloadConverter,
   ensureApplicationFailure,
@@ -232,4 +233,17 @@ test("unreadable diagnostics preserve native retry controls and cancellation ide
     const encoded = new DefaultFailureConverter().errorToFailure(failure, defaultPayloadConverter);
     assert.ok(proto.temporal.api.failure.v1.Failure.encode(encoded).finish().length <= 1024);
   }
+});
+
+test("preserves native asynchronous completion without treating a matching name as SDK control", async () => {
+  const control = new CompleteAsyncError();
+  control.message = "diagnostic".repeat(100_000);
+  const bounded = await rejectedImplementation(control);
+  assert.ok(bounded instanceof CompleteAsyncError);
+  assertBoundedFailure(bounded);
+  const spoof = new Error("diagnostic".repeat(100_000));
+  spoof.name = "CompleteAsyncError";
+  const failure = await rejectedImplementation(spoof);
+  assert.ok(failure instanceof ApplicationFailure);
+  assertBoundedFailure(failure);
 });
