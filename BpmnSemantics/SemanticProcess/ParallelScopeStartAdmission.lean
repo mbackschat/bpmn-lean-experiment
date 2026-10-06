@@ -63,4 +63,30 @@ theorem checkedSourceBound_within_ceiling (source : CheckedProcess) (bindings : 
       rcases values with ⟨parent, body, count⟩
       exact boundedClosureBound_within_ceiling parent body count bound (by simpa [checkedSourceBound, counts] using accepted)
 
+
+def boundedFrontier (waits effects : Nat) : Option StructuredParallelBody.FrontierCapacity :=
+  if waits ≤ 128 ∧ effects ≤ 64 then some ⟨waits, effects⟩ else none
+
+theorem boundedFrontier_within_limits (waits effects : Nat) (capacity : StructuredParallelBody.FrontierCapacity)
+    (accepted : boundedFrontier waits effects = some capacity) : capacity.waits ≤ 128 ∧ capacity.effects ≤ 64 := by
+  unfold boundedFrontier at accepted
+  split at accepted
+  next limits =>
+    cases accepted
+    exact limits
+  next => contradiction
+
+/-- PMIS-ADMIT-01 retains parent serial work while multiplying only simultaneous body waits by population. -/
+def checkedSourceFrontier (source : CheckedProcess) (bindings : List VariableBinding) : Option StructuredParallelBody.FrontierCapacity := do
+  let (_, _, count) ← checkedSourceCounts source bindings
+  let [entry] := source.nodes.filter (fun node => match node with | .parallelMultiInstanceSubProcess .. => true | _ => false) | none
+  let .parallelMultiInstanceSubProcess _ childScope .. := entry | none
+  let child := source.nodes.filter (fun node => checkedNodeScopeId? source node.id == some childScope)
+  let parent := source.nodes.filter (fun node => checkedNodeScopeId? source node.id != some childScope)
+  let effectIds := child.filterMap fun node => match node with | .serviceTask id .. => some id.value | _ => none
+  let body ← StructuredParallelBody.frontierCapacity (← child.mapM (SequentialScopeChecked.bodyVertex? source)) effectIds
+  let waits := max (if parent.any (fun node => match node with | .userTask .. | .serviceTask .. => true | _ => false) then 1 else 0) (count * body.waits)
+  let effects := max (if parent.any (fun node => match node with | .serviceTask .. => true | _ => false) then 1 else 0) (count * body.effects)
+  boundedFrontier waits effects
+
 end BpmnSemantics.SemanticProcess.ParallelScopeStart

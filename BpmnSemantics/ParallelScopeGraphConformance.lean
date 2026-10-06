@@ -147,6 +147,24 @@ theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 17) = none ∧
     ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none := by decide +kernel
 
+theorem private_frontier_population_retains_serial_task_capacity :
+    ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 0) = some ⟨0, 0⟩ ∧
+    ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 16) = some ⟨16, 16⟩ ∧
+    ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 17) = none := by decide +kernel
+
+private def nestedFrontier : List StructuredParallelBody.Vertex :=
+  [⟨"start", .start, ["outer"]⟩, ⟨"outer", .fork, ["inner", "c"]⟩,
+   ⟨"inner", .fork, ["a", "b"]⟩, ⟨"a", .task, ["innerJoin"]⟩, ⟨"b", .task, ["innerJoin"]⟩,
+   ⟨"innerJoin", .join, ["join"]⟩, ⟨"c", .task, ["join"]⟩, ⟨"join", .join, ["d"]⟩,
+   ⟨"d", .task, ["end"]⟩, ⟨"end", .finish, []⟩]
+
+theorem weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima :
+    StructuredParallelBody.frontierCapacity nestedFrontier ["a", "b", "c", "d"] = some ⟨3, 3⟩ ∧
+    StructuredParallelBody.frontierCapacity nestedFrontier.reverse ["d"] = some ⟨3, 1⟩ ∧
+    ParallelScopeStart.boundedFrontier 128 64 = some ⟨128, 64⟩ ∧
+    ParallelScopeStart.boundedFrontier 129 64 = none ∧
+    ParallelScopeStart.boundedFrontier 128 65 = none := by decide +kernel
+
 private def parallelScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),
    ("childScopeId", .str "body"), ("collectionName", .str "items"),

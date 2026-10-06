@@ -131,4 +131,70 @@ def analyze (vertices : List Vertex) : Option Bursts := do
     resumption := resumed.foldl (fun maximum result => max maximum result.steps) 0
     terminal := resumed.foldl (fun maximum result => if result.waits == 0 then max maximum result.steps else maximum) 0 }
 
+
+structure FrontierCapacity where
+  waits : Nat := 0
+  effects : Nat := 0
+  deriving Repr, DecidableEq
+
+private def serialCapacity (left right : FrontierCapacity) : FrontierCapacity :=
+  ⟨max left.waits right.waits, max left.effects right.effects⟩
+
+private def parallelCapacity (left right : FrontierCapacity) : FrontierCapacity :=
+  ⟨left.waits + right.waits, left.effects + right.effects⟩
+
+private structure WeightedVertex where
+  id : String
+  kind : Kind
+  outputs : List (String × FrontierCapacity)
+  weight : FrontierCapacity := {}
+
+private def replaceWeighted (vertices : List WeightedVertex) (removed replacement : String)
+    (weight : FrontierCapacity) : List WeightedVertex :=
+  vertices.map fun vertex => { vertex with outputs := vertex.outputs.map fun (id, prior) =>
+    if id == removed then (replacement, serialCapacity prior weight) else (id, prior) }
+
+/-- PMIS-ADMIT-01: task elimination takes serial maxima; paired branches add independent frontier capacities. -/
+private def contractWeighted (vertices : List WeightedVertex) (vertex : WeightedVertex) : Option (List WeightedVertex) := do
+  match vertex.kind with
+  | .task =>
+      let [(next, width)] := vertex.outputs | none
+      return replaceWeighted (vertices.filter (·.id != vertex.id)) vertex.id next (serialCapacity vertex.weight width)
+  | .fork =>
+      let (first, _) ← vertex.outputs.head?
+      let target ← vertices.find? (·.id == first)
+      let incoming := fun id => ((vertices.flatMap (·.outputs)).map (·.1)).count id
+      if vertex.outputs.all (fun edge => edge.1 == first) && target.kind == .join && incoming first == vertex.outputs.length then
+        let [(next, width)] := target.outputs | none
+        let branches := vertex.outputs.foldl (fun total edge => parallelCapacity total edge.2) {}
+        return replaceWeighted (vertices.filter fun node => node.id != vertex.id && node.id != first)
+          vertex.id next (serialCapacity branches width)
+      else if (vertex.outputs.map (·.1)).eraseDups.length == vertex.outputs.length &&
+          vertex.outputs.all (fun edge => incoming edge.1 == 1 && vertices.any (fun node => node.id == edge.1 && node.kind == .finish)) then
+        let branches := vertex.outputs.foldl (fun total (id, width) =>
+          let terminal := (vertices.find? (·.id == id)).map (·.weight) |>.getD {}
+          parallelCapacity total (serialCapacity width terminal)) {}
+        return (vertices.filter fun node => !(vertex.outputs.map (·.1)).contains node.id).map fun node =>
+          if node.id == vertex.id then { node with kind := .finish, outputs := [], weight := branches } else node
+      else none
+  | _ => none
+
+private def reduceWeighted : Nat → List WeightedVertex → Option FrontierCapacity
+  | 0, _ => none
+  | fuel + 1, vertices => do
+      if vertices.length == 2 then
+        let start ← vertices.find? (·.kind == .start)
+        let finish ← vertices.find? (·.kind == .finish)
+        let [(target, width)] := start.outputs | none
+        if target == finish.id && finish.outputs.isEmpty then some (serialCapacity width finish.weight) else none
+      else do
+        let reduced ← vertices.findSome? (contractWeighted vertices)
+        reduceWeighted fuel reduced
+
+/-- The caller supplies an already admitted structured graph; reduction still refuses an incomplete contraction. -/
+def frontierCapacity (vertices : List Vertex) (effectIds : List String) : Option FrontierCapacity :=
+  reduceWeighted (vertices.length + 1) (vertices.map fun vertex => {
+    id := vertex.id, kind := vertex.kind, outputs := vertex.outputs.map (fun id => (id, {}))
+    weight := if vertex.kind == .task then ⟨1, if effectIds.contains vertex.id then 1 else 0⟩ else {} })
+
 end BpmnSemantics.SemanticProcess.StructuredParallelBody

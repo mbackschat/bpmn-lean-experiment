@@ -139,4 +139,4 @@ export * from "./serial-business-task-admission.js";
 export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admission.js";
 
 export { analyzeRepeatedScopeStructure } from "./repeated-scope-control-analysis.js";
-export { isStructuredParallelBody } from "./structured-parallel-body-analysis.js";
+export { isStructuredParallelBody, structuredParallelBodyFrontierCapacity } from "./structured-parallel-body-analysis.js";

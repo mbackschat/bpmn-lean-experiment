@@ -3,7 +3,7 @@ import test from "node:test";
 import type { ParallelBodyNode } from "../src/structured-parallel-body-analysis.ts";
 
 type Module = typeof import("../src/structured-parallel-body-analysis.ts");
-const { ParallelBodyNodeKind: Kind, isStructuredParallelBody: admits } = await import(
+const { ParallelBodyNodeKind: Kind, isStructuredParallelBody: admits, structuredParallelBodyFrontierCapacity: capacity } = await import(
   new URL("../dist/structured-parallel-body-analysis.js", import.meta.url).href
 ) as Module;
 
@@ -87,4 +87,52 @@ test("serial length does not impose a model-size restriction or use recursive tr
   const tasks = Array.from({ length: count }, (_, index) => node(`task${index}`, Kind.Task,
     index + 1 === count ? "end" : `task${index + 1}`));
   assert.equal(admits([node("start", Kind.Start, "task0"), ...tasks, node("end", Kind.End)]), true);
+});
+
+
+test("frontier capacity takes serial maxima and parallel sums independently for waits and effects", () => {
+  assert.deepEqual(capacity(paired(), new Set(["check", "validate"])), { waits: 2, effects: 1 });
+  assert.deepEqual(capacity(separateEnds(), new Set(["check"])), { waits: 2, effects: 1 });
+  const nested = paired().map(value => value.id === "review" ? node("review", Kind.Fork, "a", "b") : value);
+  const graph = [...nested, node("a", Kind.Task, "innerJoin"), node("b", Kind.Task, "innerJoin"), node("innerJoin", Kind.Join, "join")];
+  assert.deepEqual(capacity(graph, new Set(["a", "b", "check", "validate"])), { waits: 3, effects: 3 });
+  assert.deepEqual(capacity([...graph].reverse(), new Set(["validate"])), { waits: 3, effects: 1 });
+  assert.deepEqual(capacity([node("start", Kind.Start, "fork"), node("fork", Kind.Fork, "join", "join"),
+    node("join", Kind.Join, "end"), node("end", Kind.End)], new Set()), { waits: 0, effects: 0 });
+  assert.equal(capacity([...paired(), node("orphan", Kind.End)], new Set()), undefined);
+});
+
+
+test("structural widths equal every reachable token/wait frontier on small serial and nested graphs", () => {
+  const graphs = [paired(), separateEnds(),
+    [...paired().map(value => value.id === "review" ? node("review", Kind.Fork, "a", "b") : value),
+      node("a", Kind.Task, "innerJoin"), node("b", Kind.Task, "innerJoin"), node("innerJoin", Kind.Join, "join")],
+    [...separateEnds().filter(value => value.id !== "endA").map(value => value.id === "review" ? node("review", Kind.Fork, "a", "b") : value),
+      node("a", Kind.Task, "endC"), node("b", Kind.Task, "endD"), node("endC", Kind.End), node("endD", Kind.End)]];
+  for (const graph of graphs) {
+    const tasks = graph.filter(value => value.kind === Kind.Task).map(value => value.id);
+    for (let mask = 0; mask < 2 ** tasks.length; mask++) {
+      const effects = new Set(tasks.filter((_, index) => (mask & (1 << index)) !== 0));
+      const pending = [{ tokens: ["start"], waits: [] as string[] }];
+      const seen = new Set<string>();
+      let waits = 0, effectCount = 0;
+      while (pending.length > 0) {
+        const state = pending.pop()!;
+        const key = JSON.stringify([state.tokens.sort(), state.waits.sort()]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        waits = Math.max(waits, state.waits.length);
+        effectCount = Math.max(effectCount, state.waits.filter(id => effects.has(id)).length);
+        for (const current of graph) {
+          if (state.waits.includes(current.id)) pending.push({ tokens: [...state.tokens, ...current.outputs], waits: state.waits.filter(id => id !== current.id) });
+          const required = current.kind === Kind.Start ? 1 : graph.flatMap(value => value.outputs).filter(id => id === current.id).length;
+          if (required === 0 || state.tokens.filter(id => id === current.id).length !== required) continue;
+          const tokens = state.tokens.filter(id => id !== current.id);
+          pending.push(current.kind === Kind.Task ? { tokens, waits: [...state.waits, current.id] }
+            : { tokens: [...tokens, ...current.outputs], waits: state.waits });
+        }
+      }
+      assert.deepEqual(capacity(graph, effects), { waits, effects: effectCount });
+    }
+  }
 });
