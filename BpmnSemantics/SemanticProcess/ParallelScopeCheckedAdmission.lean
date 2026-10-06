@@ -38,16 +38,23 @@ where
         let owns := fun id scope => source.nodeScopes.any (fun owner => owner.nodeId == id && owner.scopeId == scope)
         if !owns entryId root.id then none
         else do
-          let parent := source.nodes.filter (fun node => owns node.id root.id)
-          let child := source.nodes.filter (fun node => owns node.id childScope)
-          let [start] := parent.filter (fun node => match node with | .noneStartEvent _ => true | _ => false) | none
-          if !(child.any fun node => match node with | .userTask _ _ none => true | _ => false) ||
-              !(child.any fun node => match node with | .serviceTask _ _ _ _ none => true | _ => false) then none
-          else do
-            -- PMIS-ADMIT-01: complete path consumption and acyclic paired contraction certify
-            -- every owned node, including disconnection and cycles; sequential burst limits do not apply.
-            let _ ← SequentialScopeChecked.parentPath .parallel parent.length source parent start.id false 0 0
-            let _ ← StructuredParallelBody.structureOrder (← child.mapM (SequentialScopeChecked.bodyVertex? source))
-            some ()
+          -- Lowering emits operation:<node> and operation:complete-scope:<scope>; the child Start emits no operation.
+          -- PMIS-ADMIT-01 requires uniqueness across source-backed and generated operations.
+          let emitted := source.nodes.filterMap fun node => match node with
+            | .noneStartEvent id => if owns id childScope then none else some id.value
+            | _ => some node.id.value
+          let operationSuffixes := emitted ++ source.definitionScopes.map (fun scope => "complete-scope:" ++ scope.id.value)
+          if operationSuffixes.eraseDups.length != operationSuffixes.length then none else do
+            let parent := source.nodes.filter (fun node => owns node.id root.id)
+            let child := source.nodes.filter (fun node => owns node.id childScope)
+            let [start] := parent.filter (fun node => match node with | .noneStartEvent _ => true | _ => false) | none
+            if !(child.any fun node => match node with | .userTask _ _ none => true | _ => false) ||
+                !(child.any fun node => match node with | .serviceTask _ _ _ _ none => true | _ => false) then none
+            else do
+              -- PMIS-ADMIT-01: complete path consumption and acyclic paired contraction certify
+              -- every owned node, including disconnection and cycles; sequential burst limits do not apply.
+              let _ ← SequentialScopeChecked.parentPath .parallel parent.length source parent start.id false 0 0
+              let _ ← StructuredParallelBody.structureOrder (← child.mapM (SequentialScopeChecked.bodyVertex? source))
+              some ()
 
 end BpmnSemantics.SemanticProcess.ParallelScopeChecked

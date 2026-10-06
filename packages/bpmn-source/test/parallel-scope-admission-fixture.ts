@@ -6,6 +6,14 @@ import type { CheckedProcess, CheckedNode } from "@bpmn-lean/semantic-core";
 const compiler = await import(new URL("../dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../src/multi-instance-scope-source-compiler.ts");
 const { importBpmnGraph } = await import(new URL("../dist/moddle-adapter.js", import.meta.url).href) as typeof import("../src/moddle-adapter.ts");
 
+function renameNode(source: CheckedProcess, previous: string, replacement: string): CheckedProcess {
+  const rename = (id: string) => id === previous ? replacement : id;
+  return { ...source, nodes: source.nodes.map(node => ({ ...node, id: rename(node.id) })),
+    definitionScopes: source.definitionScopes.map(scope => ({ ...scope, originElementId: rename(scope.originElementId) })),
+    nodeScopes: source.nodeScopes.map(owner => ({ ...owner, nodeId: rename(owner.nodeId) })),
+    sequenceFlows: source.sequenceFlows.map(flow => ({ ...flow, sourceId: rename(flow.sourceId), targetId: rename(flow.targetId) })) };
+}
+
 export async function parallelAdmissionCases(): Promise<readonly { source: CheckedProcess; expected: boolean }[]> {
   const xml = prepareSource(await readFile(source, "utf8")).replace('isSequential="true"', 'isSequential="false"');
   const cases: { source: CheckedProcess; expected: boolean }[] = [];
@@ -39,6 +47,14 @@ export async function parallelAdmissionCases(): Promise<readonly { source: Check
     ].map(source => ({ source, expected: false })));
   }
   const baseline = cases[0]!.source;
+  const child = baseline.definitionScopes.find(scope => scope.parentScopeId !== null)!;
+  for (const scope of baseline.definitionScopes) {
+    for (const node of baseline.nodes) {
+      const elided = node.kind === Kind.NoneStartEvent && baseline.nodeScopes.some(owner => owner.nodeId === node.id && owner.scopeId === child.id);
+      cases.push({ source: renameNode(baseline, node.id, `complete-scope:${scope.id}`), expected: elided });
+    }
+    cases.push({ source: renameNode(baseline, "Review", `complete-scope:${scope.id}:distinct`), expected: true });
+  }
   for (const owner of baseline.definitionScopes) {
     const isolated: CheckedNode = { kind: Kind.UserTask, id: "Isolated", name: null };
     cases.push({ source: { ...baseline, nodes: [...baseline.nodes, isolated],
