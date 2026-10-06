@@ -76,6 +76,48 @@ private def refusalJson (program : Program) (stimulus : Stimulus) : Option Json 
   pure (Json.mkObj [("preparationFailed", toJson frontier.preparationFailed),
     ("failed", toJson closed.failed), ("unchanged", toJson (decide (closed.state = entered)))])
 
+private def integrityJson (program : Program) (stimulus : Stimulus) : Option Json := do
+  let entered ← enteredReservationState? program stimulus
+  let [operation] := program.operations.filter (fun operation => match operation with
+    | .awaitUserTask .. | .awaitEffect .. => true | _ => false) | none
+  let (human, elementId) ← match operation with
+    | .awaitUserTask _ _ _ _ task => some (true, task.id.value)
+    | .awaitEffect _ _ _ _ effect _ => some (false, effect.elementId.value)
+    | _ => none
+  let candidates ← internalOperationOccurrences? program entered operation.id
+  let count := candidates.length
+  let maxSafe := 9007199254740991
+  let counters := fun (values : List Nat) => if human then
+    { entered with activations := values.map (fun value => ⟨⟨elementId⟩, value⟩) }
+    else { entered with effectActivations := values.map (fun value => ⟨⟨elementId⟩, value⟩) }
+  let variants := [
+    ("normal", entered),
+    ("missing-controller", { entered with parallelScopeControllers := [] }),
+    ("missing-frames", { entered with variables := { entered.variables with scopes := [] } }),
+    ("duplicate-counters", counters [0, 0]),
+    ("exhausted-counters", counters [maxSafe]),
+    ("exact-headroom", counters [maxSafe - count]),
+    ("one-short-headroom", counters [maxSafe - count + 1]) ]
+  pure (toJson (variants.map fun (label, state) =>
+    let frontier := deriveInternalExecutionFrontier program state
+    let closed := closeScheduledTraced count program ⟨"batch"⟩ 0 0 [] state
+    let activations := if human then closed.state.waits.map (fun wait : UserTaskWait => wait.activation)
+      else closed.state.effectWaits.map (fun wait : EffectWait => wait.activation)
+    let finalCounters := if human then closed.state.activations.map (fun row : TaskActivation => row.count)
+      else closed.state.effectActivations.map (fun row : EffectActivation => row.count)
+    Json.mkObj [
+      ("label", toJson label),
+      ("preparationFailed", toJson frontier.preparationFailed),
+      ("offers", toJson frontier.offers.length),
+      ("directRefused", toJson (candidates.all fun candidate =>
+        (applyInternalOperationOccurrence? program state candidate).isNone)),
+      ("failed", toJson closed.failed),
+      ("unchanged", toJson (decide (closed.state = state))),
+      ("noPartialOutcomes", toJson (!closed.failed ||
+        ((closed.records.map List.isEmpty).getD true && (closed.lifecycles.map List.isEmpty).getD true))),
+      ("activations", toJson activations),
+      ("counters", toJson finalCounters) ]))
+
 private def reservationJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let entered ← enteredReservationState? program stimulus
   let batch ← (deriveInternalExecutionFrontier program entered).occurrenceBatch
@@ -91,7 +133,12 @@ private def reservationJson (program : Program) (stimulus : Stimulus) : Option J
     ("publications", (publicationJson? program entered successors closed).getD Json.null),
     ("prefixes", toJson (successors.map (prefixJson entered))) ])
 
-private def runInputs (refusal : Bool) : List String → IO UInt32
+private inductive DiagnosticMode where
+  | reservation
+  | refusal
+  | integrity
+
+private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
   | [] => pure 0
   | programPath :: startPath :: rest => do
       let programText ← IO.FS.readFile programPath
@@ -99,14 +146,18 @@ private def runInputs (refusal : Bool) : List String → IO UInt32
       let result := do
         let program ← parseWireJson programText >>= decodeProgram
         let stimulus ← parseWireJson startText >>= decodeStimulus
-        pure ((if refusal then refusalJson program stimulus else reservationJson program stimulus).getD Json.null)
+        pure ((match mode with
+          | .reservation => reservationJson program stimulus
+          | .refusal => refusalJson program stimulus
+          | .integrity => integrityJson program stimulus).getD Json.null)
       match result with
       | .error error => throw (IO.userError error)
       | .ok value => IO.println value.compress
-      runInputs refusal rest
+      runInputs mode rest
   | _ => throw (IO.userError "expected Program/Start path pairs")
 
 def main (paths : List String) : IO UInt32 :=
   match paths with
-  | "--refusal" :: rest => runInputs true rest
-  | _ => runInputs false paths
+  | "--refusal" :: rest => runInputs .refusal rest
+  | "--integrity" :: rest => runInputs .integrity rest
+  | _ => runInputs .reservation paths

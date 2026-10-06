@@ -7,7 +7,9 @@ import { SemanticTransitionKind } from "./semantic-transition-trace.js";
 import { canonicalUniqueInternalAlternatives, compareInternalAlternatives,
   internalOperationOccurrenceAlternative, resolveInternalOperationOccurrence } from "./internal-transition-alternative.js";
 import type { InternalOperationOccurrenceAlternative } from "./internal-transition-alternative.js";
-import { applyInternalOperationOccurrence, deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
+export { internalOccurrenceReservationStateIsValid } from "./internal-operation-occurrence.js";
+import { applyInternalOperationOccurrence, deriveInternalOccurrenceFrontier,
+  internalOccurrenceReservationStateIsValid, internalOccurrenceKey as occurrenceKey } from "./internal-operation-occurrence.js";
 import { applyInternalOrdinaryArmingPatch, deriveInternalOrdinaryArmingPatch,
   InternalOrdinaryArmingPatchKind } from "./internal-transition-ordinary-arming-patch.js";
 import type { InternalOrdinaryArmingPatch } from "./internal-transition-ordinary-arming-patch.js";
@@ -18,7 +20,6 @@ import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { AppliedInternalOperationStep } from "./semantic-process-runtime.js";
 import { ownedTokenMultiplicity, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
-import { isWellFormedWireString } from "./wire.js";
 
 type ReservedOccurrenceMember = Readonly<{
   alternative: InternalOperationOccurrenceAlternative;
@@ -125,44 +126,8 @@ export function applyInternalOccurrenceBatch(
   return steps;
 }
 
-/** Issuance high-water marks must dominate retained anchors before legacy discovery can construct a successor. */
-export function internalOccurrenceReservationStateIsValid(state: RuntimeState): boolean {
-  if (!validCounters(state.taskActivations) || !validCounters(state.effectActivations) ||
-      !uniqueTokenBuckets(state) || !uniqueExistingAnchors(state)) return false;
-  const issued = (id: { elementId: string; activation: number }, counters: RuntimeState["taskActivations"]) =>
-    Number.isSafeInteger(id.activation) && id.activation > 0 &&
-    id.activation <= (counters.find(counter => counter.elementId === id.elementId)?.count ?? 0);
-  return state.userTaskWaits.every(wait => issued(wait.id, state.taskActivations)) &&
-    [...state.effectWaits, ...state.effectIncidents.map(({ wait }) => wait), ...(state.compensationHandlerEffectWaits ?? [])]
-      .every(wait => issued(wait.id, state.effectActivations)) &&
-    state.variables.activities.every(({ owner }) => owner.kind !== LocalDataOwnerKind.EffectOccurrence ||
-      issued(owner.id, state.effectActivations));
-}
-
-function validCounters(counters: RuntimeState["taskActivations"]): boolean {
-  return counters.every(({ elementId, count }) => elementId.length > 0 && isWellFormedWireString(elementId) &&
-    Number.isSafeInteger(count) && count >= 0) && new Set(counters.map(counter => counter.elementId)).size === counters.length;
-}
-
-function uniqueTokenBuckets(state: RuntimeState): boolean {
-  return state.controlTokens.every((token, index, all) => Number.isSafeInteger(token.multiplicity) && token.multiplicity > 0 &&
-    all.slice(0, index).every(other => other.placeId !== token.placeId || !sameScopeOccurrence(other.owner, token.owner)));
-}
-
-function occurrenceKey(id: { processInstanceId: string; elementId: string; activation: number }): string {
-  return JSON.stringify([id.processInstanceId, id.elementId, id.activation]);
-}
-
 function anchor(patch: InternalOrdinaryArmingPatch): string {
   return occurrenceKey(patch.wait.id);
-}
-
-function uniqueExistingAnchors(state: RuntimeState): boolean {
-  const waits = [...state.userTaskWaits, ...state.messageWaits, ...state.timerWaits, ...state.effectWaits,
-    ...state.effectIncidents.map(({ wait }) => wait), ...(state.compensationHandlerEffectWaits ?? [])];
-  const frames = state.variables.activities.map(({ owner }) => JSON.stringify([owner.kind, occurrenceKey(owner.kind === LocalDataOwnerKind.EffectOccurrence
-    ? owner.id : { ...owner.id, elementId: owner.id.activityElementId })]));
-  return new Set(waits.map(wait => occurrenceKey(wait.id))).size === waits.length && new Set(frames).size === frames.length;
 }
 
 function collides(state: RuntimeState, patch: InternalOrdinaryArmingPatch): boolean {

@@ -44,6 +44,30 @@ theorem resolveInternalOperationOccurrence_requires_exact_candidate (program : P
       · exact present
       · simp [discovered, present] at resolved
 
+private def occurrenceCounterRowsValid (counters : List (String × Nat)) : Bool :=
+  decide (counters.map Prod.fst).Nodup && counters.all (fun counter =>
+    !counter.1.isEmpty && SemanticProcessJson.isSafeWireNat counter.2)
+
+/-- Issuance counters must dominate retained anchors, including suspended effects and their local frames. -/
+def occurrenceReservationStateValid (state : RuntimeState) : Bool :=
+  let compensation := state.compensationHandlerEffectWaits.map fun wait =>
+    ({ processInstanceId := wait.id.processInstanceId, elementId := wait.id.elementId,
+       activation := wait.id.activation } : OccurrenceId)
+  let issued := fun (id : OccurrenceId) (count : Nat) =>
+    0 < id.activation && SemanticProcessJson.isSafeWireNat id.activation && id.activation ≤ count
+  occurrenceCounterRowsValid (state.activations.map fun row => (row.taskId.value, row.count)) &&
+    occurrenceCounterRowsValid (state.effectActivations.map fun row => (row.elementId.value, row.count)) &&
+    decide (openWaitAnchors state ++ compensation).Nodup &&
+    decide (state.variables.activities.map (·.owner)).Nodup &&
+    state.waits.all (fun wait => issued (userTaskWaitOccurrence wait) (activationCount state wait.task.id)) &&
+    (state.effectWaits.map effectWaitOccurrence ++
+      state.effectIncidents.map (fun incident => effectWaitOccurrence incident.wait) ++ compensation).all
+      (fun id => issued id (effectActivationCount state ⟨id.elementId.value⟩)) &&
+    state.variables.activities.all (fun frame => match frame.owner with
+      | .effectOccurrence id => issued ⟨id.processInstanceId, id.elementId, id.activation⟩
+          (effectActivationCount state ⟨id.elementId.value⟩)
+      | .activityOccurrence _ => true)
+
 /-- PMIS-SELECT-01 revalidates the exact occurrence and each consumed token before an internal step. -/
 def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
     (candidate : InternalOperationOccurrence) : Option RuntimeState := do
@@ -61,14 +85,24 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
   | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. =>
       applyParallelScopeOperation? program operation.id state owner
   | .awaitEffect _ _ input output effect route => do
-      if !unit input || (hasParallelScopeDefinition program owner && hasSequentialScopeDefinition program owner) then none
+      if !unit input || !occurrenceReservationStateValid state ||
+          !SemanticProcessJson.isSafeWireNat (effectActivationCount state effect.elementId + 1) ||
+          (hasParallelScopeDefinition program owner && hasSequentialScopeDefinition program owner) then none
       else
         let arguments ← if hasParallelScopeDefinition program owner then
           evaluateParallelScopeInputs? program state owner effect.inputMappings
           else evaluateEffectInputs? program state owner effect.inputMappings
         some (activateEffect state owner.processInstanceId owner input output effect route arguments)
-  | .awaitUserTask _ _ input output task =>
-      if unit input then some (activateUserTask state owner.processInstanceId owner input output task) else none
+  | .awaitUserTask _ _ input output task => do
+      if !unit input || !occurrenceReservationStateValid state ||
+          !SemanticProcessJson.isSafeWireNat (activationCount state task.id + 1) ||
+          (hasParallelScopeDefinition program owner && hasSequentialScopeDefinition program owner) then none
+      else
+        if hasParallelScopeDefinition program owner then
+          let _ ← evaluateParallelScopeInputs? program state owner []
+          pure ()
+        else pure ()
+        some (activateUserTask state owner.processInstanceId owner input output task)
   | .duplicate _ _ input outputs =>
       if unit input then some (duplicateToken state owner input outputs) else none
   | .synchronize _ _ inputs output =>
@@ -132,30 +166,6 @@ structure InternalOccurrenceArmingBatch where
   predecessor : RuntimeState
   members : List InternalArmingPatch
   deriving Repr, DecidableEq
-
-private def occurrenceCounterRowsValid (counters : List (String × Nat)) : Bool :=
-  decide (counters.map Prod.fst).Nodup && counters.all (fun counter =>
-    !counter.1.isEmpty && SemanticProcessJson.isSafeWireNat counter.2)
-
-/-- Issuance counters must dominate retained anchors, including suspended effects and their local frames. -/
-def occurrenceReservationStateValid (state : RuntimeState) : Bool :=
-  let compensation := state.compensationHandlerEffectWaits.map fun wait =>
-    ({ processInstanceId := wait.id.processInstanceId, elementId := wait.id.elementId,
-       activation := wait.id.activation } : OccurrenceId)
-  let issued := fun (id : OccurrenceId) (count : Nat) =>
-    0 < id.activation && SemanticProcessJson.isSafeWireNat id.activation && id.activation ≤ count
-  occurrenceCounterRowsValid (state.activations.map fun row => (row.taskId.value, row.count)) &&
-    occurrenceCounterRowsValid (state.effectActivations.map fun row => (row.elementId.value, row.count)) &&
-    decide (openWaitAnchors state ++ compensation).Nodup &&
-    decide (state.variables.activities.map (·.owner)).Nodup &&
-    state.waits.all (fun wait => issued (userTaskWaitOccurrence wait) (activationCount state wait.task.id)) &&
-    (state.effectWaits.map effectWaitOccurrence ++
-      state.effectIncidents.map (fun incident => effectWaitOccurrence incident.wait) ++ compensation).all
-      (fun id => issued id (effectActivationCount state ⟨id.elementId.value⟩)) &&
-    state.variables.activities.all (fun frame => match frame.owner with
-      | .effectOccurrence id => issued ⟨id.processInstanceId, id.elementId, id.activation⟩
-          (effectActivationCount state ⟨id.elementId.value⟩)
-      | .activityOccurrence _ => true)
 
 private def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
     Nat → ScopeOccurrenceId → Bool

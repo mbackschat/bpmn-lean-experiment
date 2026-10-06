@@ -193,6 +193,101 @@ test("Lean and TypeScript agree on shared-input arming refusal and successful co
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
+async function reservationIntegrityCases() {
+  const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/semantic-process-triggered-start.ts");
+  const { applyInternalOperationOccurrence, deriveInternalExecutionFrontier } = await import(new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-transition-preparation.ts");
+  const { evaluateScheduledClosure } = await import(new URL("../../semantic-core/dist/internal-choice-schedule.js", import.meta.url).href
+  ) as typeof import("../../semantic-core/src/internal-choice-schedule.ts");
+  const inputs = [];
+  for (const count of [1, 2, 16]) for (const human of [false, true]) for (const reverse of [false, true]) {
+    const { program, start } = reservationInputs(count, human, reverse);
+    let entered = admitProcessStart(program, initialState, start);
+    assert.ok(entered);
+    const root = entered.scopeOccurrences[0]!.id;
+    for (const kind of [SemanticOperationKind.Initiate, SemanticOperationKind.EnterParallelMultiInstanceScope]) {
+      const operation = program.operations.find(candidate => candidate.kind === kind)!;
+      entered = applyInternalOperationOccurrence(program, entered, { operationId: operation.id, owner: root });
+      assert.ok(entered);
+    }
+    const wait = program.operations.find(operation => operation.id === "check")!;
+    assert.ok(wait.kind === SemanticOperationKind.AwaitUserTask || wait.kind === SemanticOperationKind.AwaitEffect);
+    const elementId = wait.kind === SemanticOperationKind.AwaitUserTask ? wait.task.elementId : wait.effect.elementId;
+    const counters = (values: readonly number[]): RuntimeState => human
+      ? { ...entered, taskActivations: values.map(value => ({ elementId, count: value })) }
+      : { ...entered, effectActivations: values.map(value => ({ elementId, count: value })) };
+    const variants = [
+      ["normal", entered],
+      ["missing-controller", { ...entered, parallelScopeControllers: [] }],
+      ["missing-frames", { ...entered, variables: { ...entered.variables, scopes: [] } }],
+      ["duplicate-counters", counters([0, 0])],
+      ["exhausted-counters", counters([Number.MAX_SAFE_INTEGER])],
+      ["exact-headroom", counters([Number.MAX_SAFE_INTEGER - count])],
+      ["one-short-headroom", counters([Number.MAX_SAFE_INTEGER - count + 1])],
+    ] as const;
+    const results = variants.map(([label, state]) => {
+      const frontierAt = (current: RuntimeState) => deriveInternalExecutionFrontier(program, current, () => assert.fail("legacy dispatch"));
+      const frontier = frontierAt(state);
+      const closed = evaluateScheduledClosure(program, state, { outcome: CommandOutcome.Committed, state }, [], count, frontierAt);
+      const failed = closed.result.outcome !== CommandOutcome.Committed;
+      const owners = state.scopeOccurrences.filter(scope => scope.id.definitionScopeId === "body").map(scope => scope.id);
+      assert.equal(owners.length, count);
+      return { label, preparationFailed: frontier.preparationFailed, offers: frontier.offers.length,
+        directRefused: owners.every(owner => applyInternalOperationOccurrence(program, state, { operationId: wait.id, owner }) === null),
+        failed, unchanged: isDeepStrictEqual(closed.result.state, state),
+        noPartialOutcomes: !failed || (closed.selectedInternalSteps.length === 0 && closed.selectedInternalBatches.length === 0 &&
+          closed.selectedInternalPreparations.length === 0 && closed.admittedState === null),
+        activations: human ? closed.result.state.userTaskWaits.map(wait => wait.id.activation)
+          : closed.result.state.effectWaits.map(wait => wait.id.activation),
+        counters: human ? closed.result.state.taskActivations.map(row => row.count)
+          : closed.result.state.effectActivations.map(row => row.count) };
+    });
+    inputs.push({ count, human, reverse, program, start, results });
+  }
+  return inputs;
+}
+
+test("TypeScript refuses malformed shared-input wait issuance before singleton or batch dispatch", async t => {
+  for (const { count, human, reverse, results } of await reservationIntegrityCases()) for (const result of results) {
+    await t.test(`${count} ${human ? "human" : "effect"} ${reverse ? "reverse" : "forward"} ${result.label}`, () => {
+      const accepted = result.label === "normal" || result.label === "exact-headroom";
+      assert.equal(result.failed, !accepted, "scheduler refusal must precede any committed wait");
+      assert.equal(result.unchanged, !accepted, "refusal preserves every state collection and variable frame");
+      assert.equal(result.noPartialOutcomes, true, "refusal discards all selected steps, batches and preparations");
+      if (result.label !== "one-short-headroom" || count === 1) {
+        assert.equal(result.preparationFailed, !accepted, "exhausted or malformed issuance refuses the frontier immediately");
+        assert.equal(result.offers, accepted ? count : 0, "a refused enabled wait cannot remain offered or disappear as disabled");
+      }
+      assert.equal(result.directRefused, !accepted && (result.label !== "one-short-headroom" || count === 1),
+        "direct occurrence dispatch validates population and its next safe activation");
+      const base = result.label === "exact-headroom" ? Number.MAX_SAFE_INTEGER - count : 0;
+      assert.deepEqual(result.activations, accepted ? Array.from({ length: count }, (_, index) => base + index + 1) : []);
+      const expectedCounters = accepted ? [base + count] : result.label === "duplicate-counters" ? [0, 0]
+        : result.label === "exhausted-counters" ? [Number.MAX_SAFE_INTEGER]
+          : result.label === "one-short-headroom" ? [Number.MAX_SAFE_INTEGER - count + 1] : [];
+      assert.deepEqual(result.counters, expectedCounters, "failure preserves counters; exact fit allocates through MAX_SAFE_INTEGER");
+    });
+  }
+});
+
+test("Lean and TypeScript agree on shared-input wait issuance integrity and atomic headroom", async () => {
+  const inputs = await reservationIntegrityCases();
+  const directory = await mkdtemp(path.join(tmpdir(), "parallel-integrity-"));
+  try {
+    const files: string[] = [];
+    for (const [index, { program, start }] of inputs.entries()) {
+      const programPath = path.join(directory, `${index}.program.json`);
+      const startPath = path.join(directory, `${index}.start.json`);
+      await writeFile(programPath, JSON.stringify(program));
+      await writeFile(startPath, JSON.stringify(start));
+      files.push(programPath, startPath);
+    }
+    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--integrity", ...files], inputs.length * 7);
+    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), inputs.map(input => input.results));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test("Lean independently admits or refuses the same private parallel checked-source inputs", async () => {
   const cases = await parallelAdmissionCases();
   const directory = await mkdtemp(path.join(tmpdir(), "parallel-source-admission-"));
