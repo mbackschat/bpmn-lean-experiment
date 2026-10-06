@@ -12,52 +12,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-theorem quiescent_scope_has_no_child (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (quiescent : scopeQuiescent state owner = true)
-    (occurrence : RuntimeScopeOccurrence) (member : occurrence ∈ state.scopeOccurrences) :
-    occurrence.parent ≠ some owner := by
-  intro parent
-  have present : (state.scopeOccurrences.any fun candidate => candidate.parent == some owner) = true :=
-    List.any_eq_true.mpr ⟨occurrence, member, by simp [parent]⟩
-  simp [scopeQuiescent, present] at quiescent
-
-theorem quiescent_scope_has_no_token (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (quiescent : scopeQuiescent state owner = true)
-    (token : ControlToken) (member : token ∈ state.tokens) : token.owner ≠ owner := by
-  intro same
-  have present : (state.tokens.any fun candidate => candidate.owner == owner) = true :=
-    List.any_eq_true.mpr ⟨token, member, by simp [same]⟩
-  simp [scopeQuiescent, present] at quiescent
-
-/-- With no immediate child, the actual parent traversal can reach only the selected scope. -/
-theorem quiescent_scope_subtree_identity (state : RuntimeState) (owner candidate : ScopeOccurrenceId)
-    (quiescent : scopeQuiescent state owner = true)
-    (inside : occurrenceInSubtree state.scopeOccurrences owner candidate = true) : candidate = owner := by
-  apply occurrenceInSubtreeWithin_least state.scopeOccurrences owner candidate _ (fun id => id = owner) rfl _ inside
-  intro parent child same edge
-  obtain ⟨occurrence, member, parentEq, _⟩ := edge
-  exact False.elim (quiescent_scope_has_no_child state owner quiescent occurrence member (by simpa [same] using parentEq))
-
-/-- Every Call seed would have an exact caller at the quiescent root; the actual closure is empty. -/
-theorem quiescent_scope_called_closure_empty (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (quiescent : scopeQuiescent state owner = true) : calledInstanceClosure state owner = [] := by
-  have seeds : (state.calledProcessOccurrences.filterMap fun record =>
-      if occurrenceInSubtree state.scopeOccurrences owner record.caller then
-        some record.calledRoot.processInstanceId else none) = [] := by
-    apply List.filterMap_eq_nil_iff.mpr
-    intro record member
-    by_cases inside : occurrenceInSubtree state.scopeOccurrences owner record.caller = true
-    · have same := quiescent_scope_subtree_identity state owner record.caller quiescent inside
-      have present : (state.calledProcessOccurrences.any fun candidate => candidate.caller == owner) = true :=
-        List.any_eq_true.mpr ⟨record, member, by simp [same]⟩
-      simp [scopeQuiescent, present] at quiescent
-    · simp [inside]
-  unfold calledInstanceClosure
-  rw [seeds]
-  have noEdges : (state.calledProcessOccurrences.filterMap (fun _ => (none : Option SemanticId))) = [] :=
-    List.filterMap_eq_nil_iff.mpr (by intros; rfl)
-  simp [processInstanceClosureWithin, noEdges]
-
 /-- A quiescent hosting root leaves no other live scopes, tokens, or Call records. Coverage
 comes from predecessor position and actual ancestry, rather than an empty-successor premise. -/
 theorem quiescent_hosting_root_position_fields (program : Program) (state : RuntimeState)

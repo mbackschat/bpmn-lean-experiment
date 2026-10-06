@@ -4,7 +4,7 @@ import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { admit } from "./semantic-command-admission.js";
 import type { SemanticCommandOutcome } from "./semantic-command-admission.js";
-import type { PreparedInternalTransition } from "./internal-transition-batch.js";
+import type { InternalBatchPreparation } from "./internal-transition-preparation.js";
 import { deriveInternalExecutionFrontier } from "./internal-transition-preparation.js";
 import type { InternalExecutionFrontier } from "./internal-transition-preparation.js";
 import { evaluateScheduledClosure } from "./internal-choice-schedule.js";
@@ -163,7 +163,7 @@ export type StimulusEvaluationResult = DeepReadonly<{
   admittedState: RuntimeState | null;
   selectedInternalSteps: AppliedInternalOperationStep[];
   selectedInternalBatches: AppliedInternalOperationStep[][];
-  selectedInternalPreparations: (PreparedInternalTransition[] | null)[];
+  selectedInternalPreparations: (InternalBatchPreparation | null)[];
 }>;
 
 export { semanticProcessClosureLimit } from "./semantic-process-limits.js";

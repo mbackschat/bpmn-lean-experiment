@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
 import BpmnSemantics.SemanticProcess.TransitionRecord
@@ -45,6 +46,9 @@ def fireInternalAlternative? (program : Program) (state : RuntimeState) (operati
     (alternative : InternalAlternative) : Option RuntimeState :=
   match alternative with
   | .operation id => if id = operation.id then fire? program operation state else none
+  | .operationOccurrence id owner =>
+      if resolveInternalOperationOccurrence? program state ⟨id, owner⟩ == some operation then
+        applyInternalOperationOccurrence? program state ⟨id, owner⟩ else none
   | .mergeInput .. =>
       if program.compensationEventSubProcessSnapshots.isSome then none
       else (selectInternalMerge? state operation alternative).map (·.apply state)
@@ -109,6 +113,7 @@ theorem selectInternalMerge_facts (state : RuntimeState) (operation : SemanticOp
   | mergeExclusive id origin inputs output =>
       cases alternative with
       | operation _ => simp [selectInternalMerge?] at found
+      | operationOccurrence _ _ => simp [selectInternalMerge?] at found
       | mergeInput selectedId owner input =>
           simp only [selectInternalMerge?] at found
           split at found
@@ -176,6 +181,7 @@ theorem prepareInternalMerge_refines (program : Program) (state : RuntimeState)
   have shape := (selectInternalMerge_facts state operation alternative selected selection).2.1
   cases alternative with
   | operation _ => simp [InternalMergeSelection.alternative] at shape
+  | operationOccurrence _ _ => simp [InternalMergeSelection.alternative] at shape
   | mergeInput _ _ _ => simp [fireInternalAlternative?, snapshots, selection, makeInternalMergePreparation]
 
 /-- Complete predecessor provenance supplies output ownership; the existing patch law retains the full invariant. -/

@@ -20,6 +20,7 @@ inductive InternalFrontierSelection where
 def selectInternalExecutionFrontier (mode : InternalSchedulingMode) (ordinal : Nat)
     (schedule : InternalChoiceSchedule) (frontier : InternalExecutionFrontier) : InternalFrontierSelection :=
   if frontier.preparationFailed then .ambiguous
+  else if frontier.occurrenceBatch.isSome then .execute frontier.offers schedule false
   else
     match frontier.offers.mapM (·.preparation) with
     | none => match frontier.offers with
@@ -76,35 +77,38 @@ theorem selectInternalExecutionFrontier_consumption (mode : InternalSchedulingMo
   split at selected
   · contradiction
   · split at selected
+    · cases selected
+      exact .inl ⟨rfl, rfl⟩
     · split at selected
-      · cases selected
-        exact .inl ⟨rfl, rfl⟩
-      · contradiction
-    · rename_i prepared preparedEq
-      split at selected
       · split at selected
         · cases selected
           exact .inl ⟨rfl, rfl⟩
         · contradiction
-      · rename_i members classified
+      · rename_i prepared preparedEq
         split at selected
-        · contradiction
         · split at selected
+          · cases selected
+            exact .inl ⟨rfl, rfl⟩
           · contradiction
-          · rename_i alternative rest consumedEq
-            split at selected
-            · rename_i offer found
-              cases selected
-              obtain ⟨directive, scheduleEq, ordinalEq, alternativesEq, selectedEq, member⟩ :=
-                (consumeInternalChoiceDirective_iff _ _ _ _ _).mp consumedEq
-              refine .inr ⟨prepared, members, directive, offer, preparedEq, classified,
-                scheduleEq, ordinalEq, alternativesEq, ?_, rfl, ?_, rfl⟩
-              · simpa only [selectedEq] using member
-              · have same : offer.alternative = alternative := by
-                  simpa [findInternalExecutionOffer?] using List.find?_some found
-                exact same.trans selectedEq.symm
+        · rename_i members classified
+          split at selected
+          · contradiction
+          · split at selected
             · contradiction
-      · contradiction
+            · rename_i alternative rest consumedEq
+              split at selected
+              · rename_i offer found
+                cases selected
+                obtain ⟨directive, scheduleEq, ordinalEq, alternativesEq, selectedEq, member⟩ :=
+                  (consumeInternalChoiceDirective_iff _ _ _ _ _).mp consumedEq
+                refine .inr ⟨prepared, members, directive, offer, preparedEq, classified,
+                  scheduleEq, ordinalEq, alternativesEq, ?_, rfl, ?_, rfl⟩
+                · simpa only [selectedEq] using member
+                · have same : offer.alternative = alternative := by
+                    simpa [findInternalExecutionOffer?] using List.find?_some found
+                  exact same.trans selectedEq.symm
+              · contradiction
+        · contradiction
 
 /-- Every prefix checks the complete fresh frontier and retains the original value-bearing artifact.
 The publication is still independently projected from the actual successor.
@@ -185,10 +189,12 @@ private def singletonClosureStep (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (offer : InternalExecutionOffer) : InternalClosureStep :=
   { state := offer.successor
     records := match offer.alternative with
+      | .operationOccurrence .. => none
       | .operation _ => (internalTransitionRecord? program state offer.operation).map List.singleton
       | .mergeInput .. => (selectInternalMerge? state offer.operation offer.alternative).map
           (fun selected => [selected.record])
     lifecycles := match offer.alternative with
+      | .operationOccurrence .. => none
       | .operation _ => (flowNodeOccurrenceDeltaForOperationWithMessageHandler? program state offer.successor
           offer.operation commandId first).map List.singleton
       | .mergeInput .. => do
@@ -197,21 +203,58 @@ private def singletonClosureStep (program : Program) (commandId : SemanticId)
             offer.operation offer.alternative commandId first
           some [publication.lifecycle] }
 
+private def acceptOccurrencePublicationPrefixes? (program : Program) (state : RuntimeState) :
+    List InstantiatedInternalTransitionPublication → List RuntimeState → Option Unit
+  | [], [] => some ()
+  | publication :: rest, next :: successors => do
+      if replayInternalOperationOccurrence? program state publication.record != some next then none else pure ()
+      let instanceId ← hostingInstanceId? state
+      let position ← controlPositionDelta? program instanceId state next
+      let lifecycle ← acceptFlowNodeOccurrenceCandidate? program state next publication.lifecycle
+      if publication.logicalTimeMs != state.logicalTimeMs ||
+          publication.positionDelta != position || publication.lifecycle != lifecycle then none
+      else acceptOccurrencePublicationPrefixes? program next rest successors
+  | _, _ => none
+
+private def occurrenceBatchPublications? (program : Program) (commandId : SemanticId)
+    (first : Nat) (state : RuntimeState) (batch : InternalOccurrenceArmingBatch)
+    (successors : List RuntimeState) : Option (List InstantiatedInternalTransitionPublication) := do
+  if !programWellFormed program then none else pure ()
+  let templates ← batch.members.mapM fun patch =>
+    internalArmingPublicationTemplate? program state patch.operation patch
+  -- The reservation certificate already orders complete operation/owner identities (PMIS-SELECT-01).
+  let publications := numberTransitionPublicationTemplates commandId first templates
+  acceptOccurrencePublicationPrefixes? program state publications successors
+  pure publications
+
 private def executeSelectedFrontier? (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (frontier : InternalExecutionFrontier)
     (offers : List InternalExecutionOffer) : Option InternalClosureStep :=
-  match offers with
-  | [offer] => some (singletonClosureStep program commandId first state offer)
-  | _ =>
-  match offers.mapM (·.preparation) with
-  | some prepared => do
-      let instanceId ← hostingInstanceId? state
-      let (state, publications) ← acceptedRevalidatedTransitionBatch? program instanceId commandId
-        first state frontier prepared
-      some { state
-             records := some (publications.map (·.record))
-             lifecycles := some (publications.map (·.lifecycle)) }
-  | none => none
+  match frontier.occurrenceBatch with
+  | some batch => do
+      let alternatives := batch.members.map fun patch =>
+        InternalAlternative.operationOccurrence patch.operation.id patch.owner
+      if offers.map (·.alternative) != alternatives then none else pure ()
+      let successors ← applyInternalOccurrenceArmingBatch? program state batch
+      let final ← successors.getLast?
+      let publications := occurrenceBatchPublications? program commandId first state batch successors
+      pure {
+        state := final
+        records := publications.map (List.map (·.record))
+        lifecycles := publications.map (List.map (·.lifecycle)) }
+  | none =>
+    match offers with
+    | [offer] => some (singletonClosureStep program commandId first state offer)
+    | _ =>
+    match offers.mapM (·.preparation) with
+    | some prepared => do
+        let instanceId ← hostingInstanceId? state
+        let (state, publications) ← acceptedRevalidatedTransitionBatch? program instanceId commandId
+          first state frontier prepared
+        some { state
+               records := some (publications.map (·.record))
+               lifecycles := some (publications.map (·.lifecycle)) }
+    | none => none
 
 structure ScheduledClosureResult where
   state : RuntimeState

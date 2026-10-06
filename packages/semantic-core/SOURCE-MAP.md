@@ -11,6 +11,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [wire.ts](src/wire.ts) | Exact non-normalized wire strings, rejecting lone UTF-16 surrogates |
 | [parallel-scope-population.ts](src/parallel-scope-population.ts) | Parallel Sub-Process membership validation and exact body retirement; runtime integration is owned by the [capsule](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) |
 | [parallel-scope-runtime.ts](src/parallel-scope-runtime.ts) | Private atomic population entry, occurrence-addressed quiescent retirement and sibling cancellation; no admitted IL producer |
+| [parallel-scope-data.ts](src/parallel-scope-data.ts) | Complete parallel body population binding, captured-item/local/Process input lookup and exact result routing |
+| [multi-instance-scope-write.ts](src/multi-instance-scope-write.ts) | Shared exact-owner sequential/parallel body writes with protected names and unrelated-scope preservation |
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
 | [pristine-runtime-state.ts](src/pristine-runtime-state.ts) | Exhaustive field comparison with the initial state for capsules requiring pristine starts |
@@ -132,6 +134,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
 | [internal-choice-schedule.ts](src/internal-choice-schedule.ts) | Universal independent normalization, exact directive consumption and failure precedence, whole-command rollback, and retained prepared publication; [schedule tests](test/internal-choice-schedule.test.ts) cover both Merge choices and late failure |
+| [internal-operation-occurrence.ts](src/internal-operation-occurrence.ts) | Private parallel Sub-Process complete operation/owner discovery and exact-owner execution |
+| [internal-occurrence-batch.ts](src/internal-occurrence-batch.ts) | Private complete human/effect frontier reservation, frozen owner-to-counter slots, publication templates and atomic prefix application |
 | [internal-transition-attempt.ts](src/internal-transition-attempt.ts) | Pre-mutation Compensation Event Sub-Process reservation and promotion staging for the evaluator's private three-arm attempt |
 | [internal-transition-activity-association.ts](src/internal-transition-activity-association.ts) | Private conflict predicate over Activity identity, body-member ownership, and attached-Timer ownership |
 | [internal-transition-arming-batch.ts](src/internal-transition-arming-batch.ts) | Retained ordinary, Timer-task, and input-only/output-only/composed-data preparation for every frontier member, complete-value revalidation, and exact local-patch application; [batch tests](test/internal-transition-arming-batch.test.ts) own permutation, stale-preparation, publication, and fuel discriminators |
@@ -171,7 +175,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-transition-ordinary-arming-patch.ts](src/internal-transition-ordinary-arming-patch.ts) | Exact local edits for ordinary wait arming, shared by pre-frontier preparation and the existing evaluator without whole-state replacement or successor-state inference |
 | [semantic-process-closure.ts](src/semantic-process-closure.ts) | Bounded closure over complete retained prepared batches with whole-batch fuel and refusal precedence |
 | [semantic-process-runtime.ts](src/semantic-process-runtime.ts) | Runtime state, ordinary and compensation internal-operation dispatch, closure-failure rollback to the pre-admission state, and `applyStimulus` |
-| [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts, scheduled lower-layer publication, and replay validation against exact consumed Merge inputs |
+| [semantic-transition-trace.ts](src/semantic-transition-trace.ts) | Committed transition facts, retained-certificate reserved-cohort publication, scheduled lower-layer publication, and replay validation against exact owners and consumed Merge inputs |
 | [flow-node-occurrence-candidates.ts](src/flow-node-occurrence-candidates.ts) | Program-selected element and Process resolution for occurrence owners |
 | [flow-node-occurrence-lifecycle.ts](src/flow-node-occurrence-lifecycle.ts) | Flow-node lifecycle derivation, compensation dispatch, and fold validation |
 | [flow-node-occurrence-interrupting-message-event-subprocess.ts](src/flow-node-occurrence-interrupting-message-event-subprocess.ts) | Declaration-owned handler scopes and predecessor-selected Message trigger facts |
@@ -221,6 +225,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 ## Test ownership
 
 Tests under [`test/`](test/) mirror these owners by contract or semantic family. The registry-driven [runtime-state preservation lane](../differential/test/runtime-state-preservation.test.ts) sits at the differential composition boundary so compiling every registered program does not add parser or catalog dependencies to this package. The [testing specification](../../docs/TESTING-SPEC.md) selects the applicable focused and repository gates.
+
+The [exact-operation tests](test/internal-operation-occurrence.test.ts) distinguish body identity from definition identity. The [parallel body tests](test/parallel-scope-effect.test.ts) cover population-bound inputs/results and reserved human/effect cohorts, including stale certificates, collisions, ordering and per-member fuel rollback. These private checks do not establish public profile or hosting qualification.
 
 The [Call pairing tests](test/call-activity-pairing.test.ts) distinguish a bijection from equal invoke/return counts using duplicated and distinct invoke identities that share one return while leaving another unclaimed.
 

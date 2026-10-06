@@ -8,7 +8,7 @@ namespace BpmnSemantics.SemanticProcess.SequentialScopeControl
 
 def inputs : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ input .. | .awaitEffect _ _ input ..
-  | .enterSequentialMultiInstanceScope _ _ input .. | .duplicate _ _ input _
+  | .enterSequentialMultiInstanceScope _ _ input .. | .enterParallelMultiInstanceScope _ _ input .. | .duplicate _ _ input _
   | .reachNoneEnd _ _ input => [input]
   | .synchronize _ _ places _ => places
   | _ => []
@@ -34,7 +34,7 @@ def parentPath : Nat → List SemanticOperation → OperationId → ControlPlace
       match operation with
       | .awaitUserTask _ _ _ output _ | .awaitEffect _ _ _ output _ none =>
           parentPath fuel rest entryId output entered (before + if entered then 0 else 1) (after + if entered then 1 else 0)
-      | .enterSequentialMultiInstanceScope id _ _ _ _ output .. =>
+      | .enterSequentialMultiInstanceScope id _ _ _ _ output .. | .enterParallelMultiInstanceScope id _ _ _ _ output .. =>
           if entered || id != entryId then none else parentPath fuel rest entryId output true before after
       | .reachNoneEnd .. => if entered && rest.isEmpty then some (before, after) else none
       | _ => none

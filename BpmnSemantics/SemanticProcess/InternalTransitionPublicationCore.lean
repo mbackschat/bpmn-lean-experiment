@@ -124,6 +124,8 @@ def actualInternalAlternativePublication? (program : Program) (instanceId : Sema
     (before after : RuntimeState) (operation : SemanticOperation) (alternative : InternalAlternative)
     (commandId : SemanticId) (transitionIndex : Nat) : Option InstantiatedInternalTransitionPublication := do
   match alternative with
+  -- PMIS-SELECT-01 requires an explicit-owner projection; the legacy selector cannot publish it.
+  | .operationOccurrence .. => none
   | .operation id =>
       if id = operation.id then
         actualInternalTransitionPublication? program instanceId before after operation commandId transitionIndex

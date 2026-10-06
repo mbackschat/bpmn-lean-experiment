@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcessJson.InternalAlternative
 import BpmnSemantics.SemanticProcessJson.Program
 import BpmnSemantics.SemanticProcessJson.Scenario
 import BpmnSemantics.SemanticProcessJson.Publication
@@ -10,27 +11,11 @@ namespace BpmnSemantics.InternalChoiceScheduleJsonMain
 
 open Lean BpmnSemantics SemanticProcess SemanticProcessJson SemanticProcess.InternalCommutation
 
-private def decodeAlternative (json : Json) : Except String InternalAlternative := do
-  match ← stringField json "kind" with
-  | "operation" =>
-      requireObjectShape json ["kind", "operationId"]
-      pure (.operation ⟨← stringField json "operationId"⟩)
-  | "mergeInput" =>
-      requireObjectShape json ["kind", "operationId", "owner", "inputControlPlace"]
-      let owner ← field json "owner"
-      requireObjectShape owner ["processInstanceId", "definitionScopeId", "activation"]
-      pure (.mergeInput ⟨← stringField json "operationId"⟩
-        { processInstanceId := ⟨← stringField owner "processInstanceId"⟩
-          definitionScopeId := ⟨← stringField owner "definitionScopeId"⟩
-          activation := ← decodeSafeNat (← field owner "activation") }
-        ⟨← stringField json "inputControlPlace"⟩)
-  | kind => throw s!"unknown alternative {kind}"
-
 private def decodeDirective (json : Json) : Except String InternalChoiceDirective := do
   requireObjectShape json ["ordinal", "alternatives", "selected"]
   pure { ordinal := ← decodeSafeNat (← field json "ordinal")
-         alternatives := ← decodeArray decodeAlternative (← field json "alternatives")
-         selected := ← decodeAlternative (← field json "selected") }
+         alternatives := ← decodeArray decodeInternalAlternative (← field json "alternatives")
+         selected := ← decodeInternalAlternative (← field json "selected") }
 
 private def outcomeName : CommandOutcome → String
   | .committed => "committed"

@@ -95,7 +95,7 @@ private def originJson (origin : BpmnElementOrigin) : Json :=
     [ ("kind", toJson "bpmnElement")
     , ("elementId", toJson origin.elementId.value) ]
 
-private def internalTransitionJson (record : InternalTransitionRecord) : Option Json := do
+def internalTransitionJson (record : InternalTransitionRecord) : Option Json := do
   let kind ← operationKindJson record.operationKind
   pure <| Json.mkObj
     [ ("kind", toJson "internalOperation")
@@ -124,7 +124,7 @@ private def scopePositionJson (position : PublicScopePosition) : Json :=
     , ("parent", optionalScopeOccurrenceIdJson position.parent)
     , ("bpmnElementId", toJson position.bpmnElementId.value) ]
 
-private def positionDeltaJson (delta : PublicControlPositionDelta) : Json :=
+def positionDeltaJson (delta : PublicControlPositionDelta) : Json :=
   Json.mkObj
     [ ("consumedTokens", jsonArray (delta.consumedTokens.map tokenPositionJson))
     , ("producedTokens", jsonArray (delta.producedTokens.map tokenPositionJson))

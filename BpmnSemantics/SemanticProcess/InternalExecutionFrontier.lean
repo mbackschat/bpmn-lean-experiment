@@ -17,10 +17,18 @@ structure InternalExecutionOffer where
 structure InternalExecutionFrontier where
   offers : List InternalExecutionOffer := []
   preparationFailed : Bool := false
+  occurrenceBatch : Option InternalOccurrenceArmingBatch := none
   deriving Repr
 
 def ordinaryExecutionFrontier (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : InternalExecutionFrontier :=
+  if program.identity.semanticProfile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" then
+    match internalOperationOccurrenceOffers? program state operation with
+    | none => { preparationFailed := true }
+    | some candidates => { offers := candidates.map fun (candidate, successor) =>
+        { alternative := .operationOccurrence candidate.operationId candidate.owner,
+          operation, successor, preparation := none } }
+  else
   -- The approved ordinary-End account retains the single-unit selector. Its broader raw
   -- relation must not bypass that executable restriction when preparation is unavailable.
   let selected := match operation with
@@ -35,6 +43,9 @@ def ordinaryExecutionFrontier (program : Program) (state : RuntimeState)
 
 def mergeExecutionFrontier (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : InternalExecutionFrontier :=
+  if program.identity.semanticProfile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" then
+    { preparationFailed := true }
+  else
   let alternatives := internalMergeInputAlternatives state operation
   let prepared := alternatives.mapM fun alternative => do
     let merge ← prepareInternalMerge? program state operation alternative
@@ -57,10 +68,13 @@ def deriveInternalExecutionFrontier (program : Program) (state : RuntimeState) :
         let next := match operation, state.control with
           | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
           | _, _ => ordinaryExecutionFrontier program state operation
-        { offers := frontier.offers ++ next.offers
+        { frontier with
+          offers := frontier.offers ++ next.offers
           preparationFailed := frontier.preparationFailed || next.preparationFailed }) ({} : InternalExecutionFrontier)
       let offers := sortBy (fun left right => internalAlternativeBefore left.alternative right.alternative) discovered.offers
       { offers
+        occurrenceBatch := if offers.length < 2 || discovered.preparationFailed then none
+          else prepareInternalOccurrenceArmingBatch? program state
         preparationFailed := discovered.preparationFailed ||
           !decide (offers.Pairwise (fun left right => left.alternative ≠ right.alternative)) }
 
@@ -72,7 +86,8 @@ private theorem fold_empty_discoveries (operations : List SemanticOperation)
     (next : SemanticOperation → InternalExecutionFrontier)
     (empty : ∀ operation ∈ operations, next operation = {}) (initial : InternalExecutionFrontier) :
     operations.foldl (fun frontier operation =>
-      { offers := frontier.offers ++ (next operation).offers
+      { frontier with
+        offers := frontier.offers ++ (next operation).offers
         preparationFailed := frontier.preparationFailed || (next operation).preparationFailed }) initial = initial := by
   induction operations generalizing initial with
   | nil => rfl
@@ -123,13 +138,14 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
     exact empty candidate (by rw [splitList]; simp [present])
       (fun same => (List.nodup_cons.mp afterOpsUnique).1 (same ▸ present))
   have folded : program.operations.foldl (fun frontier candidate =>
-      { offers := frontier.offers ++ (next candidate).offers
+      { frontier with
+        offers := frontier.offers ++ (next candidate).offers
         preparationFailed := frontier.preparationFailed || (next candidate).preparationFailed })
       ({} : InternalExecutionFrontier) = { offers := [offer] } := by
     rw [splitList, List.foldl_append, fold_empty_discoveries _ _ beforeOpsEmpty, List.foldl_cons]
     change afterOps.foldl _ ({ offers := (next operation).offers, preparationFailed := (next operation).preparationFailed } : InternalExecutionFrontier) = _
     rw [fold_empty_discoveries _ _ afterOpsEmpty]
-    exact selected
+    simp only [show next operation = { offers := [offer] } from selected]
   unfold deriveInternalExecutionFrontier
   split
   · cases state.control <;> simp_all

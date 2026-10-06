@@ -4,7 +4,7 @@ import { VariableValueKind } from "./contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { ParallelScopeRetirementKind, retireParallelScopeIteration, validParallelScopePopulation } from "./parallel-scope-population.js";
-import type { ParallelScopeIteration } from "./parallel-scope-population.js";
+import type { ParallelScopeController, ParallelScopeIteration } from "./parallel-scope-population.js";
 import { initializeScopeVariables, removeScopeVariables, selectScopeVariables } from "./scope-variable-data.js";
 import { removeScopeOccurrenceSubtree } from "./semantic-process-scope-cancellation.js";
 import { isScopeOccurrenceQuiescent } from "./semantic-process-scope-runtime.js";
@@ -107,9 +107,17 @@ export function enterParallelScope(entry: ParallelScopeEntry, state: RuntimeStat
   };
 }
 
-/** PMIS-END-01/PMIS-CANCEL-01 retire one exact quiescent body before testing the Process condition. */
-export function completeParallelScope(entry: ParallelScopeEntry, state: RuntimeState,
-  target: ScopeOccurrenceId): RuntimeState | null {
+export type ParallelScopeBinding = Readonly<{
+  activity: ActivityOccurrence;
+  controller: ParallelScopeController;
+  iterations: readonly [ParallelScopeIteration, ...ParallelScopeIteration[]];
+  bodies: readonly RuntimeScopeOccurrence[];
+  body: RuntimeScopeOccurrence;
+}>;
+
+/** PMIS-DATA-01 and PMIS-END-01 require the same complete live population before reading or retiring a body. */
+export function parallelScopeBinding(entry: ParallelScopeEntry, state: RuntimeState,
+  target: ScopeOccurrenceId): ParallelScopeBinding | null {
   if (state.control.kind !== ControlStateKind.Running) return null;
   const claims = state.activityOccurrences.filter(activity =>
     activityBodyScopeClaims(activity.body).some(scope => sameScopeOccurrence(scope, target)));
@@ -136,7 +144,16 @@ export function completeParallelScope(entry: ParallelScopeEntry, state: RuntimeS
     bodies.push(body);
   }
   const body = bodies.find(({ id }) => sameScopeOccurrence(id, target));
-  if (body === undefined || !isScopeOccurrenceQuiescent(state, body) ||
+  return body === undefined ? null : { activity, controller, iterations, bodies, body };
+}
+
+/** PMIS-END-01/PMIS-CANCEL-01 retire one exact quiescent body before testing the Process condition. */
+export function completeParallelScope(entry: ParallelScopeEntry, state: RuntimeState,
+  target: ScopeOccurrenceId): RuntimeState | null {
+  const binding = parallelScopeBinding(entry, state, target);
+  if (binding === null) return null;
+  const { activity, controller, iterations, bodies, body } = binding;
+  if (!isScopeOccurrenceQuiescent(state, body) ||
       state.activityOccurrences.some(({ owner }) => sameScopeOccurrence(owner, target))) return null;
   const variables = removeScopeVariables(state.variables, target);
   if (variables === null) return null;

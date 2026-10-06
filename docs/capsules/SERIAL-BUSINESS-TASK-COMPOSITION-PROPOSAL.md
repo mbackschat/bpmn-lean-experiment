@@ -98,7 +98,7 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 | [Core mappings](../../packages/semantic-core/src/semantic-process-data.ts) | 501 | Reuse mapping/frame mechanisms; preserve predecessor semantics. |
 | [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) | 84 | Delegate profile-specific mapping decisions. |
 | [Command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | Delegate required-start and result-domain checks. |
-| [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 10 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
+| [Open-set validation](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 9 | Extract the cohesive effect-wait validation only if growth exceeds this margin. |
 | [Source compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 377 | Retain structural compilation and delegate profile projection. |
 | [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 405 | Add one private capability route. |
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the serial capability analysis. |

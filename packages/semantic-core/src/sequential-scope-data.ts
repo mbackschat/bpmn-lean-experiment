@@ -1,18 +1,15 @@
 import { VariableValueKind } from "./contract.js";
 import type { VariableBinding } from "./contract.js";
-import { evaluateInputMappings, mergeProcessVariableBindings, projectActivityVariableScopeResult } from "./semantic-process-data.js";
-import { writeScopeVariables } from "./scope-variable-data.js";
+import { evaluateInputMappings, projectActivityVariableScopeResult } from "./semantic-process-data.js";
+import { MultiInstanceScopeWriteKind as SequentialScopeWriteKind, writeBoundMultiInstanceScopeValues } from "./multi-instance-scope-write.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { RuntimeState, ScopedVariables, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
-import { isSerialBusinessIdentifier } from "./serial-business-task-policy.js";
 import { sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
 import type { SequentialScopeBinding } from "./sequential-scope-binding.js";
-import { compareCanonicalStrings } from "./wire.js";
-
-export enum SequentialScopeWriteKind { UserTask = "userTask", ServiceTask = "serviceTask" }
+export { SequentialScopeWriteKind };
 
 /** SMIS-DATA-01 snapshots only declared inputs; inherited Process data is never copied into the body frame. */
 export function evaluateSequentialScopeInputs(program: Pick<SemanticProcessProgram, "operations">,
@@ -45,17 +42,7 @@ export function writeSequentialScopeValues(program: Pick<SemanticProcessProgram,
   kind: SequentialScopeWriteKind): ScopedVariables | null {
   const binding = sequentialScopeBindingForOwner(program, state, owner);
   if (binding === undefined) return null;
-  const handlers = handlerNames(program);
-  const condition = binding.entry.completionBooleanName;
-  if (!values.every(({ name, value }, index) => isSerialBusinessIdentifier(name) && !handlers.has(name) &&
-      name !== binding.entry.collectionName && name !== binding.entry.itemName &&
-      (index === 0 || compareCanonicalStrings(values[index - 1]!.name, name) < 0) &&
-      (name === condition ? kind === SequentialScopeWriteKind.UserTask && value.kind === VariableValueKind.Boolean
-        : value.kind === VariableValueKind.String || value.kind === VariableValueKind.Null))) return null;
-  const variables = writeScopeVariables(state.variables, owner, values.filter(({ name }) => name !== condition));
-  if (variables === null) return null;
-  return { ...variables, process: { bindings: mergeProcessVariableBindings(variables.process.bindings,
-    values.filter(({ name }) => name === condition)) } };
+  return writeBoundMultiInstanceScopeValues(program, state, owner, binding.entry, values, kind);
 }
 
 function handlerNames(program: Pick<SemanticProcessProgram, "operations">): ReadonlySet<string> {

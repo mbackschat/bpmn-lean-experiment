@@ -12,6 +12,14 @@ import type {
 } from "./flow-node-occurrence-lifecycle.js";
 import type { InternalChoiceSchedule, ScheduledStimulusResult } from "./internal-choice-schedule.js";
 import { instantiateInternalPublicationBatch } from "./internal-publication-template.js";
+import type { InternalPublicationTemplate } from "./internal-publication-template.js";
+import { InternalBatchPreparationKind } from "./internal-transition-preparation.js";
+import type { InternalBatchPreparation } from "./internal-transition-preparation.js";
+import { applyInternalOccurrenceBatch } from "./internal-occurrence-batch.js";
+import { applyInternalOperationOccurrence } from "./internal-operation-occurrence.js";
+import { PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { InternalAlternativeKind } from "./internal-transition-alternative.js";
+import { isWellFormedSemanticProcessProgram } from "./semantic-process-admission.js";
 import { applyPreparedInternalExclusiveMerge, deriveInternalExclusiveMergePreparations } from "./internal-transition-merge-preparation.js";
 import {
   projectControlPositionDelta,
@@ -176,39 +184,16 @@ function projectStimulusEvaluation(
 
   let before = evaluation.admittedState;
   for (const [batchIndex, batch] of evaluation.selectedInternalBatches.entries()) {
-    if (batch.length === 0) return noTrace(result);
-    const prepared = evaluation.selectedInternalPreparations[batchIndex];
-    if (prepared === undefined) return noTrace(result);
-    if (prepared === null && batch.length === 1) {
-      const step = batch[0]!;
-      const unit = internalPublicationUnit(program, before, step);
-      if (unit === null || !appendInternalPublicationUnits(stimulus.commandId, records, lifecycles, [unit])) {
-        return noTrace(result);
-      }
-      before = step.successor;
-      continue;
-    }
-
-    if (prepared === null || prepared.length !== batch.length) return noTrace(result);
-    const publications = instantiateInternalPublicationBatch(stimulus.commandId, records.length,
-      prepared.map(({ publicationTemplate }) => publicationTemplate));
-    if (publications === null) return noTrace(result);
-    for (const step of batch) {
-      const publication = publications.find(({ alternative }) => alternative.operationId === step.operation.id);
-      const unit = internalPublicationUnit(program, before, step);
-      if (publication === undefined || unit === null) return noTrace(result);
-      const lifecycle = unit.lifecycleAt(stimulus.commandId, publication.transitionIndex);
-      // The commutation contract requires equality with actual accepted projections, including defined lifecycles.
-      if (lifecycle === null || !sameJson(unit.record, publication.record) || !sameJson(lifecycle, publication.lifecycle)) {
-        return noTrace(result);
-      }
-      before = step.successor;
-    }
-    for (const publication of publications) {
-      records.push(publication.record);
-      lifecycles.push(publication.lifecycle);
-    }
+    const preparation = evaluation.selectedInternalPreparations[batchIndex];
+    if (preparation === undefined) return noTrace(result);
+    const published = projectInternalExecutionBatch(program, before, batch, preparation,
+      stimulus.commandId, records.length);
+    if (published === null) return noTrace(result);
+    records.push(...published.records);
+    lifecycles.push(...published.lifecycles);
+    before = published.state;
   }
+
   return sameJson(before, result.state)
     ? {
         result,
@@ -217,6 +202,55 @@ function projectStimulusEvaluation(
         currentPositions,
       }
     : noTrace(result);
+}
+
+/** Preserves the retained batch plan while checking every publication against its actual predecessor/successor. */
+export function projectInternalExecutionBatch(
+  program: SemanticProcessProgram, before: RuntimeState, batch: readonly AppliedInternalOperationStep[],
+  preparation: InternalBatchPreparation | null, commandId: string, first: number,
+): Readonly<{ state: RuntimeState; records: readonly UnnumberedCommittedTransitionRecord[];
+  lifecycles: readonly UnnumberedFlowNodeOccurrenceDelta[] }> | null {
+  if (batch.length === 0) return null;
+  if (preparation === null) {
+    if (batch.length !== 1) return null;
+    const step = batch[0]!;
+    const unit = internalPublicationUnit(program, before, step);
+    const lifecycle = unit?.lifecycleAt(commandId, first);
+    return unit === null || lifecycle === undefined || lifecycle === null ? null
+      : { state: step.successor, records: [unit.record], lifecycles: [lifecycle] };
+  }
+  let templates: readonly InternalPublicationTemplate[];
+  switch (preparation.kind) {
+    case InternalBatchPreparationKind.Prepared:
+      if (preparation.members.length !== batch.length) return null;
+      templates = preparation.members.map(member => member.publicationTemplate);
+      break;
+    case InternalBatchPreparationKind.ReservedOccurrences: {
+      if (!isWellFormedSemanticProcessProgram(program)) return null;
+      const applied = applyInternalOccurrenceBatch(program, before, preparation.certificate);
+      if (applied === null || !sameJson(applied, batch)) return null;
+      templates = preparation.certificate.members.map(member => member.publicationTemplate);
+      break;
+    }
+  }
+  const publications = instantiateInternalPublicationBatch(commandId, first, templates);
+  if (publications === null) return null;
+  let state = before;
+  for (const step of batch) {
+    const publication = publications.find(({ alternative }) => alternative.operationId === step.operation.id &&
+      (preparation.kind !== InternalBatchPreparationKind.ReservedOccurrences ||
+        (alternative.kind === InternalAlternativeKind.OperationOccurrence && step.owner !== null &&
+          sameScopeOccurrence(alternative.owner, step.owner))));
+    const unit = internalPublicationUnit(program, state, step);
+    if (publication === undefined || unit === null) return null;
+    const lifecycle = unit.lifecycleAt(commandId, publication.transitionIndex);
+    if (lifecycle === null || !sameJson(unit.record, publication.record) || !sameJson(lifecycle, publication.lifecycle)) return null;
+    if (preparation.kind === InternalBatchPreparationKind.ReservedOccurrences &&
+        !sameJson(replayInternalTransitionRecord(program, state, publication.record), step.successor)) return null;
+    state = step.successor;
+  }
+  return { state, records: publications.map(publication => publication.record),
+    lifecycles: publications.map(publication => publication.lifecycle) };
 }
 
 type InternalPublicationUnit = Readonly<{
@@ -262,23 +296,6 @@ function internalPublicationUnit(
             transitionIndex,
           ),
       };
-}
-
-function appendInternalPublicationUnits(
-  commandId: string,
-  records: UnnumberedCommittedTransitionRecord[],
-  lifecycles: UnnumberedFlowNodeOccurrenceDelta[],
-  units: ReadonlyArray<InternalPublicationUnit>,
-): boolean {
-  for (const unit of units) {
-    const lifecycle = unit.lifecycleAt(commandId, records.length);
-    if (lifecycle === null) {
-      return false;
-    }
-    records.push(unit.record);
-    lifecycles.push(lifecycle);
-  }
-  return true;
 }
 
 function transitionRecord(
@@ -331,34 +348,48 @@ export function replayCommittedTransitions(
   let current = admission.state;
 
   for (const record of records.slice(1)) {
-    if (record.transition.kind !== SemanticTransitionKind.InternalOperation) {
-      return null;
-    }
-    const transition = record.transition;
-    const operations = program.operations.filter(
-      ({ id }) => id === transition.operationId,
-    );
-    const operation = operations[0];
-    if (operations.length !== 1 || operation === undefined) {
-      return null;
-    }
-    // A record identifies its consumed bucket through its exact public delta; replay must not use the unique-offer selector.
-    const step = operation.kind === SemanticOperationKind.MergeExclusive
-      ? replayMergeStep(program, current, operation, record)
-      : applyInternalOperationStep(program, operation, current);
-    if (
-      step === null ||
-      step.owner === null ||
-      operation.kind !== transition.operationKind ||
-      !sameOrigin(operation.origin, transition.origin) ||
-      !sameScopeOccurrence(step.owner, transition.owner) ||
-      !recordBoundaryMatches(program, current, step.successor, record)
-    ) {
-      return null;
-    }
-    current = step.successor;
+    const next = replayInternalTransitionRecord(program, current, record);
+    if (next === null) return null;
+    current = next;
   }
   return current;
+}
+
+/** Replays one internal boundary while retaining its exact metadata and consumed-position checks. */
+export function replayInternalTransitionRecord(
+  program: SemanticProcessProgram, current: RuntimeState,
+  record: UnnumberedCommittedTransitionRecord,
+): RuntimeState | null {
+  if (record.transition.kind !== SemanticTransitionKind.InternalOperation) {
+    return null;
+  }
+  const transition = record.transition;
+  const operations = program.operations.filter(
+    ({ id }) => id === transition.operationId,
+  );
+  const operation = operations[0];
+  if (operations.length !== 1 || operation === undefined) {
+    return null;
+  }
+  if (operation.kind !== transition.operationKind || !sameOrigin(operation.origin, transition.origin)) return null;
+  if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+    const next = applyInternalOperationOccurrence(program, current,
+      { operationId: operation.id, owner: transition.owner });
+    return next !== null && recordBoundaryMatches(program, current, next, record) ? next : null;
+  }
+  // A record identifies its consumed bucket through its exact public delta; replay must not use the unique-offer selector.
+  const step = operation.kind === SemanticOperationKind.MergeExclusive
+    ? replayMergeStep(program, current, operation, record)
+    : applyInternalOperationStep(program, operation, current);
+  if (
+    step === null ||
+    step.owner === null ||
+    !sameScopeOccurrence(step.owner, transition.owner) ||
+    !recordBoundaryMatches(program, current, step.successor, record)
+  ) {
+    return null;
+  }
+  return step.successor;
 }
 
 function replayMergeStep(

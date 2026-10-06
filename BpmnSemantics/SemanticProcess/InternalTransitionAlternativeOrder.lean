@@ -31,6 +31,10 @@ private theorem merge_before_chain (left right : OperationId) (lo ro : ScopeOccu
       lifecycleLexStep (fun a b : OperationId => decide (a.value < b.value)) left right
         (lifecycleLexStep scopeBefore lo ro (decide (li.value < ri.value))) := rfl
 
+private theorem occurrence_before_chain (left right : OperationId) (lo ro : ScopeOccurrenceId) :
+    internalAlternativeBefore (.operationOccurrence left lo) (.operationOccurrence right ro) =
+      lifecycleLexStep (fun a b : OperationId => decide (a.value < b.value)) left right (scopeBefore lo ro) := rfl
+
 theorem internalAlternativeBefore_asymm (left right : InternalAlternative) :
     internalAlternativeBefore left right = true → internalAlternativeBefore right left = false := by
   cases left <;> cases right <;> try (solve | simp [internalAlternativeBefore])
@@ -39,6 +43,9 @@ theorem internalAlternativeBefore_asymm (left right : InternalAlternative) :
     apply lifecycleLexStep_asymm _ (fun _ _ => string_before_asymm _ _)
     apply lifecycleLexStep_asymm _ BpmnSemantics.SemanticProcess.scopeBefore_asymm
     exact string_before_asymm _ _
+  · rw [occurrence_before_chain, occurrence_before_chain]
+    apply lifecycleLexStep_asymm _ (fun _ _ => string_before_asymm _ _)
+    exact BpmnSemantics.SemanticProcess.scopeBefore_asymm _ _
 
 theorem internalAlternativeBefore_trans (left middle right : InternalAlternative) :
     internalAlternativeBefore left middle = true → internalAlternativeBefore middle right = true →
@@ -51,6 +58,11 @@ theorem internalAlternativeBefore_trans (left middle right : InternalAlternative
       (fun a b c => string_before_trans a.value b.value c.value)
     apply lifecycleLexStep_trans _ BpmnSemantics.SemanticProcess.scopeBefore_asymm BpmnSemantics.SemanticProcess.scopeBefore_trans
     exact string_before_trans _ _ _
+  · rw [occurrence_before_chain, occurrence_before_chain, occurrence_before_chain]
+    apply lifecycleLexStep_trans (fun a b : OperationId => decide (a.value < b.value))
+      (fun a b => string_before_asymm a.value b.value)
+      (fun a b c => string_before_trans a.value b.value c.value)
+    exact BpmnSemantics.SemanticProcess.scopeBefore_trans _ _ _
 
 theorem internalAlternativeBefore_total (left right : InternalAlternative) (different : left ≠ right) :
     internalAlternativeBefore left right = true ∨ internalAlternativeBefore right left = true := by
@@ -60,9 +72,11 @@ theorem internalAlternativeBefore_total (left right : InternalAlternative) (diff
       | operation right =>
           exact string_before_total left.value right.value (by intro same; cases left; cases right; simp_all)
       | mergeInput _ _ _ => simp [internalAlternativeBefore]
+      | operationOccurrence _ _ => simp [internalAlternativeBefore]
   | mergeInput left lo li =>
       cases right with
       | operation _ => simp [internalAlternativeBefore]
+      | operationOccurrence _ _ => simp [internalAlternativeBefore]
       | mergeInput right ro ri =>
           rw [merge_before_chain, merge_before_chain]
           apply lifecycleLexStep_comparable
@@ -76,5 +90,18 @@ theorem internalAlternativeBefore_total (left right : InternalAlternative) (diff
             cases li
             cases ri
             simp_all)
+  | operationOccurrence left lo =>
+      cases right with
+      | operation _ => simp [internalAlternativeBefore]
+      | mergeInput _ _ _ => simp [internalAlternativeBefore]
+      | operationOccurrence right ro =>
+          rw [occurrence_before_chain, occurrence_before_chain]
+          apply lifecycleLexStep_comparable
+          · intro a b distinct
+            exact string_before_total a.value b.value (by intro same; cases a; cases b; simp_all)
+          intro operationEq
+          apply BpmnSemantics.SemanticProcess.scopeBefore_total
+          intro ownerEq
+          exact different (by simp_all)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

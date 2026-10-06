@@ -1,7 +1,15 @@
+import { deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
+export { applyInternalOperationOccurrence, deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
+export type { InternalOccurrenceOffer } from "./internal-operation-occurrence.js";
+import { internalOccurrenceReservationStateIsValid, prepareInternalOccurrenceBatch } from "./internal-occurrence-batch.js";
+import type { InternalOccurrenceBatch } from "./internal-occurrence-batch.js";
+import { PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import {
   canonicalUniqueInternalAlternatives,
   compareInternalAlternatives,
   internalOperationAlternative,
+  resolveInternalOperationOccurrence,
+  internalOperationOccurrenceAlternative,
 } from "./internal-transition-alternative.js";
 import type { InternalAlternative } from "./internal-transition-alternative.js";
 import {
@@ -20,6 +28,16 @@ import type { RuntimeState } from "./semantic-process-state.js";
 import type { AppliedInternalOperationStep } from "./semantic-process-runtime.js";
 import { compareCanonicalStrings } from "./wire.js";
 
+export enum InternalBatchPreparationKind {
+  Prepared = "prepared",
+  ReservedOccurrences = "reservedOccurrences",
+}
+
+export type InternalBatchPreparation = Readonly<
+  | { kind: InternalBatchPreparationKind.Prepared; members: readonly PreparedInternalTransition[] }
+  | { kind: InternalBatchPreparationKind.ReservedOccurrences; certificate: InternalOccurrenceBatch }
+>;
+
 export type InternalExecutionOffer = Readonly<{
   alternative: InternalAlternative;
   step: AppliedInternalOperationStep;
@@ -30,6 +48,7 @@ export type InternalExecutionFrontier<Refusal> = Readonly<{
   offers: ReadonlyArray<InternalExecutionOffer>;
   refusal: Refusal | null;
   preparationFailed: boolean;
+  occurrenceBatch?: InternalOccurrenceBatch;
 }>;
 
 /** Exact Merge offers must not disappear merely because the legacy evaluator requires one token. */
@@ -41,6 +60,17 @@ export function deriveInternalExecutionFrontier<Refusal>(
     refusal: Refusal | null;
   }>,
 ): InternalExecutionFrontier<Refusal> {
+  if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+    if (!internalOccurrenceReservationStateIsValid(state)) return { offers: [], refusal: null, preparationFailed: true };
+    const discovered = deriveInternalOccurrenceFrontier(program, state);
+    if (discovered === null) return { offers: [], refusal: null, preparationFailed: true };
+    const occurrenceBatch = prepareInternalOccurrenceBatch(program, state);
+    return { ...(occurrenceBatch === null ? {} : { occurrenceBatch }), offers: discovered.map(({ candidate, successor }) => ({
+      alternative: internalOperationOccurrenceAlternative(candidate.operationId, candidate.owner),
+      step: { operation: resolveInternalOperationOccurrence(program, state, candidate)!, owner: candidate.owner, successor },
+      preparation: null,
+    })), refusal: null, preparationFailed: false };
+  }
   const offers: InternalExecutionOffer[] = [];
   let preparationFailed = false;
   const operations = [...program.operations].sort((left, right) => compareCanonicalStrings(left.id, right.id));

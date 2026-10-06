@@ -90,8 +90,15 @@ private def parallelCompletionCondition? (entry : ParallelScopeEntry) (state : R
       let .boolean condition := binding.value | none
       some condition
 
-def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
-    (target : ScopeOccurrenceId) : Option RuntimeState := do
+/-- Data access and retirement share the complete validated population; neither may select a sibling. -/
+structure ParallelScopeBinding where
+  activity : ActivityOccurrence
+  controller : ParallelScopeController
+  iterations : List ParallelScopeIteration
+  deriving Repr, DecidableEq
+
+def parallelScopeBinding? (entry : ParallelScopeEntry) (state : RuntimeState)
+    (target : ScopeOccurrenceId) : Option ParallelScopeBinding := do
   let .running instanceId := state.control | none
   let [record] := state.activityOccurrences.filter (fun candidate =>
     (activityBodyScopeClaims candidate.body).contains target) | none
@@ -104,10 +111,18 @@ def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
       controller.id == parallelRuntimeActivityId record) | none
     let iterations := first :: rest
     if controller.total > 16 || !validParallelScopePopulation controller iterations ||
-        !(iterations.all fun iteration => parallelScopeBodyBound entry state record iteration.scope) ||
-        !scopeQuiescent state target ||
-        state.activityOccurrences.any (fun candidate => candidate.owner == target) then none
-    else
+        !(iterations.all fun iteration => parallelScopeBodyBound entry state record iteration.scope) then none
+    else some ⟨record, controller, iterations⟩
+
+def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
+    (target : ScopeOccurrenceId) : Option RuntimeState := do
+  let binding ← parallelScopeBinding? entry state target
+  let record := binding.activity
+  let controller := binding.controller
+  let iterations := binding.iterations
+  if !scopeQuiescent state target ||
+      state.activityOccurrences.any (fun candidate => candidate.owner == target) then none
+  else
       let variables ← removeScopeVariables? state.variables target
       let disposed := { state with variables := variables }
       let condition ← parallelCompletionCondition? entry disposed
@@ -229,11 +244,7 @@ theorem completeParallelScope_preserves_process {entry : ParallelScopeEntry} {ta
     (completed : completeParallelScope? entry state target = some result) :
     result.variables.process = state.variables.process := by
   unfold completeParallelScope? at completed
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
+  obtain ⟨binding, _, completed⟩ := Option.bind_eq_some_iff.mp completed
   dsimp only at completed
   split at completed <;> try contradiction
   obtain ⟨variables, removed, completed⟩ := Option.bind_eq_some_iff.mp completed
@@ -484,5 +495,67 @@ theorem enterParallelScope_preserves_frame_uniqueness {entry : ParallelScopeEntr
         cases Option.some.inj installed
         have unique := issueParallelBodies_preserves_frame_uniqueness generated distinct
         exact unique
+
+private theorem cancelParallelBody_surviving_population (state : RuntimeState) (scope : ScopeOccurrenceId) :
+    (cancelScopeSubtree state scope .remove).variables.scopes.Sublist state.variables.scopes ∧
+    (cancelScopeSubtree state scope .remove).scopeOccurrences.Sublist state.scopeOccurrences :=
+  ⟨List.filter_sublist, List.filter_sublist⟩
+
+private theorem cancelParallelBodies_surviving_population (iterations : List ParallelScopeIteration)
+    (state : RuntimeState) :
+    ((iterations.foldl (fun current iteration => cancelScopeSubtree current iteration.scope .remove) state).variables.scopes).Sublist state.variables.scopes ∧
+    ((iterations.foldl (fun current iteration => cancelScopeSubtree current iteration.scope .remove) state).scopeOccurrences).Sublist state.scopeOccurrences := by
+  induction iterations generalizing state with
+  | nil => exact ⟨List.Sublist.refl _, List.Sublist.refl _⟩
+  | cons iteration rest ih =>
+      have tail := ih (cancelScopeSubtree state iteration.scope .remove)
+      have head := cancelParallelBody_surviving_population state iteration.scope
+      exact ⟨tail.1.trans head.1, tail.2.trans head.2⟩
+
+/-- PMIS-END-01/PMIS-CANCEL-01 dispose the selected frame and never rewrite, reorder or duplicate survivors. This does not characterize all owners removed by cancellation. -/
+theorem completeParallelScope_surviving_population {entry : ParallelScopeEntry} {target : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (completed : completeParallelScope? entry state target = some result) :
+    result.variables.scopes.Sublist (state.variables.scopes.filter fun frame => decide (frame.owner ≠ target)) ∧
+    result.scopeOccurrences.Sublist state.scopeOccurrences := by
+  unfold completeParallelScope? at completed
+  obtain ⟨binding, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  dsimp only at completed
+  split at completed <;> try contradiction
+  obtain ⟨variables, removed, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨condition, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨retirement, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  have removedFrames : variables.scopes.Sublist
+      (state.variables.scopes.filter fun frame => decide (frame.owner ≠ target)) := by
+    obtain ⟨_, shape⟩ := removeScopeVariables_success_iff.mp removed
+    rw [shape]
+    exact List.Sublist.refl _
+  cases retirement <;> cases Option.some.inj completed
+  · exact ⟨List.filter_sublist.trans removedFrames, List.filter_sublist⟩
+  · exact ⟨List.filter_sublist.trans removedFrames, List.filter_sublist⟩
+  · constructor
+    · apply List.Sublist.trans (cancelParallelBodies_surviving_population (_ :: _) _).1
+      exact List.filter_sublist.trans removedFrames
+    · apply List.Sublist.trans (cancelParallelBodies_surviving_population (_ :: _) _).2
+      exact List.filter_sublist
+
+/-- Retirement preserves both initially unique populations in all three retirement arms; cancellation cannot manufacture aliases. -/
+theorem completeParallelScope_preserves_population_uniqueness {entry : ParallelScopeEntry} {target : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (completed : completeParallelScope? entry state target = some result)
+    (frames : (state.variables.scopes.map (·.owner)).Nodup)
+    (scopes : (state.scopeOccurrences.map (·.id)).Nodup) :
+    (result.variables.scopes.map (·.owner)).Nodup ∧ (result.scopeOccurrences.map (·.id)).Nodup := by
+  have retained := completeParallelScope_surviving_population completed
+  exact ⟨frames.sublist ((retained.1.trans List.filter_sublist).map _), scopes.sublist (retained.2.map _)⟩
+
+/-- The selected body's local data cannot survive any successful retirement arm. -/
+theorem completeParallelScope_disposes_target_frame {entry : ParallelScopeEntry} {target : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (completed : completeParallelScope? entry state target = some result) :
+    ∀ frame ∈ result.variables.scopes, frame.owner ≠ target := by
+  intro frame member
+  have retained := (completeParallelScope_surviving_population completed).1.subset member
+  exact of_decide_eq_true (List.mem_filter.mp retained).2
 
 end BpmnSemantics.SemanticProcess

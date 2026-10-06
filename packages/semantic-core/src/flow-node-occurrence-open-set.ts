@@ -296,6 +296,7 @@ function projectEmbeddedScopes(
     const operation = only(program.operations.filter((candidate) =>
       (candidate.kind === SemanticOperationKind.EnterScope ||
         candidate.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope ||
+        candidate.kind === SemanticOperationKind.EnterParallelMultiInstanceScope ||
         candidate.kind === SemanticOperationKind.EnterBoundedScope ||
         candidate.kind === SemanticOperationKind.EnterMonitoredScope) &&
       candidate.childScopeId === occurrence.id.definitionScopeId &&

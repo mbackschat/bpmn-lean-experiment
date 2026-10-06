@@ -457,7 +457,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 43 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 752 | new defect arms only |
 | [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | result dispatch only |
-| [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 422 | failed arm only |
+| [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 392 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 23 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 290 | failed union references only |
@@ -472,7 +472,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 408 | failed union only |
-| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 237 | handler-effect/failed projection and selected scenario dispatch |
+| [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 279 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 157 | canonical encoding and selected publication dispatch |
 | [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 535 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |

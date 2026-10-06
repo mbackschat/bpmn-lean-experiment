@@ -9,10 +9,11 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 inductive InternalAlternative where
   | operation (id : OperationId)
   | mergeInput (id : OperationId) (owner : ScopeOccurrenceId) (input : ControlPlaceId)
+  | operationOccurrence (id : OperationId) (owner : ScopeOccurrenceId)
   deriving Repr, DecidableEq
 
 def InternalAlternative.operationId : InternalAlternative → OperationId
-  | .operation id | .mergeInput id _ _ => id
+  | .operation id | .mergeInput id _ _ | .operationOccurrence id _ => id
 
 def internalAlternativeBefore : InternalAlternative → InternalAlternative → Bool
   | .operation left, .operation right => left.value < right.value
@@ -22,6 +23,10 @@ def internalAlternativeBefore : InternalAlternative → InternalAlternative → 
       if left ≠ right then left.value < right.value
       else if leftOwner ≠ rightOwner then scopeBefore leftOwner rightOwner
       else leftInput.value < rightInput.value
+  | .operationOccurrence left leftOwner, .operationOccurrence right rightOwner =>
+      if left ≠ right then left.value < right.value else scopeBefore leftOwner rightOwner
+  | .operationOccurrence .., _ => false
+  | _, .operationOccurrence .. => true
 
 /-- Bucket multiplicity is retained by execution; indistinguishable units present one exact choice. -/
 def internalMergeInputAlternatives (state : RuntimeState) : SemanticOperation → List InternalAlternative

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.OpenWaitProjection
 import BpmnSemantics.SemanticProcess.ScenarioAdmission
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
@@ -217,46 +218,11 @@ private def activeWaits (program : Program) (state : RuntimeState) :
     sortActiveWaitsByElementId effectWaits ++
     sortActiveWaitsByElementId incidentWaits
 
-/-- The selected InputSet one live task occurrence publishes, or `none` when its Activity owns no
-local data.
+private def openUserTasks (program : Program) (state : RuntimeState) : List OpenUserTask :=
+  projectOpenUserTasks (taskDefinitions program) state
 
-Read from the committed Activity record and its occurrence-owned scope only. A scope of any other
-cardinality answers `none` rather than a truncated collection, because publishing part of an InputSet
-would present partial data as the complete selection. -/
-private def selectedTaskInputs? (state : RuntimeState) (wait : UserTaskWait) :
-    Option (List VariableBinding) := do
-  let record ← activityOccurrenceForTaskWait? state.activityOccurrences wait
-  let bindings ← activityOccurrenceVariableBindings state.variables
-    { processInstanceId := record.processInstanceId
-      activityElementId := ⟨record.activityElementId.value⟩
-      activation := record.activation }
-  match bindings with
-  | [_] => some bindings
-  | _ => none
-
-private def openUserTasks (program : Program) (state : RuntimeState) :
-    List OpenUserTask :=
-  (taskDefinitions program).flatMap fun task =>
-    (state.waits.filter fun wait => decide (wait.task.id = task.id)).map fun wait =>
-      { id :=
-          { processInstanceId := wait.processInstanceId
-            elementId := ⟨task.id.value⟩
-            activation := wait.activation }
-        name := task.name
-        state := .active
-        metadata := wait.metadata
-        inputs := selectedTaskInputs? state wait }
-
-private def openTimers (program : Program) (state : RuntimeState) :
-    List OpenTimer :=
-  (timerDefinitions program).flatMap fun timer =>
-    (state.timerWaits.filter fun wait =>
-      decide (wait.elementId = timer.elementId)).map fun wait =>
-        { id :=
-            { processInstanceId := wait.processInstanceId
-              elementId := ⟨timer.elementId.value⟩
-              activation := wait.activation }
-          deadlineMs := wait.deadlineMs }
+private def openTimers (program : Program) (state : RuntimeState) : List OpenTimer :=
+  projectOpenTimers (timerDefinitions program) state
 
 private def openMessageSubscriptions (program : Program)
     (state : RuntimeState) : List OpenMessageSubscription :=
@@ -270,12 +236,7 @@ private def openMessageSubscriptions (program : Program)
           channel := wait.channel }
   let listeners := state.eventSubProcessMessageSubscriptions.map fun listener =>
     { id := listener.id, channel := listener.channel : OpenMessageSubscription }
-  (ordinary ++ listeners).mergeSort fun left right =>
-    if left.id.processInstanceId ≠ right.id.processInstanceId then
-      left.id.processInstanceId.value < right.id.processInstanceId.value
-    else if left.id.elementId ≠ right.id.elementId then
-      left.id.elementId.value < right.id.elementId.value
-    else left.id.activation ≤ right.id.activation
+  sortOpenWaitOccurrences (·.id) (ordinary ++ listeners)
 
 private def openEffects (program : Program) (state : RuntimeState) :
     List OpenEffect :=
@@ -290,12 +251,7 @@ private def openEffects (program : Program) (state : RuntimeState) :
           arguments := wait.arguments }
   let compensation := state.compensationHandlerEffectWaits.map fun wait =>
     { id := wait.id, descriptor := wait.descriptor, arguments := wait.arguments : OpenEffect }
-  (ordinary ++ compensation).mergeSort fun left right =>
-    if left.id.processInstanceId ≠ right.id.processInstanceId then
-      left.id.processInstanceId.value < right.id.processInstanceId.value
-    else if left.id.elementId ≠ right.id.elementId then
-      left.id.elementId.value < right.id.elementId.value
-    else left.id.activation ≤ right.id.activation
+  sortOpenWaitOccurrences (·.id) (ordinary ++ compensation)
 
 private structure SequentialMultiInstanceObservationDefinition where
   taskId : TaskDefinitionId

@@ -1,6 +1,7 @@
 /** Pure transition for the ordinary, non-specialized User Task completion arm. */
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
 import { SequentialScopeWriteKind, writeSequentialScopeValues } from "./sequential-scope-data.js";
+import { hasParallelScopeDefinition, writeParallelScopeValues } from "./parallel-scope-data.js";
 import type {
   CompleteUserTaskInstanceStimulus,
 } from "./contract.js";
@@ -74,7 +75,13 @@ export function completeOrdinaryUserTask(
   if (staged === null) {
     return null;
   }
-  const variables = hasSequentialScopeDefinition(program, wait.owner)
+  const parallel = hasParallelScopeDefinition(program, wait.owner);
+  if (parallel && (hasSequentialScopeDefinition(program, wait.owner) ||
+      wait.id.processInstanceId !== wait.owner.processInstanceId ||
+      state.userTaskWaits.filter(candidate => sameOccurrence(candidate.id, stimulus.taskId)).length !== 1)) return null;
+  const variables = parallel
+    ? writeParallelScopeValues(program, staged, wait.owner, stimulus.submittedValues, SequentialScopeWriteKind.UserTask)
+    : hasSequentialScopeDefinition(program, wait.owner)
     ? writeSequentialScopeValues(program, staged, wait.owner, stimulus.submittedValues, SequentialScopeWriteKind.UserTask)
     : { ...staged.variables, process: { bindings: mergeProcessVariableBindings(staged.variables.process.bindings, stimulus.submittedValues) } };
   if (variables === null) return null;

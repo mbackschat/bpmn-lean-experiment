@@ -30,18 +30,20 @@ def bodyMappingsValid (handlers : List String) (inputs : List VariableMapping) :
       | .enclosingVariable name => nameAllowed handlers name
       | .localVariable _ => false)
 
-def requirements (program : Program) : Option Analysis := do
-  let [entry] := program.operations.filterMap sequentialScopeEntry? | none
+/-- Both repetition modes share immutable data requirements, independently of their controller semantics. -/
+def requirementsFor (program : Program) (collection item : String) (childScope : DefinitionScopeId)
+    (inputs : List VariableMapping) (condition : Option String) : Option (List String × List String) := do
+  let scalarReads := fun names => names.all fun name => name != collection && condition != some name
   let handlers := programHandlers program
-  let reserved := protectedNames entry
+  let reserved := [collection, item] ++ condition.toList
   if reserved.eraseDups.length != reserved.length ||
-      !reserved.all (nameAllowed handlers) || !bodyMappingsValid handlers entry.bodyInputs ||
-      entry.bodyInputs.any (fun mapping => reserved.contains mapping.target) then none
+      !reserved.all (nameAllowed handlers) || !bodyMappingsValid handlers inputs ||
+      inputs.any (fun mapping => reserved.contains mapping.target) then none
   else do
-    let initialReads := readNames entry.bodyInputs
-    if !scalarReadsValid entry initialReads then none
+    let initialReads := readNames inputs
+    if !scalarReads initialReads then none
     else do
-      let locals := entry.bodyInputs.map (·.target)
+      let locals := inputs.map (·.target)
       let reads ← program.operations.mapM fun operation => do
         match operation with
         | .awaitEffect id _ _ _ effect _ =>
@@ -50,13 +52,17 @@ def requirements (program : Program) : Option Analysis := do
             if !descriptorValid effect.descriptor ||
                 !mappingsValid handlers effect.inputMappings effect.outputMappings ||
                 effect.outputMappings.any (fun mapping => reserved.contains mapping.target) ||
-                !scalarReadsValid entry names then none
-            else some (names.filter fun name => owner.scopeId != entry.childScopeId ||
-              (!locals.contains name && name != entry.itemName))
+                !scalarReads names then none
+            else some (names.filter fun name => owner.scopeId != childScope ||
+              (!locals.contains name && name != item))
         | _ => some []
-      return {
-        entry, handlers,
-        requiredProcessScalars := (initialReads ++ reads.flatten).eraseDups }
+      return (handlers, (initialReads ++ reads.flatten).eraseDups)
+
+def requirements (program : Program) : Option Analysis := do
+  let [entry] := program.operations.filterMap sequentialScopeEntry? | none
+  let (handlers, required) ← requirementsFor program entry.collectionName entry.itemName entry.childScopeId
+    entry.bodyInputs entry.completionBooleanName
+  return ⟨entry, handlers, required⟩
 
 /-- Admission and canonical ordering are separate so finite witnesses can check each without unfolding the other. -/
 def analyze (program : Program) : Option Analysis :=

@@ -1,5 +1,6 @@
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
 import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
+import { evaluateParallelScopeInputs, hasParallelScopeDefinition } from "./parallel-scope-data.js";
 import type { OccurrenceId } from "./contract.js";
 import {
   addActivityVariableScope,
@@ -77,13 +78,15 @@ export function deriveInternalOrdinaryArmingPatch(
   operation: InternalOrdinaryArmingOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
+  reservedActivation?: number,
 ): InternalOrdinaryArmingPatch | null {
   if (state.control.kind !== ControlStateKind.Running) {
     return null;
   }
+  if (reservedActivation !== undefined && (!Number.isSafeInteger(reservedActivation) || reservedActivation < 1)) return null;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask: {
-      const activation = nextActivation(
+      const activation = reservedActivation ?? nextActivation(
         state.taskActivations,
         operation.task.elementId,
       );
@@ -105,7 +108,7 @@ export function deriveInternalOrdinaryArmingPatch(
     case SemanticOperationKind.AwaitMessage:
     case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage: {
-      const activation = nextActivation(
+      const activation = reservedActivation ?? nextActivation(
         state.messageActivations,
         operation.message.elementId,
       );
@@ -122,7 +125,7 @@ export function deriveInternalOrdinaryArmingPatch(
       };
     }
     case SemanticOperationKind.AwaitTimer: {
-      const activation = nextActivation(
+      const activation = reservedActivation ?? nextActivation(
         state.timerActivations,
         operation.timer.elementId,
       );
@@ -143,11 +146,14 @@ export function deriveInternalOrdinaryArmingPatch(
       };
     }
     case SemanticOperationKind.AwaitEffect: {
-      const activation = nextActivation(
+      const activation = reservedActivation ?? nextActivation(
         state.effectActivations,
         operation.effect.elementId,
       );
-      const arguments_ = hasSequentialScopeDefinition(program, owner)
+      if (hasParallelScopeDefinition(program, owner) && hasSequentialScopeDefinition(program, owner)) return null;
+      const arguments_ = hasParallelScopeDefinition(program, owner)
+        ? evaluateParallelScopeInputs(program, state, owner, operation.effect.inputMappings)
+        : hasSequentialScopeDefinition(program, owner)
         ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
         : evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
       if (arguments_ === null) return null;

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ScopeCompletion
 import BpmnSemantics.SemanticProcess.ScopeVariableData
+import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import BpmnSemantics.SemanticProcess.EffectCompletion
@@ -139,26 +140,14 @@ def evaluateEffectInputs? (program : Program) (state : RuntimeState)
     evaluateSequentialScopeInputs? program state owner mappings
   else evaluateEnclosingInputMappings state.variables.process.bindings mappings
 
-inductive SequentialScopeWriteKind where
-  | userTask | serviceTask
-  deriving Repr, DecidableEq
+abbrev SequentialScopeWriteKind := MultiInstanceScopeWriteKind
 
-/-- SMIS-DATA-01 protects iteration inputs; SMIS-EARLY-01 reserves the Process Boolean for human writes. -/
+/-- SMIS-DATA-01 joins the shared write policy to the unique current sequential body. -/
 def writeSequentialScopeValues? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (values : List VariableBinding) (kind : SequentialScopeWriteKind) : Option ScopedVariables := do
   let binding ← sequentialScopeBindingForOwner? program state owner
-  let condition := binding.entry.completionBooleanName
-  let permitted := values.all fun value =>
-    SerialBusinessTask.identifier value.name && !(sequentialScopeHandlerNames program).contains value.name &&
-      value.name != binding.entry.collectionName && value.name != binding.entry.itemName &&
-      (if condition == some value.name then kind == .userTask &&
-        (match value.value with | .boolean _ => true | _ => false)
-      else scopeVariableScalar value.value)
-  if !permitted || !decide (values.Pairwise fun left right => left.name < right.name) then none
-  else
-    let variables ← writeScopeVariables? state.variables owner (values.filter fun value => condition != some value.name)
-    let processValues := values.filter fun value => condition == some value.name
-    some { variables with process := { bindings := mergeProcessVariableBindings variables.process.bindings processValues } }
+  writeBoundMultiInstanceScopeValues? state.variables owner binding.entry.collectionName binding.entry.itemName
+    binding.entry.completionBooleanName (sequentialScopeHandlerNames program) values kind
 
 /-- Explicit local-result projection precedes nearest-scope writes and exact effect-frame disposal. -/
 def completeSequentialScopeEffectData? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)

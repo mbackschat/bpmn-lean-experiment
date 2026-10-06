@@ -1,10 +1,10 @@
+import { applyInternalOccurrenceBatch } from "./internal-occurrence-batch.js";
 import { CommandOutcome } from "./contract.js";
 import type { InternalAlternative } from "./internal-transition-alternative.js";
 import { compareInternalAlternatives } from "./internal-transition-alternative.js";
 import { applyPreparedInternalTransition } from "./internal-transition-batch.js";
-import type { PreparedInternalTransition } from "./internal-transition-batch.js";
-import { classifyPreparedInternalFrontier, InternalFrontierDisposition } from "./internal-transition-preparation.js";
-import type { InternalExecutionFrontier, InternalExecutionOffer } from "./internal-transition-preparation.js";
+import { classifyPreparedInternalFrontier, InternalFrontierDisposition, InternalBatchPreparationKind } from "./internal-transition-preparation.js";
+import type { InternalExecutionFrontier, InternalExecutionOffer, InternalBatchPreparation } from "./internal-transition-preparation.js";
 import type { CommandAdmission } from "./semantic-command-admission.js";
 import { InternalSchedulingMode } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
@@ -69,7 +69,7 @@ export function evaluateScheduledClosure<Refusal>(
   let ordinal = 0;
   const steps: AppliedInternalOperationStep[] = [];
   const batches: AppliedInternalOperationStep[][] = [];
-  const preparations: (ReadonlyArray<PreparedInternalTransition> | null)[] = [];
+  const preparations: (InternalBatchPreparation | null)[] = [];
   for (;;) {
     const frontier = state.control.kind === ControlStateKind.Cancelled || state.control.kind === ControlStateKind.Failed
       ? { offers: [], refusal: null, preparationFailed: false } : frontierAt(state);
@@ -86,6 +86,20 @@ export function evaluateScheduledClosure<Refusal>(
     // Fuel precedes both directive inspection and ambiguity, as in the existing zero-fuel closure.
     if (steps.length === limit) return rollback(null, true);
     if (frontier.preparationFailed) return rollback(null, false, true);
+
+    if (frontier.occurrenceBatch !== undefined) {
+      const certificate = frontier.occurrenceBatch;
+      if (certificate.members.length !== frontier.offers.length || certificate.members.some((member, index) =>
+          compareInternalAlternatives(member.alternative, frontier.offers[index]!.alternative) !== 0)) return rollback(null, false, true);
+      if (certificate.members.length > limit - steps.length) return rollback(null, true);
+      const batch = applyInternalOccurrenceBatch(program, state, certificate);
+      if (batch === null) return rollback(null, false, true);
+      state = batch[batch.length - 1]!.successor;
+      steps.push(...batch);
+      batches.push([...batch]);
+      preparations.push({ kind: InternalBatchPreparationKind.ReservedOccurrences, certificate });
+      continue;
+    }
 
     let selected: ReadonlyArray<InternalExecutionOffer>;
     const prepared = frontier.offers.flatMap(({ preparation }) => preparation === null ? [] : [preparation]);
@@ -138,7 +152,7 @@ export function evaluateScheduledClosure<Refusal>(
     steps.push(...batch);
     batches.push(batch);
     preparations.push(selected.every(({ preparation }) => preparation !== null)
-      ? selected.map(({ preparation }) => preparation!) : null);
+      ? { kind: InternalBatchPreparationKind.Prepared, members: selected.map(({ preparation }) => preparation!) } : null);
   }
 }
 

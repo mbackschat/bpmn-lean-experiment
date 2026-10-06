@@ -51,6 +51,7 @@ import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
 import { hasSequentialScopeDefinition, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
 import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
+import { hasParallelScopeDefinition } from "./parallel-scope-data.js";
 
 export type InternalOccurrence = Readonly<{
   kind: InternalOccurrenceKind;
@@ -392,6 +393,8 @@ export function deriveInternalTransitionFootprint(
         state.timerWaits.map(({ id }) => id),
       );
     case SemanticOperationKind.AwaitEffect: {
+      // PMIS-SELECT-01 forbids applying single-body read laws to a parallel population binding.
+      if (hasParallelScopeDefinition(program, owner)) return null;
       const repeated = hasSequentialScopeDefinition(program, owner);
       const binding = repeated ? sequentialScopeBindingForOwner(program, state, owner) : undefined;
       if (repeated && binding === undefined) return null;

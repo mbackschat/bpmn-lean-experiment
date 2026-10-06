@@ -167,7 +167,7 @@ theorem sequentialScope_write_preserves_collection (program : Program) (state : 
       (fun value => decide (value.name = binding.entry.collectionName)) = [collection])
     (written : writeSequentialScopeValues? program state owner values kind = some result) :
     result.process.bindings.filter (fun value => decide (value.name = binding.entry.collectionName)) = [collection] := by
-  unfold writeSequentialScopeValues? at written
+  unfold writeSequentialScopeValues? writeBoundMultiInstanceScopeValues? at written
   simp only [bound, bind, Option.bind] at written
   split at written <;> try contradiction
   rename_i allowed
@@ -203,23 +203,28 @@ private theorem sequentialScope_analysis_initial_reads (program : Program)
   split at requirements <;> try contradiction
   rename_i candidates entry entries
   dsimp only at requirements
-  split at requirements <;> try contradiction
-  rename_i checks
-  split at requirements <;> try contradiction
-  rename_i scalarReads
-  obtain ⟨reads, _, requirements⟩ := Option.bind_eq_some_iff.mp requirements
-  simp only [pure, Option.some.injEq] at requirements
+  obtain ⟨values, dataAccepted, rawEq⟩ := Option.bind_eq_some_iff.mp requirements
+  simp only [pure, Option.some.injEq] at rawEq
   subst raw
+  unfold SequentialScopeData.requirementsFor at dataAccepted
+  dsimp only at dataAccepted
+  split at dataAccepted <;> try contradiction
+  rename_i checks
+  split at dataAccepted <;> try contradiction
+  rename_i scalarReads
+  obtain ⟨reads, _, resultFields⟩ := Option.bind_eq_some_iff.mp dataAccepted
+  simp only [pure, Option.some.injEq] at resultFields
+  subst values
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · simp_all
-  · simpa using scalarReads
+  · simpa [SequentialScopeData.scalarReadsValid] using scalarReads
   · intro name member
     simpa only [List.mem_mergeSort, List.mem_eraseDups, List.mem_append] using Or.inl member
   · assumption
   · rfl
   · intro same
     by_cases collision : entry.itemName = entry.collectionName <;>
-      simp_all [SequentialScopeData.protectedNames, List.eraseDups_cons]
+      simp_all [List.eraseDups_cons]
 
 /-- SMIS-DATA-01 derives every initial body read from accepted Start data and the immutable read analysis. -/
 theorem sequentialScope_admitted_start_inputs (program : Program)
@@ -534,7 +539,7 @@ private theorem sequentialScope_written_values_admitted (program : Program) (ana
     (analyzed : SequentialScopeData.analyze program = some analysis)
     (written : writeSequentialScopeValues? program state owner values kind = some after) :
     SequentialScopeData.humanValuesAdmitted analysis values = true := by
-  unfold writeSequentialScopeValues? at written
+  unfold writeSequentialScopeValues? writeBoundMultiInstanceScopeValues? at written
   obtain ⟨binding, bound, written⟩ := Option.bind_eq_some_iff.mp written
   have entry := sequentialScope_owner_binding_entry program analysis state owner binding analyzed bound
   have handlers := (sequentialScope_analysis_initial_reads program analysis analyzed).2.2.2.2.1
@@ -571,7 +576,7 @@ theorem sequentialScope_write_preserves_start_data (program : Program) (analysis
     SequentialScopeData.startAdmitted program after.process.bindings = true := by
   have admitted := sequentialScope_written_values_admitted program analysis state owner values kind after analyzed written
   obtain ⟨unique, typed⟩ := sequentialScope_human_start_types analysis values admitted
-  unfold writeSequentialScopeValues? at written
+  unfold writeSequentialScopeValues? writeBoundMultiInstanceScopeValues? at written
   obtain ⟨binding, _, written⟩ := Option.bind_eq_some_iff.mp written
   dsimp only at written
   split at written <;> try contradiction
@@ -788,7 +793,7 @@ theorem sequentialScope_write_preserves_owner_census (program : Program) (before
     (owner : ScopeOccurrenceId) (values : List VariableBinding) (kind : SequentialScopeWriteKind)
     (after : ScopedVariables) (written : writeSequentialScopeValues? program before owner values kind = some after) :
     after.scopes.map (·.owner) = before.variables.scopes.map (·.owner) := by
-  unfold writeSequentialScopeValues? at written
+  unfold writeSequentialScopeValues? writeBoundMultiInstanceScopeValues? at written
   obtain ⟨binding, _, written⟩ := Option.bind_eq_some_iff.mp written
   dsimp only at written
   split at written <;> try contradiction
