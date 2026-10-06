@@ -390,4 +390,99 @@ theorem enterParallelScope_preserves_scope_uniqueness {entry : ParallelScopeEntr
         have unique := issueParallelBodies_preserves_scope_uniqueness generated distinct absent
         exact unique
 
+private theorem initializeParallelBody_frames {variables result : ScopedVariables}
+    {owner : ScopeOccurrenceId} {mappings : List VariableMapping} {bindings : List VariableBinding}
+    (evaluated : evaluateEnclosingInputMappings variables.process.bindings mappings = some bindings)
+    (initialized : initializeScopeVariables? variables owner mappings = some result) :
+    result.scopes.Perm
+      ((⟨owner, mergeProcessVariableBindings [] bindings⟩ : ScopeVariableScope) :: variables.scopes) := by
+  unfold initializeScopeVariables? at initialized
+  split at initialized
+  · simp at initialized
+  · simp [evaluated] at initialized
+    rcases initialized with ⟨_, rfl⟩
+    have filterAll (values : List ScopeVariableScope) : values.filter (fun _ => true) = values :=
+      List.filter_eq_self.mpr (by intros; rfl)
+    simpa only [filterAll] using filter_canonicalInsertBy_perm
+      (fun left right : ScopeVariableScope => scopeOwnerBefore left.owner right.owner)
+      (fun _ => true) ⟨owner, mergeProcessVariableBindings [] bindings⟩ variables.scopes rfl
+
+/-- PMIS-DATA-01 gives each body the same pre-entry input snapshot and retains every existing local frame with multiplicity. -/
+theorem issueParallelBodies_local_frames {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState}
+    {iterations : List ParallelScopeIteration} {bindings : List VariableBinding}
+    (evaluated : evaluateEnclosingInputMappings state.variables.process.bindings entry.bodyInputs = some bindings)
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    result.variables.scopes.Perm
+      (iterations.map (fun iteration => (⟨iteration.scope, mergeProcessVariableBindings [] bindings⟩ : ScopeVariableScope)) ++ state.variables.scopes) := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; simp
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨variables, initialized, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      have processFrame := (initializeScopeVariables_preserves_other_data initialized).1
+      have nextEvaluation : evaluateEnclosingInputMappings variables.process.bindings entry.bodyInputs = some bindings := by
+        rw [processFrame]
+        exact evaluated
+      have insertion := initializeParallelBody_frames evaluated initialized
+      exact (ih nextEvaluation generated).trans
+        ((List.Perm.append_left _ insertion).trans List.perm_middle)
+
+private theorem initializeParallelBody_frame_uniqueness {variables result : ScopedVariables}
+    {owner : ScopeOccurrenceId} {mappings : List VariableMapping}
+    (initialized : initializeScopeVariables? variables owner mappings = some result)
+    (distinct : (variables.scopes.map (·.owner)).Nodup) :
+    (result.scopes.map (·.owner)).Nodup := by
+  have original := initialized
+  unfold initializeScopeVariables? at initialized
+  split at initialized
+  · simp at initialized
+  · rename_i absent
+    obtain ⟨bindings, evaluated, _⟩ := Option.bind_eq_some_iff.mp initialized
+    have fresh : owner ∉ variables.scopes.map (·.owner) := by
+      intro member
+      obtain ⟨frame, frameMember, identity⟩ := List.mem_map.mp member
+      exact absent (List.any_eq_true.mpr ⟨frame, frameMember, by simp [identity]⟩)
+    have population := (initializeParallelBody_frames evaluated original).map ScopeVariableScope.owner
+    apply population.symm.nodup
+    simpa only [List.map_cons] using List.nodup_cons.mpr ⟨fresh, distinct⟩
+
+/-- PMIS-DATA-01 preserves unique local-frame ownership through arbitrary successful population issuance. -/
+theorem issueParallelBodies_preserves_frame_uniqueness {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations))
+    (distinct : (state.variables.scopes.map (·.owner)).Nodup) :
+    (result.variables.scopes.map (·.owner)).Nodup := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; exact distinct
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨variables, initialized, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      exact ih generated (initializeParallelBody_frame_uniqueness initialized distinct)
+
+/-- PMIS-ENTER-01/PMIS-DATA-01 extend frame ownership to the actual entry operation, including zero-item entry. -/
+theorem enterParallelScope_preserves_frame_uniqueness {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (entered : enterParallelScope? entry state parent = some result)
+    (distinct : (state.variables.scopes.map (·.owner)).Nodup) :
+    (result.variables.scopes.map (·.owner)).Nodup := by
+  unfold enterParallelScope? at entered
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered
+  · cases Option.some.inj entered; exact distinct
+  · obtain ⟨⟨issued, iterations⟩, generated, installed⟩ := Option.bind_eq_some_iff.mp entered
+    cases iterations with
+    | nil => simp at installed
+    | cons first rest =>
+        cases Option.some.inj installed
+        have unique := issueParallelBodies_preserves_frame_uniqueness generated distinct
+        exact unique
+
 end BpmnSemantics.SemanticProcess
