@@ -1,4 +1,4 @@
-import { CheckedNodeKind as Kind, MappingExpressionKind as Mapping, VariableValueKind as Value, compareCanonicalStrings, GatewayDirection } from "@bpmn-lean/semantic-core";
+import { CheckedNodeKind as Kind, MappingExpressionKind as Mapping, VariableValueKind as Value, compareCanonicalStrings, GatewayDirection, BoundaryInterruption, MessageChannelKind } from "@bpmn-lean/semantic-core";
 import type { CheckedNode, CheckedProcess, VariableBinding } from "@bpmn-lean/semantic-core";
 import { parallelAdmissionCases } from "./parallel-scope-admission-fixture.ts";
 
@@ -119,6 +119,14 @@ export async function parallelStartFrontierCases() {
   add(parentEffect, 0, { waits: 1, effects: 1 });
   add(parentEffect, 16, { waits: 16, effects: 16 });
   for (const entry of cases.slice(0, 2)) cases.push({ ...entry, source: { ...entry.source, nodes: [...entry.source.nodes].reverse(), sequenceFlows: [...entry.source.sequenceFlows].reverse() } });
+  for (const entry of cases.filter(entry => entry.expected !== null))
+    cases.push({ ...entry, source: { ...entry.source, interruptingMessageEventSubProcesses: [] } });
+  const [first] = cases;
+  cases.push({ ...first!, source: { ...first!.source, interruptingMessageEventSubProcesses: [{
+    parentScopeId: "root", handlerScopeId: "handler", elementId: "Handler", startEventId: "MessageStart",
+    childEntryFlowId: "HandlerEntry", interruption: BoundaryInterruption.Interrupting,
+    channel: { kind: MessageChannelKind.DirectMessage, messageId: "Cancel" },
+  }] }, expected: null });
   for (const entry of initial.filter(entry => entry.expected === null)) cases.push({ ...entry, expected: null });
   return cases;
 }

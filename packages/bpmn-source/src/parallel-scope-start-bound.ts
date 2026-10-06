@@ -32,7 +32,9 @@ export function parallelScopeStartFrontierCapacity(source: CheckedProcess, bindi
 
 function analyzeStart(source: CheckedProcess, bindings: readonly VariableBinding[]) {
   if (!parallelScopeCheckedSourceAdmitted(source)) return undefined;
-  const program = lowerCheckedProcess(source);
+  // PMIS-ADMIT-01 accepts empty Message-handler declarations as omission; nonempty declarations failed above.
+  const { interruptingMessageEventSubProcesses: _messageHandlers, ...ordinarySource } = source;
+  const program = lowerCheckedProcess(ordinarySource);
   const data = analyzeParallelScopeData(program);
   if (data === undefined || !sequentialScopeStartDataAdmitted(data, bindings)) return undefined;
   const collection = bindings.find(binding => binding.name === data.collectionName)?.value;
