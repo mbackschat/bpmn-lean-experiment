@@ -141,14 +141,14 @@ theorem sequentialScope_admitted_start_collection (program : Program)
   cases analyzed : SequentialScopeData.analyze program with
   | none => simp [SequentialScopeData.startAdmitted, analyzed] at admitted
   | some analysis =>
-      simp only [SequentialScopeData.startAdmitted, analyzed, Bool.and_eq_true] at admitted
+      simp only [SequentialScopeData.startAdmitted, SequentialScopeData.startBindingsAdmitted, analyzed, Bool.and_eq_true] at admitted
       obtain ⟨⟨⟨⟨sorted, values⟩, collection⟩, _⟩, _⟩ := admitted
       obtain ⟨binding, member, named⟩ := List.any_eq_true.mp collection
       have nameEq : binding.name = analysis.entry.collectionName := by simpa using named
       have valid := (Bool.and_eq_true _ _).mp (List.all_eq_true.mp values binding member)
       have valueValid := valid.2
       cases value : binding.value <;>
-        simp [SequentialScopeData.startValueValid, nameEq, value] at valueValid
+        simp [SequentialScopeData.startBindingValueValid, nameEq, value] at valueValid
       rename_i items
       refine ⟨analysis, items, rfl, ?_, valueValid⟩
       have exactBinding : binding = { name := analysis.entry.collectionName, value := .stringList items } := by
@@ -228,7 +228,7 @@ theorem sequentialScope_admitted_start_inputs (program : Program)
     (admitted : SequentialScopeData.startAdmitted program bindings = true) :
     ∃ inputs, evaluateEnclosingInputMappings bindings analysis.entry.bodyInputs = some inputs := by
   obtain ⟨mappings, reads, required, _, _⟩ := sequentialScope_analysis_initial_reads program analysis analyzed
-  simp only [SequentialScopeData.startAdmitted, analyzed, Bool.and_eq_true] at admitted
+  simp only [SequentialScopeData.startAdmitted, SequentialScopeData.startBindingsAdmitted, analyzed, Bool.and_eq_true] at admitted
   obtain ⟨⟨⟨⟨sorted, values⟩, _⟩, _⟩, supplied⟩ := admitted
   apply evaluateInputMappings_evaluable (enclosingVariable? bindings) analysis.entry.bodyInputs
     (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp mappings).1)
@@ -254,7 +254,7 @@ theorem sequentialScope_admitted_start_inputs (program : Program)
       have notCondition : analysis.entry.completionBooleanName ≠ some name := by
         simpa only [bne_iff_ne] using (Bool.and_eq_true_iff.mp permitted).2
       have scalar : SerialBusinessTask.scalar binding.value = true := by
-        simpa only [SequentialScopeData.startValueValid, nameEq, beq_eq_false_iff_ne.mpr notCollection,
+        simpa only [SequentialScopeData.startValueValid, SequentialScopeData.startBindingValueValid, nameEq, beq_eq_false_iff_ne.mpr notCollection,
           beq_eq_false_iff_ne.mpr notCondition, Bool.false_eq_true, ↓reduceIte] using typed
       refine ⟨binding.value, ?_⟩
       simp only [scalarInputLookup_enclosing, enclosingVariable?, census]
@@ -444,7 +444,7 @@ theorem sequentialScope_start_data_merge (program : Program) (analysis : Sequent
     (typed : patch.all (fun value => SerialBusinessTask.nameAllowed analysis.handlers value.name &&
       SequentialScopeData.startValueValid analysis.entry value) = true) :
     SequentialScopeData.startAdmitted program (mergeProcessVariableBindings existing patch) = true := by
-  simp only [SequentialScopeData.startAdmitted, analyzed, Bool.and_eq_true] at valid ⊢
+  simp only [SequentialScopeData.startAdmitted, SequentialScopeData.startBindingsAdmitted, analyzed, Bool.and_eq_true] at valid ⊢
   obtain ⟨⟨⟨⟨sorted, values⟩, collection⟩, condition⟩, required⟩ := valid
   refine ⟨⟨⟨⟨sequentialScope_pairwise_sorted _ (mergeProcessVariableBindings_strictOrder existing patch
     (strictlySortedStrings_nodup _ sorted) unique), ?_⟩,
@@ -473,7 +473,7 @@ private theorem sequentialScope_human_start_types (analysis : SequentialScopeDat
   simp only [Bool.and_eq_true] at allowed
   have collection : (value.name == analysis.entry.collectionName) = false := by
     simpa only [bne_iff_ne, beq_eq_false_iff_ne] using allowed.1.1.2
-  simp only [SequentialScopeData.startValueValid, collection, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true]
+  simp only [SequentialScopeData.startValueValid, SequentialScopeData.startBindingValueValid, collection, Bool.false_eq_true, ↓reduceIte, Bool.and_eq_true]
   exact ⟨allowed.1.1.1, allowed.2⟩
 
 private theorem sequentialScope_scoped_start_data (program : Program) (analysis : SequentialScopeData.Analysis)
@@ -682,7 +682,7 @@ theorem sequentialScope_admitted_condition (program : Program) (analysis : Seque
   | some name =>
       have distinct := (sequentialScope_analysis_initial_reads program analysis analyzed).2.2.2.2.2
       have notCollection : name ≠ analysis.entry.collectionName := by simpa [condition] using distinct
-      simp only [SequentialScopeData.startAdmitted, analyzed, Bool.and_eq_true] at admitted
+      simp only [SequentialScopeData.startAdmitted, SequentialScopeData.startBindingsAdmitted, analyzed, Bool.and_eq_true] at admitted
       obtain ⟨⟨⟨⟨sorted, values⟩, _⟩, present⟩, _⟩ := admitted
       simp only [condition, Option.all_some] at present
       obtain ⟨binding, member, named⟩ := List.any_eq_true.mp present
@@ -690,7 +690,7 @@ theorem sequentialScope_admitted_condition (program : Program) (analysis : Seque
       have census := filter_key_eq_singleton_of_nodup state.variables.process.bindings (·.name) binding
         (strictlySortedStrings_nodup _ sorted) member
       have typed := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp values binding member)).2
-      simp only [SequentialScopeData.startValueValid, nameEq, beq_eq_false_iff_ne.mpr notCollection,
+      simp only [SequentialScopeData.startBindingValueValid, nameEq, beq_eq_false_iff_ne.mpr notCollection,
         condition, beq_self_eq_true, Bool.false_eq_true, ↓reduceIte] at typed
       cases value : binding.value <;> simp only [value, Bool.false_eq_true] at typed
       rename_i flag

@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
+import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 
@@ -136,6 +137,15 @@ theorem private_checked_admission_retains_both_task_kinds_and_execution_refusal 
     ParallelScopeChecked.admitted { checkedMixed with nodes := checkedMixed.nodes.reverse } = true ∧
     ParallelScopeChecked.admitted checkedParallel = false ∧
     programProfileCapabilitiesValid (lowerCheckedProcess checkedMixed) = false := by decide +kernel
+
+private def startBindings (count : Nat) : List VariableBinding :=
+  [⟨"done", .boolean false⟩, ⟨"items", .stringList (List.replicate count "same")⟩, ⟨"seed", .null⟩]
+
+theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
+    ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 0) = some 4 ∧
+    ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 16) = some 68 ∧
+    ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 17) = none ∧
+    ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none := by decide +kernel
 
 private def parallelScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),

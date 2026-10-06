@@ -63,26 +63,34 @@ def analyze (program : Program) : Option Analysis :=
   (requirements program).map fun analysis =>
     { analysis with requiredProcessScalars := analysis.requiredProcessScalars.mergeSort (fun a b => a ≤ b) }
 
-def startValueValid (entry : SequentialScopeEntry) (binding : VariableBinding) : Bool :=
-  if binding.name == entry.collectionName then
+def startBindingValueValid (collection : String) (condition : Option String) (binding : VariableBinding) : Bool :=
+  if binding.name == collection then
     match binding.value with
     | .stringList items => sequentialScopeCollectionWithinLimits items
     | _ => false
-  else if entry.completionBooleanName == some binding.name then
+  else if condition == some binding.name then
     match binding.value with
     | .boolean _ => true
     | _ => false
   else scalar binding.value
 
+def startValueValid (entry : SequentialScopeEntry) (binding : VariableBinding) : Bool :=
+  startBindingValueValid entry.collectionName entry.completionBooleanName binding
+
+/-- Both repetition modes require the same pre-entry inputs, including when the collection is empty. -/
+def startBindingsAdmitted (collection : String) (condition : Option String)
+    (handlers required : List String) (bindings : List VariableBinding) : Bool :=
+  strictlySortedStrings (bindings.map (·.name)) &&
+  bindings.all (fun binding => nameAllowed handlers binding.name && startBindingValueValid collection condition binding) &&
+  bindings.any (·.name == collection) && condition.all (fun name => bindings.any (·.name == name)) &&
+  required.all (fun name => bindings.any (·.name == name))
+
 def startAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
   match analyze program with
   | none => false
   | some analysis =>
-      strictlySortedStrings (bindings.map (·.name)) &&
-      bindings.all (fun binding => nameAllowed analysis.handlers binding.name && startValueValid analysis.entry binding) &&
-      bindings.any (·.name == analysis.entry.collectionName) &&
-      analysis.entry.completionBooleanName.all (fun name => bindings.any (·.name == name)) &&
-      analysis.requiredProcessScalars.all (fun name => bindings.any (·.name == name))
+      startBindingsAdmitted analysis.entry.collectionName analysis.entry.completionBooleanName
+        analysis.handlers analysis.requiredProcessScalars bindings
 
 def humanValuesAdmitted (analysis : Analysis) (bindings : List VariableBinding) : Bool :=
   strictlySortedStrings (bindings.map (·.name)) && bindings.all (fun binding =>
