@@ -7,6 +7,7 @@ import {
   VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import { ApplicationFailure } from "@temporalio/workflow";
+import proto from "@temporalio/proto";
 import {
   BpmnProcessStartResultKind,
   EffectProbeActivityRegistry,
@@ -140,6 +141,71 @@ test("an oversized Activity result fails before semantic exposure and replays", 
     if (worker !== undefined) {
       await stopBpmnTestWorker(worker);
     }
+    await environment.teardown();
+  }
+});
+
+test("oversized Activity failures retain retry policy, bounded History and replay", async () => {
+  const registry = new EffectProbeActivityRegistry();
+  const environment = await withDeadline(
+    createCachedLocalEnvironment({
+      identity: "bpmn-lean-workflow-effect-failure-capacity",
+      downloadDirectory: temporalCacheDirectory,
+    }),
+    40_000,
+    "Workflow effect-failure Temporal environment startup",
+  );
+  let worker: WorkerLease | undefined;
+  try {
+    const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, "workflow-effect-failure-capacity", registry.activities);
+    for (const nonRetryable of [false, true]) {
+      const input = serviceTaskEffectInput(`FailureCapacity_${nonRetryable}`);
+      const start = input.scenario.stimuli[0];
+      assert.ok(start?.kind === StimulusKind.StartProcess);
+      const request = serviceTaskEffectRequest(input);
+      let invocations = 0;
+      registry.register(request, async () => {
+        invocations += 1;
+        const error = ApplicationFailure.create({
+          message: "😀".repeat(100_000),
+          type: "FailureCapacityProbe",
+          details: ["detail".repeat(100_000)],
+          cause: new Error("cause".repeat(100_000)),
+          nonRetryable,
+          nextRetryDelay: "10ms",
+        });
+        error.failure = { message: "serialized".repeat(100_000) };
+        throw error;
+      });
+      try {
+        const started = await startBpmnProcess(environment.client.workflow, start, input.semanticProcess,
+          { taskQueue: bpmnSemanticTaskQueue });
+        assert.equal(started.kind, BpmnProcessStartResultKind.Started);
+        const handle = getTestProcessHandle(environment.client.workflow, start.instanceId);
+        await assert.rejects(withDeadline(handle.result(), operationDeadlineMs, "bounded effect failure"),
+          (error: unknown) => {
+            assert.equal(applicationFailure(error).type, "BPMN_EFFECT_EXECUTION_EXHAUSTED");
+            return true;
+          });
+        assert.equal(invocations, nonRetryable ? 1 : 2);
+        const history = await handle.fetchHistory();
+        const failed = history.events?.filter((event) => event.activityTaskFailedEventAttributes != null) ?? [];
+        assert.equal(failed.length, 1);
+        const failure = failed[0]?.activityTaskFailedEventAttributes?.failure;
+        assert.ok(failure);
+        assert.ok(proto.temporal.api.failure.v1.Failure.encode(failure).finish().length <= 1024);
+        assert.equal(failure.applicationFailureInfo?.nonRetryable, nonRetryable);
+        assert.equal(failure.applicationFailureInfo?.type, "FailureCapacityProbe");
+        assert.equal(failure.cause, null);
+        assert.equal(failure.applicationFailureInfo?.details, null);
+        await replayBpmnHistory(bundle, history, processWorkflowId(start.instanceId));
+      } finally {
+        registry.unregister(request.idempotencyKey);
+      }
+    }
+  } finally {
+    if (worker !== undefined) await stopBpmnTestWorker(worker);
     await environment.teardown();
   }
 });

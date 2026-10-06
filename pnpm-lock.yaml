@@ -186,6 +186,9 @@ importers:
       '@grpc/grpc-js':
         specifier: 1.14.5
         version: 1.14.5
+      '@temporalio/common':
+        specifier: 1.21.0
+        version: 1.21.0
       '@temporalio/proto':
         specifier: 1.21.0
         version: 1.21.0

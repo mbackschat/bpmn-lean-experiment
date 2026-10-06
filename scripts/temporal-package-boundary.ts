@@ -49,7 +49,7 @@ const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
       PackageRole.Workflow,
     ],
     requiredSdkDependencies: ["@temporalio/worker"],
-    allowedSdkDependencies: ["@temporalio/worker", "@temporalio/proto"],
+    allowedSdkDependencies: ["@temporalio/worker", "@temporalio/proto", "@temporalio/common"],
   },
   [PackageRole.Runner]: {
     name: "@bpmn-lean/temporal-runner",

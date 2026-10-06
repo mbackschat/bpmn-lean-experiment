@@ -125,6 +125,21 @@ test("still requires each execution environment's SDK dependency", async () => {
   ]);
 });
 
+test("permits the approved native failure dependency only in the Worker", async () => {
+  const root = await createValidBoundaryFixture();
+  for (const role of ["client", "worker", "workflow", "protocol"]) {
+    const manifestPath = path.join(root, "packages", "temporal-adapter", role, "package.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    manifest.dependencies["@temporalio/common"] = fixtureSdkVersion;
+    await writeManifest(manifestPath, manifest);
+  }
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/common",
+    "packages/temporal-adapter/protocol/package.json: forbidden Temporal SDK dependency @temporalio/common",
+    "packages/temporal-adapter/workflow/package.json: forbidden Temporal SDK dependency @temporalio/common",
+  ]);
+});
+
 test("permits native deployment protocol access in the client, Worker, and testkit", async () => {
   const root = await createValidBoundaryFixture();
   for (const role of ["client", "worker", "testkit", "workflow"]) {

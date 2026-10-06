@@ -20,6 +20,7 @@
     "@bpmn-lean/temporal-client": "workspace:*",
     "@bpmn-lean/temporal-protocol": "workspace:*",
     "@bpmn-lean/temporal-workflow": "workspace:*",
+    "@temporalio/common": "1.21.0",
     "@temporalio/proto": "1.21.0",
     "@temporalio/worker": "1.21.0"
   },
