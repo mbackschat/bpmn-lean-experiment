@@ -156,9 +156,10 @@ theorem prepareInternalArm_after_scope_creation (program : Program) (state : Run
     simp only [originFound, ownerFound, ownerAfter, live, liveAfter] at found ⊢
     cases operation <;> simp only [inputFrames.1, inputFrames.2]
     all_goals cases kind : selected.kind <;>
-      simpa only [InternalScopeCreationSelection.apply, kind, activationCount,
+      simp only [InternalScopeCreationSelection.apply, kind, activationCount,
         messageActivationCount, timerActivationCount, effectActivationCount,
-        openWaitAnchorAbsent, openWaitAnchors, InternalArmingWrite.available] using found
+        openWaitAnchorAbsent, openWaitAnchors, InternalArmingWrite.available] at found ⊢
+    all_goals exact found
 
 theorem prepareInternalDataArm_after_scope_creation (program : Program) (state : RuntimeState)
     (contract : InternalDataArmingContract) (patch : InternalDataArmingPatch)
@@ -201,7 +202,6 @@ theorem prepareInternalDataArm_after_scope_creation (program : Program) (state :
   simp only [prepareInternalDataArmingContract?, ownerAfter, hostFrame, programSelection,
     liveAfter, origin, sourceFrame, patchFrame, declarer, anchorFrame, scopeFrame, recordFrame,
     bind, Option.bind, Bool.not_true, Bool.false_or, Bool.or_false, Bool.false_eq_true, if_false]
-  rfl
 
 theorem scopeArming_bucket_frame (state : RuntimeState)
     (selected : InternalScopeCreationSelection) (instanceId : SemanticId)

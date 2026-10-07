@@ -10,7 +10,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 
 ### Project foundation
 
-- Lean 4.31.0/Lake 5.0
+- Lean 4.34.1/Lake 5.0
 - Node 24.18.0
 - pnpm 11.20.0 with a repository-pinned CI-oriented local virtual-store projection, shared content-addressable store, exact wrapper-owned CLI selection that disables pnpm's recursive project-driven version switching, package-owned builds with graph-derived topological root commands, bounded wrapper regression execution, and ordinary/CI bare-wrapper guards
 - both the Node and pnpm pins owned by a single `package.json` field each, derived by the wrapper, doctor, and CI setup steps through `scripts/pinned-toolchain.sh`, and guarded against a stale selector, `engines` entry, derived consumer, or documented version

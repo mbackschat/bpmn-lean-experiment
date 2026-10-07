@@ -327,7 +327,7 @@ theorem runtimeStateIdentityBound_replacedState (state : RuntimeState)
   simp only [runtimeStateIdentityBound, Bool.and_eq_true] at holds ⊢
   obtain ⟨⟨tasks, timers⟩, activities⟩ := holds
   refine ⟨⟨?_, ?_⟩, ?_⟩
-  · simp only [replacedState]
+  · change (insertUserTaskWait _ _).all _ = true
     rw [all_insertUserTaskWait]
     simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     refine ⟨?_, ?_⟩
@@ -504,7 +504,8 @@ theorem turnoverBodyId_hit_is_turnover_key (state : RuntimeState) (wait : UserTa
     (hit : taskIdNamesWait (turnoverBodyId state wait body) candidate = true) :
     userTaskWaitKeyMatches (turnoverWait state wait) candidate = true := by
   simp only [taskIdNamesWait, turnoverBodyId, Bool.and_eq_true, beq_iff_eq] at namesWait hit
-  simp only [userTaskWaitKeyMatches, turnoverWait, Bool.and_eq_true, decide_eq_true_eq]
+  simp only [userTaskWaitKeyMatches, Bool.and_eq_true, decide_eq_true_eq]
+  simp only [turnoverWait]
   refine ⟨⟨?_, ?_⟩, hit.2⟩
   · rw [← namesWait.1.1]; exact hit.1.1
   · exact taskDefinitionId_of_value (by rw [← namesWait.1.2]; exact hit.1.2)
@@ -515,7 +516,8 @@ theorem turnoverWait_hit_transfers (state : RuntimeState) (wait : UserTaskWait)
     (candidate : UserTaskWait) (names : taskIdNamesWait task candidate = true) :
     userTaskWaitKeyMatches (turnoverWait state wait) candidate = true := by
   simp only [taskIdNamesWait, turnoverWait, Bool.and_eq_true, beq_iff_eq] at hit names
-  simp only [userTaskWaitKeyMatches, turnoverWait, Bool.and_eq_true, decide_eq_true_eq]
+  simp only [userTaskWaitKeyMatches, Bool.and_eq_true, decide_eq_true_eq]
+  simp only [turnoverWait]
   refine ⟨⟨?_, ?_⟩, ?_⟩
   · rw [← hit.1.1]; exact names.1.1
   · exact taskDefinitionId_of_value (by rw [← hit.1.2]; exact names.1.2)

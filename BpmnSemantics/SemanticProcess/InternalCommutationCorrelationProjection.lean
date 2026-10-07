@@ -197,8 +197,7 @@ theorem prepared_correlated_arm_preserves_flowNodeOccurrenceProgramValidity
           have declarers : messageWaitDeclarers program message.elementId =
               [.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
                 correlationPropertyId payloadSelector processPropertySelector] := by
-            simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-              InternalArmingWrite.elementId, wait] using unique.1.1
+            exact of_decide_eq_true unique.1.1
           have operationMember :
               .awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
                 correlationPropertyId payloadSelector processPropertySelector ∈

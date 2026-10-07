@@ -526,11 +526,15 @@ theorem prepared_arm_declared (program : Program) (state : RuntimeState)
     | .effect wait _ => declaredByExactlyOneOwnedOperation program
         (effectWaitDeclarers program wait.elementId) wait.owner = true := by
   have facts := prepared_arm_selection_unique program state operation patch prepared
+  have unique := of_decide_eq_true facts.2.1
+  have writeOwner := facts.2.2
   cases patch with | mk patchOperation _ _ _ _ _ _ _ patchOwner write _ =>
     cases write <;>
-      simp_all [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, InternalArmingWrite.owner]
+      simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId] at unique
     all_goals
+      simp only [InternalArmingWrite.owner] at writeOwner
+      dsimp only
+      rw [unique, writeOwner]
       exact declaredByExactlyOneOwnedOperation_of_exactSelection program patchOperation
         patchOwner [patchOperation] rfl facts.1
 
@@ -548,8 +552,9 @@ theorem applyInternalArmingPatch_preserves_identityBound (state : RuntimeState)
     cases write with
     | userTask wait =>
         refine ⟨⟨?_, ?_⟩, ?_⟩
-        · simp only [applyInternalArmingPatch, all_insertUserTaskWait, Bool.and_eq_true,
-            List.all_eq_true, decide_eq_true_eq]
+        · change (insertUserTaskWait _ _).all _ = true
+          rw [all_insertUserTaskWait]
+          simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
           refine ⟨?_, ?_⟩
           · change wait.activation ≤ activationCount ({ state with activations :=
                 (setActivationCount state.activations wait.task.id wait.activation) }) wait.task.id
@@ -578,8 +583,9 @@ theorem applyInternalArmingPatch_preserves_identityBound (state : RuntimeState)
         · change (state.waits.all fun candidate =>
               decide (candidate.activation ≤ activationCount state candidate.task.id)) = true
           exact tasks
-        · simp only [applyInternalArmingPatch, insertTimerWait, all_canonicalInsertBy,
-            Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
+        · change (insertTimerWait _ _).all _ = true
+          rw [insertTimerWait, all_canonicalInsertBy]
+          simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
           refine ⟨?_, ?_⟩
           · change wait.activation ≤ timerActivationCount ({ state with timerActivations :=
                 (setTimerActivationCount state.timerActivations wait.elementId wait.activation) })

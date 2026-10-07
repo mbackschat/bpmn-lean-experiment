@@ -255,6 +255,23 @@ def CallBinding (program : Program) (state : RuntimeState)
             root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
       | _ => false).length = 1
 
+private theorem call_binding_candidate_return (program : Program) (owner : ScopeOccurrenceId)
+    (element : String) (process : ProcessId) (root : DefinitionScopeId) (returned : OperationId)
+    (candidate : SemanticOperation)
+    (accepted : (if !operationOwnedBy program candidate owner then false
+      else match candidate with
+      | .invokeProcess _ origin _ calledProcess calledRoot _ returnId _ =>
+          origin.elementId.value = element && calledProcess = process &&
+            calledRoot = root && returnId = returned
+      | _ => false) = true) :
+    (match (generalizing := false) candidate with
+    | .invokeProcess _ _ _ _ _ _ returnId _ => decide (returnId = returned)
+    | _ => false) = true := by
+  cases candidate <;> simp only [ite_self, Bool.false_eq_true] at accepted ⊢
+  split at accepted <;> try contradiction
+  simp only [Bool.and_eq_true] at accepted
+  exact accepted.2
+
 private theorem structural_iff (program : Program) (state : RuntimeState) :
     flowNodeOccurrenceStructuralProgramValidity program state = true ↔
       (∀ occurrence ∈ state.scopeOccurrences, ScopeBinding program state occurrence = true) ∧
@@ -368,6 +385,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
             · intro candidate _ accepted
               split at accepted <;> try contradiction
               cases candidate <;> simp only at accepted <;> try contradiction
+              all_goals apply decide_eq_true
               all_goals simp only [enteredChildScopeId?, Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
               all_goals exact congrArg some (accepted.1.trans matchingDefinition.1.1.symm)
             · simp [owned, matchingDefinition.2]
@@ -469,10 +487,8 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
                     [.invokeProcess id selectedOrigin input process root entry returned] by rw [exactCall]; rfl
                 apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
                 · intro candidate _ accepted
-                  split at accepted <;> try contradiction
-                  cases candidate <;> simp only at accepted <;> try contradiction
-                  simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
-                  exact accepted.2
+                  exact call_binding_candidate_return program owner selectedOrigin.elementId.value
+                    process root returned candidate accepted
                 · simp [owned]
   | _ => contradiction
 

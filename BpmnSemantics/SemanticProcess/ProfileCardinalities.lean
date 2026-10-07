@@ -229,7 +229,7 @@ theorem operationCardinalities_eventRaces (operations : List SemanticOperation) 
     | nil => simp
     | cons operation rest ih =>
         rw [List.foldl_cons, ih]
-        cases operation <;> simp [addOperationCardinality, isEventRaceOperation] <;> omega
+        cases operation <;> simp [List.filter_cons, addOperationCardinality, isEventRaceOperation] <;> omega
   simpa using foldCount {}
 
 def withScopeCompletions (count : Nat) (shape : ShapeCardinalities) : ShapeCardinalities :=

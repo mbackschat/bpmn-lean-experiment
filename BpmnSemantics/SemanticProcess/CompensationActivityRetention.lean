@@ -404,13 +404,10 @@ theorem retainCompletedCompensableActivity_refusal_preserves_state
     (selected : retainCompletedCompensableActivity program owner facts before =
       .refused reason preserved) :
     preserved = before := by
-  cases facts <;>
-    simp only [retainCompletedCompensableActivity, retentionCandidate?,
-      CompensationCompletionFacts.activity, CompensationCompletionFacts.operationFamily] at selected
+  cases candidate : retentionCandidate? facts <;>
+    simp only [retainCompletedCompensableActivity, candidate] at selected
   all_goals repeat' split at selected
-  all_goals
-    repeat' split at selected
-    all_goals simp_all
+  all_goals simp_all only [reduceCtorEq, CompensationRetentionResult.refused.injEq]
 
 /-- Valid early and interrupted facts preserve the complete state without creating a record. -/
 theorem retainCompletedCompensableActivity_nonretention_preserves_state
@@ -419,13 +416,10 @@ theorem retainCompletedCompensableActivity_nonretention_preserves_state
     (selected : retainCompletedCompensableActivity program owner facts before =
       .notRetained preserved) :
     preserved = before := by
-  cases facts <;>
-    simp only [retainCompletedCompensableActivity, retentionCandidate?,
-      CompensationCompletionFacts.activity, CompensationCompletionFacts.operationFamily] at selected
+  cases candidate : retentionCandidate? facts <;>
+    simp only [retainCompletedCompensableActivity, candidate] at selected
   all_goals repeat' split at selected
-  all_goals
-    repeat' split at selected
-    all_goals simp_all
+  all_goals simp_all only [reduceCtorEq, CompensationRetentionResult.notRetained.injEq]
 
 /-- Successful direct insertion appends one record at the prior ordinal and advances once. -/
 theorem insertCompletedCompensableActivity_success_shape

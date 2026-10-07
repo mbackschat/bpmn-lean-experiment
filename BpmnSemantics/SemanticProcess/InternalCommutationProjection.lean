@@ -87,8 +87,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
            input, inputOrigin, owner, write := .userTask wait }
        have declarer : userTaskWaitDeclarers program task.id =
            [.awaitUserTask id origin input output task] := by
-         simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-           InternalArmingWrite.elementId, wait] using unique.1.1
+         exact of_decide_eq_true unique.1.1
        have startEq : waitStart? program state wait.owner ⟨wait.task.id.value⟩
            wait.activation = some newStart := by
          simpa [currentPatch, wait, InternalArmingWrite.elementId,
@@ -294,8 +293,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
         input, inputOrigin, owner, write := .timer wait }
     have declarer : timerWaitDeclarers program timer.elementId =
         [.awaitTimer id origin input output timer] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using unique.1.1
+      exact of_decide_eq_true unique.1.1
     have startEq : waitStart? program state wait.owner wait.elementId wait.activation =
         some newStart := by
       simpa [currentPatch, wait, InternalArmingWrite.elementId,
@@ -538,8 +536,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         activation := activationCount state task.id + 1, output, metadata := task.metadata }
     have declarers : userTaskWaitDeclarers program task.id =
         [.awaitUserTask id origin input output task] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using unique.1.1
+      exact of_decide_eq_true unique.1.1
     have operationMember : .awaitUserTask id origin input output task ∈ program.operations := by
       have member : .awaitUserTask id origin input output task ∈
           userTaskWaitDeclarers program task.id := by rw [declarers]; simp
@@ -566,8 +563,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         channel := message.channel, output }
     have declarers : messageWaitDeclarers program message.elementId =
         [.awaitMessage id origin input output message] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using unique.1.1
+      exact of_decide_eq_true unique.1.1
     have operationMember : .awaitMessage id origin input output message ∈ program.operations := by
       have member : .awaitMessage id origin input output message ∈
           messageWaitDeclarers program message.elementId := by rw [declarers]; simp
@@ -595,8 +591,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         channel := message.channel, output }
     have declarers : messageWaitDeclarers program message.elementId =
         [.awaitPayloadMessage id origin input output message directOutput] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using unique.1.1
+      exact of_decide_eq_true unique.1.1
     have operationMember :
         .awaitPayloadMessage id origin input output message directOutput ∈
           program.operations := by
@@ -628,8 +623,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         deadlineMs := state.logicalTimeMs + timer.durationMs, output }
     have declarers : timerWaitDeclarers program timer.elementId =
         [.awaitTimer id origin input output timer] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using unique.1.1
+      exact of_decide_eq_true unique.1.1
     have operationMember : .awaitTimer id origin input output timer ∈ program.operations := by
       have member : .awaitTimer id origin input output timer ∈
           timerWaitDeclarers program timer.elementId := by rw [declarers]; simp
@@ -658,8 +652,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
         outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
     have declarers : effectWaitDeclarers program effect.elementId =
         [.awaitEffect id origin input output effect route] := by
-      simpa [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-        InternalArmingWrite.elementId, wait] using absent.1.1
+      exact of_decide_eq_true absent.1.1
     have operationMember : .awaitEffect id origin input output effect route ∈
         program.operations := by
       have member : .awaitEffect id origin input output effect route ∈

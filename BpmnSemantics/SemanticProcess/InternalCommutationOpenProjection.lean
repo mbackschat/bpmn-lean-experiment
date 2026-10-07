@@ -116,10 +116,9 @@ private theorem prepared_arm_preserves_messageBoundedProjectionValid
     let owned := FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy program boundedOperation
     cases writeEq : patch.write with
     | userTask inserted =>
-        have declarer := selected.2.1
+        have declarer := of_decide_eq_true selected.2.1
         rw [writeEq] at declarer
-        simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-          InternalArmingWrite.elementId] at declarer
+        simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId] at declarer
         have different : inserted.task.id ≠ boundedTask.id := by
           intro same
           have boundedMember : boundedOperation ∈ userTaskWaitDeclarers program inserted.task.id := by
@@ -140,10 +139,9 @@ private theorem prepared_arm_preserves_messageBoundedProjectionValid
         simpa [boundedOperation, messageBoundedOperationProjectionValid,
           applyInternalArmingPatch, writeEq, owned, taskFilter, taskFrame] using prior
     | message inserted =>
-        have declarer := selected.2.1
+        have declarer := of_decide_eq_true selected.2.1
         rw [writeEq] at declarer
-        simp [uniqueFamilyDeclarer?, InternalArmingWrite.kind,
-          InternalArmingWrite.elementId] at declarer
+        simp only [InternalArmingWrite.kind, InternalArmingWrite.elementId] at declarer
         have different : inserted.elementId ≠ boundaryMessage.elementId := by
           intro same
           have boundedMember : boundedOperation ∈

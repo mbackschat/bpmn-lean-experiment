@@ -61,7 +61,7 @@ Project-authored code and documentation are released under the root [MIT License
 
 | Surface | License status | Project consequence |
 |---|---|---|
-| Lean `v4.31.0` toolchain and Lake | Apache-2.0 in the installed distribution and the [upstream Lean repository](https://github.com/leanprover/lean4) | External toolchain, not vendored or redistributed; it retains its own license |
+| Lean `v4.34.1` toolchain and Lake | Apache-2.0 in the installed distribution and the [upstream Lean repository](https://github.com/leanprover/lean4/tree/v4.34.1) | External toolchain, not vendored or redistributed; it retains its own license |
 | Lake packages | `lake-manifest.json` records an empty `packages` array | No external Lean package license enters the tracked source or package graph |
 | Shell verification tools | Git, curl, `jq`, `xmllint`, and either `shasum` or `sha256sum` are environment prerequisites | Invoked as external tools and not distributed by this repository; setup fetches exact inputs and doctor verifies availability |
 | Node and pnpm | Node `24.18.0` and pnpm `11.20.0`; Homebrew formulae report MIT | External runtime and package manager; both pins are owned by `package.json` and derived by every wrapper, doctor, and CI consumer; exact nvm/asdf pins and a non-mutating Homebrew fallback are tracked; the project wrapper disables pnpm's automatic project-driven CLI switching after performing its own exact version check so offline and sandboxed runs cannot stall in a hidden tool download |

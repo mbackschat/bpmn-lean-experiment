@@ -204,8 +204,8 @@ theorem replacedState_preserves_wellFormed (program : Program) (instanceId : Sem
     have candidateBound := (List.all_eq_true.mp boundParts.1.1) candidate mem
     simp only [decide_eq_true_eq] at candidateBound
     by_cases keyed : userTaskWaitKeyMatches (turnoverWait state wait) candidate = true
-    · simp only [userTaskWaitKeyMatches, turnoverWait, Bool.and_eq_true,
-        decide_eq_true_eq] at keyed
+    · simp only [userTaskWaitKeyMatches, Bool.and_eq_true, decide_eq_true_eq] at keyed
+      simp only [turnoverWait] at keyed
       rw [← keyed.1.2, ← keyed.2] at candidateBound
       omega
     · simp only [Bool.not_eq_true] at keyed
