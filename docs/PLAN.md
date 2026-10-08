@@ -109,13 +109,13 @@ Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualifi
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current outcome: public compile/start preserves exact source-overlay identity, snapshots and content-bound recovery under the [existing overlay contract](A12-ADD-ON-BOUNDARY-SPEC.md#identity-and-compilation-contract). API and consumer tests pass; private business profiles retain their host refusals. Public admission, registration and whole-process acceptance remain open.
+Current outcome: the [independently approved API correction](A12-ADD-ON-BOUNDARY-SPEC.md#independent-cold-review-receipt) preserves exact source-overlay identity, snapshots and content-bound recovery. API and consumer tests pass as working-tree integration evidence; clean-target qualification remains open. Private business profiles retain their host refusals; registration and whole-process acceptance remain open.
 
 Last verification: `/tmp/business-overlay-api-package-final`, `/tmp/business-overlay-gateway-package` and `/tmp/business-overlay-definitions-package` pass; engine/platform/PostgreSQL harness types pass. Infrastructure `/tmp/business-overlay-infrastructure-runtime` passes 636/637: Lean measurement rows/digests fail, reproduced at unchanged HEAD in `/tmp/business-overlay-baseline-cost-audit`. Current serial/mixed/Error recovery/replay receipts remain green; preserve failed `/tmp/session-functional-complete-temporal` (serial unrun). Focused passes replace neither complete gate.
 
 Preserved proof boundary: `/tmp/pmis-budget-initial-entry` verifies remaining-fuel accounting and nonempty initial draining. Resume PMIS proof work after this delivery gate; existing gaps remain acceptance requirements. Preserve the [Message withdrawal failure](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress).
 
-Next action: independently audit the committed overlay API correction for identity, mutation and recovery safety. Then close host admission, atomic registration/corpus/disclosure and whole-process acceptance. Refresh Lean measurements under the existing resource bound before complete qualification; do not substitute stored digests or weaken that guard.
+Next action: carry the retained pipeline overlay binding through corpus/runner loading, then close host admission, atomic registration/corpus/disclosure and whole-process acceptance. Refresh Lean measurements under the existing resource bound before complete qualification; do not substitute stored digests or weaken that guard.
 
 Session direction: performance qualification and cold full-library investigation remain deferred; report skips. Retain functional timer/recovery/replay checks. Lean: one process tree, one CPU, 3 GiB, no additional swap. Database selection: [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
 

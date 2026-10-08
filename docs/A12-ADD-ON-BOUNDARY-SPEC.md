@@ -14,6 +14,8 @@ Implemented and evidence-closed. Owner-approved proposal correction `8ae9b66`, s
 
 The closure reviewer used the approved checkpoint reviewer under warm continuity manifest `7756b73d6ff524adfca493f43c78e7d038a092607b834da494e1435fd141b6fc`. Rejected closure target `9a56f19` is historical. Correction `8d6ea1a` closed its four findings without changing the selected account, public contract, exclusions, or evidence strategy. The full proposal and review chronology remain in the [archived proposal](archived/A12-ADD-ON-BOUNDARY-PROPOSAL.md).
 
+Public API correction checkpoint: target `3ab48c3a`, isolation `fork-turns-none`, verdict `approve`, correction audit `not-required`. Review packet: `460e20ca6eb520ac678115f8dff442463bd61910df5558f2a53c190a3f89f0f8`. Approval covers overlay transport, identity and recovery; it grants no additional host or profile admission.
+
 ## Product boundary
 
 Product 1 retains the reusable semantic mechanisms established by the two original vertical slices: string/null values, literal input mapping, Activity-local result patches, local-variable output mapping, mapped successful effects, typed BPMN Error results, exact-code interrupting boundary routing, and the selected CIB caught-path mapping order. Their engine-owned profiles, fixtures, operations, Lean rules, TypeScript behavior, and Temporal witnesses are product-neutral.
