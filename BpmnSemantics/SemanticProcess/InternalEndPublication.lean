@@ -24,7 +24,8 @@ theorem selectInternalEnd_tokens_available (state : RuntimeState) (operation : S
   have bucket : (state.tokens.filter (fun token =>
       decide (token.placeId = selected.input) && decide (token.owner = selected.owner))).length = 1 := by
     simpa only [Bool.and_comm, List.length_cons, List.length_nil] using congrArg List.length owned
-  simp [internalLocalControlTokensAvailable, InternalEndSelection.tokens, bucket,
+  dsimp +instances only [internalLocalControlTokensAvailable, InternalEndSelection.tokens]
+  simp [bucket,
     SemanticProcessJson.isSafeWireNat, SemanticProcessJson.maxSafeWireNat]
 
 theorem prepareInternalEnd_record (program : Program) (state : RuntimeState)

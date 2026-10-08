@@ -589,20 +589,13 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
  *
  * Forty of those 56 are now converted, and every module was measured before its conversion because
  * kernel cost follows a proposition's reduction depth rather than a module's site count. The
- * remaining five rows are **not** a cost decision and cannot be lowered by spending more CPU: each
- * decides a fact that reaches parsing of a `String` literal, and the kernel does not reduce `String`
- * operations, so `decide +kernel` fails to elaborate rather than running slowly. `parseRejected
- * "{\"id\":1,\"id\":1}" = true` and `parseSimpleBooleanExpression "stringEquals(route,\"review\")"`
- * and `exact_structured_human_work_topology_is_preserved` all reach the same reduction boundary.
- * The compensation Program row groups its exact strict-decoder and declaration-admission facts into
- * one proposition because both reach concrete `String` operations. The engine-population row
- * likewise groups its complete admission, unique/zero/ambiguous/cross-definition, permutation,
- * and malformed-binding matrix because definition, Process, subscription, command, and
- * correlation-key identities all require concrete `String` equality.
- * Their `Decidable` instances do not reduce to `isTrue` or `isFalse` in the kernel.
- * `native_decide` decides them because compiled code walks the string. Removing these five rows requires
- * restating the propositions over a non-`String` representation, which is a semantic change to what
- * the fixtures lock, not a tactic swap.
+ * remaining rows retain their previously measured strict-decoder/admission reduction boundaries.
+ * A stuck decision does not show that every String operation is irreducible or that changing the
+ * representation is necessary. Follow the decision-procedure guidance in
+ * [the setup guide](../docs/CONTRIBUTOR-SETUP-GUIDE.md#lean-decision-procedures-and-build-memory):
+ * isolate the expression, try existing equation lemmas or proof-producing evaluation, and measure
+ * the unchanged proposition under the enforced bound before revising this inventory.
+ * Existing counts preserve the trusted footprint; none authorizes a new native_decide site.
  *
  * Exact null, present, missing, and malformed source-overlay JSON shapes are grouped into one
  * decision per wire owner. Grouping keeps the compiler-trusted boundary at the three parsers that

@@ -32,7 +32,7 @@ The [mixed-task account](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md#implementa
 
 **Implemented.** Source and independent Lean/TypeScript cover root User/Service tasks, ordered Exclusive choices/merges and task-crossing cycles. Writer barriers select initial inputs; task-cut ranks bound closure at eight steps. Actual execution establishes single-control ownership, available reads, local lifetime, valid-payload acceptance and fresh issuance. Cross-target lowering/E1/E2 tests include ordering, stale-owner and burst-bound counterexamples; named handlers and String/null mapping remain exact.
 
-**Open.** Registration, hosting/replay and closure remain open; host admission refuses. The [business Error extension](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) passes XML/TypeScript checks, finite Lean recovery journeys, quantified actual-Start preservation/completion proofs and source-bound E1/E2 differential checks; independent semantic checkpoint review approved `0156e9be`. No termination, concurrency, nested scope or additional public coverage is claimed.
+**Open.** Helper-domain review, registration, hosting/replay and closure remain open; host admission refuses. The [business Error extension](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) passes XML/TypeScript checks, finite Lean recovery journeys, quantified actual-Start preservation/completion proofs and source-bound E1/E2 differential checks; independent semantic checkpoint review approved `0156e9be`. No termination, concurrency, nested scope or additional public coverage is claimed.
 
 ## Serial business-task composition
 
@@ -40,7 +40,7 @@ The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOS
 
 **Implemented.** Exact-overlay source admission and independent Lean/TypeScript serial-chain analysis cover root User/Service chains, named handlers, enclosing input snapshots and exact String/null output mapping. Whole-chain tests and four-case lowering/result/publication comparison pass. Committed start and actual execution derive nonempty instance and declared root identity, exact token/wait ownership, canonical issuance, ordered suffix, required-input availability, canonical Process data and captured local lifetime. Valid completion payloads commit through actual public admission; actual scheduled closure reaches a wait or completion within two internal steps. The capsule owns bounded proof receipts and the reassessment.
 
-**Open.** The private source/core/protocol, differential, infrastructure and full Lean gates pass, and independent implementation review is complete. Public profile/corpus registration and live Temporal qualification remain absent; typed host admission refuses this private profile. These results establish no additional public CIB coverage.
+**Open.** Helper-domain and fixture corrections await independent review. Retained private gates and checkpoint approval establish no public CIB coverage. Public profile/corpus registration and live Temporal qualification remain absent; host admission refuses this profile.
 
 ## Compensation retention and Event Sub-Process parent snapshots
 

@@ -140,8 +140,13 @@ theorem transactionCancellationProgramGraph_roles (p : Program)
   rename_i entryId transaction entryInput childEntry childId entrySelected
   split at admitted <;> try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
   rename_i splitId splitOrigin splitInput outputs splitSelected
-  split at admitted <;> try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
-  rename_i left right splitSelf splitOutputs
+  rcases outputs with _ | ⟨left, remaining⟩ <;>
+    try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
+  rcases remaining with _ | ⟨right, remaining⟩ <;>
+    try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
+  cases remaining <;>
+    try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
+  dsimp only at admitted
   split at admitted <;> try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }
   rename_i cancelId cancelOrigin cancelScope cancelInput cancelOutput cancelBoundary cancelSelected
   split at admitted <;> try { simp only [Id.run, pure, Bool.false_eq_true] at admitted }

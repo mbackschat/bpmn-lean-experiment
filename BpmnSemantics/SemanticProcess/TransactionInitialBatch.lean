@@ -157,6 +157,7 @@ private theorem initial_task_prepares (p : Program) (roles : TransactionAdmitted
     bind, Option.bind, Bool.not_true, Bool.or_false, Bool.false_eq_true, ↓reduceIte]
   simp [initialTaskPatch, TransactionInitialTask.operation, InternalArmingWrite.kind,
     InternalArmingWrite.elementId, InternalArmingWrite.occurrence, InternalArmingWrite.available,
+    scopedEffectInputReads?,
     uniqueFamilyDeclarer?, declarers, openWaitAnchorAbsent, openWaitAnchors, userTaskWaitOccurrence,
     state, owner, transactionChildOwner, transactionSplitState, transactionEnteredState,
     transactionInitiatedState, transactionRootStartState, runningStartState, initialState]
@@ -177,7 +178,9 @@ private theorem initial_heads_distinct (p : Program) (roles : TransactionAdmitte
     have selected := initial_operation_filter p valid heads.left.operation left.1
     have present : heads.right.operation ∈ p.operations.filter
         (fun operation => decide (operation.id = heads.left.operation.id)) := by
-      exact List.mem_filter.mpr ⟨right.1, by simpa [TransactionInitialTask.operation, SemanticOperation.id] using same.symm⟩
+      exact List.mem_filter.mpr ⟨right.1, by
+        apply decide_eq_true
+        simpa only [TransactionInitialTask.operation, SemanticOperation.id] using same.symm⟩
     rw [selected] at present
     have sameOperation : heads.right.operation = heads.left.operation := by simpa using present
     exact roles.branch_operations_disjoint heads.left.operation leftMember (sameOperation ▸ rightMember)
@@ -199,8 +202,15 @@ private theorem initial_patches_independent (p : Program) (roles : TransactionAd
   have inputs : heads.left.input ≠ heads.right.input := by
     rw [heads.leftInput, heads.rightInput]
     exact transaction_admitted_split_places_distinct p roles
+  have populationAbsent (head : TransactionInitialTask) (origin : BpmnSequenceFlowOrigin) :
+      InternalStateAtom.activityPopulation ∉
+        (footprintOfPatch (initialTaskPatch p roles head instanceId origin)).reads := by
+    simp [footprintOfPatch, initialTaskPatch, TransactionInitialTask.operation,
+      InternalArmingWrite.kind, InternalArmingWrite.elementId, InternalArmingWrite.occurrence,
+      canonicalStateAtomSet, mem_sortBy]
   simp only [PreparedInternalArming.Independent, PreparedInternalArming.footprint,
-    footprintsNonInterfering, Bool.and_eq_true]
+    footprintsNonInterfering, stateReadSetsDisjoint, List.contains_eq_mem, populationAbsent,
+    decide_false, Bool.not_false, Bool.true_or, Bool.and_true, Bool.and_eq_true]
   repeat' constructor
   all_goals
     simp only [listsDisjoint, List.all_eq_true, Bool.not_eq_true', List.contains_eq_mem,

@@ -78,9 +78,8 @@ theorem serial_patch_frame (existing writes : List VariableBinding) (binding : V
     (present : binding ∈ existing) (untouched : binding.name ∉ writes.map (·.name)) :
     binding ∈ mergeProcessVariableBindings existing writes := by
   apply (mergeProcessVariableBindings_perm existing writes).mem_iff.mpr
-  apply List.mem_append_right
-  apply List.mem_filter.mpr
-  exact ⟨present, by simp only [List.contains_eq_mem]; simp [untouched]⟩
+  exact List.mem_append_right _ (List.mem_filter.mpr
+    ⟨present, by simp [List.contains_eq_mem, untouched]⟩)
 
 /-- Completing one effect disposes exactly its owner and preserves every other local scope. -/
 theorem serial_scope_completion_disposes_exactly (handlers : List String)
@@ -706,7 +705,8 @@ def ForeignRuntimeEmpty (state : RuntimeState) : Prop :=
   state.eventSubProcessMessageSubscriptions = [] ∧ state.variables.processInterfaces = [] ∧ state.logicalTimeMs = 0 ∧
   state.messageActivations = [] ∧ state.timerActivations = [] ∧ state.eventRaceActivations = [] ∧
   state.callActivations = [] ∧ state.activityActivations = [] ∧
-  state.sequentialScopeControllers = [] ∧ state.variables.scopes = []
+  state.sequentialScopeControllers = [] ∧ state.variables.scopes = [] ∧
+  state.parallelScopeControllers = []
 
 /-- These issuance facts are exactly the retained counter/order checks read by serial command admission. -/
 def IssuanceFrame (state : RuntimeState) : Prop :=

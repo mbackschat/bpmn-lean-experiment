@@ -127,8 +127,12 @@ theorem prepared_bounded_scope_end_pair
     · simp [makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
         makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply, child]
     · exact scopeCreation_apply_token_filter state entry _
-        (by simpa [makeInternalBoundedScopeSelection, makeInternalEndPreparation] using input)
-        (by simpa [makeInternalBoundedScopeSelection, makeInternalEndPreparation] using entryPlace)
+        (by
+          dsimp +instances only [makeInternalBoundedScopeSelection, makeInternalEndPreparation] at input ⊢
+          exact decide_eq_false input)
+        (by
+          dsimp +instances only [makeInternalBoundedScopeSelection, makeInternalEndPreparation] at entryPlace ⊢
+          exact decide_eq_false entryPlace)
   · have equality := selectedEnd.scope_creation_commutes state selected.creation canonical entryPlace
     have tokens := congrArg RuntimeState.tokens equality
     cases kind : selected.creation.kind <;>

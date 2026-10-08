@@ -63,6 +63,7 @@ theorem prepared_bounded_scope_candidate
           simpa only [keep, created, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
             makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply,
             InternalBoundedScopeContract.operation, disposition, candidateFlowNodeOccurrenceDeltaForOperation?,
+            candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
             flowNodeSelectedOperationOwner?, owned, bind, Option.bind, singletonExpanded] using candidate
       rw [singleton]
       change candidateScopeStart? program contract.operation owner created = some start at startFound

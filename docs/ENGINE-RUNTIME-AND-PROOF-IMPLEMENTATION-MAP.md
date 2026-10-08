@@ -68,7 +68,7 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 ## Implemented
 
-Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): scheduler progress proved; checkpoint approved; Lean execution/parity passes; hosting unavailable.
+Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): checkpoint approved; retained execution/parity; helper correction awaits independent review. Hosting unavailable.
 
 [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; registered; closure pending.
 

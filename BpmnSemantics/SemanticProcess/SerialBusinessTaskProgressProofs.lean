@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 
-/-! SBT-AVAILABLE-01 and SBT-CLOSURE-01 share an accepted-start reachable invariant: exact root and local ownership, ordered remaining suffix, required-input presence and canonical Process data. The proof index is not serialized execution data. -/
+/-! SBT-AVAILABLE-01 and SBT-CLOSURE-01 share an accepted-start reachable invariant: exact root and local ownership, ordered remaining suffix, required-input presence and canonical Process data. The proof index is not serialized execution data.
+Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 
@@ -278,14 +279,10 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
       have included : vertex ∈ analysis.ordered := by rw [orderEq]; simp
       have projected := token_consumer_projects_current_vertex program analysis (.reachNoneEnd id origin input)
         vertex input wellFormed analyzed member included (by simp [operationInputs]) consumer
-      have outputs : vertex.outputs = [] := by
+      have ⟨outputs, endKind⟩ : vertex.outputs = [] ∧ vertex.kind = .finish := by
         simp [operationVertex?] at projected
         cases projected
-        rfl
-      have endKind : vertex.kind = .finish := by
-        simp [operationVertex?] at projected
-        cases projected
-        rfl
+        exact ⟨rfl, rfl⟩
       have noRest := chain_end_has_no_suffix vertex rest links outputs
       subst rest
       simp only [frontierFields, Prod.mk.injEq] at fields
@@ -441,12 +438,11 @@ theorem committed_start_has_serial_invariant (program : Program) (analysis : Ana
   have created := committed_start_has_exact_builder program analysis commandId processId instanceId bindings profile analyzed committed
   simp only [runningProgramStartState?, bind, pure, Option.bind_eq_some_iff] at created
   obtain ⟨root, found, created⟩ := created
+  rw [← Option.some.inj created]
   refine ⟨⟨instanceId, root.id, 1⟩, rfl, analyzed_start_root_declared program analysis instanceId root analyzed found, ?_, ?_⟩
-  · rw [← Option.some.inj created]
-    simp [RootFrame, RootLifecycle, ForeignRuntimeEmpty, IssuanceFrame, orderedBy, noRetention, noListeners, runningStartState,
+  · simp [RootFrame, RootLifecycle, ForeignRuntimeEmpty, IssuanceFrame, orderedBy, noRetention, noListeners, runningStartState,
       initialState, emptyScopedVariables]
-  · rw [← Option.some.inj created]
-    exact ⟨[], analysis.ordered, rfl, .pending rfl, supplied.2, supplied.1⟩
+  · exact ⟨[], analysis.ordered, rfl, .pending rfl, supplied.2, supplied.1⟩
 
 
 /-- The phase is a projection of joint preservation, under the same admitted-position premises. -/
@@ -522,6 +518,7 @@ open InternalCommutation in
 /-- A real enabled serial operation is the scheduler's unique faithful offer; preparation remains optional on this actual singleton path. -/
 theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (state after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (profile : program.identity.semanticProfile = serialBusinessTaskProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (declared : DeclaredRoot program owner) (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state)
     (member : operation ∈ program.operations) (fired : fire? program operation state = some after) :
@@ -541,12 +538,12 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
     · have allowed := program_analysis_operations_allowed program analysis analyzed operation member
       cases operation <;> simp only [OperationAllowed] at allowed
       all_goals try contradiction
-      all_goals try (simp [ordinaryExecutionFrontier, fired]; done)
+      all_goals try (simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired]; done)
       case reachNoneEnd id origin input =>
         obtain ⟨token, single, port⟩ : ∃ token, state.tokens = [token] ∧ token.placeId = input := by
           simpa [SerialFirePhase, operationInputs, StructuredComposition.isScopeCompletion] using serial_fire_phase program analysis
             state after (.reachNoneEnd id origin input) owner wellFormed analyzed declared framed indexed member fired
-        simp [ordinaryExecutionFrontier, fired, selectInternalEnd?, single, port]
+        simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired, selectInternalEnd?, single, port]
     · intro candidate included different
       have refused : fire? program candidate state = none := by
         cases selected : fire? program candidate state with
@@ -556,7 +553,7 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
       have allowed := program_analysis_operations_allowed program analysis analyzed candidate included
       cases candidate <;> simp only [OperationAllowed] at allowed
       all_goals try contradiction
-      all_goals simp [ordinaryExecutionFrontier, refused]
+      all_goals simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, refused]
   · exact fun prepared selected => prepareInternalTransition_alternative program state operation prepared selected
 
 /-- Every indexed position either exposes its live external interaction, has completed, or enables a real declared operation. -/
@@ -660,6 +657,7 @@ theorem serial_position_progress (program : Program) (analysis : Analysis) (stat
 open InternalCommutation in
 /-- Actual live waits and completed roots have an empty scheduler frontier; an empty running root is excluded. -/
 theorem serial_settled_frontier (program : Program) (analysis : Analysis) (state : RuntimeState)
+    (profile : program.identity.semanticProfile = serialBusinessTaskProfileId)
     (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
     (analyzed : programAnalysis program = some analysis) (declared : DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state)
@@ -679,12 +677,13 @@ theorem serial_settled_frontier (program : Program) (analysis : Analysis) (state
   have allowed := program_analysis_operations_allowed program analysis analyzed operation member
   cases operation <;> simp only [OperationAllowed] at allowed
   all_goals try contradiction
-  all_goals simp [ordinaryExecutionFrontier, refused]
+  all_goals simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, refused]
 
 open InternalCommutation in
 /-- The actual singleton scheduler drains the indexed depth, preserving actual reachability independently of optional publication records. -/
 theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (baseline state : RuntimeState)
     (owner : ScopeOccurrenceId) (commandId : SemanticId) (fuel index ordinal : Nat) (remaining : List Vertex)
+    (profile : program.identity.semanticProfile = serialBusinessTaskProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (declared : DeclaredRoot program owner) (framed : RootFrame owner state)
     (indexed : ∃ earlier, analysis.ordered = earlier ++ remaining ∧ OrderedPosition program analysis.ordered state remaining ∧
@@ -699,7 +698,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
     have atSuffix : AtOrderedSuffix program analysis state := ⟨earlier, remaining, ordered, position, available, canonical⟩
     by_cases settled : state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId
     · rw [closeScheduledTraced_stable fuel program commandId index ordinal state
-        (serial_settled_frontier program analysis state owner wellFormed analyzed declared framed atSuffix settled)]
+        (serial_settled_frontier program analysis state profile owner wellFormed analyzed declared framed atSuffix settled)]
       exact ⟨rfl, reachable, settled⟩
     · have progress := serial_position_progress program analysis state owner wellFormed analyzed declared framed atSuffix
       have enabled : ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after := by
@@ -723,7 +722,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
       | succ fuel =>
         have tail := ih fuel (by omega) after (index + 1) next afterFrame
           ⟨nextEarlier, nextOrder, nextPosition, nextAvailable, nextCanonical⟩ nextReach (by omega)
-        obtain ⟨frontier, aligned⟩ := serial_frontier_of_firing program analysis state after operation owner wellFormed analyzed declared framed atSuffix member fired
+        obtain ⟨frontier, aligned⟩ := serial_frontier_of_firing program analysis state after operation owner profile wellFormed analyzed declared framed atSuffix member fired
         have equations := closeScheduledTraced_singleton_step fuel program commandId index ordinal state _ frontier aligned
         change (closeScheduledTraced (fuel + 1) program commandId index ordinal [] state).failed = false ∧ _
         rw [equations.2, equations.1]
@@ -817,6 +816,6 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
   obtain ⟨earlier, remaining, ordered, position, available, canonical⟩ := indexed
   have bound := (position_depth_spec program analysis.ordered remaining state owner framed position).1
   simpa [instanceEq] using serial_scheduled_closure program analysis _ state owner commandId fuel index ordinal remaining
-    wellFormed analyzed declared framed ⟨earlier, ordered, position, available, canonical⟩ reachable (Nat.le_trans bound within)
+    profile wellFormed analyzed declared framed ⟨earlier, ordered, position, available, canonical⟩ reachable (Nat.le_trans bound within)
 
 end BpmnSemantics.SemanticProcess.SerialBusinessTask

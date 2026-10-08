@@ -76,6 +76,8 @@ Lane shape: proved
 
 Evidence: reuse the [composed data relation](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean), [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), and existing [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). Composition proofs must connect structural/data admission to actual reachable execution, not merely prove a private graph walk or an evaluator-equals-result premise.
 
+Discovery helper hypotheses name the selected structured checkpoint profile rather than derive its identity from structural analysis. `reached_scheduled_closure_is_bounded` retains the same statement and derives that domain from its existing profile premise. This proof correction changes no executable definition or admission rule; independent review remains pending.
+
 | Proof owner | Established boundary | Assembly boundary |
 |---|---|---|
 | [Admission](../../BpmnSemantics/SemanticProcess/StructuredCompositionAdmissionProofs.lean) | Successful analysis retains a complete, unique, forward topological order; each admitted executable operation is represented with its identity preserved, and each control-place consumer identifies its unique operation and analyzed target. Final data facts preserve the exact input/write equations used during analysis; every read creates a start requirement or a predecessor obligation. Committed starts satisfy canonical data admission and required-binding presence. Computed burst ranks satisfy their final-graph recurrence, are positive at every vertex, and decrease on automatic routing edges; the computed maximum bounds initiation and every task-continuation target. | Supplies the rank and availability prerequisites to closure/progress. |

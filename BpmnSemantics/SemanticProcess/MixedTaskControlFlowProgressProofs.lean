@@ -1,7 +1,8 @@
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionProgressProofs
 
-/-! MTCF-PROGRESS-01 connects the admitted wait-cut ranks to actual routing transitions; graph certificates alone cannot establish bounded runtime closure. -/
+/-! MTCF-PROGRESS-01 connects the admitted wait-cut ranks to actual routing transitions; graph certificates alone cannot establish bounded runtime closure.
+Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 
@@ -449,14 +450,14 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
 open InternalCommutation in
 theorem refused_operation_has_empty_discovery
     (program : Program) (analysis : Analysis) (state : RuntimeState) (operation : SemanticOperation)
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (analyzed : programAnalysis program = some analysis) (indexed : AtPosition program analysis state)
     (refused : fire? program operation state = none) :
     (match operation, state.control with
       | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
       | _, _ => ordinaryExecutionFrontier program state operation) = {} := by
   have ordinary : ordinaryExecutionFrontier program state operation = {} := by
-    unfold ordinaryExecutionFrontier
-    split <;> simp_all
+    simp [ordinaryExecutionFrontier, ordinaryProfile, refused]
   cases operation <;> try exact ordinary
   case mergeExclusive id origin inputs output =>
     cases control : state.control <;> try exact ordinary
@@ -474,13 +475,14 @@ theorem refused_operation_has_empty_discovery
         rw [fire_mergeExclusive_withoutSnapshotDeclaration _ _ _ _ _ _ noSnapshots,
           mergeExclusiveState_singleton_offer state inputs output token single (by simpa using port)] at refused
         contradiction
-      simp [mergeExecutionFrontier, internalMergeInputAlternatives, empty, List.mapM_nil,
+      simp [mergeExecutionFrontier, ordinaryProfile, internalMergeInputAlternatives, empty, List.mapM_nil,
         InternalCommutation.sortBy]
 
 open InternalCommutation in
 theorem enabled_operation_has_singleton_discovery
     (program : Program) (analysis : Analysis) (state after : RuntimeState) (operation : SemanticOperation)
     (owner : ScopeOccurrenceId)
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (declared : SerialBusinessTask.DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
@@ -499,7 +501,7 @@ theorem enabled_operation_has_singleton_discovery
     ⟨{ alternative := .operation operation.id, operation, successor := after,
        preparation := prepareInternalTransition? program state operation }, rfl, rfl,
       fun prepared found => prepareInternalTransition_alternative program state operation prepared found,
-      by simp [ordinaryExecutionFrontier, fired]; cases operation <;> exact selected⟩
+      by simp [ordinaryExecutionFrontier, ordinaryProfile, fired]; cases operation <;> exact selected⟩
   cases operation
   all_goals try exact ordinary rfl
   case reachNoneEnd id origin input =>
@@ -551,12 +553,13 @@ theorem enabled_operation_has_singleton_discovery
           prepareInternalMerge_facts program state _ _ prepared ready
         rw [same]
         exact (selectInternalMerge_facts state _ _ selected selection).2.1
-      · simp [mergeExecutionFrontier, alternatives, List.mapM_cons, List.mapM_nil, ready, applied]
+      · simp [mergeExecutionFrontier, ordinaryProfile, alternatives, List.mapM_cons, List.mapM_nil, ready, applied]
 
 open InternalCommutation in
 /-- Discovery preserves the actual Merge alternative and preparation, as well as ordinary operation offers. -/
 theorem frontier_of_firing (program : Program) (analysis : Analysis) (state after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (declared : SerialBusinessTask.DeclaredRoot program owner) (framed : RootFrame owner state)
     (indexed : AtPosition program analysis state) (member : operation ∈ program.operations)
@@ -565,7 +568,7 @@ theorem frontier_of_firing (program : Program) (analysis : Analysis) (state afte
       deriveInternalExecutionFrontier program state = { offers := [offer] } ∧
       (∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) := by
   obtain ⟨offer, _, successor, aligned, discovery⟩ := enabled_operation_has_singleton_discovery program analysis state after
-    operation owner wellFormed analyzed declared framed indexed member fired
+    operation owner ordinaryProfile wellFormed analyzed declared framed indexed member fired
   refine ⟨offer, successor, ?_, aligned⟩
   apply deriveInternalExecutionFrontier_singleton program state operation
   · rcases framed.2.2.2.1 with ⟨running, _⟩ | ⟨completed, _⟩ <;> simp [*]
@@ -575,7 +578,7 @@ theorem frontier_of_firing (program : Program) (analysis : Analysis) (state afte
   · exact member
   · exact discovery
   · intro candidate included different
-    apply refused_operation_has_empty_discovery program analysis state candidate analyzed indexed
+    apply refused_operation_has_empty_discovery program analysis state candidate ordinaryProfile analyzed indexed
     cases selected : fire? program candidate state with
     | none => rfl
     | some successor => exact False.elim (different (firing_unique program analysis state successor after candidate operation
@@ -605,6 +608,7 @@ theorem settled_position_depth_zero (program : Program) (analysis : Analysis) (s
 
 open InternalCommutation in
 theorem settled_frontier (program : Program) (analysis : Analysis) (state : RuntimeState)
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
     (analyzed : programAnalysis program = some analysis) (declared : SerialBusinessTask.DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
@@ -612,7 +616,7 @@ theorem settled_frontier (program : Program) (analysis : Analysis) (state : Runt
     deriveInternalExecutionFrontier program state = {} := by
   apply deriveInternalExecutionFrontier_empty
   intro operation member
-  apply refused_operation_has_empty_discovery program analysis state operation analyzed indexed
+  apply refused_operation_has_empty_discovery program analysis state operation ordinaryProfile analyzed indexed
   cases fired : fire? program operation state with
   | none => rfl
   | some after =>
@@ -626,6 +630,7 @@ open InternalCommutation in
 /-- The actual singleton scheduler drains the indexed depth, preserving actual reachability independently of optional publication records. -/
 theorem scheduled_closure (program : Program) (analysis : Analysis) (baseline state : RuntimeState)
     (owner : ScopeOccurrenceId) (commandId : SemanticId) (fuel index ordinal : Nat) (frontier : Option Vertex)
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (declared : SerialBusinessTask.DeclaredRoot program owner) (framed : RootFrame owner state)
     (position : Position program analysis state frontier)
@@ -641,7 +646,7 @@ theorem scheduled_closure (program : Program) (analysis : Analysis) (baseline st
     have indexed : AtPosition program analysis state := ⟨frontier, position, by cases frontier <;> exact available, canonical⟩
     by_cases settled : state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId
     · rw [closeScheduledTraced_stable fuel program commandId index ordinal state
-        (settled_frontier program analysis state owner wellFormed analyzed declared framed indexed settled)]
+        (settled_frontier program analysis state ordinaryProfile owner wellFormed analyzed declared framed indexed settled)]
       exact ⟨rfl, reachable, framed, indexed, settled⟩
     · have progress := position_progress program analysis state owner wellFormed analyzed declared framed indexed
       have enabled : ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after := by
@@ -665,7 +670,7 @@ theorem scheduled_closure (program : Program) (analysis : Analysis) (baseline st
       | succ fuel =>
         have tail := ih fuel (by omega) after (index + 1) next afterFrame nextPosition
           (by cases next <;> exact nextAvailable) nextCanonical nextReach (by omega)
-        obtain ⟨offer, successor, discovery, aligned⟩ := frontier_of_firing program analysis state after operation owner wellFormed analyzed declared framed indexed member fired
+        obtain ⟨offer, successor, discovery, aligned⟩ := frontier_of_firing program analysis state after operation owner ordinaryProfile wellFormed analyzed declared framed indexed member fired
         have equations := closeScheduledTraced_singleton_step fuel program commandId index ordinal state offer discovery aligned
         change (closeScheduledTraced (fuel + 1) program commandId index ordinal [] state).failed = false ∧ _
         rw [equations.2, equations.1]
@@ -683,12 +688,14 @@ theorem committed_start_scheduled_closure (program : Program) (analysis : Analys
     let closed := closeScheduledTraced scenarioClosureLimit program commandId index ordinal [] started
     closed.failed = false ∧ AtPosition program analysis closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed instanceId) := by
+  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+    rcases profile with profile | profile <;> simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
   dsimp only
   obtain ⟨owner, instanceEq, declared, framed, frontier, position, available, canonical⟩ :=
     committed_start_has_invariant program analysis commandId processId instanceId bindings profile analyzed committed
   have within := position_depth_bounded program analysis _ frontier analyzed position
   obtain ⟨success, _, _, indexed, settled⟩ := scheduled_closure program analysis _ _ owner commandId scenarioClosureLimit index ordinal
-    frontier wellFormed analyzed declared framed position (by cases frontier <;> exact available) canonical .initial within
+    frontier ordinaryProfile wellFormed analyzed declared framed position (by cases frontier <;> exact available) canonical .initial within
   exact ⟨success, indexed, by simpa [instanceEq] using settled⟩
 
 /-- Accepted start derives the one exact Process owner, foreign-state absence, graph position, writer-free input presence and captured local lifetime together. -/
@@ -756,6 +763,8 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
     closed.failed = false ∧ SerialBusinessTask.ExecutionReachable program
       (admitStimulus program initialState (.startProcess startCommandId processId instanceId bindings)).state closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed instanceId) := by
+  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+    rcases profile with profile | profile <;> simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
   obtain ⟨owner, instanceEq, _, declared, framed, indexed, _⟩ :=
     reached_invariant program analysis startCommandId processId instanceId bindings state profile analyzed committed reachable
   have static := guarded_program_admission program initialState (.startProcess startCommandId processId instanceId bindings) profile
@@ -764,7 +773,7 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
   obtain ⟨frontier, position, available, canonical⟩ := indexed
   have bound := position_depth_bounded program analysis state frontier analyzed position
   obtain ⟨success, reached, _, _, settled⟩ := scheduled_closure program analysis _ state owner commandId fuel index ordinal frontier
-    wellFormed analyzed declared framed position (by cases frontier <;> exact available) canonical reachable (Nat.le_trans bound within)
+    ordinaryProfile wellFormed analyzed declared framed position (by cases frontier <;> exact available) canonical reachable (Nat.le_trans bound within)
   exact ⟨success, reached, by simpa [instanceEq] using settled⟩
 
 /-- High-water marks survive every later execution prefix, including refused and accepted completions; together with strict issuance increments, revisiting a task cannot reuse an earlier occurrence. -/

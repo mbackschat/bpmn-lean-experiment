@@ -39,7 +39,9 @@ theorem messageTask_new_references (program : Program) (state : RuntimeState)
           activation := messageActivationCount state contract.message.elementId + 1 } wait = false := by
       simp [makeInternalMessageTaskPatch, messageWaitKeyMatches, messageIdNamesWait,
         beq_iff_eq] at absent ⊢
-      exact fun process element => absent process (congrArg NodeId.mk element)
+      intro process element activation
+      exact of_decide_eq_false
+        (absent (decide_eq_true process) (decide_eq_true (congrArg NodeId.mk element))) activation
     simp [unmatched]
 
 theorem messageTask_regional_ownership_frame (state : RuntimeState) (patch : InternalMessageTaskPatch)

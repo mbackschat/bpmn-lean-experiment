@@ -45,9 +45,11 @@ theorem prepareInternalTimerTaskContract_after_scope_creation
   simp only [prepareInternalTimerTaskContract?, owned, ownerAfter, bind, Option.bind,
     live, liveAfter] at prepared ⊢
   cases kind : selected.kind <;>
-    simpa only [InternalScopeCreationSelection.apply, kind, runningInstance?,
-      makeInternalTimerTaskPatch, activationCount, activityActivationCount, timerActivationCount,
-      openWaitAnchorAbsent, openWaitAnchors] using prepared
+    simp only [InternalScopeCreationSelection.apply, kind] at prepared ⊢ <;>
+    dsimp +instances only [runningInstance?, makeInternalTimerTaskPatch,
+      activationCount, activityActivationCount, timerActivationCount,
+      openWaitAnchorAbsent, openWaitAnchors] at prepared ⊢ <;>
+    exact prepared
 
 theorem prepareInternalScopeCreation_after_timer_task
     (program : Program) (state : RuntimeState) (operation : SemanticOperation)

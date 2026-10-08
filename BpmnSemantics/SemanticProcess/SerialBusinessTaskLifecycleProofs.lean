@@ -62,12 +62,10 @@ theorem serial_committed_ingress_has_checked_predecessor (program : Program)
     (state : RuntimeState) (stimulus : Stimulus)
     (committed : (admitStimulus program state stimulus).outcome = .committed) :
     serialBusinessCommandAdmitted program state stimulus = true := by
-  cases declarations : program.compensationEventSubProcessSnapshots with
-  | some declaration => simp [admitStimulus, declarations] at committed
-  | none =>
-      cases accepted : serialBusinessCommandAdmitted program state stimulus with
-      | false => simp [admitStimulus, declarations, accepted] at committed
-      | true => rfl
+  apply Bool.ne_false_iff.mp
+  intro refused
+  cases declarations : program.compensationEventSubProcessSnapshots <;>
+    simp [admitStimulus, declarations, refused] at committed
 
 namespace SerialBusinessTask
 

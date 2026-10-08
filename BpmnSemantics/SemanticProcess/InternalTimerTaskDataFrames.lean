@@ -203,7 +203,7 @@ theorem prepareInternalTimerTaskContract_data_preserved
   have associations : regionalActivityAssociationsConflict data.record timer.record = false := by
     simp [data, timer, makeInternalDataArmingPatch, makeInternalTimerTaskPatch,
       dataInputOutputActivityRecord, regionalActivityAssociationsConflict,
-      regionalActivityBodyTasks, sameActivityOccurrence, beq_iff_eq, valuesDifferent]
+      regionalActivityBodyTasks, activityBodyScopeClaims, sameActivityOccurrence, beq_iff_eq, valuesDifferent]
   have recordFrame : after.activityOccurrences.any
       (regionalActivityAssociationsConflict · timer.record) = false := by
     apply List.any_eq_false.mpr

@@ -30,7 +30,8 @@ theorem prepared_bounded_scope_old_records_reject_child
   have absent := List.any_eq_false.mp disjoint old member
   cases body : old.body <;> simp [activityBodyScope?, body] at claimed
   subst_vars
-  simp [regionalActivityAssociationsConflict, makeInternalBoundedScopeSelection, body] at absent
+  simp [regionalActivityAssociationsConflict, activityBodyScopeClaims,
+    makeInternalBoundedScopeSelection, body] at absent
 
 theorem prepared_bounded_scope_preserves_existing_timer_match
     (program : Program) (state : RuntimeState) (contract : InternalBoundedScopeContract)
@@ -50,8 +51,12 @@ theorem prepared_bounded_scope_preserves_existing_timer_match
     rw [recordAttaches_timer_eq_names]
     have nodeEquality (left right : NodeId) : left = right ↔ left.value = right.value := by
       cases left; cases right; simp
-    simpa [selected, makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection, ActivityOccurrence.timerHandlerOccurrences,
-      anyTimerIdNamesWait, timerIdNamesWait, timerWaitOccurrence, timerWaitKeyMatches, nodeEquality] using fresh
+    simp [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
+      timerWaitKeyMatches, nodeEquality] at fresh
+    simp [selected, makeInternalBoundedScopeSelection, ActivityOccurrence.timerHandlerOccurrences,
+      anyTimerIdNamesWait, timerIdNamesWait]
+    intro process element activation
+    exact of_decide_eq_false (fresh (decide_eq_true process) element) activation
   have scopeFrame (definition : DefinitionScopeId) (old : ActivityOccurrence)
       (oldMember : old ∈ state.activityOccurrences) :
       ((insertScopeOccurrence entry.created state.scopeOccurrences).filter fun scope =>
@@ -427,14 +432,16 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
     (makeInternalBoundedScopeSelection state contract entry).creation contract.origin definition checks
   have definitionMatch := checkFacts.2.1
   simp only [InternalBoundedScopeContract.entryOperation, internalScopeCreationDefinitionMatches,
-    makeInternalBoundedScopeSelection, Bool.and_eq_true, decide_eq_true_eq] at definitionMatch
+    makeInternalBoundedScopeSelection] at definitionMatch
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at definitionMatch
+  have parent := of_decide_eq_true definitionMatch.1.2
   have nonempty := (internalScopeCreationDefinitionsExact_facts program definition checkFacts.1 definitionFacts.1).1
   have member : contract.operation ∈ program.operations := by
     have filtered : contract.operation ∈ program.operations.filter
         (fun candidate => decide (candidate.id = contract.operationId)) := by rw [operations]; simp
     exact (List.mem_filter.mp filtered).1
   have census := child_entry_census program definition entry.owner.definitionScopeId admitted snapshots
-    definitionFacts.1 definitionMatch.1.2 ⟨_, member, by
+    definitionFacts.1 parent ⟨_, member, by
       cases disposition : contract.disposition <;>
         simp [InternalBoundedScopeContract.operation, disposition,
           enteredChildScopeId?, definitionMatch.1.1]⟩
@@ -457,8 +464,9 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
     · intro candidate _ accepted
       split at accepted <;> try contradiction
       cases candidate <;> simp only at accepted <;> try contradiction
-      all_goals simp only [enteredChildScopeId?, Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
-      all_goals exact congrArg some (accepted.1.trans (childDefinition.trans definitionMatch.1.1.symm))
+      all_goals simp only [enteredChildScopeId?] at accepted ⊢
+      all_goals simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
+      all_goals exact decide_eq_true (congrArg some (accepted.1.trans (childDefinition.trans definitionMatch.1.1.symm)))
     · change operationOwnedBy program contract.operation entry.owner = true at owned
       cases disposition : contract.disposition <;>
         simp [InternalBoundedScopeContract.operation, disposition] at owned ⊢ <;>
@@ -476,7 +484,7 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
   have created : ScopeBinding program (entry.apply state) entry.created = true := by
     unfold ScopeBinding
     rw [definitions]
-    simp only [InternalScopeCreationSelection.apply, child, running, definitionMatch.1.2,
+    simp only [InternalScopeCreationSelection.apply, child, running, parent,
       childFacts.2.2.1, Bool.and_eq_true, decide_eq_true_eq]
     refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, afterCreated⟩, entryBinding⟩, ?_⟩
     · have process := checkFacts.2.2.2.2.1

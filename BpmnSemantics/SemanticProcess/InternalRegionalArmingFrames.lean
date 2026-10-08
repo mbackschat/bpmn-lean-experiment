@@ -367,7 +367,6 @@ theorem prepareInternalArm_retirement_frame (program : Program) (before after : 
   · simp at found
   · rename_i selected
     rw [if_neg selected]
-    dsimp only [Pure.pure, Bind.bind, Option.bind] at found ⊢
     obtain ⟨inputOrigin, originFound, found⟩ := Option.bind_eq_some_iff.mp found
     rw [originFound]
     dsimp only [Option.bind_some]
@@ -421,7 +420,6 @@ theorem prepareInternalDataArm_retirement_frame (program : Program) (before afte
     originFound, sourceFrame, patchFrame, unique, retirement.anchor_absent _ anchorAbsent,
     scopeFrame, recordFrame, bind, Option.bind, Bool.not_true, Bool.false_or,
     Bool.or_false, Bool.false_eq_true, if_false]
-  rfl
 
 theorem prepareInternalArm_running_binding (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)

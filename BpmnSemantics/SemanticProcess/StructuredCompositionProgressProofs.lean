@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 
-/-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. -/
+/-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. Discovery also requires the selected profile because `ordinaryExecutionFrontier` and `mergeExecutionFrontier` dispatch by profile while structural analysis remains profile-independent. -/
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -631,14 +631,14 @@ theorem admitted_enabled_operation_is_unique
 
 theorem refused_operation_has_empty_discovery
     (program : Program) (analysis : Analysis) (state : RuntimeState) (operation : SemanticOperation)
+    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (analyzed : programAnalysis program = some analysis) (bounded : ControlUnitBound state)
     (refused : fire? program operation state = none) :
     (match operation, state.control with
       | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
       | _, _ => ordinaryExecutionFrontier program state operation) = {} := by
   have ordinary : ordinaryExecutionFrontier program state operation = {} := by
-    unfold ordinaryExecutionFrontier
-    split <;> simp_all
+    simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, refused]
   cases operation <;> try exact ordinary
   case mergeExclusive id origin inputs output =>
     cases control : state.control <;> try exact ordinary
@@ -653,12 +653,13 @@ theorem refused_operation_has_empty_discovery
         rw [fire_mergeExclusive_withoutSnapshotDeclaration _ _ _ _ _ _ noSnapshots,
           mergeExclusiveState_singleton_offer state inputs output token single (by simpa using port)] at refused
         contradiction
-      simp [mergeExecutionFrontier, internalMergeInputAlternatives, empty, List.mapM_nil,
+      simp [mergeExecutionFrontier, profile, structuredCompositionCheckpointProfileId, internalMergeInputAlternatives, empty, List.mapM_nil,
         InternalCommutation.sortBy]
 
 theorem enabled_operation_has_singleton_discovery
     (program : Program) (analysis : Analysis) (state after : RuntimeState) (operation : SemanticOperation)
     (root : DefinitionScope) (owner : ScopeOccurrenceId)
+    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (origins : (program.controlPlaces.map (·.origin.elementId)).Nodup)
     (definitions : program.definitionScopes = [root]) (rootKey : owner.definitionScopeId = root.id)
@@ -677,7 +678,7 @@ theorem enabled_operation_has_singleton_discovery
     ⟨{ alternative := .operation operation.id, operation, successor := after,
        preparation := prepareInternalTransition? program state operation }, rfl, rfl,
       fun prepared found => prepareInternalTransition_alternative program state operation prepared found,
-      by simp [ordinaryExecutionFrontier, fired]; cases operation <;> exact selected⟩
+      by simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, fired]; cases operation <;> exact selected⟩
   cases operation
   all_goals try exact ordinary rfl
   case reachNoneEnd id origin input =>
@@ -720,11 +721,12 @@ theorem enabled_operation_has_singleton_discovery
           prepareInternalMerge_facts program state _ _ prepared ready
         rw [same]
         exact (selectInternalMerge_facts state _ _ selected selection).2.1
-      · simp [mergeExecutionFrontier, alternatives, List.mapM_cons, List.mapM_nil, ready, applied]
+      · simp [mergeExecutionFrontier, profile, structuredCompositionCheckpointProfileId, alternatives, List.mapM_cons, List.mapM_nil, ready, applied]
 
 /-- The actual scheduler discovers exactly the raw stable state or its unique faithful enabled offer. -/
 theorem admitted_frontier_is_complete
     (program : Program) (analysis : Analysis) (state : RuntimeState) (root : DefinitionScope) (owner : ScopeOccurrenceId)
+    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
     (origins : (program.controlPlaces.map (·.origin.elementId)).Nodup)
     (definitions : program.definitionScopes = [root]) (rootKey : owner.definitionScopeId = root.id)
@@ -739,7 +741,7 @@ theorem admitted_frontier_is_complete
   by_cases enabled : ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after
   · obtain ⟨operation, member, after, fired⟩ := enabled
     obtain ⟨offer, operationEq, successorEq, aligned, discovered⟩ := enabled_operation_has_singleton_discovery
-      program analysis state after operation root owner wellFormed analyzed origins definitions rootKey frame bounded owned member fired
+      program analysis state after operation root owner profile wellFormed analyzed origins definitions rootKey frame bounded owned member fired
     have active : (match state.control with | .cancelled _ | .failed .. => false | _ => true) = true := by
       rcases frame.2 with ⟨_, control, _⟩ | ⟨_, control, _⟩ <;> simp [control]
     have unique : program.operations.Nodup := List.Pairwise.of_map (S := (· ≠ ·)) (·.id)
@@ -748,7 +750,7 @@ theorem admitted_frontier_is_complete
     refine Or.inr ⟨offer, by simpa [operationEq] using member, by simpa [operationEq, successorEq] using fired, aligned, ?_⟩
     apply deriveInternalExecutionFrontier_singleton program state operation offer active unique member discovered
     intro candidate candidateMember different
-    apply refused_operation_has_empty_discovery program analysis state candidate analyzed bounded
+    apply refused_operation_has_empty_discovery program analysis state candidate profile analyzed bounded
     cases found : fire? program candidate state with
     | none => rfl
     | some successor => exact False.elim (different (admitted_enabled_operation_is_unique program analysis state successor after
@@ -759,7 +761,7 @@ theorem admitted_frontier_is_complete
       | none => rfl
       | some after => exact False.elim (enabled ⟨operation, member, after, found⟩)
     exact Or.inl ⟨deriveInternalExecutionFrontier_empty program state (fun operation member =>
-      refused_operation_has_empty_discovery program analysis state operation analyzed bounded (stable operation member)), stable⟩
+      refused_operation_has_empty_discovery program analysis state operation profile analyzed bounded (stable operation member)), stable⟩
 
 /-- Exact lowering and actual reachability make the existing rank bound sufficient for successful scheduled closure and raw stability. -/
 theorem reached_scheduled_closure_is_bounded
@@ -797,7 +799,7 @@ theorem reached_scheduled_closure_is_bounded
     have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed startOwned startBound reachable
     have reachedPositions := task_execution_preserves_input_positions program vertices analysis _ reached wellFormed profile
       analyzed graph positions startBound reachable
-    rcases admitted_frontier_is_complete program analysis reached root owner wellFormed analyzed origins definitions rootKey
+    rcases admitted_frontier_is_complete program analysis reached root owner profile wellFormed analyzed origins definitions rootKey
       frame bounded owned (fun token live => let ⟨target, found, _⟩ := reachedPositions.1 token live; ⟨target, found⟩) with
       ⟨frontier, stable⟩ | ⟨offer, member, fired, aligned, frontier⟩
     · simp only [closeScheduledTraced_stable fuel program commandId index ordinal reached frontier]

@@ -101,8 +101,9 @@ private theorem filter_removeParallelChildWaits_by_pending
   simp only [removeParallelChildWaits, List.filter_filter]
   apply List.filter_congr
   intro wait _
-  by_cases same : progressWaitTaskId wait = target <;>
-    simp [List.contains_eq_mem, progressWaitTaskId, Bool.and_comm]
+  by_cases same : progressWaitTaskId wait = target
+  all_goals simp only [progressWaitTaskId] at same
+  all_goals simp [List.contains_eq_mem, progressWaitTaskId, same, Bool.and_comm]
 
 private theorem filter_removeParallelChildWaits_commutes (waits : List UserTaskWait)
     (target : UserTaskInstanceId) (predicate : UserTaskWait → Bool) :
@@ -112,8 +113,9 @@ private theorem filter_removeParallelChildWaits_commutes (waits : List UserTaskW
   simp only [removeParallelChildWaits, List.filter_filter]
   apply List.filter_congr
   intro wait _
-  by_cases same : progressWaitTaskId wait = target <;>
-    simp [progressWaitTaskId, Bool.and_comm]
+  by_cases same : progressWaitTaskId wait = target
+  all_goals simp only [progressWaitTaskId] at same
+  all_goals simp [progressWaitTaskId, same, Bool.and_comm]
 
 private theorem length_filter_map (values : List α) (project : α → β)
     (predicate : β → Bool) :
@@ -329,8 +331,9 @@ theorem parallelMultiInstanceProgramBindingsValid_progress
       simp only [updatedSlots, replacePendingParallelSlot] at slotMember
       obtain ⟨prior, priorMember, rfl⟩ := List.mem_map.mp slotMember
       have priorValid := snapshotLength prior priorMember
-      simpa [updatedController, updatedSlots, parallelSlotIdentityValid,
-        completeParallelSlot_taskId, activationCount] using priorValid
+      unfold parallelSlotIdentityValid
+      rw [completeParallelSlot_taskId]
+      exact priorValid
     · exact slotIdsUnique
     · simpa [updatedController, activationCount, timerActivationCount] using slotsValid
     · exact timerFacts

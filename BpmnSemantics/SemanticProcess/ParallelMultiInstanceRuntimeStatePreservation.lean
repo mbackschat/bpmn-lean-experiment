@@ -742,8 +742,8 @@ theorem insertNextTimer_preserves_identityBound (state : RuntimeState)
   simp only [runtimeStateIdentityBound, Bool.and_eq_true] at bounded ⊢
   obtain ⟨⟨tasks, timers⟩, activities⟩ := bounded
   refine ⟨⟨tasks, ?_⟩, activities⟩
-  simp only [insertTimerWait, all_canonicalInsertBy, Bool.and_eq_true, List.all_eq_true,
-    decide_eq_true_eq]
+  rw [insertTimerWait, all_canonicalInsertBy]
+  simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
   refine ⟨?_, ?_⟩
   · change wait.activation ≤ timerActivationCount
       { state with timerActivations := (setTimerActivationCount state.timerActivations

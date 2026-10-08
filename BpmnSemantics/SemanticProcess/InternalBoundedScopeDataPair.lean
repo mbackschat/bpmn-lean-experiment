@@ -89,7 +89,7 @@ theorem prepareInternalBoundedScope_after_data
         (makeInternalBoundedScopeSelection state contract entry).record = false := by
       have different : dataContract.taskId.value ≠ contract.origin.elementId.value := activities.symm
       simp [data, makeInternalDataArmingPatch, dataInputOutputActivityRecord, makeInternalBoundedScopeSelection,
-        regionalActivityAssociationsConflict, regionalActivityBodyTasks, sameActivityOccurrence,
+        regionalActivityAssociationsConflict, regionalActivityBodyTasks, activityBodyScopeClaims, sameActivityOccurrence,
         beq_iff_eq, different]
     have recordFrame : after.activityOccurrences.any (regionalActivityAssociationsConflict ·
         (makeInternalBoundedScopeSelection state contract entry).record) =

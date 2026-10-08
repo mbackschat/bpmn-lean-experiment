@@ -45,9 +45,11 @@ theorem prepareInternalMessageTaskContract_after_scope_creation
   simp only [prepareInternalMessageTaskContract?, owned, ownerAfter, bind, Option.bind,
     live, liveAfter] at prepared ⊢
   cases kind : selected.kind <;>
-    simpa only [InternalScopeCreationSelection.apply, kind, runningInstance?,
-      makeInternalMessageTaskPatch, activationCount, activityActivationCount, messageActivationCount,
-      openWaitAnchorAbsent, openWaitAnchors] using prepared
+    simp only [InternalScopeCreationSelection.apply, kind] at prepared ⊢ <;>
+    dsimp +instances only [runningInstance?, makeInternalMessageTaskPatch,
+      activationCount, activityActivationCount, messageActivationCount,
+      openWaitAnchorAbsent, openWaitAnchors] at prepared ⊢ <;>
+    exact prepared
 
 theorem prepareInternalScopeCreation_after_message_task
     (program : Program) (state : RuntimeState) (operation : SemanticOperation)

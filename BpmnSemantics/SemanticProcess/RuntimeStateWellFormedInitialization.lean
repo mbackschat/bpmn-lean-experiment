@@ -101,7 +101,76 @@ private theorem initialSnapshotValid (program : Program)
         have capacity : 2 ≤ declaration.maxCanonicalBytes := by grind
         simp [compensationEventSubProcessSnapshotStateValid, valid, present, initialState,
           canonicalCompensationParentContextRetentionsUtf8Bytes, retentionLifecycleValid]
-        exact ⟨rfl, capacity⟩
+        refine ⟨rfl, ?_⟩
+        change decide (2 ≤ declaration.maxCanonicalBytes) = true
+        exact decide_eq_true_eq.mpr capacity
+
+/-- Initialization may contain a hosting root but no repeated body. `programGraphWellFormed_scopeContract` requires every sequential entry child to have a parent; unique definition IDs therefore keep the parentless selected root out of its body census. -/
+private theorem startingSequentialValid (program : Program) (state : RuntimeState)
+    (structural : programWellFormed program = true)
+    (activities : state.activityOccurrences = [])
+    (controllers : state.sequentialScopeControllers = [])
+    (roots : ∀ occurrence ∈ state.scopeOccurrences, ∃ root,
+      rootDefinitionScope? program = some root ∧ occurrence.id.definitionScopeId = root.id) :
+    sequentialScopeStateValid program state = true := by
+  have unique : (program.definitionScopes.map (·.id)).Nodup := by
+    apply List.Pairwise.of_map (S := (· ≠ ·)) DefinitionScopeId.value
+      (fun _ _ different same => different (congrArg DefinitionScopeId.value same))
+    rw [List.map_map]
+    have admitted := structural
+    simp only [programWellFormed, Bool.and_eq_true] at admitted
+    have sorted : strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) = true := by
+      grind
+    exact strictlySortedStrings_nodup _ sorted
+  obtain ⟨entryRoot, _, _, ownership⟩ :=
+    programGraphWellFormed_scopeContract program (programWellFormed_graph program structural)
+  simp only [scopedOwnershipComplete, Bool.and_eq_true] at ownership
+  simp only [sequentialScopeStateValid, activities, controllers, List.all_nil,
+    List.filter_nil, Bool.true_and]
+  apply List.all_eq_true.mpr
+  intro entry declared
+  have bodies : (state.scopeOccurrences.filter fun occurrence =>
+      occurrence.id.definitionScopeId == entry.childScopeId) = [] := by
+    apply List.filter_eq_nil_iff.mpr
+    intro occurrence member matched
+    obtain ⟨root, rootFound, rootOwner⟩ := roots occurrence member
+    have rootCensus : (program.definitionScopes.filter fun scope =>
+        scope.parentScopeId.isNone &&
+          decide (scope.originElementId.value = program.processId.value)) = [root] := by
+      unfold rootDefinitionScope? at rootFound
+      split at rootFound
+      · cases Option.some.inj rootFound
+        assumption
+      · contradiction
+    have rootMember : root ∈ program.definitionScopes :=
+      (List.mem_filter.mp (show root ∈ program.definitionScopes.filter (fun scope =>
+        scope.parentScopeId.isNone &&
+          decide (scope.originElementId.value = program.processId.value)) by rw [rootCensus]; simp)).1
+    have rootParent : root.parentScopeId = none := by
+      have selected := (List.mem_filter.mp (show root ∈ program.definitionScopes.filter (fun scope =>
+        scope.parentScopeId.isNone &&
+          decide (scope.originElementId.value = program.processId.value)) by rw [rootCensus]; simp)).2
+      exact Option.isNone_iff_eq_none.mp (Bool.and_eq_true_iff.mp selected).1
+    have rootLookup : (program.definitionScopes.find? fun scope => decide (scope.id = root.id)) = some root := by
+      rw [← List.head?_filter,
+        filter_key_eq_singleton_of_nodup program.definitionScopes (·.id) root unique rootMember]
+      rfl
+    obtain ⟨operation, member, selected⟩ := List.mem_filterMap.mp declared
+    cases operation <;> simp [sequentialScopeEntry?] at selected
+    rename_i id origin input childEntry childScopeId output collectionName itemName bodyInputs condition
+    cases selected
+    have childRoot : childScopeId = root.id := by
+      simpa only [rootOwner] using (beq_iff_eq.mp matched).symm
+    have respects := List.all_eq_true.mp ownership.2 _ member
+    change (match (program.operationScopes.find? fun binding => decide (binding.operationId = id)).map (·.scopeId) with
+      | none => false
+      | some owner => _ && _ &&
+        (program.definitionScopes.find? fun scope => decide (scope.id = childScopeId)).any
+          (fun scope => scope.parentScopeId == some owner && scope.originElementId == origin.elementId)) = true at respects
+    cases owned : (program.operationScopes.find? fun binding => decide (binding.operationId = id)).map (·.scopeId) with
+    | none => simp [owned] at respects
+    | some owner => simp [owned, childRoot, rootLookup, rootParent] at respects
+  rw [bodies]
 
 private theorem startingRoot_eq_parentless (program : Program) (root selected : DefinitionScope)
     (rootFound : rootDefinitionScope? program = some root)
@@ -216,6 +285,17 @@ private theorem startedWithSnapshots_wellFormed (program : Program) (instanceId 
       Option.some.injEq] at built
     obtain ⟨_, _, rfl⟩ := built
     exact startingParallelValid program _ structural rfl rfl rfl rfl
+  have repeated : sequentialScopeStateValid program
+      { raw with compensationParentContextRetentions := retentions } = true := by
+    unfold runningProgramStartState? at built
+    simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at built
+    obtain ⟨root, rootFound, rfl⟩ := built
+    apply startingSequentialValid program _ structural rfl rfl
+    intro occurrence member
+    have same := List.mem_singleton.mp member
+    subst occurrence
+    exact ⟨root, rootFound, rfl⟩
   unfold runningProgramStartState? at built
   simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
     Option.some.injEq] at built
@@ -223,7 +303,7 @@ private theorem startedWithSnapshots_wellFormed (program : Program) (instanceId 
   have compensation := startingCompensationValid program instanceId _ position
     rfl rfl (.inr ⟨instanceId, rfl⟩)
   unfold runtimeStateWellFormed
-  rw [position, compensation, snapshots, retention, parallel]
+  rw [position, compensation, snapshots, retention, parallel, repeated]
   simp [runningStartState, initialState, emptyScopedVariables, waitOwnersLive, waitIdentitiesUnique,
     waitDeclarationsValid, hiddenRecordDeclarationsValid, canonicalCollectionOrder, orderedBy,
     eventRaceAssociationsValid, effectIncidentAssociationsValid, runtimeStateIdentityBound,
@@ -257,8 +337,11 @@ theorem initialState_wellFormed (program : Program) (instanceId : SemanticId)
     cases present : program.compensationActivityRetention <;>
       simp [compensationActivityRetentionStateValid, retentionDeclared, present, initialState]
   have parallel := startingParallelValid program initialState structural rfl rfl rfl rfl
+  have repeated := startingSequentialValid program initialState structural rfl rfl (by
+    intro occurrence member
+    simp [initialState] at member)
   unfold runtimeStateWellFormed
-  rw [position, compensation, snapshots, retention, parallel]
+  rw [position, compensation, snapshots, retention, parallel, repeated]
   simp [initialState, emptyScopedVariables, notStartedStateEmpty, waitOwnersLive, waitIdentitiesUnique,
     waitDeclarationsValid, hiddenRecordDeclarationsValid, canonicalCollectionOrder, orderedBy,
     eventRaceAssociationsValid, effectIncidentAssociationsValid, runtimeStateIdentityBound,

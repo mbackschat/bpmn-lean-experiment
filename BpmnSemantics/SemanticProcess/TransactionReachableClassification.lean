@@ -22,10 +22,14 @@ private theorem attempt_operation_filter (p : Program) (state : RuntimeState)
   | nil => rfl
   | cons operation rest ih =>
     have identity := attemptInternalOperation_operation_identity p operation state
-    cases attempted : attemptInternalOperation p operation state
-    all_goals rw [attempted] at identity
-    all_goals simp only [InternalOperationAttempt.operation] at identity
-    all_goals simp [attempted, appliedOperation, ih, identity]
+    rw [List.map_cons, List.filterMap_cons, List.filter_cons]
+    cases attempted : attemptInternalOperation p operation state with
+    | applied step =>
+      rw [attempted] at identity
+      change step.operation = operation at identity
+      change step.operation :: _ = operation :: _
+      rw [identity, ih]
+    | disabled _ | refused _ _ => exact ih
 
 /-- The admitted operation inventory prevents duplicate offers even after canonical sorting. -/
 theorem transaction_frontier_operations_nodup (p : Program) (roles : TransactionAdmittedRoles p)

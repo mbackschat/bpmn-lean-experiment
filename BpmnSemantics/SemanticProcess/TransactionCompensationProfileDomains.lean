@@ -23,7 +23,7 @@ private theorem compensationCardinality (operations : List SemanticOperation) :
     | nil => simp
     | cons operation rest ih =>
         rw [List.foldl_cons, ih]
-        cases operation <;> simp [addOperationCardinality, isCompensationOperation] <;> omega
+        cases operation <;> simp [List.filter, addOperationCardinality, isCompensationOperation] <;> omega
   simpa using count {}
 
 /-- Exact profile counts exclude an absent operation family without adding successor-state assumptions. -/

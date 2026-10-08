@@ -4,12 +4,17 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { buildProcessShowcaseCatalog } from "./rc-showcase-catalog.ts";
+import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
 test("projects retained business models and twelve configured evaluation paths without promoting engine-only models", async () => {
   const catalog = await buildProcessShowcaseCatalog(root);
-  assert.equal(catalog.length, 45);
+  const manifest = requireExecutableModelCorpusManifest(JSON.parse(
+    await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8"),
+  ));
+  assert.deepEqual(catalog.map(({ id }) => id), manifest.models
+    .filter(({ source }) => source.kind === "retainedScenario").map(({ id }) => id));
   assert.equal(catalog.filter((model) => model.showcase !== null).length, 12);
   assert.equal(catalog.filter((model) => model.showcase?.mode === "human").length, 3);
   const transaction = catalog.find((model) => model.id === "reservation-withdrawal")!;

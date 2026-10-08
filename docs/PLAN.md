@@ -109,16 +109,18 @@ Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualifi
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current outcome: the [independently approved API correction](A12-ADD-ON-BOUNDARY-SPEC.md#independent-cold-review-receipt) preserves exact source-overlay identity, snapshots and content-bound recovery. API and consumer tests pass as working-tree integration evidence; clean-target qualification remains open. Private business profiles retain their host refusals; registration and whole-process acceptance remain open.
+Current task: qualify public registration of approved serial/mixed-task/business Error journeys; no new family or topology.
 
-Last verification: `/tmp/business-overlay-api-package-final`, `/tmp/business-overlay-gateway-package` and `/tmp/business-overlay-definitions-package` pass; engine/platform/PostgreSQL harness types pass. Infrastructure `/tmp/business-overlay-infrastructure-runtime` passes 636/637: Lean measurement rows/digests fail, reproduced at unchanged HEAD in `/tmp/business-overlay-baseline-cost-audit`. Current serial/mixed/Error recovery/replay receipts remain green; preserve failed `/tmp/session-functional-complete-temporal` (serial unrun). Focused passes replace neither complete gate.
+Current result: the public-registration candidate remains separate from this proof prerequisite. Corrections preserve composed guarantees and runtime behavior; the [serial assurance lane](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#lean-assurance-lane) owns the strengthened reachable frame and explicit helper domains. Serial proof owners meet their unchanged strict size bound.
 
-Preserved proof boundary: `/tmp/pmis-budget-initial-entry` verifies remaining-fuel accounting and nonempty initial draining. Resume PMIS proof work after this delivery gate; existing gaps remain acceptance requirements. Preserve the [Message withdrawal failure](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md#implementation-progress).
+Last verification: the complete Lean library passes under the fixed resource bound. Isolated types, components/API, differential/artifacts, exact three-journey Lean/core results/E1/E2/mutations and public journeys/replays pass. Installed-SDK composition, Error and 28/29 remaining hosted groups pass; all 18 serial groups pass. Current Call recovery and public-candidate infrastructure pass; prerequisite infrastructure remains incomplete. Serial fixtures pass bounded measurement. Latest mixed-tree documentation check hits the runtime-map word limit and a timeout; no green claim.
 
-Next action: carry the retained pipeline overlay binding through corpus/runner loading, then close host admission, atomic registration/corpus/disclosure and whole-process acceptance. Refresh Lean measurements under the existing resource bound before complete qualification; do not substitute stored digests or weaken that guard.
+Next action: complete remaining infrastructure qualification and independent proof review after the owner-directed checkpoint, then integrate public registration. No further commit partitioning.
 
-Session direction: performance qualification and cold full-library investigation remain deferred; report skips. Retain functional timer/recovery/replay checks. Lean: one process tree, one CPU, 3 GiB, no additional swap. Database selection: [sequential SQLite versus concurrent PostgreSQL](TESTING-SPEC.md#three-level-verification-policy).
+Unresolved: installed-runtime qualification, original concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/publication-query failures, independent proof/public review and closure, and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation remains on hold; performance qualification remains excluded. Lean stays one process tree, one CPU/3 GiB without extra swap; no cold-library investigation is selected.
 
-Oracle: the selected account passes bounded Lean laws and independent TypeScript discriminators; hosted/CIB claims require their own evidence. Practical coverage acceptance and push qualification remain open under the [defect ledger](TEMPORAL-DEFECTS-LEDGER.md).
+Oracle: exact lowering/results/E1/E2, fresh-occurrence/current-data recovery, mutations and applicable acceptance gates.
 
-Stop if the account contradicts normative evidence, requires an unapproved language/dependency or exceeds its bounded assurance scope. Preserve release tags and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
+Stop if a correction weakens guarantees or broadens scope; reassess the shared invariant.
+
+Preserve release tags, mixed worktree and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.

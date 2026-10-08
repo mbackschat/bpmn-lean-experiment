@@ -99,7 +99,9 @@ theorem preparedRegional_cancellation_triggers_empty (program : Program) (state 
         (calledInstanceClosure state prepared.selection.root.id).contains trigger.owner.processInstanceId) = [] := by
   have components := valid
   simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at components
-  obtain ⟨position, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, retention, _, execution⟩ := components
+  have position : runtimePositionValid program hosting state = true := by grind only
+  have retention : compensationActivityRetentionStateValid program state = true := by grind only
+  have execution : compensationExecutionStateValid program state = true := by grind only
   obtain ⟨snapshots, declared, _, closed, _, _, _⟩ := prepareInternalRegional_facts program state operation prepared found
   have selected := (ownershipClosedSelection_facts program state operation prepared.selection closed).1
   have facts := regionalSelection_lifecycle_facts program state operation prepared.selection selected

@@ -85,10 +85,11 @@ theorem explicit_null_start_reaches_review :
     review.outcome = .committed ∧ review.state.waits.map (·.task.id.value) = ["B"] := by
   decide +kernel
 
+-- List.mergeSort is well-founded; cbv uses its equations instead of kernel-unfolding the recursion.
 theorem review_arms_immutable_enclosing_arguments :
     validation.outcome = .committed ∧ validation.state.effectWaits.map (·.arguments) =
       [[{ name := "echo", value := .string "parent" },
-        { name := "payload", value := .string "reviewed" }]] := by decide +kernel
+        { name := "payload", value := .string "reviewed" }]] := by cbv
 
 theorem local_result_fanout_and_parent_frame :
     classification.outcome = .committed ∧
@@ -98,7 +99,7 @@ theorem local_result_fanout_and_parent_frame :
        { name := "status", value := .null }] ∧
     classification.state.effectWaits.map (·.arguments) = [[{ name := "decision", value := .null }]] ∧
     classification.state.variables.activities.map (·.owner) = [.effectOccurrence classificationId] := by
-  decide +kernel
+  cbv
 
 theorem complete_actual_serial_journey :
     finalization.outcome = .committed ∧ finalization.state.waits.map (·.task.id.value) = ["E"] ∧
@@ -108,7 +109,7 @@ theorem complete_actual_serial_journey :
       [{ name := "classification", value := .string "manual" },
        { name := "decision", value := .null }, { name := "payload", value := .string "parent" },
        { name := "request", value := .string "reviewed" }, { name := "result", value := .string "old" },
-       { name := "status", value := .null }] := by decide +kernel
+       { name := "status", value := .null }] := by cbv
 
 theorem missing_start_refuses :
     applyStimulus 8 program initialState (.startProcess ⟨"bad"⟩ ⟨"P"⟩ ⟨"I"⟩ []) =
@@ -125,12 +126,12 @@ theorem replayed_effect_refuses_unchanged :
     applyStimulus 8 program classification.state
       (.completeEffect ⟨"stale"⟩ validationId (.success [{ name := "result", value := .null }])) =
       { outcome := .rejected, state := classification.state,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by decide +kernel
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by cbv
 
 theorem incomplete_patch_refuses_unchanged :
     applyStimulus 8 program validation.state (.completeEffect ⟨"bad"⟩ validationId (.success [])) =
       { outcome := .rejected, state := validation.state,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by decide +kernel
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by cbv
 
 theorem engine_context_and_keyword_handlers_refuse :
     SerialBusinessTask.descriptorValid (descriptor "execution") = false ∧
@@ -141,15 +142,15 @@ theorem snapshot_survives_parent_change :
     serialRuntimeAssociationsValid program
       { validation.state with variables := { validation.state.variables with
         process := { bindings := [{ name := "payload", value := .string "changed" },
-          { name := "request", value := .string "later" }] } } } = true := by decide +kernel
+          { name := "request", value := .string "later" }] } } } = true := by cbv
 
 theorem chained_input_nonlaw :
     evaluateEnclosingInputMappings
       [{ name := "payload", value := .string "parent" }, { name := "request", value := .string "reviewed" }]
       [{ target := "payload", expression := .enclosingVariable "request" },
        { target := "echo", expression := .enclosingVariable "payload" }] =
-      some [{ name := "payload", value := .string "reviewed" }, { name := "echo", value := .string "parent" }] := by
-  decide +kernel
+      some [{ name := "echo", value := .string "parent" }, { name := "payload", value := .string "reviewed" }] := by
+  cbv
 
 theorem old_profile_does_not_admit_business_handlers :
     programProfileCapabilitiesValid { program with identity := { program.identity with
@@ -163,7 +164,7 @@ theorem malformed_result_classes_refuse :
       [{ name := "decision", value := .null }] ].all (fun patch =>
         let result := applyStimulus 8 program validation.state
           (.completeEffect ⟨"bad"⟩ validationId (.success patch))
-        result.outcome == .rejected && result.state == validation.state) = true := by decide +kernel
+        result.outcome == .rejected && result.state == validation.state) = true := by cbv
 
 theorem second_distinct_source_cannot_partially_write :
     serialEffectPatch? []

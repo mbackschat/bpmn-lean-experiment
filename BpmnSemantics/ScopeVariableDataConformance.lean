@@ -33,19 +33,25 @@ private def initialized : Option ScopedVariables :=
 theorem inputs_use_pre_entry_context_and_ignore_declaration_order :
     (initialized.bind fun variables => readScopeVariable? variables owner "b") = some (.string "outer") ∧
     initializeScopeVariables? before owner [input "status" "status", input "b" "a", literal "a" "seed"] = initialized := by
-  decide +kernel
+  simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
+    evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
+    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
 
 theorem missing_parent_is_not_supplied_by_local_declarations :
     initializeScopeVariables? emptyScopedVariables owner [input "status" "status"] = none ∧
     initializeScopeVariables? emptyScopedVariables owner [literal "a" "seed", input "b" "a"] = none := by
-  decide +kernel
+  simp [owner, input, literal, initializeScopeVariables?, evaluateEnclosingInputMappings,
+    evaluateInputMappings?, canonicalInputMappings?, List.mergeSort,
+    List.MergeSort.Internal.splitInTwo] <;> decide +kernel
 
 theorem present_null_initializes_and_shadows_parent :
     ((initializeScopeVariables? { before with process := { bindings := [{ name := "status", value := .null }] } }
       owner [input "status" "status"]).bind fun variables => readScopeVariable? variables owner "status") = some .null ∧
     ((initialized.bind fun variables => writeScopeVariables? variables owner [{ name := "status", value := .null }]).bind
       fun variables => readScopeVariable? variables owner "status") = some .null := by
-  decide +kernel
+  simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
+    evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
+    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
 
 theorem writes_choose_existing_body_and_otherwise_process :
     ((initialized.bind fun variables => writeScopeVariables? variables owner
@@ -53,7 +59,9 @@ theorem writes_choose_existing_body_and_otherwise_process :
       fun variables => (variables.process.bindings, readScopeVariable? variables foreign "status")) =
     some ([{ name := "a", value := .string "outer" }, { name := "new", value := .string "created" },
       { name := "status", value := .string "parent" }], some (.string "foreign")) := by
-  decide +kernel
+  simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
+    evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
+    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
 
 theorem duplicate_complete_owner_refuses_before_binding_availability :
     let variables := { before with scopes := [{ owner, bindings := [] },
@@ -68,6 +76,8 @@ theorem disposal_preserves_other_owners_and_reentry_initializes_fresh_data :
     ((initialized.bind fun variables => removeScopeVariables? variables owner).bind fun variables =>
       (initializeScopeVariables? variables { owner with activation := 2 } [literal "status" "pending"]).bind
         fun next => readScopeVariable? next { owner with activation := 2 } "status") = some (.string "pending") := by
-  decide +kernel
+  simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
+    evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
+    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
 
 end BpmnSemantics.ScopeVariableDataConformance

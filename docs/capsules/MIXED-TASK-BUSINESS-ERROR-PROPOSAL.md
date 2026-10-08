@@ -86,7 +86,7 @@ Pre-release evolution applies. Add one private profile and classified relationsh
 | [Admission laws](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmissionLaws.lean) | 493 |
 | [Data proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) | 16 |
 | [Lifecycle proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean) | 45 |
-| [Progress proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) | 24 |
+| [Progress proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) | 15 |
 | [Effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 |
 | [Completion proofs](../../BpmnSemantics/SemanticProcess/MixedTaskBusinessErrorCompletionProofs.lean) | 583 |
 | [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 |

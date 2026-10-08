@@ -530,14 +530,13 @@ theorem completeParallelScope_surviving_population {entry : ParallelScopeEntry} 
     obtain ⟨_, shape⟩ := removeScopeVariables_success_iff.mp removed
     rw [shape]
     exact List.Sublist.refl _
-  cases retirement <;> cases Option.some.inj completed
+  rcases retirement with ⟨_, _, _, _⟩ | ⟨_, _⟩ | ⟨_, _, first, rest⟩ <;> cases Option.some.inj completed
   · exact ⟨List.filter_sublist.trans removedFrames, List.filter_sublist⟩
   · exact ⟨List.filter_sublist.trans removedFrames, List.filter_sublist⟩
-  · constructor
-    · apply List.Sublist.trans (cancelParallelBodies_surviving_population (_ :: _) _).1
-      exact List.filter_sublist.trans removedFrames
-    · apply List.Sublist.trans (cancelParallelBodies_surviving_population (_ :: _) _).2
-      exact List.filter_sublist
+  · exact ⟨(cancelParallelBodies_surviving_population (first :: rest) _).1.trans
+        (List.filter_sublist.trans removedFrames),
+      (cancelParallelBodies_surviving_population (first :: rest) _).2.trans
+        List.filter_sublist⟩
 
 /-- Retirement preserves both initially unique populations in all three retirement arms; cancellation cannot manufacture aliases. -/
 theorem completeParallelScope_preserves_population_uniqueness {entry : ParallelScopeEntry} {target : ScopeOccurrenceId}

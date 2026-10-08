@@ -118,9 +118,8 @@ theorem iteratedState_preserves_controllersOwnLiveActivity
   simp only [storeIterationResult, List.mem_map] at member
   obtain ⟨original, present, rfl⟩ := member
   have inherited := carried original present
-  simp only [decide_eq_true_eq] at inherited ⊢
-  rw [List.filter_congr fun r _ => name_of_stored original target result r]
-  exact inherited
+  exact (congrArg (fun records : List ActivityOccurrence => decide (records.length = 1))
+    (List.filter_congr fun r _ => name_of_stored original target result r)).trans inherited
 
 /-- The canonical insert changes where a record sits, never how many a predicate selects. -/
 private theorem length_filter_insertActivityOccurrence (predicate : ActivityOccurrence → Bool)
@@ -252,7 +251,7 @@ theorem emptyCollectionEntryState_preserves_controllersOwnLiveActivity
     (arm : SequentialMultiInstanceArm) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (wellFormed : controllersOwnLiveActivity state = true) :
     controllersOwnLiveActivity (emptyCollectionEntryState arm state owner) = true := by
-  simpa [controllersOwnLiveActivity, emptyCollectionEntryState] using wellFormed
+  exact wellFormed
 
 /-- `SMI-COMPLETE-01` removes the controller together with the one record it names. -/
 theorem finalCompletionState_preserves_controllersOwnLiveActivity

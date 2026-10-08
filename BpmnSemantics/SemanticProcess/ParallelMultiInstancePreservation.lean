@@ -455,7 +455,7 @@ theorem repeatedScopeEntryCardinality (operations : List SemanticOperation) :
     | nil => simp
     | cons operation rest ih =>
       rw [List.foldl_cons, ih]
-      cases operation <;> simp [addOperationCardinality, sequentialScopeEntry?] <;> omega
+      cases operation <;> simp [List.filterMap, addOperationCardinality, sequentialScopeEntry?] <;> omega
   simpa using count {}
 
 /-- The admitted parallel User Task profile has no repeated Sub-Process entries; its census owns that exclusion. -/

@@ -65,7 +65,7 @@ theorem message_monitored_second_delivery (program : Program) (before after : Ru
       have again : spawnFromMessageMonitoredUserTask? program
           (spawnMessageMonitoredPair before pair.val) identity channel = some next := by
         change (messageMonitoredPairForSubscription? program before identity).bind _ = some next
-        simp [found, accepted, next]
+        simp [found, Option.bind, accepted, next]
       refine ⟨next, again, rfl, rfl, rfl, ?_⟩
       have secondStep := spawnFromMessageMonitoredUserTask_sound program _ next identity channel again
       have one := message_monitored_spawn_adds_exactly_one_token program identity channel _ _ firstStep

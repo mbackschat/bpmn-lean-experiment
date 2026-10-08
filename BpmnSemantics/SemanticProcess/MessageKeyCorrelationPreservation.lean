@@ -298,9 +298,7 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
           (fun value => by simp [messageWaitKeyMatches]) wait before.messageWaits
             messageIdentities
         simpa [settled, framed] using retainedIdentities
-      have boundsAfter : runtimeStateIdentityBound settled = true := by
-        simpa [settled, framed, runtimeStateIdentityBound, activationCount,
-          timerActivationCount, activityActivationCount] using bounds
+      have boundsAfter : runtimeStateIdentityBound settled = true := bounds
       have declarationsAfter : waitDeclarationsValid program expectedInstanceId settled = true := by
         simp only [waitDeclarationsValid, Bool.and_eq_true] at declarations ⊢
         refine ⟨⟨⟨⟨declarations.1.1.1.1, ?_⟩, declarations.1.1.2⟩,

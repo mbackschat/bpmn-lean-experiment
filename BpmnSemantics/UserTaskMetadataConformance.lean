@@ -315,6 +315,149 @@ theorem metadata_free_values_omit_the_property_physically :
           "metadata" = true := by
   decide +kernel
 
+private def completionReady (bindings : List VariableBinding) : RuntimeState :=
+  { BooleanProcessDataConformance.waitingState with
+    waits := []
+    tokens := addToken BooleanProcessDataConformance.waitingState.tokens
+      SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner
+    variables := { BooleanProcessDataConformance.waitingState.variables with process := { bindings } } }
+
+private def completionEndOperation : SemanticOperation :=
+  .reachNoneEnd ⟨"operation:EndEvent_1"⟩ { elementId := ⟨"EndEvent_1"⟩ } ⟨"place:Flow_TaskToEnd"⟩
+
+private def completionRootOperation : SemanticOperation :=
+  .completeScope ⟨"operation:complete-scope:scope:Process_SequentialUserTask"⟩
+    { elementId := ⟨"Process_SequentialUserTask"⟩ } ⟨"scope:Process_SequentialUserTask"⟩ none
+
+private def completionAfterEnd (bindings : List VariableBinding) : RuntimeState :=
+  reachNoneEndToken (completionReady bindings) SequentialUserTask.rootOwner ⟨"place:Flow_TaskToEnd"⟩
+
+private def completionFinished (bindings : List VariableBinding) : RuntimeState :=
+  { SequentialUserTask.completedState with
+    variables := { SequentialUserTask.completedState.variables with process := { bindings } } }
+
+private theorem completionOperations : (programFor exactMetadata).operations =
+    [completionEndOperation,
+      .initiate ⟨"operation:StartEvent_1"⟩ { elementId := ⟨"StartEvent_1"⟩ } ⟨"place:Flow_StartToTask"⟩,
+      operationFor exactMetadata, completionRootOperation] := by
+  decide +kernel
+
+private def completionOffer (before after : RuntimeState) (operation : SemanticOperation) :
+    InternalCommutation.InternalExecutionOffer :=
+  { alternative := .operation operation.id, operation, successor := after,
+    preparation := InternalCommutation.prepareInternalTransition? (programFor exactMetadata) before operation }
+
+private theorem completionDiscovery (before after : RuntimeState) (operation : SemanticOperation)
+    (selected : (match operation with
+      | .reachNoneEnd .. => (InternalCommutation.selectInternalEnd? before operation).isSome
+      | _ => true) = true)
+    (fired : fire? (programFor exactMetadata) operation before = some after) :
+    InternalCommutation.ordinaryExecutionFrontier (programFor exactMetadata) before operation =
+      { offers := [completionOffer before after operation] } := by
+  have ordinary : ((programFor exactMetadata).identity.semanticProfile.value ==
+      "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") = false := by decide +kernel
+  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, fired, completionOffer]
+  exact selected
+
+private theorem completionRefusedDiscovery (before : RuntimeState) (operation : SemanticOperation)
+    (refused : fire? (programFor exactMetadata) operation before = none) :
+    InternalCommutation.ordinaryExecutionFrontier (programFor exactMetadata) before operation = {} := by
+  have ordinary : ((programFor exactMetadata).identity.semanticProfile.value ==
+      "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") = false := by decide +kernel
+  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, refused]
+
+private theorem completionReadyFrontier (bindings : List VariableBinding) :
+    InternalCommutation.deriveInternalExecutionFrontier (programFor exactMetadata) (completionReady bindings) =
+      { offers := [completionOffer (completionReady bindings) (completionAfterEnd bindings) completionEndOperation] } := by
+  apply InternalCommutation.deriveInternalExecutionFrontier_singleton
+    (operation := completionEndOperation)
+  · rfl
+  · rw [completionOperations]; decide +kernel
+  · rw [completionOperations]; simp
+  · exact completionDiscovery _ _ _ (by with_unfolding_all rfl) (by with_unfolding_all rfl)
+  · intro operation member different
+    rw [completionOperations] at member
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl | rfl | rfl
+    · exact False.elim (different rfl)
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+
+private theorem completionAfterEndFrontier (bindings : List VariableBinding) :
+    InternalCommutation.deriveInternalExecutionFrontier (programFor exactMetadata) (completionAfterEnd bindings) =
+      { offers := [completionOffer (completionAfterEnd bindings) (completionFinished bindings) completionRootOperation] } := by
+  apply InternalCommutation.deriveInternalExecutionFrontier_singleton
+    (operation := completionRootOperation)
+  · rfl
+  · rw [completionOperations]; decide +kernel
+  · rw [completionOperations]; simp
+  · exact completionDiscovery _ _ _ rfl (by with_unfolding_all rfl)
+  · intro operation member different
+    rw [completionOperations] at member
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl | rfl | rfl
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+    · exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+    · exact False.elim (different rfl)
+
+private theorem completionFinishedFrontier (bindings : List VariableBinding) :
+    InternalCommutation.deriveInternalExecutionFrontier (programFor exactMetadata) (completionFinished bindings) = {} := by
+  apply InternalCommutation.deriveInternalExecutionFrontier_empty
+  intro operation member
+  rw [completionOperations] at member
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl
+  all_goals exact completionRefusedDiscovery _ _ (by with_unfolding_all rfl)
+
+-- closeScheduledTraced_singleton_step ignores optional publication payloads, so symbolic Process data needs no publication normalization.
+private theorem completionTailSucceeded (bindings : List VariableBinding) (commandId : SemanticId) :
+    (InternalCommutation.closeScheduledTraced scenarioClosureLimit (programFor exactMetadata)
+      commandId 1 0 [] (completionReady bindings)).failed = false := by
+  have endStep := InternalCommutation.closeScheduledTraced_singleton_step 7 (programFor exactMetadata)
+    commandId 1 0 (completionReady bindings)
+    (completionOffer (completionReady bindings) (completionAfterEnd bindings) completionEndOperation)
+    (completionReadyFrontier bindings)
+    (by
+      intro prepared found
+      change InternalCommutation.prepareInternalTransition? (programFor exactMetadata)
+        (completionReady bindings) completionEndOperation = some prepared at found
+      exact InternalCommutation.prepareInternalTransition_alternative
+        (programFor exactMetadata) (completionReady bindings) completionEndOperation prepared found)
+  have rootStep := InternalCommutation.closeScheduledTraced_singleton_step 6 (programFor exactMetadata)
+    commandId 2 0 (completionAfterEnd bindings)
+    (completionOffer (completionAfterEnd bindings) (completionFinished bindings) completionRootOperation)
+    (completionAfterEndFrontier bindings)
+    (by
+      intro prepared found
+      change InternalCommutation.prepareInternalTransition? (programFor exactMetadata)
+        (completionAfterEnd bindings) completionRootOperation = some prepared at found
+      exact InternalCommutation.prepareInternalTransition_alternative
+        (programFor exactMetadata) (completionAfterEnd bindings) completionRootOperation prepared found)
+  have stable := InternalCommutation.closeScheduledTraced_stable 6 (programFor exactMetadata)
+    commandId 3 0 (completionFinished bindings) (completionFinishedFrontier bindings)
+  change (InternalCommutation.closeScheduledTraced (7 + 1) (programFor exactMetadata)
+    commandId 1 0 [] (completionReady bindings)).failed = false
+  rw [endStep.2]
+  change (InternalCommutation.closeScheduledTraced (6 + 1) (programFor exactMetadata)
+    commandId 2 0 [] (completionAfterEnd bindings)).failed = false
+  rw [rootStep.2]
+  change (InternalCommutation.closeScheduledTraced 6 (programFor exactMetadata)
+    commandId 3 0 [] (completionFinished bindings)).failed = false
+  rw [stable]
+  rfl
+
+private theorem completionTailCommitted (before : RuntimeState) (bindings : List VariableBinding)
+    (commandId : SemanticId) :
+    (StimulusResult.ofScheduledClosure before
+      (InternalCommutation.closeScheduledTraced scenarioClosureLimit (programFor exactMetadata)
+        commandId 1 0 [] (completionReady bindings))).outcome = .committed := by
+  have succeeded := completionTailSucceeded bindings commandId
+  simp only [InternalCommutation.ScheduledClosureResult.failed, Bool.or_eq_false_iff] at succeeded
+  simp [StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
+    succeeded.1.1, succeeded.1.2, succeeded.2]
+
 /-- Any two admitted metadata values leave completion admission, variable merge, and continuation equal. -/
 theorem completion_is_metadata_irrelevant
     (leftMetadata rightMetadata : UserTaskMetadata)
@@ -414,7 +557,11 @@ theorem completion_is_metadata_irrelevant
           by decide +kernel,
       show isCallActivityProgram (programFor exactMetadata) = false by decide +kernel,
       completed, admitted]
-    with_unfolding_all rfl
+    change (StimulusResult.ofScheduledClosure (waitingStateFor leftMetadata)
+      (InternalCommutation.closeScheduledTraced scenarioClosureLimit (programFor exactMetadata)
+        commandId 1 0 [] (completionReady
+          (mergeProcessVariableBindings successor.variables.process.bindings submittedValues)))).outcome = .committed
+    exact completionTailCommitted _ _ _
 
 /-- A wrong occurrence preserves the complete metadata-bearing state. -/
 theorem wrong_occurrence_preserves_full_metadata_state :

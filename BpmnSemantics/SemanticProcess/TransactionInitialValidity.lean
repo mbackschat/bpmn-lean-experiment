@@ -378,8 +378,17 @@ theorem transaction_split_wellFormed (p : Program) (roles : TransactionAdmittedR
     intro operation member
     have family := List.all_eq_true.mp roles.canonicalOperations operation member
     cases operation <;> first | rfl | (change false = true at family; contradiction)
+  have sequentialEntries : p.operations.filterMap sequentialScopeEntry? = [] := by
+    apply List.filterMap_eq_nil_iff.mpr
+    intro operation member
+    have family := List.all_eq_true.mp roles.canonicalOperations operation member
+    cases operation <;> first | rfl | (change false = true at family; contradiction)
+  have sequentialScopes : sequentialScopeStateValid p state = true := by
+    simp [sequentialScopeStateValid, sequentialEntries, state, transactionSplitState,
+      transactionEnteredState, transactionInitiatedState, transactionRootStartState,
+      runningStartState, initialState]
   unfold runtimeStateWellFormed
-  rw [position, retention, ordered, execution, snapshots, parallel]
+  rw [position, retention, ordered, execution, snapshots, parallel, sequentialScopes]
   simp [transactionSplitState, transactionEnteredState, transactionInitiatedState,
     transactionRootStartState, runningStartState, initialState, emptyScopedVariables,
     waitOwnersLive, waitIdentitiesUnique, waitDeclarationsValid, hiddenRecordDeclarationsValid,
@@ -521,8 +530,9 @@ private theorem transaction_split_occurrence_valid (p : Program) (roles : Transa
         refine Eq.trans ?_ (congrArg List.length census)
         apply congrArg List.length
         apply List.filter_congr
-        intro operation _
-        cases operation <;> rfl
+        intro operation member
+        have canonical := List.all_eq_true.mp roles.canonicalOperations operation member
+        cases operation <;> first | rfl | (change false = true at canonical; contradiction)
       · change (match roles.child.parentScopeId, (some root : Option ScopeOccurrenceId), state.control with
           | some expected, some owner, .running _ =>
               decide (owner.processInstanceId = child.processInstanceId) &&
