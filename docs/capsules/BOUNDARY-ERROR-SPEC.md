@@ -367,7 +367,7 @@ The expected relation is:
 - `BERROR-REFUSE-01` mismatch space is exercised by Lean and the TypeScript core, plus a focused Temporal adapter-failure witness for a returned unmatched code;
 - Activity failure versus returned business error is a focused Temporal mechanism witness, not a CIB comparison.
 
-The declared-target pipeline keeps one boundary-error semantic scenario with two isolated Temporal executions and replays only its primary history. The successful-mapping control remains a phase-zero and focused semantic witness rather than another pipeline scenario. No additional transport-only scenario is present; repository-wide live matrix counts belong to [the testing specification](../TESTING-SPEC.md#complete-differentialrefinement-pipeline).
+The declared-target pipeline keeps one boundary-error semantic scenario with two isolated Temporal executions and replays only its primary history. The successful-mapping control remains a phase-zero and focused semantic witness rather than another pipeline scenario. No additional transport-only scenario is present; repository-wide live matrix counts belong to [the testing specification](../SEMANTIC-VERIFICATION-POLICY.md#complete-differentialrefinement-pipeline).
 
 Retained CIB evidence is generated only through the explicit replacement command, belongs to the `2.0.0` release group, and is content-bound to the project-authored fixture and answer-free scenario. External A12 bytes remain outside the MIT evidence artifact.
 

@@ -49,7 +49,7 @@ The approach separates **process meaning** from **execution infrastructure**. We
 
 **TypeScript puts those rules to work.** Its interpreter decides which process steps run next, what must wait, and how tasks and events change the process. Those decisions are separate from network and database operations, so they can be tested on their own and then inside a Temporal Workflow. Lean is used during development and verification; you do not need it to run the published Docker images.
 
-**Proofs and tests answer different questions.** Lean checks properties of the model. Comparison tests check that the separately written TypeScript engine follows it, and hosting tests check its behavior on Temporal. We also review the BPMN standard and compare selected examples with CIB Seven: two implementations agreeing does not establish that their shared interpretation is correct. The [design rationale](docs/PROJECT-DESIGN.md#two-kinds-of-independence) and [verification approach](docs/TESTING-SPEC.md#evidence-lanes) explain the boundaries in more detail.
+**Proofs and tests answer different questions.** Lean checks properties of the model. Comparison tests check that the separately written TypeScript engine follows it, and hosting tests check its behavior on Temporal. We also review the BPMN standard and compare selected examples with CIB Seven: two implementations agreeing does not establish that their shared interpretation is correct. The [design rationale](docs/PROJECT-DESIGN.md#two-kinds-of-independence) and [verification approach](docs/SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes) explain the boundaries in more detail.
 
 <p align="center">
   <a href="docs/assets/project-infographics/why-lean-helps.avif"><img src="docs/assets/project-infographics/why-lean-helps.avif" alt="Why Lean helps: describe and check BPMN execution rules, implement them in TypeScript, and test that Temporal hosting preserves their behavior." width="560"></a>
@@ -69,7 +69,7 @@ The approach already supports complete example processes and several kinds of ve
 
 - **A range of BPMN processes runs on the engine.** The [retained example processes](model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md) exercise human and service tasks, conditional and parallel paths, subprocesses and called processes, messages and timers, sequential and parallel review batches, and the supported compensation and transaction-cancellation cases.
 - **Selected execution rules have machine-checked proofs.** These cover properties of [parallel reviews](docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#lean-assurance-lane), [cancellation](docs/capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md#lean-assurance-lane), and [human-task interaction](docs/capsules/USER-TASK-INTERACTION-SPEC.md#lean-assurance-lane), helping us check difficult behavior beyond individual test runs.
-- **The TypeScript engine agrees with Lean on the tested process examples.** The [comparison tests](docs/TESTING-SPEC.md#complete-differentialrefinement-pipeline) run the same tasks, messages, and timer events through both and compare the results. Selected examples also compare against CIB Seven. Tests with deliberately introduced mistakes check that the comparisons can detect incorrect behavior.
+- **The TypeScript engine agrees with Lean on the tested process examples.** The [comparison tests](docs/SEMANTIC-VERIFICATION-POLICY.md#complete-differentialrefinement-pipeline) run the same tasks, messages, and timer events through both and compare the results. Selected examples also compare against CIB Seven. Tests with deliberately introduced mistakes check that the comparisons can detect incorrect behavior.
 - **Processes retain progress after a worker restart.** The [hosting tests](docs/TEMPORAL-TEST-EVIDENCE-MAP.md) cover waiting tasks, messages, timers, and parallel reviews. They also check recovery when a task completion was accepted but its acknowledgement was lost, and continuation when a process outgrows its configured execution-history limit.
 - **People can work through complete processes in the BPM platform.** The [three prepared interactive examples](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) let users select and start a process, claim a task, fill in its form, complete the work, and inspect progress and Action history.
 
@@ -339,7 +339,7 @@ showcase/            BPM platform acceptance harnesses
 
 ## Contributing
 
-Read [CLAUDE.md](CLAUDE.md), also exposed through the [AGENTS.md](AGENTS.md) symlink, before changing the project. Changes to execution rules start from the BPMN standard, with tests that distinguish the intended behavior from plausible mistakes. The [testing specification](docs/TESTING-SPEC.md) defines the required checks and reviews.
+Read [CLAUDE.md](CLAUDE.md), also exposed through the [AGENTS.md](AGENTS.md) symlink, before changing the project. Changes to execution rules start from the BPMN standard, with tests that distinguish the intended behavior from plausible mistakes. The [testing entry point](docs/TESTING-SPEC.md#select-the-task-owner) selects required checks and routes to task-specific evidence and review policy.
 
 ## License
 

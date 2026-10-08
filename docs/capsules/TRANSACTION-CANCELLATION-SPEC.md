@@ -164,7 +164,7 @@ The registered implementation closes the selected Start-to-publication outcome a
 
 Common-mode risks are a shared wrong source-role interpretation, dropping eligible records in generic cancellation, using root-only validators for child tombstones, normal scope completion racing compensation, and projecting the desired boundary from the fixture rather than transition evidence. Cross-language laws, non-target-owner witnesses, explicit empty/failure schedules, negative admission, and live paused-handler publication discriminate those risks separately.
 
-The implementation and correction interval is `ac0a2c1d..9fb6705b`; [the closure cost record](../CAPSULE-COST-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retains reproducible churn, both comparisons and sampled receipt span/union. Engineering elapsed time remains unknown. Broader scheduling domains remain outside this specification.
+The implementation and correction interval is `ac0a2c1d..9fb6705b`; [the closure cost record](../capsule-costs/TRANSACTION-OUTCOME-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retains reproducible churn, both comparisons and sampled receipt span/union. Engineering elapsed time remains unknown. Broader scheduling domains remain outside this specification.
 
 ## Independent cold-review receipt
 

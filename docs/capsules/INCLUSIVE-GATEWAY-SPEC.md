@@ -12,7 +12,7 @@
 | Semantic checkpoint | `5e0dc3b` | `fork-turns-none` | `approve-with-required-edits` | `ea8b019` |
 | Closure | `ee21fce` | `fork-turns-none` | `approve-with-required-edits` | `15ebadc` |
 
-This receipt follows the [independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid. The semantic checkpoint and closure used isolated same-model/same-effort sub-agents, and each required-edits verdict passed a warm correction audit without a material redesign.
+This receipt follows the [independent cold-review gate](../REVIEW-POLICY.md#independent-cold-review-gate). Immutable proposal target `16904dd` predates transition baseline `b361681`, so its external fresh-session review remains valid. The semantic checkpoint and closure used isolated same-model/same-effort sub-agents, and each required-edits verdict passed a warm correction audit without a material redesign.
 
 ## Scope
 

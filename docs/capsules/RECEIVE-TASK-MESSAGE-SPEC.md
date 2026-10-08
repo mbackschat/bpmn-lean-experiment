@@ -34,7 +34,7 @@ Concrete fixture theorems and `by decide` checks do not establish general Receiv
 | Semantic checkpoint | `7226733` | `fork-turns-none` | `approve-with-required-edits` | `5a74bad` |
 | Closure | `3881a7a` | `external-fresh-session` | `approve-with-required-edits` | `f5f9caf` |
 
-The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. The external fresh-session closure review of immutable target `3881a7a` approved the account with required edits, and the same reviewer passed correction audit target `f5f9caf`. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate).
+The proposal review and its correction audit are complete. The semantic checkpoint review of immutable target `7226733` approved the checkpoint with required edits, and the same reviewer passed correction audit target `5a74bad`. The external fresh-session closure review of immutable target `3881a7a` approved the account with required edits, and the same reviewer passed correction audit target `f5f9caf`. The full reports remain external handoff evidence; this receipt records only the repository lifecycle facts required by [the independent cold-review gate](../REVIEW-POLICY.md#independent-cold-review-gate).
 
 ## Contract
 

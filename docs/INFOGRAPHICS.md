@@ -147,7 +147,7 @@ Show that no single proof or test establishes whole-system correctness. Each lay
 - [PROJECT-DESIGN.md, Authority model](PROJECT-DESIGN.md#authority-model)
 - [PROJECT-DESIGN.md, Component boundaries](PROJECT-DESIGN.md#component-boundaries)
 - [PROJECT-DESIGN.md, Two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence)
-- [TESTING-SPEC.md, Evidence lanes](TESTING-SPEC.md#evidence-lanes)
+- [TESTING-SPEC.md, Evidence lanes](SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes)
 - [Semantic Process IL independence](SEMANTIC-PROCESS-IL-SPEC.md#independence)
 - [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md#implemented)
 

@@ -287,4 +287,4 @@ The review should answer:
 8. Do any instructions encourage copied, stale, broader-than-evidence, or status-bearing comments?
 9. Is any required measure missing, disproportionate, or better expressed as a human review rule than a machine guard?
 
-Use the verdict and finding format in [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). In particular, classify any boilerplate incentive as a required finding rather than an advisory style preference.
+Use the verdict and finding format in [the independent cold-review gate](../REVIEW-POLICY.md#independent-cold-review-gate). In particular, classify any boilerplate incentive as a required finding rather than an advisory style preference.

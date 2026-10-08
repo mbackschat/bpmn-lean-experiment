@@ -168,7 +168,7 @@ test("closed Beta permits each approved successor semantic item", async () => {
 });
 
 test("keeps the MUE Preview Beta testing contract aligned with the closed integration handoff", async () => {
-  const testingSpec = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+  const testingSpec = await readFile(path.join(projectRoot, "docs/PLATFORM-VERIFICATION-POLICY.md"), "utf8");
   assert.match(
     testingSpec,
     /activates integration only after all seven content boundaries are satisfied/u,

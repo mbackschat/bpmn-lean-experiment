@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, independently closure-reviewed, and maintained.** The platform shell, workspace flows, responsive evidence, and diagram presentation contract realize this information architecture. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implemented, independently closure-reviewed, and maintained.** The platform shell, workspace flows, responsive evidence, and diagram presentation contract realize this information architecture. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](REVIEW-POLICY.md#independent-cold-review-gate).
 
 The 2026-09-27 owner-approved routing extension is implemented and accepted through the composed package, policy and browser evidence described below. The earlier closure receipt does not qualify this extension.
 

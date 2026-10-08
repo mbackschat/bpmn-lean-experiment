@@ -187,7 +187,7 @@ No operation variant, RuntimeState collection or public observation field is add
 
 ## Review and closure obligations
 
-Independent proposal approval precedes production Lean/core work. The first green semantic admission/runtime checkpoint receives its own cold review before artifact, host or public-registration work. Closure requires exact rule-to-evidence reconciliation, all selected gates, the deferred hosting witness, truthful support/absence maps and independent closure approval. The [testing specification](../TESTING-SPEC.md#independent-cold-review-gate) owns those stages; this document does not create an exception for the semantics-only period.
+Independent proposal approval precedes production Lean/core work. The first green semantic admission/runtime checkpoint receives its own cold review before artifact, host or public-registration work. Closure requires exact rule-to-evidence reconciliation, all selected gates, the deferred hosting witness, truthful support/absence maps and independent closure approval. The [testing specification](../REVIEW-POLICY.md#independent-cold-review-gate) owns those stages; this document does not create an exception for the semantics-only period.
 
 Record reproducible baseline-to-closure nonblank code/documentation churn in the [cost ledger](../CAPSULE-COST-LEDGER.md), comparing the existing composed-data and cyclic-control-flow increments. Authoring elapsed time is unknown unless measured. Reassess after each committed increment: reuse the already proved operations, keep analysis out of shared dispatchers, and remove temporary checkpoint enrollment at registration. Do not reopen the superseded universal checked-source proof programme.
 

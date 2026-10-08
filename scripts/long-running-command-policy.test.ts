@@ -14,7 +14,7 @@ const contributorGuidePath = fileURLToPath(
   new URL("../CLAUDE.md", import.meta.url),
 );
 const testingSpecPath = fileURLToPath(
-  new URL("../docs/TESTING-SPEC.md", import.meta.url),
+  new URL("../docs/VERIFICATION-INFRASTRUCTURE-POLICY.md", import.meta.url),
 );
 const documentationRegistryPath = fileURLToPath(
   new URL("../docs/README.md", import.meta.url),
@@ -54,12 +54,12 @@ test("long-running JavaScript and TypeScript commands retain resumable evidence"
   );
   assert.match(
     contributorGuide,
-    /\[long-running-command policy\]\(docs\/TESTING-SPEC\.md#long-running-javascript-and-typescript-commands\)/u,
+    /\[long-running-command policy\]\(docs\/VERIFICATION-INFRASTRUCTURE-POLICY\.md#long-running-javascript-and-typescript-commands\)/u,
   );
   assert.match(contributorGuide, /node scripts\/assert-command-receipt\.ts/u);
   assert.match(
     documentationRegistry,
-    /\[Long-running command policy\]\(TESTING-SPEC\.md#long-running-javascript-and-typescript-commands\)/u,
+    /\[Long-running command policy\]\(VERIFICATION-INFRASTRUCTURE-POLICY\.md#long-running-javascript-and-typescript-commands\)/u,
   );
   assert.match(scriptRegistry, /\[`assert-command-receipt\.ts`\]\(assert-command-receipt\.ts\)/u);
 });

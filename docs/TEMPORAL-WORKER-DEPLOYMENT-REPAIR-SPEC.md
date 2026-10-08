@@ -12,7 +12,7 @@ Downstream witnesses preserve one A ingress across A/B Process populations, same
 
 The closure container smoke used clean commit `9628d6fbad8cf8d279ace9fb2abdecd449a1f932` with `./scripts/pnpm.sh run demo:prepare`. All four application images matched that revision and source-tree SHA-256 `b8149880eb1e0ec1fe451b39a7668618820a4f2ec649c56b7c77eabb8e6566b0`; fresh initialization, migration, Worker readiness, every service health check, and public web/API probes succeeded. Output SHA-256: `445e6c45809659f7ae720457fe481c781bde8348fb11241b9a274c8767f8c286`. Separate native deployment inspection confirmed one Current bundle and no ramp; that inspection is outside the hashed smoke log. This is evaluation-composition evidence, not a production-capacity result.
 
-The [cost ledger](CAPSULE-COST-LEDGER.md#repair-closure-costs) records the contiguous implementation range and its overlap with command-recovery corrections without subtraction. The SMI witness runs byte-for-byte in the existing serial lane after concurrent server startup exceeded its host-clock margin; its semantic Timer and margin remain unchanged.
+The [cost ledger](capsule-costs/REVIEW-AND-WORKFLOW-LEDGER.md#repair-closure-costs) records the contiguous implementation range and its overlap with command-recovery corrections without subtraction. The SMI witness runs byte-for-byte in the existing serial lane after concurrent server startup exceeded its host-clock margin; its semantic Timer and margin remain unchanged.
 
 ## Problem and bounded outcome
 

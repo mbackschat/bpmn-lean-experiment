@@ -1,0 +1,43 @@
+# Platform verification policy
+
+## Status
+
+Implemented mandatory verification procedure for Product 2. [The testing entry point](TESTING-SPEC.md) owns cadence and gate selection; this policy owns database, browser and distribution acceptance. Engine semantics remain owned by the applicable capsules.
+
+## Database test selection
+
+SQLite owns sequential local persistence; real PostgreSQL owns overlapping transactions, locking, competing writers, leases and shared replicas. Common contracts run against both adapters only for sequential operations. Fakes or serialized SQLite requests do not establish database-concurrency evidence; never race worker threads/processes against one SQLite file. Independent tests may run together only with separate stores. Retain concurrency assertions in the explicit PostgreSQL lane.
+
+The platform repository boundary is Promise-only; retain no parallel synchronous path. New PostgreSQL work is a domain-owned vertical slice with its migration, adapter and one reusable invariant matrix for both backends. Ordinary package tests run the SQLite instance without a PostgreSQL server. The real database instance belongs under nested `test/postgresql/` with an explicit `test:postgresql` command; do not widen ordinary `test:built` globs, `test:platform-foundation`, operations checkpoints or `verify.sh`.
+
+| Change | Evidence cadence |
+|---|---|
+| Pure contracts, services, authorization, HTTP | Focused fake-based oracle, then complete affected package before commit. |
+| Sequential persistence, schema refusal, retry/conflict, restart, paging | Ordinary affected SQLite package gate before commit. |
+| PostgreSQL SQL, migrations, concurrency | Focused real PostgreSQL 18 witness and affected database package suite when changed; both backends before committing a repository slice. |
+| Runtime/migration mechanics | `test:platform-foundation` plus `test:platform-postgresql:runtime:local`. |
+| Shared API/recovery replicas and lease loss | Complete `test:platform-postgresql:local` at integration; clean `test:pre-push:platform-postgresql` before relevant push and applicable release acceptance. No full shared-mode run after every local commit. |
+
+The complete local gate creates one disposable PostgreSQL 18 cluster, builds the union server/recovery/migration graph once, strictly type-checks its source-mapped harness, and runs each reuse-only package suite in an isolated temporary database so migration-prefix witnesses cannot contaminate each other. The clean-HEAD pre-push equivalent uses explicit `BPMN_TEST_POSTGRES_URL`; the selector uses the local disposable-cluster command when absent. The separate PostgreSQL workflow provides its pinned PostgreSQL service without adding one to ordinary platform/Product 1 jobs.
+
+Horizon 1 distributed acceptance retains exact two-API-replica definition interoperability, disjoint two-worker lease-loss recovery and 5,000-registration bounded readiness. Diagnostics record observed PostgreSQL major, schema epoch, replica counts, batch/lease settings, retained population, freshness budget and witness time. These are correctness facts, not performance/capacity claims.
+
+## Browser acceptance
+
+For a material Product 2 interaction, workflow, or visualization change, the source-grounded UI/UX preflight is a prerequisite to red/green implementation rather than a closure-only visual check. Run `./scripts/doctor.sh research`, inspect the analogous CIB Seven surface first through its current documentation and pristine pinned checkout when it exists, record adopted, deliberately changed, and excluded behavior with its project-owned justification, and name the acceptance oracle before the first production edit. The [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md#source-grounded-design-preflight) owns the complete procedure; the Product 2 UI-quality boundary guard keeps this prerequisite, its CIB source registry, and the retained process finding synchronized.
+
+Every Product 2 workflow offered through the browser requires a production-built headless-Chromium user journey at release acceptance. The journey starts at the product entry point, selects or supplies its Process model, starts the Process, observes each public prerequisite state, performs the user actions in their required order, reaches the advertised terminal or resumption state, and checks the public status plus applicable history or audit. For every user-visible mutation precondition, fixed-fixture browser evidence must first hold the precondition false and prove the action unavailable; a stale or raced server-side precondition must prove that a definite HTTP refusal is not presented as uncertain delivery. Unit and package tests remain the fast diagnostic layer, while the journey proves that the offered workflow composes. Review must trace each selected mutation precondition to its false-state browser oracle and its successful journey transition; a positive script alone is insufficient evidence.
+
+Real-host browser acceptance serves the built web application through `vite preview`, never the Vite development server. A direct showcase wrapper prepares `build:release-product2` once, then runs its package and Chromium gates with `PLAYWRIGHT_PREBUILT_WEB=true`; the grouped M2 and release Product 2 wrappers likewise prepare the union graph once and reuse it across every Playwright launch. A built wrapper must not invoke another package build, and a browser config may build only as an explicit direct-invocation fallback when the prebuilt marker is absent. The feedback-efficiency guard locks this call graph across all seven real-host showcases. MUE Preview Beta is a release composition over two of those existing showcases and the UI-quality lane, not an eighth package or host harness.
+
+Do not multiply the same invariant merely because a parameterized environment is available. Contract decoding, state machines, authorization, error classification, and other viewport-independent behavior run once. Only layout-sensitive collection, detail, table, form, diagram, audit, focus, and overflow discriminators repeat at both supported desktop widths. The wide project owns the complete fixed-fixture browser behavior; the 1280 project selects only tests tagged `@responsive`. A focused browser change runs its owning specification at the wide project during development, the complete affected web package plus owning browser specification before a regular commit, and the full two-width `test:pre-push:ui` composition only after the intended commits are clean.
+
+## Continuous integration and distribution
+
+Product 2 browser work remains outside `verify.sh` and Product 1 feedback loops. Separate [platform](../.github/workflows/platform-quality.yml), [PostgreSQL](../.github/workflows/platform-postgresql-quality.yml), [showcase compatibility](../.github/workflows/showcase-quality.yml) and [UI](../.github/workflows/ui-quality.yml) workflows invoke their exact clean-commit local counterparts and may run concurrently. The UI job builds once and reuses its production bundle for package tests and blocking 1280/1600 functional evidence.
+
+Manual `release_acceptance` builds the shared release graph once and reuses the real-host M1–M4 and MUE Preview Alpha browser gates plus deterministic UI evidence. Beta composes existing Alpha, correlated Message ingress and UI gates without another showcase package; its historical integration activates integration only after all seven content boundaries are satisfied. [The Beta specification](MUE-PREVIEW-BETA-SPEC.md) owns that acceptance boundary. Separate MUE acceptance is not a Practical CIB7 prerequisite.
+
+Manual `regenerate_baselines` produces only the optional wide Process Diagram candidate for human review. CI never writes repository baselines or blocks on pixel comparison. After a material UI change or before a release candidate, explicitly run `walkthrough:screenshots:refresh`; the [walkthrough guide](../showcase/platform-browser-walkthrough/README.md) owns capture and catalog rules.
+
+The [evaluation-distribution workflow](../.github/workflows/evaluation-distribution.yml) runs on Ubuntu only for a version tag or explicit dispatch: build and health-check Compose, probe the public web/API origin, clean its named volumes, and optionally publish the four project images. Tag or explicit refresh also captures catalogued public UI images. Ordinary push/PR, package, verification and quality jobs do not build containers, start service dependencies, regenerate documentation images or compare pixels. Structural guards check topology, privilege, closure, triggers, catalog/Markdown membership and PNG dimensions without Docker or a browser.

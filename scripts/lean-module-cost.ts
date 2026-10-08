@@ -24,7 +24,7 @@ import type { DeepReadonly } from "@bpmn-lean/contract-types";
  * cannot manufacture the headroom that a raised memory figure would.
  * `sourceSha256` binds the exact mounted source bytes. New measurements identify
  * their completed command receipt separately from historical Git provenance;
- * [the commit protocol](../docs/TESTING-SPEC.md#commit-boundaries) defines capture.
+ * [the commit protocol](../docs/REVIEW-POLICY.md#commit-boundaries) defines capture.
  */
 export type LeanModuleCostRow = DeepReadonly<{
   module: string;

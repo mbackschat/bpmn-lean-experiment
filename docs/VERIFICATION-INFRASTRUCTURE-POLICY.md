@@ -1,0 +1,126 @@
+# Verification infrastructure policy
+
+## Status
+
+Implemented mandatory procedure for verification infrastructure, resource control and command evidence. Use [the testing entry point](TESTING-SPEC.md) to select a gate; this owner defines how its execution remains reproducible and recoverable.
+
+## Prerequisites and structural guards
+
+Run `./scripts/doctor.sh verify` before the default gate. Missing inputs, wrong revisions, dirty evidence checkouts and unavailable tools are infrastructure failures, not semantic outcomes. [Contributor setup](CONTRIBUTOR-SETUP-GUIDE.md) owns installation, dependency pins, cache scopes and host tools; [SOURCES.md](SOURCES.md) owns source provenance. `verify` requires the hash-bound OMG corpus and never fetches or reads A12. Select `research` for registered research checkouts and `adoption` explicitly for optional exact A12 evidence. Selected CMOF, MIWG, CIB inventory and A12 lanes may not silently skip missing inputs or weaken their claims.
+
+Default gates must work without optional caches. The normative-reference guard uses [the tracked label digest](reference/bpmn-2.0.2/NORMATIVE-LABELS.digest) and compares the optional Markdown conversion only when present; contributor-setup tests derive empty-cache probes from [the cache lock](../scripts/workspace-cache.lock). The corpus fetcher installs PDF search exclusions without exempting PDFs from hash verification; use text first and inspect PDF only for a normative gap. Fetching exact official artifacts is explicit provisioning, never a network fallback during semantic verification.
+
+BPMN XML validation uses [validate-bpmn-xml.sh](../scripts/validate-bpmn-xml.sh), which preflights and reports `xmllint` and refuses a missing registered `BPMN20.xsd`; well-formedness cannot replace schema conformance. Diagnostic overrides are `BPMN_XSD_PATH`, `BPMN_CMOF_PATH` and `BPMN_SEMANTIC_XSD_PATH`. The [metamodel checker](../scripts/check-bpmn-semantic-process-metamodel.ts) requires both CMOF and XSD sources for its bounded facts. A new host tool must have a supported Ubuntu package or a pinned action/wrapper supplying it.
+
+[Documentation discipline](DOC-DISCIPLINE.md) owns registry membership, roles, status, receipt requirements, map atoms, reviewability budgets and maintained PLAN shape. The infrastructure gate checks those contracts and local Markdown file/anchor resolution over tracked and pending maintained material. It derives capability/profile completeness and canonical capsule assurance lanes from their typed sources; prose is not a second implementation inventory. The [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions: every closed slice's cited requirement must be decided, and every capsule-cited requirement must exist. A new proposal records an unimplemented requirement as unsupported until closure; a CIB extension or representation capsule need not manufacture a BPMN requirement. Neither check requires every supported row to be cited back from a map.
+
+[Contributor code hygiene](../CLAUDE.md#code-hygiene-and-module-boundaries) owns module cohesion and approved size limits. Source guards include pending files, keep Lean umbrellas import-only, reject handwritten JavaScript and project build-output imports in source-mapped harnesses, and derive every public package export's source mapping. `SOURCE_HEADROOM` is a planning warning, not a failure or a substitute for responsibility review; agents cannot create their own size exceptions.
+
+The [Lean source contracts](../scripts/lean-source-contracts.test.ts) require module documentation after imports and before declarations, named maintained conformance theorems instead of anonymous top-level examples, independent declarative transition relations, and safe occurrence construction. Shared literal-aware analysis distinguishes comments, strings, characters and identifier primes; no comment-density or prose-quality quota applies. [Lean import boundaries](../scripts/lean-import-boundaries.test.ts) reject aggregate SemanticProcess imports from leaves so unrelated proof owners do not force broad rebuilds. Source contracts and their adversarial fixtures, not a prose file inventory, own exact checks.
+
+The [A12 boundary guard](../scripts/a12-boundary.test.ts) enforces the external-source/MIT distribution separation over tracked and pending material. Research may describe A12/EUPL; it may not introduce A12 code, coordinates, exact external model bytes, linked checkout content or downstream bean assumptions into the engine. Project-authored fixtures retain distinct hash-bound provenance. [Publication statistics](../scripts/publication-statistics.ts) are maintainer-only: tags require current README blocks and Tokei; ordinary setup, builds, tests, pre-push and CI do not depend on Tokei.
+
+pnpm 11's implicit virtual-store layout depends on `CI`. [pnpm-workspace.yaml](../pnpm-workspace.yaml) therefore pins `enableGlobalVirtualStore: false`: ordinary developer and `CI=true` commands share the repository-local projection while the content-addressable store stays shared. [The configuration guard](../scripts/pnpm-project-config.test.ts) removes overrides, checks the effective setting with and without CI, and runs bare `check:source-hygiene`; a purge or reinstall attempt fails. This is installation consistency, not a reason to delete shared caches.
+
+## Lean execution and resource evidence
+
+The package-level `leanOptions` in [lakefile.toml](../lakefile.toml) select synchronous theorem elaboration for every repository library and executable module build and the Lake-managed language server. This removes the repeated theorem-task accumulation measured in [the resource correction](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#package-wide-theorem-elaboration-memory-correction); the thread pin alone does not remove those retained tasks. Every theorem and `decide +kernel` obligation remains kernel-checked. The existing verification-entrypoint guard rejects a missing, enabled, or library-only setting. This package default is separate from the wrapper's process-tree limit and does not configure a raw `env lean` invocation. Resource acceptance for this correction requires a cold full-library result under the unchanged 3 GiB ceiling with zero controlled memory events and zero pressure totals; warm outputs alone cannot close a reproduced cold-build pressure failure.
+
+Every Lean command is serialized through [`scripts/lake.sh`](../scripts/lake.sh). The wrapper replaces inherited `LEAN_NUM_THREADS` with the manifest-owned conservative value, acquires one fail-closed host lock before invoking Lake, and refuses an explicit `BpmnSemantics` target. The full root build is spelled `./scripts/lake.sh build`; a focused build names only its narrow modules. A delegated lane may run the wrapper for the narrow modules it owns under the conditions in [CLAUDE.md](../CLAUDE.md#delegated-implementation); the bare full-gate form, `test`, `exe`, and `env lean` stay with the root integrator. A yielded Lean command must be resumed or terminated rather than duplicated, and a killed one leaves the lock directory behind for manual recovery. [`verification-entrypoint.test.ts`](../scripts/verification-entrypoint.test.ts) runs the wrapper against a fake Lake executable and locks all three separators: an attempted thread override remains pinned, umbrella contamination rejects before Lake starts, and a held lock refuses a second process tree.
+
+## Feedback budgets
+
+The [pipeline budget](../scripts/pipeline-budget.ts) derives a diagnostic warm target at 500 ms per registered case, a portable pathology ceiling at 1,300 ms per case, and a 10,000 ms floor for focused Lean batches. `BPMN_PIPELINE_WARM_BUDGET_MS` declares an environment-specific aggregate ceiling. Hosted allowance must exceed the portable ceiling by at least 50% and cover the longest nested CIB deadline plus reporting/cleanup. Both outer deadlines must exceed the selected aggregate ceiling; child CIB, Temporal, Lean and Node deadlines remain hang detectors. Do not copy current catalog counts or derived totals into this policy.
+
+A soft-target breach reports the exact measurement and does not fail correctness. The prepared hosted aggregate ceiling remains hard; local cold pipeline time is measured and never reported as zero for prepared CI. Compare `phaseMs.warmTotal` only with the last uncontended measurement in [PLAN.md](PLAN.md). A full gate overlapping review or other heavy work is contended by construction: report correctness evidence and non-comparable timing, never a new performance baseline. Repeated hosted breaches require classifying the child deadline or optimizing the gate; changing a budget requires an explicit owner decision and strict parent-over-child ordering.
+
+Stop if a feedback budget can be met only by weakening independence or evidence. Remove duplicate work, split by owned contract or make a performance measure diagnostic; never delete a discriminator, merge independent producers, skip a selected lane or relax its correctness oracle. During a complete pipeline measurement, no repository worktree may be modified: the harness records `git status --porcelain` after replay. Concurrent preparation stays read-only outside every worktree; ignored build output still obeys disjoint ownership.
+
+## Long-running JavaScript and TypeScript commands
+
+This policy preserves the result of a test or build when terminal output is truncated, an execution tool yields, or conversational context is compacted. Compaction is routine and must not force duplicate work or turn a completed gate into an unknown result.
+
+Use durable capture for a JavaScript or TypeScript test, build, verification wrapper, browser run, or container orchestration command that may outlive one execution-tool yield or emit more output than the tool can retain. A short focused command whose complete output and exit status return in one invocation does not need a receipt.
+
+Continue to use pnpm, `CI=true`, the repository wrappers, and the owning gate bounds: tests are bounded to 60 seconds and builds to 120 seconds unless an owning composed gate documents a different aggregate deadline. Never start an indefinite watch process as verification.
+
+Before launch:
+
+1. Create an isolated receipt directory under `${TMPDIR:-/tmp}`.
+2. Record or report its exact path before starting the command, so context compaction cannot erase the recovery location.
+3. Name the exact command in that directory or in the accompanying progress update.
+4. Start the command through a resumable execution facility and retain its resumable session ID. Retain the child command session ID, not only an outer tool-cell identifier.
+
+During execution, stream combined standard output and error to the user and a durable log, resume the existing session after a yield, and do not start a replacement process merely to obtain more output. Do not poll only for activity; wait for meaningful output or completion while continuing the normal user-update cadence.
+
+On completion, capture the command's pipeline status immediately and write the numeric exit status to an exit-status receipt only after the command and log capture have completed. A present receipt is the authoritative result. Retain the log until the result has been reported or incorporated into required review evidence. A green claim requires a separate `node scripts/assert-command-receipt.ts <absolute-receipt-directory>` invocation to exit zero and print `COMMAND_RECEIPT_VERDICT=success`; that verdict also prints the exact committed Git `HEAD` captured before the command started. A task notification, outer shell or tool-wrapper status, and filtered log search do not establish the command verdict. Missing or malformed evidence is invalid rather than green or red.
+
+For a completed failed command, the assertion also reports `COMMAND_RECEIPT_FIRST_FAILURE=<line>: <text>` when the log contains a recognized line-start Node or Lean diagnostic. This is a locator, not a verdict: it may be absent for an unfamiliar reporter, preserves the complete log, and never interrupts execution or reports a failure from intentional negative output in a passing command.
+
+Set optional `COMMAND_RECEIPT_LANE` before the receipt wrapper to retain an author-supplied label of 1–128 ASCII letters, digits, dots, underscores, colons, slashes, or hyphens, starting with a letter or digit. Labels describe work organization, not verified agent identities. Missing historical labels remain unknown.
+
+Run `node scripts/summarize-command-receipts.ts <receipt-root>` to report completed direct-child receipts. Span runs from the earliest `command.txt` modification time to the latest `exit-status` modification time; busy duration is the union of those intervals, while summed command duration counts overlaps. Preserve modification times when copying receipts. Known direct command prefixes supply family totals; unfamiliar wrappers remain `other`. Invalid candidates are listed and make the report exit two; command failures remain observations and do not themselves fail summary generation. These measurements establish neither critical-path delay nor engineering effort and never replace individual receipt verdicts.
+
+After compaction or a lost tool response, resume by session ID first. If that session is unavailable, inspect the receipt, the durable log, and the operating-system process state. An absent receipt means only that completion was not recorded: the command may still be running or may have been interrupted. Never rerun a command merely because transient output was lost or unavailable. Rerun only after confirming that no prior process remains active and that its outcome cannot be recovered; report that evidence gap explicitly.
+
+[`scripts/run-with-receipt.sh`](../scripts/run-with-receipt.sh) is the executable mechanism. It uses `set -o pipefail`, `tee`, immediate `PIPESTATUS[0]` capture, atomic receipt publication, and refusal to overwrite prior evidence. Allocate and report the receipt directory before launching the long-running command:
+
+```bash
+command_receipt_root=$(mktemp -d "${TMPDIR:-/tmp}/bpmn-lean-command.XXXXXX")
+printf 'command receipt: %s\n' "$command_receipt_root"
+```
+
+Then run the exact command through the wrapper in the same shell:
+
+```bash
+./scripts/run-with-receipt.sh "$command_receipt_root" -- \
+  env CI=true ./scripts/pnpm.sh run test:pre-push:verify
+```
+
+When an execution tool uses a new shell for each invocation, copy the printed absolute receipt path into the wrapper invocation instead of relying on the shell variable to survive. Use the actual project command in place of the example. `command.txt` records the working directory and shell-escaped command, `git-head` records the exact committed `HEAD` before execution, `output.log` retains combined output, and `exit-status` appears only after authoritative completion. The wrapper refuses to start outside a Git worktree with a committed `HEAD`. The runner prints `COMMAND_RECEIPT_COMPLETE` only after atomic status publication; it is a completion marker, while the separate receipt assertion is the verdict. Exit `125` means the command result could not be retained reliably because log capture failed.
+
+## Direct TypeScript harnesses
+
+Node 24 executes every project-authored harness directly from `.ts` source through its built-in erasable-type stripping. Runtime execution does not perform type checking, so strict no-emit coverage precedes runtime execution. Product 1 uses `tsconfig.harness.json` through `check:harness-types`; it includes the engine's package tests, calibration entry points, and ordinary `scripts/*.ts`, while explicitly excluding `platform/` and `*.platform-test.ts`. Product 2 uses `tsconfig.platform-harness.json` through `test:platform-m1` and the additive M2, M3, and M4 platform checkpoint gates; it includes platform package tests and platform-only policy tests. Both configurations map workspace package names to source entry points and both reject project-owned `dist/` imports, so a clean checkout never depends on generated declarations. This split keeps `verify.sh` and its hosted workflow complete for the engine without building the platform tree, while separate path-filtered Product 2 workflows own platform, showcase-compatibility, and UI gates.
+
+The harness configurations keep `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and NodeNext module resolution enabled. They permit `.ts` import suffixes because Node executes those paths directly. The shared harness-source policy parses each directly executed root and rejects TypeScript constructs such as native enums, runtime namespaces, parameter properties, import aliases, and `export =` that need emitted JavaScript; directly executed harnesses use `as const` value objects and derived unions instead. This guard is scoped to executed roots because no-emit checking also follows imported workspace source through path mappings, while those packages execute from compiled output and may legitimately use enums. `skipLibCheck` applies only to imported declarations, including the pinned Temporal SDK declarations that do not type-check under TypeScript 7.0.2, while every included project source file remains strictly checked. The direct `@types/node` dependency supplies the Node 24 host API surface; its `undici-types` dependency supplies type declarations for Node's Fetch-compatible APIs and adds no runtime code.
+
+The no-emit configuration resolves workspace package names and every declared public JavaScript subpath of each mapped package to checked source entry points, so a clean checkout does not need ignored `dist/` output for type coverage. One workspace-manifest-derived guard keeps both harness path maps complete as public subpaths are added. Runtime package self-references still use each package's ordinary built output after the applicable gate builds it.
+
+There is no JavaScript exception left: every project-authored module is strict TypeScript inside this gate. Package tests import their subject through the workspace package name so the gate resolves checked source while Node resolves the package's own built output; a package's internal compiled-only module is loaded through a non-literal specifier and narrowed like any other untrusted boundary, keeping the gate independent of `dist/`.
+
+The semantic-core type-test configuration compiles without emitting JavaScript and locks developer-facing contract properties that runtime tests cannot observe. Its `DeepReadonly<T>` witness requires top-level, nested, array-element, tuple-element, and discriminated-union payload mutation to fail at compile time while callback types remain callable and tuples retain exact positions. `test:semantic-core` and `test:semantic` both run this gate.
+
+The Temporal gates start a local server, and the infrastructure gate proves that run-local Playwright ports are bindable before a browser launch. In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline`, or `./scripts/pnpm.sh run test:timer-time-skipping`; do not run a restricted probe first. A loopback-listener error containing `Operation not permitted` or `EPERM` identifies sandbox-denied local binding, not a port collision or infrastructure or semantic-test failure. The Temporal gates use pinned CLI `v1.8.1` cached under ignored `.cache/temporal-cli/`.
+
+## Continuous integration
+
+The [verification workflow](../.github/workflows/verify.yml) selects Product 1 from the committed diff and runs four guarded Ubuntu stages. [verify.sh](../scripts/verify.sh) defines the partition; bare local execution runs the same union sequentially, and `test:pre-push:verify` is its complete clean-HEAD equivalent.
+
+| Stage | Required evidence and ordering |
+|---|---|
+| Proof library | Starts with runtime; the library is Lake's test driver. Source-derived reachability includes every maintained non-experimental conformance and named-theorem owner. Compilation has 120 minutes inside a 135-minute job. |
+| Runtime | Prerequisite inventory, infrastructure, XML, TypeScript builds/tests, CIB and Temporal; no Lean-dependent package tests. |
+| Lean checks | After proof library; restore that run's exact output, elaborate checked-source/JSON roots and run no-argument checks through the Lean interpreter within 10 minutes. Programmatic witnesses must not rebuild native executables or bypass the wrapper. |
+| Integration | After runtime and Lean checks; restore exact run-attempt outputs, run every Lean-dependent parity test, the prepared pipeline and `git diff --check`. Primary Lean execution and three mutants form one serial resource-exclusive sub-lane; CIB and Temporal remain concurrent. |
+
+`verify-complete` requires all four selected stages and accepts a legitimate Product 2-only skip. Source-derived guards follow package helper imports to prevent parity omissions or accidental runtime assignment. Weekly execution builds Lean from scratch; ordinary execution may restore the exact-source cache with incremental fallback. Lake validates reuse, and cache presence is never qualification evidence.
+
+Keep compilation separate from setup/recovery headroom. The two-hour allowance is conservative recovery space, not a speed claim; do not restore the obsolete 30-minute cold-build limit. Restore/save are separate, and failed or timed-out compilation may save only under a unique partial key, never the immutable completed-source key. Saving is best effort and cannot survive runner loss or forced outer termination.
+
+[The GitHub runner rule](../CLAUDE.md#rule-1-no-routine-github-hosted-macos) excludes routine macOS; Ubuntu owns clean-machine portability and the development Mac owns proportionate local validation. Only a job explicitly restricted to `workflow_dispatch` may perform a focused clean-Mac/ARM smoke check; no duplicate full suite. Larger billable runners require a separate owner decision.
+
+[Platform verification](PLATFORM-VERIFICATION-POLICY.md#continuous-integration-and-distribution) owns separate platform, PostgreSQL, showcase and UI workflows and release/distribution execution. Product 2 browser work remains outside `verify.sh`.
+
+## Pre-release architecture guard
+
+`scripts/pre-release-architecture.test.ts` prevents active code from reintroducing:
+
+- embedded schema/trace format counters;
+- milestone-era scenario identifiers and paths;
+- version-suffixed compiler routing;
+- retired semantic-operation vocabulary in active code and maintained documentation, except exact allowlisted removal-history contexts;
+- committed Temporal history JSON fixtures;
+- Temporal Workflow patch branches other than the exact `bpmn-workflow-chain-v1` enrollment.
+
+The general representation checks apply to current source and executable tests. The retired-operation check additionally scans maintained Markdown under `docs/`, excludes `docs/archived/`, and permits only the exact current removal-history contexts owned by the implementation map and profile-parameterized admission specification.

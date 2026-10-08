@@ -51,23 +51,23 @@ test("joins every ledger family to one evidence-owned classification per dimensi
     mechanismObligation: "Obligation B",
     invariantCoverage: {
       classification: "slice-local",
-      evidence: "docs/TESTING-SPEC.md#classification-evidence",
-      owner: "docs/TESTING-SPEC.md",
+      evidence: "docs/SEMANTIC-VERIFICATION-POLICY.md#classification-evidence",
+      owner: "docs/SEMANTIC-VERIFICATION-POLICY.md",
     },
     activityOccurrenceAdoption: {
       classification: "shared",
-      evidence: "docs/TESTING-SPEC.md#classification-evidence",
-      owner: "docs/TESTING-SPEC.md",
+      evidence: "docs/SEMANTIC-VERIFICATION-POLICY.md#classification-evidence",
+      owner: "docs/SEMANTIC-VERIFICATION-POLICY.md",
     },
     multipleEnabledClosure: {
       classification: "order-invariant",
-      evidence: "docs/TESTING-SPEC.md#classification-evidence",
-      owner: "docs/TESTING-SPEC.md",
+      evidence: "docs/SEMANTIC-VERIFICATION-POLICY.md#classification-evidence",
+      owner: "docs/SEMANTIC-VERIFICATION-POLICY.md",
     },
     compositionEvidence: {
       classification: "reusable",
-      evidence: "docs/TESTING-SPEC.md#classification-evidence",
-      owner: "docs/TESTING-SPEC.md",
+      evidence: "docs/SEMANTIC-VERIFICATION-POLICY.md#classification-evidence",
+      owner: "docs/SEMANTIC-VERIFICATION-POLICY.md",
     },
   });
 });

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented, independently closure-reviewed, and maintained.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic desktop browser evidence implement this visual and interaction contract. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](TESTING-SPEC.md#independent-cold-review-gate).
+**Implemented, independently closure-reviewed, and maintained.** The M3 shell, shared UI kit, feature CSS Modules, responsive collection, complete declared-state fixtures, real-host showcases, and deterministic desktop browser evidence implement this visual and interaction contract. It changes no BPMN meaning, engine contract, or platform authorization rule and is classified non-material under the [independent cold-review negative case](REVIEW-POLICY.md#independent-cold-review-gate).
 
 ## Independent cold-review receipt
 

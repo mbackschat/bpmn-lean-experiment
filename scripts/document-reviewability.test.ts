@@ -300,16 +300,38 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
   );
 });
 
-test("keeps the testing overview aligned with the reviewed detail-map budgets", async () => {
-  const testingSpec = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
-  assert.match(
-    testingSpec,
-    /4,500 for contracts\/source, 5,400 for engine runtime\/proof, 7,000 for Temporal hosting, and 4,300 for assurance\/adoption/u,
-  );
-  assert.doesNotMatch(
-    testingSpec,
-    /5,000 for the exact Temporal-hosting and engine-runtime\/proof owners/u,
-  );
+test("routes verification detail to one task owner instead of duplicating the manual", async () => {
+  const entry = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+  const guide = await readFile(path.join(projectRoot, "CLAUDE.md"), "utf8");
+  const routes = [
+    ["REVIEW-POLICY.md", "Independent cold-review gate"],
+    ["SEMANTIC-VERIFICATION-POLICY.md", "Current Lean and semantic-core gate"],
+    ["CIB-OBSERVATION-POLICY.md", "Canonical CIB observation fidelity"],
+    ["TEMPORAL-VERIFICATION-POLICY.md", "Current Temporal gate"],
+    ["PLATFORM-VERIFICATION-POLICY.md", "Browser acceptance"],
+    ["VERIFICATION-INFRASTRUCTURE-POLICY.md", "Long-running JavaScript and TypeScript commands"],
+  ] as const;
+  const assertRouting = (document: string): void => {
+    for (const [owner, heading] of routes) {
+      assert.ok(document.includes(`](${owner})`), `entry must route to ${owner}`);
+      assert.ok(!document.includes(`## ${heading}\n`), `detail belongs in ${owner}`);
+    }
+    for (const heading of ["Select the task owner", "Three-level verification policy", "Focused gate matrix", "Profile release-readiness gate"]) {
+      assert.ok(document.includes(`## ${heading}\n`), `missing entry contract: ${heading}`);
+    }
+  };
+  assertRouting(entry);
+  for (const [owner, heading] of routes) {
+    const detail = await readFile(path.join(projectRoot, "docs", owner), "utf8");
+    assert.ok(detail.includes(`## ${heading}\n`), `${owner} must own its routed contract`);
+    assert.throws(() => assertRouting(entry.replace(`](${owner})`, "](missing.md)")));
+    assert.throws(() => assertRouting(`${entry}\n## ${heading}\n`));
+  }
+  assert.match(guide, /TESTING-SPEC\.md#select-the-task-owner/u);
+  assert.match(guide, /Do not import every testing policy for ordinary work/u);
+  const infrastructure = await readFile(path.join(projectRoot, "docs/VERIFICATION-INFRASTRUCTURE-POLICY.md"), "utf8");
+  assert.match(infrastructure, /Documentation discipline\]\(DOC-DISCIPLINE\.md\).*reviewability budgets/u);
+  assert.doesNotMatch(entry, /4,500 for contracts\/source|5,000 for the exact Temporal-hosting/u);
 });
 
 test("covers every registered semantic profile in the admission capability table", async () => {

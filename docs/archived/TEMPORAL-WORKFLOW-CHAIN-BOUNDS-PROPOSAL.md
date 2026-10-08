@@ -201,7 +201,7 @@ The first production test must set a test-only Event History threshold low enoug
 - an adversarial mutation that clears the recovery ledger on rollover, which must fail duplicate and conflict recovery in the next Run;
 - an adversarial mutation that resets publication revision or open occurrence anchors, which must fail cross-segment continuity.
 
-The decisive focused gate is `./scripts/pnpm.sh run test:temporal`. Documentation, receipt, package-boundary, and source-hygiene consequences also run through `./scripts/pnpm.sh run test:infrastructure`. The root integrator then runs `./scripts/verify.sh`; every JavaScript or TypeScript gate follows the [long-running command receipt policy](../TESTING-SPEC.md#long-running-javascript-and-typescript-commands).
+The decisive focused gate is `./scripts/pnpm.sh run test:temporal`. Documentation, receipt, package-boundary, and source-hygiene consequences also run through `./scripts/pnpm.sh run test:infrastructure`. The root integrator then runs `./scripts/verify.sh`; every JavaScript or TypeScript gate follows the [long-running command receipt policy](../VERIFICATION-INFRASTRUCTURE-POLICY.md#long-running-javascript-and-typescript-commands).
 
 ## Atomic owner consequences
 

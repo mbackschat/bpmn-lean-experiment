@@ -29,7 +29,7 @@ The structural routing redesign used a new context-cold reviewer and three owner
 
 The earlier closure stage used two ordinary correction rounds at `b67d048` and `ccf1a78`. The owner authorized correction `b98c3f8` for four residual stale consumers and their line-wide guard escape, then authorized final correction `8c73c00` when the same reviewer proved that the sentence-level replacement retained the same association defect between clauses. The final reviewers still found mechanism-level false negatives and false positives. The structural redesign is a new proposal boundary, not a fifth patch or audit round against that failed mechanism.
 
-This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
+This proposal is documentation governance rather than a material semantic proposal under [the independent cold-review gate](../REVIEW-POLICY.md#independent-cold-review-gate). It selects no BPMN meaning, semantic profile, CIB relationship, checked-source or Semantic Process representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim. The owner nevertheless requested a context-cold proposal review because an inefficient control plane can repeatedly misroute implementation work.
 
 ## Problem and measured baseline
 
@@ -280,4 +280,4 @@ The review should answer:
 7. Does any requirement create a new history board, status manifest, or bespoke source of truth that merely relocates the current problem?
 8. Is the expected reduction in startup context and ordinary edit churn large enough to justify the migration cost?
 
-Use the issue-first verdict format in [the independent cold-review gate](../TESTING-SPEC.md#independent-cold-review-gate). Classify any route that can silently omit required context, any ambiguous owner, or any unguarded claim-loss path as required rather than advisory.
+Use the issue-first verdict format in [the independent cold-review gate](../REVIEW-POLICY.md#independent-cold-review-gate). Classify any route that can silently omit required context, any ambiguous owner, or any unguarded claim-loss path as required rather than advisory.

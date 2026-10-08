@@ -113,7 +113,7 @@ Reopen for source XML changes, a default value, optional data, another value kin
 
 ## Closure evidence
 
-The exact-source success and failure witnesses cover frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. The [cost ledger](../CAPSULE-COST-LEDGER.md#repair-closure-costs) retains the contiguous implementation/correction attribution and comparison with the source/lowering checkpoint at the same TypeScript/Lean admission seam. The receipt below records this repair's own closure review; the trigger closure supplies the composed hosting evidence.
+The exact-source success and failure witnesses cover frozen input, concurrent handlers, pre-schedule continuation, Worker replacement, same-key retry, cancellation drain, terminal receipts, and replay. The [cost ledger](../capsule-costs/REVIEW-AND-WORKFLOW-LEDGER.md#repair-closure-costs) retains the contiguous implementation/correction attribution and comparison with the source/lowering checkpoint at the same TypeScript/Lean admission seam. The receipt below records this repair's own closure review; the trigger closure supplies the composed hosting evidence.
 
 ## Independent cold-review receipt
 

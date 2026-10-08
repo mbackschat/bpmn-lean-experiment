@@ -6,7 +6,7 @@ import { scanMarkdownAnchors } from "./markdown-link-lexer.ts";
 
 const SourcePaths = {
   Ledger: "docs/BPMN-REQUIREMENT-LEDGER.md",
-  Testing: "docs/TESTING-SPEC.md",
+  Testing: "docs/SEMANTIC-VERIFICATION-POLICY.md",
 } as const;
 
 const Sections = {

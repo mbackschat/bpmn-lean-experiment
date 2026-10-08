@@ -1,0 +1,59 @@
+# Elaboration and fixture resource ledger
+
+## Status
+
+Maintained historical evidence ledger. Dated records preserve their source, conditions and qualifications; current work is owned by [PLAN.md](../PLAN.md) and the linked specifications.
+
+[Resource topic index](README.md) · [Cost rows](../CAPSULE-COST-LEDGER.md#measurements)
+
+## Measurement basis
+
+Apply [the historical measurement basis](RUNTIME-AND-ACTIVITY-LEDGER.md#measurement-basis) and the current procedure it links. Local records retain source/cache conditions and exceptions. Target calibration establishes no performance trend, cold whole-library qualification or independent semantic approval.
+
+## Package-wide theorem elaboration memory correction
+
+On 2026-09-08, the composed arming footprint checkpoint's complete working-tree library build after `539ec9ac` compiled all 322 jobs successfully but failed resource acceptance. It took 27:13.68 at 2,990,012 KiB GNU RSS, reached the exact 3,221,225,472-byte cgroup ceiling, recorded 539 `max` events and 1,880,779 microseconds in each pressure total, and recorded no OOM, kill, or swap. Output SHA-256: `5dc21491554f96f8d10a85f9bc2d070df9de2f647b5f709258cb009980f8b412`. A subsequent warm run cannot close this pressure failure; the owner explicitly required its correction.
+
+The mechanism is retained asynchronous theorem elaboration, which the single Lean thread does not remove. In the pinned Lean `v4.31.0` distribution, `Lean/Elab/MutualDef.lean` selects asynchronous theorem-body tasks when `Elab.async` is enabled; those tasks retain elaboration state and snapshots. `Lean/Elab/Tactic/Decide.lean` already disables async for the auxiliary declaration used by `decide +kernel`, so the correction concerns the surrounding theorem tasks, not removal or weakening of a kernel decision. `Lean/AddDecl.lean` uses the same kernel-checking operation in both scheduling branches. The earlier [E1](RUNTIME-AND-ACTIVITY-LEDGER.md#measurements) and [standing-consumer corrections](RUNTIME-AND-ACTIVITY-LEDGER.md#runtime-invariant-and-committed-initialization-correction) identified the same contributor, but per-module overrides left other fixtures using the default.
+
+Two cold-target comparisons held the maintained source, dependencies, pinned image, CPU/thread count, network isolation, 3 GiB ceiling, and swap policy fixed. Each variant inserted only `set_option Elab.async false`; removing that inserted line reproduces every original source byte, including every theorem statement and proof. Each run invalidated only the target's eight generated products and retained its warm dependencies. Both defaults recorded pressure; both synchronous variants recorded zero controlled memory events, zero pressure totals, and no swap. These are working-tree diagnostics, not immutable module-cost rows.
+
+| Target and mode | Elapsed | GNU RSS | Cgroup peak | Each pressure total | Output SHA-256 |
+|---|---:|---:|---:|---:|---|
+| Message payload, default | 28.77 s | 3,093,752 KiB | 2,963,697,664 bytes | 179,104 µs | `290bc7b5d628596545111cf38fd240cede2a1a1c29f656e37e6337f065cd6682` |
+| Message payload, synchronous | 28.44 s | 1,510,044 KiB | 1,222,635,520 bytes | 0 µs | `736efcf4c7243e53aa44bd179f67246caa03cb620ef878d918f01ffcaf547b20` |
+| Snapshot root closure, default | 17.49 s | 2,952,724 KiB | 2,933,153,792 bytes | 5,602 µs | `968e895aa80f2db32d127b9eee71860cd05a00d849df48b37686c53cc17cb25e` |
+| Snapshot root closure, synchronous | 17.35 s | 2,944,444 KiB | 2,710,491,136 bytes | 0 µs | `e051f3ab5c1fec7b6d11066058afe4697dfd32b114068606640712bcc383145d` |
+
+The Message-payload result separates accumulated theorem tasks from a necessary single reduction peak. The smaller snapshot-root reduction leaves its individual large proof as a residual risk, so synchronous elaboration is not claimed to guarantee a memory bound by itself. [lakefile.toml](../../lakefile.toml) now selects `leanOptions = { Elab.async = false }` at package scope. Lake fingerprints that effective option for every repository module build and supplies it to the language server. The [verification-entrypoint guard](../../scripts/verification-entrypoint.test.ts) rejects absence, enabling, and placement after a library table, which would fail to supply the package default. Existing local overrides remain; the package setting changes no theorem, fixture, memory limit, or thread pin.
+
+The first genuinely cold full-library run with that package default compiled all 322 jobs in 23:34.40 at 2,941,520 KiB GNU RSS and 2,820,386,816 cgroup bytes. All controlled memory events and swap were zero, but both pressure totals reached 52,632 microseconds, so resource acceptance still failed. Sampling first observed that pressure after the snapshot-root closure target; the sample interval alone does not prove attribution. All 348 recorded source inputs remained byte-identical across the run, and all 320 generated module setups contained Boolean `Elab.async=false`. Output SHA-256: `7fb701d2113271ef0cc80aef12fd4415fc7855275bfeb253dd3135973ec72a19`.
+
+The unchanged synchronous snapshot-root target then reproduced pressure in isolation. Its selected-root theorem decides nine facts together and refers five times to a result that expands three production commands; the unselected-root theorem repeats the same mechanism across three facts. Separately deciding the selected theorem's conjuncts lowered residency but exceeded the unchanged 200,000-heartbeat limit, so that form was discarded. The correction instead materializes each complete `StimulusResult` through a kernel equality and rewrites the next command with its checked predecessor. The [snapshot-root owner](../../BpmnSemantics/CompensationEventSubProcessSnapshotRootClosureConformance.lean) retains all six public execution definitions and both public theorem statements byte-for-byte. Its private values preserve every runtime field and result flag; the original propositions still use `decide +kernel` after rewriting those complete equalities.
+
+| Snapshot-root diagnostic | Exit | Elapsed | GNU RSS | Cgroup peak | Each pressure total | Output SHA-256 |
+|---|---:|---:|---:|---:|---:|---|
+| Unchanged synchronous target | 0 | 18.02 s | 2,946,452 KiB | 2,697,547,776 bytes | 127,640 µs | `f6b122a09189857926aa2b6e88e17c1f9222ffc188a894e26f06b19ac1619d2d` |
+| Separate conjunct decisions; heartbeat refusal | 1 | 36.89 s | 2,433,692 KiB | 2,342,072,320 bytes | 0 µs | `3de17af5fbfe6ab87e2f859a1bbdaa9ecf53ee3b7c88792b2cdaf64df2f2b18d` |
+| Kernel-locked complete intermediate results | 0 | 22.50 s | 1,495,236 KiB | 1,139,458,048 bytes | 0 µs | `cc0359e1910afc2259c377e99c0496dc581befec761dc06a5d6bc98846d0546c` |
+
+Every diagnostic retained the same 3 GiB ceiling, one CPU/thread, synchronous package default, network isolation, warm dependency closure, and cold target. All controlled memory events and swap were zero. Independent mutations of the literal Child Task wait owner and the promoted snapshot's root frame were rejected at their complete-result equality checks. Their output SHA-256 values are `35c6f782e89399f65490962a32ce556f341f471843f5f83008350f5d2c215191` and `b93330619f950289708bc912a81498bc0a3ba09752b5fe10c9e367610992b211`, respectively. These are working-tree diagnostics; immutable module-cost replacement remains separate.
+
+The second genuinely cold full-library run passed all 322 jobs in 23:34.16 at 2,561,396 KiB GNU RSS and 2,454,470,656 cgroup bytes, leaving 766,754,816 bytes below the unchanged ceiling. Every controlled memory event, both pressure totals, and swap were zero. All 348 recorded source inputs remained byte-identical across the build, and all 320 generated module setups retained Boolean `Elab.async=false`. Output SHA-256: `a22210437126ab93770838a8047b3597fe81609269fc095657e35aee1aabf3a1`. The complete companion `./scripts/lake.sh test` passed against those warm outputs in 0.57 seconds at 121,436 KiB GNU RSS and 42,070,016 cgroup bytes, again with every event and pressure total zero; its output SHA-256 is `59a7c33035dd9ce0ac7546046bb9dccf7b6744e75716a693139323c62ae73190`. The cold result supplies resource acceptance for this correction; the companion warm command does not replace it.
+
+This memory repair is non-material to the semantic review boundary: public execution definitions, theorem propositions, profiles, observations, and admission remain unchanged. The verification-entrypoint and contributor-setup guards cover the native package setting; Lean source-contract, import-boundary, source-hygiene, link, plan, and reviewability guards cover the fixture correction. Kernel equality locks and their separating mutations preserve the complete results. The composed arming footprint checkpoint still requires its separate independent semantic review.
+
+## Kernel-fixture pilot, 2026-09-20
+
+The one-module pilot used [Internal Commutation conformance](../../BpmnSemantics/InternalCommutationConformance.lean) at `df8a6c2d`. All 23 original propositions were retained byte-for-byte. Twenty-two were replaced in a scratch snapshot by `#guard (decide (<proposition>))`; `complete_pair_publication_is_order_independent` retained its original proof through the general commutation law because its publication result has no executable `Decidable` equality instance. A ground proposition without consumers is therefore not automatically an executable fixture. The other Lean sources contain no references to these 23 theorem names.
+
+| Variant | Elapsed seconds | GNU peak RSS, KiB | Cgroup peak, bytes | Exit |
+|---|---:|---:|---:|---:|
+| Original kernel proofs | 10.86 | 1,288,936 | 939,388,928 | 0 |
+| 22 guards and one retained proof | 3.11 | 1,206,968 | 829,521,920 | 0 |
+
+Both runs used Lean 4.31.0, image `sha256:4df22c7a1ec8ba8c4c2795fdea1269d7b9cadade4e65b22e595047509aa27950`, one Lean thread, one CPU, no network, a read-only source mount, a 3,221,225,472-byte memory limit, and zero permitted swap. Dependency caches were warmed identically; each measured run rebuilt only the target. All controlled memory events, pressure totals, and actual swap were zero. RSS and cgroup charging remain separate accounting measures. The original target's new measured peak updates its [cost row](../../scripts/lean-module-cost.ts); no production Lean source changed.
+
+The local evidence root is `/tmp/bpmn-fixture-pilot-20260920`: `inputs.json` hashes all 513 source/build inputs and each original proposition; `kernel/cold-evidence/measurement.json` hashes to `a836939c202072965c700b568492e38cfd346628584fc39f77726a391fb1dc53`, and `guard/evidence-03/measurement.json` to `3bede60427ea119c152cad08abfe35fd881b8c70267b565da87ce4327af00ea7`. Mounted target hashes are respectively `a02dd231e707535714fa9f6f453b6a8ca6059f89123b8f8aadb10737ac868d00` and `41acf3bed8b3abfce9fd8e8faca507e95dc054750b08001c4195f3aac9948a04`. Reproduction replaces only the 22 whole theorem declarations/proofs and makes attached doc comments ordinary comments; definitions, imports, proposition text, and the remaining proof stay unchanged. The initial dependency-warming run and two failed scratch conversions are excluded. Negating the first guard's enabledness proposition then failed specifically because the expression did not evaluate to true.
+
+Coverage is preserved in this pilot, but the 22 guards trust Lean's evaluator/compiler rather than supplying kernel-checked proof terms, cannot be cited as theorems, and cannot supply downstream hypotheses. The retained theorem keeps its original boundary. The single observation saves 7.75 seconds with only about 6% lower RSS; it establishes neither a suite-wide saving nor a remedy for the shared-atom memory ceiling. Retain the production kernel lane. Reopen selective conversion when a particular fixture's measured cost justifies that explicit trust tradeoff; do not convert by consumer count alone.

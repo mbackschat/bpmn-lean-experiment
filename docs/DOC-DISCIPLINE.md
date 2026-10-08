@@ -47,6 +47,8 @@ An approved proposal remains a proposal until its contract is implemented. “Ap
 
 `-LEDGER` and `-REGISTER` are intentionally different. A ledger classifies a defined denominator and retains its rows. A register records every relationship that has entered review but does not imply that the unreviewed external universe has been enumerated.
 
+Retain ledger identities, measurements, dispositions, material qualifications and required approval evidence; retention does not require an append-only incident narrative. Update each mechanism’s current control and limits in place, keeping compact provenance for distinct occurrences and measurement conditions. Link current policy and implementation owners instead of restating them. Long historical evidence may live in topic-group files under a subfolder, with each live record linking directly to its evidence owner and no second copy of its measurements or disposition. Keep one navigation layer: a folder README is optional browsing, not an intermediate reading requirement; do not add another routing hub between the live record and its evidence. Keep a coherent evidence record together. Ordinary use reads the selection index and complete relevant records; structural or denominator changes require whole-ledger review. Condense before splitting by responsibility, and preserve executable populations, ordinal IDs and evidence bindings when relocating records.
+
 ## Reserved singleton names
 
 The following names identify repository-wide owners and do not require another suffix:
@@ -97,7 +99,7 @@ Lifecycle: <closed-value>
 Review: <closed-value>
 ```
 
-Lifecycle is one of `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, or `archived`. Review is one of `pending`, `approved`, `approved-with-required-edits`, `rejected`, or `not-required`. Dates, commits, findings, scope narration, and implementation results belong in a current-boundary section, review receipt, plan, or implementation detail map rather than Status. Only `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` authorize implementation. `owner-approved` records the authority a green independent review establishes under [the review gate](TESTING-SPEC.md#independent-cold-review-gate); it names no separate manual step.
+Lifecycle is one of `draft`, `owner-approved`, `implementation-in-progress`, `implemented-awaiting-closure`, `superseded`, or `archived`. Review is one of `pending`, `approved`, `approved-with-required-edits`, `rejected`, or `not-required`. Dates, commits, findings, scope narration, and implementation results belong in a current-boundary section, review receipt, plan, or implementation detail map rather than Status. Only `owner-approved`, `implementation-in-progress`, and `implemented-awaiting-closure` authorize implementation. `owner-approved` records the authority a green independent review establishes under [the review gate](REVIEW-POLICY.md#independent-cold-review-gate); it names no separate manual step.
 
 Other maintained document roles continue to use concise plain status language such as Draft, Owner-approved, Implemented, Evidence-closed draft, Superseded, or Archived.
 
@@ -107,7 +109,7 @@ A status never changes the suffix contract. An owner-approved but unimplemented 
 
 When a proposal is implemented:
 
-1. complete the governed closure review and record the approved `Independent cold-review receipt` required by [TESTING-SPEC.md](TESTING-SPEC.md#review-receipt), using guarded checkpoint-reviewer warm continuity only when its executable manifest passes; pre-policy documents in the closed executable grandfather set do not receive invented historical receipts;
+1. complete the governed closure review and record the approved `Independent cold-review receipt` required by [REVIEW-POLICY.md](REVIEW-POLICY.md#review-receipt), using guarded checkpoint-reviewer warm continuity only when its executable manifest passes; pre-policy documents in the closed executable grandfather set do not receive invented historical receipts;
 2. move the stable implemented contract into the corresponding `-SPEC.md`;
 3. update every current producer, consumer, schema, test, evidence lane, and documentation owner in the same change;
 4. remove implementation sequencing and completed-work narration from the spec;
@@ -118,9 +120,15 @@ Do not leave a `-PROPOSAL.md` describing a shipped current surface. Do not creat
 
 ## Specs and moving results
 
-Specs own stable method, contracts, invariants, exclusions, and acceptance criteria. They do not own a chronological run diary.
+Proposals and specs own the design or current contract, invariants, exclusions, and acceptance criteria. They do not own a chronological run diary.
 
-Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Stable gate definitions and evidence requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md). The root [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
+Current measured verification results and exact resume state belong in [PLAN.md](PLAN.md). Gate selection, cadence and shared acceptance requirements belong in [TESTING-SPEC.md](TESTING-SPEC.md); review/delegation and detailed domain evidence belong in its [task-selected owners](TESTING-SPEC.md#select-the-task-owner). Keep each contract in one owner and route readers to it; do not repopulate the entry point with implementation inventories or incident narration. The root [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact implemented or absent claims to the applicable detail map and does not duplicate them.
+
+### Active-task continuity
+
+Maintain `PLAN.md`'s `Exact resume point` as one replaceable account of the active task: its intended outcome, current result, decisive verification, unresolved blockers, and next action. Update it in place as work advances. When another task becomes active, replace the previous task's details; retain only constraints or unresolved failures that still affect the new task. Keep the existing four-section structure and word limits. `Current evidence` likewise holds current decision-relevant results, not successive runs.
+
+Do not append session summaries, helper-proof updates, failed elaboration attempts, command transcripts, or temporary-log inventories to proposals, specs, implementation maps, or the plan. Keep raw command output in execution receipts; link only the decisive current receipt when resumption needs it. Git retains superseded tracked text. Preserve unique durable decisions, evidence boundaries and unresolved obligations in their owning document, and keep required immutable approval receipts under [the review-receipt contract](REVIEW-POLICY.md#review-receipt). An interruption or handoff does not create another documentation owner or justify a work diary.
 
 ### Reviewed detail-map word budgets
 
@@ -159,6 +167,7 @@ That commitment was tested and kept for the semantic-family maps. The family map
 | Exact implementation and assurance status | The detail map registered by `IMPLEMENTATION-MAP.md` |
 | Immediate work order | `PLAN.md` |
 | Reproducible completed capsule cost and comparison | `CAPSULE-COST-LEDGER.md` |
+| Retained Lean resource measurements, calibration and failed-evidence dispositions | [Lean resource evidence](lean-resource-costs/README.md) |
 | Retained process findings, their instance counts, and dispositions | `PROCESS-ASSESSMENT-LEDGER.md` |
 | Test method and gates | `TESTING-SPEC.md` |
 | External revisions and licenses | `SOURCES.md` |
@@ -184,7 +193,7 @@ Match a document's length to the substance its owner actually holds. Do not pad 
 
 Use regular relative Markdown links for project documents. Do not duplicate an owned fact merely to avoid a link.
 
-Implementation-status navigation uses one exact inline route atom: `implementation-status-router` for the fragment-free root router, `implementation-status-root-owner` for an owned root section, `implementation-status-owner:<AREA-ID>` for a registered detail owner, or `implementation-status-delegation:<AREA-ID>` for a capsule's single reciprocal implemented/absent section. The atom is the entire code-formatted link label and carries no status claim itself. Ordinary implementation-map links are reserved for the root Routing table, the `Maps` field of [PLAN.md](PLAN.md), the first cell of each map row in the [documentation registry](README.md#registry), and the exact root-map step in [`CLAUDE.md`](../CLAUDE.md#start-every-session). Every other live implementation-map link or bare path is rejected. [TESTING-SPEC.md](TESTING-SPEC.md#default-verification) owns the executable live-universe, target, anchor, duplicate, and delegation checks.
+Implementation-status navigation uses one exact inline route atom: `implementation-status-router` for the fragment-free root router, `implementation-status-root-owner` for an owned root section, `implementation-status-owner:<AREA-ID>` for a registered detail owner, or `implementation-status-delegation:<AREA-ID>` for a capsule's single reciprocal implemented/absent section. The atom is the entire code-formatted link label and carries no status claim itself. Ordinary implementation-map links are reserved for the root Routing table, the `Maps` field of [PLAN.md](PLAN.md), the first cell of each map row in the [documentation registry](README.md#registry), and the exact root-map step in [`CLAUDE.md`](../CLAUDE.md#start-every-session). Every other live implementation-map link or bare path is rejected. [Infrastructure verification](VERIFICATION-INFRASTRUCTURE-POLICY.md#prerequisites-and-structural-guards) owns the executable live-universe, target, anchor, duplicate, and delegation checks.
 
 When a fact genuinely must appear in two owners, the change that creates the second copy adds an executable check that fails when the copies disagree. A claim written about a referent without reading that referent is the mechanism behind both rejected closure targets recorded in this repository, and a copy nobody compares is the same defect waiting on a reader who does not check. Project boundaries belong in [PROJECT-DESIGN.md](PROJECT-DESIGN.md); their concrete package realization belongs in [ARCHITECTURE.md](ARCHITECTURE.md), which links to those boundaries instead of restating their rationale.
 

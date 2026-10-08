@@ -2,6 +2,8 @@
 
 Shared guidance for Claude Code, OpenAI Codex, and human contributors working in **bpmn-lean-experiment**. [AGENTS.md](AGENTS.md) is a symlink to this file; keep one canonical guide and preserve the symlink.
 
+**Project opt-in:** Use HIGH/MEDIUM model tiers. Read [Delegated implementation](#delegated-implementation) at session start for role selection and delegation rules.
+
 ## Rule 1: no routine GitHub-hosted macOS
 
 Standard GitHub-hosted macOS runners are [free and unlimited for public repositories](https://docs.github.com/en/billing/concepts/product-billing/github-actions), so billing is not the reason for this rule. Their distinct evidence is a clean macOS machine and, on `macos-latest`, Apple Silicon compatibility. Do not add macOS to a push, pull-request, scheduled, matrix, ordinary release, or other routine workflow: this repository ships no macOS-native artifact, the development computer already owns proportionate local macOS validation, and Ubuntu supplies the independent routine portability lane with less duplicate feedback work. A focused macOS smoke job is allowed only when it has an explicit clean-machine or ARM compatibility purpose and the job itself is guarded by `github.event_name == 'workflow_dispatch'`; do not run the complete verification suite merely to duplicate Linux evidence. [Larger macOS runners remain billable](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) even for public repositories and require a separate owner decision. The executable GitHub-runner policy must reject every macOS label outside that manual-only boundary.
@@ -40,9 +42,11 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 5. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated or pre-existing changes. Run `./scripts/doctor.sh verify`. It inventories every declared external pin, dependency owner, and cache even when the selected scope does not require all of them. On a fresh machine, follow [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md); provision missing inputs rather than weakening or skipping their lanes. Use the `research` scope before source-grounded work using registered research checkouts. Use the separate `adoption` scope only when the task explicitly requires optional A12 exact-source evidence; never infer that evidence from the complete MIT engine `verify` gate.
 6. After discovering concrete target paths, run `node scripts/what-binds.ts <path>...` and read every newly reported detail map before editing.
 7. Read every boundary-specific owner routed by the change table below.
-8. Run the current applicable gate from [TESTING-SPEC.md](docs/TESTING-SPEC.md), then take the selected work.
+8. Use [TESTING-SPEC.md](docs/TESTING-SPEC.md#select-the-task-owner) to select the applicable gate and focused policy owners; read those owners and run the gate, then take the selected work. Do not import every testing policy for ordinary work.
 
 Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely on chat history for project state.
+
+Maintain the active task in [PLAN.md](docs/PLAN.md#exact-resume-point) by replacing its current result, decisive verification, blockers and next action in place. Replace those details when the active task changes; carry forward only still-relevant constraints and unresolved failures. Never append session, command or helper-proof diaries to the plan, proposals, specs or maps. Follow [active-task continuity](docs/DOC-DISCIPLINE.md#active-task-continuity) for durable evidence and review receipts.
 
 For frontend architecture questions, comparisons, or recommendations, apply [Before frontend recommendations](#before-frontend-recommendations) before the first recommendation, even when no code change is requested.
 
@@ -63,7 +67,7 @@ For frontend architecture questions, comparisons, or recommendations, apply [Bef
 | CIB Seven or Temporal source instrumentation/acceleration | [REFERENCE-INSTRUMENTATION-POLICY.md](docs/REFERENCE-INSTRUMENTATION-POLICY.md) |
 | External checkout, clean-machine setup, or fixture provenance | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](docs/SOURCES.md) |
 
-Read the complete selected document before acting on it.
+Read the complete selected document before acting on it. For routine ledger use, read its purpose/update rules and the selected complete records: the cost increment and comparator, the applicable resource measurement, or the self-assessment questions and matching findings. Read the whole ledger when changing its structure, denominator or rules. Testing detail is task-routed: select the relevant owner through [the testing entry point](docs/TESTING-SPEC.md#select-the-task-owner), not the entire verification-policy collection.
 
 ## Authority model
 
@@ -139,7 +143,7 @@ Default to common, established ecosystem practices and native tool mechanisms. D
 
 If ordinary work exposes a defect in the documentation control plane, surface it and treat it as a regular project defect: identify the root mechanism, reproduce the class with a separating guard, fix it proportionately, and continue the selected work. Do not silently route around the defect or automatically reopen a special documentation programme.
 
-Follow the [database test selection and cadence](docs/TESTING-SPEC.md#three-level-verification-policy): SQLite tests execute local persistence operations sequentially; real PostgreSQL tests own database concurrency and shared replicas. Retain concurrency coverage in the explicit PostgreSQL lane instead of introducing competing SQLite workers. Ordinary package tests require no PostgreSQL server. Run the focused affected PostgreSQL witness when its behavior changes, the complete shared-mode gate at integration, and the clean path-selected pre-push gate before a relevant push; do not require the full shared-mode suite after every local commit.
+Follow the [database test selection and cadence](docs/PLATFORM-VERIFICATION-POLICY.md#database-test-selection): SQLite tests execute local persistence operations sequentially; real PostgreSQL tests own database concurrency and shared replicas. Retain concurrency coverage in the explicit PostgreSQL lane instead of introducing competing SQLite workers. Ordinary package tests require no PostgreSQL server. Run the focused affected PostgreSQL witness when its behavior changes, the complete shared-mode gate at integration, and the clean path-selected pre-push gate before a relevant push; do not require the full shared-mode suite after every local commit.
 
 For Product 2 PostgreSQL runtime or migration work, run the explicit runtime witness with `./scripts/pnpm.sh run test:platform-postgresql:runtime:local`. Run the complete shared-mode witness with `./scripts/pnpm.sh run test:platform-postgresql:local`; after committing PostgreSQL-backed platform changes, run `./scripts/pnpm.sh run test:pre-push:platform-postgresql` against an explicit database or use the local disposable-cluster command.
 
@@ -166,6 +170,8 @@ For every material Product 2 UI/UX surface, inspect CIB Seven first when it has 
 Apply [disclosure and dialog design](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md#disclosures-and-dialogs) consistently: optional information expands inline with an explicit Show/Hide button; bounded forms and decisions use the shared modal with a backdrop, focus containment and obvious dismissal; long activities use a dedicated view. Never position a disclosure over unrelated content or present an overlay without a clear way to close it. Verify keyboard collapse/dismissal, focus return and pending/error states, not just the open screenshot.
 
 ### Semantic code
+
+For Lean implementation and proof refactoring, follow [Lean proof design and review](docs/REVIEW-POLICY.md#lean-proof-design-and-review). Start from the composed guarantee and reusable invariants; reassess repeated implementation unfolding or growing prerequisite chains before adding more local lemmas. Keep the bounded next outcome in [PLAN.md](docs/PLAN.md#exact-resume-point).
 
 #### Forward-compatible semantic restrictions
 
@@ -194,54 +200,29 @@ Prefer enum-based pattern matching or switch statements for semantic variants. K
 
 ### Delegated implementation
 
-Spawning a sub-agent for a review lane or a bounded implementation lane defined in this document is standing authorization; do not treat it as needing separate per-invocation permission, and do not substitute self-review because permission was not asked for. What bounds delegation is the worth-opening floor in [the delegated implementation protocol](docs/TESTING-SPEC.md#delegated-implementation-protocol), not an approval step.
+The root integrator is HIGH and resolves the active CLI's tiers from the loaded global [model mappings](https://github.com/mbackschat/coding-setup/blob/main/CLAUDE.md#model-tier-mappings). Delegate bounded work to MEDIUM when it repays the handoff cost; keep judgment, integration and acceptance with HIGH. Delegation within these rules is authorized without per-task permission.
 
-Budget agent threads before delegating:
+Prefer reusing a completed MEDIUM agent for related follow-ups while its assumptions remain valid. Keep the same agent through implementation, assigned testing and corrections with explicit file ownership. While a delegated Lean lane is active, defer edits to its targets’ transitive dependencies. Confirm its prior work has stopped and replace its assignment explicitly. Use fresh context for unrelated work, changed assumptions or required independence.
 
-- Handle routine investigation and small audits in the root thread.
-- Reserve thread capacity for the required independent review stages. Do not assume that an agent finishing its task closes its thread or frees a slot.
-- Reuse the exact reviewer for correction audits and eligible closure under [the review continuity rules](docs/TESTING-SPEC.md#when-a-warm-review-is-valid).
-- Open optional agents only when capacity remains after those review obligations.
+Give each new agent a task-shaped name and a concise brief covering one complete bounded outcome, affected consumers and proofs, constraints, owned paths and validation. Batch related work through implementation, tests and corrections into one handback; avoid helper-sized assignments, repeated polling and idle waiting updates. Reserve cleanup within the timebox. Run focused checks during development and broader affected-consumer gates after related changes stabilize, preserving required acceptance gates. Start with one MEDIUM worker; add concurrency only for independent work with disjoint file ownership/build outputs and review capacity. HIGH takes over proof or design decisions after repeated failure; do not delegate another equivalent attempt.
 
-Give each implementation sub-agent a task-shaped name and one bounded lane. Its prompt names the exact invariant algorithm, one adversarial counterexample that must fail before the correction, the cross-target invariant matrix of required facts and explicit non-requirements, the files it may own, the files it must not touch, the proportionate focused gates, and the `node scripts/what-binds.ts` output for the files it may own so the lane inherits the guard, registry, and headroom bounds instead of rediscovering them mid-edit. A desired outcome without the deciding algorithm and realistic wrong case is not a sufficient delegation contract.
-
-Lean execution is bounded rather than root-only. A Lean implementation or review sub-agent may run `./scripts/lake.sh build <module target>` for the narrow modules its own lane owns, and nothing else: never the bare full-gate form, never `test`, `exe`, or `env lean`, and never a target outside its lane. Four conditions carry that permission and each is load-bearing. The root warms the lane's dependency closure before delegating, because a narrow target whose dependencies are stale builds them too and is the full library under another name. Only one Lean-capable lane runs at a time, because [the wrapper](scripts/lake.sh)'s fail-closed lock is repository-wide. The lane treats exit `75` carrying `LEAN_BUILD_REFUSED` as another build holding that lock rather than as its own verdict, and stops instead of retrying. The first build of a module that adds or changes kernel-decided fixtures stays with the root under the memory bound, because that is the case this repository has twice had to kill for exhausting host memory.
-
-This replaces an earlier root-only rule. Its two protections, the thread pin and single-process-tree serialization, are now enforced mechanically by the wrapper rather than by the integrator's attention, and what the rule still cost was one full round trip per compile error: in the increment that retired it, three such trips resolved a redundant term, six unused `simp` arguments, and a missing binder type.
-
-Never interrupt a lane's Lean build. The lock is a directory removed by an exit trap, so a killed process leaves it behind and every later Lean command in the repository refuses until someone clears it by hand. The lane's final safe boundary is still **Ready for root Lean gate**, now reporting the exact commands it ran and their output, and the root runs that narrow gate itself once before integrating: against a warm closure it costs seconds, and it keeps the proof state something the integrator has watched fail. Never start a replacement command because a Lean command yielded; resume the existing process or terminate it before any retry.
-
-Carry the session's operational constraints into every sub-agent prompt rather than assuming a role word implies them. A sub-agent must not create files inside the repository unless the prompt assigns it those files as owned, and must never run a command that needs the user's authorization, `rm` included. "Read-only" does not convey either rule: a review lane told only that it was read-only wrote an executable probe test into the package under review, then attempted to delete it, which put an authorization prompt in front of the user and made the next clean-worktree gate record `"dirty":true`. When a lane needs something executed to settle a question, it names the exact command and the root integrator runs it and returns the output.
-
-Assign concurrent agents disjoint file ownership and disjoint build outputs. Two lanes that both run a gate writing the same package's `dist/` corrupt each other's artifacts even when their sources never overlap, so concurrent lanes either target different workspace packages or leave the building gate to the root, and at most one of them may be Lean-capable because the Lean lock is repository-wide. Use concurrency within both the disjointness constraints and the thread budget reserved for required reviews. The root integrator owns shared integration points, lifecycle and status documentation, commits, and the repository-wide full gate; do not ask two active agents to edit the same owner or use an implementation agent as its own independent reviewer.
-
-While any delegated lane is active, the root stages only its own reviewed paths explicitly and never uses `git add -A` or `git add .`.
-
-Require three concise safe-boundary reports from every nontrivial implementation lane: **Red reproduced**, **Root mechanism implemented**, and **Focused gates green**. Each report states the observed evidence and any change to the invariant matrix. Do not poll a long-running build merely for activity; request a report only when a promised boundary has not arrived and the agent may be stalled.
-
-Treat **Focused gates green** as an integration handoff. The root groups supporting lanes into the coherent outcome named before implementation and follows [the commit boundaries](docs/TESTING-SPEC.md#commit-boundaries), including the required package gates and independent review boundary. A compiled helper or completed agent lane alone does not require a commit.
-
-Implementation agents run only their focused gates, which for a Lean lane means the narrow module builds bounded above and no other Lean command. After reviewing and integrating every lane, the root integrator runs the complete applicable gate once. Open a new task-shaped agent only when the lane meets the delegation floor and fits the thread budget; preserve the exact reviewer for correction audits and eligible closure.
+HIGH checks handbacks and owns integration, [commit boundaries](docs/REVIEW-POLICY.md#commit-boundaries) and acceptance; inspect evidence without duplicating the worker's investigation. Follow the [delegation protocol](docs/REVIEW-POLICY.md#delegated-implementation-protocol) for limits and [independent-review rules](#independent-cold-review); implementers cannot review their own work. At each bounded outcome, assess accepted results against rework, context/handoff, polling and validation cost, using measured usage when available; self-correct task size, reuse, concurrency and gate cadence. Failed attempts count as rework. Do not claim unmeasured token savings. Report assessments only when asked.
 
 ### Independent cold review
 
-Materiality is decided by what a change touches, not by its size or layer. A product, adapter, CLI, harness, or documentation increment that changes no BPMN meaning, profile or CIB relationship, checked-source or IL representation, runtime or public observation, admission capability, transition family, proof boundary, or Temporal refinement claim opens no review cycle and is governed by the executable guards plus the applicable complete gate; see [the negative case](docs/TESTING-SPEC.md#independent-cold-review-gate). Do not spend a governed cycle on work the guards already cover, and do not skip one for work that touches those claims.
+For a Lean-bearing stage, apply [Lean proof design and review](docs/REVIEW-POLICY.md#lean-proof-design-and-review) during the static scan and retain its instruction in the review prompt. Compilation alone does not establish adequate modeling or proof composition.
 
-Select gates by the [three-level verification policy](docs/TESTING-SPEC.md#three-level-verification-policy), not by review frequency. Use focused checks during development and affected-package gates for coherent commits; reserve repository-wide verification for meaningful integration milestones, RC qualification, or a concrete cross-package failure. Reuse valid unchanged evidence; a new review or commit alone does not require another full run. When a repository-wide gate is due, run it concurrently with review: it mutates no tracked file, so only edits must wait for the verdict. Name only the decisive focused gates in a review prompt, because a reviewer that re-runs every gate the root already ran spends its budget on duplication instead of adversarial checks. Paste the generated review packet verbatim; hand-transcribing its digests has produced a wrong hash in a prompt and cost the reviewer a verification detour.
+Before a material proposal, semantic checkpoint, or closure, read and apply [the independent cold-review gate](docs/REVIEW-POLICY.md#independent-cold-review-gate). Materiality depends on changed BPMN meaning, profile/CIB relationship, checked-source/IL or runtime representation, admission, public observation, transition family, proof boundary, or Temporal refinement claim. Work changing none of these opens no review cycle; executable guards and the applicable complete gate govern it.
 
-Every material semantic proposal-to-specification lifecycle requires a read-only cold proposal review before owner approval or implementation. Closure review is cold by default, but the exact approved semantic-checkpoint reviewer may perform warm closure continuity when the executable manifest proves that the selected account, public contract, exclusions, and evidence strategy are byte-identical. A genuinely single-lane atomic closure may instead use one context-cold review for both checkpoint and closure when its first green target already contains every evidence lane, full gate, reflection, cost record, and final status, and no downstream lane crossed an unreviewed checkpoint. Materiality is content-defined: the rule applies whether the document is a capsule or a cross-cutting root proposal/specification when it selects or changes BPMN meaning, a semantic profile or CIB relationship, checked-source/IL or runtime representation, admission, public observation, proof boundary, or Temporal refinement claim. Routine local refactors and corrections that do not change those claims do not open a review cycle.
+The owner defines stage timing, neutral prompts, the target-bound semantic review packet, receipts, and corrections. Commit the exact target and pause edits at the required boundary. Paste the generated packet verbatim; require the complete capsule, stage-specific owner context, an issue-first static scan and decisive adversarial probes before CPU-heavy gates. Required corrections block the stage. The exact same reviewer audits bounded corrections; material redesign requires a new cold review. A green independent verdict establishes approval and the proposal's `Lifecycle` transition without another human approval step. If the required review is unavailable, stop the affected stage rather than substituting self-review.
 
-A green independent review is the approval. When the required review returns `approved`, or `approved-with-required-edits` with its correction audit recorded, the author records the `Lifecycle` transition in the proposal's `## Status` section and proceeds; no separate human approval step is interposed. This does not relax isolation or permit self-review: the verdict must come from the required isolated reviewer, and a pending, rejected, or unobtainable review still blocks the stage. [TESTING-SPEC.md](docs/TESTING-SPEC.md#independent-cold-review-gate) owns the exact stage contract.
+Spawn each cold reviewer with no forked turns and without a model or reasoning override (`fork-turns-none`). Cold or warm, every reviewer uses the root agent's same model and reasoning effort; never substitute a generic or general worker tier. Reviewers remain read-only, and implementation agents cannot review their own work. Author context, full-history forks, or prior review conversations do not satisfy cold isolation.
 
-Add a conditional semantic checkpoint review after the first green implementation checkpoint when the capsule changes a wire/schema contract, checked graph or IL, runtime/public observation, admission/profile capability, transition family or proof boundary, or scope/cancellation/concurrency behavior. Spawn every prospective cold reviewer with no forked turns and without a model or reasoning override, recorded as `fork-turns-none`, so it inherits the author agent's same model and reasoning effort while receiving none of the author conversation. A warm author thread, a full-history fork, an agent that helped implement the target, or an earlier review conversation does not count.
+Use [the warm-review rules](docs/REVIEW-POLICY.md#when-a-warm-review-is-valid) for correction audits, non-governing preflights, non-material independent integration review, and guarded warm closure continuity. Closure is cold by default: the exact approved checkpoint reviewer may continue warm only when the executable manifest proves unchanged selected account, public contract, exclusions, and evidence strategy. The single-lane atomic closure exception requires the first green target to contain all closure evidence and no downstream lane to have crossed an unreviewed checkpoint.
 
-Cold or warm, every reviewer uses the root agent's same model and reasoning effort. Do not substitute a generic or general worker tier, a cheaper model, or a lower-effort configuration. Warm review is valid for the exact same reviewer auditing corrections, for a non-governing preflight before the immutable target exists, for routine non-material refactor and integration review by an agent that did not implement the reviewed files, or for guarded warm closure continuity by the exact approved checkpoint reviewer. Warm closure requires an approved checkpoint, a descendant closure target, the executable four-boundary manifest, and no change to the selected account, public contract, exclusions, or evidence strategy; otherwise spawn a new context-cold closure reviewer.
+Follow [the three-level verification policy](docs/TESTING-SPEC.md#three-level-verification-policy), reuse valid unchanged evidence, and name only decisive focused gates in review prompts. A review or commit alone does not require repository-wide verification. When due, that gate may run concurrently with read-only review because it changes no tracked files.
 
-The author commits the exact review target, pauses work at the applicable boundary, and mints the neutral review prompt defined in [TESTING-SPEC.md](docs/TESTING-SPEC.md#independent-cold-review-gate). A target-bound semantic review packet carries the immutable diff inventory, routed section hashes, and root gate command/status/time/output digests without a diagnosis or suggested verdict. The prompt requires the full capsule, applies the stage-specific focus to other owner documents, carries a hash-bound continuity manifest when warm closure is eligible, and asks for an issue-first report. The reviewer completes the static claim scan and decisive adversarial probes before starting CPU-heavy gates; a blocking finding may defer routine focused gates to the warm correction audit. The sub-agent reviewer remains read-only. Required corrections block the stage; the exact same reviewer sub-agent audits the correction commit in a warm follow-up so finding continuity is preserved, while a material redesign starts a new cold sub-agent. If the required sub-agent review cannot be obtained, stop rather than substituting self-review.
-
-Every active proposal and specification uses a `## Status` section, and every governed document created after the review-policy gate carries the short `Independent cold-review receipt` defined in [TESTING-SPEC.md](docs/TESTING-SPEC.md#review-receipt). The receipt records immutable targets, isolation, verdicts, and correction-audit targets; it does not copy the full review report into the repository. The executable infrastructure guard reads owner approval only from that Status section and requires every recorded commit to resolve to a commit object that is an ancestor of `HEAD`. For targets governed by the sub-agent transition, recording `fork-turns-none` or `fork-turns-none-combined` attests both context isolation and omission of model/reasoning overrides; Git cannot independently verify either runtime fact. Historical and already-started reviews retain the isolation valid for their immutable target under the transition rule in the testing specification.
-
-The pre-policy grandfather set and its selection rule are fixed by immutable baseline commit `f1ef362`. It contains the active specifications and three legacy root proposals selected by the executable guard, but excludes the already-receipted Receive Task proposal. An agent or contributor may not approve, append, rebase, or replace that exception set; every later specification must carry approved proposal and closure receipts. Changing the baseline or selection rule is an owner-governance change, not a way to make a failing gate green.
+Maintain the required `## Status` and [Independent cold-review receipt](docs/REVIEW-POLICY.md#review-receipt), including immutable targets, isolation, verdicts and correction audits. Recorded commits must be ancestors of `HEAD`; isolation is an attestation, not something Git proves. Historical transitions and the grandfather selection remain owned by the review policy. Contributors may not approve, append, rebase, or replace the grandfather set fixed by `f1ef362`; changing it requires an owner-governance decision.
 
 ### Comments — document semantic surplus
 
@@ -281,7 +262,7 @@ For concrete TypeScript definitions and fixtures, prefer `as const satisfies Con
 
 Write idiomatic TypeScript rather than Java translated into TypeScript. Prefer immutable data plus small pure functions and cohesive ES modules over stateful utility classes, factories, builders, bean accessors, namespaces, and nominal wrapper ceremony. Accept `unknown` at untrusted boundaries and narrow it with explicit validators or type guards; avoid `any`, non-null assertions, unchecked casts, and catch-all string dictionaries. Let local implementation types infer when the result remains obvious, but annotate exported contracts, semantic functions, recursion boundaries, and callback ownership. Keep async control flow explicit with `async`/`await`, propagate typed domain results separately from thrown infrastructure failures, and never hide ordering, cancellation, timeout, or resource lifetime behind a convenience abstraction.
 
-Write idiomatic Lean rather than imperative evaluator code transliterated into theorem syntax. Represent semantic domains with distinct structures, inductive types, and propositions; use total pattern matching and structurally clear recursion; keep executable definitions separate from declarative relations and reusable laws. Prefer small named lemmas with meaningful hypotheses, library combinators, and readable `cases`/`induction`/`simp`/`rw` proofs over duplicated theorem bodies, giant tactic blocks, Boolean encodings of propositions, or proof-by-serialization. Deciding a finite fact is appropriate for fixtures, decoder locks, and concrete counterexamples; it does not replace a quantified semantic theorem. Write it as `decide +kernel`, never as plain `decide`: the plain form reduces the `Decidable` instance in the elaborator and then discards that result so the kernel redoes the same reduction, which measured as half of this repository's Lean gate CPU. The kernel form proves the same proposition from the same instance, adds no axiom, and removes the elaborator's `whnf` from the trusted path; [the source-hygiene guard](scripts/source-hygiene.test.ts) rejects a tactic-position `decide` without it, in the combinator positions as well as after `by`. Prefer `decide +kernel` over `native_decide`, which moves trust to the compiler by adding a `native_decide` axiom to the proving theorem's footprint. Choose between the two by the proposition's shape rather than by either tactic's reputation. A fact whose evaluation walks a `String` cannot use `decide +kernel` at all: the kernel does not reduce `String` operations, so the tactic fails to elaborate with its instance "stuck", and restating that fixture over a non-`String` representation changes the proposition rather than the tactic and needs its own review. `native_decide` is also not simply the faster choice, because it pays to compile a decision procedure that a shallow fact never recovers. When converting existing sites, measure one module at a time against a fresh single-target build and invalidate the cache by content, since Lake keys on content and a bare `touch` measures a build that never ran; cost follows each proposition's reduction depth, never a module's site count. **Measure resident memory alongside CPU and never call a conversion affordable from CPU alone.** The kernel reduces in RAM, so `decide +kernel` trades memory as well as elaborator time, and a conversion that is cheap in CPU can still exhaust the machine. Run every Lean cost measurement and the first narrow build after a change that can increase kernel-reduction cost under an operating-system-enforced memory bound rather than a polling watchdog, which cannot stop a process that allocates gigabytes between samples. Ordinary development builds use the conservative thread pin in [`scripts/lake.sh`](scripts/lake.sh) and do not require a container. [The contributor setup guide](docs/CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements) owns the platform choice: native cgroups on Linux, a container fallback on macOS, and a verified native equivalent or container elsewhere. This repository reverted two large conversions after their builds repeatedly had to be killed for exhausting host memory, and when a change adds a branch to a dispatcher that kernel-decided fixtures reduce through, such as `fireTimer` and its siblings, build one narrow target before any full `./scripts/lake.sh build` or `./scripts/lake.sh test`, because that branch is re-reduced by every downstream decided fixture. [The Lean source-contracts guard](scripts/lean-source-contracts.test.ts) records every remaining site with its reason and rejects a new site or a new module. Preserve domain-specific identifier types, keep JSON and wire conversion at boundary modules, and do not weaken types or expose evaluator internals merely to shorten a proof.
+Write idiomatic Lean rather than imperative evaluator code transliterated into theorem syntax. Represent semantic domains with distinct structures, inductive types, and propositions; use total pattern matching and structurally clear recursion; keep executable definitions separate from declarative relations and reusable laws. Prefer small named lemmas with meaningful hypotheses, library combinators, and readable `cases`/`induction`/`simp`/`rw` proofs over duplicated theorem bodies, giant tactic blocks, Boolean encodings of propositions, or proof-by-serialization. Use `decide +kernel` for finite decidable facts, never plain `decide`; finite fixtures do not replace quantified laws. Before changing decision tactics or code reduced by kernel-decided fixtures, read [the decision-procedure measurement rules](docs/CONTRIBUTOR-SETUP-GUIDE.md#lean-decision-procedures-and-build-memory). Measure memory as well as CPU under an enforced bound and build one narrow target before the full gate. Preserve domain-specific identifier types, keep JSON and wire conversion at boundary modules, and do not weaken types or expose evaluator internals merely to shorten a proof.
 
 When an enforced resource ceiling catches a real regression, treat the breach as design evidence and a checkpoint blocker rather than as a flaky build. Preserve the exact command, limit, exit status, peak measurement, affected target, and failing mechanism in the owning resource evidence; identify and correct the root amplification mechanism; lock the intended fast path or bound with an executable guard or quantified theorem; and rerun the deciding target under the unchanged ceiling. Because unrelated machine activity may perturb elapsed time and peak measurements, tolerate it and repeat an anomalous run, but never raise or bypass the limit merely to pass. Report the failure, correction, remaining margin, and measurement caveats together; do not shorten the account by dropping relevant failed attempts or intermediate evidence.
 
@@ -291,7 +272,7 @@ The source-hygiene gate detects hard file-size violations and requires an explic
 
 BPMN XML parsing, admission, and lowering run before Workflow start with an explicit byte limit and parser Promise-settlement deadline. The current timeout cannot preempt synchronous parser CPU; production untrusted uploads still require a bounded Worker or process. Every new Workflow execution must contain the admitted current executable definition; no fallback constructor may invent it.
 
-Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in every applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [TESTING-SPEC.md](docs/TESTING-SPEC.md#evidence-lanes) owns the per-claim independence test and disclosure of shared failure modes.
+Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest checked non-law, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in every applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [SEMANTIC-VERIFICATION-POLICY.md](docs/SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes) owns the per-claim independence test and disclosure of shared failure modes.
 
 Give every material semantic rule a stable capsule-owned identifier and a rule-to-evidence row. An editorial correction may retain an identifier; a materially different proposition requires a new identifier and, when already used by evidence or running instances, the applicable profile or artifact version change. Rule identifiers are traceability labels and do not enter runtime wire contracts without a concrete consumer and versioning decision.
 
@@ -325,13 +306,13 @@ After the technical gate is green but before marking a milestone or semantic cap
 8. confirm the applicable pre-release or durable evolution/history policy, and require a meaningful mutation for every new evidence projection;
 9. inspect feedback timing, duplicated builds, process cleanup, harness coupling, document placement, stale status, and removable complexity;
 10. compare the capsule's commit-bounded nonblank code and documentation churn recorded in [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) with the previous comparable capsule; use elapsed wall time only when explicit start and closure timestamps exist, otherwise record it as unknown rather than answering by impression, and remove one identified process weight before starting the next capsule when the measured cost did not fall. The removed weight must bear on the measure that rose, or the row states why no such weight exists; a removal on an axis that already improved leaves the growing cost unaddressed and satisfies the only subtractive rule in this process without subtracting anything;
-11. answer the fixed self-assessment questions in [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) and either add a row or record that none applied; this assesses how the work was carried out and is separate from the claim review above;
+11. answer the fixed [self-assessment questions](docs/PROCESS-ASSESSMENT-LEDGER.md#self-assessment-questions) and inspect matching findings through the [finding index](docs/PROCESS-ASSESSMENT-LEDGER.md#finding-index) and either add a row or record that none applied; this assesses how the work was carried out and is separate from the claim review above;
 12. decide whether the result changes the next best step;
 13. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review) before crossing their stage boundaries.
 
-Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: a mechanism seen twice has already refuted the prose meant to prevent it and requires an executable guard. Assume your own fresh prose does not bind you.
+Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: recurrence requires an executable guard or an explicit explanation that the class is unguardable under the ledger’s closed dispositions. Assume your own fresh prose does not bind you.
 
-Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), evidence and guards in [TESTING-SPEC.md](docs/TESTING-SPEC.md), implementation status in the applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
+Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](docs/PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](docs/capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](docs/PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](docs/ARCHITECTURE.md), evidence and guards in the focused owner selected by [TESTING-SPEC.md](docs/TESTING-SPEC.md#select-the-task-owner), implementation status in the applicable detail map routed by [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](docs/PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
 
 ### Architecture experiments
 
@@ -377,12 +358,15 @@ Use one owner for each fact and link to it elsewhere:
 | Route to exact current implementation, proof, test, and absence status | [`implementation-status-router`](docs/IMPLEMENTATION-MAP.md) and its registered detail maps |
 | Current checkpoint, ordered work, blockers, and resume point | [PLAN.md](docs/PLAN.md) |
 | Commit-bounded completed capsule and enabling-increment cost | [CAPSULE-COST-LEDGER.md](docs/CAPSULE-COST-LEDGER.md) |
+| Retained Lean resource measurements and calibration evidence | [Resource evidence directory](docs/lean-resource-costs/README.md) |
 | Self-assessment questions, retained process findings, and their dispositions | [PROCESS-ASSESSMENT-LEDGER.md](docs/PROCESS-ASSESSMENT-LEDGER.md) |
 | CIB behavior relative to BPMN: agreements, operational details, interpretations, extensions, configuration, limitations, and deviations | [CIB-BPMN-RELATION-REGISTER.md](docs/CIB-BPMN-RELATION-REGISTER.md) |
 | Bounded project-owned semantic meaning, laws, witnesses, and exclusions | [docs/capsules](docs/capsules/README.md) |
 | External-system and semantic-background findings | [docs/research](docs/research/README.md) |
 | Bounded executable questions and results | [docs/experiments](docs/experiments/README.md) |
-| Gates, evidence lanes, and test procedure | [TESTING-SPEC.md](docs/TESTING-SPEC.md) |
+| Gate selection and cadence | [TESTING-SPEC.md](docs/TESTING-SPEC.md) |
+| Review, delegation and proof-design assessment | [REVIEW-POLICY.md](docs/REVIEW-POLICY.md) |
+| Domain evidence and execution procedure | The relevant [task-selected testing owner](docs/TESTING-SPEC.md#select-the-task-owner) |
 | Clean-machine and coding-agent setup | [CONTRIBUTOR-SETUP-GUIDE.md](docs/CONTRIBUTOR-SETUP-GUIDE.md) |
 | External revisions, licenses, and checkout navigation | [SOURCES.md](docs/SOURCES.md) |
 
@@ -420,177 +404,57 @@ The Lean toolchain is pinned in [lean-toolchain](lean-toolchain) and currently h
 
 In a managed sandbox, agents must request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline`, or `./scripts/pnpm.sh run test:timer-time-skipping`. Do not probe by running one of these commands inside the restricted sandbox first. A loopback-listener error containing `Operation not permitted` or `EPERM` means the sandbox denied local binding; it is not evidence of a port collision or a failing infrastructure or semantic test.
 
-**Never invoke `lake` or `lean` directly. Use [the Lean wrapper](scripts/lake.sh): `./scripts/lake.sh build`, `./scripts/lake.sh test`, `./scripts/lake.sh run <source.lean> [arguments...]`, `./scripts/lake.sh exe <target>`, `./scripts/lake.sh env lean <file>`.** It is the single owner of Lean's build parallelism; [package.json](package.json)'s `config.leanBuildThreads` owns the value, and the wrapper derives it through [the pin reader](scripts/pinned-toolchain.sh), replaces any inherited `LEAN_NUM_THREADS`, and exports the fixed value. The wrapper also holds one fail-closed host lock, so a second repository Lean process tree refuses to start. An explicit `BpmnSemantics` target is forbidden because `./scripts/lake.sh build` already owns the root-integrator-only full gate; a focused command must name only its narrow targets. Build a runnable module explicitly and use `run` when a verification witness needs its `main`; programmatic `exe` invocations are forbidden because they regenerate and native-compile an already elaborated dependency closure. Never override the thread pin or start another Lean command while one has yielded. A sub-agent runs Lean only under the narrow-target conditions in [the delegated implementation rules](#delegated-implementation).
+**Never invoke `lake` or `lean` directly. Use [the Lean wrapper](scripts/lake.sh): `./scripts/lake.sh build`, `./scripts/lake.sh test`, `./scripts/lake.sh run <source.lean> [arguments...]`, `./scripts/lake.sh exe <target>`, `./scripts/lake.sh env lean <file>`.** It is the single owner of Lean's build parallelism; [package.json](package.json)'s `config.leanBuildThreads` owns the value, and the wrapper derives it through [the pin reader](scripts/pinned-toolchain.sh), replaces any inherited `LEAN_NUM_THREADS`, and exports the fixed value. The wrapper also holds one fail-closed host lock, so a second repository Lean process tree refuses to start. An explicit `BpmnSemantics` target is forbidden because `./scripts/lake.sh build` already owns the root-integrator-only full gate; a focused command must name only its narrow targets. Build a runnable module explicitly and use `run` when a verification witness needs its `main`; programmatic `exe` invocations are forbidden because they regenerate and native-compile an already elaborated dependency closure. Never override the thread pin or start another Lean command while one has yielded. A sub-agent runs Lean only under the narrow-target conditions in [the delegated implementation rules](docs/REVIEW-POLICY.md#delegated-implementation-protocol).
 
-The pin exists because this repository decides finite fixtures in the kernel and kernel reduction holds its terms in resident memory. Lake sizes its build pool from that variable or from the logical processor count and offers no `--jobs` option, so an unpinned build scales its peak with core count: on an 8-core host it ran four concurrent `lean` processes above 2 GB each and peaked at 7978 MB, against 2411 MB at one thread and 4699 MB at two, at roughly double the wall time. The default is the most conservative value on purpose, because concurrent kernel reductions add their resident terms to one process-tree charge; a GitHub-hosted runner for a private repository has 7 GB and the lightweight tier 5 GB, so an unpinned build already exceeds them. An individual target's cost follows its propositions' reduction depth and proof ownership, not its fixture count; the [cold-consumer watch](docs/CAPSULE-COST-LEDGER.md#snapshot-invariant-and-cgroup-acceptance-correction) owns remeasurement when a consumed reduction family changes. The wrapper exists rather than an exported pin on each gate because that earlier arrangement pinned the gates and nothing else: the documented experiment commands and every Lean build typed directly stayed at the host's core count behind a prose caveat asking the reader to remember. [The infrastructure guard](scripts/verification-entrypoint.test.ts) dynamically rejects a bare `lake` subcommand in every present tracked or pending command surface, including scripts, package manifests, CI workflows, and shell wrappers, plus the maintained instruction documents. Historical records such as [PLAN.md](docs/PLAN.md) and the ledgers can therefore retain an unpinned command as a measured fact without weakening executable coverage.
+Before Lean cost measurements or changes that can increase kernel-reduction cost, follow [memory-bounded Lean measurements](docs/CONTRIBUTOR-SETUP-GUIDE.md#memory-bounded-lean-measurements), including the decision-procedure and build-memory guidance there.
 
-Current verification gate:
+Select gates using [the three-level verification policy](docs/TESTING-SPEC.md#three-level-verification-policy) and [focused gate matrix](docs/TESTING-SPEC.md#focused-gate-matrix); these own prerequisites, composition and evidence scope. The compact index below preserves discoverability, not a requirement to run every gate for every edit.
 
-```sh
-./scripts/verify.sh
-git status --short
-```
+Full verification: `./scripts/verify.sh`, followed by `git status --short`.
 
-Fast semantic gate (Lean plus TypeScript semantic core):
+| Scope | Command |
+|---|---|
+| Lean and TypeScript | `./scripts/pnpm.sh run test:semantic` |
+| TypeScript semantic core | `./scripts/pnpm.sh run test:semantic-core` |
+| Semantic compile-time contracts | `./scripts/pnpm.sh run check:semantic-types` |
+| Temporal refinement/replay | `./scripts/pnpm.sh run test:temporal` |
+| BPMN source/compiler/CMOF | `./scripts/pnpm.sh run test:bpmn-source` |
+| Contracts and retained evidence | `./scripts/pnpm.sh run test:contracts` |
+| Direct TypeScript harness types | `./scripts/pnpm.sh run check:harness-types` |
+| Source ownership/module boundaries | `./scripts/pnpm.sh run check:source-hygiene` |
+| Platform foundation | `./scripts/pnpm.sh run test:platform-foundation` |
+| Complete M1 platform packages | `./scripts/pnpm.sh run test:platform-m1` |
+| Evaluation structure (no database) | `./scripts/pnpm.sh run test:evaluation-distribution:structure` |
+| M2 Process-instance search checkpoint | `./scripts/pnpm.sh run test:platform-process-search-checkpoint` |
+| M3 Work checkpoint | `./scripts/pnpm.sh run test:platform-work-checkpoint` |
+| M4 Operations checkpoint | `./scripts/pnpm.sh run test:platform-operations-checkpoint` |
+| M1 deployment showcase | `./scripts/pnpm.sh run test:showcase:m1` |
+| M2 scheduling showcase | `./scripts/pnpm.sh run test:showcase:m2` |
+| M2 Process-instance search showcase | `./scripts/pnpm.sh run test:showcase:m2-process-instance-search` |
+| M3 human-work showcase | `./scripts/pnpm.sh run test:showcase:m3-human-work` |
+| M4 incident-operations showcase | `./scripts/pnpm.sh run test:showcase:m4-incident-operations` |
+| MUE Preview Alpha showcase | `./scripts/pnpm.sh run test:showcase:mue-preview-alpha` |
+| M3 release acceptance | `./scripts/pnpm.sh run test:release:m3` |
+| M4 release acceptance | `./scripts/pnpm.sh run test:release:m4` |
+| MUE Preview Alpha release acceptance | `./scripts/pnpm.sh run test:release:mue-preview-alpha` |
+| Product 2 deterministic UI quality | `./scripts/pnpm.sh run test:ui-quality` |
+| Optional wide-Diagram screenshot review | `./scripts/pnpm.sh run test:ui-quality:visual` |
+| Scripts/documentation/infrastructure | `./scripts/pnpm.sh run test:infrastructure` |
+| Pure differential comparator | `./scripts/pnpm.sh run test:differential` |
+| Optional pinned MIWG observations | `./scripts/pnpm.sh run test:miwg` |
+| Optional timer time-skipping calibration | `./scripts/pnpm.sh run test:timer-time-skipping` |
+| Complete differential/refinement pipeline | `./scripts/pnpm.sh run test:pipeline` |
+| Executable model corpus (research doctor first) | `./scripts/pnpm.sh run test:model-corpus` |
 
-```sh
-./scripts/pnpm.sh run test:semantic
-```
-
-Focused TypeScript semantic-core gate, and its compile-time contract gate:
-
-```sh
-./scripts/pnpm.sh run test:semantic-core
-./scripts/pnpm.sh run check:semantic-types
-```
-
-Focused Temporal refinement and replay gate:
-
-```sh
-./scripts/pnpm.sh run test:temporal
-```
-
-Focused BPMN source, CMOF-fact, and compiler gate:
-
-```sh
-./scripts/pnpm.sh run test:bpmn-source
-```
-
-Focused shared-contract and retained-evidence gate:
-```sh
-./scripts/pnpm.sh run test:contracts
-```
-
-Strict no-emit gate for directly executed TypeScript harnesses:
-
-```sh
-./scripts/pnpm.sh run check:harness-types
-```
-
-Focused source-ownership and module-boundary gate:
-
-```sh
-./scripts/pnpm.sh run check:source-hygiene
-```
-
-Focused M1 engine-gateway and platform-foundation gate:
-
-```sh
-./scripts/pnpm.sh run test:platform-foundation
-```
-
-Complete implemented M1 platform-package gate:
-
-```sh
-./scripts/pnpm.sh run test:platform-m1
-```
-
-This platform-only gate uses `tsconfig.platform-harness.json`; the default engine harness excludes `platform/` and `*.platform-test.ts`, so complete engine verification remains independent of platform package builds.
-
-Database-free structure gate for the containerized evaluation distribution:
-
-```sh
-./scripts/pnpm.sh run test:evaluation-distribution:structure
-```
-
-Explicit evaluation start and maintained walkthrough screenshot refresh commands. Both start service dependencies and remain outside ordinary verification; screenshot refresh owns an isolated Compose project and removes its transient volumes:
-
-```sh
-./scripts/pnpm.sh run evaluation:start
-./scripts/pnpm.sh run walkthrough:screenshots:refresh
-```
-
-M2 Process-instance search public-contract, durable-index, and producer-recording checkpoint gate:
-
-```sh
-./scripts/pnpm.sh run test:platform-process-search-checkpoint
-```
-
-Required M1 end-to-end showcase after installing Playwright's pinned Chromium:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m1
-```
-
-Required M2 definition-scheduling showcase, including live Temporal evidence and headless-browser acceptance:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m2
-```
-
-Focused M2 Process-instance search live and browser gate:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m2-process-instance-search
-```
-
-M3 Work contract, identity, audit, persistence, HTTP, and web composition gate:
-
-```sh
-./scripts/pnpm.sh run test:platform-work-checkpoint
-```
-
-Required M3 human-work live Temporal and headless-browser gate:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m3-human-work
-```
-
-Complete Product 2 M3 release acceptance, composing the real-host gate with the isolated deterministic UI-quality lane:
-
-```sh
-./scripts/pnpm.sh run test:release:m3
-```
-
-M4 incident contracts, confirmed-locator bootstrap, current aggregation, authorization, durable actions, audit, HTTP, server composition, and web workspace gate:
-
-```sh
-./scripts/pnpm.sh run test:platform-operations-checkpoint
-```
-
-Required M4 incident-operations real Temporal and headless-browser gate:
-
-```sh
-./scripts/pnpm.sh run test:showcase:m4-incident-operations
-```
-
-Complete Product 2 M4 release acceptance, composing the real-host gate with the isolated deterministic UI-quality lane:
-
-```sh
-./scripts/pnpm.sh run test:release:m4
-```
-
-Required MUE Preview Alpha exact natural/interrupted Sequential Multi-Instance, real Temporal, replay, and production-browser gate:
-
-```sh
-./scripts/pnpm.sh run test:showcase:mue-preview-alpha
-```
-
-Complete MUE Preview Alpha release acceptance, composing the production-backed showcase with the isolated deterministic UI-quality lane:
-
-```sh
-./scripts/pnpm.sh run test:release:mue-preview-alpha
-```
-
-Complete MUE Preview Beta release acceptance, building the Product 2 graph once and reusing the Alpha, definition-scoped correlated Message, and deterministic UI-quality gates:
+MUE Preview Beta release acceptance builds Product 2 once and reuses Alpha, correlated Message and UI-quality lanes:
 
 ```sh
 ./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
 
-Product 2 fixed-fixture responsive, focus, reduced-motion, and interaction gate at the supported 1280-pixel and 1600-pixel desktop widths:
+Product 2 package/browser gates remain outside `verify.sh` and Product 1 feedback loops. Install pinned Playwright Chromium before browser acceptance; retain M1 as the unseen-source regression floor when running M2. The deterministic UI-quality lane is independent of Temporal and covers 1280/1600 desktop widths. Platform harnesses use `tsconfig.platform-harness.json`; the engine harness excludes `platform/` and `*.platform-test.ts`.
 
-```sh
-./scripts/pnpm.sh run test:ui-quality
-```
-
-After committing every intended change, require a clean worktree and let the repository derive every local GitHub-workflow equivalent selected by the committed diff:
-
-```sh
-./scripts/pnpm.sh run test:pre-push
-```
-
-The selector reads the Product 2 workflows' actual `push.paths`, adds Product 1 verification through the same path classifier as GitHub, fails closed on malformed or missing filters, and uses a disposable local PostgreSQL 18 cluster when no explicit `BPMN_TEST_POSTGRES_URL` is supplied. The individual clean-commit commands remain the exact workflow equivalents for focused diagnosis:
+Before an authorized push, commit intended changes, require a clean worktree, and run `./scripts/pnpm.sh run test:pre-push`. It derives workflow equivalents from committed changed paths and fails closed on missing/malformed filters. Its PostgreSQL lane uses an explicit database or a disposable local PostgreSQL 18 cluster. For focused diagnosis, the exact equivalents are:
 
 ```sh
 ./scripts/pnpm.sh run test:pre-push:verify
@@ -600,75 +464,23 @@ The selector reads the Product 2 workflows' actual `push.paths`, adds Product 1 
 ./scripts/pnpm.sh run test:pre-push:ui
 ```
 
-The optional manually reviewed wide-Diagram screenshot has no blocking CI or release role:
+Specialized commands require their owning context:
 
-```sh
-./scripts/pnpm.sh run test:ui-quality:visual
-```
+| Trigger | Command and owner |
+|---|---|
+| Explicit evaluation start | `./scripts/pnpm.sh run evaluation:start`; [evaluation setup](docs/CONTRIBUTOR-SETUP-GUIDE.md#evaluation-distribution) |
+| Explicit walkthrough screenshot refresh | `./scripts/pnpm.sh run walkthrough:screenshots:refresh`; [evaluation setup](docs/CONTRIBUTOR-SETUP-GUIDE.md#evaluation-distribution); isolated Compose project and transient-volume cleanup |
+| CIB calibration | `./scripts/test-cibseven-oracle.sh`; [CIB gate](docs/SEMANTIC-VERIFICATION-POLICY.md#current-cib-gate) |
+| Provisional representation experiment | `./scripts/lake.sh exe checkSemanticRepresentationSpike`; [experiment registry](docs/experiments/README.md) |
+| Checked-source relation experiment | `./scripts/lake.sh exe checkCheckedSourceRelationExperiment`; [experiment registry](docs/experiments/README.md) |
 
-These browser lanes are independent from Temporal and remain outside `verify.sh` and every Product 1 semantic feedback loop.
-
-Keep the M1 gate as an independent unseen-source deployment regression floor when running M2.
-
-Complete gate for scripts, documentation fragments, and the executable guards, and the only complete gate that needs no host port:
-
-```sh
-./scripts/pnpm.sh run test:infrastructure
-```
-
-Focused pure differential comparator gate:
-
-```sh
-./scripts/pnpm.sh run test:differential
-```
-
-Optional local pinned MIWG observation gate:
-
-```sh
-./scripts/pnpm.sh run test:miwg
-```
-
-Optional timer time-skipping calibration gate:
-
-```sh
-./scripts/pnpm.sh run test:timer-time-skipping
-```
-
-Complete fast differential/refinement gate:
-
-```sh
-./scripts/pnpm.sh run test:pipeline
-```
-
-Executable model corpus provenance, admission, ranking, and selected production-pipeline gate after `./scripts/doctor.sh research`:
-
-```sh
-./scripts/pnpm.sh run test:model-corpus
-```
-
-Focused CIB calibration gate:
-
-```sh
-./scripts/test-cibseven-oracle.sh
-```
-
-Provisional representation-spike gate:
-
-```sh
-./scripts/lake.sh exe checkSemanticRepresentationSpike
-```
-
-Bounded checked-source relation experiment gate:
-
-```sh
-./scripts/lake.sh exe checkCheckedSourceRelationExperiment
-```
+Evaluation and screenshot refresh start service dependencies and are outside ordinary verification. `test:infrastructure` includes a loopback-port allocation test, so it also requires host port-binding authorization in a managed sandbox.
 
 Every helper process a contributor or agent starts must be able to terminate itself. Bound it with `timeout`, an explicit deadline, or a fixed iteration count, so that an exception, a tool timeout, an interrupt, or a forgotten cleanup step cannot leave it running. Do not rely on a later `kill` as the only exit: the parent may never reach it, and a background job whose parent exits is reparented to `init` and outlives the session.
 
 Never recover those identities with `PIDS=$(jobs -p)`. Command substitution runs in a subshell that owns no jobs, so the variable is empty and the `kill` silently succeeds against nothing. Capture each `$!` immediately after its own `&` instead, and treat the bounded lifetime rather than the capture as the real guarantee. This rule exists because eight unbounded `while :; do :; done` load generators were started to measure a gate under CPU pressure, their `kill` matched nothing for exactly that reason, and they ran orphaned at ~80% CPU each until the owner noticed a load average above 100. Any measurement taken while they ran is contended and must be repeated. Sweep for strays before reporting a host measurement: a killed test run can also leave an ephemeral Temporal server behind.
 
-Before starting any JavaScript or TypeScript test or build, follow the [long-running-command policy](docs/TESTING-SPEC.md#long-running-javascript-and-typescript-commands). A command that may outlive one execution-tool yield or overflow transient output must retain recoverable evidence and be resumed after compaction rather than duplicated. Do not report such a command green until `node scripts/assert-command-receipt.ts <absolute-receipt-directory>` exits zero and prints its success verdict. Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the manifest-pinned Temporal declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
+Before starting any JavaScript or TypeScript test or build, follow the [long-running-command policy](docs/VERIFICATION-INFRASTRUCTURE-POLICY.md#long-running-javascript-and-typescript-commands). A command that may outlive one execution-tool yield or overflow transient output must retain recoverable evidence and be resumed after compaction rather than duplicated. Do not report such a command green until `node scripts/assert-command-receipt.ts <absolute-receipt-directory>` exits zero and prints its success verdict. Use pnpm, not npm. The adapter keeps strict checking for project source but sets `skipLibCheck: true` because the manifest-pinned Temporal declarations do not type-check under TypeScript 7.0.2; do not broaden that workaround to the semantic core.
 
 Always run:
 
@@ -680,7 +492,7 @@ git diff --check
 
 - Preserve unrelated user changes and avoid destructive Git operations.
 - Commit only when explicitly requested in the current task.
-- Use Conventional Commits: `type(scope): subject`, lowercase type, imperative subject, subject-only by default.
+- Use Conventional Commits: `type(scope): subject`, lowercase type and imperative subject. Add a concise body when non-obvious rationale, architectural consequences, or compatibility constraints would otherwise be lost.
 - Do not push without an explicit current request.
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
 - The default branch requires the `verify-complete` hosted check, which passes only when the selected Ubuntu verification succeeded. Repository administrators may bypass it, so a red merge takes a deliberate override rather than an accident; never override to land unverified work.

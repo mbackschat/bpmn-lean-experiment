@@ -23,7 +23,7 @@ test("classifies every canonical CIB state field at schema depth", async () => {
       `${projectRoot}/contracts/schemas/scenario.schema.json`,
       "utf8",
     ),
-    readFile(`${projectRoot}/docs/TESTING-SPEC.md`, "utf8"),
+    readFile(`${projectRoot}/docs/CIB-OBSERVATION-POLICY.md`, "utf8"),
   ]);
   const schema = JSON.parse(schemaSource) as ScenarioSchema;
   const stateObservation = requiredDefinition(schema, "stateObservation");
@@ -32,7 +32,7 @@ test("classifies every canonical CIB state field at schema depth", async () => {
   assert.notEqual(
     sectionStart,
     -1,
-    "TESTING-SPEC must own the canonical CIB fidelity table",
+    "CIB-OBSERVATION-POLICY must own the canonical CIB fidelity table",
   );
   const nextHeading = testingSpec.indexOf("\n## ", sectionStart + 1);
   const section = testingSpec.slice(

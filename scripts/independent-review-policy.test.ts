@@ -58,12 +58,21 @@ function assertOwnerReviewPrompt(document: string): void {
   const prompt = document.split("```text\nReview stage:")[1]?.split("\n```")[0] ?? "";
   assert.match(prompt, /what-binds map set: <actual map paths for the changed paths>/u);
   assert.match(prompt, /Check affected claims and exclusions in unchanged owner passages/u);
+  assert.match(prompt, /For Lean work, assess proof architecture/u);
+  assert.match(prompt, /\[Lean proof design and review\]\(docs\/REVIEW-POLICY\.md#lean-proof-design-and-review\)/u);
+  assert.match(prompt, /Report concrete abstraction gaps and the smallest sufficient correction/u);
 }
 
-test("the minted review prompt retains the unchanged-owner check and computed map context", async () => {
-  const document = await readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8");
+test("the review prompt retains owner context and a substantive Lean proof architecture assessment", async () => {
+  const document = await readFile(path.join(projectRoot, "docs/REVIEW-POLICY.md"), "utf8");
   assertOwnerReviewPrompt(document);
-  for (const clause of ["what-binds map set: <actual map paths for the changed paths>", "Check affected claims and exclusions in unchanged owner passages"]) {
+  for (const clause of [
+    "what-binds map set: <actual map paths for the changed paths>",
+    "Check affected claims and exclusions in unchanged owner passages",
+    "For Lean work, assess proof architecture",
+    "[Lean proof design and review](docs/REVIEW-POLICY.md#lean-proof-design-and-review)",
+    "Report concrete abstraction gaps and the smallest sufficient correction",
+  ]) {
     assert.throws(() => assertOwnerReviewPrompt(document.replace(clause, "")));
   }
 });
@@ -412,18 +421,23 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
     verificationWorkflow,
   ] = await Promise.all([
       readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
-      readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
+      readFile(path.join(projectRoot, "docs/REVIEW-POLICY.md"), "utf8"),
       readFile(path.join(projectRoot, "docs/DOC-DISCIPLINE.md"), "utf8"),
       readFile(path.join(capsuleRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
     ]);
 
   assert.match(contributorGuide, /^### Independent cold review$/mu);
+  for (const section of ["Semantic code", "Independent cold review"]) {
+    const body = contributorGuide.split(`### ${section}\n`)[1]?.split("\n### ")[0] ?? "";
+    assert.match(body, /\[Lean proof design and review\]\(docs\/REVIEW-POLICY\.md#lean-proof-design-and-review\)/u);
+  }
   assert.match(contributorGuide, /may not approve, append, rebase, or replace/u);
   assert.match(contributorGuide, /without a model or reasoning override/u);
   assert.match(contributorGuide, /Cold or warm, every reviewer/u);
   assert.match(contributorGuide, /generic or general worker tier/u);
   assert.match(testingSpec, /^## Independent cold-review gate$/mu);
+  assert.match(testingSpec, /^## Lean proof design and review$/mu);
   assert.match(testingSpec, /^### When a warm review is valid$/mu);
   assert.match(testingSpec, /external-fresh-session/u);
   // The bound is stated in two places by necessity: the guard decides it and the contract explains
@@ -434,7 +448,7 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(testingSpec, /`fork_turns: "none"`/u);
   assert.match(testingSpec, new RegExp(reviewPolicyBaseline, "u"));
   assert.match(testingSpec, new RegExp(subagentReviewPolicyBaseline, "u"));
-  assert.match(testingSpec, /same model and reasoning effort/u);
+  assert.match(testingSpec, /same root model and reasoning effort/u);
   assert.match(testingSpec, /same root model and reasoning effort/u);
   assert.match(testingSpec, /requires a new `fork-turns-none` closure reviewer/u);
   assert.match(testingSpec, /omits both model and reasoning-effort overrides/u);
@@ -445,8 +459,8 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
   assert.match(testingSpec, /issue-first/u);
   assert.match(testingSpec, /fork-turns-none-combined/u);
   assert.match(testingSpec, /static claim scan/u);
-  assert.match(testingSpec, /defer routine focused gates/u);
-  assert.match(testingSpec, /stage-specific focus/u);
+  assert.match(testingSpec, /deferring routine focused gates/u);
+  assert.match(testingSpec, /Stage-specific focus/u);
   assert.match(testingSpec, /semantic-review-packet\.ts/u);
   assert.match(testingSpec, /outputSha256/u);
   assert.match(testingSpec, /routing evidence, not independent proof/u);
@@ -461,7 +475,7 @@ test("keeps the cold-review lifecycle in its documentation owners", async () => 
 test("keeps delegated implementation orchestration in its documentation owners", async () => {
   const [contributorGuide, testingSpec] = await Promise.all([
     readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
-    readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/REVIEW-POLICY.md"), "utf8"),
   ]);
 
   assert.match(contributorGuide, /^### Delegated implementation$/mu);
@@ -482,7 +496,7 @@ test("keeps delegated implementation orchestration in its documentation owners",
 test("separates integration handoffs from outcome-sized commit boundaries", async () => {
   const [contributorGuide, testingSpec, costLedger] = await Promise.all([
     readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
-    readFile(path.join(projectRoot, "docs/TESTING-SPEC.md"), "utf8"),
+    readFile(path.join(projectRoot, "docs/REVIEW-POLICY.md"), "utf8"),
     readFile(path.join(projectRoot, "docs/CAPSULE-COST-LEDGER.md"), "utf8"),
   ]);
 
@@ -493,8 +507,8 @@ test("separates integration handoffs from outcome-sized commit boundaries", asyn
       "a green lane must not force a commit independently of its coherent outcome",
     );
   }
-  assert.match(contributorGuide, /\]\(docs\/TESTING-SPEC\.md#commit-boundaries\)/u);
-  assert.match(costLedger, /\]\(TESTING-SPEC\.md#commit-boundaries\)/u);
+  assert.match(contributorGuide, /\]\(docs\/REVIEW-POLICY\.md#commit-boundaries\)/u);
+  assert.match(costLedger, /\]\(REVIEW-POLICY\.md#commit-boundaries\)/u);
   const cadence = testingSpec.split("## Commit boundaries\n")[1]?.split("\n## ")[0] ?? "";
   assert.match(cadence, /feature, defect repair, or material semantic checkpoint/u);
   assert.match(cadence, /helper theorem, module, or agent handoff/u);
