@@ -26,7 +26,7 @@ test("private Call data preserves supplier isolation through continuation, repla
   try {
     const bundle = await loadBpmnWorkflowBundle();
     worker = await startBpmnTestWorker(environment, bundle, "call-data-original");
-    for (const mode of ["string", "null", "terminate"] as const) {
+    for (const mode of ["string", "null", "host-termination"] as const) {
       await t.test(mode, async () => {
         const value = mode === "null" ? null : "supplier-summary";
         const start = supplierStart(`supplier-host-${mode}`, value);
@@ -70,7 +70,7 @@ test("private Call data preserves supplier isolation through continuation, repla
         worker = undefined;
         worker = await startBpmnTestWorker(environment, bundle, `call-data-replacement-${mode}`);
         await assertCurrent();
-        if (mode === "terminate") {
+        if (mode === "host-termination") {
           await handle.terminate("Supplier onboarding stopped before due diligence returned");
           await oracle.assertPublications();
           assert.deepEqual(oracle.state.variables.process.bindings.find(binding => binding.name === "Property_DueDiligenceDecision"),
@@ -117,7 +117,7 @@ test("private Call data preserves supplier isolation through continuation, repla
           await replayBpmnHistory(bundle, history, workflowId);
         }
         assert.ok(carriedInterface > 0);
-        assert.equal(terminations, mode === "terminate" ? 1 : 0);
+        assert.equal(terminations, mode === "host-termination" ? 1 : 0);
         assert.deepEqual(trace, oracle.trace);
       });
     }
