@@ -7,6 +7,7 @@ import type {
   AcceptedBpmnCompilation,
   BpmnSourceIdentity,
   BpmnSourceLimits,
+  SourceOverlaySelection,
 } from "@bpmn-lean/bpmn-source";
 import {
   StimulusKind,
@@ -14,6 +15,7 @@ import {
   cloneVariableBinding,
   isVariablePatch,
   isWellFormedWireString,
+  sameSourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
@@ -37,6 +39,7 @@ import type {
 } from "@bpmn-lean/temporal-client/definition-start";
 
 import type { EngineDefinitionIdentity } from "./index.js";
+import { snapshotSourceOverlay } from "./source-overlay.js";
 import {
   engineProcessWorkLocatorForCanonicalProcess,
 } from "./process-locator.js";
@@ -75,6 +78,7 @@ export type EngineDefinitionStartPreparationRequest = Readonly<{
   sourceId: string;
   expectedSha256: string;
   semanticProfile: string;
+  sourceOverlay?: SourceOverlaySelection | null;
   expectedProcessId: string;
   processInstanceId: string;
   initialVariables: readonly VariableBinding[];
@@ -229,10 +233,11 @@ export async function describeBpmnDefinitionVersionStart(
 
 type PreparationSnapshot = Omit<
   EngineDefinitionStartPreparationRequest,
-  "bytes" | "limits"
+  "bytes" | "limits" | "sourceOverlay"
 > & Readonly<{
   bytes: Uint8Array;
   limits: BpmnSourceLimits;
+  sourceOverlay: SourceOverlaySelection | null;
 }>;
 
 type StartSnapshot = PreparationSnapshot & Readonly<{
@@ -256,7 +261,7 @@ async function prepareSnapshot(
     sourceId: snapshot.sourceId,
     expectedSha256: snapshot.expectedSha256,
     semanticProfile: snapshot.semanticProfile,
-    sourceOverlay: null,
+    sourceOverlay: snapshot.sourceOverlay,
     limits: snapshot.limits,
   });
   const expectedDefinition = definitionIdentity(snapshot);
@@ -371,6 +376,7 @@ function snapshotPreparationRequest(
     sourceId: request.sourceId,
     expectedSha256: request.expectedSha256,
     semanticProfile: request.semanticProfile,
+    sourceOverlay: snapshotSourceOverlay(request.sourceOverlay),
     expectedProcessId: request.expectedProcessId,
     processInstanceId: requireNonemptyWireString(
       request.processInstanceId,
@@ -408,6 +414,10 @@ function definitionIdentity(
   return {
     processId: snapshot.expectedProcessId,
     semanticProfile: snapshot.semanticProfile,
+    sourceOverlay: snapshot.sourceOverlay === null ? null : {
+      id: snapshot.sourceOverlay.id,
+      sha256: snapshot.sourceOverlay.sha256,
+    },
   };
 }
 
@@ -419,7 +429,10 @@ function compiledIdentityMatches(
     compilation.source.sha256 === snapshot.expectedSha256 &&
     compilation.semanticProcess.identity.sourceId === snapshot.sourceId &&
     compilation.semanticProcess.identity.sourceSha256 === snapshot.expectedSha256 &&
-    compilation.semanticProcess.identity.sourceOverlay === null &&
+    sameSourceOverlayIdentity(
+      compilation.semanticProcess.identity.sourceOverlay,
+      snapshot.sourceOverlay,
+    ) &&
     compilation.semanticProcess.identity.semanticProfile === snapshot.semanticProfile &&
     compilation.semanticProcess.processId === snapshot.expectedProcessId;
 }

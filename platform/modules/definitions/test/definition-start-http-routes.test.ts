@@ -269,6 +269,7 @@ function createFixture(
       const common = {
         source: { ...storedDefinition.source },
         definition: {
+          sourceOverlay: null,
           processId: storedDefinition.processId,
           semanticProfile: storedDefinition.semanticProfile,
         },
@@ -316,6 +317,7 @@ function createFixture(
         status: EngineDefinitionStartStatus.Started,
         source: { ...storedDefinition.source },
         definition: {
+          sourceOverlay: null,
           processId: storedDefinition.processId,
           semanticProfile: storedDefinition.semanticProfile,
         },
@@ -335,6 +337,7 @@ function createFixture(
       source: { ...storedDefinition.source },
       diagnostics: [],
       definition: {
+        sourceOverlay: null,
         processId: storedDefinition.processId,
         semanticProfile: storedDefinition.semanticProfile,
       },

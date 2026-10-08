@@ -109,6 +109,7 @@ class AcceptedCompiler implements DefinitionCompiler {
       },
       diagnostics: [],
       definition: {
+        sourceOverlay: null,
         processId: this.#processId,
         semanticProfile: request.semanticProfile,
       },

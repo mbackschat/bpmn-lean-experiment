@@ -13,8 +13,10 @@ import type {
   BpmnSourceDiagnostic,
   BpmnSourceIdentity,
   BpmnSourceLimits,
+  SourceOverlaySelection,
 } from "@bpmn-lean/bpmn-source";
-import type { DeepReadonly } from "@bpmn-lean/semantic-core";
+import type { DeepReadonly, SourceOverlayIdentity } from "@bpmn-lean/semantic-core";
+import { snapshotSourceOverlay } from "./source-overlay.js";
 
 import {
   engineDefinitionCorrelationCapabilities,
@@ -35,18 +37,20 @@ export type EngineDefinitionCompilationStatus =
     keyof typeof EngineDefinitionCompilationStatus
   ];
 
-/** Compilation snapshots the mutable byte view before asynchronous parsing. */
+/** Compilation snapshots BPMN and selected overlay bytes before asynchronous parsing. */
 export type EngineDefinitionCompilationRequest = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
   semanticProfile: string;
   expectedSha256: string | undefined;
+  sourceOverlay?: SourceOverlaySelection | null;
   limits: BpmnSourceLimits;
 }>;
 
 export type EngineDefinitionIdentity = DeepReadonly<{
   processId: string;
   semanticProfile: string;
+  sourceOverlay: SourceOverlayIdentity | null;
 }>;
 
 export type EngineAcceptedDefinitionCompilation = DeepReadonly<{
@@ -80,6 +84,7 @@ export async function compileBpmnDefinition(
     sourceId: request.sourceId,
     semanticProfile: request.semanticProfile,
     expectedSha256: request.expectedSha256,
+    sourceOverlay: snapshotSourceOverlay(request.sourceOverlay),
     limits: { ...request.limits },
   };
   const compilation = await compileBpmnToSemanticProcess({
@@ -87,7 +92,7 @@ export async function compileBpmnDefinition(
     sourceId: snapshot.sourceId,
     expectedSha256: snapshot.expectedSha256,
     semanticProfile: snapshot.semanticProfile,
-    sourceOverlay: null,
+    sourceOverlay: snapshot.sourceOverlay,
     limits: snapshot.limits,
   });
   switch (compilation.status) {
@@ -99,6 +104,7 @@ export async function compileBpmnDefinition(
         definition: {
           processId: compilation.semanticProcess.processId,
           semanticProfile: compilation.semanticProcess.identity.semanticProfile,
+          sourceOverlay: compilation.semanticProcess.identity.sourceOverlay,
         },
         startCapabilities: engineDefinitionStartCapabilities(
           compilation.semanticProcess,

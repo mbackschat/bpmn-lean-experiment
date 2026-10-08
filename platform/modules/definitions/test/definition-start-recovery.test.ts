@@ -118,6 +118,7 @@ test("restart dispatches one durable reserved direct start and never redispatche
           status: EngineDefinitionStartStatus.Started,
           source: structuredClone(definition.source),
           definition: {
+            sourceOverlay: null,
             processId: definition.processId,
             semanticProfile: definition.semanticProfile,
           },
@@ -170,6 +171,7 @@ test("restart dispatches the exact command captured before a caller mutation", a
       status: EngineDefinitionStartStatus.Admitted,
       source: structuredClone(definition.source),
       definition: {
+        sourceOverlay: null,
         processId: definition.processId,
         semanticProfile: definition.semanticProfile,
       },
@@ -186,6 +188,7 @@ test("restart dispatches the exact command captured before a caller mutation", a
         status: EngineDefinitionStartStatus.Started,
         source: structuredClone(definition.source),
         definition: {
+          sourceOverlay: null,
           processId: definition.processId,
           semanticProfile: definition.semanticProfile,
         },
@@ -250,6 +253,7 @@ test("composition obtains the artifact-validating direct recovery host", async (
         status: EngineDefinitionStartStatus.Started,
         source: structuredClone(definition.source),
         definition: {
+          sourceOverlay: null,
           processId: definition.processId,
           semanticProfile: definition.semanticProfile,
         },
@@ -310,6 +314,7 @@ function createFixture(initialDescription: "missing" | "matching") {
       status: EngineDefinitionStartStatus.Admitted,
       source: structuredClone(definition.source),
       definition: {
+        sourceOverlay: null,
         processId: definition.processId,
         semanticProfile: definition.semanticProfile,
       },

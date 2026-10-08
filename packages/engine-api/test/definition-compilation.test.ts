@@ -47,6 +47,7 @@ test("projects accepted source identity without exposing engine representations"
   assert.match(result.source.sha256, /^[0-9a-f]{64}$/u);
   assert.equal(result.definition.processId, "Process_SequentialUserTask");
   assert.equal(result.definition.semanticProfile, semanticProfile);
+  assert.equal(result.definition.sourceOverlay, null);
   assert.deepEqual(result.startCapabilities, {
     messageStarts: [],
     timerStarts: [],

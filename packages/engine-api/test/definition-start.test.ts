@@ -131,7 +131,7 @@ test("starts one empty-variable instance and projects no private handle field", 
       declaredEncoding: "UTF-8",
       decodedAs: "UTF-8",
     },
-    definition: { processId, semanticProfile },
+    definition: { processId, semanticProfile, sourceOverlay: null },
     processInstanceId: "semantic-instance-42",
   });
   assert.equal(calls.length, 1);

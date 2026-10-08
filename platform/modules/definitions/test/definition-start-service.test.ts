@@ -430,6 +430,7 @@ function createFixture(
           decodedAs: "UTF-8",
         },
         definition: {
+          sourceOverlay: null,
           processId: options.startOnlyDrift ? request.expectedProcessId :
             options.startedDrift?.processId ?? request.expectedProcessId,
           semanticProfile:
@@ -480,6 +481,7 @@ function createFixture(
           decodedAs: "UTF-8",
         },
         definition: {
+          sourceOverlay: null,
           processId: options.startedDrift?.processId ?? request.expectedProcessId,
           semanticProfile:
             options.startedDrift?.semanticProfile ?? request.semanticProfile,

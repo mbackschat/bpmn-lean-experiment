@@ -94,6 +94,8 @@ Canonical order uses the exact unnormalized Unicode-scalar sequence. Effect bind
 
 Compilation selects exactly one engine-owned `semanticProfile` and zero or one registered `sourceOverlay`. `sourceOverlay.semanticProfile` must exactly equal the selected profile. Exact BPMN bytes, semantic-profile identity, overlay identity and digest, and compiler identity jointly determine the admitted definition.
 
+The [public engine API](../packages/engine-api/README.md) accepts the same exact overlay selection for compilation and exact-definition start preparation; omission means `null`. It snapshots the selection and bytes before asynchronous work. Accepted compilation exposes the validated nullable overlay identity, and start preparation compares that identity with the selected overlay. The complete compiled Program remains part of the existing start-intent digest, so a changed overlay cannot recover or retry a different retained intent. Overlay transport grants no additional profile or host admission.
+
 Checked graphs, Semantic Process programs, scenario BPMN identities, canonical result provenance, completed-process receipts, and effect-transport identity retain `sourceOverlay: SourceOverlayIdentity | null`. Lean, the semantic core, and Temporal compare and preserve this identity but never branch on the overlay ID.
 
 The generic compiler reads supported Camunda/CIB extension structures, validates the bounded mapping and boundary-Error forms against the selected engine profile, and lowers them to existing neutral descriptors and mapping data. The overlay supplies only exact source bindings and inert-attribute declarations.

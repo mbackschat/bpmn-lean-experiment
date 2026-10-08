@@ -6,6 +6,8 @@
 
 Use the approved API from the Product 2 engine gateway to compile exact source, start an exact deployed definition, observe published engine facts, and submit content-bound commands. Process-local commands use opaque Process locators. Definition-scoped correlation accepts only an engine-projected complete semantic definition address, a caller-owned command identity, and payload; callers never supply a candidate locator or target and receive no Workflow handle, Run ID, Event History, or private semantic anchor. The bounded Product 2 binding is implemented and independently closure-reviewed.
 
+Product 1 compilation and exact-definition direct-start requests accept an optional `sourceOverlay: { id, sha256, bytes } | null`; omission selects `null`. They snapshot the selected identity and bytes before asynchronous work and publish `definition.sourceOverlay: { id, sha256 } | null` alongside Process and profile identity. Preparation and prepared start bind that selection into the existing complete-Program intent; recovery compares the retained intent. The [source-overlay contract](../../docs/A12-ADD-ON-BOUNDARY-SPEC.md#public-source-overlay-contract) owns validation and profile restrictions. Compilation acceptance remains separate from Temporal hosting qualification.
+
 ## Quick start
 
 ```sh

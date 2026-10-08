@@ -46,7 +46,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 
 - One structural schema file per semantic profile, source overlay, scenario, canonical result, CIB evidence, checked BPMN graph, and Semantic Process program
 - stable document kinds
-- semantic profile/source/compiler identity plus required nullable source-overlay identity in scenarios, checked graphs, Semantic Process programs, effect transport, and completed-process receipts
+- profile/source/compiler identity and required nullable source-overlay identity in public compilation/start, scenarios, checked graphs, IL, effect transport, and completed-process receipts
 - exact scenario/profile/source-overlay content binding
 - a guarded catalog of answer-free target scenarios with CIB evidence required only by declared CIB target sets
 - produced checked-process and Semantic Process artifacts

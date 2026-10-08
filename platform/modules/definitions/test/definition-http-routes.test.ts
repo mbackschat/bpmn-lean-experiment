@@ -496,7 +496,7 @@ function createFixture(
         status: DefinitionCompilationStatus.Accepted,
         source,
         diagnostics: [],
-        definition: { processId, semanticProfile: request.semanticProfile },
+        definition: { sourceOverlay: null, processId, semanticProfile: request.semanticProfile },
         startCapabilities: { messageStarts: [], timerStarts: [] },
       } as const satisfies DefinitionCompilationResult;
       compilationResults.push(result);
