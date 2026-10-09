@@ -74,9 +74,13 @@ export function DeferredDefinitionWorkspace({
 
   const openDefinition = useCallback(async (definition: DeployedDefinitionVersion) => {
     if (navigationRef.current !== undefined) {
-      requests.current.invalidate();
-      selectDefinition(null);
-      setVersions([]);
+      const { process, version } = navigationRef.current.search;
+      // The refresh effect observes these keys; unchanged keys retain their current loader.
+      if (process !== definition.processId || version !== definition.version) {
+        requests.current.invalidate();
+        selectDefinition(null);
+        setVersions([]);
+      }
       navigationRef.current.navigate({ process: definition.processId, version: definition.version });
       return;
     }

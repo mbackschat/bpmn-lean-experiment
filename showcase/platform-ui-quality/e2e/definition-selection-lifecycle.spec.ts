@@ -143,6 +143,53 @@ test("pending definition selection cannot reselect the preceding definition thro
   } finally { pending.resolve(); }
 });
 
+test("same exact definition selection preserves an in-flight return refresh", async ({ page }) => {
+  await installPublicApiFixtures(page);
+  await openDefinitions(page);
+  const refreshing = page.getByRole("status").filter({ hasText: "Refreshing definitions" });
+  await expect(refreshing).toHaveCount(0);
+  const selectedUrl = page.url();
+  const pending = Promise.withResolvers<void>();
+  const requested = Promise.withResolvers<void>();
+  await page.route("**/api/v1/definitions", async (route) => {
+    requested.resolve();
+    await pending.promise;
+    await route.fulfill({ json: { definitions: [definition] } });
+  });
+  const navigation = page.getByRole("navigation", { name: "Primary navigation" });
+  await navigation.getByRole("link", { name: "About", exact: true }).click();
+  await navigation.getByRole("link", { name: "Definitions", exact: true }).click();
+  await requested.promise;
+  try {
+    await expect(refreshing).toBeVisible();
+    await page.getByRole("combobox", { name: "Definition", exact: true }).selectOption(definition.processId);
+    const response = page.waitForResponse("**/api/v1/definitions");
+    pending.resolve();
+    await response;
+    const versions = page.getByRole("combobox", { name: "Version", exact: true });
+    await expect(versions).toBeEnabled();
+    await expect(versions).toHaveValue("7");
+    await expect(refreshing).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Start version 7", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(selectedUrl);
+  } finally { pending.resolve(); }
+});
+
+test("same exact definition selection preserves settled version choices", async ({ page }) => {
+  await installPublicApiFixtures(page);
+  await openDefinitions(page);
+  const refreshing = page.getByRole("status").filter({ hasText: "Refreshing definitions" });
+  await expect(refreshing).toHaveCount(0);
+  const selectedUrl = page.url();
+  await page.getByRole("combobox", { name: "Definition", exact: true }).selectOption(definition.processId);
+  const versions = page.getByRole("combobox", { name: "Version", exact: true });
+  await expect(versions).toBeEnabled();
+  await expect(versions).toHaveValue("7");
+  await expect(refreshing).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start version 7", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(selectedUrl);
+});
+
 test("start results stay with the exact version that was started", async ({ page }) => {
   await installPublicApiFixtures(page);
   const newer = { ...definition, version: 8 };
