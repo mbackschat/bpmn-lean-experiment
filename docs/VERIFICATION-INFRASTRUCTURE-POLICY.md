@@ -28,6 +28,14 @@ The package-level `leanOptions` in [lakefile.toml](../lakefile.toml) select sync
 
 Every Lean command is serialized through [`scripts/lake.sh`](../scripts/lake.sh). The wrapper replaces inherited `LEAN_NUM_THREADS` with the manifest-owned conservative value, acquires one fail-closed host lock before invoking Lake, and refuses an explicit `BpmnSemantics` target. The full root build is spelled `./scripts/lake.sh build`; a focused build names only its narrow modules. A delegated lane may run the wrapper for the narrow modules it owns under the conditions in [CLAUDE.md](../CLAUDE.md#delegated-implementation); the bare full-gate form, `test`, `exe`, and `env lean` stay with the root integrator. A yielded Lean command must be resumed or terminated rather than duplicated, and a killed one leaves the lock directory behind for manual recovery. [`verification-entrypoint.test.ts`](../scripts/verification-entrypoint.test.ts) runs the wrapper against a fake Lake executable and locks all three separators: an attempted thread override remains pinned, umbrella contamination rejects before Lake starts, and a held lock refuses a second process tree.
 
+## Command deadline selection
+
+Select the deadline before launching the command. Identify whether it is a focused test/build or a composed gate, then read that gate's documented allowance. Focused tests default to 60 seconds and focused builds to 120 seconds only when no applicable owner documents another budget. A composed gate uses its own allowance; keep its child deadlines, CPU limit, memory ceiling and swap restriction independently enforced.
+
+For the full Lean library, local `./scripts/lake.sh test`, bare `./scripts/lake.sh build` and `./scripts/verify.sh lean-library` use the proof-library compilation allowance in [the verification stages](#continuous-integration), including when reached through pre-push. Use the compilation allowance, not the enclosing CI job's setup/recovery headroom. A focused-build default must not truncate that full-library allowance.
+
+Execution-tool yield and polling intervals only control when the agent receives output; they are not command deadlines. Resume the same live session and receipt. Do not deliberately kill and restart a full-library build in focused-budget chunks to accumulate cache progress: unfinished modules restart from scratch. Reuse cached outputs after a genuine interruption, while retaining the failed receipt and any separate cold-resource acceptance obligation. A timeout first requires checking the selected gate and deadline against its owner; it does not by itself demonstrate a slow compiler or justify a larger budget.
+
 ## Feedback budgets
 
 The [pipeline budget](../scripts/pipeline-budget.ts) derives a diagnostic warm target at 500 ms per registered case, a portable pathology ceiling at 1,300 ms per case, and a 10,000 ms floor for focused Lean batches. `BPMN_PIPELINE_WARM_BUDGET_MS` declares an environment-specific aggregate ceiling. Hosted allowance must exceed the portable ceiling by at least 50% and cover the longest nested CIB deadline plus reporting/cleanup. Both outer deadlines must exceed the selected aggregate ceiling; child CIB, Temporal, Lean and Node deadlines remain hang detectors. Do not copy current catalog counts or derived totals into this policy.
@@ -42,7 +50,7 @@ This policy preserves the result of a test or build when terminal output is trun
 
 Use durable capture for a JavaScript or TypeScript test, build, verification wrapper, browser run, or container orchestration command that may outlive one execution-tool yield or emit more output than the tool can retain. A short focused command whose complete output and exit status return in one invocation does not need a receipt.
 
-Continue to use pnpm, `CI=true`, the repository wrappers, and the owning gate bounds: tests are bounded to 60 seconds and builds to 120 seconds unless an owning composed gate documents a different aggregate deadline. Never start an indefinite watch process as verification.
+Continue to use pnpm, `CI=true`, the repository wrappers, and [command deadline selection](#command-deadline-selection). Never start an indefinite watch process as verification.
 
 Before launch:
 

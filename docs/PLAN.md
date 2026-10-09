@@ -124,7 +124,7 @@ Current task: qualify and publish the security correction, then resume business-
 
 Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) checkpoint `3f64ddd0` passed correction audit `9133ea7b`. [Tracker](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind identities, not acceptance.
 
-Last verification: Full-library continuation reproduces sequential human/effect dispatch failures at the parallel-profile branch. Shared profile exclusion closes both after Boolean-to-equality normalization; statements and premises are unchanged (non-material repair). Dispatch and transition-consumer gates pass: `/tmp/publication-sequential-dispatch-green-20261009`, `/tmp/publication-sequential-dispatch-consumers-20261009`. Full-library qualification remains incomplete.
+Last verification: Dispatch and consumer gates pass. `/tmp/prepush-31007563-20261009` passes security and 661 infrastructure tests. Call conformance passes in 149 seconds under the [full-library allowance](VERIFICATION-INFRASTRUCTURE-POLICY.md#command-deadline-selection), correcting the mistaken focused-build cutoff. Compilation continues; stop before Lean checks, commit guidance, then qualify clean HEAD.
 
 Next action: finish bounded library qualification, pass clean-HEAD pre-push and push, then restore PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce`; verify eight file hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. Resume metadata fixtures, explicit handlers, generic string Start inputs and three production journeys; UI preflight is complete. No model switch or metadata-only commit.
 
