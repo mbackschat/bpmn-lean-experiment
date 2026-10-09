@@ -57,7 +57,7 @@ def replayCommittedTransitionsWithCompensationSnapshots (program : Program)
   if program.compensationEventSubProcessSnapshots.isSome ||
       program.compensationExecution.isSome then
     replayCommittedTransitionsForDeclaredCompensationSnapshots program initial transitions
-  else replayCommittedTransitions program initial transitions
+  else ParallelScopeReplay.committedTransitions? program initial transitions
 
 def enabledInternalOperationCountWithCompensationSnapshots
     (program : Program) (state : RuntimeState) : Nat :=

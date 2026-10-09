@@ -1,0 +1,68 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/serial-business-task-composition/process.bpmn",
+    "sourceId": "classified-invoice",
+    "semanticProfile": "cibseven-2.2.0-serial-business-tasks-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/serial-business-task-composition/source-overlay.json",
+      "id": "invoice-handlers",
+      "sha256": "b4a778099c78ae9cda0074b2e79ea6ce12b76ff95ce1f983cebde460d106dc75"
+    },
+    "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
+  },
+  "process": {
+    "instanceId": "MvpExample_serial_business_task_composition_1",
+    "initialVariables": [
+      { "name": "payload", "value": { "kind": "string", "value": "parent-payload" } },
+      { "name": "request", "value": { "kind": "string", "value": "initial" } },
+      { "name": "result", "value": { "kind": "string", "value": "parent-result" } }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Review",
+      "delayMs": 250,
+      "inputVariableNames": ["payload", "request"],
+      "submittedValues": [
+        { "name": "request", "value": { "kind": "string", "value": "INV-42" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Finalize",
+      "delayMs": 250,
+      "inputVariableNames": ["classification", "decision"],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "invoiceValidator",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "result", "value": { "kind": "string", "value": "valid" } }
+        ]
+      }
+    },
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "invoiceClassifier",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "result", "value": { "kind": "string", "value": "standard" } }
+        ]
+      }
+    }
+  ]
+}

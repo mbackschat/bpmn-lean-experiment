@@ -1,0 +1,56 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/mixed-task-control-flow/process.bpmn",
+    "sourceId": "reviewed-invoice",
+    "semanticProfile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/mixed-task-control-flow/source-overlay.json",
+      "id": "invoice-handlers",
+      "sha256": "cd9fa32a59aa8af2d39cefff9d1162e9958c2838eebee13b2f22e5dfd4a0060a"
+    },
+    "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
+  },
+  "process": {
+    "instanceId": "MvpExample_mixed_task_control_flow_1",
+    "initialVariables": [
+      { "name": "request", "value": { "kind": "string", "value": "initial" } }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Review",
+      "delayMs": 250,
+      "inputVariableNames": ["request"],
+      "submittedValues": [
+        { "name": "request", "value": { "kind": "string", "value": "INV-42" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Finalize",
+      "delayMs": 250,
+      "inputVariableNames": ["decision"],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "invoiceValidator",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "result", "value": { "kind": "string", "value": "valid" } }
+        ]
+      }
+    }
+  ]
+}

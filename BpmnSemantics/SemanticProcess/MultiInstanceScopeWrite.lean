@@ -41,4 +41,30 @@ theorem writeBoundMultiInstanceScopeValues_preserves_other_scopes
   cases Option.some.inj written
   exact writeScopeVariables_preserves_other_scopes (result := bodyVariables) bodyWrite
 
+/-- Protected Process writes preserve the complete frame-owner census needed by body binding. -/
+theorem writeBoundMultiInstanceScopeValues_preserves_owner_census
+    {variables result : ScopedVariables} {owner : ScopeOccurrenceId} {collectionName itemName : String}
+    {condition : Option String} {handlers : List String} {values : List VariableBinding} {kind : MultiInstanceScopeWriteKind}
+    (written : writeBoundMultiInstanceScopeValues? variables owner collectionName itemName condition handlers values kind = some result) :
+    result.scopes.map (·.owner) = variables.scopes.map (·.owner) := by
+  unfold writeBoundMultiInstanceScopeValues? at written
+  dsimp only at written
+  split at written <;> try contradiction
+  obtain ⟨bodyVariables, bodyWrite, written⟩ := Option.bind_eq_some_iff.mp written
+  cases Option.some.inj written
+  exact writeScopeVariables_preserves_owner_census (result := bodyVariables) bodyWrite
+
+/-- Protected condition writes share the Activity-frame isolation of ordinary scope writes. -/
+theorem writeBoundMultiInstanceScopeValues_preserves_activities
+    {variables result : ScopedVariables} {owner : ScopeOccurrenceId} {collectionName itemName : String}
+    {condition : Option String} {handlers : List String} {values : List VariableBinding} {kind : MultiInstanceScopeWriteKind}
+    (written : writeBoundMultiInstanceScopeValues? variables owner collectionName itemName condition handlers values kind = some result) :
+    result.activities = variables.activities := by
+  unfold writeBoundMultiInstanceScopeValues? at written
+  dsimp only at written
+  split at written <;> try contradiction
+  obtain ⟨bodyVariables, bodyWrite, written⟩ := Option.bind_eq_some_iff.mp written
+  cases Option.some.inj written
+  exact writeScopeVariables_preserves_activities (result := bodyVariables) bodyWrite
+
 end BpmnSemantics.SemanticProcess

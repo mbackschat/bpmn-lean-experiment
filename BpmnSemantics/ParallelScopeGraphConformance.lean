@@ -3,6 +3,9 @@ import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
 import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 
@@ -146,6 +149,99 @@ theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 16) = some 68 ∧
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 17) = none ∧
     ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none := by decide +kernel
+
+private def rawCapacityProgram : Program :=
+  lowerCheckedProcess { checkedMixed with
+    definitionScopes := checkedMixed.definitionScopes.reverse
+    identity := { checkedMixed.identity with
+      sourceSha256 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      sourceOverlay := some {
+        id := ⟨"handlers"⟩
+        sha256 := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } } }
+
+theorem private_raw_parallel_capacity_retains_population_and_required_empty_inputs :
+    (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 0)).map (·.closureBound) = some 4 ∧
+    (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 1)).map (·.closureBound) = some 8 ∧
+    (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 2)).map (·.closureBound) = some 12 ∧
+    (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 16)).map (·.closureBound) = some 68 ∧
+    ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 17) = none ∧
+    ParallelScopeStart.programStartCapacity rawCapacityProgram ((startBindings 0).filter (·.name != "seed")) = none := by
+  decide +kernel
+
+theorem private_raw_parallel_start_ingress_preserves_public_shape_refusal :
+    (admitStimulus rawCapacityProgram initialState
+      (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 0))).outcome = .committed ∧
+    (admitStimulus rawCapacityProgram initialState
+      (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 16))).outcome = .committed ∧
+    programProfileCapabilitiesValid rawCapacityProgram = false := by decide +kernel
+
+theorem private_raw_parallel_capacity_checks_the_original_decoded_program :
+    ParallelScopeStart.programStartCapacity { rawCapacityProgram with operations := rawCapacityProgram.operations.reverse }
+      (startBindings 2) = none ∧
+    ParallelScopeStart.programStartCapacity { rawCapacityProgram with interruptingMessageEventSubProcesses := [{
+      parentScopeId := ⟨"root"⟩, handlerScopeId := ⟨"body"⟩, elementId := ⟨"Batch"⟩,
+      startEventId := ⟨"ChildStart"⟩, channel := .operationMessage ⟨"I"⟩ ⟨"O"⟩ ⟨"M"⟩,
+      childEntry := ⟨"body-in"⟩ }] } (startBindings 2) = none := by decide +kernel
+
+private def commandWaitingState? : Option RuntimeState := do
+  let started := admitStimulus rawCapacityProgram initialState
+    (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 2))
+  if started.outcome != .committed then none else pure ()
+  let [root] := started.state.scopeOccurrences | none
+  let [init] := rawCapacityProgram.operations.filter (fun operation => match operation with
+    | .initiate .. => true | _ => false) | none
+  let initialized ← InternalCommutation.applyInternalOperationOccurrence? rawCapacityProgram started.state ⟨init.id, root.id⟩
+  let [entry] := rawCapacityProgram.operations.filterMap parallelScopeEntry? | none
+  let entered ← InternalCommutation.applyInternalOperationOccurrence? rawCapacityProgram initialized ⟨entry.id, root.id⟩
+  let [task] := rawCapacityProgram.operations.filter (fun operation => match operation with
+    | .awaitUserTask .. => true | _ => false) | none
+  let body ← entered.scopeOccurrences.find? (fun scope => scope.id.definitionScopeId == entry.childScopeId)
+  InternalCommutation.applyInternalOperationOccurrence? rawCapacityProgram entered ⟨task.id, body.id⟩
+
+private def commandResume? (change : RuntimeState → RuntimeState) : Option (CommandOutcome × Option Nat) := do
+  let waiting ← commandWaitingState?
+  let [wait] := waiting.waits | none
+  let state := change waiting
+  let stimulus := Stimulus.completeUserTaskInstance ⟨"review"⟩
+    ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ []
+  pure ((admitStimulus rawCapacityProgram state stimulus).outcome,
+    (ParallelScopeStart.programStateCapacity rawCapacityProgram state).map (·.closureBound))
+
+private def strayScopeFrame (state : RuntimeState) : RuntimeState :=
+  { state with variables := { state.variables with scopes := state.variables.scopes ++
+    [⟨⟨⟨"invoices"⟩, ⟨"stray"⟩, 1⟩, []⟩] } }
+
+private def strayController (state : RuntimeState) : RuntimeState :=
+  { state with parallelScopeControllers := state.parallelScopeControllers ++
+    [⟨⟨⟨"invoices"⟩, ⟨"stray"⟩, 1⟩, 1, 0⟩] }
+
+private def unissuedHumanWait (state : RuntimeState) : RuntimeState :=
+  { state with activations := state.activations.map fun row => { row with count := 0 } }
+
+private def cyclicParent (state : RuntimeState) : RuntimeState :=
+  { state with scopeOccurrences := state.scopeOccurrences.map fun scope =>
+    if scope.parent.isNone then { scope with parent := some scope.id } else scope }
+
+theorem private_parallel_resumption_uses_real_scoped_waits :
+    commandResume? id = some (.committed, some 12) := by decide +kernel
+
+private def assertRejectedResumption (name : String)
+    (variants : List (String × (RuntimeState → RuntimeState))) : IO Unit := do
+  let actual := variants.map fun (label, change) => (label, commandResume? change)
+  IO.println s!"{name}: {repr actual}"
+  unless actual.all (fun result => result.2 == some (.rejected, none)) do
+    throw (IO.userError s!"{name}: corrupted resumption was admitted")
+
+private def private_parallel_resumption_refuses_unrelated_population_rows : IO Unit :=
+  assertRejectedResumption "private_parallel_resumption_refuses_unrelated_population_rows"
+    [("stray-frame", strayScopeFrame), ("stray-controller", strayController)]
+
+private def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : IO Unit :=
+  assertRejectedResumption "private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents"
+    [("unissued-human", unissuedHumanWait), ("cyclic-parent", cyclicParent)]
+
+#eval private_parallel_resumption_refuses_unrelated_population_rows
+#eval private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents
 
 theorem private_frontier_population_retains_serial_task_capacity :
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 0) = some ⟨0, 0⟩ ∧

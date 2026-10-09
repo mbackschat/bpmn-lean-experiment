@@ -567,14 +567,38 @@ test("a carried User Task identity above its absent counter is refused", () => {
   );
 });
 
-test("continuation refuses parallel controllers before their Program binding is admitted", () => {
-  for (const controllers of [[], [{
+test("continuation refuses parallel controllers at the exact shape or Program boundary", () => {
+  assert.deepEqual(
+    requireBpmnWorkflowContinuationStateV1(resumable, program, instanceId),
+    resumable,
+  );
+  const controller = {
     id: { processInstanceId: instanceId, activityElementId: "Review", activation: 1 },
     total: 1, completed: 0,
-  }]]) {
+  } as const;
+  for (const controllers of [[], [controller]]) {
+    const state = {
+      ...resumable,
+      parallelScopeControllers: controllers,
+    } as const satisfies RuntimeState;
     assert.throws(() => requireBpmnWorkflowContinuationStateV1(
-      { ...resumable, parallelScopeControllers: controllers }, program, instanceId,
-    ), /Malformed committed RuntimeState continuation/u);
+      state, program, instanceId,
+    ), {
+      name: "TypeError",
+      message: "RuntimeState is not one representable committed state",
+    });
+  }
+  for (const malformed of [
+    { ...controller, total: 0 },
+    { ...controller, completed: -1 },
+    { ...controller, extra: true },
+  ]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(
+      { ...resumable, parallelScopeControllers: [malformed] }, program, instanceId,
+    ), {
+      name: "TypeError",
+      message: "Malformed committed RuntimeState continuation",
+    });
   }
 });
 

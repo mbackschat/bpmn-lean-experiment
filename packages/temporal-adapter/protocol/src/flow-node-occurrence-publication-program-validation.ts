@@ -176,6 +176,8 @@ function internalOperationStarts(
         positions.enteredScopes.every(scope => scope.id.activation > transitionOwner.activation);
     }
     case SemanticOperationKind.EnterParallelMultiInstanceScope:
+      return exactOrigin && positions.exitedScopes.length === 0 &&
+        repeatedScopeStartMatches(operation, value, positions);
     case SemanticOperationKind.CompleteParallelMultiInstanceScope:
       return false;
     default:
@@ -185,12 +187,14 @@ function internalOperationStarts(
 
 /** FNOM-OCCURRENCE-01 derives a generated body's start from its exact E1 scope entry. */
 function repeatedScopeStartMatches(
-  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope }>,
+  entry: Extract<SemanticOperation, { kind: SemanticOperationKind.EnterSequentialMultiInstanceScope | SemanticOperationKind.EnterParallelMultiInstanceScope }>,
   value: OccurrenceFact,
   positions: CommittedTransitionRecord["positionDelta"],
 ): boolean {
   const owner = value.owner as ScopeOccurrenceId;
-  return value.elementId === entry.origin.elementId && positions.enteredScopes.length === 1 &&
+  return value.elementId === entry.origin.elementId &&
+    (entry.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope
+      ? positions.enteredScopes.length === 1 : positions.enteredScopes.length > 0) &&
     positions.enteredScopes.every(scope => scope.id.definitionScopeId === entry.childScopeId &&
       scope.id.processInstanceId === owner.processInstanceId && scope.bpmnElementId === value.elementId &&
       scope.parent !== null && sameScope(scope.parent, owner));

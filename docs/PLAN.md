@@ -111,11 +111,11 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: qualify public registration of approved serial/mixed-task/business Error journeys; no new family or topology.
 
-Current result: maintained-proof checkpoint `da2b3ca3` is independently approved without required corrections. The serial/mixed-task/business Error registration checkpoint retains existing semantic accounts and handlers; public-boundary review and complete hosted qualification remain open.
+Current result: owner-directed worktree checkpoint preserves unfinished parallel MI work and public-registration corrections together; it does not establish acceptance. Maintained-proof checkpoint `da2b3ca3` is approved. Public registration `7d9e60d8` received required edits: R1 catalog members, exact-source examples and an artifact-derived completeness guard are implemented, but catalog-consumer corrections remain; R2 corrects two stale cycle exclusions.
 
-Last verification: all 804 Lean/build inputs match the passing bounded library. All 99 checkpoint infrastructure files, harness types, six standard-axiom checks and the changed scope-data fixture measurement pass. Registered whole-process Lean/core results, E1/E2, mutations, public starts and replay pass; retained installed-runtime failures remain unresolved.
+Last verification: prior registered checkpoint evidence includes the passing bounded Lean library, 99 infrastructure files, harness types, six standard-axiom checks, scope-data fixture measurement, whole-process Lean/core results, E1/E2, mutations, public starts and replay. This evidence does not qualify the combined worktree checkpoint. The new catalog completeness guard reproduced all three omissions and the corrected core builds; focused examples and harness types currently fail at missing preservation-capability classifications. Complete affected gates and independent correction review remain outstanding.
 
-Next action: review the committed registration boundary and close its remaining acceptance obligations. No further commit partitioning; preserve the runtime-investigation hold.
+Next action: correct the four catalog consumers, pass affected gates and obtain the same reviewer’s R1/R2 correction audit. Resume actual implementation without further commit partitioning; preserve the runtime-investigation hold.
 
 Unresolved: installed-runtime qualification, original concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/publication-query failures, independent public review and closure, and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation remains on hold; performance qualification remains excluded. Lean stays one process tree, one CPU/3 GiB without extra swap; no cold-library investigation is selected.
 

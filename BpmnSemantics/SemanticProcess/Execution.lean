@@ -75,6 +75,54 @@ theorem applyStimulus_rejected_of_admission
         ambiguousInternalChoice := false } := by
   simp [applyStimulus, rejected]
 
+/-- Exact committed admission successors determine successful evaluation for every profile.
+`CLOSURE-ATOMIC-01` retains the distinct predecessor on rollback, so the conclusion requires successful closure. -/
+theorem applyStimulus_equal_of_same_admitted_successor
+    (closureLimit : Nat) (program : Program)
+    (leftState rightState successor : RuntimeState) (stimulus : Stimulus)
+    (leftAdmission : admitStimulus program leftState stimulus = { outcome := .committed, state := successor })
+    (rightAdmission : admitStimulus program rightState stimulus = { outcome := .committed, state := successor })
+    (committed : (applyStimulus closureLimit program leftState stimulus).outcome = .committed) :
+    applyStimulus closureLimit program leftState stimulus =
+      applyStimulus closureLimit program rightState stimulus := by
+  simp only [applyStimulus, leftAdmission, rightAdmission] at committed ⊢
+  unfold StimulusResult.ofScheduledClosure at committed ⊢
+  split at committed
+  · simp at committed
+  · rename_i successful
+    simp only [if_neg successful]
+    unfold StimulusResult.ofClosure at committed ⊢
+    split at committed <;> simp_all
+
+private theorem committedScheduledClosureFacts (before : RuntimeState)
+    (closed : InternalCommutation.ScheduledClosureResult)
+    (committed : (StimulusResult.ofScheduledClosure before closed).outcome = .committed) :
+    closed.failed = false ∧ (StimulusResult.ofScheduledClosure before closed).state = closed.state := by
+  unfold StimulusResult.ofScheduledClosure at committed ⊢
+  split at committed
+  · simp at committed
+  · rename_i scheduleAccepted
+    simp only [if_neg scheduleAccepted]
+    unfold StimulusResult.ofClosure at committed ⊢
+    split at committed
+    · simp at committed
+    · rename_i closureAccepted
+      simp [closureAccepted, InternalCommutation.ScheduledClosureResult.failed, scheduleAccepted]
+
+/-- Every committed command exposes a stable complete frontier, as required by reachable retirement. -/
+theorem applyStimulus_committed_frontier_stable
+    (closureLimit : Nat) (program : Program) (before : RuntimeState) (stimulus : Stimulus)
+    (committed : (applyStimulus closureLimit program before stimulus).outcome = .committed) :
+    let after := (applyStimulus closureLimit program before stimulus).state
+    ((InternalCommutation.deriveInternalExecutionFrontier program after).offers.isEmpty &&
+      !(InternalCommutation.deriveInternalExecutionFrontier program after).preparationFailed) = true := by
+  cases outcome : (admitStimulus program before stimulus).outcome <;>
+    simp only [applyStimulus, outcome] at committed ⊢ <;> try contradiction
+  obtain ⟨succeeded, stateEq⟩ := committedScheduledClosureFacts before _ committed
+  rw [stateEq]
+  exact InternalCommutation.closeScheduledTraced_success_stable closureLimit program
+    (stimulusCommandId stimulus) 1 0 [] (admitStimulus program before stimulus).state succeeded
+
 private theorem empty_activities_refuse_scope_binding (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (empty : state.activityOccurrences = []) :
     sequentialScopeBindingForOwner? program state owner = none := by
@@ -90,6 +138,25 @@ private theorem empty_activities_refuse_scope_binding (program : Program) (state
   cases result <;> try rfl
   simp [completeSequentialScopeEffectData?, writeSequentialScopeValues?, unbound _ empty]
   split <;> simp
+
+private theorem empty_process_refuses_parallel_scope_start (program : Program) :
+    ParallelScopeStart.programStartCapacity program [] = none := by
+  cases analysis : ParallelScopeStart.analyzeProgram program <;>
+    simp [ParallelScopeStart.programStartCapacity, analysis]
+
+private theorem empty_process_refuses_parallel_scope_capacity (program : Program) (state : RuntimeState)
+    (empty : state.variables.process.bindings = []) :
+    ParallelScopeStart.programStateCapacity program state = none := by
+  simp [ParallelScopeStart.programStateCapacity, empty, empty_process_refuses_parallel_scope_start]
+
+private theorem empty_process_refuses_parallel_scope_effect (program : Program) (state : RuntimeState)
+    (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
+    (empty : state.variables.process.bindings = [])
+    (selected : ParallelScopeStart.programSelected program = true) :
+    ParallelScopeCommand.stimulusAdmitted program state (.completeEffect commandId effectId result) = false := by
+  have capacity := empty_process_refuses_parallel_scope_capacity program state empty
+  cases analysis : ParallelScopeStart.analyzeProgram program <;> cases result <;>
+    simp [ParallelScopeCommand.stimulusAdmitted, selected, analysis, capacity]
 
 /-- A matching effect result whose patch cannot satisfy the committed mapping contract is rejected with exact state preservation. -/
 theorem effect_result_mapping_failure_is_rejected
@@ -158,6 +225,10 @@ theorem effect_result_mapping_failure_is_rejected
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
           exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError]
+        intro _ _ _ admitted selected
+        have refused := empty_process_refuses_parallel_scope_effect program state
+          completionCommandId effectId result rfl selected
+        simp [refused] at admitted
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -211,6 +282,10 @@ theorem effect_result_route_failure_is_rejected
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
           exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError]
+        intro _ _ _ admitted selected
+        have refused := empty_process_refuses_parallel_scope_effect program state
+          completionCommandId effectId result rfl selected
+        simp [refused] at admitted
     | some _ => simp [admitStimulus, declared]
   simp [applyStimulus, rejectedAdmission]
 
@@ -229,7 +304,8 @@ private theorem raw_task_completion_frames_message_phase (program : Program)
     exact message_handler_phase_wait_token_exchange program before instanceId wait running
       (List.mem_of_find?_eq_some found)
 
-/-- Matching ordinary User Task completions with one admitted successor agree after successful closure.
+/-- Matching ordinary User Task completions with one raw successor agree after successful closure.
+Repeated-scope profiles use exact admitted successors because scoped writes depend on the selected owner.
 `CLOSURE-ATOMIC-01` retains each distinct input on rollback, so admitted-successor equality alone does not equate failed results. -/
 theorem user_task_completion_with_same_successor_is_equal
     (closureLimit : Nat) (program : Program)
@@ -238,6 +314,7 @@ theorem user_task_completion_with_same_successor_is_equal
     (submittedTaskId : UserTaskInstanceId)
     (submittedValues : List VariableBinding)
     (noRepeatedScope : sequentialScopeProgramSelected program = false)
+    (noParallelRepeatedScope : ParallelScopeStart.programSelected program = false)
     (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
     (serialGuardAgreement :
       serialBusinessCommandAdmitted program leftState
@@ -289,6 +366,9 @@ theorem user_task_completion_with_same_successor_is_equal
     | false => simp [applyStimulus, admitStimulus, snapshotAbsent, accepted] at committed
     | true => rfl
   have rightSerial := serialGuardAgreement.symm.trans leftSerial
+  have parallelGuard (state : RuntimeState) : ParallelScopeCommand.stimulusAdmitted program state
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) = true := by
+    simp [ParallelScopeCommand.stimulusAdmitted, noParallelRepeatedScope]
   have notCallData : program.identity.semanticProfile ≠ callDataCheckpointProfileId := by
     intro profile
     have valid : callDataRuntimeStateValid program leftState = true := by
@@ -331,24 +411,44 @@ theorem user_task_completion_with_same_successor_is_equal
     dataOutputUndeclaredTaskRefusesCompletion program state
       submittedTaskId.processInstanceId ⟨submittedTaskId.elementId.value⟩
       submittedTaskId.activation submittedValues noOutputAssociation
-  cases serialInput : ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId && program.identity.semanticProfile != mixedTaskBusinessErrorProfileId) ||
+  have admittedOutcome : (admitStimulus program leftState
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues)).outcome = .committed := by
+    cases outcome : (admitStimulus program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues)).outcome <;>
+      simp_all [applyStimulus]
+  have admissionsEqual : admitStimulus program leftState
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
+      admitStimulus program rightState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) := by
+    cases serialInput : ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId && program.identity.semanticProfile != mixedTaskBusinessErrorProfileId) ||
       SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) <;>
-  cases completionAdmitted : structuredCompositionOrdinaryCompletionAdmitted program
+    cases completionAdmitted : structuredCompositionOrdinaryCompletionAdmitted program
       submittedTaskId submittedValues <;>
-  cases inputPresent : (dataInputTaskOperations program).any (fun entry =>
+    cases inputPresent : (dataInputTaskOperations program).any (fun entry =>
     decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
-  simp [applyStimulus, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
-    admitStimulus, noRepeatedScope, snapshotAbsent, leftSerial, rightSerial, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
+    simp [admitStimulus, noRepeatedScope, noParallelRepeatedScope, parallelGuard, snapshotAbsent, leftSerial, rightSerial, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,
     inputRefused, outputRefused,
     ordinaryProgram, valuesAdmitted, completionAdmitted, serialInput,
     completeOrdinaryUserTaskWithCompensation?, nonCompensationTarget, leftCompletion,
-    rightCompletion] at committed ⊢
-  split at committed <;> simp_all
+    rightCompletion] at admittedOutcome ⊢
+    all_goals try (split at admittedOutcome <;> simp_all)
+    all_goals simp_all
+  have exactAdmission : admitStimulus program leftState
+      (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
+      { outcome := .committed, state := (admitStimulus program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues)).state } := by
+    cases admission : admitStimulus program leftState
+        (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) with
+    | mk outcome state =>
+        have outcomeCommitted : outcome = .committed := by simpa only [admission] using admittedOutcome
+        simp only [outcomeCommitted]
+  exact applyStimulus_equal_of_same_admitted_successor closureLimit program leftState rightState _ _
+    exactAdmission (admissionsEqual.symm.trans exactAdmission) committed
 
 private theorem empty_activities_refuse_monitored_task_completion (program : Program)
     (state : RuntimeState) (process : SemanticId) (task : TaskDefinitionId) (activation : Nat)
@@ -377,6 +477,17 @@ private theorem empty_activities_refuse_monitored_task_timer (program : Program)
   rw [empty]
   rfl
 
+private theorem singleton_task_mismatch_refuses_parallel_completion
+    (program : Program) (wait : UserTaskWait) (id : UserTaskInstanceId)
+    (values : List VariableBinding) (time : Nat) (variables : ScopedVariables)
+    (mismatch : id.processInstanceId ≠ wait.processInstanceId ∨
+      id.elementId.value ≠ wait.task.id.value ∨ id.activation ≠ wait.activation) :
+    ParallelScopeCommand.completeTask? program (singletonWaitingState wait time variables) id values = none := by
+  rcases mismatch with processMismatch | elementMismatch | activationMismatch
+  · simp [ParallelScopeCommand.completeTask?, singletonWaitingState, Ne.symm processMismatch]
+  · simp [ParallelScopeCommand.completeTask?, singletonWaitingState, Ne.symm elementMismatch]
+  · simp [ParallelScopeCommand.completeTask?, singletonWaitingState, Ne.symm activationMismatch]
+
 /-- Any ordinary-family mismatch in the full semantic task-occurrence identity rejects completion with exact state preservation. -/
 theorem task_identity_mismatch_is_rejected
     (program : Program) (wait : UserTaskWait)
@@ -401,10 +512,20 @@ theorem task_identity_mismatch_is_rejected
         state := singletonWaitingState wait logicalTimeMs variables
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
+  have noParallelCompletion := singleton_task_mismatch_refuses_parallel_completion program wait
+    submittedTaskId submittedValues logicalTimeMs variables mismatch
+  by_cases selected : ParallelScopeStart.programSelected program = true
+  · apply applyStimulus_rejected_of_admission
+    have running : (singletonWaitingState wait logicalTimeMs variables).control = .running wait.processInstanceId := rfl
+    have noIncidents : (singletonWaitingState wait logicalTimeMs variables).effectIncidents = [] := rfl
+    cases declared : program.compensationEventSubProcessSnapshots <;>
+      simp [admitStimulus, declared, selected, running, noIncidents, noParallelCompletion]
+  have unselected : ParallelScopeStart.programSelected program = false := by
+    cases selection : ParallelScopeStart.programSelected program <;> simp_all
   rcases mismatch with processMismatch | remainingMismatch
   · apply applyStimulus_rejected_of_admission
     cases declared : program.compensationEventSubProcessSnapshots <;>
-      simp [admitStimulus, declared,
+      simp [admitStimulus, declared, ParallelScopeCommand.stimulusAdmitted, unselected,
         completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
         initialState,
         completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
@@ -425,7 +546,7 @@ theorem task_identity_mismatch_is_rejected
           (congrArg TaskDefinitionId.value exactMatch.1.2).symm
       apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared,
+        simp [admitStimulus, declared, ParallelScopeCommand.stimulusAdmitted, unselected,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
           completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
@@ -438,7 +559,7 @@ theorem task_identity_mismatch_is_rejected
           singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance, noParallelMultiInstance, noMatch, Ne.symm elementMismatch]
     · apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared,
+        simp [admitStimulus, declared, ParallelScopeCommand.stimulusAdmitted, unselected,
           completeOrdinaryUserTaskWithCompensation?, matchingOrdinaryUserTaskWait?, completeUserTask,
           initialState,
           completeBoundedUserTask?, empty_activities_refuse_monitored_task_completion, completeDataInputOutputUserTask?,
@@ -599,6 +720,13 @@ theorem effect_identity_mismatch_is_rejected
         state := singletonEffectWaitingState wait logicalTimeMs
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
+  by_cases selected : ParallelScopeStart.programSelected program = true
+  · have refused := empty_process_refuses_parallel_scope_effect program
+      (singletonEffectWaitingState wait logicalTimeMs) completionCommandId submittedEffectId result rfl selected
+    apply applyStimulus_rejected_of_admission
+    cases declared : program.compensationEventSubProcessSnapshots <;> simp [admitStimulus, declared, refused]
+  have unselected : ParallelScopeStart.programSelected program = false := by
+    cases selection : ParallelScopeStart.programSelected program <;> simp_all
   rcases mismatch with processMismatch | remainingMismatch
   · have noMatch : ¬ (
         (wait.processInstanceId = submittedEffectId.processInstanceId ∧
@@ -611,7 +739,7 @@ theorem effect_identity_mismatch_is_rejected
       simp [effectOccurrenceMatches, noMatch]
     apply applyStimulus_rejected_of_admission
     cases declared : program.compensationEventSubProcessSnapshots <;>
-      simp [admitStimulus, declared, initialState,
+      simp [admitStimulus, declared, initialState, ParallelScopeCommand.stimulusAdmitted, unselected,
         singletonEffectWaitingState, noOccurrence]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · have noMatch : ¬ (
@@ -625,7 +753,7 @@ theorem effect_identity_mismatch_is_rejected
         simp [effectOccurrenceMatches, noMatch]
       apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared, initialState,
+        simp [admitStimulus, declared, initialState, ParallelScopeCommand.stimulusAdmitted, unselected,
           singletonEffectWaitingState, noOccurrence]
     · have noMatch : ¬ (
           (wait.processInstanceId = submittedEffectId.processInstanceId ∧
@@ -638,7 +766,7 @@ theorem effect_identity_mismatch_is_rejected
         simp [effectOccurrenceMatches, noMatch]
       apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
-        simp [admitStimulus, declared, initialState,
+        simp [admitStimulus, declared, initialState, ParallelScopeCommand.stimulusAdmitted, unselected,
           singletonEffectWaitingState, noOccurrence]
 
 end BpmnSemantics.SemanticProcess

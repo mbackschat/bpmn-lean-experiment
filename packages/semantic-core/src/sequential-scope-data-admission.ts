@@ -109,7 +109,11 @@ export function sequentialScopeStartDataAdmitted(analysis: SequentialScopeDataAn
 export function sequentialScopeStimulusDataAdmitted(program: SemanticProcessProgram, stimulus: Stimulus): boolean {
   if (program.identity.semanticProfile !== SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return true;
   const analysis = analyzeSequentialScopeData(program);
-  if (analysis === undefined) return false;
+  return analysis !== undefined && repeatedScopeStimulusDataAdmitted(analysis, stimulus);
+}
+
+/** Repetition modes share protected names and value domains after their own Program analysis. */
+export function repeatedScopeStimulusDataAdmitted(analysis: SequentialScopeDataAnalysis, stimulus: Stimulus): boolean {
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
       return stimulus.instanceId.length > 0 && sequentialScopeStartDataAdmitted(analysis, stimulus.initialVariables);

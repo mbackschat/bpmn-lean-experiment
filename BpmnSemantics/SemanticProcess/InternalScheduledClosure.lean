@@ -290,6 +290,24 @@ private def executeSelectedFrontier? (program : Program) (commandId : SemanticId
                lifecycles := some (publications.map (·.lifecycle)) }
     | none => none
 
+/-- A selected reservation reaches its last successor once identities align and the complete batch applies; absent publication remains a separate result. -/
+theorem executeSelectedFrontier_reserved_batch_ready (program : Program) (commandId : SemanticId)
+    (first : Nat) (state : RuntimeState) (frontier : InternalExecutionFrontier)
+    (offers : List InternalExecutionOffer) (batch : InternalOccurrenceBatch) (successors : List RuntimeState)
+    (reserved : frontier.occurrenceBatch = some batch)
+    (aligned : offers.map (·.alternative) = batch.members.map (fun patch =>
+      InternalAlternative.operationOccurrence patch.operation.id patch.owner))
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors)
+    (nonempty : successors ≠ []) :
+    ∃ step, executeSelectedFrontier? program commandId first state frontier offers = some step ∧
+      step.state = successors.getLast nonempty := by
+  refine ⟨{
+    state := successors.getLast nonempty
+    records := (occurrenceBatchPublications? program commandId first state batch successors).map (List.map (·.record))
+    lifecycles := (occurrenceBatchPublications? program commandId first state batch successors).map (List.map (·.lifecycle)) }, ?_, rfl⟩
+  simp only [executeSelectedFrontier?, reserved, aligned, bne_self_eq_false, Bool.false_eq_true,
+    ↓reduceIte, applied, List.getLast?_eq_some_getLast nonempty, bind, Option.bind_some, pure]
+
 structure ScheduledClosureResult where
   state : RuntimeState
   hitBound : Bool := false
@@ -308,6 +326,12 @@ private def prependClosureStep (step : InternalClosureStep) (closed : ScheduledC
   else { closed with
     records := do pure ((← step.records) ++ (← closed.records))
     lifecycles := do pure ((← step.lifecycles) ++ (← closed.lifecycles)) }
+
+private theorem prependClosureStep_projections (step : InternalClosureStep) (closed : ScheduledClosureResult) :
+    (prependClosureStep step closed).state = closed.state ∧
+    (prependClosureStep step closed).failed = closed.failed := by
+  unfold prependClosureStep
+  split <;> simp [ScheduledClosureResult.failed]
 
 /-- Fuel counts operations, including every member of an independent batch. Stable closure is
 checked before fuel; fuel is checked before preparation ambiguity or directive inspection.
@@ -345,6 +369,31 @@ theorem closeScheduledTraced_stable (fuel : Nat) (program : Program) (commandId 
       { state, records := some [], lifecycles := some [] } := by
   unfold closeScheduledTraced
   simp [frontier]
+
+/-- An executed nonempty selection consumes one fuel unit per member; optional publication cannot change the recursive state or failure verdict. -/
+theorem closeScheduledTraced_selected_step (fuel : Nat) (program : Program) (commandId : SemanticId)
+    (index ordinal : Nat) (schedule remaining : InternalChoiceSchedule) (state : RuntimeState)
+    (first : InternalExecutionOffer) (rest : List InternalExecutionOffer) (consumed : Bool)
+    (step : InternalClosureStep)
+    (nonempty : (deriveInternalExecutionFrontier program state).offers.isEmpty = false)
+    (selected : selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule
+      (deriveInternalExecutionFrontier program state) = .execute (first :: rest) remaining consumed)
+    (enough : rest.length ≤ fuel)
+    (executed : executeSelectedFrontier? program commandId index state
+      (deriveInternalExecutionFrontier program state) (first :: rest) = some step) :
+    (closeScheduledTraced (fuel + 1) program commandId index ordinal schedule state).state =
+      (closeScheduledTraced (fuel - rest.length) program commandId (index + rest.length + 1)
+        (ordinal + if consumed then 1 else 0) remaining step.state).state ∧
+    (closeScheduledTraced (fuel + 1) program commandId index ordinal schedule state).failed =
+      (closeScheduledTraced (fuel - rest.length) program commandId (index + rest.length + 1)
+        (ordinal + if consumed then 1 else 0) remaining step.state).failed := by
+  rw [closeScheduledTraced]
+  simp only [nonempty, Bool.false_and, Bool.false_eq_true, ↓reduceIte, selected,
+    Nat.not_lt.mpr enough, executed]
+  generalize closeScheduledTraced (fuel - rest.length) program commandId (index + rest.length + 1)
+    (ordinal + if consumed then 1 else 0) remaining step.state = closed
+  unfold prependClosureStep
+  split <;> simp [ScheduledClosureResult.failed]
 
 /-- Singleton execution preserves the recursive closure's result state and failure verdict, independently of optional publication output. -/
 theorem closeScheduledTraced_singleton_step (fuel : Nat) (program : Program) (commandId : SemanticId)
@@ -455,5 +504,294 @@ theorem closeScheduledTraced_exact_consumption (fuel : Nat) (program : Program) 
                   simp only [prependClosureStep, tailSuccess, Bool.false_eq_true, ↓reduceIte] at closedEq
                   cases closedEq
                   exact InternalScheduleExecution.step _ _ _ _ _ _ _ _ _ _ _ selected executed tail
+
+/-- The schedule relation ends only at a complete stable frontier, including refusal checks. -/
+theorem InternalScheduleExecution.final_stable
+    {program : Program} {commandId : SemanticId} {index ordinal finalOrdinal : Nat}
+    {schedule : InternalChoiceSchedule} {before after : RuntimeState}
+    (execution : InternalScheduleExecution program commandId index ordinal schedule before after finalOrdinal) :
+    ((deriveInternalExecutionFrontier program after).offers.isEmpty &&
+      !(deriveInternalExecutionFrontier program after).preparationFailed) = true := by
+  induction execution with
+  | stable _ _ _ stable => exact stable
+  | step _ _ _ _ _ _ _ _ _ _ _ _ _ _ ih => exact ih
+
+/-- Successful actual closure supplies the stable-frontier premise needed by reachable-state laws. -/
+theorem closeScheduledTraced_success_stable (fuel : Nat) (program : Program) (commandId : SemanticId)
+    (index ordinal : Nat) (schedule : InternalChoiceSchedule) (state : RuntimeState)
+    (succeeded : (closeScheduledTraced fuel program commandId index ordinal schedule state).failed = false) :
+    let after := (closeScheduledTraced fuel program commandId index ordinal schedule state).state
+    ((deriveInternalExecutionFrontier program after).offers.isEmpty &&
+      !(deriveInternalExecutionFrontier program after).preparationFailed) = true := by
+  exact (closeScheduledTraced_exact_consumption fuel program commandId index ordinal schedule state
+    succeeded).final_stable
+
+/-- An actual recursive-call prefix retains the exact fuel and choice cursor. Refused selections
+and insufficient fuel cannot extend it, even when optional publication records are absent.
+-/
+inductive ScheduledClosurePrefix (program : Program) (commandId : SemanticId)
+    (initialFuel initialIndex initialOrdinal : Nat) (initialSchedule : InternalChoiceSchedule)
+    (initialState : RuntimeState) : Nat → Nat → Nat → InternalChoiceSchedule → RuntimeState → Prop where
+  | initial : ScheduledClosurePrefix program commandId initialFuel initialIndex initialOrdinal
+      initialSchedule initialState initialFuel initialIndex initialOrdinal initialSchedule initialState
+  | step {fuel index ordinal : Nat} {schedule remaining : InternalChoiceSchedule}
+      {state : RuntimeState} {first : InternalExecutionOffer} {rest : List InternalExecutionOffer}
+      {consumed : Bool} {next : InternalClosureStep}
+      (earlier : ScheduledClosurePrefix program commandId initialFuel initialIndex initialOrdinal
+        initialSchedule initialState (fuel + 1) index ordinal schedule state)
+      (unstable : ¬ ((deriveInternalExecutionFrontier program state).offers.isEmpty &&
+        !(deriveInternalExecutionFrontier program state).preparationFailed) = true)
+      (selected : selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule
+        (deriveInternalExecutionFrontier program state) = .execute (first :: rest) remaining consumed)
+      (enough : rest.length ≤ fuel)
+      (executed : executeSelectedFrontier? program commandId index state
+        (deriveInternalExecutionFrontier program state) (first :: rest) = some next) :
+      ScheduledClosurePrefix program commandId initialFuel initialIndex initialOrdinal initialSchedule initialState
+        (fuel - rest.length) (index + rest.length + 1) (ordinal + if consumed then 1 else 0) remaining next.state
+
+theorem ScheduledClosurePrefix.trans
+    {program : Program} {commandId : SemanticId} {f₀ i₀ o₀ f₁ i₁ o₁ f₂ i₂ o₂ : Nat}
+    {q₀ q₁ q₂ : InternalChoiceSchedule} {s₀ s₁ s₂ : RuntimeState}
+    (earlier : ScheduledClosurePrefix program commandId f₀ i₀ o₀ q₀ s₀ f₁ i₁ o₁ q₁ s₁)
+    (later : ScheduledClosurePrefix program commandId f₁ i₁ o₁ q₁ s₁ f₂ i₂ o₂ q₂ s₂) :
+    ScheduledClosurePrefix program commandId f₀ i₀ o₀ q₀ s₀ f₂ i₂ o₂ q₂ s₂ := by
+  induction later with
+  | initial => exact earlier
+  | step _ unstable selected enough executed ih => exact .step ih unstable selected enough executed
+
+theorem ScheduledClosurePrefix.budget
+    {program : Program} {commandId : SemanticId} {f₀ i₀ o₀ fuel index ordinal : Nat}
+    {q₀ schedule : InternalChoiceSchedule} {s₀ state : RuntimeState}
+    (path : ScheduledClosurePrefix program commandId f₀ i₀ o₀ q₀ s₀ fuel index ordinal schedule state) :
+    fuel ≤ f₀ ∧ index = i₀ + (f₀ - fuel) := by
+  induction path with
+  | initial => simp
+  | step _ _ _ enough _ ih => omega
+
+/-- A retained prefix identifies the same final state and failure verdict as its actual suffix;
+publication concatenation does not affect either projection (`prependClosureStep`).
+-/
+theorem ScheduledClosurePrefix.continuation
+    {program : Program} {commandId : SemanticId} {f₀ i₀ o₀ fuel index ordinal : Nat}
+    {q₀ schedule : InternalChoiceSchedule} {s₀ state : RuntimeState}
+    (path : ScheduledClosurePrefix program commandId f₀ i₀ o₀ q₀ s₀ fuel index ordinal schedule state) :
+    (closeScheduledTraced f₀ program commandId i₀ o₀ q₀ s₀).state =
+      (closeScheduledTraced fuel program commandId index ordinal schedule state).state ∧
+    (closeScheduledTraced f₀ program commandId i₀ o₀ q₀ s₀).failed =
+      (closeScheduledTraced fuel program commandId index ordinal schedule state).failed := by
+  induction path with
+  | initial => exact ⟨rfl, rfl⟩
+  | step _ unstable selected enough executed ih =>
+      rw [ih.1, ih.2]
+      rw [closeScheduledTraced]
+      simp only [unstable, ↓reduceIte, selected, Nat.not_lt.mpr enough, executed]
+      exact prependClosureStep_projections _ _
+
+/-- Induction follows the evaluator's actual fuel-checked recursive calls, including failing
+closures whose executed prefix has no published records.
+-/
+theorem closeScheduledTraced_cursor_induction (program : Program) (commandId : SemanticId)
+    (predicate : Nat → Nat → Nat → InternalChoiceSchedule → RuntimeState → Prop)
+    (advance : ∀ fuel index ordinal schedule state first rest remaining consumed step,
+      predicate (fuel + 1) index ordinal schedule state →
+      (¬ ((deriveInternalExecutionFrontier program state).offers.isEmpty &&
+        !(deriveInternalExecutionFrontier program state).preparationFailed) = true) →
+      selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule
+        (deriveInternalExecutionFrontier program state) = .execute (first :: rest) remaining consumed →
+      rest.length ≤ fuel →
+      executeSelectedFrontier? program commandId index state
+        (deriveInternalExecutionFrontier program state) (first :: rest) = some step →
+      predicate (fuel - rest.length) (index + rest.length + 1)
+        (ordinal + if consumed then 1 else 0) remaining step.state)
+    (fuel index ordinal : Nat) (schedule : InternalChoiceSchedule) (state : RuntimeState)
+    (initial : predicate fuel index ordinal schedule state) :
+    ∃ remainingFuel nextIndex nextOrdinal nextSchedule,
+      ScheduledClosurePrefix program commandId fuel index ordinal schedule state
+        remainingFuel nextIndex nextOrdinal nextSchedule
+        (closeScheduledTraced fuel program commandId index ordinal schedule state).state ∧
+      predicate remainingFuel nextIndex nextOrdinal nextSchedule
+        (closeScheduledTraced fuel program commandId index ordinal schedule state).state := by
+  induction fuel using Nat.strongRecOn generalizing index ordinal schedule state with
+  | ind fuel ih =>
+      generalize closedEq : closeScheduledTraced fuel program commandId index ordinal schedule state = closed
+      unfold closeScheduledTraced at closedEq
+      dsimp only at closedEq
+      split at closedEq
+      · split at closedEq <;> cases closedEq <;> exact ⟨_, _, _, _, .initial, initial⟩
+      · rename_i unstable
+        cases fuel with
+        | zero => cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+        | succ fuel =>
+            simp only at closedEq
+            split at closedEq
+            · cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+            · cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+            · cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+            · rename_i first rest remaining consumed selected
+              split at closedEq
+              · cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+              · rename_i enough
+                split at closedEq
+                · cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
+                · rename_i step executed
+                  have next := advance fuel index ordinal schedule state first rest remaining consumed step
+                    initial unstable selected (Nat.le_of_not_gt enough) executed
+                  obtain ⟨remainingFuel, nextIndex, nextOrdinal, nextSchedule, path, preserved⟩ := ih (fuel - rest.length)
+                    (Nat.lt_succ_of_le (Nat.sub_le _ _)) (index + rest.length + 1)
+                    (ordinal + if consumed then 1 else 0) remaining step.state next
+                  have endpoint : closed.state = (closeScheduledTraced (fuel - rest.length) program commandId
+                      (index + rest.length + 1) (ordinal + if consumed then 1 else 0) remaining step.state).state := by
+                    rw [← closedEq]
+                    exact (prependClosureStep_projections _ _).1
+                  rw [endpoint]
+                  exact ⟨remainingFuel, nextIndex, nextOrdinal, nextSchedule,
+                    (ScheduledClosurePrefix.step .initial unstable selected (Nat.le_of_not_gt enough) executed).trans path, preserved⟩
+
+/-- Fuel refusal identifies the actual stopped cursor, including whole-batch overflow.
+The witness survives missing publication and does not assume successful closure. -/
+theorem closeScheduledTraced_hitBound_cursor (program : Program) (commandId : SemanticId)
+    (fuel index ordinal : Nat) (schedule : InternalChoiceSchedule) (state : RuntimeState)
+    (hit : (closeScheduledTraced fuel program commandId index ordinal schedule state).hitBound = true) :
+    ∃ remainingFuel nextIndex nextOrdinal nextSchedule,
+      let final := (closeScheduledTraced fuel program commandId index ordinal schedule state).state
+      ScheduledClosurePrefix program commandId fuel index ordinal schedule state
+        remainingFuel nextIndex nextOrdinal nextSchedule final ∧
+      (¬ ((deriveInternalExecutionFrontier program final).offers.isEmpty &&
+        !(deriveInternalExecutionFrontier program final).preparationFailed) = true) ∧
+      (remainingFuel = 0 ∨ ∃ offers remaining consumed,
+        selectInternalExecutionFrontier program.internalSchedulingMode nextOrdinal nextSchedule
+          (deriveInternalExecutionFrontier program final) = .execute offers remaining consumed ∧
+        remainingFuel < offers.length) := by
+  induction fuel using Nat.strongRecOn generalizing index ordinal schedule state with
+  | ind fuel ih =>
+      generalize closedEq : closeScheduledTraced fuel program commandId index ordinal schedule state = closed at hit ⊢
+      unfold closeScheduledTraced at closedEq
+      dsimp only at closedEq
+      split at closedEq
+      · split at closedEq <;> cases closedEq <;> contradiction
+      · rename_i unstable
+        cases fuel with
+        | zero => cases closedEq; exact ⟨0, index, ordinal, schedule, .initial, unstable, Or.inl rfl⟩
+        | succ fuel =>
+            simp only at closedEq
+            split at closedEq
+            · cases closedEq; contradiction
+            · cases closedEq; contradiction
+            · cases closedEq; contradiction
+            · rename_i first rest remaining consumed selected
+              split at closedEq
+              · rename_i overflow
+                cases closedEq
+                exact ⟨fuel + 1, index, ordinal, schedule, .initial, unstable,
+                  Or.inr ⟨first :: rest, remaining, consumed, selected, by simp only [List.length_cons]; omega⟩⟩
+              · rename_i enough
+                split at closedEq
+                · cases closedEq; contradiction
+                · rename_i step executed
+                  have suffixHit : (closeScheduledTraced (fuel - rest.length) program commandId
+                      (index + rest.length + 1) (ordinal + if consumed then 1 else 0) remaining step.state).hitBound = true := by
+                    have preserved (suffix : ScheduledClosureResult) :
+                        (prependClosureStep step suffix).hitBound = suffix.hitBound := by
+                      unfold prependClosureStep
+                      split <;> rfl
+                    rw [← closedEq] at hit
+                    exact (preserved _).symm.trans hit
+                  obtain ⟨remainingFuel, nextIndex, nextOrdinal, nextSchedule, path, stopped, deficit⟩ :=
+                    ih (fuel - rest.length) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                      (index + rest.length + 1) (ordinal + if consumed then 1 else 0) remaining step.state suffixHit
+                  have endpoint := (prependClosureStep_projections step
+                    (closeScheduledTraced (fuel - rest.length) program commandId
+                      (index + rest.length + 1) (ordinal + if consumed then 1 else 0) remaining step.state)).1
+                  rw [closedEq] at endpoint
+                  rw [endpoint]
+                  exact ⟨remainingFuel, nextIndex, nextOrdinal, nextSchedule,
+                    (ScheduledClosurePrefix.step .initial unstable selected (Nat.le_of_not_gt enough) executed).trans path,
+                    stopped, deficit⟩
+
+/-- The index-only accounting interface derives spent fuel from the exact recursive-call prefix. -/
+theorem closeScheduledTraced_prefix_induction (program : Program) (commandId : SemanticId)
+    (predicate : Nat → RuntimeState → Prop)
+    (advance : ∀ index ordinal schedule state offers remaining consumed step,
+      predicate index state → offers ≠ [] →
+      selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule
+        (deriveInternalExecutionFrontier program state) = .execute offers remaining consumed →
+      executeSelectedFrontier? program commandId index state
+        (deriveInternalExecutionFrontier program state) offers = some step →
+      predicate (index + offers.length) step.state)
+    (fuel index ordinal : Nat) (schedule : InternalChoiceSchedule) (state : RuntimeState)
+    (initial : predicate index state) :
+    ∃ spent ≤ fuel, predicate (index + spent)
+      (closeScheduledTraced fuel program commandId index ordinal schedule state).state := by
+  obtain ⟨remainingFuel, nextIndex, _, _, path, preserved⟩ := closeScheduledTraced_cursor_induction program commandId
+    (fun _ position _ _ current => predicate position current) (by
+      intro _ position nextOrdinal nextSchedule before first rest remaining consumed step earlier _ selected _ executed
+      simpa only [List.length_cons, Nat.add_assoc] using
+        advance position nextOrdinal nextSchedule before (first :: rest) remaining consumed step earlier (by simp) selected executed)
+    fuel index ordinal schedule state initial
+  exact ⟨fuel - remainingFuel, Nat.sub_le _ _, path.budget.2 ▸ preserved⟩
+
+/-- Selected PMIS execution exposes actual singleton or ordered reserved-batch steps even when publication is absent. -/
+theorem executeSelectedFrontier_parallel_scope_steps (program : Program) (commandId : SemanticId)
+    (index ordinal : Nat) (schedule : InternalChoiceSchedule) (state : RuntimeState)
+    (offers : List InternalExecutionOffer) (remaining : InternalChoiceSchedule) (consumed : Bool)
+    (step : InternalClosureStep)
+    (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (nonempty : offers ≠ [])
+    (selected : selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule
+      (deriveInternalExecutionFrontier program state) = .execute offers remaining consumed)
+    (executed : executeSelectedFrontier? program commandId index state
+      (deriveInternalExecutionFrontier program state) offers = some step) :
+    (∃ offer candidate, offers = [offer] ∧ offers.length = 1 ∧
+      offer.alternative = .operationOccurrence candidate.operationId candidate.owner ∧
+      applyInternalOperationOccurrence? program state candidate = some step.state ∧ offer.preparation = none) ∨
+    (∃ batch successors,
+      (deriveInternalExecutionFrontier program state).occurrenceBatch = some batch ∧
+      applyInternalOccurrenceBatch? program state batch = some successors ∧
+      successors.length = offers.length ∧ successors.getLast? = some step.state ∧
+      offers.map (·.alternative) = batch.members.map (fun patch =>
+        InternalAlternative.operationOccurrence patch.operation.id patch.owner) ∧
+      ∀ pair ∈ batch.members.zip ((state :: successors).zip successors),
+        InternalOccurrencePatchStep program pair.2.1 pair.2.2 pair.1) := by
+  let frontier := deriveInternalExecutionFrontier program state
+  change selectInternalExecutionFrontier program.internalSchedulingMode ordinal schedule frontier = _ at selected
+  change executeSelectedFrontier? program commandId index state frontier offers = _ at executed
+  have sound : ∀ offer ∈ frontier.offers, ∃ candidate,
+      offer.alternative = .operationOccurrence candidate.operationId candidate.owner ∧
+      applyInternalOperationOccurrence? program state candidate = some offer.successor ∧ offer.preparation = none :=
+    fun offer present => deriveInternalExecutionFrontier_occurrence_sound program state profile offer present
+  cases batch : frontier.occurrenceBatch with
+  | some certificate =>
+    simp only [executeSelectedFrontier?, batch] at executed
+    split at executed <;> try contradiction
+    rename_i aligned
+    have alternatives : offers.map (·.alternative) = certificate.members.map (fun patch =>
+        InternalAlternative.operationOccurrence patch.operation.id patch.owner) := by
+      exact Classical.byContradiction (fun different => aligned (by simpa only [bne_iff_ne] using different))
+    obtain ⟨successors, applied, executed⟩ := Option.bind_eq_some_iff.mp executed
+    obtain ⟨final, last, executed⟩ := Option.bind_eq_some_iff.mp executed
+    cases Option.some.inj executed
+    obtain ⟨length, steps⟩ := applyInternalOccurrenceBatch_ordered_steps program state certificate successors applied
+    have identities := congrArg List.length alternatives
+    simp only [List.length_map] at identities
+    exact Or.inr ⟨certificate, successors, rfl, applied, by omega, last, alternatives, steps⟩
+  | none =>
+    cases discovered : frontier.offers with
+    | nil =>
+      simp [selectInternalExecutionFrontier, batch, discovered, classifyPreparedInternalFrontier, sortBy] at selected
+    | cons first rest =>
+      obtain ⟨candidate, alternative, applied, preparation⟩ := sound first (by rw [discovered]; simp)
+      have unprepared : frontier.offers.mapM (·.preparation) = none := by
+        simp [discovered, List.mapM_cons, preparation]
+      simp only [selectInternalExecutionFrontier, batch, Option.isSome_none, Bool.false_eq_true,
+        if_false] at selected
+      rw [unprepared, discovered] at selected
+      split at selected <;> try contradiction
+      cases rest with
+      | nil =>
+        cases selected
+        simp only [executeSelectedFrontier?, batch] at executed
+        cases Option.some.inj executed
+        exact Or.inl ⟨first, candidate, rfl, rfl, alternative, applied, preparation⟩
+      | cons next tail => contradiction
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

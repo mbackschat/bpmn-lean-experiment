@@ -719,7 +719,7 @@ export function applyStimulus(
   program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = semanticProcessClosureLimit,
+  closureLimit?: number,
 ): CommandResult {
   return evaluateStimulusWithSelectedSteps(
     program,
@@ -738,7 +738,7 @@ export function evaluateStimulusWithSelectedSteps(
   program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = semanticProcessClosureLimit,
+  closureLimit?: number,
 ): StimulusEvaluationResult {
   const evaluation = evaluateScheduledStimulusWithSelectedSteps(program, state, stimulus, [], closureLimit);
   const { scheduleFailure: _failure, ...result } = evaluation.result;
@@ -751,7 +751,7 @@ export function applyStimulusWithSchedule(
   state: RuntimeState,
   stimulus: Stimulus,
   schedule: InternalChoiceSchedule,
-  closureLimit: number = semanticProcessClosureLimit,
+  closureLimit?: number,
 ): ScheduledStimulusResult {
   return evaluateScheduledStimulusWithSelectedSteps(program, state, stimulus, schedule, closureLimit).result;
 }
@@ -761,11 +761,14 @@ export function evaluateScheduledStimulusWithSelectedSteps(
   state: RuntimeState,
   stimulus: Stimulus,
   schedule: InternalChoiceSchedule,
-  closureLimit: number = semanticProcessClosureLimit,
+  closureLimit?: number,
 ): ScheduledStimulusEvaluationResult {
-  validateClosureLimit(closureLimit);
+  if (closureLimit !== undefined) validateClosureLimit(closureLimit);
   try {
-    return evaluateScheduledClosure(program, state, admit(program, state, stimulus), schedule, closureLimit,
+    const admission = admit(program, state, stimulus);
+    const limit = admission.closureBound === undefined ? closureLimit ?? semanticProcessClosureLimit
+      : Math.min(closureLimit ?? admission.closureBound, admission.closureBound);
+    return evaluateScheduledClosure(program, state, admission, schedule, limit,
       (current) => internalOperationFrontier(program, current));
   } catch (error) {
     if (!(error instanceof RecurringBoundaryTimerCapacityRefusal)) throw error;

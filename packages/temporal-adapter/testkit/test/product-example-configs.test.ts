@@ -6,11 +6,11 @@
  * passes both pre-start gates without opening a Temporal connection. Live durable execution of these
  * same configurations is a separate lane that requires a running Temporal service.
  *
- * The oracle is `SemanticProfileId`, not the example directory, so adding a profile without a product
- * example fails here rather than silently shrinking the advertised product surface.
+ * Profile artifacts independently define the public inventory. The catalog must equal that inventory,
+ * and examples must cover it, so omitting both a catalog member and its example still fails.
  */
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { glob, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -20,13 +20,29 @@ import {
   compileBpmnToSemanticProcess,
 } from "@bpmn-lean/bpmn-source";
 import {
+  CommandOutcome,
+  EffectExecutionResultKind,
+  ProcessStatus,
+  ScenarioStepKind,
   SemanticProfileId,
+  advanceScenario,
+  initialState,
+  observeStableState,
+  projectEffectTransportMaterial,
 } from "@bpmn-lean/semantic-core";
+import type { Scenario, Stimulus } from "@bpmn-lean/semantic-core";
 import {
   BpmnProcessAdmissionResultKind,
+  HostInteractionResultKind,
+  ProcessCommandResultKind,
   TemporalHostCapabilityResultKind,
   assessBpmnProcessAdmission,
   assessTemporalHostCapability,
+  completeEffectStimulus,
+  createHostEffectActivities,
+  driveHostInteractions,
+  effectTransportKey,
+  projectUserTaskDetail,
 } from "@bpmn-lean/temporal-testkit";
 
 import { loadRunnableMvpConfig } from "../../runner/cli/runnable-mvp-config.ts";
@@ -34,6 +50,7 @@ import type { RunnableMvpConfig } from "../../runner/cli/runnable-mvp-config.ts"
 import {
   createRunnableMvpStartStimulus,
 } from "../../runner/cli/runnable-mvp-start.ts";
+import { parseStrictJson } from "../../../../scripts/strict-json.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const exampleRoot = path.join(projectRoot, "examples/temporal-mvp");
@@ -67,6 +84,51 @@ async function exampleConfigPaths(): Promise<ReadonlyArray<string>> {
     .sort()
     .map((file) => path.join(exampleRoot, file));
 }
+
+async function profileArtifactIds(): Promise<ReadonlyArray<string>> {
+  const ids: string[] = [];
+  const profileRoot = path.join(projectRoot, "profiles");
+  for await (const file of glob("*/profile.json", { cwd: profileRoot })) {
+    const artifact = parseStrictJson<unknown>(
+      await readFile(path.join(profileRoot, file), "utf8"), file,
+    );
+    assert.ok(typeof artifact === "object" && artifact !== null);
+    assert.ok("id" in artifact && typeof artifact.id === "string" && artifact.id.length > 0);
+    ids.push(artifact.id);
+  }
+  return ids.sort();
+}
+
+function assertProfileCatalogMatchesArtifacts(
+  artifactIds: ReadonlyArray<string>,
+  catalogIds: ReadonlyArray<string>,
+): void {
+  assert.equal(new Set(artifactIds).size, artifactIds.length, "duplicate profile artifact IDs");
+  assert.equal(new Set(catalogIds).size, catalogIds.length, "duplicate profile catalog IDs");
+  assert.deepEqual([...catalogIds].sort(), [...artifactIds].sort());
+}
+
+test("registers exactly the independent public profile artifact inventory", async () => {
+  assertProfileCatalogMatchesArtifacts(await profileArtifactIds(), registeredProfiles);
+});
+
+test("rejects omitted, extra and duplicate public profile catalog identities", async () => {
+  const artifactIds = await profileArtifactIds();
+  const [omitted] = artifactIds;
+  assert.ok(omitted !== undefined);
+  assert.throws(() => assertProfileCatalogMatchesArtifacts(
+    artifactIds, artifactIds.filter((id) => id !== omitted),
+  ), assert.AssertionError);
+  assert.throws(() => assertProfileCatalogMatchesArtifacts(
+    artifactIds, [...artifactIds, "unregistered-profile"],
+  ), assert.AssertionError);
+  assert.throws(() => assertProfileCatalogMatchesArtifacts(
+    artifactIds, [...artifactIds, omitted],
+  ), /duplicate profile catalog IDs/u);
+  assert.throws(() => assertProfileCatalogMatchesArtifacts(
+    [...artifactIds, omitted], [...artifactIds, omitted],
+  ), /duplicate profile artifact IDs/u);
+});
 
 async function compileExample(config: RunnableMvpConfig) {
   const sourceOverlay = config.bpmn.sourceOverlay;
@@ -118,6 +180,93 @@ test("gives every registered semantic profile at least one example and no exampl
     { profilesWithoutExample: [], unregisteredProfiles: [] },
   );
 });
+
+for (const example of [
+  {
+    name: "serial-business-task-composition",
+    profile: SemanticProfileId.SerialBusinessTaskComposition,
+    operations: ["invoiceValidator", "invoiceClassifier"],
+    variables: [["classification", "standard"], ["decision", "valid"],
+      ["payload", "parent-payload"], ["request", "INV-42"], ["result", "parent-result"]],
+  },
+  {
+    name: "mixed-task-control-flow",
+    profile: SemanticProfileId.MixedTaskControlFlow,
+    operations: ["invoiceValidator"],
+    variables: [["decision", "valid"], ["request", "INV-42"]],
+  },
+  {
+    name: "mixed-task-business-error",
+    profile: SemanticProfileId.MixedTaskBusinessError,
+    operations: ["invoiceValidator", "policyChecker"],
+    variables: [["decision", "valid"], ["request", "INV-42"], ["result", "parent-result"]],
+  },
+] as const) {
+  test(`terminates ${example.name} with its configured fixed-result handlers`, async () => {
+    const config = await loadRunnableMvpConfig(path.join(exampleRoot, `${example.name}.json`));
+    assert.equal(config.bpmn.semanticProfile, example.profile);
+    assert.equal(config.bpmn.file, path.join(projectRoot, `scenarios/${example.name}/process.bpmn`));
+    assert.equal(config.bpmn.sourceOverlay?.file,
+      path.join(projectRoot, `scenarios/${example.name}/source-overlay.json`));
+    const compilation = await compileExample(config);
+    assert.ok(compilation.status === BpmnCompilationStatus.Accepted);
+    const program = compilation.semanticProcess;
+    const scenario = parseStrictJson<Scenario>(await readFile(
+      path.join(projectRoot, `scenarios/${example.name}/scenario.json`), "utf8",
+    ), example.name);
+    assert.equal(program.identity.sourceId, scenario.bpmn.id);
+    assert.equal(program.identity.sourceSha256, scenario.bpmn.sha256);
+    assert.deepEqual(program.identity.sourceOverlay, scenario.bpmn.sourceOverlay);
+    const activities = createHostEffectActivities(config.effectHandlers);
+    const operations: string[] = [];
+    let state = initialState;
+    const submit = async (stimulus: Stimulus) => {
+      const step = advanceScenario(program, state, stimulus);
+      assert.ok(step.kind === ScenarioStepKind.Committed);
+      state = step.state;
+      return {
+        kind: ProcessCommandResultKind.Semantic,
+        commandId: stimulus.commandId,
+        outcome: CommandOutcome.Committed,
+      } as const;
+    };
+    const readState = async () => {
+      const observation = observeStableState(program, state);
+      assert.ok(observation !== null);
+      return observation;
+    };
+    await submit(createRunnableMvpStartStimulus(config, program));
+    const driven = await driveHostInteractions(config.interactions, {
+      readState,
+      readUserTaskDetail: async (request) => projectUserTaskDetail(state, request),
+      submitCompletion: submit,
+      submitMessage: async () => { throw new Error("Unexpected Message interaction"); },
+      publishCorrelated: async () => { throw new Error("Unexpected correlated publication"); },
+      submitCancellation: async () => { throw new Error("Unexpected cancellation"); },
+    }, async () => {
+      const [effect] = (await readState()).openEffects;
+      if (effect === undefined) {
+        return;
+      }
+      operations.push(effect.descriptor.operation);
+      const result = await activities.executeBpmnEffect({
+        ...effect.descriptor,
+        arguments: effect.arguments,
+        idempotencyKey: effectTransportKey(projectEffectTransportMaterial(program, effect)),
+      });
+      assert.ok(result.kind === EffectExecutionResultKind.Success);
+      await submit(completeEffectStimulus(effect.id, result));
+    });
+    assert.deepEqual(driven, { kind: HostInteractionResultKind.Driven, submitted: 2 });
+    assert.deepEqual(operations, example.operations);
+    const final = await readState();
+    assert.equal(final.status, ProcessStatus.Completed);
+    assert.deepEqual(final.variables, example.variables.map(([name, value]) => ({
+      name, value: { kind: "string", value },
+    })));
+    assert.deepEqual(state.variables.activities, []);
+  });
+}
 
 test("registers Process data with preserved notation through the existing User Task driver", async () => {
   assert.equal(

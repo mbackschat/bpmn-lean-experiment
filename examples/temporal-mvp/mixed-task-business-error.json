@@ -1,0 +1,67 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/mixed-task-business-error/process.bpmn",
+    "sourceId": "invoice-business-error",
+    "semanticProfile": "cibseven-2.2.0-mixed-task-business-error-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/mixed-task-business-error/source-overlay.json",
+      "id": "invoice-handlers",
+      "sha256": "078fb081badfc264e638492d7cfe32c0c6d7d0f6f5e290d3c28e15c3b9cd1fe6"
+    },
+    "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
+  },
+  "process": {
+    "instanceId": "MvpExample_mixed_task_business_error_1",
+    "initialVariables": [
+      { "name": "request", "value": { "kind": "string", "value": "initial" } },
+      { "name": "result", "value": { "kind": "string", "value": "parent-result" } }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Review",
+      "delayMs": 250,
+      "inputVariableNames": ["request"],
+      "submittedValues": [
+        { "name": "request", "value": { "kind": "string", "value": "INV-42" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Finalize",
+      "delayMs": 250,
+      "inputVariableNames": ["decision"],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "invoiceValidator",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "result", "value": { "kind": "string", "value": "valid" } }
+        ]
+      }
+    },
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "policyChecker",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "result", "value": { "kind": "string", "value": "valid" } }
+        ]
+      }
+    }
+  ]
+}

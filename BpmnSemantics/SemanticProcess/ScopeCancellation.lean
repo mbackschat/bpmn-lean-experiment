@@ -278,6 +278,98 @@ theorem cancelScopeSubtree_retains_selected_child_activity (state : RuntimeState
   simp only [recordInRegion, outside, body, retainedCancellationRoot, beq_self_eq_true,
     Bool.not_true, Bool.and_false, Bool.or_self, Bool.not_false]
 
+/-- Distinct direct children of a parentless root cannot lie in each other's cancellation subtree. -/
+theorem occurrenceInSubtree_sibling (occurrences : List RuntimeScopeOccurrence)
+    (retired sibling parent : ScopeOccurrenceId) (different : sibling ≠ retired)
+    (parentDifferent : parent ≠ retired) (owned : occurrenceParent? occurrences sibling = some parent)
+    (parentless : occurrenceParent? occurrences parent = none) :
+    occurrenceInSubtree occurrences retired sibling = false := by
+  cases length : occurrences.length <;>
+    simp [occurrenceInSubtree, occurrenceInSubtreeWithin, length, different, owned, parentDifferent, parentless]
+
+/-- A Call-free population has no extra Process-instance cancellation targets. -/
+theorem calledInstanceClosure_no_calls (state : RuntimeState) (root : ScopeOccurrenceId)
+    (noCalls : state.calledProcessOccurrences = []) : calledInstanceClosure state root = [] := by
+  simp [calledInstanceClosure, noCalls, processInstanceClosureWithin]
+
+/-- Cancellation preserves the complete occurrence and local-frame selection censuses of every outside owner. -/
+theorem cancelScopeSubtree_outside_owner_census (state : RuntimeState) (root owner : ScopeOccurrenceId)
+    (noCalls : state.calledProcessOccurrences = [])
+    (outside : occurrenceInSubtree state.scopeOccurrences root owner = false) :
+    (cancelScopeSubtree state root .remove).scopeOccurrences.filter (fun value => value.id == owner) =
+        state.scopeOccurrences.filter (fun value => value.id == owner) ∧
+      (cancelScopeSubtree state root .remove).variables.scopes.filter (fun value => decide (value.owner = owner)) =
+        state.variables.scopes.filter (fun value => decide (value.owner = owner)) := by
+  have calls := calledInstanceClosure_no_calls state root noCalls
+  constructor
+  · simp only [cancelScopeSubtree, keepScopeOccurrence, calls, List.contains_nil, Bool.or_false, List.filter_filter]
+    apply List.filter_congr
+    intro value _
+    by_cases same : value.id = owner <;> simp [same, outside]
+  · simp only [cancelScopeSubtree, calls, List.contains_nil, Bool.or_false, List.filter_filter]
+    apply List.filter_congr
+    intro value _
+    by_cases same : value.owner = owner <;> simp [same, outside]
+
+/-- After retired membership is detached, a sole outside outer Activity and its controller survive leaf cancellation. -/
+theorem cancelScopeSubtree_outside_parallel_outer (state : RuntimeState) (root : ScopeOccurrenceId)
+    (record : ActivityOccurrence) (controller : ParallelScopeController)
+    (noCalls : state.calledProcessOccurrences = [])
+    (activities : state.activityOccurrences = [record]) (controllers : state.parallelScopeControllers = [controller])
+    (ownerOutside : occurrenceInSubtree state.scopeOccurrences root record.owner = false)
+    (claimsOutside : ∀ scope ∈ activityBodyScopeClaims record.body,
+      occurrenceInSubtree state.scopeOccurrences root scope = false) :
+    (cancelScopeSubtree state root .remove).activityOccurrences = [record] ∧
+      (cancelScopeSubtree state root .remove).parallelScopeControllers = [controller] := by
+  have calls := calledInstanceClosure_no_calls state root noCalls
+  have notWithdrawn : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner) record none = false := by
+    cases body : record.body <;> simp [recordInRegion, body, ownerOutside, activityBodyScopeClaims] at claimsOutside ⊢
+    all_goals simp_all
+  simp [cancelScopeSubtree, calls, activities, controllers, retainedByRegion, withdrawnByRegion,
+    retainedCancellationRoot, notWithdrawn]
+
+/-- Regional cancellation can only remove occurrences, so later cancellations cannot resurrect an owner. -/
+theorem cancelScopeSubtree_scopeOccurrences_sublist (state : RuntimeState)
+    (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition) :
+    (cancelScopeSubtree state root disposition).scopeOccurrences.Sublist state.scopeOccurrences :=
+  List.filter_sublist
+
+/-- Removal classifies the exact selected occurrence as inside its subtree independently of ancestry. -/
+theorem cancelScopeSubtree_remove_target (state : RuntimeState) (root : ScopeOccurrenceId) :
+    ∀ occurrence ∈ (cancelScopeSubtree state root .remove).scopeOccurrences, occurrence.id ≠ root := by
+  intro occurrence member same
+  change occurrence ∈ state.scopeOccurrences.filter _ at member
+  have retained := (List.mem_filter.mp member).2
+  simp [keepScopeOccurrence, occurrenceInSubtree, occurrenceInSubtreeWithin, same] at retained
+
+/-- Every prefix of a removal fold inherits the initial occurrence census as a sublist. -/
+theorem cancelScopeSubtree_fold_scopeOccurrences_sublist {α : Type}
+    (targets : List α) (scope : α → ScopeOccurrenceId) (state : RuntimeState) :
+    (targets.foldl (fun current target => cancelScopeSubtree current (scope target) .remove)
+      state).scopeOccurrences.Sublist state.scopeOccurrences := by
+  induction targets generalizing state with
+  | nil => exact List.Sublist.refl _
+  | cons target rest ih =>
+      exact (ih (cancelScopeSubtree state (scope target) .remove)).trans
+        (cancelScopeSubtree_scopeOccurrences_sublist state (scope target) .remove)
+
+/-- Each listed target is removed when visited and cannot reappear during later regional removals. -/
+theorem cancelScopeSubtree_fold_remove_targets {α : Type}
+    (targets : List α) (scope : α → ScopeOccurrenceId) (state : RuntimeState) :
+    ∀ target ∈ targets, ∀ occurrence ∈
+      (targets.foldl (fun current target => cancelScopeSubtree current (scope target) .remove)
+        state).scopeOccurrences, occurrence.id ≠ scope target := by
+  induction targets generalizing state with
+  | nil => simp
+  | cons head rest ih =>
+      intro target member occurrence survives
+      rcases List.mem_cons.mp member with same | tail
+      · subst target
+        exact cancelScopeSubtree_remove_target state (scope head) occurrence
+          ((cancelScopeSubtree_fold_scopeOccurrences_sublist rest scope
+            (cancelScopeSubtree state (scope head) .remove)).subset survives)
+      · exact ih (cancelScopeSubtree state (scope head) .remove) target tail occurrence survives
+
 /-- Regional interruption removes the selected occurrence and then emits the caught route token in its live parent. -/
 def interruptScope (state : RuntimeState) (root parent : ScopeOccurrenceId)
     (output : ControlPlaceId) : RuntimeState :=

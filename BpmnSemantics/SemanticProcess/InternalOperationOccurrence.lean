@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import BpmnSemantics.SemanticProcess.OccurrenceReservationState
 import BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.TransitionRecord
 
@@ -45,30 +46,6 @@ theorem resolveInternalOperationOccurrence_requires_exact_candidate (program : P
       · exact present
       · simp [discovered, present] at resolved
 
-private def occurrenceCounterRowsValid (counters : List (String × Nat)) : Bool :=
-  decide (counters.map Prod.fst).Nodup && counters.all (fun counter =>
-    !counter.1.isEmpty && SemanticProcessJson.isSafeWireNat counter.2)
-
-/-- Issuance counters must dominate retained anchors, including suspended effects and their local frames. -/
-def occurrenceReservationStateValid (state : RuntimeState) : Bool :=
-  let compensation := state.compensationHandlerEffectWaits.map fun wait =>
-    ({ processInstanceId := wait.id.processInstanceId, elementId := wait.id.elementId,
-       activation := wait.id.activation } : OccurrenceId)
-  let issued := fun (id : OccurrenceId) (count : Nat) =>
-    0 < id.activation && SemanticProcessJson.isSafeWireNat id.activation && id.activation ≤ count
-  occurrenceCounterRowsValid (state.activations.map fun row => (row.taskId.value, row.count)) &&
-    occurrenceCounterRowsValid (state.effectActivations.map fun row => (row.elementId.value, row.count)) &&
-    decide (openWaitAnchors state ++ compensation).Nodup &&
-    decide (state.variables.activities.map (·.owner)).Nodup &&
-    state.waits.all (fun wait => issued (userTaskWaitOccurrence wait) (activationCount state wait.task.id)) &&
-    (state.effectWaits.map effectWaitOccurrence ++
-      state.effectIncidents.map (fun incident => effectWaitOccurrence incident.wait) ++ compensation).all
-      (fun id => issued id (effectActivationCount state ⟨id.elementId.value⟩)) &&
-    state.variables.activities.all (fun frame => match frame.owner with
-      | .effectOccurrence id => issued ⟨id.processInstanceId, id.elementId, id.activation⟩
-          (effectActivationCount state ⟨id.elementId.value⟩)
-      | .activityOccurrence _ => true)
-
 /-- PMIS-SELECT-01 revalidates the exact occurrence and each consumed token before an internal step. -/
 def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
     (candidate : InternalOperationOccurrence) : Option RuntimeState := do
@@ -113,6 +90,25 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
       if unit input then some (reachNoneEndToken state owner input) else none
   | _ => none
 
+/-- Token-offer readiness reads exact scope resolution and owned units, independently of shared data and counters. -/
+theorem applyInternalOperationOccurrence_token_offer_read_frame
+    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
+    (operation : SemanticOperation)
+    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
+    (tokenOperation : operation.kind ∈ [SemanticOperationKind.duplicate, .synchronize, .reachNoneEnd])
+    (control : after.control = before.control) (scopes : after.scopeOccurrences = before.scopeOccurrences)
+    (counts : ∀ place, (after.tokens.filter fun token => token.placeId == place && token.owner == candidate.owner).length =
+      (before.tokens.filter fun token => token.placeId == place && token.owner == candidate.owner).length) :
+    (applyInternalOperationOccurrence? program after candidate).isSome =
+      (applyInternalOperationOccurrence? program before candidate).isSome := by
+  have selected : resolveInternalOperationOccurrence? program after candidate = some operation := by
+    simpa only [resolveInternalOperationOccurrence?, internalOperationOccurrences?, scopes] using resolved
+  cases running : before.control <;>
+    simp only [applyInternalOperationOccurrence?, control, running] <;> try rfl
+  cases operation <;> simp [SemanticOperation.kind] at tokenOperation
+  all_goals simp [selected, resolved, counts]
+  all_goals split <;> simp_all
+
 /-- PMIS-SELECT-01 replays the recorded owner rather than selecting a unique owner across all bodies. -/
 def replayInternalOperationOccurrence? (program : Program) (state : RuntimeState)
     (record : InternalTransitionRecord) : Option RuntimeState := do
@@ -154,6 +150,17 @@ def internalOperationOccurrenceOffers? (program : Program) (state : RuntimeState
         | none => if enabledWait then none else some []
       pure steps.flatten
   | _ => none
+
+/-- Exact resolution supplies both the declaration and its discovery key. -/
+theorem resolveInternalOperationOccurrence_declaration (program : Program) (state : RuntimeState)
+    (candidate : InternalOperationOccurrence) (operation : SemanticOperation)
+    (resolved : resolveInternalOperationOccurrence? program state candidate = some operation) :
+    operation ∈ program.operations ∧ operation.id = candidate.operationId := by
+  unfold resolveInternalOperationOccurrence? at resolved
+  obtain ⟨candidates, _, resolved⟩ := Option.bind_eq_some_iff.mp resolved
+  split at resolved
+  · exact ⟨List.mem_of_find?_eq_some resolved, by simpa using List.find?_some resolved⟩
+  · contradiction
 
 /-- Discovery retains all enabled exact candidates and refuses operation kinds outside this dispatcher. -/
 def deriveInternalOccurrenceFrontier? (program : Program) (state : RuntimeState) :
@@ -208,7 +215,7 @@ structure InternalOccurrenceBatch where
   members : List InternalOccurrencePatch
   deriving Repr, DecidableEq
 
-private def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
+def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
     Nat → ScopeOccurrenceId → Bool
   | 0, _ => false
   | fuel + 1, owner =>
@@ -328,7 +335,7 @@ def prepareOccurrenceTokenPatch? (program : Program) (state : RuntimeState)
   let _ ← internalLocalControlPositionDelta? program tokens
   some { operation, tokens, endIncrement }
 
-private def reserveOccurrenceMembers? (program : Program) (state : RuntimeState)
+def reserveOccurrenceMembers? (program : Program) (state : RuntimeState)
     (reserved : List InternalOccurrencePatch) : List InternalOperationOccurrence → Option (List InternalOccurrencePatch)
   | [] => some reserved
   | candidate :: rest => do
@@ -348,7 +355,7 @@ private def reserveOccurrenceMembers? (program : Program) (state : RuntimeState)
         | _ => InternalOccurrencePatch.token <$> prepareOccurrenceTokenPatch? program state candidate
       reserveOccurrenceMembers? program state (reserved ++ [member]) rest
 
-private def acceptOccurrenceBatch? (program : Program) (state : RuntimeState)
+def acceptOccurrenceBatch? (program : Program) (state : RuntimeState)
     (members : List InternalOccurrencePatch) : Option InternalOccurrenceBatch :=
   let increments := (members.map (·.endIncrement)).sum
   if 2 ≤ members.length &&
@@ -370,7 +377,7 @@ def prepareInternalOccurrenceBatch? (program : Program) (state : RuntimeState) :
     let members ← reserveOccurrenceMembers? program state [] (offers.map Prod.fst)
     acceptOccurrenceBatch? program state members
 
-private def occurrenceMemberRevalidated (program : Program) (state : RuntimeState) : InternalOccurrencePatch → Bool
+def occurrenceMemberRevalidated (program : Program) (state : RuntimeState) : InternalOccurrencePatch → Bool
   | .arm patch =>
       occurrenceCounterBase? state patch.operation == some (patch.write.occurrence.activation - 1) &&
       patch.write.occurrence.activation > 0 &&
@@ -379,7 +386,7 @@ private def occurrenceMemberRevalidated (program : Program) (state : RuntimeStat
   | .token patch =>
       prepareOccurrenceTokenPatch? program state ⟨patch.operation.id, patch.tokens.owner⟩ == some patch
 
-private def applyReservedOccurrencePrefix? (program : Program) (state : RuntimeState) :
+def applyReservedOccurrencePrefix? (program : Program) (state : RuntimeState) :
     List InternalOccurrencePatch → Option (List RuntimeState)
   | [] => some []
   | patch :: rest => do
@@ -472,5 +479,371 @@ theorem applyInternalOccurrenceBatch_steps_and_frames (program : Program) (state
   split at applied
   · contradiction
   · exact reservedPrefix_steps_and_frames program batch.members state successors applied
+
+private theorem occurrenceMemberRevalidated_prepared (program : Program) (state : RuntimeState)
+    (patch : InternalOccurrencePatch) :
+    occurrenceMemberRevalidated program state patch = true →
+    match patch with
+    | .arm arm => prepareReservedOccurrenceArm? program state ⟨arm.operation.id, arm.owner⟩
+        arm.write.occurrence.activation = some arm
+    | .token token => prepareOccurrenceTokenPatch? program state ⟨token.operation.id, token.tokens.owner⟩ = some token := by
+  intro revalidated
+  cases patch with
+  | arm arm =>
+      simp only [occurrenceMemberRevalidated, Bool.and_eq_true, beq_iff_eq] at revalidated
+      exact revalidated.2
+  | token token =>
+      simpa only [occurrenceMemberRevalidated, beq_iff_eq] using revalidated
+
+private theorem occurrenceMemberRevalidated_evidence (program : Program) (state : RuntimeState)
+    (patch : InternalOccurrencePatch) : occurrenceMemberRevalidated program state patch = true →
+    match patch with
+    | .arm arm => occurrenceCounterBase? state arm.operation = some (arm.write.occurrence.activation - 1) ∧
+        arm.write.occurrence.activation > 0 ∧ prepareReservedOccurrenceArm? program state
+          ⟨arm.operation.id, arm.owner⟩ arm.write.occurrence.activation = some arm
+    | .token token => prepareOccurrenceTokenPatch? program state ⟨token.operation.id, token.tokens.owner⟩ = some token := by
+  intro revalidated
+  cases patch <;> simpa only [occurrenceMemberRevalidated, Bool.and_eq_true, beq_iff_eq,
+    decide_eq_true_eq, and_assoc] using revalidated
+
+/-- A batch step retains exact predecessor preparation and the frozen arm allocation revalidation. -/
+def InternalOccurrencePatchStep (program : Program) (before after : RuntimeState)
+    (patch : InternalOccurrencePatch) : Prop :=
+  after = patch.apply before ∧ match patch with
+  | .arm arm => occurrenceCounterBase? before arm.operation = some (arm.write.occurrence.activation - 1) ∧
+      arm.write.occurrence.activation > 0 ∧ prepareReservedOccurrenceArm? program before
+        ⟨arm.operation.id, arm.owner⟩ arm.write.occurrence.activation = some arm
+  | .token token => prepareOccurrenceTokenPatch? program before ⟨token.operation.id, token.tokens.owner⟩ = some token
+
+/-- Actual arm revalidation allocates exactly the native singleton counter's next activation. -/
+theorem InternalOccurrencePatchStep.arm_activation (program : Program) (before after : RuntimeState)
+    (arm : InternalArmingPatch) : InternalOccurrencePatchStep program before after (.arm arm) →
+    match arm.operation with
+    | .awaitUserTask _ _ _ _ task => arm.write.occurrence.activation = activationCount before task.id + 1
+    | .awaitEffect _ _ _ _ effect _ => arm.write.occurrence.activation = effectActivationCount before effect.elementId + 1
+    | _ => False := by
+  rintro ⟨_, base, positive, _⟩
+  cases operation : arm.operation <;>
+    simp only [occurrenceCounterBase?, operation, bind, Option.bind_none, Option.bind_some] at base ⊢ <;>
+    try contradiction
+  all_goals split at base <;> try contradiction
+  case awaitUserTask.isFalse =>
+    simp only [taskActivationCount_string_lookup, Option.some.injEq] at base
+    unfold activationCount
+    omega
+  case awaitEffect.isFalse =>
+    simp only [effectActivationCount_string_lookup, Option.some.injEq] at base
+    omega
+
+private theorem reservedPrefix_ordered_steps (program : Program) (members : List InternalOccurrencePatch)
+    (state : RuntimeState) (successors : List RuntimeState)
+    (applied : applyReservedOccurrencePrefix? program state members = some successors) :
+    ∀ pair ∈ members.zip ((state :: successors).zip successors),
+      InternalOccurrencePatchStep program pair.2.1 pair.2.2 pair.1 := by
+  induction members generalizing state successors with
+  | nil =>
+      simp only [applyReservedOccurrencePrefix?, Option.some.injEq] at applied
+      subst successors
+      simp
+  | cons patch rest ih =>
+      simp only [applyReservedOccurrencePrefix?] at applied
+      split at applied
+      · contradiction
+      · rename_i valid
+        have revalidated : occurrenceMemberRevalidated program state patch = true := by
+          cases checked : occurrenceMemberRevalidated program state patch with
+          | false => simp [checked] at valid
+          | true => rfl
+        obtain ⟨tail, tailApplied, applied⟩ := Option.bind_eq_some_iff.mp applied
+        cases applied
+        intro pair found
+        rcases List.mem_cons.mp found with rfl | later
+        · exact ⟨rfl, occurrenceMemberRevalidated_evidence program state patch revalidated⟩
+        · exact ih _ _ tailApplied pair later
+
+/-- Successful batch members are paired in order with their real predecessor/successor states. -/
+theorem applyInternalOccurrenceBatch_ordered_steps (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
+    successors.length = batch.members.length ∧
+      ∀ pair ∈ batch.members.zip ((state :: successors).zip successors),
+        InternalOccurrencePatchStep program pair.2.1 pair.2.2 pair.1 := by
+  refine ⟨(applyInternalOccurrenceBatch_steps_and_frames program state batch successors applied).1, ?_⟩
+  unfold applyInternalOccurrenceBatch? at applied
+  split at applied
+  · contradiction
+  · exact reservedPrefix_ordered_steps program batch.members state successors applied
+
+private theorem reservedPrefix_induction (program : Program) (all members : List InternalOccurrencePatch)
+    (predicate : RuntimeState → Prop)
+    (step : ∀ state patch, patch ∈ all →
+      (match patch with
+      | .arm arm => prepareReservedOccurrenceArm? program state ⟨arm.operation.id, arm.owner⟩
+          arm.write.occurrence.activation = some arm
+      | .token token => prepareOccurrenceTokenPatch? program state ⟨token.operation.id, token.tokens.owner⟩ = some token) →
+      predicate state → predicate (patch.apply state))
+    (contained : ∀ patch ∈ members, patch ∈ all) (state : RuntimeState) (successors : List RuntimeState)
+    (initial : predicate state)
+    (applied : applyReservedOccurrencePrefix? program state members = some successors) :
+    ∀ successor ∈ successors, predicate successor := by
+  induction members generalizing state successors with
+  | nil =>
+      simp only [applyReservedOccurrencePrefix?, Option.some.injEq] at applied
+      subst successors
+      simp
+  | cons patch rest ih =>
+      simp only [applyReservedOccurrencePrefix?] at applied
+      split at applied
+      · contradiction
+      · rename_i valid
+        have revalidated : occurrenceMemberRevalidated program state patch = true := by
+          cases checked : occurrenceMemberRevalidated program state patch with
+          | false => simp [checked] at valid
+          | true => rfl
+        obtain ⟨tail, tailApplied, applied⟩ := Option.bind_eq_some_iff.mp applied
+        cases applied
+        have next := step state patch (contained patch (by simp))
+          (occurrenceMemberRevalidated_prepared program state patch revalidated) initial
+        have later := ih (fun member found => contained member (by simp [found])) _ _ next tailApplied
+        intro successor found
+        rcases List.mem_cons.mp found with same | tailMember
+        · subst successor
+          exact next
+        · exact later successor tailMember
+
+/-- PMIS-SELECT-01 revalidates each prefix before applying it, so invariant proofs use actual preparation at that predecessor. -/
+theorem applyInternalOccurrenceBatch_prefix_induction (program : Program) (state : RuntimeState)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState) (predicate : RuntimeState → Prop)
+    (initial : predicate state)
+    (step : ∀ before patch, patch ∈ batch.members →
+      (match patch with
+      | .arm arm => prepareReservedOccurrenceArm? program before ⟨arm.operation.id, arm.owner⟩
+          arm.write.occurrence.activation = some arm
+      | .token token => prepareOccurrenceTokenPatch? program before ⟨token.operation.id, token.tokens.owner⟩ = some token) →
+      predicate before → predicate (patch.apply before))
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
+    ∀ successor ∈ successors, predicate successor := by
+  unfold applyInternalOccurrenceBatch? at applied
+  split at applied
+  · contradiction
+  · exact reservedPrefix_induction program batch.members batch.members predicate step
+      (by intro patch found; exact found) state successors initial applied
+
+private theorem refusingGuardSuccess {α : Type} (guard : Bool) (tail : Option α) (value : α)
+    (successful : (if guard then none else tail) = some value) : tail = some value := by
+  cases guard <;> simp_all
+
+private theorem occurrenceApplicationRunning (program : Program) (before after : RuntimeState)
+    (candidate : InternalOperationOccurrence)
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    ∃ instanceId, before.control = .running instanceId := by
+  cases control : before.control with
+  | running instanceId => exact ⟨instanceId, rfl⟩
+  | _ => simp [applyInternalOperationOccurrence?, control] at applied
+
+private def singletonArmingPatch (program : Program) (before : RuntimeState)
+    (operation : SemanticOperation) (owner : ScopeOccurrenceId) (input : ControlPlaceId)
+    (write : InternalArmingWrite) : InternalArmingPatch :=
+  { operation, definition := program.identity, processId := program.processId,
+    origin := operation.origin, runtimeInstanceId := owner.processInstanceId,
+    logicalTimeMs := before.logicalTimeMs, input, inputOrigin := { elementId := ⟨input.value⟩ }, owner, write }
+
+/-- Actual body execution is either aligned wait arming or an exact-owner token edit with an End increment. -/
+theorem applyInternalOperationOccurrence_body_effect
+    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
+    (operation : SemanticOperation)
+    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
+    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
+      .duplicate, .synchronize, .reachNoneEnd])
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    (∃ patch : InternalArmingPatch, patch.owner = candidate.owner ∧ patch.write.owner = patch.owner ∧
+      after = applyInternalArmingPatch before patch) ∨
+    (∃ patch : TokenPatch, ∃ increment : Nat, patch.owner = candidate.owner ∧
+      after = { before with tokens := patch.apply before.tokens, endOccurrences := before.endOccurrences + increment }) := by
+  obtain ⟨instanceId, running⟩ := occurrenceApplicationRunning program before after candidate applied
+  cases operation <;> simp [SemanticOperation.kind] at bodyOperation
+  all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
+  case awaitUserTask id origin input output task =>
+    have applied := refusingGuardSuccess _ _ after applied
+    cases parallel : hasParallelScopeDefinition program candidate.owner with
+    | false =>
+        simp only [parallel, pure, Option.bind_some] at applied
+        cases Option.some.inj applied
+        let patch := singletonArmingPatch program before (.awaitUserTask id origin input output task) candidate.owner input
+          (.userTask
+            { processInstanceId := candidate.owner.processInstanceId
+              owner := candidate.owner
+              task := task
+              activation := activationCount before task.id + 1
+              output := output
+              metadata := task.metadata })
+        exact Or.inl ⟨patch, rfl, rfl, rfl⟩
+    | true =>
+        simp only [parallel, ↓reduceIte, pure, Option.bind_some] at applied
+        obtain ⟨_, _, applied⟩ := Option.bind_eq_some_iff.mp applied
+        cases Option.some.inj applied
+        let patch := singletonArmingPatch program before (.awaitUserTask id origin input output task) candidate.owner input
+          (.userTask
+            { processInstanceId := candidate.owner.processInstanceId
+              owner := candidate.owner
+              task := task
+              activation := activationCount before task.id + 1
+              output := output
+              metadata := task.metadata })
+        exact Or.inl ⟨patch, rfl, rfl, rfl⟩
+  case awaitEffect id origin input output effect route =>
+    have applied := refusingGuardSuccess _ _ after applied
+    cases parallel : hasParallelScopeDefinition program candidate.owner <;>
+      simp only [parallel, ↓reduceIte] at applied
+    all_goals
+      obtain ⟨arguments, _, applied⟩ := Option.bind_eq_some_iff.mp applied
+      cases Option.some.inj applied
+      let patch := singletonArmingPatch program before (.awaitEffect id origin input output effect route) candidate.owner input
+        (.effect
+          { processInstanceId := candidate.owner.processInstanceId
+            owner := candidate.owner
+            elementId := effect.elementId
+            activation := effectActivationCount before effect.elementId + 1
+            descriptor := effect.descriptor
+            arguments := arguments
+            outputMappings := effect.outputMappings
+            output := output
+            bpmnErrorRoute := route } arguments)
+      exact Or.inl ⟨patch, rfl, rfl, rfl⟩
+  case duplicate id origin input outputs =>
+    split at applied <;> try contradiction
+    cases Option.some.inj applied
+    exact Or.inr ⟨{ owner := candidate.owner, consumed := [input], produced := outputs }, 0, rfl, rfl⟩
+  case synchronize id origin inputs output =>
+    split at applied <;> try contradiction
+    cases Option.some.inj applied
+    exact Or.inr ⟨{ owner := candidate.owner, consumed := inputs, produced := [output] }, 0, rfl, rfl⟩
+  case reachNoneEnd id origin input =>
+    split at applied <;> try contradiction
+    cases Option.some.inj applied
+    exact Or.inr ⟨{ owner := candidate.owner, consumed := [input], produced := [] }, 1, rfl, rfl⟩
+
+/-- Both reserved patch forms preserve the population and data read by parallel retirement. -/
+theorem InternalOccurrencePatch.retirement_frame (state : RuntimeState) (patch : InternalOccurrencePatch) :
+    (patch.apply state).control = state.control ∧
+      (patch.apply state).scopeOccurrences = state.scopeOccurrences ∧
+      (patch.apply state).activityOccurrences = state.activityOccurrences ∧
+      (patch.apply state).parallelScopeControllers = state.parallelScopeControllers ∧
+      (patch.apply state).variables.scopes = state.variables.scopes ∧
+      (patch.apply state).variables.process = state.variables.process := by
+  cases patch with
+  | arm arm => cases write : arm.write <;> simp [InternalOccurrencePatch.apply, applyInternalArmingPatch, write]
+  | token token => exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- Revalidated batch execution preserves retirement eligibility and Process data at every actual prefix. -/
+theorem applyInternalOccurrenceBatch_retirement_frames
+    (program : Program) (state : RuntimeState) (batch : InternalOccurrenceBatch)
+    (successors : List RuntimeState)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
+    ∀ successor ∈ successors,
+      successor.control = state.control ∧ successor.scopeOccurrences = state.scopeOccurrences ∧
+      successor.activityOccurrences = state.activityOccurrences ∧
+      successor.parallelScopeControllers = state.parallelScopeControllers ∧
+      successor.variables.scopes = state.variables.scopes ∧
+      successor.variables.process = state.variables.process := by
+  apply applyInternalOccurrenceBatch_prefix_induction program state batch successors
+    (fun current => current.control = state.control ∧ current.scopeOccurrences = state.scopeOccurrences ∧
+      current.activityOccurrences = state.activityOccurrences ∧
+      current.parallelScopeControllers = state.parallelScopeControllers ∧
+      current.variables.scopes = state.variables.scopes ∧ current.variables.process = state.variables.process)
+    ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩ _ applied
+  intro before patch _ _ preserved
+  obtain ⟨control, scopes, activities, controllers, frames, process⟩ := patch.retirement_frame before
+  obtain ⟨oldControl, oldScopes, oldActivities, oldControllers, oldFrames, oldProcess⟩ := preserved
+  exact ⟨control.trans oldControl, scopes.trans oldScopes, activities.trans oldActivities,
+    controllers.trans oldControllers, frames.trans oldFrames, process.trans oldProcess⟩
+
+/-- Every actual successful batch prefix retains the exact parallel population binding. -/
+theorem applyInternalOccurrenceBatch_binding_frames
+    (program : Program) (state : RuntimeState) (batch : InternalOccurrenceBatch)
+    (successors : List RuntimeState) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
+    ∀ successor ∈ successors,
+      parallelScopeBinding? entry successor target = parallelScopeBinding? entry state target := by
+  intro successor member
+  obtain ⟨control, scopes, activities, controllers, frames, _⟩ :=
+    applyInternalOccurrenceBatch_retirement_frames program state batch successors applied successor member
+  exact parallelScopeBinding_state_frame entry state successor target control scopes activities controllers
+    (congrArg (fun scopes => scopes.map ScopeVariableScope.owner) frames)
+
+/-- Actual body edits retain the retirement population and Process condition data; arming adds only separate Activity data. -/
+theorem applyInternalOperationOccurrence_body_retirement_frame
+    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
+    (operation : SemanticOperation)
+    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
+    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
+      .duplicate, .synchronize, .reachNoneEnd])
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    after.control = before.control ∧ after.scopeOccurrences = before.scopeOccurrences ∧
+      after.activityOccurrences = before.activityOccurrences ∧ after.parallelScopeControllers = before.parallelScopeControllers ∧
+      after.variables.scopes = before.variables.scopes ∧ after.variables.process = before.variables.process := by
+  rcases applyInternalOperationOccurrence_body_effect program before after candidate operation resolved bodyOperation applied with
+    ⟨patch, _, _, rfl⟩ | ⟨patch, increment, _, rfl⟩
+  · exact (InternalOccurrencePatch.arm patch).retirement_frame before
+  · exact (InternalOccurrencePatch.token { operation, tokens := patch, endIncrement := increment }).retirement_frame before
+
+/-- Parent body operations preserve the actual clean-entry population, including the child's issuance counter. -/
+theorem applyInternalOperationOccurrence_body_clean_entry
+    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
+    (operation : SemanticOperation) (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId)
+    (clean : ParallelScopeCleanEntry entry parent before)
+    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
+    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
+      .duplicate, .synchronize, .reachNoneEnd])
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    ParallelScopeCleanEntry entry parent after := by
+  obtain ⟨_, scopes, activities, controllers, locals, _⟩ :=
+    applyInternalOperationOccurrence_body_retirement_frame program before after candidate operation resolved bodyOperation applied
+  have counters : after.scopeActivations = before.scopeActivations := by
+    rcases applyInternalOperationOccurrence_body_effect program before after candidate operation resolved bodyOperation applied with
+      ⟨patch, _, _, rfl⟩ | ⟨patch, increment, _, rfl⟩
+    · cases write : patch.write <;> simp [applyInternalArmingPatch, write]
+    · rfl
+  exact ParallelScopeCleanEntry.frame entry parent before after clean scopes activities controllers locals counters
+
+/-- Exact binding eligibility survives every actual successful body operation, independently of token changes. -/
+theorem applyInternalOperationOccurrence_body_binding_frame
+    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
+    (operation : SemanticOperation) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
+    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
+    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
+      .duplicate, .synchronize, .reachNoneEnd])
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
+  obtain ⟨control, scopes, activities, controllers, frames, _⟩ :=
+    applyInternalOperationOccurrence_body_retirement_frame program before after candidate operation resolved bodyOperation applied
+  exact parallelScopeBinding_state_frame entry before after target control scopes activities controllers (congrArg (fun scopes => scopes.map ScopeVariableScope.owner) frames)
+
+/-- PMIS retirement readiness survives every reserved prefix; only the body's quiescence remains to be established. -/
+theorem applyInternalOccurrenceBatch_retirement_ready
+    (program : Program) (state : RuntimeState) (batch : InternalOccurrenceBatch)
+    (successors : List RuntimeState) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
+    (binding : ParallelScopeBinding)
+    (applied : applyInternalOccurrenceBatch? program state batch = some successors)
+    (bound : parallelScopeBinding? entry state target = some binding)
+    (noActivity : state.activityOccurrences.any (fun activity => activity.owner == target) = false)
+    (typedCondition : match entry.completionBooleanName with
+      | none => True
+      | some name => ∃ condition, state.variables.process.bindings.filter (·.name == name) =
+          [{ name, value := .boolean condition }]) :
+    ∀ successor ∈ successors, scopeQuiescent successor target = true →
+      ∃ after, completeParallelScope? entry successor target = some after := by
+  intro successor present quiescent
+  have boundAfter := (applyInternalOccurrenceBatch_binding_frames program state batch successors
+    entry target applied successor present).trans bound
+  obtain ⟨_, _, activities, _, _, process⟩ :=
+    applyInternalOccurrenceBatch_retirement_frames program state batch successors applied successor present
+  exact completeParallelScope_ready entry successor target binding boundAfter
+    (parallelScopeBinding_member entry state target binding bound) quiescent
+    (by rw [activities]; exact noActivity)
+    (by
+      cases named : entry.completionBooleanName with
+      | none => trivial
+      | some name => simpa only [named, process] using typedCondition)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

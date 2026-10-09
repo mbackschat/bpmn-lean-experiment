@@ -52,6 +52,149 @@ private def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
 def topologicalOrder (fuel : Nat) (vertices : List Vertex) : Option (List Vertex) :=
   orderPending fuel (vertices.map fun vertex => (vertex, incomingCount vertices vertex.id))
 
+private theorem deduplicated_length_le (values : List String) :
+    values.eraseDups.length ≤ values.length := by
+  cases values with
+  | nil => simp
+  | cons head tail =>
+      rw [List.eraseDups_cons]
+      have smaller := deduplicated_length_le (tail.filter (fun value => !(value == head)))
+      have retained := List.length_filter_le (fun value => !(value == head)) tail
+      simp only [List.length_cons]
+      omega
+termination_by values.length
+decreasing_by
+  exact Nat.lt_succ_of_le (List.length_filter_le _ _)
+
+private theorem unique_of_deduplicated_length (values : List String)
+    (same : values.eraseDups.length = values.length) : values.Nodup := by
+  induction values with
+  | nil => simp
+  | cons head tail ih =>
+      rw [List.eraseDups_cons] at same
+      have small := deduplicated_length_le (tail.filter (fun value => !(value == head)))
+      have retained := List.length_filter_le (fun value => !(value == head)) tail
+      have lengthEqual : (tail.filter (fun value => !(value == head))).length = tail.length := by
+        simp only [List.length_cons] at same
+        omega
+      have all := List.length_filter_eq_length_iff.mp lengthEqual
+      have unchanged : tail.filter (fun value => !(value == head)) = tail :=
+        List.filter_eq_self.mpr all
+      rw [unchanged] at same
+      apply List.nodup_cons.mpr
+      refine ⟨?_, ih (by simpa using same)⟩
+      intro member
+      simpa using all head member
+
+private theorem pending_split (pending : List (Vertex × Nat)) (chosen : Vertex × Nat)
+    (unique : (pending.map (fun value => value.1.id)).Nodup) (member : chosen ∈ pending) :
+    (pending.map Prod.fst).Perm
+      (chosen.1 :: (pending.filter (fun value => value.1.id != chosen.1.id)).map Prod.fst) := by
+  induction pending with
+  | nil => simp at member
+  | cons head tail ih =>
+      simp only [List.map_cons, List.nodup_cons] at unique
+      rcases List.mem_cons.mp member with equal | member
+      · subst chosen
+        have unchanged : tail.filter (fun value => value.1.id != head.1.id) = tail := by
+          apply List.filter_eq_self.mpr
+          intro value present
+          have different : value.1.id ≠ head.1.id := by
+            intro equal
+            apply unique.1
+            exact List.mem_map.mpr ⟨value, present, equal⟩
+          simpa using different
+        simp [unchanged]
+      · have different : head.1.id ≠ chosen.1.id := by
+          intro equal
+          apply unique.1
+          exact List.mem_map.mpr ⟨chosen, member, equal.symm⟩
+        simpa [different] using
+          (List.Perm.cons head.1 (ih unique.2 member)).trans
+            (List.Perm.swap chosen.1 head.1
+              ((tail.filter (fun value => value.1.id != chosen.1.id)).map Prod.fst))
+
+private theorem orderPending_certificate (fuel : Nat) (pending : List (Vertex × Nat))
+    (ordered : List Vertex)
+    (unique : (pending.map (fun value => value.1.id)).Nodup)
+    (counts : ∀ value ∈ pending,
+      value.2 = incomingCount (pending.map Prod.fst) value.1.id)
+    (success : orderPending fuel pending = some ordered) :
+    (pending.map Prod.fst).Perm ordered ∧
+      ordered.Pairwise (fun earlier later => earlier.id ∉ later.outputs) ∧
+      (∀ vertex ∈ ordered, vertex.id ∉ vertex.outputs) := by
+  induction fuel generalizing pending ordered with
+  | zero =>
+      simp only [orderPending] at success
+      split at success
+      · rename_i empty
+        have : pending = [] := List.isEmpty_iff.mp empty
+        subst pending
+        simp_all
+      · contradiction
+  | succ fuel ih =>
+      simp only [orderPending] at success
+      split at success
+      · rename_i empty
+        have : pending = [] := List.isEmpty_iff.mp empty
+        subst pending
+        simp_all
+      · cases found : pending.find? (fun value => value.2 == 0) with
+        | none => simp [found] at success
+        | some chosen =>
+          have member := List.mem_of_find?_eq_some found
+          have zero : chosen.2 = 0 := by simpa using List.find?_some found
+          have split := pending_split pending chosen unique member
+          let filtered := pending.filter (fun value => value.1.id != chosen.1.id)
+          let remaining := filtered.map fun value =>
+            (value.1, value.2 - chosen.1.outputs.count value.1.id)
+          have vertices : remaining.map Prod.fst = filtered.map Prod.fst := by
+            simp [remaining, List.map_map]
+          have incoming (id : String) : incomingCount (pending.map Prod.fst) id =
+              chosen.1.outputs.count id + incomingCount (filtered.map Prod.fst) id := by
+            have perm := split.flatMap_right (fun vertex => vertex.outputs)
+            have same := perm.count_eq id
+            simpa [incomingCount, filtered] using same
+          have nextUnique : (remaining.map (fun value => value.1.id)).Nodup := by
+            have retained : (filtered.map (fun value => value.1.id)).Nodup :=
+              (List.filter_sublist.map (fun value : Vertex × Nat => value.1.id)).nodup unique
+            simpa [remaining, List.map_map, Function.comp_def] using retained
+          have nextCounts : ∀ value ∈ remaining,
+              value.2 = incomingCount (remaining.map Prod.fst) value.1.id := by
+            intro value present
+            change value ∈ filtered.map (fun value =>
+              (value.1, value.2 - chosen.1.outputs.count value.1.id)) at present
+            obtain ⟨original, originalPresent, equal⟩ := List.mem_map.mp present
+            subst value
+            have originalMember := (List.mem_filter.mp originalPresent).1
+            have equation := counts original originalMember
+            rw [incoming] at equation
+            simp only [vertices]
+            omega
+          cases recursive : orderPending fuel remaining with
+          | none => simp [found, remaining, filtered, recursive] at success
+          | some rest =>
+            have output : ordered = chosen.1 :: rest := by
+              simpa [found, remaining, filtered, recursive] using success.symm
+            subst ordered
+            obtain ⟨permutation, pairwise, self⟩ :=
+              ih remaining rest nextUnique nextCounts recursive
+            have absent : ∀ vertex ∈ pending.map Prod.fst,
+                chosen.1.id ∉ vertex.outputs := by
+              intro vertex present edge
+              have emptyCount : incomingCount (pending.map Prod.fst) chosen.1.id = 0 := by
+                rw [← counts chosen member, zero]
+              apply List.not_mem_of_count_eq_zero emptyCount
+              exact List.mem_flatMap.mpr ⟨vertex, present, edge⟩
+            refine ⟨split.trans (List.Perm.cons _ (by simpa [vertices] using permutation)), ?_, ?_⟩
+            · exact List.pairwise_cons.mpr ⟨fun vertex present =>
+                absent vertex ((split.trans (List.Perm.cons _
+                  (by simpa [vertices] using permutation))).mem_iff.mpr (by simp [present])), pairwise⟩
+            · intro vertex present
+              rcases List.mem_cons.mp present with rfl | present
+              · exact absent chosen.1 (List.mem_map.mpr ⟨chosen, member, rfl⟩)
+              · exact self vertex present
+
 def replaceTarget (vertices : List Vertex) (removed replacement : String) : List Vertex :=
   vertices.map fun vertex =>
     { vertex with outputs := vertex.outputs.map fun id => if id == removed then replacement else id }
@@ -121,6 +264,152 @@ def structureOrder (vertices : List Vertex) : Option (List Vertex) := do
   else do
     let ordered ← topologicalOrder vertices.length vertices
     if !paired (vertices.length + 1) vertices then none else some ordered
+
+/-- PMIS-ADMIT-01: successful structural admission returns the complete unique vertex
+population in strict predecessor order; self edges and backward edges are excluded. -/
+theorem structureOrder_certificate (vertices ordered : List Vertex)
+    (success : structureOrder vertices = some ordered) :
+    vertices.Perm ordered ∧ (ordered.map (·.id)).Nodup ∧
+      ordered.Pairwise (fun earlier later => earlier.id ∉ later.outputs) ∧
+      (∀ vertex ∈ ordered, vertex.id ∉ vertex.outputs) ∧
+      (∀ vertex ∈ ordered, ∀ target ∈ vertex.outputs,
+        ∃ next ∈ ordered, next.id = target) := by
+  unfold structureOrder at success
+  split at success
+  · simp at success
+  · rename_i admitted
+    have checked : (vertices.all (fun vertex => !vertex.id.isEmpty) &&
+        (vertices.map (·.id)).eraseDups.length == vertices.length && aritiesValid vertices &&
+        (vertices.filter (·.kind == .start)).length == 1 && vertices.any (·.kind == .task)) = true := by
+      cases value : (vertices.all (fun vertex => !vertex.id.isEmpty) &&
+        (vertices.map (·.id)).eraseDups.length == vertices.length && aritiesValid vertices &&
+        (vertices.filter (·.kind == .start)).length == 1 && vertices.any (·.kind == .task)) <;>
+        simp_all
+    simp only [Bool.and_eq_true, beq_iff_eq] at checked
+    have unique : (vertices.map (·.id)).Nodup :=
+      unique_of_deduplicated_length _ (by simpa using checked.1.1.1.2)
+    cases ordering : topologicalOrder vertices.length vertices with
+    | none => simp [ordering] at success
+    | some result =>
+      split at success
+      · simp at success
+      · have equal : result = ordered := by simpa [ordering] using success
+        subst result
+        obtain ⟨permutation, pairwise, self⟩ := orderPending_certificate vertices.length
+          (vertices.map fun vertex => (vertex, incomingCount vertices vertex.id)) ordered
+          (by simpa [List.map_map, Function.comp_def] using unique)
+          (by intro value member; obtain ⟨vertex, _, rfl⟩ := List.mem_map.mp member; simp [List.map_map, Function.comp_def])
+          ordering
+        have population : vertices.Perm ordered := by simpa [List.map_map, Function.comp_def] using permutation
+        refine ⟨population, (population.map (·.id)).nodup_iff.mp unique, pairwise, self, ?_⟩
+        intro vertex present target edge
+        have vertexMember := population.mem_iff.mpr present
+        have arities : aritiesValid vertices = true := checked.1.1.2
+        have arity := List.all_eq_true.mp arities vertex vertexMember
+        have targets : vertex.outputs.all (fun target => vertices.any (·.id == target)) = true :=
+          (Bool.and_eq_true_iff.mp arity).1
+        obtain ⟨next, member, equal⟩ := List.any_eq_true.mp (List.all_eq_true.mp targets target edge)
+        exact ⟨next, population.mem_iff.mp member, by simpa using equal⟩
+
+private theorem incoming_budget_bound (vertices : List Vertex) (fire : String → Nat)
+    (target : String)
+    (bounded : ∀ vertex ∈ vertices, vertex.outputs.count target ≠ 0 → fire vertex.id ≤ 1) :
+    (vertices.map (fun vertex => fire vertex.id * vertex.outputs.count target)).sum ≤
+      incomingCount vertices target := by
+  induction vertices with
+  | nil => simp [incomingCount]
+  | cons head tail ih =>
+      have rest := ih (fun vertex member => bounded vertex (by simp [member]))
+      have headBound : fire head.id * head.outputs.count target ≤ head.outputs.count target := by
+        by_cases zero : head.outputs.count target = 0
+        · simp [zero]
+        · simpa using Nat.mul_le_mul_right (head.outputs.count target)
+            (bounded head (by simp) zero)
+      simp only [List.map_cons, List.sum_cons, incomingCount, List.flatMap_cons,
+        List.count_append] at rest ⊢
+      omega
+
+private theorem firing_scan (graph : List Vertex) (fire : String → Nat)
+    (start : ∀ vertex ∈ graph, vertex.kind = .start → fire vertex.id ≤ 1)
+    (positive : ∀ vertex ∈ graph, vertex.kind ≠ .start → 0 < incomingCount graph vertex.id)
+    (budget : ∀ vertex ∈ graph, vertex.kind ≠ .start →
+      fire vertex.id * incomingCount graph vertex.id ≤
+        (graph.map (fun pred => fire pred.id * pred.outputs.count vertex.id)).sum)
+    (rest priorVertices : List Vertex) (population : graph.Perm (priorVertices ++ rest))
+    (prior : ∀ vertex ∈ priorVertices, fire vertex.id ≤ 1)
+    (ordered : rest.Pairwise (fun earlier later => earlier.id ∉ later.outputs))
+    (self : ∀ vertex ∈ rest, vertex.id ∉ vertex.outputs) :
+    ∀ vertex ∈ rest, fire vertex.id ≤ 1 := by
+  induction rest generalizing priorVertices with
+  | nil => simp
+  | cons head tail ih =>
+      have headMember : head ∈ graph := population.mem_iff.mpr (by simp)
+      have nextOrder := List.pairwise_cons.mp ordered
+      have headBound : fire head.id ≤ 1 := by
+        by_cases synthetic : head.kind = .start
+        · exact start head headMember synthetic
+        · have weighted := incoming_budget_bound graph fire head.id (by
+            intro pred member nonzero
+            have present := population.mem_iff.mp member
+            rcases List.mem_append.mp present with before | after
+            · exact prior pred before
+            · rcases List.mem_cons.mp after with equal | later
+              · subst pred
+                exact False.elim (nonzero (List.count_eq_zero.mpr (self head (by simp))))
+              · exact False.elim (nonzero (List.count_eq_zero.mpr (nextOrder.1 pred later))))
+          have supply := budget head headMember synthetic
+          have nonempty := positive head headMember synthetic
+          by_cases bounded : fire head.id ≤ 1
+          · exact bounded
+          · have twice := Nat.mul_le_mul_right (incomingCount graph head.id)
+                (show 2 ≤ fire head.id by omega)
+            simp only [Nat.succ_mul, Nat.zero_mul, Nat.zero_add] at twice
+            omega
+      have remaining := ih (priorVertices ++ [head])
+        (by simpa [List.append_assoc] using population)
+        (by intro vertex member; rcases List.mem_append.mp member with old | new
+            · exact prior vertex old
+            · have equal : vertex = head := by simpa using new
+              subst vertex
+              exact headBound)
+        nextOrder.2 (fun vertex member => self vertex (by simp [member]))
+      intro vertex member
+      rcases List.mem_cons.mp member with rfl | later
+      · exact headBound
+      · exact remaining vertex later
+
+/-- PMIS-ADMIT-01's strict graph order turns a one-shot Start and incoming-flow
+budget into a firing bound; the budget remains a separate execution obligation. -/
+theorem structureOrder_firing_count_le_one (vertices ordered : List Vertex)
+    (success : structureOrder vertices = some ordered) (fire : String → Nat)
+    (start : ∀ vertex ∈ vertices, vertex.kind = .start → fire vertex.id ≤ 1)
+    (budget : ∀ vertex ∈ vertices, vertex.kind ≠ .start →
+      fire vertex.id * incomingCount vertices vertex.id ≤
+        (vertices.map (fun pred => fire pred.id * pred.outputs.count vertex.id)).sum) :
+    ∀ vertex ∈ vertices, fire vertex.id ≤ 1 := by
+  obtain ⟨population, _, pairwise, self, _⟩ := structureOrder_certificate vertices ordered success
+  have arities : aritiesValid vertices = true := by
+    unfold structureOrder at success
+    split at success
+    · simp at success
+    · rename_i admitted
+      have checked : (vertices.all (fun vertex => !vertex.id.isEmpty) &&
+          (vertices.map (·.id)).eraseDups.length == vertices.length && aritiesValid vertices &&
+          (vertices.filter (·.kind == .start)).length == 1 && vertices.any (·.kind == .task)) = true := by
+        cases value : (vertices.all (fun vertex => !vertex.id.isEmpty) &&
+          (vertices.map (·.id)).eraseDups.length == vertices.length && aritiesValid vertices &&
+          (vertices.filter (·.kind == .start)).length == 1 && vertices.any (·.kind == .task)) <;> simp_all
+      simp only [Bool.and_eq_true] at checked
+      exact checked.1.1.2
+  have positive : ∀ vertex ∈ vertices, vertex.kind ≠ .start →
+      0 < incomingCount vertices vertex.id := by
+    intro vertex member nonstart
+    have shape := (Bool.and_eq_true_iff.mp (List.all_eq_true.mp arities vertex member)).2
+    cases kind : vertex.kind <;> simp [kind, beq_iff_eq, decide_eq_true_eq] at shape nonstart <;> omega
+  have bounded := firing_scan vertices fire start positive budget ordered []
+    (by simpa using population) (by simp) pairwise self
+  intro vertex member
+  exact bounded vertex (population.mem_iff.mp member)
 
 def analyze (vertices : List Vertex) : Option Bursts := do
   let ordered ← structureOrder vertices

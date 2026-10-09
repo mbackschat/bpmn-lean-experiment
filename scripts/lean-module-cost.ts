@@ -35,6 +35,11 @@ export type LeanModuleCostRow = DeepReadonly<{
   measuredAtCommit?: string;
 }>;
 
+/**
+ * Aggregate provenance describes the historical baseline series; receipt-bound
+ * rows retain their own measured toolchain and conditions in the identified
+ * command receipt under [the commit protocol](../docs/REVIEW-POLICY.md#commit-boundaries).
+ */
 export type LeanModuleCostProvenance = DeepReadonly<{
   measuredAtCommit: string;
   leanVersion: string;
@@ -138,10 +143,10 @@ export const leanModuleCostRecord = {
     "BpmnSemantics.TransactionCancellationJoinPublicationConformance",
   ],
   rows: [
-    { module: "BpmnSemantics.ParallelScopeGraphConformance", sourceSha256: "a3127e69c25e8bea3505c8247b103808d610658b5a7cf3bdf8029f38d3413c74", peakResidentKib: 919348, elapsedSeconds: 9.16, measurementReceiptSha256: "901c9375b186e97f30ab22c88859ac3eaf657000f8c9c72883337e8ecf2e9756", measuredAtCommit: "2383712bc69d50993e6736e10487d64701e29fda" },
     { module: "BpmnSemantics.SequentialScopeGraphConformance", sourceSha256: "46250abc65a5d7b95aa67a594175109e0a29b29a89548b5ab39a84fc64da0cfe", peakResidentKib: 1277156, elapsedSeconds: 15.74, measurementReceiptSha256: "1b1bb10ae14364f75758a36aaf077360cf10d9fadaf3f100313db5eef24ea99d", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.ScopeVariableDataConformance", sourceSha256: "c69f709b498c3e363d44d975902428bf35abe85f72f83991ba10fecd3fe7291f", peakResidentKib: 544376, elapsedSeconds: 1.38, measurementReceiptSha256: "7e8d2c9f8339c12565e8a7e086a07ae7910b06f0c59e6183debe76667a7bb4cb", measuredAtCommit: "da2b3ca3f5685096e6c19fc44b8cd2d09c7d8749" },
     { module: "BpmnSemantics.ParallelScopeRuntimeConformance", sourceSha256: "31fe4e3ba57eaf9d27c94a27dd9140a1696e0962bdbb43a8ad8703be8b564e2e", peakResidentKib: 1073088, elapsedSeconds: 7.83, measurementReceiptSha256: "26bda55e23e07238444351d2efa2c7e085363e14519b65f7fd2f541dbcd702e9", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
+    { module: "BpmnSemantics.ParallelScopeGraphConformance", sourceSha256: "00762a89a4c7222807784235b949a978f0d91a74dedc7ef3a61c6e5001c866d6", peakResidentKib: 1329868, elapsedSeconds: 16.23, measurementReceiptSha256: "19ce511ddf3a20e92058b6a8befee774ad56ae1c066cfa572fd5ffa6ffda1f59", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.MixedTaskBusinessErrorConformance", sourceSha256: "daf7a42aa265295310ffbb738729ed040b3973d15e53e24b9dff380f854554c4", peakResidentKib: 1842264, elapsedSeconds: 28.88, measurementReceiptSha256: "2b99d852eb5b8372ec0b2ad3332d93afbfaab0b33b40310f99956ea1a562e300", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.SerialBusinessTaskConformance", sourceSha256: "3c3f3293ae078850cda4e060d5d49f15d094b6c4495dd38fae00683aba8754f4", peakResidentKib: 1962164, elapsedSeconds: 74.81, measurementReceiptSha256: "b8ea1d5149ff929552d65710a77691ff48d026659c50e55e8e454faa92774b15", measuredAtCommit: "2383712bc69d50993e6736e10487d64701e29fda" },
     { module: "BpmnSemantics.InterruptingMessageEventSubProcessConformance", sourceSha256: "ed216e49bfb4d6e298e569014a570316221dd0f3986a9df8b32a28d9c50c5f68", peakResidentKib: 2105768, elapsedSeconds: 85.16, measurementReceiptSha256: "25f62aa7585db070ce98dd92d04286f48ec36c147e33f740eff191f444fc31c1", measuredAtCommit: "fdcf55eb68efa309be981a99cd36a2efecf996ce" },
@@ -381,12 +386,7 @@ export const leanModuleCostRecord = {
     { module: "BpmnSemantics.EventBasedGatewayConformance", sourceSha256: "6d92cbf323262358a6521da1218834514961c5d62853baabeceadcdc77355f7e", peakResidentKib: 2721196, elapsedSeconds: 17.19, measuredAtCommit: "e9c9db0f" },
     { module: "BpmnSemantics.SubProcessErrorPropagationConformance", sourceSha256: "07f431826e295264ca63c8240c7210c51263c0ee60afc1d6dc53ee62c7ba0d02", peakResidentKib: 2367304, elapsedSeconds: 40.77, measurementReceiptSha256: "6fea56611b134a8225a9a55867c38eaf66d09a547d854a4c6ed4b5189de86950" },
     { module: "BpmnSemantics.SubProcessBoundaryTimerConformance", sourceSha256: "40c6e0ff7a80ccf322286db4f1329dcf4006e274662a3234a458c2488b325ceb", peakResidentKib: 1514392, elapsedSeconds: 28.54, measurementReceiptSha256: "fa0047938f0da13dfa47a7dbeb656afb45359f749af731f0be8e00c4ef383454" },
-    {
-      module: "BpmnSemantics.CommittedExecutionPublicationConformance", sourceSha256: "2dab3dd3114f19a7cfd2403c24d93cd3cc93a1e56a7844e872edbcd832bb89b5",
-      peakResidentKib: 1478996,
-      elapsedSeconds: 17.13,
-      measuredAtCommit: "cbb78a11",
-    },
+    { module: "BpmnSemantics.CommittedExecutionPublicationConformance", sourceSha256: "904321a18900278c86997e9a8cd7093ce23e62e223e8b9ece0dfbfcf5bb38815", peakResidentKib: 1687204, elapsedSeconds: 31.33, measurementReceiptSha256: "7350917c2482e017df01a3b7d85cf15c20268f26b8625a5b46b75661ed62bb49", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.IntermediateCatchMessageConformance", sourceSha256: "3b219db84da8ca90b05c5924d66864fbc064f579149cbf81c94d8efa2d51aa3d", peakResidentKib: 2225108, elapsedSeconds: 11.7 },
     { module: "BpmnSemantics.TerminateEndEventConformance", sourceSha256: "a9aef86cb9612e53468a2f362ba19cdbac2a5fda1962eeb4db37849975f58663", peakResidentKib: 1854908, elapsedSeconds: 42.4, measurementReceiptSha256: "9f7d06530e6e56968a9a011debeebeb576624047feca9a093d1043fd735c39eb", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.SemanticProcessConformance", sourceSha256: "ad75af29f6f4b4229d41b8ec5526346f68ec746f3c361685edee922883c27505", peakResidentKib: 2203824, elapsedSeconds: 8.9 },
@@ -476,7 +476,7 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 6.68,
       measuredAtCommit: "ef739572",
     },
-    { module: "BpmnSemantics.UserTaskMetadataConformance", sourceSha256: "0585105a90e785ddebacbc5febfb2df5a7cd42638b335faa109112127c302e8e", peakResidentKib: 1415500, elapsedSeconds: 22.84, measurementReceiptSha256: "5481ae06ec56e9064b6f65de768e1a7049e42ea34dc8dc7f97c7cef5cbdf1ec6", measuredAtCommit: "2383712bc69d50993e6736e10487d64701e29fda" },
+    { module: "BpmnSemantics.UserTaskMetadataConformance", sourceSha256: "1a09a4592e9348eca247ff888ac5632fd717b5206679c77c5180744bb95c03be", peakResidentKib: 1421608, elapsedSeconds: 20.5, measurementReceiptSha256: "8a4f4f9a6c2cb965cb83c6a93026bb1ce13fd238f4b3b71e7338605fb6785081", measuredAtCommit: "28f4bf5a8ef59f8345a5f96b563f32641389a597" },
     { module: "BpmnSemantics.ActivityDataInputOutputAdmissionConformance", sourceSha256: "1c5ffac335d5de45b6948bac4c9ab57b8bc301cbc59e4f028fd67d69bc37ad29", peakResidentKib: 1087700, elapsedSeconds: 3.23, measurementReceiptSha256: "20c7f4af284eb7ef0074133ddd1307c708717f841ab7f1816ab1d4a3fa14b113", measuredAtCommit: "c6aeb583" },
     { module: "BpmnSemantics.ActivityDataInputOutputRefusalConformance", sourceSha256: "de936a04bbe3bbd048e83fcc22c4c5b8ff0196df955c9e9daab25dbc9bdb7c3e", peakResidentKib: 788884, elapsedSeconds: 2.11, measurementReceiptSha256: "f7074052ed824aeaa12b7a2c63c6fd828bf144b57394b89e4f716f184de023a8", measuredAtCommit: "8d3927f6" },
     { module: "BpmnSemantics.ActivityDataInputOutputConformance", sourceSha256: "aa76e6e36b44cfec497a35cbedeffc49666e625daaabc6fb27a9e3a472065eef", peakResidentKib: 1088924, elapsedSeconds: 1.68, measurementReceiptSha256: "4d17d3e9780ea6aca2324767ea32a10bc8b2891e5fda5800d43dbc5ef34aca0e", measuredAtCommit: "ee17ed58" },

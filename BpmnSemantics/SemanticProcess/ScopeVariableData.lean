@@ -238,4 +238,15 @@ theorem selectScopeVariables_owner_census (before after : ScopedVariables) (owne
   obtain ⟨nextFrame, census⟩ := List.length_eq_one_iff.mp lengths
   exact ⟨nextFrame, selectScopeVariables_iff.mpr census⟩
 
+/-- Scope and Process writes leave separate Activity-local frames unchanged. -/
+theorem writeScopeVariables_preserves_activities {variables result : ScopedVariables}
+    {owner : ScopeOccurrenceId} {patch : List VariableBinding}
+    (written : writeScopeVariables? variables owner patch = some result) :
+    result.activities = variables.activities := by
+  unfold writeScopeVariables? at written
+  obtain ⟨scope, _, written⟩ := Option.bind_eq_some_iff.mp written
+  split at written <;> try contradiction
+  cases Option.some.inj written
+  rfl
+
 end BpmnSemantics.SemanticProcess

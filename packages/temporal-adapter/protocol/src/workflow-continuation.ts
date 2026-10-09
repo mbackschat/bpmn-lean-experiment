@@ -10,6 +10,8 @@ import {
   isGateAdmissibleRuntimeState,
   callDataStateIsValid,
   sequentialScopeCheckpointValid,
+  parallelScopeCheckpointValid,
+  PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   isCompensationHandlerEffectWait,
   isCompensationParentContextRetention,
   isCompensationTriggerExecution,
@@ -209,7 +211,9 @@ export function requireBpmnWorkflowContinuationStateV1(
   }
   if (!isGateAdmissibleRuntimeState(program, processInstanceId, value) ||
     !callDataStateIsValid(program, value) ||
-    !sequentialScopeCheckpointValid(program, value) ||
+    !(program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
+      ? parallelScopeCheckpointValid(program, value)
+      : value.parallelScopeControllers === undefined && sequentialScopeCheckpointValid(program, value)) ||
     !recoveredTimeIsBelowEveryLiveDeadline(value)) {
     throw new TypeError("RuntimeState is not one representable committed state");
   }
@@ -318,6 +322,7 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     ...(Object.hasOwn(value, "sequentialMultiInstanceControllers")
       ? ["sequentialMultiInstanceControllers"]
       : []),
+    ...(Object.hasOwn(value, "parallelScopeControllers") ? ["parallelScopeControllers"] : []),
     ...(Object.hasOwn(value, "sequentialScopeControllers") ? ["sequentialScopeControllers"] : []),
     ...(Object.hasOwn(value, "parallelMultiInstanceControllers")
       ? ["parallelMultiInstanceControllers"]
@@ -356,6 +361,8 @@ function isRuntimeState(value: unknown): value is RuntimeState {
     !isList(value.activityOccurrences, isActivityOccurrence) ||
     (Object.hasOwn(value, "sequentialMultiInstanceControllers") &&
       !isList(value.sequentialMultiInstanceControllers, isSequentialMultiInstanceController)) ||
+    (Object.hasOwn(value, "parallelScopeControllers") &&
+      !isList(value.parallelScopeControllers, isParallelScopeController)) ||
     (Object.hasOwn(value, "sequentialScopeControllers") &&
       !isList(value.sequentialScopeControllers, isSequentialScopeController)) ||
     (Object.hasOwn(value, "parallelMultiInstanceControllers") &&
@@ -418,6 +425,11 @@ function isSequentialMultiInstanceController(value: unknown): boolean {
     isActivityOccurrenceId(value.id) &&
     isList(value.snapshot, isWireString) &&
     isList(value.outputSlots, isWireString);
+}
+
+function isParallelScopeController(value: unknown): boolean {
+  return isRecord(value) && hasOnlyKeys(value, ["id", "total", "completed"]) &&
+    isActivityOccurrenceId(value.id) && isSafeInteger(value.total, 1) && isSafeInteger(value.completed, 0);
 }
 
 function isSequentialScopeController(value: unknown): boolean {

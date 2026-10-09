@@ -144,7 +144,7 @@ private def transitionSuccessor? (program : Program) (state : RuntimeState) :
   | .internalOperation record =>
       if program.compensationEventSubProcessSnapshots.isSome || program.compensationExecution.isSome
       then replayInternalTransitionWithCompensationSnapshots? program state record
-      else replayInternalTransition? program state record
+      else ParallelScopeReplay.internalTransition? program state record
 
 private def transitionRecordJson? (program : Program) (instanceId : SemanticId)
     (encodeStimulus : Stimulus → Option Json)

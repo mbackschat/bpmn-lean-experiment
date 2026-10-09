@@ -16,21 +16,7 @@ import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 const { parallelScopeCheckedSourceAdmitted } = await import(new URL("../../bpmn-source/dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../../bpmn-source/src/multi-instance-scope-source-compiler.ts");
 const { parallelScopeStartClosureBound, parallelScopeStartFrontierCapacity } = await import(new URL("../../bpmn-source/dist/parallel-scope-start-bound.js", import.meta.url).href) as typeof import("../../bpmn-source/src/parallel-scope-start-bound.ts");
 
-const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
-const prefix = (before: RuntimeState, state: RuntimeState) => ({
-  tokens: state.controlTokens.flatMap(token => Array.from({ length: token.multiplicity }, () => [token.placeId, owner(token.owner)])),
-  tasks: state.userTaskWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output]),
-  effects: state.effectWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output, wait.arguments]),
-  taskCounters: state.taskActivations.map(row => [row.elementId, row.count]),
-  effectCounters: state.effectActivations.map(row => [row.elementId, row.count]),
-  endOccurrences: state.endOccurrences,
-  effectFrames: state.variables.activities.flatMap(frame => frame.owner.kind === LocalDataOwnerKind.EffectOccurrence
-    ? [[frame.owner.id.processInstanceId, frame.owner.id.elementId, frame.owner.id.activation, frame.bindings]] : []),
-  otherStateUnchanged: isDeepStrictEqual({ ...state, controlTokens: before.controlTokens,
-    userTaskWaits: before.userTaskWaits, effectWaits: before.effectWaits, taskActivations: before.taskActivations,
-    effectActivations: before.effectActivations, endOccurrences: before.endOccurrences,
-    variables: { ...state.variables, activities: before.variables.activities } }, before),
-});
+import { owner, prefix, verifyParallelCommandParity, verifyParallelEarlyCompletionParity, verifyParallelRootEffectParity, verifyParallelInnerBodyCommandParity, verifyParallelProgramCapacityParity, verifyParallelDataCommandParity, verifyParallelParentPreludeParity } from "./parallel-scope-command-parity.ts";
 
 test("Lean and TypeScript agree on shared-input reservation slots and every applied prefix", async () => {
   const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
@@ -712,3 +698,15 @@ test("Lean and TypeScript derive the same concurrent wait/effect capacity from v
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("Lean and TypeScript agree on real parallel Start, scoped commands and complete natural retirement", verifyParallelCommandParity);
+
+test("Lean and TypeScript agree on private raw Program capacity ordinary matrix and syntax refusal", () => verifyParallelProgramCapacityParity());
+test("Lean and TypeScript agree on private raw Program capacity accepted 1024-operation parent boundary", () => verifyParallelProgramCapacityParity("maximum-parent"));
+test("Lean and TypeScript agree on private raw Program capacity accepted 1024-operation body boundary", () => verifyParallelProgramCapacityParity("maximum-body"));
+test("Lean and TypeScript agree on real parallel early completion and stale cancelled work", verifyParallelEarlyCompletionParity);
+test("Lean and TypeScript agree on private root Service null-output commands", verifyParallelRootEffectParity);
+test("Lean and TypeScript agree on interleaved parallel inner-body joined and separate-End commands", verifyParallelInnerBodyCommandParity);
+test("Lean and TypeScript agree on ordered Process writes, early cancellation retention and data refusals", verifyParallelDataCommandParity);
+
+test("Lean and TypeScript agree on parent approval and validation before parallel entry", verifyParallelParentPreludeParity);

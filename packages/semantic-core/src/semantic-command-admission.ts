@@ -1,3 +1,6 @@
+import { PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { parallelScopeCommandCapacity } from "./parallel-scope-command-admission.js";
+import { completeParallelScopeEffect, hasParallelScopeDefinition } from "./parallel-scope-data.js";
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
 import { completeSequentialScopeEffectData } from "./sequential-scope-data.js";
 import { mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
@@ -141,6 +144,7 @@ export type SemanticCommandOutcome =
 export type CommandAdmission = DeepReadonly<{
   outcome: SemanticCommandOutcome;
   state: RuntimeState;
+  closureBound?: number;
 }>;
 
 /**
@@ -214,7 +218,16 @@ function activityDataInputOutputStartDataAdmitted(
         stimulus.initialVariables[0]?.name === declaration.directInput.source.propertyId));
 }
 
-export function admit(
+export function admit(program: SemanticProcessProgram, state: RuntimeState, stimulus: Stimulus): CommandAdmission {
+  if (program.identity.semanticProfile !== PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID)
+    return admitValidated(program, state, stimulus);
+  const capacity = parallelScopeCommandCapacity(program, state, stimulus);
+  if (capacity === undefined) return { outcome: CommandOutcome.Rejected, state };
+  const admitted = admitValidated(program, state, stimulus);
+  return admitted.outcome === CommandOutcome.Committed ? { ...admitted, closureBound: capacity.closureBound } : admitted;
+}
+
+function admitValidated(
   program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
@@ -460,6 +473,11 @@ export function admit(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
+      if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID &&
+          hasParallelScopeDefinition(program, wait.owner)) {
+        const next = completeParallelScopeEffect(program, state, stimulus.effectId, stimulus.result);
+        return next === null ? { outcome: CommandOutcome.Rejected, state } : { outcome: CommandOutcome.Committed, state: next };
+      }
       const route =
         stimulus.result.kind === EffectExecutionResultKind.BpmnError
           ? wait.bpmnErrorRoute
@@ -477,7 +495,8 @@ export function admit(
         wait.id,
         wait.outputMappings,
         stimulus.result.localPatch,
-        stimulus.result.kind === EffectExecutionResultKind.BpmnError || program.identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+        stimulus.result.kind === EffectExecutionResultKind.BpmnError || program.identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID ||
+          program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
       );
       if (variables === null) {
         return { outcome: CommandOutcome.Rejected, state };

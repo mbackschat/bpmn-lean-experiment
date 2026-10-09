@@ -1,3 +1,4 @@
+export { parallelScopeCheckpointValid } from "./parallel-scope-state-validation.js";
 export * from "./contract.js";
 export { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 export { analyzeSequentialScopeControl } from "./sequential-scope-control-analysis.js";

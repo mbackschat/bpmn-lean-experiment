@@ -130,3 +130,41 @@ export async function parallelStartFrontierCases() {
   for (const entry of initial.filter(entry => entry.expected === null)) cases.push({ ...entry, expected: null });
   return cases;
 }
+
+
+export async function parallelProgramCapacityCases() {
+  const { lowerCheckedProcess } = await import(new URL("../dist/semantic-process-lowering.js", import.meta.url).href) as typeof import("../src/semantic-process-lowering.ts");
+  type Capacity = Readonly<{ closureBound: number; waits: number; effects: number }>;
+  const cases: { program: unknown; bindings: readonly VariableBinding[]; expected: Capacity | null }[] = [];
+  for (const { source, bindings, expected } of await parallelStartFrontierCases()) {
+    const lowered = lowerCheckedProcess(source);
+    // Source fixtures vary declaration order; the IL contract requires canonical definition arrays.
+    const program = { ...lowered, controlPlaces: [...lowered.controlPlaces].sort((a, b) => compareCanonicalStrings(a.id, b.id)) };
+    const root = source.definitionScopes.find(scope => scope.parentScopeId === null)!;
+    const parent = source.nodeScopes.filter(owner => owner.scopeId === root.id).length + 1;
+    const collection = bindings.find(binding => binding.value.kind === Value.StringList);
+    const count = collection?.value.kind === Value.StringList ? collection.value.value.length : 0;
+    const closureBound = parent + count * (source.nodes.length + 1 - parent);
+    cases.push({ program, bindings, expected: expected === null || Object.hasOwn(program, "interruptingMessageEventSubProcesses") ? null : { closureBound, ...expected } });
+  }
+  const source = (await parallelStartBoundCases())[1]!;
+  const lowered = lowerCheckedProcess(source.source);
+  const program = { ...lowered, controlPlaces: [...lowered.controlPlaces].sort((a, b) => compareCanonicalStrings(a.id, b.id)) };
+  const bindings = source.bindings;
+  const expected = { closureBound: 10, waits: 1, effects: 1 };
+  cases.push({ program: JSON.parse(JSON.stringify(program).replaceAll("operation:", "step:")), bindings, expected });
+  cases.push({ program, bindings, expected });
+  const invalid: unknown[] = [null, {}, { ...program, interruptingMessageEventSubProcesses: [] },
+    { ...program, interruptingMessageEventSubProcesses: [{ parentScopeId: "root" }] }, { ...program, budget: 1 }, { ...program, identity: { ...program.identity, sourceOverlay: null } },
+    { ...program, operations: [...program.operations].reverse() }, { ...program, operationScopes: program.operationScopes.slice(1) },
+    { ...program, controlPlaceScopes: program.controlPlaceScopes.slice(1) },
+    { ...program, operations: program.operations.map(operation => ({ ...operation, extra: true })) },
+    { ...program, operations: [...program.operations, program.operations[0]] },
+    { ...program, operations: program.operations.map(operation => operation.kind === "completeParallelMultiInstanceScope" ? { ...operation, entryOperationId: "missing" } : operation) },
+    { ...program, operations: program.operations.map(operation => operation.kind === "awaitEffect" ? { ...operation, effect: { ...operation.effect, descriptor: { ...operation.effect.descriptor, operation: "" } } } : operation) },
+    { ...program, operationScopes: program.operationScopes.map(owner => ({ ...owner, scopeId: program.definitionScopes.find(scope => scope.parentScopeId === null)!.id })) },
+    { ...program, controlPlaces: program.controlPlaces.map(place => ({ ...place, origin: { ...place.origin, elementId: program.processId } })) },
+  ];
+  for (const value of invalid) cases.push({ program: value, bindings, expected: null });
+  return cases;
+}

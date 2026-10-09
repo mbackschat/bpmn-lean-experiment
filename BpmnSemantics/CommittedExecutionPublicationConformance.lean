@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.ParallelScopeTransitionTraceProofs
 import BpmnSemantics.SemanticProcess.Fixtures
 import BpmnSemantics.CallActivityConformance
 
@@ -57,8 +58,8 @@ theorem admitted_start_trace_replays_to_exact_result :
       (applyStimulusTraced scenarioClosureLimit sequentialProgram initialState
         startStimulus).committedTransitions =
     some (applyStimulus scenarioClosureLimit sequentialProgram initialState startStimulus).state
-  exact applyStimulusTraced_emitted_trace_replays scenarioClosureLimit sequentialProgram
-    initialState startStimulus (by decide +kernel)
+  exact applyStimulusTraced_emitted_trace_replays_of_unselected_parallel_scope scenarioClosureLimit sequentialProgram
+    initialState startStimulus (by decide +kernel) (by decide +kernel)
 
 def droppedTrace : List CommittedTransition :=
   [.externalStimulus startStimulus, .internalOperation startRecord]

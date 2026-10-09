@@ -477,7 +477,7 @@ export function advanceScenario(
   program: SemanticProcessProgram,
   state: RuntimeState,
   stimulus: Stimulus,
-  closureLimit: number = semanticProcessClosureLimit,
+  closureLimit?: number,
 ): ScenarioStep {
   const traced = applyStimulusWithTrace(
     program,

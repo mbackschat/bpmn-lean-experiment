@@ -228,7 +228,10 @@ export function validateIncomingWorkflowContinuation(
   );
 }
 
-function validateContinuationArguments(
+/** Validates carried facts, continuation identity and budgets after execution admission and host decoding.
+ * Callers retain those prerequisites separately, as initializeWorkflowChain does; this function grants no host capability.
+ */
+export function validateContinuationArguments(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
   input: BpmnWorkflowContinuationHostInputV1,

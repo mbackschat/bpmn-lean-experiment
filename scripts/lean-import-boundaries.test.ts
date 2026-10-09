@@ -124,6 +124,34 @@ function moduleName(sourcePath: string): string {
   return sourcePath.replace(/\.lean$/u, "").replaceAll("/", ".");
 }
 
+function importedModules(code: string): readonly string[] {
+  return [...code.matchAll(/^\s*import\s+([A-Za-z0-9_.]+)\s*$/gmu)].map(match => match[1]!);
+}
+
+function forbiddenImportPaths(
+  sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
+  roots: readonly string[],
+  forbidden: ReadonlySet<string>,
+): readonly string[] {
+  const graph = new Map(sources.map(source => [moduleName(source.path.replaceAll(path.sep, "/")),
+    importedModules(analyzeLeanSource(source.source).code)] as const));
+  return roots.flatMap(root => {
+    assert.ok(graph.has(root), `missing executable import root: ${root}`);
+    const visited = new Set<string>();
+    const pending = [[root]];
+    const violations: string[] = [];
+    for (let index = 0; index < pending.length; index++) {
+      const chain = pending[index]!;
+      const current = chain.at(-1)!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      if (forbidden.has(current)) violations.push(chain.join(" -> "));
+      for (const imported of graph.get(current) ?? []) pending.push([...chain, imported]);
+    }
+    return violations;
+  });
+}
+
 export function unreachableMaintainedAssuranceModules(
   sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
 ): readonly string[] {
@@ -134,12 +162,7 @@ export function unreachableMaintainedAssuranceModules(
       module: moduleName(sourcePath.replaceAll(path.sep, "/")),
       path: sourcePath.replaceAll(path.sep, "/"),
       hasNamedTheorem: /(?<![\p{L}\p{N}_'.?!])theorem\s+[\p{L}_][\p{L}\p{N}_'.?!]*/u.test(declarationCode),
-      imports: code
-        .split(/\r?\n/u)
-        .flatMap((line) => {
-          const match = /^\s*import\s+([A-Za-z0-9_.]+)\s*$/u.exec(line);
-          return match?.[1] === undefined ? [] : [match[1]];
-        }),
+      imports: importedModules(code),
     };
   });
   const importsByModule = new Map(
@@ -408,4 +431,27 @@ test("semantic leaf modules import narrow owners rather than the aggregate umbre
     [],
     "a broad SemanticProcess import invalidates unrelated proof-heavy modules when a leaf owner changes",
   );
+});
+
+test("PMIS executable entries do not import accounting proof owners", () => {
+  const sources = readWorktreeSources(worktreeLeanSourceFiles());
+  const forbidden = new Set(sources.map(source => moduleName(source.path)).filter(module =>
+    /^BpmnSemantics\.SemanticProcess\.ParallelScope.*(?:Proofs|Accounting|Progress|Reachability|ContinuationMarking|ReplayFrames|CommandReplay|CollectionProvenance)$/u.test(module)));
+  assert.ok(forbidden.size >= 8, "the guard must discover the maintained PMIS proof owners");
+  assert.deepEqual(forbiddenImportPaths(sources, [
+    "BpmnSemantics.ParallelScopeReservationMain",
+    "BpmnSemantics.SemanticProcessJsonMain",
+  ], forbidden), [], "proof-only changes must not invalidate executable PMIS replay consumers");
+});
+
+test("runtime proof isolation detects indirect imports and ignores prose and cycles", () => {
+  const sources = [
+    { path: "Runtime.lean", source: "import Adapter\n-- import Proofs\n" },
+    { path: "Adapter.lean", source: "import Runtime\nimport Proofs\n" },
+    { path: "Proofs.lean", source: "theorem witness : True := by trivial\n" },
+  ];
+  assert.deepEqual(forbiddenImportPaths(sources, ["Runtime"], new Set(["Proofs"])), ["Runtime -> Adapter -> Proofs"]);
+  assert.deepEqual(forbiddenImportPaths(sources.map(source => source.path === "Adapter.lean"
+    ? { ...source, source: 'import Runtime\n/- import Proofs -/\ndef prose := "import Proofs"\n' } : source),
+  ["Runtime"], new Set(["Proofs"])), []);
 });

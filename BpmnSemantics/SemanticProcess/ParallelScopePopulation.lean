@@ -86,6 +86,34 @@ def retireParallelScopeIteration (controller : ParallelScopeController)
     let (before, selected, after) ← selectParallelScopeIteration target iterations
     pure (finishParallelScopeRetirement controller selected (before ++ after) condition)
 
+/-- Every present exact owner has an executable selection; no ordering premise is needed. -/
+theorem selectParallelScopeIteration_total (target : ScopeOccurrenceId)
+    (iterations : List ParallelScopeIteration)
+    (member : ∃ iteration ∈ iterations, iteration.scope = target) :
+    ∃ before selected after, selectParallelScopeIteration target iterations = some (before, selected, after) := by
+  induction iterations with
+  | nil => simp at member
+  | cons current rest ih =>
+    by_cases selected : current.scope = target
+    · exact ⟨[], current, rest, by simp [selectParallelScopeIteration, selected]⟩
+    · obtain ⟨iteration, present, identity⟩ := member
+      have tailMember : iteration ∈ rest := by
+        rcases List.mem_cons.mp present with rfl | present
+        · exact False.elim (selected identity)
+        · exact present
+      obtain ⟨before, chosen, after, found⟩ := ih ⟨iteration, tailMember, identity⟩
+      exact ⟨current :: before, chosen, after, by simp [selectParallelScopeIteration, selected, found]⟩
+
+/-- Valid population accounting and present ownership make retirement dispatch total. -/
+theorem retireParallelScopeIteration_total (controller : ParallelScopeController)
+    (iterations : List ParallelScopeIteration) (target : ScopeOccurrenceId) (condition : Bool)
+    (valid : validParallelScopePopulation controller iterations = true)
+    (member : ∃ iteration ∈ iterations, iteration.scope = target) :
+    ∃ result, retireParallelScopeIteration controller iterations target condition = some result := by
+  obtain ⟨before, selected, after, found⟩ := selectParallelScopeIteration_total target iterations member
+  exact ⟨finishParallelScopeRetirement controller selected (before ++ after) condition,
+    by simp [retireParallelScopeIteration, valid, found]⟩
+
 theorem selectParallelScopeIteration_sound (target : ScopeOccurrenceId)
     (iterations before after : List ParallelScopeIteration) (selected : ParallelScopeIteration)
     (found : selectParallelScopeIteration target iterations = some (before, selected, after)) :
@@ -225,6 +253,52 @@ theorem retireParallelScopeIteration_accounting (controller : ParallelScopeContr
     have accounted := validParallelScopePopulation_accounting controller iterations valid
     simp only [shape, List.length_cons, List.length_nil] at accounted
     exact ⟨rfl, rfl, rfl, by simpa [ParallelScopeRetirement.controller, ParallelScopeRetirement.siblings] using accounted⟩
+
+private theorem validParallelScopeIterations_sublist (instanceId : SemanticId)
+    (before after : List ParallelScopeIteration)
+    (valid : validParallelScopeIterations instanceId before = true)
+    (retained : after.Sublist before) (nonempty : after ≠ []) :
+    validParallelScopeIterations instanceId after = true := by
+  simp only [validParallelScopeIterations, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at valid ⊢
+  refine ⟨⟨by cases after <;> simp_all, ?_⟩, List.Pairwise.sublist retained valid.2⟩
+  intro iteration member
+  exact valid.1.2 iteration (retained.subset member)
+
+/-- PMIS-END-01 preserves valid ongoing ownership after any exact retirement that leaves a nonempty population. -/
+theorem retireParallelScopeIteration_remaining_valid (controller next : ParallelScopeController)
+    (iterations : List ParallelScopeIteration) (target : ScopeOccurrenceId) (condition : Bool)
+    (selected first : ParallelScopeIteration) (rest : List ParallelScopeIteration)
+    (executed : retireParallelScopeIteration controller iterations target condition =
+      some (.remaining next selected first rest)) :
+    validParallelScopePopulation next (first :: rest) = true := by
+  have accounted := (retireParallelScopeIteration_accounting controller iterations target condition
+    (.remaining next selected first rest) executed).2.2.2
+  have relation := retireParallelScopeIteration_dispatch controller iterations target condition
+    (.remaining next selected first rest) executed
+  cases relation with
+  | remaining before after selected first rest valid shape identity siblings =>
+    have retained : (first :: rest).Sublist iterations := by
+      rw [← siblings, shape]
+      exact (List.sublist_cons_self selected after).append_left before
+    have original := valid
+    simp only [validParallelScopePopulation, Bool.and_eq_true, decide_eq_true_eq,
+      isSafeWireNat, List.all_eq_true] at original
+    have totalSafe : controller.total ≤ maxSafeWireNat := original.1.1.1.1
+    have completionSafe : controller.completed + 1 ≤ maxSafeWireNat := by
+      simp only [ParallelScopeRetirement.controller, ParallelScopeRetirement.siblings,
+        List.length_cons] at accounted
+      omega
+    have completionBelow : controller.completed + 1 < controller.total := by
+      simp only [ParallelScopeRetirement.controller, ParallelScopeRetirement.siblings,
+        List.length_cons] at accounted
+      omega
+    have iterationsValid := validParallelScopeIterations_sublist controller.id.processInstanceId
+      iterations (first :: rest) original.1.2 retained (by simp)
+    simp only [validParallelScopePopulation, Bool.and_eq_true, decide_eq_true_eq,
+      isSafeWireNat, List.all_eq_true]
+    refine ⟨⟨⟨⟨totalSafe, completionSafe⟩, ⟨completionBelow, accounted⟩⟩, iterationsValid⟩, ?_⟩
+    intro iteration member
+    exact original.2 iteration (retained.subset member)
 
 private def sampleController : ParallelScopeController :=
   ⟨⟨⟨"applicants"⟩, ⟨"Check"⟩, 2⟩, 3, 0⟩

@@ -4,14 +4,24 @@ import { analyzeSequentialScopeControl } from "./sequential-scope-control-analys
 import { analyzeSequentialScopeData } from "./sequential-scope-data-admission.js";
 
 export function sequentialScopeProgramShape(operations: readonly SemanticOperation[], scopeCount: number): boolean {
+  return repeatedScopeProgramShape(operations, scopeCount, Op.EnterSequentialMultiInstanceScope, Op.CompleteSequentialMultiInstanceScope);
+}
+
+/** Repetition modes share ordinary body shape; each caller selects its paired entry and completion. */
+export function repeatedScopeProgramShape(operations: readonly SemanticOperation[], scopeCount: number,
+  entry: Op.EnterSequentialMultiInstanceScope | Op.EnterParallelMultiInstanceScope,
+  completion: Op.CompleteSequentialMultiInstanceScope | Op.CompleteParallelMultiInstanceScope): boolean {
   const count = (kind: Op) => operations.filter(operation => operation.kind === kind).length;
-  return scopeCount === 2 && [Op.Initiate, Op.EnterSequentialMultiInstanceScope, Op.CompleteSequentialMultiInstanceScope, Op.CompleteScope]
+  return scopeCount === 2 && [Op.Initiate, entry, completion, Op.CompleteScope]
     .every(kind => count(kind) === 1) && count(Op.ReachNoneEnd) >= 2 && count(Op.AwaitUserTask) > 0 && count(Op.AwaitEffect) > 0 &&
     operations.every(operation => {
     switch (operation.kind) {
       case Op.Initiate:
+        return true;
       case Op.EnterSequentialMultiInstanceScope:
+      case Op.EnterParallelMultiInstanceScope: return operation.kind === entry;
       case Op.CompleteSequentialMultiInstanceScope:
+      case Op.CompleteParallelMultiInstanceScope: return operation.kind === completion;
       case Op.ReachNoneEnd:
       case Op.Duplicate:
       case Op.Synchronize: return true;

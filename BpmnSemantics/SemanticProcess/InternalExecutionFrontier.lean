@@ -154,4 +154,221 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
     rw [folded]
     rfl
 
+private theorem sortBy_empty_reflects (before : α → α → Bool) (values : List α)
+    (empty : sortBy before values = []) : values = [] := by
+  apply List.eq_nil_iff_forall_not_mem.mpr
+  intro value present
+  have sorted := (mem_sortBy before value values).mpr present
+  rw [empty] at sorted
+  contradiction
+
+private theorem fold_discovery_reflects (operations : List SemanticOperation)
+    (next : SemanticOperation → InternalExecutionFrontier) (initial : InternalExecutionFrontier)
+    (empty : (operations.foldl (fun frontier operation => { frontier with
+      offers := frontier.offers ++ (next operation).offers
+      preparationFailed := frontier.preparationFailed || (next operation).preparationFailed }) initial).offers = [])
+    (successful : (operations.foldl (fun frontier operation => { frontier with
+      offers := frontier.offers ++ (next operation).offers
+      preparationFailed := frontier.preparationFailed || (next operation).preparationFailed }) initial).preparationFailed = false) :
+    initial.offers = [] ∧ initial.preparationFailed = false ∧
+      ∀ operation ∈ operations, (next operation).offers = [] ∧ (next operation).preparationFailed = false := by
+  induction operations generalizing initial with
+  | nil => exact ⟨empty, successful, by simp⟩
+  | cons head tail ih =>
+    obtain ⟨empty, successful, rest⟩ := ih _ empty successful
+    have parts : initial.offers = [] ∧ (next head).offers = [] := by simpa using empty
+    obtain ⟨initialEmpty, headEmpty⟩ := parts
+    obtain ⟨initialSuccess, headSuccess⟩ := Bool.or_eq_false_iff.mp successful
+    refine ⟨initialEmpty, initialSuccess, ?_⟩
+    intro operation member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact ⟨headEmpty, headSuccess⟩
+    · exact rest operation member
+
+/-- Empty successful aggregation reflects every declaration's actual discovery. -/
+theorem deriveInternalExecutionFrontier_empty_reflects (program : Program) (state : RuntimeState)
+    (active : (match state.control with | .cancelled _ | .failed .. => false | _ => true) = true)
+    (empty : (deriveInternalExecutionFrontier program state).offers = [])
+    (successful : (deriveInternalExecutionFrontier program state).preparationFailed = false)
+    (operation : SemanticOperation) (member : operation ∈ program.operations) :
+    (match operation, state.control with
+      | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
+      | _, _ => ordinaryExecutionFrontier program state operation).offers = [] ∧
+    (match operation, state.control with
+      | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
+      | _, _ => ordinaryExecutionFrontier program state operation).preparationFailed = false := by
+  unfold deriveInternalExecutionFrontier at empty successful
+  cases control : state.control <;> simp [control] at active
+  all_goals
+    simp only [control] at empty successful
+    have unsortedEmpty := sortBy_empty_reflects _ _ empty
+    have reflected := (fold_discovery_reflects _ _ _ unsortedEmpty
+      (Bool.or_eq_false_iff.mp successful).1).2.2 operation member
+    cases operation <;> exact reflected
+
+private theorem occurrenceMapM_member (values : List α) (project : α → Option β)
+    (results : List β) (mapped : values.mapM project = some results)
+    (value : α) (member : value ∈ values) :
+    ∃ result ∈ results, project value = some result := by
+  induction values generalizing results with
+  | nil => simp at member
+  | cons head tail ih =>
+    simp only [List.mapM_cons, Option.bind_eq_bind] at mapped
+    obtain ⟨first, firstEq, mapped⟩ := Option.bind_eq_some_iff.mp mapped
+    obtain ⟨rest, restEq, resultEq⟩ := Option.bind_eq_some_iff.mp mapped
+    simp only [pure, Pure.pure, Option.some.injEq] at resultEq
+    subst results
+    rcases List.mem_cons.mp member with rfl | member
+    · exact ⟨first, List.mem_cons_self, firstEq⟩
+    · obtain ⟨result, present, resultEq⟩ := ih rest restEq member
+      exact ⟨result, List.mem_cons_of_mem _ present, resultEq⟩
+
+/-- Successful discovery retains every successful exact execution, including scope retirement. -/
+theorem internalOperationOccurrenceOffers_complete (program : Program) (state after : RuntimeState)
+    (candidate : InternalOperationOccurrence) (operation : SemanticOperation)
+    (offers : List (InternalOperationOccurrence × RuntimeState))
+    (resolved : resolveInternalOperationOccurrence? program state candidate = some operation)
+    (applied : applyInternalOperationOccurrence? program state candidate = some after)
+    (discovered : internalOperationOccurrenceOffers? program state operation = some offers) :
+    (candidate, after) ∈ offers := by
+  obtain ⟨candidates, candidatesEq, member⟩ :=
+    resolveInternalOperationOccurrence_requires_exact_candidate program state candidate operation resolved
+  have key := (resolveInternalOperationOccurrence_declaration program state candidate operation resolved).2
+  cases operation <;> simp only [internalOperationOccurrenceOffers?] at discovered <;> try contradiction
+  all_goals
+    obtain ⟨owners, ownersEq, discovered⟩ := Option.bind_eq_some_iff.mp discovered
+    rw [key, candidatesEq] at ownersEq
+    cases Option.some.inj ownersEq
+    obtain ⟨pieces, mapped, flattened⟩ := Option.bind_eq_some_iff.mp discovered
+    simp only [pure, Pure.pure, Option.some.injEq] at flattened
+    obtain ⟨piece, present, pieceEq⟩ := occurrenceMapM_member _ _ pieces mapped candidate member
+    simp only [applied] at pieceEq
+    cases Option.some.inj pieceEq
+    rw [← flattened]
+    exact List.mem_flatten.mpr ⟨[(candidate, after)], present, by simp⟩
+
+/-- A resolved candidate cannot execute when the selected PMIS frontier is empty and successful. -/
+theorem deriveInternalExecutionFrontier_empty_occurrence_refusal (program : Program) (state : RuntimeState)
+    (selected : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (candidate : InternalOperationOccurrence) (operation : SemanticOperation)
+    (resolved : resolveInternalOperationOccurrence? program state candidate = some operation)
+    (empty : (deriveInternalExecutionFrontier program state).offers = [])
+    (successful : (deriveInternalExecutionFrontier program state).preparationFailed = false) :
+    applyInternalOperationOccurrence? program state candidate = none := by
+  cases applied : applyInternalOperationOccurrence? program state candidate with
+  | none => rfl
+  | some after =>
+    have running : ∃ process, state.control = .running process := by
+      cases control : state.control <;> simp [applyInternalOperationOccurrence?, control] at applied
+      exact ⟨_, rfl⟩
+    obtain ⟨process, running⟩ := running
+    have reflection := deriveInternalExecutionFrontier_empty_reflects program state
+      (by simp [running]) empty successful operation
+      (resolveInternalOperationOccurrence_declaration program state candidate operation resolved).1
+    have ordinary : (ordinaryExecutionFrontier program state operation).offers = [] ∧
+        (ordinaryExecutionFrontier program state operation).preparationFailed = false := by
+      cases operation <;> simp only [running] at reflection <;> try exact reflection
+      simp [mergeExecutionFrontier, selected] at reflection
+    simp only [ordinaryExecutionFrontier, selected, beq_self_eq_true, ↓reduceIte] at ordinary
+    cases discovery : internalOperationOccurrenceOffers? program state operation with
+    | none => simp [discovery] at ordinary
+    | some offers =>
+      have present := internalOperationOccurrenceOffers_complete program state after candidate operation offers resolved applied discovery
+      simp only [discovery] at ordinary
+      have noOffers : offers = [] := by simpa using ordinary.1
+      rw [noOffers] at present
+      contradiction
+
+private theorem mapM_output_witness {α β : Type} (values : List α) (project : α → Option β)
+    (results : List β) (mapped : values.mapM project = some results)
+    (result : β) (member : result ∈ results) : ∃ value ∈ values, project value = some result := by
+  induction values generalizing results with
+  | nil => simp at mapped; subst results; contradiction
+  | cons first rest ih =>
+    simp only [List.mapM_cons, Option.bind_eq_bind] at mapped
+    obtain ⟨head, headEq, mapped⟩ := Option.bind_eq_some_iff.mp mapped
+    obtain ⟨tail, tailEq, resultEq⟩ := Option.bind_eq_some_iff.mp mapped
+    simp only [pure, Pure.pure, Option.some.injEq] at resultEq
+    subst results
+    rcases List.mem_cons.mp member with rfl | member
+    · exact ⟨first, by simp, headEq⟩
+    · obtain ⟨value, present, chosen⟩ := ih tail tailEq member
+      exact ⟨value, by simp [present], chosen⟩
+
+private theorem occurrence_offers_sound (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (offers : List (InternalOperationOccurrence × RuntimeState))
+    (discovered : internalOperationOccurrenceOffers? program state operation = some offers)
+    (candidate : InternalOperationOccurrence) (after : RuntimeState) (member : (candidate, after) ∈ offers) :
+    applyInternalOperationOccurrence? program state candidate = some after := by
+  unfold internalOperationOccurrenceOffers? at discovered
+  cases operation <;> simp only at discovered <;> try contradiction
+  all_goals
+    obtain ⟨candidates, _, discovered⟩ := Option.bind_eq_some_iff.mp discovered
+    obtain ⟨chunks, mapped, resultEq⟩ := Option.bind_eq_some_iff.mp discovered
+    simp only [pure, Pure.pure, Option.some.injEq] at resultEq
+    subst offers
+    obtain ⟨chunk, chunkMember, pairMember⟩ := List.mem_flatten.mp member
+    obtain ⟨selected, _, chosen⟩ := mapM_output_witness candidates _ chunks mapped chunk chunkMember
+    cases applied : applyInternalOperationOccurrence? program state selected with
+    | some successor =>
+      simp only [applied, Option.some.injEq] at chosen
+      subst chunk
+      simp only [List.mem_singleton] at pairMember
+      cases pairMember
+      exact applied
+    | none =>
+      simp only [applied] at chosen
+      split at chosen <;> simp_all
+
+private theorem fold_offers_property (operations : List SemanticOperation)
+    (next : SemanticOperation → InternalExecutionFrontier) (initial : InternalExecutionFrontier)
+    (property : InternalExecutionOffer → Prop)
+    (initialValid : ∀ offer ∈ initial.offers, property offer)
+    (discoveredValid : ∀ operation ∈ operations, ∀ offer ∈ (next operation).offers, property offer) :
+    ∀ offer ∈ (operations.foldl (fun frontier operation => { frontier with
+      offers := frontier.offers ++ (next operation).offers,
+      preparationFailed := frontier.preparationFailed || (next operation).preparationFailed }) initial).offers,
+      property offer := by
+  induction operations generalizing initial with
+  | nil => exact initialValid
+  | cons first rest ih =>
+    apply ih
+    · intro offer member
+      rcases List.mem_append.mp member with previous | discovered
+      · exact initialValid offer previous
+      · exact discoveredValid first (by simp) offer discovered
+    · intro operation member
+      exact discoveredValid operation (by simp [member])
+
+/-- Every selected PMIS offer carries the actual exact-owner execution, including result-only offers. -/
+theorem deriveInternalExecutionFrontier_occurrence_sound (program : Program) (state : RuntimeState)
+    (selected : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (offer : InternalExecutionOffer) (member : offer ∈ (deriveInternalExecutionFrontier program state).offers) :
+    ∃ candidate, offer.alternative = .operationOccurrence candidate.operationId candidate.owner ∧
+      applyInternalOperationOccurrence? program state candidate = some offer.successor ∧ offer.preparation = none := by
+  let property := fun offer : InternalExecutionOffer => ∃ candidate,
+    offer.alternative = .operationOccurrence candidate.operationId candidate.owner ∧
+    applyInternalOperationOccurrence? program state candidate = some offer.successor ∧ offer.preparation = none
+  have ordinary : ∀ operation, ∀ offer ∈ (ordinaryExecutionFrontier program state operation).offers, property offer := by
+    intro operation offer member
+    simp only [ordinaryExecutionFrontier, selected] at member
+    cases discovered : internalOperationOccurrenceOffers? program state operation with
+    | none => simp [discovered] at member
+    | some offers =>
+      simp only [discovered] at member
+      obtain ⟨⟨candidate, successor⟩, present, equal⟩ := List.mem_map.mp member
+      cases equal
+      exact ⟨candidate, rfl, occurrence_offers_sound program state operation offers discovered candidate successor present, rfl⟩
+  have discovered : ∀ (operation : SemanticOperation), ∀ offer ∈ (match operation, state.control with
+      | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
+      | _, _ => ordinaryExecutionFrontier program state operation).offers, property offer := by
+    intro operation offer member
+    cases operation <;> cases control : state.control <;> simp only [control] at member <;> try exact ordinary _ _ member
+    simp [mergeExecutionFrontier, selected] at member
+  unfold deriveInternalExecutionFrontier at member
+  split at member <;> try contradiction
+  dsimp only at member
+  have present := (mem_sortBy _ offer _).mp member
+  exact fold_offers_property program.operations _ {} property (by simp) (fun operation _ => discovered operation) offer present
+
 end BpmnSemantics.SemanticProcess.InternalCommutation

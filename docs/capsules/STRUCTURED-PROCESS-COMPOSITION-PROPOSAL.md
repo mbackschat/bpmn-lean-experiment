@@ -177,11 +177,11 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 | [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 | Extract reusable association projection while preserving predecessor admission. |
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the new profile analysis. |
 | [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 477 | Select the structural capability without fixture IDs. |
-| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | Delegate start requirements and per-task completion payload checks. |
-| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 496 | Classify string/null start and completion surfaces. |
+| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 262 | Delegate start requirements and per-task completion payload checks. |
+| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 492 | Classify string/null start and completion surfaces. |
 | [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Independently select the checked analysis. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not put the analysis in this nearly full owner. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | Delegate start and completion decisions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 | Delegate start and completion decisions. |
 
 These are measured nonblank lines before the existing 800-line review target. If planned growth exceeds available headroom, first extract a cohesive existing responsibility without changing its contract. The guard remeasures these figures; rerun `what-binds` when target paths change. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
 

@@ -89,7 +89,7 @@ Pre-release evolution applies. Add one selected profile and classified relations
 | [Progress proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) | 15 |
 | [Effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 |
 | [Completion proofs](../../BpmnSemantics/SemanticProcess/MixedTaskBusinessErrorCompletionProofs.lean) | 583 |
-| [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 |
+| [Command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 |
 
 These measured margins constrain the first implementation plan. Extract a cohesive existing responsibility before planned growth exceeds its margin; rerun bindings for every concrete added/growing path. Required guards include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [artifact relationships](../../scripts/contract-artifact-projections.test.ts), [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [Lean imports](../../scripts/lean-import-boundaries.test.ts), [module cost](../../scripts/lean-module-cost.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), [documentation reviewability](../../scripts/document-reviewability.test.ts) and [public corpus coverage](../../model-corpus/test/executable-model-corpus.test.ts). The source/core/contracts/differential and bounded complete Lean gates precede checkpoint review; unchanged CIB evidence is reused until the claimed comparison changes.
 

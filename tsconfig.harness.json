@@ -100,7 +100,10 @@
     "packages/temporal-adapter/worker/test/external-temporal-runtime-options.test.ts",
     "packages/temporal-adapter/worker/test/workflow-deployment-initialization.test.ts",
     "packages/temporal-adapter/workflow/test/closure-failure-classification*.ts",
+    "packages/temporal-adapter/workflow/test/parallel-scope-recovery.test.ts",
+    "packages/temporal-adapter/workflow/test/parallel-scope-continuation.test.ts",
     "packages/temporal-adapter/workflow/test/workflow-chain-update-capacity.test.ts",
+    "packages/temporal-adapter/workflow/test/workflow-semantic-candidate.test.ts",
     "scripts/*.ts"
   ],
   "exclude": [

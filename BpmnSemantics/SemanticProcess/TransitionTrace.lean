@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
 
 /-! # Committed semantic transition traces
 
@@ -263,19 +264,19 @@ private theorem evaluateStimulusScheduled_failure_is_atomic
 private def replayCheckedTransitions (program : Program) (initial result : RuntimeState) :
     Option (List CommittedTransition) → List CommittedTransition
   | some candidate =>
-      if replayCommittedTransitions program initial candidate = some result then candidate else []
+      if ParallelScopeReplay.committedTransitions? program initial candidate = some result then candidate else []
   | none => []
 
 private theorem replayCheckedTransitions_sound (program : Program)
     (initial result : RuntimeState) (candidate : Option (List CommittedTransition))
     (published : replayCheckedTransitions program initial result candidate ≠ []) :
-    replayCommittedTransitions program initial
+    ParallelScopeReplay.committedTransitions? program initial
         (replayCheckedTransitions program initial result candidate) = some result := by
   cases candidate with
   | none => simp [replayCheckedTransitions] at published
   | some transitions =>
       by_cases replays :
-          replayCommittedTransitions program initial transitions = some result
+          ParallelScopeReplay.committedTransitions? program initial transitions = some result
       · simp [replayCheckedTransitions, replays]
       · simp [replayCheckedTransitions, replays] at published
 
@@ -439,12 +440,12 @@ theorem applyStimulusTraced_erases_to_applyStimulus
   dsimp only
   exact evaluateStimulus_result_eq_applyStimulus closureLimit program state stimulus
 
-/-- Every nonempty evaluator-emitted publication replays to its exact committed result state. -/
+/-- Every nonempty emitted trace replays through its selected account. PMIS uses exact-owner occurrence execution; this theorem makes no legacy ProgramStep claim for that profile. -/
 theorem applyStimulusTraced_emitted_trace_replays
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (published :
       (applyStimulusTraced closureLimit program state stimulus).committedTransitions ≠ []) :
-    replayCommittedTransitions program state
+    ParallelScopeReplay.committedTransitions? program state
         (applyStimulusTraced closureLimit program state stimulus).committedTransitions =
       some (applyStimulus closureLimit program state stimulus).state := by
   unfold applyStimulusTraced at *
@@ -452,7 +453,7 @@ theorem applyStimulusTraced_emitted_trace_replays
   unfold publishEvaluatedTransitions at published ⊢
   split at *
   · calc
-      replayCommittedTransitions program state
+      ParallelScopeReplay.committedTransitions? program state
           (replayCheckedTransitions program state
             (evaluateStimulus closureLimit program state stimulus).result.state
             (evaluateStimulus closureLimit program state stimulus).candidateTransitions) =
@@ -463,6 +464,44 @@ theorem applyStimulusTraced_emitted_trace_replays
       _ = some (applyStimulus closureLimit program state stimulus).state :=
         congrArg (fun result : StimulusResult => some result.state)
           (evaluateStimulus_result_eq_applyStimulus closureLimit program state stimulus)
+  all_goals simp at published
+
+
+private theorem evaluateStimulusScheduled_candidate_head
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (schedule : InternalCommutation.InternalChoiceSchedule) (transitions : List CommittedTransition)
+    (defined : (evaluateStimulusScheduled closureLimit program state stimulus schedule).candidateTransitions = some transitions) :
+    ∃ rest, transitions = .externalStimulus stimulus :: rest := by
+  unfold evaluateStimulusScheduled at defined
+  generalize admissionEq : admitStimulus program state stimulus = admission at defined
+  cases outcomeEq : admission.outcome <;> simp only [outcomeEq] at defined <;> try contradiction
+  split at defined <;> try contradiction
+  split at defined <;> try contradiction
+  split at defined <;> try contradiction
+  obtain ⟨records, _, defined⟩ := Option.bind_eq_some_iff.mp defined
+  obtain ⟨_, _, defined⟩ := Option.bind_eq_some_iff.mp defined
+  obtain ⟨_, _, defined⟩ := Option.bind_eq_some_iff.mp defined
+  cases Option.some.inj defined
+  exact ⟨records.map .internalOperation, rfl⟩
+
+/-- A nonempty publication retains the exact received stimulus at its head. -/
+theorem applyStimulusTraced_emitted_original_stimulus
+    (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
+    (published : (applyStimulusTraced closureLimit program state stimulus).committedTransitions ≠ []) :
+    ∃ rest, (applyStimulusTraced closureLimit program state stimulus).committedTransitions =
+      .externalStimulus stimulus :: rest := by
+  unfold applyStimulusTraced at published ⊢
+  dsimp only at published ⊢
+  unfold publishEvaluatedTransitions at published ⊢
+  split at *
+  · cases candidate : (evaluateStimulus closureLimit program state stimulus).candidateTransitions with
+    | none => simp [candidate, replayCheckedTransitions] at published
+    | some transitions =>
+      by_cases replays : ParallelScopeReplay.committedTransitions? program state transitions =
+          some (evaluateStimulus closureLimit program state stimulus).result.state
+      · have head := evaluateStimulusScheduled_candidate_head closureLimit program state stimulus [] transitions candidate
+        simpa [candidate, replayCheckedTransitions, replays] using head
+      · simp [candidate, replayCheckedTransitions, replays] at published
   all_goals simp at published
 
 /-- Non-committed command results have no public trace. -/

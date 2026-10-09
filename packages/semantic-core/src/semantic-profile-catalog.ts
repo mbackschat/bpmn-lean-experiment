@@ -20,6 +20,12 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-called-process-call-activity-draft",
   CallActivityDataBoundaries:
     "bpmn-2.0.2-call-activity-data-boundaries-draft",
+  SerialBusinessTaskComposition:
+    "cibseven-2.2.0-serial-business-tasks-draft",
+  MixedTaskControlFlow:
+    "cibseven-2.2.0-mixed-task-control-flow-draft",
+  MixedTaskBusinessError:
+    "cibseven-2.2.0-mixed-task-business-error-draft",
   Compensation:
     "bpmn-2.0.2-compensation-source-checkpoint-draft",
   TransactionCancellation:
@@ -116,17 +122,17 @@ export const REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID =
 export const TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID =
   SemanticProfileId.TransactionCancellation;
 
-/** SBT hosting qualification precedes public capability registration. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID =
-  "cibseven-2.2.0-serial-business-tasks-draft";
+  SemanticProfileId.SerialBusinessTaskComposition;
 
-/** MTCF hosting remains unavailable until its recovery and replay witnesses qualify the profile. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID =
-  "cibseven-2.2.0-mixed-task-control-flow-draft";
+  SemanticProfileId.MixedTaskControlFlow;
 
-/** MBERR-HOST-01 requires recovery and replay evidence before hosted qualification. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID =
-  "cibseven-2.2.0-mixed-task-business-error-draft";
+  SemanticProfileId.MixedTaskBusinessError;
 
 export const PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-parallel-multi-instance-subprocess-draft";

@@ -10,8 +10,11 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [contract.ts](src/contract.ts) | Scenario, stimulus, outcome, and public identity wire shapes |
 | [wire.ts](src/wire.ts) | Exact non-normalized wire strings, rejecting lone UTF-16 surrogates |
 | [parallel-scope-population.ts](src/parallel-scope-population.ts) | Parallel Sub-Process membership validation and exact body retirement; runtime integration is owned by the [capsule](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) |
-| [parallel-scope-runtime.ts](src/parallel-scope-runtime.ts) | Private atomic population entry, occurrence-addressed quiescent retirement and sibling cancellation; no admitted IL producer |
+| [parallel-scope-runtime.ts](src/parallel-scope-runtime.ts) | Private atomic population entry, occurrence-addressed quiescent retirement and sibling cancellation; public execution remains unregistered |
 | [parallel-scope-data.ts](src/parallel-scope-data.ts) | Complete parallel body population binding, captured-item/local/Process input lookup and exact result routing |
+| [parallel-scope-program-capacity.ts](src/parallel-scope-program-capacity.ts) | Exact private Program/Start data, closure fuel and concurrent wait/effect capacity |
+| [parallel-scope-command-admission.ts](src/parallel-scope-command-admission.ts) | Private command data and derived capacity; public registration remains separate |
+| [parallel-scope-state-validation.ts](src/parallel-scope-state-validation.ts) | Shared complete population/collection binding and private restoration checks for declared body locals and retained issuance |
 | [multi-instance-scope-write.ts](src/multi-instance-scope-write.ts) | Shared exact-owner sequential/parallel body writes with protected names and unrelated-scope preservation |
 | [deep-readonly.ts](src/deep-readonly.ts) | The project-owned deeply immutable contract utility |
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |

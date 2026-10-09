@@ -1,10 +1,10 @@
 import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcessJson.Program
+import BpmnSemantics.SemanticProcessJson.ParallelScopeProgramInput
 import BpmnSemantics.SemanticProcessJson.Scenario
 import BpmnSemantics.SemanticProcessJson.Publication
 
-/-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes and exact body retirements.
-This diagnostic does not admit a command or assert full publication/refinement agreement. -/
+/-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes, exact body retirements, and real command traces.
+The command witness uses the existing evaluator and publication serializer without registering a public profile. -/
 
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics.SemanticProcessJson Lean
@@ -253,6 +253,187 @@ private def retirementFrontierJson (program : Program) (stimulus : Stimulus) : O
     state := after
   pure (toJson outputs)
 
+private def commandOutcomeName : CommandOutcome → String
+  | .committed => "committed"
+  | .rolledBack => "rolledBack"
+  | .rejected => "rejected"
+  | .semanticFailure => "semanticFailure"
+  | .unsupported => "unsupported"
+
+private def controlStatusName : ProcessControl → String
+  | .notStarted => "notStarted"
+  | .running _ => "running"
+  | .completed _ => "completed"
+  | .cancelled _ => "cancelled"
+  | .failed .. => "failed"
+
+private def stateScopeIdJson (id : ScopeOccurrenceId) : Json :=
+  Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
+    ("definitionScopeId", toJson id.definitionScopeId.value), ("activation", toJson id.activation)]
+
+private def stateOccurrenceIdJson (id : OccurrenceId) : Json :=
+  Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
+    ("elementId", toJson id.elementId.value), ("activation", toJson id.activation)]
+
+private def stateActivityIdJson (id : ActivityOccurrenceId) : Json :=
+  Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
+    ("activityElementId", toJson id.activityElementId.value), ("activation", toJson id.activation)]
+
+private def stateMappingJson (mapping : VariableMapping) : Json :=
+  let expression := match mapping.expression with
+    | .stringLiteral value => Json.mkObj [("kind", toJson "stringLiteral"), ("value", toJson value)]
+    | .localVariable name => Json.mkObj [("kind", toJson "localVariable"), ("name", toJson name)]
+    | .enclosingVariable name => Json.mkObj [("kind", toJson "enclosingVariable"), ("name", toJson name)]
+  Json.mkObj [("target", toJson mapping.target), ("expression", expression)]
+
+/-- ActivityOccurrence deliberately omits operation identity in Lean; resolve its unique PMIS declarer. -/
+private def stateActivityJson? (program : Program) (activity : ActivityOccurrence) : Option Json := do
+  let .parallelChildScopes first rest := activity.body | none
+  if !activity.attachedHandlers.isEmpty then none else pure ()
+  let [operation] := program.operations.filter (fun operation => match operation with
+    | .enterParallelMultiInstanceScope .. => operation.origin.elementId == activity.activityElementId
+    | _ => false) | none
+  pure (Json.mkObj [("id", stateActivityIdJson ⟨activity.processInstanceId, ⟨activity.activityElementId.value⟩, activity.activation⟩),
+    ("owner", stateScopeIdJson activity.owner), ("operationId", toJson operation.id.value),
+    ("body", Json.mkObj [("kind", toJson "parallelChildScopes"), ("iterations", toJson ((first :: rest).map fun iteration =>
+      Json.mkObj [("scope", stateScopeIdJson iteration.scope), ("loopCounter", toJson iteration.loopCounter),
+        ("item", toJson iteration.item)]))]), ("attachedHandlers", toJson ([] : List Json))])
+
+/-- This private observer refuses excluded families rather than erasing their contents from agreement.
+As in `prefixJson`, owner-first Lean wait storage maps to the core's public-occurrence order without removing duplicates. -/
+private def completePrivateStateJson? (program : Program) (state : RuntimeState) : Option Json := do
+  if !([state.messageWaits.isEmpty, state.eventSubProcessMessageSubscriptions.isEmpty, state.timerWaits.isEmpty,
+      state.effectIncidents.isEmpty, state.selectedBranchSets.isEmpty, state.eventRaces.isEmpty,
+      state.calledProcessOccurrences.isEmpty, state.sequentialScopeControllers.isEmpty,
+      state.sequentialMultiInstanceControllers.isEmpty, state.parallelMultiInstanceControllers.isEmpty,
+      state.compensationActivityRetentions.isEmpty, state.compensationParentContextRetentions.isEmpty,
+      state.compensationTriggers.isEmpty, state.compensationHandlerEffectWaits.isEmpty,
+      state.variables.processInterfaces.isEmpty].all id) then none else pure ()
+  if !(state.waits.all fun wait => decide (wait.metadata = wait.task.metadata)) ||
+      !(state.effectWaits.all fun wait => wait.bpmnErrorRoute.isNone) then none else pure ()
+  let control ← match state.control with
+    | .notStarted => some (Json.mkObj [("kind", toJson "notStarted")])
+    | .failed .. => none
+    | .running instanceId | .completed instanceId | .cancelled instanceId =>
+        some (Json.mkObj [("kind", toJson (controlStatusName state.control)), ("instanceId", toJson instanceId.value)])
+  let activities ← state.activityOccurrences.mapM (stateActivityJson? program)
+  let frames ← state.variables.activities.mapM fun frame => do
+    let .effectOccurrence id := frame.owner | none
+    pure (Json.mkObj [("owner", Json.mkObj [("kind", toJson "effectOccurrence"), ("id", stateOccurrenceIdJson id)]),
+      ("bindings", bindingsJson frame.bindings)])
+  let waits := InternalCommutation.sortBy (fun left right : UserTaskWait =>
+    if left.task.id.value != right.task.id.value then left.task.id.value < right.task.id.value
+    else left.activation < right.activation) state.waits
+  let effects := InternalCommutation.sortBy (fun left right : EffectWait =>
+    if left.elementId.value != right.elementId.value then left.elementId.value < right.elementId.value
+    else left.activation < right.activation) state.effectWaits
+  let counter := fun (elementId : String) (count : Nat) => Json.mkObj [("elementId", toJson elementId), ("count", toJson count)]
+  let empty := toJson ([] : List Json)
+  pure (Json.mkObj [
+    ("control", control), ("initiationPending", toJson state.initiationPending),
+    ("scopeOccurrences", toJson (state.scopeOccurrences.map fun scope => Json.mkObj [("id", stateScopeIdJson scope.id),
+      ("parent", toJson (scope.parent.map stateScopeIdJson))])),
+    ("controlTokens", toJson (state.tokens.map fun token => Json.mkObj [("placeId", toJson token.placeId.value), ("owner", stateScopeIdJson token.owner)])),
+    ("userTaskWaits", toJson (waits.map fun wait => Json.mkObj [
+      ("id", stateOccurrenceIdJson ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩),
+      ("owner", stateScopeIdJson wait.owner), ("name", toJson wait.task.name),
+      ("metadata", toJson (wait.metadata.map encodeUserTaskMetadata)), ("output", toJson wait.output.value)])),
+    ("effectWaits", toJson (effects.map fun wait => Json.mkObj [
+      ("id", stateOccurrenceIdJson ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩),
+      ("owner", stateScopeIdJson wait.owner),
+      ("descriptor", Json.mkObj [("protocol", toJson wait.descriptor.protocol), ("operation", toJson wait.descriptor.operation)]),
+      ("arguments", bindingsJson wait.arguments), ("outputMappings", toJson (wait.outputMappings.map stateMappingJson)),
+      ("bpmnErrorRoute", Json.null), ("output", toJson wait.output.value), ("incidentAlreadyRetried", toJson wait.incidentAlreadyRetried)])),
+    ("activityOccurrences", toJson activities),
+    ("parallelScopeControllers", toJson (state.parallelScopeControllers.map fun controller => Json.mkObj [
+      ("id", stateActivityIdJson controller.id), ("total", toJson controller.total), ("completed", toJson controller.completed)])),
+    ("variables", Json.mkObj [("process", Json.mkObj [("bindings", bindingsJson state.variables.process.bindings)]),
+      ("scopes", toJson (state.variables.scopes.map fun frame => Json.mkObj [("owner", stateScopeIdJson frame.owner), ("bindings", bindingsJson frame.bindings)])),
+      ("activities", toJson frames), ("processInterfaces", empty)]),
+    ("taskActivations", toJson (state.activations.map fun row => counter row.taskId.value row.count)),
+    ("messageActivations", toJson (state.messageActivations.map fun row => counter row.elementId.value row.count)),
+    ("timerActivations", toJson (state.timerActivations.map fun row => counter row.elementId.value row.count)),
+    ("effectActivations", toJson (state.effectActivations.map fun row => counter row.elementId.value row.count)),
+    ("scopeActivations", toJson (state.scopeActivations.map fun row => counter row.scopeId.value row.count)),
+    ("eventRaceActivations", toJson (state.eventRaceActivations.map fun row => counter row.elementId.value row.count)),
+    ("callActivations", toJson (state.callActivations.map fun row => counter row.elementId.value row.count)),
+    ("activityActivations", toJson (state.activityActivations.map fun row => counter row.taskId.value row.count)),
+    ("messageWaits", empty), ("eventSubProcessMessageSubscriptions", empty), ("timerWaits", empty),
+    ("effectIncidents", empty), ("selectedBranchSets", empty), ("eventRaces", empty), ("calledProcessOccurrences", empty),
+    ("sequentialScopeControllers", empty), ("sequentialMultiInstanceControllers", empty), ("parallelMultiInstanceControllers", empty),
+    ("compensationActivityRetentions", empty), ("compensationParentContextRetentions", empty),
+    ("compensationTriggers", empty), ("compensationHandlerEffectWaits", empty),
+    ("endOccurrences", toJson state.endOccurrences), ("logicalTimeMs", toJson state.logicalTimeMs)])
+
+private def commandStateJson (before state : RuntimeState) (fullState : Json) : Json :=
+  Json.mkObj [
+    ("fullState", fullState),
+    ("status", toJson (controlStatusName state.control)),
+    ("prefix", prefixJson before state),
+    ("process", bindingsJson state.variables.process.bindings),
+    ("scopeFrames", toJson (state.variables.scopes.map fun frame =>
+      toJson [ownerJson frame.owner, bindingsJson frame.bindings])),
+    ("scopes", toJson (state.scopeOccurrences.map fun scope =>
+      toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])) ]
+
+private def commandsJson (program : Program) (inputs : List (Stimulus × Json)) : Except String Json := do
+  let some (.startProcess _ _ instanceId _, _) := inputs.head? |
+    throw "command witness requires an initial manual Start"
+  let mut state := initialState
+  let mut commands := []
+  for (stimulus, wire) in inputs do
+    let before := state
+    let limit := (ParallelScopeStart.commandClosureLimit? program before stimulus).getD scenarioClosureLimit
+    let traced := applyStimulusTraced limit program before stimulus
+    state := traced.result.state
+    let publication := Publication.tracedExecutionPublicationJson? program instanceId before traced
+      (fun recorded => if recorded == stimulus then some wire else none)
+    let some fullState := completePrivateStateJson? program state | throw "Command state contains an excluded PMIS family"
+    commands := commands ++ [Json.mkObj [
+      ("commandId", toJson (stimulusCommandId stimulus).value),
+      ("outcome", toJson (commandOutcomeName traced.result.outcome)),
+      ("internalStepBoundExceeded", toJson traced.result.internalStepBoundExceeded),
+      ("ambiguousInternalChoice", toJson traced.result.ambiguousInternalChoice),
+      ("stateUnchanged", toJson (decide (state = before))),
+      ("traceReplays", toJson (decide (ParallelScopeReplay.committedTransitions? program before
+        traced.committedTransitions = some state))),
+      ("publication", publication.getD Json.null),
+      ("lifecycles", toJson (traced.flowNodeOccurrenceLifecycles.map Publication.occurrenceDeltaJson)),
+      ("state", commandStateJson before state fullState) ]]
+  let some fullState := completePrivateStateJson? program state | throw "Final state contains an excluded PMIS family"
+  pure (Json.mkObj [
+    ("commands", toJson commands),
+    ("finalState", commandStateJson initialState state fullState),
+    ("publicShapeAdmitted", toJson (programProfileCapabilitiesValid program)) ])
+
+private def printCommands (programPath stimuliPath : String) : IO Unit := do
+  let programText ← IO.FS.readFile programPath
+  let stimuliText ← IO.FS.readFile stimuliPath
+  let result := do
+    let admitted ← parseWireJson programText >>= decodeParallelScopeProgramInput
+    let inputs ← parseWireJson stimuliText >>= decodeArray (fun wire => do
+      let stimulus ← decodeStimulus wire
+      pure (stimulus, wire))
+    match admitted with
+    | none => pure Json.null
+    | some program => commandsJson program inputs
+  match result with
+  | .error error => throw (IO.userError error)
+  | .ok value => IO.println value.compress
+
+private def runCommands : List String → IO UInt32
+  | [] => pure 0
+  | programPath :: stimuliPath :: rest => do
+      printCommands programPath stimuliPath
+      runCommands rest
+  | _ => throw (IO.userError "expected Program/Stimuli path pairs")
+
+private def programCapacityJson (program : Program) (stimulus : Stimulus) : Option Json := do
+  let .startProcess _ _ _ bindings := stimulus | none
+  let capacity ← ParallelScopeStart.programStartCapacity program bindings
+  pure (Json.mkObj [("closureBound", toJson capacity.closureBound),
+    ("waits", toJson capacity.waits), ("effects", toJson capacity.effects)])
+
 private inductive DiagnosticMode where
   | reservation
   | refusal
@@ -260,22 +441,28 @@ private inductive DiagnosticMode where
   | startFrontier
   | enteredFrontier
   | retirementFrontier
+  | programCapacity
 
 private def printInput (mode : DiagnosticMode) (programPath startPath : String) (fuel : Nat) : IO Unit := do
   let programText ← IO.FS.readFile programPath
   let startText ← IO.FS.readFile startPath
   let result := do
-    let program ← parseWireJson programText >>= decodeProgram
+    let admitted ← parseWireJson programText >>= decodeParallelScopeProgramInput
     let stimulus ← parseWireJson startText >>= decodeStimulus
-    pure ((match mode with
-      | .reservation => reservationJson program stimulus
-      | .refusal => refusalJson program stimulus
-      | .integrity => integrityJson program stimulus
-      | .startFrontier => startFrontierJson program stimulus fuel false
-      | .enteredFrontier => startFrontierJson program stimulus fuel true
-      | .retirementFrontier => retirementFrontierJson program stimulus).getD Json.null)
+    match admitted with
+    | none => pure Json.null
+    | some program => pure ((match mode with
+        | .reservation => reservationJson program stimulus
+        | .refusal => refusalJson program stimulus
+        | .integrity => integrityJson program stimulus
+        | .startFrontier => startFrontierJson program stimulus fuel false
+        | .enteredFrontier => startFrontierJson program stimulus fuel true
+        | .retirementFrontier => retirementFrontierJson program stimulus
+        | .programCapacity => programCapacityJson program stimulus).getD Json.null)
   match result with
-  | .error error => throw (IO.userError error)
+  | .error error => match mode with
+    | .programCapacity => IO.println (Json.mkObj [("syntaxError", toJson error)]).compress
+    | _ => throw (IO.userError error)
   | .ok value => IO.println value.compress
 
 private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
@@ -294,6 +481,8 @@ private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
 
 def main (paths : List String) : IO UInt32 :=
   match paths with
+  | "--commands" :: rest => runCommands rest
+  | "--program-capacity" :: rest => runInputs .programCapacity rest
   | "--refusal" :: rest => runInputs .refusal rest
   | "--integrity" :: rest => runInputs .integrity rest
   | "--start-frontier" :: rest => runInputs .startFrontier rest

@@ -1,10 +1,10 @@
 # Engine runtime and proof implementation map
 
-This map owns cross-cutting runtime, scope, Lean, TypeScript semantic-core, and BPMN-conformance status. Per-family capsule-delegated status is owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md). Root routing and cross-area claims remain in [`implementation-status-router`](IMPLEMENTATION-MAP.md).
+This map owns runtime, scope, Lean, TypeScript semantic-core and BPMN-conformance status. Family status: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md). Routing and cross-area claims: [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): mixed-control approved; paired entry/retirement publication passes, review pending. Command/public/hosted acceptance remains open.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): publication approved (`fd9b8750`); [private proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish reservation readiness, result-only command commitment/stability and retirement certificates. Resumption admission/capacity, complete publication, independent review and public/hosted acceptance remain open.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
@@ -180,7 +180,7 @@ Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-a
 
 [RC dependency assessment](INTERNAL-COMMUTATION-PROPOSAL.md#rc-admission-dependency-assessment) scopes exclusions and reopening conditions.
 
-Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Only the bounded User Task cycle is cyclic. Only M6 User Task completion admits integers. String-list values are confined to M6 completion and exact profile-gated sequential Multi-Instance start/output; Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
+Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Cycles: bounded User Task and [mixed-task families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#mixed-task-control-flow) only. Only M6 User Task completion admits integers. String-list values are confined to M6 completion and exact profile-gated sequential Multi-Instance start/output; Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
 
 The identity bound excludes Message, Effect, Event race, Call, ordinary Scope, and called roots. Only Activity issuing is checkpoint-approved; other issuing disciplines and general preservation remain absent.
 

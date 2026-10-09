@@ -456,19 +456,19 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | collection/control references only |
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 43 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 752 | new defect arms only |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 280 | result dispatch only |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 262 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 388 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 290 | failed union references only |
-| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 44 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
+| [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 41 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
 | [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 122 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 221 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 23 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | compensation relation only |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 3 | result dispatch only |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 | result dispatch only |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 408 | failed union only |
@@ -486,7 +486,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |
 | [incident query handler](../../packages/temporal-adapter/workflow/src/incident-operations-query-handler.ts) | 558 | failed terminal projection only |
-| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 171 | new collections and failed refusal |
+| [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) | 160 | new collections and failed refusal |
 | [Workflow loop](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts) | 5 | extract frontier scheduler before integration |
 | [host readiness](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts) | 478 | scheduler delegation only |
 | [effect host](../../packages/temporal-adapter/workflow/src/effect-execution-host.ts) | 630 | compensation result dispatch only |

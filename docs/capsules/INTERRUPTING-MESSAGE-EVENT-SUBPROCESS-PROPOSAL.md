@@ -167,7 +167,7 @@ The proposed additions bind source admission, checked/IL declarations, both deco
 | [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 408 | Keep hosted capability closed until its own qualification passes. |
 | [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 23 | Keep subscription types/runtime helpers in a cohesive family owner. |
 | [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 545 | Preserve ordinary-child continuation and add exact passive expiry. |
-| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 537 | Classify the new collection in every removal path. |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 453 | Classify the new collection in every removal path. |
 
 ### Atomic consumers and guards
 

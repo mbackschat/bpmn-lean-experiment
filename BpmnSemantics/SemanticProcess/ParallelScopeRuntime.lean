@@ -114,6 +114,32 @@ def parallelScopeBinding? (entry : ParallelScopeEntry) (state : RuntimeState)
         !(iterations.all fun iteration => parallelScopeBodyBound entry state record iteration.scope) then none
     else some ⟨record, controller, iterations⟩
 
+/-- Successful binding certifies every member's local frame and population accounting. -/
+theorem parallelScopeBinding_population (entry : ParallelScopeEntry) (state : RuntimeState)
+    (target : ScopeOccurrenceId) (binding : ParallelScopeBinding)
+    (bound : parallelScopeBinding? entry state target = some binding) :
+    validParallelScopePopulation binding.controller binding.iterations = true ∧
+      binding.iterations.all (fun iteration => parallelScopeBodyBound entry state binding.activity iteration.scope) = true := by
+  unfold parallelScopeBinding? at bound
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  dsimp only at bound
+  split at bound <;> try contradiction
+  cases Option.some.inj bound
+  constructor <;> simp_all
+
+private theorem parallelScopeBodyBound_frame (entry : ParallelScopeEntry) (state : RuntimeState)
+    (record : ActivityOccurrence) (target : ScopeOccurrenceId)
+    (bound : parallelScopeBodyBound entry state record target = true) :
+    ∃ frame, selectScopeVariables? state.variables target = some frame := by
+  unfold parallelScopeBodyBound at bound
+  split at bound <;> try contradiction
+  simp only [Bool.and_eq_true] at bound
+  exact Option.isSome_iff_exists.mp bound.1.2
+
 def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
     (target : ScopeOccurrenceId) : Option RuntimeState := do
   let binding ← parallelScopeBinding? entry state target
@@ -144,6 +170,39 @@ def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
           let cancelled := (first :: rest).foldl
             (fun current iteration => cancelScopeSubtree current iteration.scope .remove) retired
           some { cancelled with tokens := addToken cancelled.tokens entry.normalOutput record.owner }
+
+/-- PMIS-END-01 retirement is executable once exact binding, body quiescence and typed Process condition data hold. -/
+theorem completeParallelScope_ready (entry : ParallelScopeEntry) (state : RuntimeState)
+    (target : ScopeOccurrenceId) (binding : ParallelScopeBinding)
+    (bound : parallelScopeBinding? entry state target = some binding)
+    (member : ∃ iteration ∈ binding.iterations, iteration.scope = target)
+    (quiescent : scopeQuiescent state target = true)
+    (noActivity : state.activityOccurrences.any (fun activity => activity.owner == target) = false)
+    (typedCondition : match entry.completionBooleanName with
+      | none => True
+      | some name => ∃ condition, state.variables.process.bindings.filter (·.name == name) =
+          [{ name, value := .boolean condition }]) :
+    ∃ after, completeParallelScope? entry state target = some after := by
+  obtain ⟨valid, frames⟩ := parallelScopeBinding_population entry state target binding bound
+  obtain ⟨iteration, present, identity⟩ := member
+  have bodyBound := List.all_eq_true.mp frames iteration present
+  rw [identity] at bodyBound
+  obtain ⟨frame, selected⟩ := parallelScopeBodyBound_frame entry state binding.activity target bodyBound
+  let variables := { state.variables with scopes := state.variables.scopes.filter fun scope => decide (scope.owner ≠ target) }
+  have removed : removeScopeVariables? state.variables target = some variables := by
+    simp [removeScopeVariables?, selected, variables]
+  have conditionReady : ∃ condition, parallelCompletionCondition? entry { state with variables } = some condition := by
+    cases named : entry.completionBooleanName with
+    | none => exact ⟨false, by simp [parallelCompletionCondition?, named]⟩
+    | some name =>
+      obtain ⟨condition, typed⟩ := (show ∃ condition, state.variables.process.bindings.filter (·.name == name) =
+        [{ name, value := .boolean condition }] from by simpa [named] using typedCondition)
+      exact ⟨condition, by simp [parallelCompletionCondition?, named, variables, typed]⟩
+  obtain ⟨condition, evaluated⟩ := conditionReady
+  obtain ⟨retirement, retired⟩ := retireParallelScopeIteration_total binding.controller binding.iterations target condition
+    valid ⟨iteration, present, identity⟩
+  cases retirement <;>
+    simp [completeParallelScope?, bound, quiescent, noActivity, removed, evaluated, retired]
 
 def parallelScopeEntry? : SemanticOperation → Option ParallelScopeEntry
   | .enterParallelMultiInstanceScope id origin input childEntry childScopeId output collection item mappings condition =>
@@ -355,6 +414,71 @@ theorem issueParallelBodies_scope_domain {entry : ParallelScopeEntry} {parent : 
       · subst iteration; exact ⟨rfl, rfl⟩
       · exact ih generated iteration member
 
+/-- PMIS-ENTER-01 produces a valid initial population when the admitted capacity and issued ordinals fit the wire bound. -/
+theorem issueParallelBodies_initial_population_valid {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (id : ActivityOccurrenceId) (process : id.processInstanceId = parent.processInstanceId)
+    (issued : issueParallelBodies? entry parent items 0 state = some (result, iterations))
+    (nonempty : items ≠ []) (capacity : items.length ≤ 16)
+    (ordinalsSafe : scopeActivationCount state entry.childScopeId + items.length ≤ SemanticProcessJson.maxSafeWireNat) :
+    validParallelScopePopulation ⟨id, items.length, 0⟩ iterations = true := by
+  obtain ⟨itemValues, indices⟩ := issueParallelBodies_preserves_items_and_indices issued
+  have length : iterations.length = items.length := by
+    have equal := congrArg List.length itemValues
+    simpa using equal
+  have positive : 0 < items.length := List.length_pos_iff.mpr nonempty
+  have iterationNonempty : iterations ≠ [] := by
+    intro empty
+    simp [empty] at length
+    omega
+  have indexBound : ∀ iteration ∈ iterations, iteration.loopCounter < items.length := by
+    intro iteration member
+    have present : iteration.loopCounter ∈ List.range' 0 items.length := by
+      rw [← indices]
+      exact List.mem_map.mpr ⟨iteration, member, rfl⟩
+    obtain ⟨index, bounded, equal⟩ := List.mem_range'.mp present
+    omega
+  have ordinalBound : ∀ iteration ∈ iterations, 0 < iteration.scope.activation ∧
+      iteration.scope.activation ≤ SemanticProcessJson.maxSafeWireNat := by
+    intro iteration member
+    have present : iteration.scope.activation ∈
+        List.range' (scopeActivationCount state entry.childScopeId + 1) items.length := by
+      rw [← (issueParallelBodies_scope_ordinals issued).1]
+      exact List.mem_map.mpr ⟨iteration, member, rfl⟩
+    obtain ⟨index, bounded, equal⟩ := List.mem_range'.mp present
+    simp only [Nat.one_mul] at equal
+    omega
+  have ordered : iterations.Pairwise (fun left right => left.loopCounter < right.loopCounter) := by
+    apply List.Pairwise.of_map (S := fun a b : Nat => a < b) ParallelScopeIteration.loopCounter
+      (fun _ _ ordered => ordered)
+    rw [indices]
+    exact List.pairwise_lt_range'
+  have distinct := List.nodup_iff_pairwise_ne.mp (issueParallelBodies_distinct_scopes issued)
+  have scopesDistinct : iterations.Pairwise (fun left right => left.scope ≠ right.scope) := by
+    exact List.Pairwise.of_map (S := fun a b : ScopeOccurrenceId => a ≠ b)
+      ParallelScopeIteration.scope (fun _ _ different => different) distinct
+  have paired : iterations.Pairwise (fun left right => left.loopCounter < right.loopCounter ∧
+      left.scope ≠ right.scope ∧ left.scope.definitionScopeId = right.scope.definitionScopeId) := by
+    apply List.Pairwise.imp_of_mem _ (ordered.and scopesDistinct)
+    intro left right leftMember rightMember facts
+    exact ⟨facts.1, facts.2, (issueParallelBodies_scope_domain issued left leftMember).2.trans
+      (issueParallelBodies_scope_domain issued right rightMember).2.symm⟩
+  have totalSafe : items.length ≤ SemanticProcessJson.maxSafeWireNat := by
+    unfold SemanticProcessJson.maxSafeWireNat
+    omega
+  have validIterations : validParallelScopeIterations id.processInstanceId iterations = true := by
+    simp only [validParallelScopeIterations, SemanticProcessJson.isSafeWireNat,
+      Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
+    refine ⟨⟨?_, ?_⟩, paired⟩
+    · cases iterations <;> simp_all
+    · intro iteration member
+      obtain ⟨aboveZero, safe⟩ := ordinalBound iteration member
+      refine ⟨⟨⟨(issueParallelBodies_scope_domain issued iteration member).1.trans process.symm, aboveZero⟩, safe⟩, ?_⟩
+      exact Nat.le_trans (Nat.le_of_lt (indexBound iteration member)) totalSafe
+  simp only [validParallelScopePopulation, SemanticProcessJson.isSafeWireNat,
+    Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
+  exact ⟨⟨⟨⟨totalSafe, Nat.zero_le _⟩, ⟨positive, by simpa using length⟩⟩, validIterations⟩, indexBound⟩
+
 private theorem issueParallelBodies_preserves_scope_uniqueness {entry : ParallelScopeEntry}
     {parent : ScopeOccurrenceId} {items : List String} {index : Nat}
     {state result : RuntimeState} {iterations : List ParallelScopeIteration}
@@ -495,6 +619,164 @@ theorem enterParallelScope_preserves_frame_uniqueness {entry : ParallelScopeEntr
         cases Option.some.inj installed
         have unique := issueParallelBodies_preserves_frame_uniqueness generated distinct
         exact unique
+
+/-- Issuance creates body scopes and tokens without changing enclosing control, outer population or Call ownership. -/
+theorem issueParallelBodies_structural_fields {entry : ParallelScopeEntry} {parent : ScopeOccurrenceId}
+    {items : List String} {index : Nat} {state result : RuntimeState} {iterations : List ParallelScopeIteration}
+    (issued : issueParallelBodies? entry parent items index state = some (result, iterations)) :
+    result.control = state.control ∧ result.activityOccurrences = state.activityOccurrences ∧
+      result.parallelScopeControllers = state.parallelScopeControllers ∧
+      result.calledProcessOccurrences = state.calledProcessOccurrences := by
+  induction items generalizing state index iterations with
+  | nil => simp [issueParallelBodies?] at issued; rcases issued with ⟨rfl, rfl⟩; exact ⟨rfl, rfl, rfl, rfl⟩
+  | cons item items ih =>
+    unfold issueParallelBodies? at issued
+    obtain ⟨variables, _, issued⟩ := Option.bind_eq_some_iff.mp issued
+    obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+    cases Option.some.inj issued
+    have frame := ih generated
+    exact frame
+
+private theorem uniqueKeyFilter {α β : Type} [BEq β] [LawfulBEq β]
+    (values : List α) (keyOf : α → β) (key : β)
+    (unique : (values.map keyOf).Nodup) (present : key ∈ values.map keyOf) :
+    ∃ value, values.filter (fun value => keyOf value == key) = [value] ∧ keyOf value = key := by
+  induction values with
+  | nil => simp at present
+  | cons first rest ih =>
+    obtain ⟨absent, unique⟩ := List.nodup_cons.mp unique
+    by_cases same : keyOf first = key
+    · have empty : rest.filter (fun value => keyOf value == key) = [] := by
+        apply List.filter_eq_nil_iff.mpr
+        intro value member equal
+        have identity : keyOf value = key := by simpa using equal
+        exact absent (List.mem_map.mpr ⟨value, member, identity.trans same.symm⟩)
+      exact ⟨first, by simp [same, empty], same⟩
+    · have tail : key ∈ rest.map keyOf := by simpa [same, Ne.symm same] using present
+      obtain ⟨value, filtered, identity⟩ := ih unique tail
+      exact ⟨value, by simp [same, filtered], identity⟩
+
+/-- PMIS-ENTER-01 installs one exact binding for every child generated from an initially clean root population. -/
+theorem enterParallelScope_clean_binding {entry : ParallelScopeEntry} {parent target : ScopeOccurrenceId}
+    {state result : RuntimeState}
+    (entered : enterParallelScope? entry state parent = some result)
+    (root : state.scopeOccurrences = [⟨parent, none⟩])
+    (different : entry.childScopeId ≠ parent.definitionScopeId)
+    (activities : state.activityOccurrences = []) (controllers : state.parallelScopeControllers = [])
+    (locals : state.variables.scopes = []) (counter : scopeActivationCount state entry.childScopeId = 0)
+    (present : ∃ occurrence ∈ result.scopeOccurrences, occurrence.id = target)
+    (child : target.definitionScopeId = entry.childScopeId) :
+    ∃ binding, parallelScopeBinding? entry result target = some binding := by
+  have scopesUnique := enterParallelScope_preserves_scope_uniqueness entered (by simp [root])
+  have framesUnique := enterParallelScope_preserves_frame_uniqueness entered (by simp [locals])
+  unfold enterParallelScope? at entered
+  split at entered <;> try contradiction
+  rename_i admitted
+  have running : state.control = .running parent.processInstanceId := by
+    cases control : state.control <;> simp_all
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  rename_i bounded
+  split at entered
+  · cases Option.some.inj entered
+    obtain ⟨occurrence, member, identity⟩ := present
+    have : target = parent := by
+      have same := List.mem_singleton.mp (root ▸ member)
+      cases same
+      exact identity.symm
+    exact False.elim (different (by simpa [this] using child.symm))
+  · rename_i item items itemsEq
+    obtain ⟨⟨issued, iterations⟩, generated, installed⟩ := Option.bind_eq_some_iff.mp entered
+    cases iterations with
+    | nil => simp at installed
+    | cons first rest =>
+      cases Option.some.inj installed
+      obtain ⟨controlFrame, activityFrame, controllerFrame, _⟩ := issueParallelBodies_structural_fields generated
+      have population := issueParallelBodies_scope_population generated
+      have domain := issueParallelBodies_scope_domain generated
+      have capacity : (item :: items).length ≤ 16 := by simp_all
+      have safeOrdinals : scopeActivationCount state entry.childScopeId + (item :: items).length ≤ SemanticProcessJson.maxSafeWireNat := by
+        rw [counter]; unfold SemanticProcessJson.maxSafeWireNat; omega
+      have valid := issueParallelBodies_initial_population_valid
+        (⟨parent.processInstanceId, ⟨entry.elementId.value⟩, activityActivationCount state ⟨entry.elementId.value⟩ + 1⟩)
+        rfl generated (by simp) capacity safeOrdinals
+      obtain ⟨occurrence, member, identity⟩ := present
+      have targetMember : target ∈ (first :: rest).map (·.scope) := by
+        have found := population.mem_iff.mp member
+        simp only [root, List.mem_append, List.mem_map, List.mem_singleton] at found
+        rcases found with ⟨iteration, found, same⟩ | same
+        · exact List.mem_map.mpr ⟨iteration, found, by cases same; exact identity⟩
+        · have : target = parent := by cases same; exact identity.symm
+          exact False.elim (different (by simpa [this] using child.symm))
+      have generatedOriginal := generated
+      have bodyFrames : ∀ iteration ∈ first :: rest, (selectScopeVariables? issued.variables iteration.scope).isSome = true := by
+        intro iteration found
+        have frameMember : iteration.scope ∈ issued.variables.scopes.map (·.owner) := by
+          unfold issueParallelBodies? at generated
+          obtain ⟨variables, initialized, generated⟩ := Option.bind_eq_some_iff.mp generated
+          unfold initializeScopeVariables? at initialized
+          split at initialized <;> try contradiction
+          obtain ⟨bindings, evaluated, _⟩ := Option.bind_eq_some_iff.mp initialized
+          have framePopulation := issueParallelBodies_local_frames evaluated generatedOriginal
+          have frames := framePopulation.map ScopeVariableScope.owner
+          apply frames.mem_iff.mpr
+          simpa only [List.map_append, List.map_map, Function.comp_def, locals, List.map_nil, List.append_nil]
+            using (List.mem_map.mpr ⟨iteration, found, rfl⟩ : iteration.scope ∈ (first :: rest).map (·.scope))
+        obtain ⟨frame, filtered, _⟩ := uniqueKeyFilter issued.variables.scopes ScopeVariableScope.owner iteration.scope framesUnique frameMember
+        have predicates : (fun value : ScopeVariableScope => decide (value.owner = iteration.scope)) =
+            (fun value => value.owner == iteration.scope) := by
+          funext value
+          apply Bool.eq_iff_iff.mpr
+          simp
+        have selected : selectScopeVariables? issued.variables iteration.scope = some frame := by
+          unfold selectScopeVariables?
+          rw [predicates, filtered]
+        simp [selected]
+      let record : ActivityOccurrence :=
+        { processInstanceId := parent.processInstanceId, activityElementId := entry.elementId,
+          activation := activityActivationCount state ⟨entry.elementId.value⟩ + 1, owner := parent,
+          body := .parallelChildScopes first rest, attachedHandlers := [] }
+      have rootPresent : parent ∈ issued.scopeOccurrences.map (·.id) := by
+        have mapped := population.map RuntimeScopeOccurrence.id
+        apply mapped.mem_iff.mpr
+        simp [root]
+      obtain ⟨rootBody, rootFilter, _⟩ := uniqueKeyFilter issued.scopeOccurrences RuntimeScopeOccurrence.id parent scopesUnique rootPresent
+      have bodiesBound : ∀ iteration ∈ first :: rest,
+          parallelScopeBodyBound entry { issued with activityOccurrences := [record] } record iteration.scope = true := by
+        intro iteration found
+        have scopePresent : iteration.scope ∈ issued.scopeOccurrences.map (·.id) := by
+          have mapped := population.map RuntimeScopeOccurrence.id
+          apply mapped.mem_iff.mpr
+          simp only [List.map_append, List.map_map, Function.comp_def, List.mem_append]
+          exact Or.inl (List.mem_map.mpr ⟨iteration, found, rfl⟩)
+        obtain ⟨body, filtered, identity⟩ := uniqueKeyFilter issued.scopeOccurrences RuntimeScopeOccurrence.id iteration.scope scopesUnique scopePresent
+        have owned : body.parent = some parent := by
+          have bodyMember := (List.mem_filter.mp (show body ∈ issued.scopeOccurrences.filter (fun value => value.id == iteration.scope) from by rw [filtered]; simp)).1
+          have source := population.mem_iff.mp bodyMember
+          simp only [root, List.mem_append, List.mem_map, List.mem_singleton] at source
+          rcases source with ⟨selected, _, same⟩ | same
+          · cases same; rfl
+          · cases same
+            have domainFact := (domain iteration found).2
+            exact False.elim (different (domainFact.symm.trans (congrArg ScopeOccurrenceId.definitionScopeId identity.symm)))
+        have claimed : iteration.scope ∈ activityBodyScopeClaims record.body := by
+          change iteration.scope ∈ (first :: rest).map (·.scope)
+          exact List.mem_map.mpr ⟨iteration, found, rfl⟩
+        simp [parallelScopeBodyBound, filtered, (domain iteration found).2, owned, record,
+          bodyFrames iteration found, claimed]
+      change ∃ binding, parallelScopeBinding? entry
+        { issued with
+          activityOccurrences := insertActivityOccurrence record issued.activityOccurrences
+          activityActivations := setActivationCount issued.activityActivations ⟨entry.elementId.value⟩ record.activation
+          parallelScopeControllers := issued.parallelScopeControllers ++
+            [⟨⟨parent.processInstanceId, ⟨entry.elementId.value⟩, record.activation⟩, (item :: items).length, 0⟩] } target = some binding
+      simp only [activityFrame, activities, controllerFrame, controllers, insertActivityOccurrence, List.nil_append]
+      have targetClaimed : target ∈ activityBodyScopeClaims record.body := targetMember
+      simp [parallelScopeBinding?, controlFrame, running, targetClaimed, rootFilter, parallelRuntimeActivityId, record]
+      refine ⟨⟨by simp only [List.length_cons] at capacity; omega, by simpa using valid⟩, bodiesBound first (by simp), ?_⟩
+      intro iteration found
+      exact bodiesBound iteration (by simp [found])
 
 private theorem cancelParallelBody_surviving_population (state : RuntimeState) (scope : ScopeOccurrenceId) :
     (cancelScopeSubtree state scope .remove).variables.scopes.Sublist state.variables.scopes ∧
