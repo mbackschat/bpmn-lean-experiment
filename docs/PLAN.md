@@ -109,17 +109,17 @@ Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualifi
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: qualify registered [serial](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md), mixed-task and business Error journeys; no new family or topology.
+Current task: advance [parallel MI command publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) while installed-runtime qualification of the registered business-task journeys remains open.
 
-Current result: checkpoint `6fdae8fb` preserves unfinished parallel MI work alongside registration corrections without acceptance. R1 repairs catalog completeness, exact-source examples and catalog consumers; R2 corrects stale cycle exclusions. Semantic accounts and host mechanisms are unchanged by these corrections.
+Current result: public registration `7d9e60d8` is independently approved through first correction audit `9048174d`; both required findings are closed. Checkpoint `6fdae8fb` preserves unfinished parallel MI work without acceptance.
 
-Last verification: current TypeScript build, strict harness types, semantic shape checks and 32 runner checks pass. Complete inventory batches pass for all 264 core/source test files and 99 infrastructure test files. The earlier monolithic timeouts remain failed invocations; bounded batches supply the complete coverage. Earlier Lean/Temporal evidence does not qualify the combined checkpoint.
+Last verification: TypeScript build/types, semantic shape checks, 264 core/source test files and 99 infrastructure test files pass. The reviewer independently passed 61 focused checks and verified receipt/input bindings. Earlier Lean/Temporal evidence does not qualify the combined checkpoint.
 
-Next action: commit the registration corrections and obtain the original reviewer's R1/R2 audit, then resume applicable delivery qualification. No further commit partitioning.
+Next action: compose full occurrence-to-Program correspondence for reachable Running prefixes using existing structural and wait-preservation laws; connect it to actual command results without assumed predecessor validity or publication success. This advances complete command publication, not a helper-only commit. Reassess before another replay hierarchy or prerequisite owner; reuse the existing execution induction.
 
-Unresolved: installed-runtime qualification, concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/query failures, public closure and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation stays on hold; performance qualification and cold-library investigation remain excluded. Lean stays one process tree, one CPU/3 GiB without extra swap.
+Unresolved: reachable resumption admission, stable-wait existence, complete publication, combined Lean qualification, installed-runtime qualification, concurrent testkit batch 13, zero-item MI publication unavailability and prior SIGSEGV/query failures. Runtime investigation, performance qualification and cold-library investigation stay on hold. Lean stays one process tree, one CPU/3 GiB without extra swap.
 
-Oracle: exact lowering/results/E1/E2, fresh-occurrence/current-data recovery, mutations and applicable acceptance gates.
+Oracle: actual accepted-Start reachability, kernel-checked command result and exact full-state/E1/E2 differential witnesses.
 
 Stop if correction weakens guarantees or broadens scope.
 

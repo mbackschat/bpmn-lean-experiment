@@ -139,8 +139,10 @@ The nearest unsupported claims are mixed-task parallelism, nested scopes, busine
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `b40eda56` | `fork-turns-none` | `approve-with-required-edits` | `745c836b` |
-| Semantic checkpoint | `da2b3ca3` | `fork-turns-none` | `approve` | `not-required` |
+| Semantic checkpoint | `7d9e60d8` | `fork-turns-none` | `approve-with-required-edits` | `9048174d` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The public-registration correction `9048174d` closes both required findings in the first audit by the original reviewer. The [shared receipt](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#independent-cold-review-receipt) owns its exact evidence and qualification limits.
 
 Maintained-proof corrections at `da2b3ca3` are independently approved; the [shared receipt](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#independent-cold-review-receipt) records the packet, scope and qualification limits.
 
@@ -150,7 +152,7 @@ The semantic checkpoint reviewer approved correction `245962ad`, closing the sta
 
 ## Implementation progress
 
-The private increment admits the reviewed graph family through checked source, IL validation and ordinary command execution. Exclusive candidate sequences are nonempty; Inclusive and existing profile cardinalities remain unchanged. The shared business-task reader preserves the mapping and expression contracts. No new runtime state or operation was introduced. The [registration candidate](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) removes its qualification-only host refusal after recovery/replay evidence; public-boundary review and complete qualification remain open. This is implementation evidence, not capsule closure.
+The private increment admits the reviewed graph family through checked source, IL validation and ordinary command execution. Exclusive candidate sequences are nonempty; Inclusive and existing profile cardinalities remain unchanged. The shared business-task reader preserves the mapping and expression contracts. No new runtime state or operation was introduced. The [registration candidate](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) removes its qualification-only host refusal after recovery/replay evidence; public-registration review is approved at `9048174d`; complete qualification remains open. This is implementation evidence, not capsule closure.
 
 The [admission laws](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmissionLaws.lean) prove writer-free reachability obligations, cut acyclicity, rank decrease and bounded admitted ranks. The [data owner](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) derives required read availability from actual committed Start; Human patches preserve it, Service patches supply barrier writes, and available canonical bindings make actual input evaluation total. It also proves arbitrary ordered first-true/default selection and refusal of nonunique effect-local ownership. The path invariant covers admitted graphs without enumerating business topologies.
 

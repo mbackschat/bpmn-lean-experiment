@@ -6,7 +6,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 [MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 
-Private [serial/mixed](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) and [business Error](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) recovery/replay witnesses pass; [mixed host-cache mutations](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) fail through public state. The [registration candidate](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) passes public start/replay; qualification and review remain open.
+Private [serial/mixed](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) and [business Error](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) recovery/replay witnesses pass; [mixed host-cache mutations](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) fail through public state. The [registration candidate](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) passes public start/replay and registration review at `9048174d`; qualification remains open.
 
 Runner [overlay selection](RUNNABLE-TEMPORAL-MVP-SPEC.md#public-operating-contract) preserves identity/bytes before connection. Non-material wiring: runner/example/types/Temporal guards; simulations and host refusals unchanged.
 
