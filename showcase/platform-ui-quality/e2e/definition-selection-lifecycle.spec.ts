@@ -8,6 +8,7 @@ const definition = {
   processId: "Process_Responsive_Human_Work_Review", version: 7,
   source: { kind: "bpmnSource", id: "responsive-human-work-review.bpmn", sha256: "a".repeat(64), byteLength: 815, declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
   semanticProfile: "user-task-assignment-form-metadata-v1",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 };
 

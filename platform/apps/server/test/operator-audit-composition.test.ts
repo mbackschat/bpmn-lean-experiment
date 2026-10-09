@@ -80,6 +80,7 @@ const instance = {
       decodedAs: "UTF-8",
     },
     semanticProfile: "profile/operator-audit",
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   },
 } as const satisfies PublicProcessInstanceIdentity;

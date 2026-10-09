@@ -34,6 +34,7 @@ function deployedResult(bytes: Uint8Array) {
         decodedAs: "UTF-8",
       },
       semanticProfile: "profile/portable",
+      sourceOverlay: null,
       startCapabilities: {
         messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],

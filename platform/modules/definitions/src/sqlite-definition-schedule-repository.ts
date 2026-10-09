@@ -1,3 +1,5 @@
+import { definitionSchedulesTableSql } from "./definition-sqlite-tables.js";
+import { decodeStoredSourceOverlayIdentity, sourceOverlaySqlValues } from "./definition-overlay-values.js";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLOutputValue } from "node:sqlite";
 
@@ -243,11 +245,11 @@ implements DefinitionScheduleRepository {
       INSERT INTO definition_schedules (
         process_id, version, schedule_id, source_kind, source_id, source_sha256,
         source_byte_length, source_declared_encoding, source_decoded_as,
-        semantic_profile, start_capabilities_json, timer_start_event_id,
+        source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, timer_start_event_id,
         timer_duration_ms, activation_at, due_at, process_instance_id,
         host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
         cancellation_origin, process_locator
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL)
     `).run(
       record.reference.processId,
       record.reference.version,
@@ -258,6 +260,7 @@ implements DefinitionScheduleRepository {
       record.definition.source.byteLength,
       record.definition.source.declaredEncoding,
       record.definition.source.decodedAs,
+      ...sourceOverlaySqlValues(record.definition.sourceOverlay),
       record.definition.semanticProfile,
       encodeDefinitionStartCapabilities(record.definition.startCapabilities),
       record.timerStart.startEventId,
@@ -275,62 +278,14 @@ implements DefinitionScheduleRepository {
 const selectColumns = `SELECT
   process_id, version, schedule_id, source_kind, source_id, source_sha256,
   source_byte_length, source_declared_encoding, source_decoded_as,
-  semantic_profile, start_capabilities_json, timer_start_event_id,
+  source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, timer_start_event_id,
   timer_duration_ms, activation_at, due_at, process_instance_id,
   host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
   cancellation_origin, process_locator
 FROM definition_schedules`;
 
 function initializeSchema(database: DatabaseSync): void {
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS definition_schedules (
-      process_id TEXT NOT NULL,
-      version INTEGER NOT NULL CHECK (version > 0),
-      schedule_id TEXT NOT NULL,
-      source_kind TEXT NOT NULL CHECK (source_kind = 'bpmnSource'),
-      source_id TEXT NOT NULL,
-      source_sha256 TEXT NOT NULL CHECK (
-        length(source_sha256) = 64
-        AND source_sha256 NOT GLOB '*[^0-9a-f]*'
-      ),
-      source_byte_length INTEGER NOT NULL CHECK (source_byte_length >= 0),
-      source_declared_encoding TEXT,
-      source_decoded_as TEXT CHECK (
-        source_decoded_as IS NULL OR source_decoded_as = 'UTF-8'
-      ),
-      semantic_profile TEXT NOT NULL,
-      start_capabilities_json TEXT NOT NULL,
-      timer_start_event_id TEXT NOT NULL,
-      timer_duration_ms INTEGER NOT NULL CHECK (timer_duration_ms > 0),
-      activation_at TEXT NOT NULL,
-      due_at TEXT NOT NULL,
-      process_instance_id TEXT NOT NULL UNIQUE,
-      host_schedule_id TEXT NOT NULL UNIQUE,
-      configured_workflow_id_base TEXT NOT NULL UNIQUE,
-      state TEXT NOT NULL CHECK (state IN (
-        'creating', 'creatingHost', 'scheduled', 'cancelling',
-        'started', 'missed', 'cancelled'
-      )),
-      cleanup_complete INTEGER NOT NULL CHECK (cleanup_complete IN (0, 1)),
-      cancellation_origin TEXT CHECK (
-        cancellation_origin IS NULL
-        OR cancellation_origin IN ('creatingHost', 'scheduled')
-      ),
-      process_locator TEXT,
-      PRIMARY KEY (process_id, version, schedule_id),
-      CHECK (
-        (state = 'cancelling' AND cancellation_origin IS NOT NULL)
-        OR (state <> 'cancelling' AND cancellation_origin IS NULL)
-      ),
-      CHECK (
-        (state = 'started' AND process_locator IS NOT NULL)
-        OR (state <> 'started' AND process_locator IS NULL)
-      ),
-      CHECK (
-        state IN ('started', 'missed', 'cancelled') OR cleanup_complete = 0
-      )
-    ) STRICT
-  `);
+  database.exec(definitionSchedulesTableSql);
 }
 
 function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRecord {
@@ -411,6 +366,7 @@ function decodeDefinition(
       decodedAs,
     },
     semanticProfile: requireNonemptyString(row, "semantic_profile"),
+    sourceOverlay: decodeStoredSourceOverlayIdentity(row.source_overlay_id, row.source_overlay_sha256),
     startCapabilities: decodeDefinitionStartCapabilities(
       requireString(row, "start_capabilities_json"),
     ),

@@ -52,6 +52,7 @@ test("collapsing Triggers preserves a schedule draft without submitting it", asy
     processId: "Scheduled_Process", version: 1,
     source: { kind: "bpmnSource", id: "scheduled.bpmn", sha256: "a".repeat(64), byteLength: 815, declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
     semanticProfile: "timer-start",
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [{ startEventId: "Start_Timer", durationMs: 1000 }] },
   };
   await page.route("**/api/v1/definitions", (route) => route.fulfill({ json: { definitions: [definition] } }));

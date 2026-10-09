@@ -544,6 +544,7 @@ function definition(): DefinitionMetadata {
       messageStarts: [messageStart()],
       timerStarts: [],
     },
+    sourceOverlay: null,
   };
 }
 

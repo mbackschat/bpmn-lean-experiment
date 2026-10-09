@@ -161,6 +161,7 @@ const task: PublicWorkTask = {
         decodedAs: "UTF-8",
       },
       semanticProfile: "metadata-profile",
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   },

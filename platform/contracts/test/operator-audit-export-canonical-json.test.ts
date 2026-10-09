@@ -24,6 +24,7 @@ const instance = {
     },
     semanticProfile: "profile/operator-audit",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   },
 } as const;
 
@@ -70,11 +71,11 @@ const value = {
 test("emits fixed operator-audit canonical bytes and SHA", () => {
   const bytes = serializeOperatorAuditExport(value, instance);
   const text = new TextDecoder().decode(bytes);
-  const fixedByteOracle = String.raw`{"format":"bpmn-lean.operator-audit.v1","incidentActions":{"events":[{"actionId":"retry-1","actionKind":"retryIncident","actorId":"operator-1","eventId":"incident-1","hostingProcessInstanceId":"hosting-instance/🚀","incidentId":{"effectId":{"activation":1,"elementId":"ChargeCard","processInstanceId":"hosting-instance/🚀"},"generation":1},"outcome":"committed","recordedAt":"2026-08-15T12:00:01.000Z"}],"headEventId":"incident-1"},"instance":{"definition":{"processId":"OrderProcess","semanticProfile":"profile/operator-audit","source":{"byteLength":512,"declaredEncoding":"UTF-8","decodedAs":"UTF-8","id":"order.bpmn","kind":"bpmnSource","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},"startCapabilities":{"messageStarts":[],"timerStarts":[]},"version":1},"processInstanceId":"hosting-instance/🚀"},"work":{"events":[{"action":{"actionId":"claim-1","kind":"claim","outcome":"claimed"},"actorId":"worker\nalpha","eventId":"work-1","hostingProcessInstanceId":"hosting-instance/🚀","recordedAt":"2026-08-15T12:00:02.000Z","taskId":{"activation":1,"elementId":"ReviewOrder","processInstanceId":"semantic-instance"}}],"headEventId":"work-1"}}`;
+  const fixedByteOracle = String.raw`{"format":"bpmn-lean.operator-audit.v1","incidentActions":{"events":[{"actionId":"retry-1","actionKind":"retryIncident","actorId":"operator-1","eventId":"incident-1","hostingProcessInstanceId":"hosting-instance/🚀","incidentId":{"effectId":{"activation":1,"elementId":"ChargeCard","processInstanceId":"hosting-instance/🚀"},"generation":1},"outcome":"committed","recordedAt":"2026-08-15T12:00:01.000Z"}],"headEventId":"incident-1"},"instance":{"definition":{"processId":"OrderProcess","semanticProfile":"profile/operator-audit","source":{"byteLength":512,"declaredEncoding":"UTF-8","decodedAs":"UTF-8","id":"order.bpmn","kind":"bpmnSource","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},"sourceOverlay":null,"startCapabilities":{"messageStarts":[],"timerStarts":[]},"version":1},"processInstanceId":"hosting-instance/🚀"},"work":{"events":[{"action":{"actionId":"claim-1","kind":"claim","outcome":"claimed"},"actorId":"worker\nalpha","eventId":"work-1","hostingProcessInstanceId":"hosting-instance/🚀","recordedAt":"2026-08-15T12:00:02.000Z","taskId":{"activation":1,"elementId":"ReviewOrder","processInstanceId":"semantic-instance"}}],"headEventId":"work-1"}}`;
   assert.equal(text, fixedByteOracle);
   assert.equal(
     createHash("sha256").update(bytes).digest("hex"),
-    "39fee418002934d34b144fd173607a1bac4784c5561da165c810c561fc0e2a59",
+    "ae3f9071cdff5d0890525b27de2888a9d35504b9a12308ceb202ccdf6d89510d",
   );
   assert.deepEqual(decodeCanonicalOperatorAuditExport(bytes, instance), value);
 });

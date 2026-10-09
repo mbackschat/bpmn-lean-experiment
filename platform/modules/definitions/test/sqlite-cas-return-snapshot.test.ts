@@ -217,5 +217,6 @@ function definition(processId: string, sourceId: string, digest: string) {
       messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     },
+    sourceOverlay: null,
   };
 }

@@ -20,6 +20,7 @@ const definition = {
   },
   semanticProfile: "profile",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 function availableMetrics() {

@@ -23,6 +23,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "metrics-profile",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DeployedDefinitionVersion;
 

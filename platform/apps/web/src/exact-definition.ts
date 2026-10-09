@@ -20,6 +20,7 @@ export function snapshotExactDefinition(
         ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
       ),
     },
+    sourceOverlay: definition.sourceOverlay === null ? null : { ...definition.sourceOverlay },
   };
 }
 
@@ -37,6 +38,10 @@ export function sameExactDefinition(
     actual.source.byteLength === expected.source.byteLength &&
     actual.source.declaredEncoding === expected.source.declaredEncoding &&
     actual.source.decodedAs === expected.source.decodedAs &&
+    (actual.sourceOverlay === null || expected.sourceOverlay === null
+      ? actual.sourceOverlay === expected.sourceOverlay
+      : actual.sourceOverlay.id === expected.sourceOverlay.id &&
+        actual.sourceOverlay.sha256 === expected.sourceOverlay.sha256) &&
     sameMessageStarts(
       actual.startCapabilities.messageStarts,
       expected.startCapabilities.messageStarts,

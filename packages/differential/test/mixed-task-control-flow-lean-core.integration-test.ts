@@ -16,6 +16,8 @@ import type { CheckedProcess, SemanticProcessProgram, Scenario, ScenarioResult, 
 import { compile, invoiceWithBurst, profile, source } from "../../bpmn-source/test/mixed-task-control-flow-fixture.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
+import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 
 const binding = (name: string, value: string): VariableBinding => ({ name, value: { kind: VariableValueKind.String, value } });
 const instanceId = "invoice";
@@ -97,6 +99,8 @@ test("mixed-task branching, rework, local data and complete publications agree w
     .replace('id="Accept" sourceRef="Decision" targetRef="Finalize"', 'id="Accept" sourceRef="Decision" targetRef="AcceptMerge"')
     .replace('<sequenceFlow id="Finish"', '<sequenceFlow id="BeginFinalize" sourceRef="AcceptMerge" targetRef="Finalize"/><sequenceFlow id="Finish"');
   const variants = [
+    { id: "string-metadata-rework", xml: original.replace(/<userTask\b([^>]*?)\s*\/>/gu,
+      '<userTask$1 camunda:candidateGroups="reviewers"><extensionElements><camunda:formData><camunda:formField id="request" type="string"/></camunda:formData></extensionElements></userTask>'), rounds: 3, rework: true, expectedWait: { elementId: "Review", activation: 4 } },
     { id: "eight-step-resumption", xml: invoiceWithBurst(original, 8), rounds: 1, rework: false },
     { id: "immediate-approval", xml: original, rounds: 1, rework: false },
     { id: "nullable-result-fanout", xml: original.replace('</camunda:outputParameter>', '</camunda:outputParameter><camunda:outputParameter name="audit">${result}</camunda:outputParameter>'), rounds: 1, rework: false, nullable: true },
@@ -242,6 +246,29 @@ test("mixed-task branching, rework, local data and complete publications agree w
       ]);
       assert.deepEqual(record.commandPublications, publications, `${scenario.id} E2`);
     }
+    const metadataInput = inputs.find(input => input.id === "string-metadata-rework");
+    assert.ok(metadataInput);
+    const metadataPath = paths[inputs.indexOf(metadataInput)]!;
+    const admissionInputs: DefinitionAdmissionInput[] = [{ scenarioId: "string-control",
+      checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program }];
+    const expectedAdmissions: DefinitionAdmissionResult[] = [{ scenarioId: "string-control",
+      checkedWellFormed: true, programWellFormed: true, programProfileCapabilitiesValid: true }];
+    for (const [id, from, to] of [['boolean', '"type":"string"', '"type":"boolean"'],
+      ['handler-key', '"key":"request"', '"key":"invoiceValidator"']]) {
+      const mutate = <T>(value: T): T => JSON.parse(JSON.stringify(value).replaceAll(from!, to!));
+      const invalid = mutate({ scenarioId: metadataInput.scenario.id, checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program });
+      admissionInputs.push({ ...invalid, scenarioId: `${id}-checked-and-il` }, {
+        scenarioId: `${id}-il-only`, checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) });
+      expectedAdmissions.push({ scenarioId: `${id}-checked-and-il`, checkedWellFormed: false, programWellFormed: true,
+        programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
+        programWellFormed: true, programProfileCapabilitiesValid: false });
+      await writeFile(definitions, JSON.stringify(invalid) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
+        checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+    }
+    assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
     const baseline = inputs[0]!;
     const checkedProcess: CheckedProcess = { ...baseline.checkedProcess,
       nodes: baseline.checkedProcess.nodes.filter(node => !["Review", "Validate"].includes(node.id)),

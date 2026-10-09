@@ -82,9 +82,9 @@ Pre-release evolution applies. Add one selected profile and classified relations
 |---|---:|
 | [Graph analysis](../../packages/semantic-core/src/mixed-task-control-flow-analysis.ts) | 654 |
 | [Graph admission](../../packages/semantic-core/src/mixed-task-control-flow-admission.ts) | 595 |
-| [Business source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 663 |
+| [Business source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 662 |
 | [Admission laws](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmissionLaws.lean) | 493 |
-| [Data proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) | 16 |
+| [Data proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) | 13 |
 | [Lifecycle proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean) | 45 |
 | [Progress proofs](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowProgressProofs.lean) | 15 |
 | [Effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 |

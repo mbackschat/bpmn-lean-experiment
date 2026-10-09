@@ -32,6 +32,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "bpmn-2.0.2-bpmn-lean-message-key-correlation-v1",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
 const correlatedMessage = {

@@ -4,9 +4,11 @@ import type {
 } from "@bpmn-lean/platform-artifact-store";
 import type {
   DefinitionCompilationResult,
+  DefinitionSourceOverlaySelection,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   HumanTaskCatalogV1,
+  PublicSourceOverlayIdentity,
 } from "@bpmn-lean/platform-contracts";
 
 export const DefinitionDeploymentStatus = {
@@ -23,6 +25,7 @@ export type DefinitionDeploymentRequest = Readonly<{
   sourceId: string;
   semanticProfile: string;
   expectedSha256: string | undefined;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
 export type DefinitionReference = Readonly<{
@@ -58,6 +61,7 @@ export type DefinitionMetadata = Readonly<{
   source: DefinitionSourceIdentity;
   semanticProfile: string;
   startCapabilities: DefinitionStartCapabilities;
+  sourceOverlay: PublicSourceOverlayIdentity | null;
 }>;
 
 export type NewDefinitionMetadata = Readonly<{
@@ -65,6 +69,7 @@ export type NewDefinitionMetadata = Readonly<{
   source: DefinitionSourceIdentity;
   semanticProfile: string;
   startCapabilities: DefinitionStartCapabilities;
+  sourceOverlay: PublicSourceOverlayIdentity | null;
 }>;
 
 type RejectedCompilation = Extract<
@@ -184,7 +189,7 @@ export class DefinitionArtifactIntegrityError extends Error {
         : `definition ${definition.processId}/${definition.version} artifact ${sourceSha256} has ${lengths.actual} bytes instead of ${lengths.expected}`,
     );
     this.name = "DefinitionArtifactIntegrityError";
-    this.definition = { ...definition };
+    this.definition = { processId: definition.processId, version: definition.version };
     this.sourceSha256 = sourceSha256;
     this.expectedByteLength = lengths?.expected ?? null;
     this.actualByteLength = lengths?.actual ?? null;
@@ -200,6 +205,14 @@ export class DefinitionStartIntegrityError extends Error {
       `definition ${definition.processId}/${definition.version} did not remain identity-bound during start`,
     );
     this.name = "DefinitionStartIntegrityError";
-    this.definition = { ...definition };
+    this.definition = { processId: definition.processId, version: definition.version };
+  }
+}
+
+/** Raised before publication when compilation changes the captured content selection. */
+export class DefinitionDeploymentIntegrityError extends Error {
+  constructor() {
+    super("compiled definition identity differs from the captured deployment selection");
+    this.name = "DefinitionDeploymentIntegrityError";
   }
 }

@@ -1,3 +1,5 @@
+import type { DefinitionSourceOverlaySelection } from "@bpmn-lean/platform-engine-gateway";
+import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionMetadata,
   DefinitionReference,
@@ -112,6 +114,7 @@ export type DefinitionScheduleValidationRequest = Readonly<{
   expectedSha256: string;
   semanticProfile: string;
   expectedProcessId: string;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
 export type AcceptedDefinitionScheduleValidation = Readonly<{
@@ -120,6 +123,7 @@ export type AcceptedDefinitionScheduleValidation = Readonly<{
   processId: string;
   semanticProfile: string;
   startCapabilities: DefinitionStartCapabilities;
+  sourceOverlay: PublicSourceOverlayIdentity | null;
 }>;
 
 export type RejectedDefinitionScheduleValidation = Readonly<{
@@ -133,6 +137,7 @@ export type DefinitionScheduleValidationResult =
 
 export type DefinitionScheduleHostRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: DefinitionMetadata;
   timerStart: DefinitionTimerStartCapability;
   activationAt: string;

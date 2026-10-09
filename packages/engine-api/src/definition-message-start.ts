@@ -6,11 +6,13 @@ import {
 import type {
   AcceptedBpmnCompilation,
   BpmnSourceLimits,
+  SourceOverlaySelection,
 } from "@bpmn-lean/bpmn-source";
 import {
   MessageChannelKind,
   StimulusKind,
   isWellFormedWireString,
+  sameSourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 import type {
   TriggerMessageStartStimulus,
@@ -37,6 +39,7 @@ import type {
   EngineDefinitionStartCapabilities,
   EngineMessageStartCapability,
 } from "./definition-capabilities.js";
+import { snapshotSourceOverlay } from "./source-overlay.js";
 
 export enum EngineDefinitionMessageStartStatus {
   Admitted = "admitted",
@@ -57,6 +60,7 @@ export type EngineDefinitionMessageStartIntent = TemporalMessageStartIntent;
 
 export type EngineDefinitionMessageStartPreparationRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: SourceOverlaySelection | null;
   sourceId: string;
   expectedSha256: string;
   expectedByteLength: number;
@@ -214,10 +218,11 @@ export async function describeBpmnDefinitionMessageStart(
 
 type MessageStartSnapshot = Omit<
   EngineDefinitionMessageStartPreparationRequest,
-  "bytes" | "limits"
+  "bytes" | "limits" | "sourceOverlay"
 > & Readonly<{
   bytes: Uint8Array;
   limits: BpmnSourceLimits;
+  sourceOverlay: SourceOverlaySelection | null;
 }>;
 
 type PreparedMessageStart = Readonly<{
@@ -234,7 +239,7 @@ async function prepareDefinitionMessageStart(
     sourceId: snapshot.sourceId,
     expectedSha256: snapshot.expectedSha256,
     semanticProfile: snapshot.semanticProfile,
-    sourceOverlay: null,
+    sourceOverlay: snapshot.sourceOverlay,
     limits: snapshot.limits,
   });
   if (compilation.status === BpmnCompilationStatus.Rejected) {
@@ -302,6 +307,7 @@ function snapshotRequest(
   }
   return {
     bytes: Uint8Array.from(request.bytes),
+    sourceOverlay: snapshotSourceOverlay(request.sourceOverlay),
     sourceId: request.sourceId,
     expectedSha256: request.expectedSha256,
     expectedByteLength: request.expectedByteLength,
@@ -371,7 +377,10 @@ function compiledIdentityMatches(
     compilation.source.byteLength === snapshot.expectedByteLength &&
     compilation.semanticProcess.identity.sourceId === snapshot.sourceId &&
     compilation.semanticProcess.identity.sourceSha256 === snapshot.expectedSha256 &&
-    compilation.semanticProcess.identity.sourceOverlay === null &&
+    sameSourceOverlayIdentity(
+      compilation.semanticProcess.identity.sourceOverlay,
+      snapshot.sourceOverlay,
+    ) &&
     compilation.semanticProcess.identity.semanticProfile === snapshot.semanticProfile &&
     compilation.semanticProcess.processId === snapshot.expectedProcessId;
 }

@@ -71,6 +71,7 @@ test("refuses Boolean stringification in strict task detail", async () => {
             decodedAs: "UTF-8",
           },
           semanticProfile: "profile-1",
+          sourceOverlay: null,
           startCapabilities: { messageStarts: [], timerStarts: [] },
         },
       },

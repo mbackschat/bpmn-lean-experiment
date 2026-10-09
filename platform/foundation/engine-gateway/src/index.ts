@@ -13,6 +13,7 @@ import {
 } from "@bpmn-lean/engine-api";
 import type {
   EngineDefinitionCompilationResult,
+  EngineDefinitionCompilationRequest,
   EngineDefinitionStartDescriptionResult,
   EngineDefinitionStartIntent,
   EngineDefinitionStartPreparationRequest,
@@ -86,11 +87,14 @@ export type DefinitionStartPreparationResult =
     > & Readonly<{ locator: string }>)
   | Exclude<EngineDefinitionStartPreparationResult, { status: "admitted" }>;
 
+export type DefinitionSourceOverlaySelection = NonNullable<EngineDefinitionCompilationRequest["sourceOverlay"]>;
+
 export type DefinitionCompilationRequest = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
   semanticProfile: string;
   expectedSha256: string | undefined;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
 export type EngineGatewayLimits = Readonly<{
@@ -106,6 +110,7 @@ export type DefinitionVersionStartRequest = Readonly<{
   expectedProcessId: string;
   processInstanceId: string;
   initialVariables: readonly PlatformVariableBinding[];
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
 export type PreparedDefinitionVersionStartRequest =

@@ -409,6 +409,7 @@ function instance(processInstanceId: string): PublicProcessInstanceIdentity {
       },
       semanticProfile: "cibseven-incident",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   };
 }

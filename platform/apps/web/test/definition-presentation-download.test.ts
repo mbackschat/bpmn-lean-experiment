@@ -91,6 +91,7 @@ function presentation(
         decodedAs: "UTF-8",
       },
       semanticProfile: "profile/portable",
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
     sourceSha256: "a".repeat(64),

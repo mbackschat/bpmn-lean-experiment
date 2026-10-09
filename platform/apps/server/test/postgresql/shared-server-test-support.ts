@@ -89,6 +89,7 @@ export function createCrossReplicaEngineRuntime(
         definition: {
           processId: sharedDefinitionProcessId,
           semanticProfile: request.semanticProfile,
+          sourceOverlay: null,
         },
         startCapabilities: capabilities(),
       }),
@@ -103,6 +104,7 @@ export function createCrossReplicaEngineRuntime(
         definition: {
           processId: sharedDefinitionProcessId,
           semanticProfile: request.semanticProfile,
+          sourceOverlay: null,
         },
         processInstanceId: request.processInstanceId,
         locator: `shared:${request.processInstanceId}`,
@@ -127,6 +129,7 @@ export function createCrossReplicaEngineRuntime(
           definition: {
             processId: sharedDefinitionProcessId,
             semanticProfile: request.semanticProfile,
+            sourceOverlay: null,
           },
           processInstanceId: request.processInstanceId,
         };
@@ -148,6 +151,7 @@ export function createCrossReplicaEngineRuntime(
         source: source("schedule-validate", request),
         processId: sharedDefinitionProcessId,
         semanticProfile: request.semanticProfile,
+        sourceOverlay: null,
         startCapabilities: capabilities(),
       }),
       createOrCompare: async (request: SourceBoundRequest) => {

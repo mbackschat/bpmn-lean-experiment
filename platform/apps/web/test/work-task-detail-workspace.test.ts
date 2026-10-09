@@ -71,6 +71,7 @@ test("labels semantic task and hosting root Process identities separately", () =
           decodedAs: "UTF-8",
         },
         semanticProfile: "test-profile",
+        sourceOverlay: null,
         startCapabilities: { messageStarts: [], timerStarts: [] },
       },
     },

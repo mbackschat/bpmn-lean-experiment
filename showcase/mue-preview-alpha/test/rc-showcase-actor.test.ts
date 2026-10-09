@@ -16,6 +16,7 @@ function instance(sha256: string, semanticProfile: string): PublicProcessInstanc
       processId: "same-process", version: 1, semanticProfile,
       source: { kind: "bpmnSource", id: "source", sha256, byteLength: 1,
         declaredEncoding: null, decodedAs: "UTF-8" },
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   };
@@ -55,6 +56,24 @@ test("duplicate discovery launches once both during and after completion", async
   assert.equal(actors.discover(exact), false);
   assert.equal(launches, 1);
 });
+
+for (const sourceOverlay of [
+  { id: "overlay-a", sha256: "a".repeat(64) },
+  { id: "overlay-b", sha256: "a".repeat(64) },
+  { id: "overlay-a", sha256: "b".repeat(64) },
+]) {
+  test(`refuses matching source/profile actor discovery with overlay ${sourceOverlay.id}/${sourceOverlay.sha256.slice(0, 8)}`, async () => {
+    const bindings = await loadRcShowcaseBindings();
+    const guided = bindings.find((binding) => binding.mode === "guided")!;
+    const exact = instance(guided.sourceSha256, guided.semanticProfile);
+    let launches = 0;
+    const actors = new RcShowcaseActors(bindings, async () => { launches++; });
+    assert.equal(actors.discover({ ...exact, definition: { ...exact.definition, sourceOverlay } }), false);
+    assert.equal(actors.discover(exact), true);
+    await actors.drain();
+    assert.equal(launches, 1);
+  });
+}
 
 test("actor failure is retained for the caller and never retried on discovery", async () => {
   const bindings = await loadRcShowcaseBindings();

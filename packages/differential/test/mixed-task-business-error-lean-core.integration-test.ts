@@ -17,6 +17,8 @@ import { compile, profile, source } from "../../bpmn-source/test/mixed-task-busi
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
+import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
 const instanceId = "invoice";
@@ -76,6 +78,8 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
     { id: "reordered", xml: reordered, prefix: "", nullable: false },
     { id: "renamed", xml: reordered.replace(/\b(id|sourceRef|targetRef|attachedToRef|errorRef)="([^"]+)"/gu, '$1="Renamed_$2"'), prefix: "Renamed_", nullable: false },
     { id: "nullable-fanout", xml: original.replaceAll('</camunda:outputParameter>', '</camunda:outputParameter><camunda:outputParameter name="audit">${result}</camunda:outputParameter>'), prefix: "", nullable: true },
+    { id: "string-metadata-error-recovery", xml: original.replace(/<userTask\b([^>]*?)\s*\/>/gu,
+      '<userTask$1 camunda:candidateGroups="reviewers"><extensionElements><camunda:formData><camunda:formField id="request" type="string"/></camunda:formData></extensionElements></userTask>'), prefix: "", nullable: false },
   ];
   const inputs = await Promise.all(variants.map(async variant => {
     const compiled = await compile(variant.xml);
@@ -203,6 +207,29 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
         await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /variable bindings must have unique names in canonical order/);
       }
     }
+    const metadataInput = inputs.find(input => input.id === "string-metadata-error-recovery");
+    assert.ok(metadataInput);
+    const metadataPath = paths[inputs.indexOf(metadataInput)]!;
+    const admissionInputs: DefinitionAdmissionInput[] = [{ scenarioId: "string-control",
+      checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program }];
+    const expectedAdmissions: DefinitionAdmissionResult[] = [{ scenarioId: "string-control",
+      checkedWellFormed: true, programWellFormed: true, programProfileCapabilitiesValid: true }];
+    for (const [id, from, to] of [['boolean', '"type":"string"', '"type":"boolean"'],
+      ['handler-key', '"key":"request"', '"key":"invoiceValidator"']]) {
+      const mutate = <T>(value: T): T => JSON.parse(JSON.stringify(value).replaceAll(from!, to!));
+      const invalid = mutate({ scenarioId: metadataInput.scenario.id, checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program });
+      admissionInputs.push({ ...invalid, scenarioId: `${id}-checked-and-il` }, {
+        scenarioId: `${id}-il-only`, checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) });
+      expectedAdmissions.push({ scenarioId: `${id}-checked-and-il`, checkedWellFormed: false, programWellFormed: true,
+        programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
+        programWellFormed: true, programProfileCapabilitiesValid: false });
+      await writeFile(definitions, JSON.stringify(invalid) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
+        checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+    }
+    assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
     await writeFile(paths[0]!, JSON.stringify(baseline.scenario));
     const validation = baseline.program.operations.find(operation => operation.kind === SemanticOperationKind.AwaitEffect && operation.effect.elementId === "Validate");
     const authorization = baseline.program.operations.find(operation => operation.kind === SemanticOperationKind.AwaitEffect && operation.effect.elementId === "Authorize");

@@ -133,21 +133,18 @@ theorem completion_admission_preserves_lifecycle_frame
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (analyzed : programAnalysis program = some analysis) (empty : LifecycleFrame before) :
     LifecycleFrame (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings with dispatched | refused
-  · rw [dispatched]
-    rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with refused |
-      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
-    · simpa [refused] using empty
-    · rw [result]
-      exact data_completion_preserves_lifecycle_frame program before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation bindings empty completed
-    · rw [result]
-      exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation empty completed
-    · rw [result]
-      exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation empty completed
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
+    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
   · simpa [refused] using empty
+  · rw [result]
+    exact data_completion_preserves_lifecycle_frame program before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation bindings empty completed
+  · rw [result]
+    exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation empty completed
+  · rw [result]
+    exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation empty completed
 
 theorem task_execution_preserves_lifecycle_frame
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState)
@@ -546,20 +543,17 @@ theorem completion_admission_preserves_task_lifetime_shape
     (analyzed : programAnalysis program = some analysis)
     (bounded : ControlUnitBound before) (shape : TaskLifetimeShape program before) :
     TaskLifetimeShape program (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings with dispatched | refused
-  · rw [dispatched]
-    rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
-      refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
-    · simpa [refused] using shape
-    · rw [result]
-      exact data_completion_clears_task_lifetime program before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation bindings bounded shape completed
-    · rw [result]
-      have cleared := ordinary_completion_clears_task_lifetime program before after taskId bindings
-        wellFormed profile ordinary bounded shape completed
-      exact task_lifetime_shape_frame program after _ cleared rfl rfl rfl rfl
-    · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
+    refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
   · simpa [refused] using shape
+  · rw [result]
+    exact data_completion_clears_task_lifetime program before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation bindings bounded shape completed
+  · rw [result]
+    have cleared := ordinary_completion_clears_task_lifetime program before after taskId bindings
+      wellFormed profile ordinary bounded shape completed
+    exact task_lifetime_shape_frame program after _ cleared rfl rfl rfl rfl
+  · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
 
 theorem task_execution_preserves_task_lifetime_shape
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState) (owner : ScopeOccurrenceId)

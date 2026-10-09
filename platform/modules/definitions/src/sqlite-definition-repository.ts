@@ -1,3 +1,5 @@
+import { definitionVersionsTableSql } from "./definition-sqlite-tables.js";
+import { decodeStoredSourceOverlayIdentity, sourceOverlaySqlValues } from "./definition-overlay-values.js";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLOutputValue } from "node:sqlite";
 
@@ -78,10 +80,10 @@ export class SqliteDefinitionRepository implements
           source_byte_length,
           source_declared_encoding,
           source_decoded_as,
-          semantic_profile,
+          source_overlay_id, source_overlay_sha256, semantic_profile,
           start_capabilities_json,
           human_task_catalog_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         metadata.processId,
         version,
@@ -91,6 +93,7 @@ export class SqliteDefinitionRepository implements
         metadata.source.byteLength,
         metadata.source.declaredEncoding,
         metadata.source.decodedAs,
+        ...sourceOverlaySqlValues(metadata.sourceOverlay),
         metadata.semanticProfile,
         encodeDefinitionStartCapabilities(metadata.startCapabilities),
         humanTaskCatalogJson,
@@ -99,6 +102,7 @@ export class SqliteDefinitionRepository implements
       return {
         ...metadata,
         source: { ...metadata.source },
+        sourceOverlay: decodeStoredSourceOverlayIdentity(...sourceOverlaySqlValues(metadata.sourceOverlay)),
         startCapabilities: decodeDefinitionStartCapabilities(
           encodeDefinitionStartCapabilities(metadata.startCapabilities),
         ),
@@ -123,7 +127,7 @@ export class SqliteDefinitionRepository implements
         definition.source_byte_length,
         definition.source_declared_encoding,
         definition.source_decoded_as,
-        definition.semantic_profile,
+        definition.source_overlay_id, definition.source_overlay_sha256, definition.semantic_profile,
         definition.start_capabilities_json
       FROM definition_versions AS definition
       INNER JOIN (
@@ -150,7 +154,7 @@ export class SqliteDefinitionRepository implements
         source_byte_length,
         source_declared_encoding,
         source_decoded_as,
-        semantic_profile,
+        source_overlay_id, source_overlay_sha256, semantic_profile,
         start_capabilities_json
       FROM definition_versions
       WHERE process_id = ?
@@ -169,7 +173,7 @@ export class SqliteDefinitionRepository implements
         source_byte_length,
         source_declared_encoding,
         source_decoded_as,
-        semantic_profile,
+        source_overlay_id, source_overlay_sha256, semantic_profile,
         start_capabilities_json
       FROM definition_versions
       WHERE process_id = ? AND version = ?
@@ -223,29 +227,7 @@ function initializeSchema(database: DatabaseSync): void {
       database.exec("COMMIT");
       return;
     }
-    database.exec(`
-      CREATE TABLE definition_versions (
-        process_id TEXT NOT NULL,
-        version INTEGER NOT NULL CHECK (version > 0),
-        source_kind TEXT NOT NULL CHECK (source_kind = 'bpmnSource'),
-        source_id TEXT NOT NULL,
-        source_sha256 TEXT NOT NULL CHECK (
-          length(source_sha256) = 64
-          AND source_sha256 NOT GLOB '*[^0-9a-f]*'
-        ),
-        source_byte_length INTEGER NOT NULL CHECK (source_byte_length >= 0),
-        source_declared_encoding TEXT,
-        source_decoded_as TEXT CHECK (
-          source_decoded_as IS NULL OR source_decoded_as = 'UTF-8'
-        ),
-        semantic_profile TEXT NOT NULL,
-        start_capabilities_json TEXT NOT NULL CHECK (
-          length(start_capabilities_json) > 0
-        ),
-        human_task_catalog_json TEXT,
-        PRIMARY KEY (process_id, version)
-      ) STRICT
-    `);
+    database.exec(definitionVersionsTableSql);
     database.exec("COMMIT");
   } catch (error: unknown) {
     if (database.isTransaction) {
@@ -259,7 +241,7 @@ function requireCurrentSchema(database: DatabaseSync): void {
   const columns = database.prepare(`
     SELECT name, type, "notnull", pk
     FROM pragma_table_info('definition_versions')
-    ORDER BY cid
+    ORDER BY name
   `).all();
   const expected = [
     ["process_id", "TEXT", 1, 1],
@@ -270,6 +252,8 @@ function requireCurrentSchema(database: DatabaseSync): void {
     ["source_byte_length", "INTEGER", 1, 0],
     ["source_declared_encoding", "TEXT", 0, 0],
     ["source_decoded_as", "TEXT", 0, 0],
+    ["source_overlay_id", "TEXT", 0, 0],
+    ["source_overlay_sha256", "TEXT", 0, 0],
     ["semantic_profile", "TEXT", 1, 0],
     ["start_capabilities_json", "TEXT", 1, 0],
     ["human_task_catalog_json", "TEXT", 0, 0],
@@ -277,7 +261,7 @@ function requireCurrentSchema(database: DatabaseSync): void {
   if (
     columns.length !== expected.length ||
     columns.some((column, index) => {
-      const wanted = expected[index];
+      const wanted = [...expected].sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)[index];
       return wanted === undefined ||
         column.name !== wanted[0] ||
         column.type !== wanted[1] ||
@@ -331,6 +315,7 @@ function decodeMetadata(
       decodedAs,
     },
     semanticProfile: requireStringField(row, "semantic_profile"),
+    sourceOverlay: decodeStoredSourceOverlayIdentity(row.source_overlay_id, row.source_overlay_sha256),
     startCapabilities: decodeDefinitionStartCapabilities(
       requireStringField(row, "start_capabilities_json"),
     ),

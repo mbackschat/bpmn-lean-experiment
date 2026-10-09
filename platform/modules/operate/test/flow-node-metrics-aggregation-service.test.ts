@@ -34,6 +34,7 @@ const definition: DeployedDefinitionVersion = {
   },
   semanticProfile: "metrics-profile",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 test("returns an exact available empty aggregate for zero retained members", async () => {

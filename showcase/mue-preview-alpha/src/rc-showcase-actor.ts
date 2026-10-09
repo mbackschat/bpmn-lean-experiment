@@ -94,7 +94,7 @@ export class RcShowcaseActors {
   }
 
   discover(instance: PublicProcessInstanceIdentity): boolean {
-    if (this.#attempts.has(instance.processInstanceId)) return false;
+    if (instance.definition.sourceOverlay !== null || this.#attempts.has(instance.processInstanceId)) return false;
     const binding = this.#bindings.find((candidate) => candidate.mode === "guided"
       && candidate.sourceSha256 === instance.definition.source.sha256
       && candidate.semanticProfile === instance.definition.semanticProfile);

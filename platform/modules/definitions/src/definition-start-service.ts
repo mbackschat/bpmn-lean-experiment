@@ -19,8 +19,8 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import {
-  DefinitionArtifactIntegrityError,
   DefinitionStartIntegrityError,
+  DefinitionArtifactIntegrityError,
   DefinitionVersionStartStatus,
 } from "./contracts.js";
 import type {
@@ -30,7 +30,9 @@ import type {
   DefinitionVersionStartResult,
   ExactArtifactStore,
 } from "./contracts.js";
-import { cloneDefinitionMetadata } from "./definition-values.js";
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import { cloneSourceOverlayIdentity, equalSourceOverlayIdentity, cloneDefinitionMetadata } from "./definition-values.js";
 import {
   ConfirmedProcessInstanceIntegrityError,
   ConfirmedProcessInstanceState,
@@ -90,24 +92,7 @@ export class DefinitionStartService {
     ) {
       throw new DefinitionStartIntegrityError(selectedReference);
     }
-    const artifact = await this.#artifacts.get(definition.source.sha256);
-    if (artifact === null) {
-      throw new DefinitionArtifactIntegrityError(
-        selectedReference,
-        definition.source.sha256,
-      );
-    }
-    const bytes = Uint8Array.from(artifact);
-    if (bytes.byteLength !== definition.source.byteLength) {
-      throw new DefinitionArtifactIntegrityError(
-        selectedReference,
-        definition.source.sha256,
-        {
-          expected: definition.source.byteLength,
-          actual: bytes.byteLength,
-        },
-      );
-    }
+    const { bytes, sourceOverlay } = await readRetainedDefinitionArtifacts(this.#artifacts, definition);
 
     const processInstanceId = this.#processInstanceIdGenerator();
     requireProcessInstanceId(processInstanceId);
@@ -119,6 +104,7 @@ export class DefinitionStartService {
       expectedProcessId: definition.processId,
       processInstanceId,
       initialVariables: capturedCommand.initialVariables,
+      ...(sourceOverlay === null ? {} : { sourceOverlay }),
     } satisfies DefinitionVersionStartRequest;
     const prepared = await this.#starter.prepareDefinitionVersion(request);
     requireExactDefinitionBinding(
@@ -224,25 +210,18 @@ export class DefinitionStartService {
         const definition = toDefinitionMetadata(
           reservation.instance.definition,
         );
-        const artifact = await this.#artifacts.get(definition.source.sha256);
-        if (artifact === null) {
-          throw new DefinitionArtifactIntegrityError(
-            reference,
-            definition.source.sha256,
-          );
+        let retained: RetainedDefinitionArtifacts;
+        try {
+          retained = await readRetainedDefinitionArtifacts(this.#artifacts, definition);
+        } catch (error: unknown) {
+          if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
+          // BPD-RETAIN-01: a known artifact fault precedes SDK entry and cannot become uncertain delivery.
+          return { status: "integrityFailure", evidence: error.message };
         }
-        if (artifact.byteLength !== definition.source.byteLength) {
-          throw new DefinitionArtifactIntegrityError(
-            reference,
-            definition.source.sha256,
-            {
-              expected: definition.source.byteLength,
-              actual: artifact.byteLength,
-            },
-          );
-        }
+        const { bytes, sourceOverlay } = retained;
         const request = {
-          bytes: Uint8Array.from(artifact),
+          bytes,
+          ...(sourceOverlay === null ? {} : { sourceOverlay }),
           sourceId: definition.source.id,
           expectedSha256: definition.source.sha256,
           semanticProfile: definition.semanticProfile,
@@ -287,6 +266,7 @@ export class DefinitionStartService {
         const result = await this.#starter.startPreparedDefinitionVersion({
           ...request,
           bytes: Uint8Array.from(request.bytes),
+          ...(request.sourceOverlay === undefined || request.sourceOverlay === null ? {} : { sourceOverlay: { ...request.sourceOverlay, bytes: Uint8Array.from(request.sourceOverlay.bytes) } }),
           expectedIntent: { ...expectedIntent },
         });
         try {
@@ -348,6 +328,7 @@ function toDefinitionMetadata(
         ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
       ),
     },
+    sourceOverlay: cloneSourceOverlayIdentity(definition.sourceOverlay),
   };
 }
 
@@ -366,6 +347,7 @@ function requireExactDefinitionBinding(
     result.source.decodedAs !== definition.source.decodedAs ||
     result.definition.processId !== definition.processId ||
     result.definition.semanticProfile !== definition.semanticProfile ||
+    !equalSourceOverlayIdentity(result.definition.sourceOverlay, definition.sourceOverlay) ||
     (
       (
         result.status === EngineDefinitionStartStatus.Started ||

@@ -1,3 +1,5 @@
+import type { DefinitionSourceOverlaySelection } from "./index.js";
+import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
 /** Product 2's target-free correlated Message boundary over exact admitted definition bytes. */
 import {
   EngineCorrelatedMessagePublishResolutionKind,
@@ -25,6 +27,7 @@ export type DefinitionCorrelationIdentity = Readonly<{
   processId: string;
   source: DefinitionCorrelationSource;
   semanticProfile: string;
+  sourceOverlay?: PublicSourceOverlayIdentity | null;
 }>;
 
 export type DefinitionCorrelatedMessageCapability = Readonly<{
@@ -45,6 +48,7 @@ export type DefinitionCorrelatedMessagePayload = Readonly<{
 
 export type DefinitionCorrelatedMessageDescribeRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: DefinitionCorrelationIdentity;
 }>;
 
@@ -298,6 +302,7 @@ export class BpmnDefinitionCorrelatedMessageGateway
         sourceId: snapshot.definition.source.id,
         semanticProfile: snapshot.definition.semanticProfile,
         expectedSha256: snapshot.definition.source.sha256,
+        sourceOverlay: snapshot.sourceOverlay ?? null,
         limits: this.#limits,
       });
     } catch {
@@ -313,6 +318,7 @@ export class BpmnDefinitionCorrelatedMessageGateway
     if (
       result.definition.processId !== snapshot.definition.processId ||
       result.definition.semanticProfile !== snapshot.definition.semanticProfile ||
+      !sameOverlay(result.definition.sourceOverlay, snapshot.definition.sourceOverlay ?? null) ||
       result.source.id !== snapshot.definition.source.id ||
       result.source.sha256 !== snapshot.definition.source.sha256 ||
       result.source.byteLength !== snapshot.definition.source.byteLength
@@ -330,6 +336,7 @@ function snapshotDescribeRequest(
 ): DefinitionCorrelatedMessageDescribeRequest {
   return {
     bytes: Uint8Array.from(request.bytes),
+    sourceOverlay: request.sourceOverlay === undefined || request.sourceOverlay === null ? null : { ...request.sourceOverlay, bytes: Uint8Array.from(request.sourceOverlay.bytes) },
     definition: {
       processId: request.definition.processId,
       source: {
@@ -338,6 +345,7 @@ function snapshotDescribeRequest(
         byteLength: request.definition.source.byteLength,
       },
       semanticProfile: request.definition.semanticProfile,
+      sourceOverlay: request.definition.sourceOverlay === undefined || request.definition.sourceOverlay === null ? null : { ...request.definition.sourceOverlay },
     },
   };
 }
@@ -444,4 +452,8 @@ function requireNonempty(value: string, name: string): void {
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`${name} must not be empty`);
   }
+}
+
+function sameOverlay(left: PublicSourceOverlayIdentity | null, right: PublicSourceOverlayIdentity | null): boolean {
+  return left === null || right === null ? left === right : left.id === right.id && left.sha256 === right.sha256;
 }

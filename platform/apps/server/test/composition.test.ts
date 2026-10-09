@@ -315,6 +315,7 @@ const workPublication = {
         decodedAs: "UTF-8" as const,
       },
       semanticProfile: "profile-1",
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   },

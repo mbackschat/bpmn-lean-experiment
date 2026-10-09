@@ -1,7 +1,9 @@
+import { definitionSourceOverlaySqliteColumns, definitionSqliteTables, priorDefinitionSqliteTableSql } from "./definition-sqlite-tables.js";
+import { decodePublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 import type { DatabaseSync } from "node:sqlite";
 
 const legacyDefinitionDatabaseSchemaEpoch = 3;
-const currentDefinitionDatabaseSchemaEpoch = 4;
+const currentDefinitionDatabaseSchemaEpoch = 5;
 const canonicalEmptyStartCommandSql = "CAST('{\"initialVariables\":[]}' AS BLOB)";
 
 const legacyConfirmedProcessInstancesTableSql = `
@@ -77,8 +79,9 @@ export function requireDefinitionDatabaseSchemaEpoch(
       database.exec("COMMIT");
       return;
     }
-    if (epoch === legacyDefinitionDatabaseSchemaEpoch) {
-      migrateLegacyConfirmedProcessInstances(database);
+    if (epoch === legacyDefinitionDatabaseSchemaEpoch || epoch === 4) {
+      if (epoch === legacyDefinitionDatabaseSchemaEpoch) migrateLegacyConfirmedProcessInstances(database);
+      migrateSourceOverlayIdentity(database);
       database.exec(
         `PRAGMA user_version = ${currentDefinitionDatabaseSchemaEpoch}`,
       );
@@ -158,4 +161,34 @@ function hasUserTables(database: DatabaseSync): boolean {
 
 function normalizeSql(sql: string): string {
   return sql.replace(/\s+/gu, " ").trim();
+}
+
+/** Old public admission allowed no overlay; only its exact snapshots may acquire null. */
+function migrateSourceOverlayIdentity(database: DatabaseSync): void {
+  const retainedTables = definitionSqliteTables.filter(({ name, sql }) => {
+    const retained = database.prepare("SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = ?").get(name);
+    if (retained === undefined) return false;
+    if (typeof retained.sql !== "string" || normalizeTableSql(retained.sql) !== normalizeTableSql(priorDefinitionSqliteTableSql(sql))) {
+      throw new DefinitionSchemaResetRequiredError();
+    }
+    return true;
+  });
+  const confirmed = database.prepare("SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'confirmed_process_instances'").get();
+  if (confirmed !== undefined && (typeof confirmed.sql !== "string" || normalizeTableSql(confirmed.sql) !== normalizeTableSql(confirmedProcessInstancesTableSql))) {
+    throw new DefinitionSchemaResetRequiredError();
+  }
+  for (const table of retainedTables) {
+    for (const column of definitionSourceOverlaySqliteColumns) database.exec(`ALTER TABLE ${table.name} ADD COLUMN ${column}`);
+  }
+  if (database.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'confirmed_process_instances'").get() === undefined) return;
+  const rows = database.prepare("SELECT process_instance_id, public_instance_json, json_type(public_instance_json, '$.definition.sourceOverlay') AS overlay_type, json_set(public_instance_json, '$.definition.sourceOverlay', json('null')) AS migrated FROM confirmed_process_instances").all();
+  for (const row of rows) {
+    if (row.overlay_type !== null || typeof row.migrated !== "string" || typeof row.process_instance_id !== "string") throw new DefinitionSchemaResetRequiredError();
+    const instance = decodePublicProcessInstanceIdentity(JSON.parse(row.migrated));
+    database.prepare("UPDATE confirmed_process_instances SET public_instance_json = ? WHERE process_instance_id = ?").run(JSON.stringify(instance), row.process_instance_id);
+  }
+}
+
+function normalizeTableSql(sql: string): string {
+  return normalizeSql(sql).replace(/CREATE TABLE IF NOT EXISTS /iu, "CREATE TABLE ").replace(/\s*([(),])\s*/gu, "$1");
 }

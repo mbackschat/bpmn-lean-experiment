@@ -579,6 +579,9 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
         ⟨taskId.elementId.value⟩ analyzed
     have ordinary : isCallActivityProgram program = false := by
       simp [isCallActivityProgram, profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
+    have noParallelScope : ParallelScopeStart.programSelected program = false := by
+      apply ParallelScopeStart.programSelected_of_other_profile
+      simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
     have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
         completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
       simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
@@ -592,7 +595,7 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       all_goals rw [profile]; rfl
     cases control : before.control <;>
       simp only [dispatchStimulus, noSnapshots] <;>
-      simp [control, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+      simp [control, noParallelScope, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
         noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
     case running instanceId =>
       cases completed : completeUserTask before taskId.processInstanceId

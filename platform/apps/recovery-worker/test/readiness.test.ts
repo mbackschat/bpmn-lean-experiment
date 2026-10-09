@@ -5,7 +5,6 @@ import { LeaseMutationResult } from "@bpmn-lean/platform-recovery-runtime";
 
 import {
   checkRecoveryWorkerReadiness,
-  RECOVERY_WORKER_SCHEMA_EPOCH,
 } from "../dist/readiness.js";
 
 test("proves version and exact epoch in one query, a disposable lease, and engine connectivity", async () => {
@@ -16,7 +15,7 @@ test("proves version and exact epoch in one query, a disposable lease, and engin
       assert.match(text, /server_version_num/u);
       assert.match(text, /schema_epoch/u);
       return {
-        rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH }],
+        rows: [{ server_major: 18, epoch_rows: 1, schema_epoch: 13 }],
         rowCount: 1,
       };
     },
@@ -54,9 +53,10 @@ test("proves version and exact epoch in one query, a disposable lease, and engin
 
 test("fails readiness for the wrong major, row cardinality, epoch, or lease result", async () => {
   for (const row of [
-    { server_major: 17, epoch_rows: 1, schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH },
-    { server_major: 18, epoch_rows: 2, schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH },
-    { server_major: 18, epoch_rows: 1, schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH - 1 },
+    { server_major: 17, epoch_rows: 1, schema_epoch: 13 },
+    { server_major: 18, epoch_rows: 2, schema_epoch: 13 },
+    { server_major: 18, epoch_rows: 1, schema_epoch: 12 },
+    { server_major: 18, epoch_rows: 1, schema_epoch: 14 },
   ]) {
     await assert.rejects(
       checkRecoveryWorkerReadiness(readinessFixture(row).options),
@@ -66,7 +66,7 @@ test("fails readiness for the wrong major, row cardinality, epoch, or lease resu
   const fixture = readinessFixture({
     server_major: 18,
     epoch_rows: 1,
-    schema_epoch: RECOVERY_WORKER_SCHEMA_EPOCH,
+    schema_epoch: 13,
   }, LeaseMutationResult.LeaseLost);
   await assert.rejects(checkRecoveryWorkerReadiness(fixture.options), /readiness lease/u);
   assert.equal(fixture.engineCalls(), 0);

@@ -266,6 +266,7 @@ function publication(processInstanceId: string) {
         },
         semanticProfile: "profile-1",
         startCapabilities: { messageStarts: [], timerStarts: [] },
+        sourceOverlay: null,
       },
     },
     locator: `private:${processInstanceId}`,

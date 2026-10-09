@@ -3,6 +3,7 @@ import type { VariableBinding } from "./contract.js";
 import { EffectProtocol, MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
 import { compareCanonicalStrings, isWellFormedWireString } from "./wire.js";
+import { isAssignmentFormUserTaskMetadata } from "./user-task-metadata.js";
 
 const reservedNames = new Set([
   "null", "true", "false", "empty", "div", "mod", "not", "and", "or", "le", "lt", "eq", "ne", "ge", "gt", "instanceof",
@@ -12,6 +13,14 @@ const reservedNames = new Set([
 /** CIB-EXT-0015 excludes JUEL keywords and context names before variable/bean resolution. */
 export function isSerialBusinessIdentifier(value: unknown): value is string {
   return typeof value === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/u.test(value) && !reservedNames.has(value);
+}
+
+/** BPD-METADATA-01 keeps a legacy form key within the inherited writable business namespace. */
+export function serialBusinessUserTaskMetadataAdmitted(task: Readonly<Record<string, unknown>>, handlers: ReadonlySet<string>): boolean {
+  if (!Object.hasOwn(task, "metadata")) return true;
+  const metadata = task.metadata;
+  return isAssignmentFormUserTaskMetadata(metadata) && metadata.form.fields[0].type === "string" &&
+    isSerialBusinessIdentifier(metadata.form.fields[0].key) && !handlers.has(metadata.form.fields[0].key);
 }
 
 export function serialBusinessMappingsAdmitted(value: unknown, input: boolean, handlers: ReadonlySet<string> = new Set()): value is readonly VariableMapping[] {

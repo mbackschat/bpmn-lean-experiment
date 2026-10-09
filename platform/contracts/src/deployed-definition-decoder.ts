@@ -5,6 +5,7 @@ import type {
   PublicMessageStartCapability,
   PublicOperationMessageChannel,
   PublicTimerStartCapability,
+  PublicSourceOverlayIdentity,
 } from "./definitions.js";
 import {
   readOwn,
@@ -30,6 +31,7 @@ export function decodeDeployedDefinitionVersion(
     "source",
     "startCapabilities",
     "version",
+    "sourceOverlay",
   ]);
   return {
     processId: requireNonemptyString(readOwn(value, "processId"), `${label}.processId`),
@@ -46,6 +48,7 @@ export function decodeDeployedDefinitionVersion(
       readOwn(value, "startCapabilities"),
       `${label}.startCapabilities`,
     ),
+    sourceOverlay: decodePublicSourceOverlayIdentity(readOwn(value, "sourceOverlay"), `${label}.sourceOverlay`),
   };
 }
 
@@ -190,4 +193,15 @@ export function decodeExactPublicSourceIdentity(
     ),
     decodedAs,
   };
+}
+
+/** Requires explicit absence; omission is never an admission selection. */
+export function decodePublicSourceOverlayIdentity(value: unknown, label: string): PublicSourceOverlayIdentity | null {
+  if (value === null) return null;
+  requireObject(value, label);
+  requireExactKeys(value, label, ["id", "sha256"]);
+  const id = requireNonemptyString(readOwn(value, "id"), `${label}.id`);
+  const sha256 = requireString(readOwn(value, "sha256"), `${label}.sha256`);
+  if (!lowercaseSha256.test(sha256)) throw new TypeError(`${label}.sha256 must be lowercase SHA-256`);
+  return { id, sha256 };
 }

@@ -142,6 +142,7 @@ function task(activation: number): PublicWorkTask {
       processId: "DraftReview", version: 1, semanticProfile: "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
       source: { kind: "bpmnSource", id: "draft-review", sha256: "a".repeat(64), byteLength: 100,
         declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     } },
     claimGeneration: 1, claim: { actorId: "demo-user", generation: 1 }, claimableByCurrentActor: true,

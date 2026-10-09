@@ -1,3 +1,4 @@
+import { decodePublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 import type { DatabaseSync, SQLOutputValue } from "node:sqlite";
 
 import {
@@ -195,7 +196,7 @@ const schemaObjects = new Map<string, string>([
   `],
 ]);
 
-/** Creates or verifies the one exact pre-release Operate epoch-4 schema. */
+/** Creates or verifies the one exact pre-release Operate schema. */
 export function initializeOperateSchema(database: DatabaseSync): void {
   database.exec("BEGIN IMMEDIATE");
   try {
@@ -207,7 +208,16 @@ export function initializeOperateSchema(database: DatabaseSync): void {
       for (const sql of schemaObjects.values()) database.exec(sql);
       database.exec(`PRAGMA user_version = ${currentProcessInstanceDatabaseSchemaEpoch}`);
     } else {
-      requireExactSchema(version, objects, database);
+      requireExactSchema(version === 4 ? currentProcessInstanceDatabaseSchemaEpoch : version, objects, database);
+      if (version === 4) {
+        const rows = database.prepare("SELECT process_instance_id, json_type(public_identity_json, '$.definition.sourceOverlay') AS overlay_type, json_set(public_identity_json, '$.definition.sourceOverlay', json('null')) AS migrated FROM process_instances").all();
+        for (const row of rows) {
+          if (row.overlay_type !== null || typeof row.migrated !== "string" || typeof row.process_instance_id !== "string") throw new OperateSchemaResetRequiredError();
+          const instance = decodePublicProcessInstanceIdentity(JSON.parse(row.migrated));
+          database.prepare("UPDATE process_instances SET public_identity_json = ? WHERE process_instance_id = ?").run(JSON.stringify(instance), row.process_instance_id);
+        }
+        database.exec(`PRAGMA user_version = ${currentProcessInstanceDatabaseSchemaEpoch}`);
+      }
     }
     database.exec("COMMIT");
   } catch (error: unknown) {

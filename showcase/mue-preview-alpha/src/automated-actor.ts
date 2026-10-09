@@ -161,7 +161,8 @@ function requireExactAlphaInstance(instance: PublicProcessInstanceIdentity): voi
   if (
     instance.definition.processId !== alphaProcessId ||
     instance.definition.semanticProfile !== alphaSemanticProfile ||
-    instance.definition.source.sha256 !== alphaSourceSha256
+    instance.definition.source.sha256 !== alphaSourceSha256 ||
+    instance.definition.sourceOverlay !== null
   ) {
     throw new Error("Alpha actor requires the exact registered definition and profile");
   }

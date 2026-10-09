@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implementation-in-progress
 Review: approved
 
 ## Question and boundary
@@ -100,28 +100,28 @@ Measured 2026-10-09 against the 800-nonblank review target. Each row's headroom 
 
 | Owner | Headroom |
 |---|---|
-| [Business source](../packages/bpmn-source/src/serial-business-task-source.ts) | 663 |
-| [Metadata reader](../packages/bpmn-source/src/user-task-metadata-source.ts) | 317 |
+| [Business source](../packages/bpmn-source/src/serial-business-task-source.ts) | 662 |
+| [Metadata reader](../packages/bpmn-source/src/user-task-metadata-source.ts) | 311 |
 | [Serial admission](../packages/semantic-core/src/serial-business-task-admission.ts) | 662 |
 | [Mixed admission](../packages/semantic-core/src/mixed-task-control-flow-admission.ts) | 595 |
 | [Profile selection](../packages/semantic-core/src/semantic-process-profile.ts) | 477 |
-| [Lean serial admission](../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean) | 631 |
-| [Lean mixed admission](../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean) | 454 |
+| [Lean serial admission](../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean) | 622 |
+| [Lean mixed admission](../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean) | 451 |
 | [Lean profile shape](../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 147 |
-| [Public definitions](../platform/contracts/src/definitions.ts) | 673 |
+| [Public definitions](../platform/contracts/src/definitions.ts) | 670 |
 | [E1 identity](../platform/contracts/src/execution-publications.ts) | 324 |
 | [E2 identity](../platform/contracts/src/flow-node-occurrence-publications.ts) | 684 |
-| [Engine gateway](../platform/foundation/engine-gateway/src/index.ts) | 429 |
-| [Definitions contracts](../platform/modules/definitions/src/contracts.ts) | 625 |
+| [Engine gateway](../platform/foundation/engine-gateway/src/index.ts) | 425 |
+| [Definitions contracts](../platform/modules/definitions/src/contracts.ts) | 613 |
 | [HTTP request](../platform/modules/definitions/src/http-request.ts) | 605 |
-| [HTTP routes](../platform/modules/definitions/src/http-routes.ts) | 383 |
-| [Deployment](../platform/modules/definitions/src/definition-deployment-service.ts) | 578 |
-| [Start/recovery](../platform/modules/definitions/src/definition-start-service.ts) | 414 |
-| [Definition values](../platform/modules/definitions/src/definition-values.ts) | 742 |
-| [Public values](../platform/modules/definitions/src/definition-public-values.ts) | 758 |
-| [SQLite definitions](../platform/modules/definitions/src/sqlite-definition-repository.ts) | 432 |
+| [HTTP routes](../platform/modules/definitions/src/http-routes.ts) | 385 |
+| [Deployment](../platform/modules/definitions/src/definition-deployment-service.ts) | 560 |
+| [Start/recovery](../platform/modules/definitions/src/definition-start-service.ts) | 432 |
+| [Definition values](../platform/modules/definitions/src/definition-values.ts) | 733 |
+| [Public values](../platform/modules/definitions/src/definition-public-values.ts) | 756 |
+| [SQLite definitions](../platform/modules/definitions/src/sqlite-definition-repository.ts) | 447 |
 | [PostgreSQL definitions](../platform/modules/definitions/src/postgresql-definition-repository.ts) | 663 |
-| [PostgreSQL values](../platform/modules/definitions/src/postgresql-definition-values.ts) | 542 |
+| [PostgreSQL values](../platform/modules/definitions/src/postgresql-definition-values.ts) | 535 |
 | [Journey host](../showcase/m3-human-work/src/host.ts) | 704 |
 | [Browser journey](../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts) | 687 |
 

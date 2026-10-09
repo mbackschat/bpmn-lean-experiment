@@ -3,6 +3,7 @@ import type {
   ExactPublicSourceIdentity,
 } from "@bpmn-lean/platform-contracts";
 
+import { cloneSourceOverlayIdentity } from "./definition-values.js";
 import type {
   DefinitionMetadata,
   DefinitionSourceIdentity,
@@ -28,6 +29,7 @@ export function toPublicDefinition(
         ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
       ),
     },
+    sourceOverlay: cloneSourceOverlayIdentity(definition.sourceOverlay),
   };
 }
 

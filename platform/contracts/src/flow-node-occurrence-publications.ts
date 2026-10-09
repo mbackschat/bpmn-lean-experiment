@@ -31,7 +31,7 @@ export function flowNodeOccurrencePublicationIdentityForPublicProcessInstance(
       semanticProfile: instance.definition.semanticProfile,
       sourceId: instance.definition.source.id,
       sourceSha256: instance.definition.source.sha256,
-      sourceOverlay: null,
+      sourceOverlay: instance.definition.sourceOverlay === null ? null : { ...instance.definition.sourceOverlay },
     },
     processId: instance.definition.processId,
     processInstanceId: instance.processInstanceId,

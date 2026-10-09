@@ -1,3 +1,5 @@
+import { messageStartPublicationsTableSql } from "./definition-sqlite-tables.js";
+import { decodeStoredSourceOverlayIdentity, sourceOverlaySqlValues } from "./definition-overlay-values.js";
 import { DatabaseSync } from "node:sqlite";
 import type { SQLOutputValue } from "node:sqlite";
 
@@ -130,11 +132,11 @@ implements MessageStartPublicationRepository {
       INSERT INTO message_start_publications (
         publication_id, process_id, version, source_kind, source_id,
         source_sha256, source_byte_length, source_declared_encoding,
-        source_decoded_as, semantic_profile, start_capabilities_json,
+        source_decoded_as, source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json,
         message_start_event_id, message_interface_id,
         message_interface_operation_id, message_id, process_instance_id,
         command_id, workflow_id, intent_protocol, intent_sha256, state
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved')
     `).run(
       record.publicationId,
       record.definition.processId,
@@ -145,6 +147,7 @@ implements MessageStartPublicationRepository {
       record.definition.source.byteLength,
       record.definition.source.declaredEncoding,
       record.definition.source.decodedAs,
+      ...sourceOverlaySqlValues(record.definition.sourceOverlay),
       record.definition.semanticProfile,
       encodeDefinitionStartCapabilities(record.definition.startCapabilities),
       record.messageStart.startEventId,
@@ -163,50 +166,14 @@ implements MessageStartPublicationRepository {
 const selectColumns = `SELECT
   publication_id, process_id, version, source_kind, source_id, source_sha256,
   source_byte_length, source_declared_encoding, source_decoded_as,
-  semantic_profile, start_capabilities_json, message_start_event_id,
+  source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, message_start_event_id,
   message_interface_id, message_interface_operation_id, message_id,
   process_instance_id, command_id, workflow_id, intent_protocol, intent_sha256,
   state
 FROM message_start_publications`;
 
 function initializeSchema(database: DatabaseSync): void {
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS message_start_publications (
-      publication_id TEXT NOT NULL PRIMARY KEY,
-      process_id TEXT NOT NULL,
-      version INTEGER NOT NULL CHECK (version > 0),
-      source_kind TEXT NOT NULL CHECK (source_kind = 'bpmnSource'),
-      source_id TEXT NOT NULL,
-      source_sha256 TEXT NOT NULL CHECK (
-        length(source_sha256) = 64
-        AND source_sha256 NOT GLOB '*[^0-9a-f]*'
-      ),
-      source_byte_length INTEGER NOT NULL CHECK (source_byte_length >= 0),
-      source_declared_encoding TEXT,
-      source_decoded_as TEXT CHECK (
-        source_decoded_as IS NULL OR source_decoded_as = 'UTF-8'
-      ),
-      semantic_profile TEXT NOT NULL,
-      start_capabilities_json TEXT NOT NULL CHECK (
-        length(start_capabilities_json) > 0
-      ),
-      message_start_event_id TEXT NOT NULL,
-      message_interface_id TEXT NOT NULL,
-      message_interface_operation_id TEXT NOT NULL,
-      message_id TEXT NOT NULL,
-      process_instance_id TEXT NOT NULL UNIQUE,
-      command_id TEXT NOT NULL UNIQUE,
-      workflow_id TEXT NOT NULL UNIQUE,
-      intent_protocol TEXT NOT NULL,
-      intent_sha256 TEXT NOT NULL CHECK (
-        length(intent_sha256) = 64
-        AND intent_sha256 NOT GLOB '*[^0-9a-f]*'
-      ),
-      state TEXT NOT NULL CHECK (state IN (
-        'reserved', 'starting', 'accepted', 'indeterminate', 'integrityFailure'
-      ))
-    ) STRICT
-  `);
+  database.exec(messageStartPublicationsTableSql);
 }
 
 function decodeRecord(
@@ -251,6 +218,7 @@ function decodeDefinition(
       decodedAs,
     },
     semanticProfile: requireNonemptyString(row, "semantic_profile"),
+    sourceOverlay: decodeStoredSourceOverlayIdentity(row.source_overlay_id, row.source_overlay_sha256),
     startCapabilities: decodeDefinitionStartCapabilities(
       requireString(row, "start_capabilities_json"),
     ),

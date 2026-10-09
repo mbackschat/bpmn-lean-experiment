@@ -73,6 +73,7 @@ function definition(version: number) {
       decodedAs: "UTF-8",
     },
     semanticProfile: "metrics-profile",
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   } as const;
 }

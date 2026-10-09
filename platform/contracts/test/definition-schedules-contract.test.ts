@@ -38,6 +38,7 @@ const definition = {
     messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
   },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 const scheduled = {

@@ -233,7 +233,7 @@ export function projectCheckedNodes(
     : undefined;
 }
 
-function projectUserTaskMetadata(
+export function projectUserTaskMetadata(
   element: ElementRecord,
   definitions: ElementRecord,
   id: string,

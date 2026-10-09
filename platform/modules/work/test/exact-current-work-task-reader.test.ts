@@ -25,6 +25,7 @@ const definition = {
   },
   semanticProfile: "profile-1",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 test("targets only the owning locator for an exact Unicode task occurrence", async () => {

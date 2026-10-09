@@ -42,6 +42,7 @@ export const registration: OperateProcessRegistration = {
       },
       semanticProfile: "profile-publication",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   },
 };

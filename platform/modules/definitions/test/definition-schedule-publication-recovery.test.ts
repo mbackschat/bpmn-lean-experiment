@@ -104,6 +104,7 @@ function scheduleRecord(): NewDefinitionScheduleRecord {
       messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     },
+    sourceOverlay: null,
   };
   return {
     reference: { processId: definition.processId, version: 1, scheduleId: "schedule" },

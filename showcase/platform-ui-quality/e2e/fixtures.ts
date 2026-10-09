@@ -54,6 +54,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "user-task-assignment-form-metadata-v1",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
 

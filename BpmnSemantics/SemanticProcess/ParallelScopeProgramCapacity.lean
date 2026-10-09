@@ -10,6 +10,12 @@ namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 def programSelected (program : Program) : Bool :=
   program.identity.semanticProfile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft"
 
+@[simp] theorem programSelected_of_other_profile (program : Program)
+    (different : program.identity.semanticProfile.value ≠
+      "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") :
+    programSelected program = false := by
+  simp [programSelected, different]
+
 structure ProgramAnalysis where
   entry : ParallelScopeEntry
   handlers : List String

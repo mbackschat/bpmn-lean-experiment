@@ -21,6 +21,7 @@ const exactDefinition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DeployedDefinitionVersion;
 

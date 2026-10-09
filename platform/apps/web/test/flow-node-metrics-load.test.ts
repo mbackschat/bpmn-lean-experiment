@@ -83,6 +83,7 @@ function definition(
       decodedAs: "UTF-8",
     },
     semanticProfile: "metrics-profile",
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   };
 }

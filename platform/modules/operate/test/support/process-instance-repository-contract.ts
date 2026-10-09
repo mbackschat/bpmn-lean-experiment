@@ -30,6 +30,7 @@ export function processPublication(
         },
         semanticProfile: "profile-operate-postgresql",
         startCapabilities: { messageStarts: [], timerStarts: [] },
+        sourceOverlay: null,
       },
     },
     locator: `locator:${processInstanceId}`,

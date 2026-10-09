@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
   BpmnCompilationStatus,
+  compileBpmnToSemanticProcess,
+  userTaskMetadataBindingValid,
 } from "@bpmn-lean/bpmn-source";
 import {
   CommandOutcome, EffectExecutionResultKind, StimulusKind, VariableValueKind,
@@ -13,10 +16,106 @@ import {
   MappingExpressionKind,
 } from "@bpmn-lean/semantic-core";
 import { compile, protocol, source } from "./serial-business-task-fixture.ts";
-import type { CheckedNode, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import type { CheckedNode, Scenario, SemanticProcessProgram, UserTaskMetadata } from "@bpmn-lean/semantic-core";
 
 function binding(name: string, value: string) {
   return { name, value: { kind: VariableValueKind.String, value } } as const;
+}
+
+function eraseMetadata<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value, (key, item: unknown) => key === "metadata" ? undefined : item)) as T;
+}
+
+for (const family of ["serial-business-task-composition", "mixed-task-control-flow", "mixed-task-business-error"]) {
+  test(`${family} admits optional complete string metadata with independent checked/IL policy and passive execution`, async () => {
+    const root = new URL(`../../../scenarios/${family}/`, import.meta.url);
+    const xml = await readFile(new URL("process.bpmn", root), "utf8");
+    const overlayBytes = new Uint8Array(await readFile(new URL("source-overlay.json", root)));
+    const overlay = JSON.parse(new TextDecoder().decode(overlayBytes)) as { id: string; semanticProfile: string };
+    const scenario = JSON.parse(await readFile(new URL("scenario.json", root), "utf8")) as Scenario;
+    const compileSelected = (text: string) => compileBpmnToSemanticProcess({
+      bytes: new TextEncoder().encode(text), sourceId: scenario.bpmn.id, expectedSha256: undefined,
+      semanticProfile: overlay.semanticProfile,
+      sourceOverlay: { id: overlay.id, bytes: overlayBytes, sha256: createHash("sha256").update(overlayBytes).digest("hex") },
+      limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+    });
+    const baseline = await compileSelected(xml);
+    assert.equal(baseline.status, BpmnCompilationStatus.Accepted);
+    if (baseline.status !== BpmnCompilationStatus.Accepted) throw new Error("Metadata-free business source rejected");
+    const annotate = (key = "request", type = "string", firstOnly = false) => {
+      let index = 0;
+      return xml.replace(/<userTask\b([^>]*?)\s*\/>/gu, (original, attributes: string) => {
+        if (firstOnly && index++ > 0) return original;
+        const id = /\bid="([^"]+)"/u.exec(attributes)?.[1];
+        assert.ok(id);
+        return `<userTask${attributes} camunda:candidateGroups="group_${id}"><extensionElements><camunda:formData><camunda:formField id="${key}" type="${type}"/></camunda:formData></extensionElements></userTask>`;
+      });
+    };
+    const compiled = await compileSelected(annotate());
+    assert.equal(compiled.status, BpmnCompilationStatus.Accepted, JSON.stringify(compiled.diagnostics));
+    if (compiled.status !== BpmnCompilationStatus.Accepted) throw new Error("Metadata-bearing business source rejected");
+    const { checkedProcess, semanticProcess: program } = compiled;
+    assert.deepEqual(eraseMetadata(checkedProcess.nodes), baseline.checkedProcess.nodes);
+    assert.deepEqual(eraseMetadata(program.operations), baseline.semanticProcess.operations);
+    assert.ok(baseline.checkedProcess.nodes.every(node => !Object.hasOwn(node, "metadata")));
+    assert.equal((await compileSelected(annotate("request", "string", true))).status, BpmnCompilationStatus.Accepted);
+    const handlers = program.operations.flatMap(item => item.kind === SemanticOperationKind.AwaitEffect ? [item.effect.descriptor.operation] : []);
+    for (const bad of [annotate("request", "boolean"), annotate("execution"), ...handlers.map(handler => annotate(handler)),
+      annotate().replace(/<extensionElements>[\s\S]*?<\/extensionElements>/u, ''),
+      annotate().replace('camunda:candidateGroups="group_Review"', 'camunda:candidateGroups="group_Review" xmlns:other="http://camunda.org/schema/1.0/bpmn" other:candidateGroups="other"'),
+      annotate().replace('camunda:candidateGroups="group_Review"', 'xmlns:wrong="urn:wrong" wrong:candidateGroups="group_Review"'),
+      annotate().replace('camunda:candidateGroups="group_Review"', '')]) {
+      assert.equal((await compileSelected(bad)).status, BpmnCompilationStatus.Rejected);
+    }
+    const changedNodes = (metadata: UserTaskMetadata) => checkedProcess.nodes.map(node => node.kind === "userTask" ? { ...node, metadata } : node);
+    const changedProgram = (metadata: UserTaskMetadata): SemanticProcessProgram => ({ ...program,
+      operations: program.operations.map(item => item.kind === SemanticOperationKind.AwaitUserTask ? { ...item, task: { ...item.task, metadata } } : item) });
+    const metadata = { assignment: { candidates: [{ kind: "group", id: "reviewers" }] }, form: { fields: [{ key: "request", type: "string" }] } } as const;
+    for (const [selected, admitted] of [
+      [metadata, true],
+      [{ ...metadata, form: { fields: [{ key: "request", type: "boolean" }] } }, false],
+      [{ assignment: metadata.assignment }, false],
+      ...["execution", ...handlers].map(key => [{ ...metadata, form: { fields: [{ key, type: "string" }] } }, false]),
+      [null, false], [undefined, false],
+    ] as const) {
+      assert.equal(profileAllowsCheckedProcessShape(overlay.semanticProfile, changedNodes(selected as UserTaskMetadata), 1), admitted);
+      assert.equal(isWellFormedSemanticProcessProgram(changedProgram(selected as UserTaskMetadata)), admitted);
+    }
+    const dropped: SemanticProcessProgram = { ...program, operations: program.operations.map((item, index) =>
+      item.kind === SemanticOperationKind.AwaitUserTask && index === program.operations.findIndex(op => op.kind === SemanticOperationKind.AwaitUserTask)
+        ? { ...item, task: eraseMetadata(item.task) } : item) };
+    assert.equal(userTaskMetadataBindingValid(checkedProcess, dropped), false);
+    const waits = program.operations.filter(item => item.kind === SemanticOperationKind.AwaitUserTask);
+    assert.ok(waits.length >= 2);
+    const swapped: SemanticProcessProgram = { ...program, operations: program.operations.map(item => {
+      if (item.kind !== SemanticOperationKind.AwaitUserTask) return item;
+      return item === waits[0] ? { ...item, task: { ...item.task, metadata: waits[1]!.task.metadata! } } : item === waits[1]
+        ? { ...item, task: { ...item.task, metadata: waits[0]!.task.metadata! } } : item;
+    }) };
+    assert.equal(userTaskMetadataBindingValid(checkedProcess, swapped), false);
+    let state = initialState;
+    let erasedState = initialState;
+    const erasedProgram = eraseMetadata(program);
+    for (const stimulus of scenario.stimuli) {
+      const result = applyStimulus(program, state, stimulus);
+      const erased = applyStimulus(erasedProgram, erasedState, stimulus);
+      assert.equal(result.outcome, CommandOutcome.Committed, stimulus.commandId);
+      assert.equal(erased.outcome, result.outcome);
+      state = result.state;
+      erasedState = erased.state;
+      assert.deepEqual(eraseMetadata(state), erasedState, stimulus.commandId);
+      for (const wait of state.userTaskWaits) {
+        const operation = waits.find(item => item.task.elementId === wait.id.elementId);
+        assert.deepEqual(wait.metadata, operation?.task.metadata);
+      }
+      if (stimulus.kind === StimulusKind.CompleteUserTaskInstance) {
+        const stale = applyStimulus(program, state, { ...stimulus, commandId: `stale-${stimulus.commandId}` });
+        assert.equal(stale.outcome, CommandOutcome.Rejected);
+        assert.deepEqual(stale.state, state);
+      }
+    }
+    assert.equal(state.control.kind, "completed");
+  });
 }
 
 for (const reversed of [false, true]) {

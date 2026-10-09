@@ -227,6 +227,7 @@ function record(scheduleId: string, identity: number): NewDefinitionScheduleReco
         messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
       },
+      sourceOverlay: null,
     },
     timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
     activationAt: "2026-08-11T12:00:00.000Z",

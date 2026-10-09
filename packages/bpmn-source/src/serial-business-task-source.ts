@@ -1,6 +1,7 @@
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
-import { projectCheckedSequenceFlows, projectExclusiveMerge } from "./checked-element-projection.js";
+import { projectCheckedSequenceFlows, projectExclusiveMerge, projectUserTaskMetadata } from "./checked-element-projection.js";
+import { admitsUserTaskMetadataForeignAttribute } from "./user-task-metadata-source.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
   CheckedNodeKind, CheckedProcessKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
@@ -46,7 +47,8 @@ function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, ov
   if (definitions?.$type !== "bpmn:Definitions" || !hasOnlyModelledKeys(definitions,
     ["$type", "id", "targetNamespace", "exporter", "exporterVersion", "rootElements", "diagrams", ...(mixed ? ["expressionLanguage"] : [])])) return unsupported("Expected one exact BPMN Definitions document.");
   const foreign = exactForeignAttributeRejections(definitions, locateContainedElements(definitions),
-    (type, namespace, name) => type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
+    (type, namespace, name) => admitsUserTaskMetadataForeignAttribute(type, namespace, name) ||
+      (type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore")));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
   const roots = asElementArray(definitions.rootElements);
   const processes = roots?.filter(element => element.$type === "bpmn:Process");
@@ -72,9 +74,8 @@ function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, ov
       case "bpmn:EndEvent": node = projectPlainNode(element, CheckedNodeKind.NoneEndEvent); break;
       case "bpmn:UserTask": {
         const id = readId(element);
-        if (id !== undefined && hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode)) {
-          node = { kind: CheckedNodeKind.UserTask, id, name: typeof element.name === "string" ? element.name : null };
-        }
+        if (id !== undefined) node = projectUserTaskMetadata(element, definitions, id,
+          typeof element.name === "string" ? element.name : null, semanticProfile);
         break;
       }
       case "bpmn:ExclusiveGateway": {

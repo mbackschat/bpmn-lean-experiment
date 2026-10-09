@@ -383,14 +383,26 @@ theorem data_completion_preserves_control_unit_bound
     · contradiction
   · contradiction
 
-/-- A case theorem for the existing dispatcher, not a replacement semantic relation. Keeping its
-admission conditions with each exact returned state lets control and data invariants share the
-same SPC-COMMAND-01 boundary. -/
-theorem completion_dispatch_cases
+private theorem completion_admission_dispatch_or_refusal
+    (program : Program) (before : RuntimeState)
+    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding) :
+    admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
+      dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings) ∨
+    admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
+      { outcome := .rejected, state := before } := by
+  cases snapshots : program.compensationEventSubProcessSnapshots with
+  | some declaration => exact Or.inr (by simp [admitStimulus, snapshots])
+  | none =>
+      simp [admitStimulus, dispatchStimulus, snapshots]
+      grind
+
+/-- SPC-COMMAND-01 shares exact completion provenance at actual admission. Graph analysis alone
+cannot exclude PMIS profile dispatch; its two-scope admission rejects this one-scope structure. -/
+theorem completion_admission_cases
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (analyzed : programAnalysis program = some analysis) :
-    let result := dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings)
+    let result := admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)
     result = { outcome := .rejected, state := before } ∨
     (∃ after,
       completeDataInputOutputUserTask? program before taskId.processInstanceId
@@ -409,47 +421,60 @@ theorem completion_dispatch_cases
       isCallActivityProgram program = true ∧ bindings = [] ∧
       result = { outcome := .committed, state := after }) := by
   dsimp only
-  obtain ⟨_, _, noRetention, noSnapshots, _⟩ :=
+  obtain ⟨oneScope, _, noRetention, noSnapshots, _⟩ :=
     program_analysis_excludes_foreign_declarations program analysis analyzed
-  obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
-    noInput, noOutput, noMonitored⟩ :=
-    admitted_completion_foreign_families_absent program analysis ⟨taskId.elementId.value⟩ analyzed
-  have noRepeated owner : hasSequentialScopeDefinition program owner = false := by
-    simp only [hasSequentialScopeDefinition, List.any_eq_false, List.mem_filterMap]
-    rintro entry ⟨operation, member, projected⟩; have allowed := program_analysis_operations_allowed program analysis analyzed operation member
-    cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
-  have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
-      completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
-    simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
-  cases control : before.control <;>
-    simp only [dispatchStimulus, noSnapshots] <;>
-    simp [control, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
-      noBounded, noInput, noOutput, noMonitored, legacy]
-  case running instanceId =>
-    cases data : isDataInputOutputTaskDefinition program ⟨taskId.elementId.value⟩ with
-    | true =>
-        cases completed : completeDataInputOutputUserTask? program before
-            taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bindings with
-        | none => simp
-        | some after =>
-            simp only [ite_true]
-            split
-            · rename_i accepted
-              exact Or.inr (Or.inl ⟨after, rfl, accepted.2, rfl⟩)
-            · exact Or.inl rfl
-    | false =>
-        cases completed : completeUserTask before taskId.processInstanceId
-            ⟨taskId.elementId.value⟩ taskId.activation with
-        | none => simp
-        | some after =>
-            simp only [Bool.false_eq_true, ite_false]
-            split
-            · rename_i accepted
-              exact Or.inr (Or.inr (Or.inl ⟨after, rfl, accepted.1.2, accepted.2, rfl⟩))
-            · split
-              · rename_i accepted
-                exact Or.inr (Or.inr (Or.inr ⟨after, rfl, accepted.1, accepted.2, rfl⟩))
-              · exact Or.inl rfl
+  cases selected : ParallelScopeStart.programSelected program with
+  | true =>
+      have unavailable : ParallelScopeStart.analyzeProgram program = none := by
+        simp [ParallelScopeStart.analyzeProgram, oneScope]
+      have refused : ParallelScopeCommand.stimulusAdmitted program before
+          (.completeUserTaskInstance commandId taskId bindings) = false := by
+        simp [ParallelScopeCommand.stimulusAdmitted, selected, unavailable]
+      exact Or.inl (by simp [admitStimulus, noSnapshots, refused])
+  | false =>
+      rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings
+          with dispatched | refused
+      · rw [dispatched]
+        obtain ⟨noParallel, noSequential, noMessageMonitored, noMessageBounded, noBounded,
+          noInput, noOutput, noMonitored⟩ :=
+          admitted_completion_foreign_families_absent program analysis ⟨taskId.elementId.value⟩ analyzed
+        have noRepeated owner : hasSequentialScopeDefinition program owner = false := by
+          simp only [hasSequentialScopeDefinition, List.any_eq_false, List.mem_filterMap]
+          rintro entry ⟨operation, member, projected⟩; have allowed := program_analysis_operations_allowed program analysis analyzed operation member
+          cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
+        have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
+            completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
+          simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
+        cases control : before.control <;>
+          simp only [dispatchStimulus, noSnapshots] <;>
+          simp [control, selected, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
+            noBounded, noInput, noOutput, noMonitored, legacy]
+        case running instanceId =>
+          cases data : isDataInputOutputTaskDefinition program ⟨taskId.elementId.value⟩ with
+          | true =>
+              cases completed : completeDataInputOutputUserTask? program before
+                  taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bindings with
+              | none => simp
+              | some after =>
+                  simp only [ite_true]
+                  split
+                  · rename_i accepted
+                    exact Or.inr (Or.inl ⟨after, rfl, accepted.2, rfl⟩)
+                  · exact Or.inl rfl
+          | false =>
+              cases completed : completeUserTask before taskId.processInstanceId
+                  ⟨taskId.elementId.value⟩ taskId.activation with
+              | none => simp
+              | some after =>
+                  simp only [Bool.false_eq_true, ite_false]
+                  split
+                  · rename_i accepted
+                    exact Or.inr (Or.inr (Or.inl ⟨after, rfl, accepted.1.2, accepted.2, rfl⟩))
+                  · split
+                    · rename_i accepted
+                      exact Or.inr (Or.inr (Or.inr ⟨after, rfl, accepted.1, accepted.2, rfl⟩))
+                    · exact Or.inl rfl
+      · exact Or.inl refused
 
 theorem ordinary_completion_has_exact_continuation
     (before after : RuntimeState) (instanceId : SemanticId) (taskId : TaskDefinitionId) (activation : Nat)
@@ -496,14 +521,27 @@ theorem data_completion_has_exact_continuation
     · contradiction
   · contradiction
 
-theorem completion_dispatch_preserves_control_unit_bound
+theorem rejected_completion_preserves_state
+    (program : Program) (analysis : Analysis) (before : RuntimeState)
+    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
+    (analyzed : programAnalysis program = some analysis)
+    (refused : (admitStimulus program before
+      (.completeUserTaskInstance commandId taskId bindings)).outcome = .rejected) :
+    (admitStimulus program before
+      (.completeUserTaskInstance commandId taskId bindings)).state = before := by
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
+    result | ⟨after, _, _, result⟩ | ⟨after, _, _, _, result⟩ | ⟨after, _, _, _, result⟩
+  · rw [result]
+  all_goals simp [result] at refused
+
+theorem completion_admission_preserves_control_unit_bound
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (analyzed : programAnalysis program = some analysis)
     (bounded : ControlUnitBound before) :
-    ControlUnitBound (dispatchStimulus program before
+    ControlUnitBound (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ |
       ⟨after, completed, _, _, result⟩
   · simpa [refused] using bounded
@@ -516,62 +554,6 @@ theorem completion_dispatch_preserves_control_unit_bound
   · rw [result]
     exact ordinary_completion_preserves_control_unit_bound before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation bounded completed
-
-theorem completion_dispatch_refusal_preserves_state
-    (program : Program) (analysis : Analysis) (before : RuntimeState)
-    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (analyzed : programAnalysis program = some analysis)
-    (refused : (dispatchStimulus program before
-      (.completeUserTaskInstance commandId taskId bindings)).outcome = .rejected) :
-    (dispatchStimulus program before
-      (.completeUserTaskInstance commandId taskId bindings)).state = before := by
-  rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
-    result | ⟨after, _, _, result⟩ | ⟨after, _, _, _, result⟩ | ⟨after, _, _, _, result⟩
-  · rw [result]
-  all_goals simp [result] at refused
-
-theorem completion_admission_dispatch_or_refusal
-    (program : Program) (before : RuntimeState)
-    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding) :
-    admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
-      dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings) ∨
-    admitStimulus program before (.completeUserTaskInstance commandId taskId bindings) =
-      { outcome := .rejected, state := before } := by
-  cases snapshots : program.compensationEventSubProcessSnapshots with
-  | some declaration => exact Or.inr (by simp [admitStimulus, snapshots])
-  | none =>
-      simp [admitStimulus, dispatchStimulus, snapshots]
-      grind
-
-theorem rejected_completion_preserves_state
-    (program : Program) (analysis : Analysis) (before : RuntimeState)
-    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (analyzed : programAnalysis program = some analysis)
-    (refused : (admitStimulus program before
-      (.completeUserTaskInstance commandId taskId bindings)).outcome = .rejected) :
-    (admitStimulus program before
-      (.completeUserTaskInstance commandId taskId bindings)).state = before := by
-  rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings
-      with dispatched | refusedAtAdmission
-  · rw [dispatched] at refused ⊢
-    exact completion_dispatch_refusal_preserves_state program analysis before commandId taskId
-      bindings analyzed refused
-  · rw [refusedAtAdmission]
-
-theorem completion_admission_preserves_control_unit_bound
-    (program : Program) (analysis : Analysis) (before : RuntimeState)
-    (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (analyzed : programAnalysis program = some analysis)
-    (bounded : ControlUnitBound before) :
-    ControlUnitBound (admitStimulus program before
-      (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings
-      with dispatched | refused
-  · rw [dispatched]
-    exact completion_dispatch_preserves_control_unit_bound program analysis before
-      commandId taskId bindings analyzed bounded
-  · rw [refused]
-    exact bounded
 
 inductive TaskExecutionReachable (program : Program) (initial : RuntimeState) : RuntimeState → Prop where
   | initial : TaskExecutionReachable program initial initial
@@ -775,21 +757,18 @@ theorem completion_admission_preserves_root_ownership
     (owner : ScopeOccurrenceId) (analyzed : programAnalysis program = some analysis)
     (owned : RootOwnedControl owner before) : RootOwnedControl owner
       (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_dispatch_or_refusal program before commandId taskId bindings with dispatched | refused
-  · rw [dispatched]
-    rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with refused |
-      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
-    · simpa [refused] using owned
-    · rw [result]
-      exact data_completion_preserves_root_ownership program before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation bindings owner owned completed
-    · rw [result]
-      exact ordinary_completion_preserves_root_ownership before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation owner owned completed
-    · rw [result]
-      exact ordinary_completion_preserves_root_ownership before after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation owner owned completed
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
+    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
   · simpa [refused] using owned
+  · rw [result]
+    exact data_completion_preserves_root_ownership program before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation bindings owner owned completed
+  · rw [result]
+    exact ordinary_completion_preserves_root_ownership before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation owner owned completed
+  · rw [result]
+    exact ordinary_completion_preserves_root_ownership before after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation owner owned completed
 
 theorem committed_start_has_root_owner
     (program : Program) (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)

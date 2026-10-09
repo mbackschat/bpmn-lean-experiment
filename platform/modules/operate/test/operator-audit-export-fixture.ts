@@ -23,6 +23,7 @@ export const operatorAuditInstance = {
     },
     semanticProfile: "profile/operator-audit",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   },
 } as const satisfies PublicProcessInstanceIdentity;
 

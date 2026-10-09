@@ -75,7 +75,7 @@ test("sets one shared epoch on an empty database before either repository create
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
       const row = database.prepare("PRAGMA user_version").get();
-      assert.equal(row?.user_version, 4);
+      assert.equal(row?.user_version, 5);
     } finally {
       database.close();
     }
@@ -161,7 +161,7 @@ test("migrates the exact epoch-3 confirmed-instance table with canonical legacy 
     assert.equal(Reflect.get(confirmed!, "startCommandBytes"), null);
     const migrated = new DatabaseSync(databaseFile, { readOnly: true });
     try {
-      assert.equal(migrated.prepare("PRAGMA user_version").get()?.user_version, 4);
+      assert.equal(migrated.prepare("PRAGMA user_version").get()?.user_version, 5);
     } finally {
       migrated.close();
     }
@@ -203,3 +203,36 @@ test("rejects and leaves untouched a structurally divergent epoch-3 confirmed st
     await rm(root, { recursive: true, force: true });
   }
 });
+
+for (const [table, open] of [
+    ["definition_versions", (file: string) => new SqliteDefinitionRepository(file)],
+    ["definition_schedules", (file: string) => new SqliteDefinitionScheduleRepository(file)],
+  ] as const) {
+  test(`divergent epoch-4 ${table} refuses before any migration write`, async () => {
+    const root = await mkdtemp(join(tmpdir(), "overlay-divergent-prior-"));
+    const file = join(root, "definitions.sqlite");
+    try {
+      open(file).close();
+      const prior = new DatabaseSync(file);
+      if (table === "definition_versions") {
+        prior.prepare(`INSERT INTO definition_versions (process_id, version, source_kind, source_id, source_sha256, source_byte_length, semantic_profile, start_capabilities_json) VALUES ('retained', 1, 'bpmnSource', 'retained.bpmn', ?, 42, 'profile', '{"messageStarts":[],"timerStarts":[]}')`).run("a".repeat(64));
+      } else {
+        prior.prepare(`INSERT INTO definition_schedules (process_id, version, schedule_id, source_kind, source_id, source_sha256, source_byte_length, semantic_profile, start_capabilities_json, timer_start_event_id, timer_duration_ms, activation_at, due_at, process_instance_id, host_schedule_id, configured_workflow_id_base, state, cleanup_complete) VALUES ('retained', 1, 'schedule', 'bpmnSource', 'retained.bpmn', ?, 42, 'profile', '{"messageStarts":[],"timerStarts":[]}', 'timer', 1000, '2026-10-09T00:00:00.000Z', '2026-10-09T00:00:01.000Z', 'instance', 'host', 'workflow', 'missed', 1)`).run("a".repeat(64));
+      }
+      prior.exec(`ALTER TABLE ${table} DROP COLUMN source_overlay_id;
+        ALTER TABLE ${table} DROP COLUMN source_overlay_sha256;
+        ALTER TABLE ${table} RENAME COLUMN source_byte_length TO unexpected_length;
+        PRAGMA user_version = 4;`);
+      const before = prior.prepare("SELECT name, sql FROM sqlite_schema ORDER BY name").all();
+      const beforeRows = prior.prepare(`SELECT * FROM ${table}`).all();
+      prior.close();
+      assert.throws(() => { const unexpected = open(file); unexpected.close(); }, DefinitionSchemaResetRequiredError, table);
+      const retained = new DatabaseSync(file, { readOnly: true });
+      try {
+        assert.equal(retained.prepare("PRAGMA user_version").get()?.user_version, 4, table);
+        assert.deepEqual(retained.prepare("SELECT name, sql FROM sqlite_schema ORDER BY name").all(), before, table);
+        assert.deepEqual(retained.prepare(`SELECT * FROM ${table}`).all(), beforeRows, table);
+      } finally { retained.close(); }
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+}

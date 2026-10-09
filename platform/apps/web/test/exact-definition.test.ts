@@ -43,6 +43,7 @@ function createMutableDefinition(): Mutable<DeployedDefinitionVersion> {
       }],
       timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
     },
+    sourceOverlay: null,
   };
 }
 
@@ -65,4 +66,33 @@ test("distinguishes Message Start operation drift when every other identity fact
 
   assert.equal(sameExactDefinition(definition, createMutableDefinition()), true);
   assert.equal(sameExactDefinition(definition, drifted), false);
+});
+
+test("captures both overlay identity fields without retaining a caller alias", () => {
+  const mutable = createMutableDefinition();
+  mutable.sourceOverlay = { id: "business-policy", sha256: "a".repeat(64) };
+  const expected = structuredClone(mutable);
+  const snapshot = snapshotExactDefinition(mutable);
+
+  mutable.sourceOverlay.id = "changed-policy";
+  mutable.sourceOverlay.sha256 = "b".repeat(64);
+
+  assert.deepEqual(snapshot, expected);
+  assert.equal(sameExactDefinition(snapshot, expected), true);
+  assert.equal(sameExactDefinition(snapshot, mutable), false);
+});
+
+test("rejects overlay ID, digest and presence drift in either comparison direction", () => {
+  const selected = createMutableDefinition();
+  selected.sourceOverlay = { id: "business-policy", sha256: "a".repeat(64) };
+  for (const sourceOverlay of [
+    null,
+    { id: "another-policy", sha256: "a".repeat(64) },
+    { id: "business-policy", sha256: "b".repeat(64) },
+  ]) {
+    const drifted = { ...selected, sourceOverlay };
+    assert.equal(sameExactDefinition(selected, drifted), false);
+    assert.equal(sameExactDefinition(drifted, selected), false);
+  }
+  assert.equal(sameExactDefinition(selected, structuredClone(selected)), true);
 });

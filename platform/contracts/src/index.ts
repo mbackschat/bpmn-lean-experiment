@@ -11,6 +11,7 @@ export * from "./definition-schedule-routes.js";
 export * from "./definition-schedules.js";
 export {
   decodePublicDefinitionStartCapabilities,
+  decodePublicSourceOverlayIdentity,
   decodePublicMessageStartCapability,
   decodePublicOperationMessageChannel,
   decodePublicTimerStartCapability,

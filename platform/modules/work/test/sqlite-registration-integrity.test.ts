@@ -68,6 +68,7 @@ function confirmedPublication(processInstanceId: string) {
         },
         semanticProfile: "profile-1",
         startCapabilities: { messageStarts: [], timerStarts: [] },
+        sourceOverlay: null,
       },
     },
     locator: `locator:${processInstanceId}`,

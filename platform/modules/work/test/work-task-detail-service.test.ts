@@ -28,6 +28,7 @@ const definition = {
   },
   semanticProfile: "profile-1",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 const task = {

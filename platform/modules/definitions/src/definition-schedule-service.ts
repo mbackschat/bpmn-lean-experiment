@@ -1,6 +1,5 @@
-import {
-  DefinitionArtifactIntegrityError,
-} from "./contracts.js";
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import type {
   DefinitionMetadata,
   DefinitionReference,
@@ -13,6 +12,7 @@ import {
 import {
   cloneDefinitionMetadata,
   equalDefinitionSource,
+  equalSourceOverlayIdentity,
 } from "./definition-values.js";
 import {
   cloneDefinitionReference,
@@ -49,6 +49,7 @@ import type {
 type LoadedDefinition = Readonly<{
   definition: DefinitionMetadata;
   bytes: Uint8Array;
+  sourceOverlay: RetainedDefinitionArtifacts["sourceOverlay"];
 }>;
 
 /** Coordinates durable definition schedules without exposing host identities. */
@@ -225,22 +226,8 @@ export class DefinitionScheduleService {
         "definition repository did not preserve the exact version binding",
       );
     }
-    const artifact = await this.#dependencies.artifacts.get(definition.source.sha256);
-    if (artifact === null) {
-      throw new DefinitionArtifactIntegrityError(
-        reference,
-        definition.source.sha256,
-      );
-    }
-    const bytes = Uint8Array.from(artifact);
-    if (bytes.byteLength !== definition.source.byteLength) {
-      throw new DefinitionArtifactIntegrityError(
-        reference,
-        definition.source.sha256,
-        { expected: definition.source.byteLength, actual: bytes.byteLength },
-      );
-    }
-    return { definition, bytes };
+    const retained = await readRetainedDefinitionArtifacts(this.#dependencies.artifacts, definition);
+    return { definition, ...retained };
   }
 
   async #validateDefinition(
@@ -248,6 +235,7 @@ export class DefinitionScheduleService {
   ): Promise<DefinitionTimerStartCapability> {
     const result = await this.#dependencies.host.validateDefinition({
       bytes: Uint8Array.from(loaded.bytes),
+      sourceOverlay: loaded.sourceOverlay,
       sourceId: loaded.definition.source.id,
       expectedSha256: loaded.definition.source.sha256,
       semanticProfile: loaded.definition.semanticProfile,
@@ -261,6 +249,7 @@ export class DefinitionScheduleService {
     );
     if (
       !equalDefinitionSource(result.source, loaded.definition.source) ||
+      !equalSourceOverlayIdentity(result.sourceOverlay, loaded.definition.sourceOverlay) ||
       result.processId !== loaded.definition.processId ||
       result.semanticProfile !== loaded.definition.semanticProfile ||
       !equalDefinitionStartCapabilities(
@@ -512,11 +501,11 @@ export class DefinitionScheduleService {
     record: DefinitionScheduleRecord,
     knownBytes?: Uint8Array,
   ): Promise<DefinitionScheduleHostRequest> {
-    const bytes = knownBytes === undefined
-      ? await this.#loadRecordBytes(record)
-      : Uint8Array.from(knownBytes);
+    const retained = knownBytes === undefined || record.definition.sourceOverlay !== null
+      ? await readRetainedDefinitionArtifacts(this.#dependencies.artifacts, record.definition)
+      : { bytes: Uint8Array.from(knownBytes), sourceOverlay: null };
     return {
-      bytes,
+      ...retained,
       definition: cloneDefinitionMetadata(record.definition),
       timerStart: { ...record.timerStart },
       activationAt: record.activationAt,
@@ -525,30 +514,6 @@ export class DefinitionScheduleService {
       hostScheduleId: record.identity.hostScheduleId,
       configuredWorkflowIdBase: record.identity.configuredWorkflowIdBase,
     };
-  }
-
-  async #loadRecordBytes(record: DefinitionScheduleRecord): Promise<Uint8Array> {
-    const artifact = await this.#dependencies.artifacts.get(
-      record.definition.source.sha256,
-    );
-    if (artifact === null) {
-      throw new DefinitionArtifactIntegrityError(
-        record.reference,
-        record.definition.source.sha256,
-      );
-    }
-    const bytes = Uint8Array.from(artifact);
-    if (bytes.byteLength !== record.definition.source.byteLength) {
-      throw new DefinitionArtifactIntegrityError(
-        record.reference,
-        record.definition.source.sha256,
-        {
-          expected: record.definition.source.byteLength,
-          actual: bytes.byteLength,
-        },
-      );
-    }
-    return bytes;
   }
 
   async #reconcileCurrent(

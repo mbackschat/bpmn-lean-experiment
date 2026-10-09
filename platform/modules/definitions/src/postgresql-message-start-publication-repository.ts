@@ -44,14 +44,11 @@ export class PostgresqlMessageStartPublicationRepository
           INSERT INTO bpmn_platform.message_start_publications (
             publication_id, process_id, version, source_kind, source_id,
             source_sha256, source_byte_length, source_declared_encoding,
-            source_decoded_as, semantic_profile, start_capabilities_json,
+            source_decoded_as, source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json,
             message_start_event_id, message_interface_id,
             message_interface_operation_id, message_id, process_instance_id,
             command_id, workflow_id, intent_protocol, intent_sha256, state
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-            $12, $13, $14, $15, $16, $17, $18, $19, $20, 'reserved'
-          )
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 'reserved')
           ON CONFLICT (publication_id) DO NOTHING
           RETURNING *
         `,

@@ -15,6 +15,20 @@ const inputs: VariableMapping[] = [
   { target: "echo", expression: { kind: MappingExpressionKind.EnclosingVariable, name: "payload" } },
 ];
 
+test("business metadata is optional but present forms have one writable string field", () => {
+  const handlers = new Set(["invoiceValidator", "policyChecker"]);
+  const task = (key: string, type = "string") => ({ metadata: {
+    assignment: { candidates: [{ kind: "group", id: "reviewers" }] }, form: { fields: [{ key, type }] },
+  } });
+  assert.equal(core.serialBusinessUserTaskMetadataAdmitted({}, handlers), true);
+  assert.equal(core.serialBusinessUserTaskMetadataAdmitted(task("request"), handlers), true);
+  for (const value of [task("request", "boolean"), task("execution"), task("invoiceValidator"), task("policyChecker"),
+    task("request.value"), { metadata: null }, { metadata: undefined },
+    { metadata: { assignment: task("request").metadata.assignment } }]) {
+    assert.equal(core.serialBusinessUserTaskMetadataAdmitted(value, handlers), false);
+  }
+});
+
 test("effect inputs read one enclosing snapshot regardless of local target order", () => {
   const context = [binding("payload", "parent"), binding("request", "reviewed")];
   const before = structuredClone(context);

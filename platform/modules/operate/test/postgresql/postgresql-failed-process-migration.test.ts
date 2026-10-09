@@ -64,9 +64,10 @@ if (baseUrl === undefined) {
 
   test("migration 0012 refuses a schema epoch other than eleven atomically", async () => {
     const sql = await readFile(migrationUrl, "utf8");
+    const retainedEpoch = (await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows;
     await assert.rejects(runtime.transaction(async (session) => {
       await session.query({ text: sql });
     }), /unexpected schema epoch before migration 0012/u);
-    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 12 }]);
+    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, retainedEpoch);
   });
 }

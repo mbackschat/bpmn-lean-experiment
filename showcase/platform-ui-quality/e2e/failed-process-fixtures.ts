@@ -29,6 +29,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "bpmn-2.0.2-compensation-trigger-handler-draft",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
 

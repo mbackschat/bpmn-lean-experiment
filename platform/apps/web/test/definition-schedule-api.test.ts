@@ -30,6 +30,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "timer-start-event-draft",
+  sourceOverlay: null,
   startCapabilities: {
     messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],

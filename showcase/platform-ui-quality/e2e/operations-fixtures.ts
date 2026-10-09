@@ -148,6 +148,7 @@ function definitionVersion(
       decodedAs: "UTF-8",
     },
     semanticProfile,
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   } as const;
 }

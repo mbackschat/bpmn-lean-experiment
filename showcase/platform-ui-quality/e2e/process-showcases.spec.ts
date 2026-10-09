@@ -26,6 +26,7 @@ test("prepared showcases link to the published exact definition without redeploy
   const definition = {
     processId: "Prepared_Showcase", version: 7,
     source: { kind: "bpmnSource", id: "process.bpmn", sha256: model.sha256, byteLength: Buffer.byteLength(model.xml), declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+    sourceOverlay: null,
     semanticProfile: model.profile, startCapabilities: { messageStarts: [], timerStarts: [] },
   };
   let mutations = 0;
@@ -63,6 +64,7 @@ for (const modelId of ["request-review-with-form", "external-service-recording",
     const definition = {
       processId: "Prepared_Showcase", version: 3,
       source: { kind: "bpmnSource", id: "process.bpmn", sha256: model.sha256, byteLength: Buffer.byteLength(model.xml), declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+      sourceOverlay: null,
       semanticProfile: model.profile, startCapabilities: { messageStarts: [], timerStarts: [] },
     };
     const newer = { ...definition, version: 4 };

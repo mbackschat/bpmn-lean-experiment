@@ -29,6 +29,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "profile/portable",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DeployedDefinitionVersion;
 

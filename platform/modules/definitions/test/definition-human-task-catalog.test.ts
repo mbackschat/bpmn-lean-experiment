@@ -173,7 +173,7 @@ function acceptedCompiler(): DefinitionCompiler {
         },
         diagnostics: [],
         definition: {
-          sourceOverlay: null,
+        sourceOverlay: null,
           processId: catalog.processId,
           semanticProfile: request.semanticProfile,
         },

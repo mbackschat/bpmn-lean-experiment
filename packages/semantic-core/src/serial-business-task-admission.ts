@@ -7,7 +7,7 @@ import type { SemanticOperation, SemanticProcessProgram } from "./semantic-proce
 import { SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
-import { serialBusinessBindingsAdmitted, serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { serialBusinessBindingsAdmitted, serialBusinessEffectAdmitted, serialBusinessUserTaskMetadataAdmitted } from "./serial-business-task-policy.js";
 
 enum VertexKind { Start, Human, Service, End }
 type Vertex = Readonly<{ id: string; kind: VertexKind; next: string | null; inputs: readonly VariableMapping[]; outputs: readonly VariableMapping[] }>;
@@ -23,7 +23,7 @@ export function serialBusinessProgramShape(operations: readonly SemanticOperatio
         case SemanticOperationKind.Initiate:
         case SemanticOperationKind.ReachNoneEnd: return true;
         case SemanticOperationKind.CompleteScope: return operation.parentOutput === null;
-        case SemanticOperationKind.AwaitUserTask: return operation.task.metadata === undefined;
+        case SemanticOperationKind.AwaitUserTask: return serialBusinessUserTaskMetadataAdmitted(operation.task, handlers);
         case SemanticOperationKind.AwaitEffect: return operation.bpmnErrorRoute === null && serialBusinessEffectAdmitted(operation.effect, handlers);
         default: return false;
       }
@@ -38,7 +38,7 @@ export function serialBusinessCheckedShape(nodes: readonly CheckedNode[], scopeC
       switch (node.kind) {
         case CheckedNodeKind.NoneStartEvent:
         case CheckedNodeKind.NoneEndEvent: return true;
-        case CheckedNodeKind.UserTask: return node.metadata === undefined;
+        case CheckedNodeKind.UserTask: return serialBusinessUserTaskMetadataAdmitted(node, handlers);
         case CheckedNodeKind.ServiceTask: return node.bpmnErrorRoute === null && serialBusinessEffectAdmitted(node, handlers);
         default: return false;
       }

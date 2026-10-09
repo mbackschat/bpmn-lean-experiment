@@ -33,6 +33,7 @@ const definition = {
   },
   semanticProfile: "bpmn-2.0.2-bpmn-lean-message-key-correlation-v1",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 const correlatedMessage = {

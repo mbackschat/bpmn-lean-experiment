@@ -45,8 +45,8 @@ export class PostgresqlDefinitionRepository implements
           INSERT INTO bpmn_platform.definition_versions (
             process_id, version, source_kind, source_id, source_sha256,
             source_byte_length, source_declared_encoding, source_decoded_as,
-            semantic_profile, start_capabilities_json, human_task_catalog_json
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, human_task_catalog_json
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING *
         `,
         values: [

@@ -340,14 +340,14 @@ theorem ordinary_completion_preserves_process_bindings
   · cases Option.some.inj completed
     rfl
 
-theorem completion_dispatch_preserves_binding_presence
+theorem completion_admission_preserves_binding_presence
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (name : String) (present : BindingPresent before.variables.process.bindings name)
     (analyzed : programAnalysis program = some analysis) :
-    BindingPresent (dispatchStimulus program before
+    BindingPresent (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state.variables.process.bindings name := by
-  rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ |
       ⟨after, completed, _, _, result⟩
   · simpa [refused] using present
@@ -407,15 +407,15 @@ theorem composed_completion_preserves_valid_bindings
         activityDataInputOutputUserTaskProfileId, value] at scalar ⊢
     · exact valid.2 binding (List.mem_filter.mp retained).1
 
-theorem completion_dispatch_preserves_valid_bindings
+theorem completion_admission_preserves_valid_bindings
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (analyzed : programAnalysis program = some analysis)
     (valid : ProcessBindingsValid before.variables.process.bindings) :
-    ProcessBindingsValid (dispatchStimulus program before
+    ProcessBindingsValid (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state.variables.process.bindings := by
-  rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, accepted, result⟩ | ⟨after, completed, ordinary, _, result⟩ |
       ⟨after, completed, call, _, result⟩
   · simpa [refused] using valid

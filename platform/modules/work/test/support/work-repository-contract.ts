@@ -73,6 +73,7 @@ export const publication: ConfirmedProcessWorkPublication = {
       },
       semanticProfile: "profile\u0000one",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   },
   locator: "bpmn-process-work-v1:private\u0000address",

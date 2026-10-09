@@ -118,6 +118,33 @@ test("refuses a cached task identity even when the advertised element still matc
   assert.equal(submissions, 0);
 });
 
+for (const sourceOverlay of [
+  { id: "overlay-a", sha256: "a".repeat(64) },
+  { id: "overlay-b", sha256: "a".repeat(64) },
+  { id: "overlay-a", sha256: "b".repeat(64) },
+]) {
+  for (const journey of Object.values(AlphaJourney)) {
+    test(`refuses matching Alpha source/profile ${journey} actor with overlay ${sourceOverlay.id}/${sourceOverlay.sha256.slice(0, 8)}`, async () => {
+      const harness = journey === AlphaJourney.Natural ? naturalPort() : interruptedPort();
+      const exact = publicInstance(journey === AlphaJourney.Natural ? "Instance_Natural" : "Instance_Interrupted");
+      const overlaid = { ...exact, definition: { ...exact.definition, sourceOverlay } };
+      const actor = new MuePreviewAlphaActor(async () => undefined);
+      let observations = 0;
+      const port = { ...harness.port, readState: async () => { observations++; return harness.port.readState(); } };
+      let escalationReady = 0;
+      await assert.rejects(journey === AlphaJourney.Natural
+        ? actor.runNatural(overlaid, port)
+        : actor.runInterrupted(overlaid, port, {
+            onEscalationReady: () => { escalationReady++; },
+            waitForEscalationRelease: async () => undefined,
+          }), /exact registered definition/u);
+      assert.equal(observations, 0);
+      assert.equal(harness.submitted.length, 0);
+      assert.equal(escalationReady, 0);
+    });
+  }
+}
+
 test("refuses a result bound to the wrong current business item", async () => {
   const processInstanceId = "Instance_WrongItem";
   const valid = alphaReviewState(processInstanceId, 1);
@@ -450,6 +477,7 @@ function publicInstance(processInstanceId: string) {
         decodedAs: "UTF-8",
       },
       semanticProfile,
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   } as const;

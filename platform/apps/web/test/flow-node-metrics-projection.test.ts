@@ -21,6 +21,7 @@ const snapshot = {
       decodedAs: "UTF-8",
     },
     semanticProfile: "metrics-profile",
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   },
   population: { processInstances: 3, label: "allRetainedEvidence" },

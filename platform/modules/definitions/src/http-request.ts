@@ -1,7 +1,7 @@
 import { PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
 import type { PublicApiErrorCode as PublicApiErrorCodeValue } from "@bpmn-lean/platform-contracts";
 
-const deploymentMediaType = /^(?:application\/xml|text\/xml|application\/bpmn\+xml)(?:[ \t]*;[ \t]*[!#$%&'*+.^_`|~0-9A-Za-z-]+[ \t]*=[ \t]*(?:[!#$%&'*+.^_`|~0-9A-Za-z-]+|"(?:[^"\\\r\n]|\\[\t -~])*"))*[ \t]*$/iu;
+export const deploymentMediaType = /^(?:application\/xml|text\/xml|application\/bpmn\+xml)(?:[ \t]*;[ \t]*[!#$%&'*+.^_`|~0-9A-Za-z-]+[ \t]*=[ \t]*(?:[!#$%&'*+.^_`|~0-9A-Za-z-]+|"(?:[^"\\\r\n]|\\[\t -~])*"))*[ \t]*$/iu;
 const contentLength = /^[0-9]+$/u;
 
 export type DeploymentQuery = Readonly<{

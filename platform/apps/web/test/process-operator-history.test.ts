@@ -62,6 +62,7 @@ const value = {
         decodedAs: "UTF-8",
       },
       semanticProfile: "profile-1",
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   },

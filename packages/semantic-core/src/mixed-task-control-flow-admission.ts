@@ -10,7 +10,7 @@ import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
-import { serialBusinessBindingsAdmitted, serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { serialBusinessBindingsAdmitted, serialBusinessEffectAdmitted, serialBusinessUserTaskMetadataAdmitted } from "./serial-business-task-policy.js";
 
 export function mixedTaskControlProgramShape(operations: readonly SemanticOperation[], scopeCount: number,
   semanticProfile: string = MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID): boolean {
@@ -27,7 +27,7 @@ export function mixedTaskControlProgramShape(operations: readonly SemanticOperat
         case SemanticOperationKind.Initiate:
         case SemanticOperationKind.ReachNoneEnd: return true;
         case SemanticOperationKind.CompleteScope: return operation.parentOutput === null;
-        case SemanticOperationKind.AwaitUserTask: return operation.task.metadata === undefined;
+        case SemanticOperationKind.AwaitUserTask: return serialBusinessUserTaskMetadataAdmitted(operation.task, handlers);
         case SemanticOperationKind.AwaitEffect: return (businessError || operation.bpmnErrorRoute === null) && serialBusinessEffectAdmitted(operation.effect, handlers);
         case SemanticOperationKind.Choose: return operation.candidates.length > 0;
         case SemanticOperationKind.MergeExclusive: return operation.inputs.length >= 2;
@@ -50,7 +50,7 @@ export function mixedTaskControlCheckedShape(nodes: readonly CheckedNode[], scop
         case CheckedNodeKind.NoneStartEvent:
         case CheckedNodeKind.NoneEndEvent:
         case CheckedNodeKind.ExclusiveMerge: return true;
-        case CheckedNodeKind.UserTask: return node.metadata === undefined;
+        case CheckedNodeKind.UserTask: return serialBusinessUserTaskMetadataAdmitted(node, handlers);
         case CheckedNodeKind.ServiceTask: return (businessError || node.bpmnErrorRoute === null) && serialBusinessEffectAdmitted(node, handlers);
         case CheckedNodeKind.ExclusiveGateway: return node.direction === GatewayDirection.Diverging && node.candidateFlowIds.length > 0;
         default: return false;

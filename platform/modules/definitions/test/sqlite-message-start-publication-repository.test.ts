@@ -222,6 +222,7 @@ function definition(): MessageStartPublicationRecord["definition"] {
       messageStarts: [messageStart()],
       timerStarts: [],
     },
+    sourceOverlay: null,
   };
 }
 

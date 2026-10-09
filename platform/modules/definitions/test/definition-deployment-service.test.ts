@@ -109,7 +109,7 @@ class AcceptedCompiler implements DefinitionCompiler {
       },
       diagnostics: [],
       definition: {
-        sourceOverlay: null,
+      sourceOverlay: null,
         processId: this.#processId,
         semanticProfile: request.semanticProfile,
       },
@@ -190,6 +190,7 @@ test("snapshots bytes and every scalar before the compiler can yield", async () 
         messageStarts: [],
         timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
       },
+      sourceOverlay: null,
     });
     assert.equal(compiler.seenExpectedSha256, originalDigest);
     assert.deepEqual(

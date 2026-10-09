@@ -24,6 +24,7 @@ const definition = {
   },
   semanticProfile: "profile/portable",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 const generatedPresentation = {

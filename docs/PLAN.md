@@ -76,11 +76,11 @@ Acceptance covers source/Lean/TypeScript, applicable CIB evidence, Temporal refi
 
 ## Ordered work
 
-Exactly one stable work ID is active. Required maps are part of the routing contract, not descriptive tags.
+Exactly one stable work ID is active. Required maps govern routing.
 
 ### External-review correction checklist
 
-The six external reviews and correction audits are complete; the [repair cost ledger](capsule-costs/REVIEW-AND-WORKFLOW-LEDGER.md#repair-closure-costs) retains their evidence. No finding is reopened.
+The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AND-WORKFLOW-LEDGER.md#repair-closure-costs) is retained. No finding is reopened.
 
 1. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the private checkpoint; hosting, registration and closure remain deferred.
 2. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve approved scalar semantics and private recovery; registration is implemented, but independent public qualification failed and closure remains open.
@@ -94,11 +94,11 @@ The six external reviews and correction audits are complete; the [repair cost le
 
 ### Scheduled delivery batches
 
-Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). The proof attempt reached its bound; usable business delivery takes priority.
+Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). Business delivery precedes further proof work.
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| Next | Finish acceptance reporting alongside business qualification. | Tracker comparison/baseline: `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind owners/models. Derive acceptance from exact source/profile/configuration, scope and closure evidence; test missing/failed closure and scope drift. Keep total remaining unknown until denominator review. |
+| Next | Bind qualified delivery evidence at closure. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. Total remaining stays unknown until denominator review. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
 | 3 | Extend business data/expressions. | Shared typed values, collections, scoped visibility, mappings and predicates. |
@@ -119,15 +119,15 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver registered business processes through public deployment, exact-version start and Work.
+Current task: deliver business processes through public deployment, exact-version start and Work.
 
-Current result: business registration is approved at `9048174d`; [public-delivery design](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) is approved after audit `6e7261a8`. Overlay lifecycle and metadata implementation remain open. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [selected crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) supply identities, not acceptance.
+Current result: registration `9048174d` and [public-delivery design](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md), audited at `6e7261a8`, are approved; qualification continues. [Tracker](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind identities, not acceptance.
 
-Last verification: `/tmp/business-human-metadata-red-20261009` reproduces metadata rejection in all three profiles after accepted baselines. `/tmp/business-public-overlay-gap-confirmed-20261009` confirms public deployment refusal and lost retained overlay/start integrity in all three. `/tmp/practical-crosswalk-docs-20261009` passes 35 checks; reporting's complete infrastructure inventory remains in `/tmp/delivery-progress-infrastructure-batches-20261009/complete.json`.
+Last verification: source/core, contracts, types, Definitions, showcase identities, independent admission/parity, server/web and nonnull recovery pass. Complete PostgreSQL integration passes (`/tmp/business-overlay-postgresql-reuse-integration-green-20261009`); populated upgrade and policy gates pass. Shared admission, Serial/mixed progress, Error completion and conformance integration pass (`/tmp/business-backend-conformance-cached-20261009`); two conformance witnesses are measured. Infrastructure: 659/661; SQLite separator finding corrected, pending PMIS proof remains unreached.
 
-Next action: `implement_delivery_progress_reporting` owns source/core/Lean metadata and tests; `implement_public_overlay_lifecycle` owns platform overlay contracts/services/persistence/tests. Root owns integration, docs and three production journeys. Reuse artifact storage/Work; no metadata-only commit or model switch. One shared checkpoint; audit `/tmp/business-delivery-cold-audit-docs-6e7261a8`.
+Next action: independently review the coherent backend checkpoint, then implement metadata fixtures, explicit handlers, generic string Start inputs and three production journeys. Shared profile-exclusion/admission laws preserve inherited guarantees and semantics. Preserve required bindings; no model switch or metadata-only commit.
 
-Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Preserve pending sources; no helper commit. The Lean lane is released.
+Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Preserve pending sources; no helper commit.
 
 Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime/performance/cold-library investigations remain on hold. One Lean tree, one CPU/3 GiB, no extra swap.
 

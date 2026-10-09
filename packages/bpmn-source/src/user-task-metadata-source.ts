@@ -40,6 +40,9 @@ export function isUserTaskMetadataProfile(semanticProfile: string): boolean {
     case userTaskMetadataProfile:
     case parallelUserTaskMetadataProfile:
     case structuredHumanWorkProfile:
+    case SemanticProfileId.SerialBusinessTaskComposition:
+    case SemanticProfileId.MixedTaskControlFlow:
+    case SemanticProfileId.MixedTaskBusinessError:
       return true;
     default:
       return false;
@@ -412,7 +415,10 @@ export function userTaskMetadataBindingValid(
       { kind: SemanticOperationKind.AwaitUserTask }
     > => operation.kind === SemanticOperationKind.AwaitUserTask,
   );
-  const requiredTaskCount = checked.identity.semanticProfile ===
+  const business = checked.identity.semanticProfile === SemanticProfileId.SerialBusinessTaskComposition ||
+    checked.identity.semanticProfile === SemanticProfileId.MixedTaskControlFlow ||
+    checked.identity.semanticProfile === SemanticProfileId.MixedTaskBusinessError;
+  const requiredTaskCount = business ? tasks.length : checked.identity.semanticProfile ===
       parallelUserTaskMetadataProfile
     ? 2
     : 1;
@@ -444,7 +450,7 @@ export function userTaskMetadataBindingValid(
       return false;
     }
     if (task.metadata === undefined || wait.task.metadata === undefined) {
-      return checked.identity.semanticProfile === userTaskMetadataProfile &&
+      return (business || checked.identity.semanticProfile === userTaskMetadataProfile) &&
         task.metadata === undefined && wait.task.metadata === undefined;
     }
     return metadataMatchesSelectedProfile(

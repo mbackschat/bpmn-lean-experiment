@@ -23,6 +23,7 @@ const definition = {
   },
   semanticProfile: "profile/review",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 test("returns one exact resolved definition presentation", async () => {

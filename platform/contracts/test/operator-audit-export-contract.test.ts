@@ -28,6 +28,7 @@ const definition = {
   },
   semanticProfile: "cib-seven-2.2.0:parallel-user-task-metadata-composition",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 const instance = {

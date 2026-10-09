@@ -18,7 +18,10 @@ import type {
 import {
   PostgresqlDefinitionsRecoveryIntermediateResult,
   PostgresqlDefinitionsRecoveryStepKind,
+  PostgresqlConfirmedProcessInstanceRepository,
+  PostgresqlDirectStartRecoveryStep,
 } from "@bpmn-lean/platform-definitions";
+import type { RetainedOverlayRecoveryFixture } from "../../support/definitions-repository-contract.ts";
 import type {
   PostgresqlDefinitionsRecoveryStepResult,
 } from "@bpmn-lean/platform-definitions";
@@ -245,6 +248,7 @@ export async function seedDefinition(
         },
       }],
     },
+    sourceOverlay: null,
   });
 }
 export function confirmedPublication(
@@ -369,4 +373,42 @@ export function createTestRuntime(connectionString: string): PostgresqlRuntime {
     lockTimeoutMs: 2_000,
     idleInTransactionSessionTimeoutMs: 4_000,
   });
+}
+
+export async function createRetainedOverlayRecoveryFixture(connectionString: string): Promise<RetainedOverlayRecoveryFixture> {
+  let runtime = createTestRuntime(connectionString);
+  let artifacts = new PostgresqlExactArtifactStore(runtime);
+  let definitions = new PostgresqlDefinitionRepository(runtime);
+  let confirmed = new PostgresqlConfirmedProcessInstanceRepository(runtime);
+  await resetDatabase(runtime);
+  return {
+    get definitions() { return definitions; },
+    get confirmed() { return confirmed; },
+    get artifacts() { return artifacts; },
+    reopen: async () => {
+      await runtime.close();
+      runtime = createTestRuntime(connectionString);
+      artifacts = new PostgresqlExactArtifactStore(runtime);
+      definitions = new PostgresqlDefinitionRepository(runtime);
+      confirmed = new PostgresqlConfirmedProcessInstanceRepository(runtime);
+    },
+    recover: async (host, processInstanceId) => {
+      const recovery = new PostgresqlDirectStartRecoveryStep({ runtime, host });
+      const prepared = await recovery.prepare(directKey(processInstanceId));
+      const result = prepared.kind === PostgresqlDefinitionsRecoveryStepKind.Intermediate
+        ? await continueIntermediate(runtime, prepared) : prepared;
+      await apply(runtime, result);
+    },
+    removeArtifact: async (sha256) => {
+      await runtime.transaction(async (session) => {
+        // BPD-RETAIN-01 requires refusal even after privileged loss of a referenced artifact.
+        await session.query({ text: "SET LOCAL session_replication_role = replica" });
+        await session.query({ text: "DELETE FROM bpmn_platform.exact_artifacts WHERE sha256 = $1", values: [sha256] });
+      });
+    },
+    corruptArtifact: async (sha256, bytes) => {
+      await runtime.query({ text: "UPDATE bpmn_platform.exact_artifacts SET bytes = $1, byte_length = $2 WHERE sha256 = $3", values: [Buffer.from(bytes), bytes.byteLength, sha256] });
+    },
+    dispose: async () => { await runtime.close(); },
+  };
 }

@@ -16,6 +16,7 @@ export const definitionVersion = {
   },
   semanticProfile: "profile-publication",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const;
 
 export const occurrenceDefinition = {

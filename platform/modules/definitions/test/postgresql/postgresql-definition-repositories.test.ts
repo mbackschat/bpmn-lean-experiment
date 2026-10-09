@@ -31,6 +31,10 @@ import {
   sidecar,
   sourceBytes,
   sourceSha256,
+  overlayBytes,
+  overlayIdentity,
+  laterOverlayBytes,
+  laterOverlayIdentity,
 } from "../support/definitions-repository-contract.ts";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
@@ -72,6 +76,8 @@ if (baseUrl === undefined) {
     async () => {
       await resetDatabase(runtime);
       await artifacts.put({ sha256: sourceSha256, bytes: sourceBytes });
+      await artifacts.put({ ...overlayIdentity, bytes: overlayBytes });
+      await artifacts.put({ ...laterOverlayIdentity, bytes: laterOverlayBytes });
       return {
         definitions: new PostgresqlDefinitionRepository(runtime),
         presentations: new PostgresqlDefinitionPresentationRepository(runtime),
@@ -96,6 +102,11 @@ if (baseUrl === undefined) {
       (await repository.allocateNext(metadata("Missing_Artifact"))).version,
       1,
     );
+    await assert.rejects(repository.allocateNext({ ...metadata("Missing_Overlay"), sourceOverlay: overlayIdentity }),
+      (error: unknown) => postgresqlCode(error) === "23503");
+    assert.deepEqual(await repository.listVersions("Missing_Overlay"), []);
+    await artifacts.put({ ...overlayIdentity, bytes: overlayBytes });
+    assert.equal((await repository.allocateNext({ ...metadata("Missing_Overlay"), sourceOverlay: overlayIdentity })).version, 1);
   });
 
   test("independent sessions allocate one gap-free process-local version order", async () => {
@@ -375,6 +386,7 @@ function metadata(
     },
     semanticProfile: "profile-v1",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
 }
 

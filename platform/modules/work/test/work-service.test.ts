@@ -26,6 +26,7 @@ const definition = {
   },
   semanticProfile: "profile-1",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 test("fails the complete snapshot when any current host is unavailable", async () => {

@@ -78,6 +78,42 @@ test("rejects changed Interface Operation selection before any SDK call", async 
   assert.equal(result.status, EngineDefinitionMessageStartStatus.Rejected);
 });
 
+test("retained overlays reach Message Start profile admission instead of being silently dropped", async () => {
+  const bytes = await readFile(sourceUrl);
+  const base = preparationFor(bytes);
+  const overlayBytes = new TextEncoder().encode(JSON.stringify({
+    kind: "bpmnSourceOverlay",
+    id: "message-overlay",
+    semanticProfile: base.semanticProfile,
+    effectBindings: [],
+    inertAttributes: [],
+  }));
+  const actualDigest = createHash("sha256").update(overlayBytes).digest("hex");
+  const admitted = await prepareBpmnDefinitionMessageStart(base);
+  assert.equal(admitted.status, EngineDefinitionMessageStartStatus.Admitted);
+  for (const digest of [actualDigest, "0".repeat(64)]) {
+    const client = new FakeMessageStartClient();
+    const request = {
+      ...base,
+      sourceOverlay: { id: "message-overlay", sha256: digest, bytes: overlayBytes },
+    };
+    const prepared = await prepareBpmnDefinitionMessageStart(request);
+    assert.equal(prepared.status, EngineDefinitionMessageStartStatus.IntegrityFailure);
+    assert.equal(prepared.failure.code, "definitionCompilationRejected");
+    assert.match(prepared.failure.evidence, digest === actualDigest
+      ? /does not admit a source overlay/u
+      : /expected SHA-256/u);
+    const started = await startBpmnDefinitionMessageStart({
+      ...request,
+      expectedIntent: admitted.intent,
+      temporalClient: client.client,
+    });
+    assert.equal(started.status, EngineDefinitionMessageStartStatus.IntegrityFailure);
+    assert.equal(client.startCalls.length, 0);
+    assert.equal(client.describeCalls, 0);
+  }
+});
+
 test("starts only through the persisted matching intent", async () => {
   const bytes = await readFile(sourceUrl);
   const client = new FakeMessageStartClient();

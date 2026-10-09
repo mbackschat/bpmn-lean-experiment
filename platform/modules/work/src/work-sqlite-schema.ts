@@ -1,8 +1,9 @@
+import { decodePublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 import type { DatabaseSync, SQLOutputValue } from "node:sqlite";
 
 import { WorkSchemaResetRequiredError } from "./work-contracts.js";
 
-const schemaEpoch = 3;
+const schemaEpoch = 4;
 
 const schemaObjects = new Map<string, string>([
   ["work_processes", `
@@ -81,7 +82,16 @@ export function initializeWorkSchema(database: DatabaseSync): void {
       for (const sql of schemaObjects.values()) database.exec(sql);
       database.exec(`PRAGMA user_version = ${schemaEpoch}`);
     } else {
-      requireExactSchema(version, objects, database);
+      requireExactSchema(version === 3 ? schemaEpoch : version, objects, database);
+      if (version === 3) {
+        const rows = database.prepare("SELECT process_instance_id, json_type(public_instance_json, '$.definition.sourceOverlay') AS overlay_type, json_set(public_instance_json, '$.definition.sourceOverlay', json('null')) AS migrated FROM work_processes").all();
+        for (const row of rows) {
+          if (row.overlay_type !== null || typeof row.migrated !== "string" || typeof row.process_instance_id !== "string") throw new WorkSchemaResetRequiredError();
+          const instance = decodePublicProcessInstanceIdentity(JSON.parse(row.migrated));
+          database.prepare("UPDATE work_processes SET public_instance_json = ? WHERE process_instance_id = ?").run(JSON.stringify(instance), row.process_instance_id);
+        }
+        database.exec(`PRAGMA user_version = ${schemaEpoch}`);
+      }
     }
     database.exec("COMMIT");
   } catch (error: unknown) {

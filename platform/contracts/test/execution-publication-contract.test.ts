@@ -229,6 +229,7 @@ test("derives the exact current admitted Product 2 identity without a host locat
       },
       semanticProfile: "cib-seven-2.2.0:publication-test",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   }), publicationIdentity);
 });

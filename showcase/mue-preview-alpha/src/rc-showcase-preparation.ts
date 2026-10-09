@@ -25,8 +25,9 @@ export async function prepareRcShowcases(
         throw new Error(`RC showcase ${model.id} preparation rejected: ${result.diagnostics.map(({ code }) => code).join(", ")}`);
       case DefinitionDeployStatus.Deployed:
         if (response.status !== 201) throw new Error(`RC showcase ${model.id} preparation has a contradictory HTTP status`);
-        if (result.definition.source.sha256 !== model.sha256 || result.definition.semanticProfile !== model.profile) {
-          throw new Error(`RC showcase ${model.id} preparation returned a different source or profile`);
+        if (result.definition.source.sha256 !== model.sha256 || result.definition.semanticProfile !== model.profile
+          || result.definition.sourceOverlay !== null) {
+          throw new Error(`RC showcase ${model.id} preparation returned a different source, overlay, or profile`);
         }
         break;
     }

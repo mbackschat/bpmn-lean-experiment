@@ -1,3 +1,4 @@
+import type { DefinitionSourceOverlaySelection } from "@bpmn-lean/platform-engine-gateway";
 import type {
   MessageStartPublication,
   PutMessageStartPublicationRequest,
@@ -79,6 +80,7 @@ export type MessageStartPublicationIdentityPolicy = Readonly<{
 
 export type MessageStartPublicationHostRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: Readonly<{
     processId: string;
     source: Readonly<{

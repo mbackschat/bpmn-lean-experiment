@@ -1,3 +1,5 @@
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import {
   DefinitionCorrelatedMessageResolutionKind,
   DefinitionCorrelatedMessageSemanticOutcomeKind,
@@ -19,6 +21,7 @@ import type {
   DefinitionCorrelatedMessageResolution as GatewayResolution,
 } from "@bpmn-lean/platform-engine-gateway";
 
+import { DefinitionArtifactIntegrityError } from "./contracts.js";
 import type {
   DefinitionMetadata,
   DefinitionReference,
@@ -39,6 +42,7 @@ import { toPublicDefinition } from "./definition-public-values.js";
 type LoadedDefinition = Readonly<{
   definition: DefinitionMetadata;
   bytes: Uint8Array;
+  sourceOverlay: RetainedDefinitionArtifacts["sourceOverlay"];
 }>;
 
 /** Reconstructs and publishes definition-scoped Message correlation without a target index. */
@@ -130,19 +134,13 @@ export class DefinitionCorrelatedMessageService
         "definition repository did not preserve the exact version binding",
       );
     }
-    const artifact = await this.#dependencies.artifacts.get(definition.source.sha256);
-    if (artifact === null) {
-      throw new DefinitionCorrelatedMessageIntegrityError(
-        "stored correlated Message definition artifact is missing",
-      );
+    try {
+      const retained = await readRetainedDefinitionArtifacts(this.#dependencies.artifacts, definition);
+      return { definition, ...retained };
+    } catch (error: unknown) {
+      if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
+      throw new DefinitionCorrelatedMessageIntegrityError(error.message);
     }
-    const bytes = Uint8Array.from(artifact);
-    if (bytes.byteLength !== definition.source.byteLength) {
-      throw new DefinitionCorrelatedMessageIntegrityError(
-        "stored correlated Message definition artifact length drifted",
-      );
-    }
-    return { definition, bytes };
   }
 
   async #describeMessages(
@@ -165,6 +163,7 @@ function hostDescribeRequest(
 ): DefinitionCorrelatedMessageDescribeRequest {
   return {
     bytes: Uint8Array.from(loaded.bytes),
+    sourceOverlay: loaded.sourceOverlay,
     definition: {
       processId: loaded.definition.processId,
       source: {
@@ -173,6 +172,7 @@ function hostDescribeRequest(
         byteLength: loaded.definition.source.byteLength,
       },
       semanticProfile: loaded.definition.semanticProfile,
+      sourceOverlay: loaded.definition.sourceOverlay,
     },
   };
 }

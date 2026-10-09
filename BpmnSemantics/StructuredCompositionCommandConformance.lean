@@ -58,4 +58,55 @@ theorem ordinary_completion_refuses_process_write :
       (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).state = notifyWait := by
   decide +kernel
 
+private def parallelProfileProgram : Program :=
+  { serialProgram with identity := { serialProgram.identity with
+      semanticProfile := ⟨"cibseven-2.2.0-parallel-multi-instance-subprocess-draft"⟩ } }
+
+theorem reprofiled_ordinary_completion_separates_raw_dispatch_from_admission :
+    StructuredComposition.programAnalysis parallelProfileProgram =
+      StructuredComposition.programAnalysis serialProgram ∧
+    (StructuredComposition.programAnalysis parallelProfileProgram).isSome = true ∧
+    processDataBindingsAdmitted parallelProfileProgram.identity.semanticProfile
+      .userTaskCompletion [invoice] = false ∧
+    (dispatchStimulus parallelProfileProgram notifyWait
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).outcome = .committed ∧
+    (dispatchStimulus parallelProfileProgram notifyWait
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).state.variables.process.bindings = [invoice] ∧
+    (admitStimulus parallelProfileProgram notifyWait
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).outcome = .rejected ∧
+    (admitStimulus parallelProfileProgram notifyWait
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).state = notifyWait := by
+  refine ⟨rfl, ?_⟩
+  decide +kernel
+
+private def assessId : UserTaskInstanceId :=
+  { notifyId with elementId := ⟨"Assess"⟩ }
+
+/-- The absent Activity/input lifetime also separates the raw wait fallback from ADIO-ATOMIC-01 admission. -/
+private def assessWait : RuntimeState :=
+  { notifyWait with waits := notifyWait.waits.map fun wait =>
+      { wait with task := { id := ⟨"Assess"⟩, name := none }, output := ⟨"place:b"⟩ } }
+
+private def propertyNamedOutput : VariableBinding :=
+  { name := "Decision", value := .string "accepted" }
+
+theorem reprofiled_data_completion_separates_raw_dispatch_from_admission :
+    StructuredComposition.programAnalysis parallelProfileProgram =
+      StructuredComposition.programAnalysis serialProgram ∧
+    (StructuredComposition.programAnalysis parallelProfileProgram).isSome = true ∧
+    isDataInputOutputTaskDefinition parallelProfileProgram ⟨"Assess"⟩ = true ∧
+    completeDataInputOutputUserTask? parallelProfileProgram assessWait assessId.processInstanceId
+      ⟨"Assess"⟩ assessId.activation [propertyNamedOutput] = none ∧
+    (dispatchStimulus parallelProfileProgram assessWait
+      (.completeUserTaskInstance ⟨"assess"⟩ assessId [propertyNamedOutput])).outcome = .committed ∧
+    (dispatchStimulus parallelProfileProgram assessWait
+      (.completeUserTaskInstance ⟨"assess"⟩ assessId [propertyNamedOutput])).state.variables.process.bindings =
+        [propertyNamedOutput] ∧
+    (admitStimulus parallelProfileProgram assessWait
+      (.completeUserTaskInstance ⟨"assess"⟩ assessId [propertyNamedOutput])).outcome = .rejected ∧
+    (admitStimulus parallelProfileProgram assessWait
+      (.completeUserTaskInstance ⟨"assess"⟩ assessId [propertyNamedOutput])).state = assessWait := by
+  refine ⟨rfl, ?_⟩
+  decide +kernel
+
 end BpmnSemantics.StructuredCompositionCommandConformance

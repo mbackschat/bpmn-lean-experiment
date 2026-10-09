@@ -187,6 +187,7 @@ function instance(
         messageStarts: [],
         timerStarts: [],
       },
+      sourceOverlay: null,
     },
   };
 }

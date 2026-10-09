@@ -28,6 +28,7 @@ const publication = {
       },
       semanticProfile: "profile-1",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   },
   locator: "bpmn-process-work-v1:private-address",

@@ -315,6 +315,7 @@ function instance(
         }],
         timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
       },
+      sourceOverlay: null,
     },
   };
 }

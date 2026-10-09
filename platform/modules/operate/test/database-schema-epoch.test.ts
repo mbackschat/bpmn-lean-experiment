@@ -17,7 +17,7 @@ test("sets an independent epoch on a fresh Process-instance database", async () 
 
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
-      assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 4);
+      assert.equal(database.prepare("PRAGMA user_version").get()?.user_version, 5);
       assert.deepEqual(
         database.prepare(`
           SELECT name FROM sqlite_schema

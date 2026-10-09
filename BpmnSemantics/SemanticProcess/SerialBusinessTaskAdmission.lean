@@ -27,6 +27,14 @@ def identifier (name : String) : Bool :=
 def nameAllowed (handlers : List String) (name : String) : Bool :=
   identifier name && !handlers.contains name
 
+/-- BPD-METADATA-01 composes passive legacy metadata with the existing writable-name policy. -/
+def metadataValid (handlers : List String) : Option UserTaskMetadata → Bool
+  | none => true
+  | some metadata => UserTaskMetadata.assignmentFormWellFormed metadata &&
+      match metadata.form with
+      | some { fields := [{ key, type := .string }] } => nameAllowed handlers key
+      | _ => false
+
 def scalar : VariableValue → Bool
   | .string _ | .null => true
   | _ => false
@@ -129,7 +137,9 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   match node with
   | .noneStartEvent _ => return { id, kind := .start, outputs }
   | .noneEndEvent _ => return { id, kind := .finish, outputs }
-  | .userTask _ _ none => return { id, kind := .human, outputs }
+  | .userTask _ _ metadata =>
+      if !metadataValid (checkedHandlers source) metadata then none
+      else return { id, kind := .human, outputs }
   | .serviceTask _ descriptor inputs mappings none =>
       if !(descriptorValid descriptor && mappingsValid (checkedHandlers source) inputs mappings) then none
       else return { id, kind := .service, outputs, reads := readNames inputs,
@@ -152,7 +162,7 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
   | .initiate _ _ output => return { id, kind := .start, outputs := [← consumer? program output] }
   | .reachNoneEnd .. => return { id, kind := .finish, outputs := [] }
   | .awaitUserTask _ _ _ output task =>
-      if task.metadata.isSome then none
+      if !metadataValid (programHandlers program) task.metadata then none
       else return { id, kind := .human, outputs := [← consumer? program output] }
   | .awaitEffect _ origin _ output effect none =>
       if !(origin.elementId == effect.elementId && descriptorValid effect.descriptor &&

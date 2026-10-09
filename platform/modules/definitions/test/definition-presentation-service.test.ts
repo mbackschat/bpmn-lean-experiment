@@ -299,6 +299,7 @@ function fixtureFor(
     },
     semanticProfile: "metadata-profile",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
   const definitions: DefinitionRepository = {
     allocateNext: async () => metadata,

@@ -31,6 +31,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "message-start-event-draft",
+  sourceOverlay: null,
   startCapabilities: {
     messageStarts: [{
       startEventId: "MessageStart_OrderReceived",

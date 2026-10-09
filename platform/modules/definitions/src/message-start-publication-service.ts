@@ -1,9 +1,9 @@
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import type {
   PutMessageStartPublicationRequest,
 } from "@bpmn-lean/platform-contracts";
 
 import {
-  DefinitionArtifactIntegrityError,
 } from "./contracts.js";
 import type {
   DefinitionMessageStartCapability,
@@ -165,32 +165,9 @@ export class MessageStartPublicationService {
         await this.#failIntegrity(existing, "stored publication snapshot drifted");
       }
     }
-    const artifact = await this.#dependencies.artifacts.get(definition.source.sha256);
-    if (artifact === null) {
-      if (existing !== null) {
-        await this.#failIntegrity(existing, "stored publication artifact is missing");
-      }
-      throw new DefinitionArtifactIntegrityError(
-        request.definition,
-        definition.source.sha256,
-      );
-    }
-    const bytes = Uint8Array.from(artifact);
-    if (bytes.byteLength !== definition.source.byteLength) {
-      if (existing !== null) {
-        await this.#failIntegrity(
-          existing,
-          "stored publication artifact length drifted",
-        );
-      }
-      throw new DefinitionArtifactIntegrityError(
-        request.definition,
-        definition.source.sha256,
-        { expected: definition.source.byteLength, actual: bytes.byteLength },
-      );
-    }
+    const { bytes, sourceOverlay } = await readRetainedDefinitionArtifacts(this.#dependencies.artifacts, definition);
     const preparation = await this.#dependencies.host.prepare(
-      messageStartPublicationHostRequest(bytes, definition, messageStart, identity),
+      messageStartPublicationHostRequest(bytes, definition, messageStart, identity, sourceOverlay),
     );
     switch (preparation.status) {
       case "admitted":
@@ -217,6 +194,7 @@ export class MessageStartPublicationService {
             definition,
             messageStart,
             identity,
+            sourceOverlay,
           ),
           intent: { ...preparation.intent },
         };

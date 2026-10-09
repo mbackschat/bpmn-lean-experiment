@@ -48,6 +48,7 @@ const incident = {
       source,
       semanticProfile: "cib-seven-2.2.0:service-task-incident-cancellation",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   },
   incident: {

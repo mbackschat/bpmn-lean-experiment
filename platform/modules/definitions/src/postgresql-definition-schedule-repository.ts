@@ -56,16 +56,12 @@ export class PostgresqlDefinitionScheduleRepository
           INSERT INTO bpmn_platform.definition_schedules (
             process_id, version, schedule_id, source_kind, source_id,
             source_sha256, source_byte_length, source_declared_encoding,
-            source_decoded_as, semantic_profile, start_capabilities_json,
+            source_decoded_as, source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json,
             timer_start_event_id, timer_duration_ms, activation_at, due_at,
             process_instance_id, host_schedule_id, configured_workflow_id_base,
             state, cleanup_complete, cancellation_origin,
             process_locator
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-            $12, $13, $14, $15, $16, $17, $18,
-            'creating', false, NULL, NULL
-          )
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'creating', false, NULL, NULL)
           ON CONFLICT (process_id, version, schedule_id) DO NOTHING
           RETURNING *
         `,

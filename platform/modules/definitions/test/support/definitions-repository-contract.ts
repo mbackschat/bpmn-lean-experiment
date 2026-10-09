@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import { ArtifactConflictError } from "@bpmn-lean/platform-artifact-store";
+import { DefinitionStartDescriptionStatus } from "@bpmn-lean/platform-engine-gateway";
+import type { DefinitionVersionStarter, PreparedDefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
 
 import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
 import {
@@ -9,6 +12,8 @@ import {
   DefinitionPresentationIntegrityError,
   DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
+  DefinitionStartService,
+  ConfirmedProcessInstancePublicationService,
   MessageStartPublicationIntegrityError,
   MessageStartPublicationState,
 } from "@bpmn-lean/platform-definitions";
@@ -17,6 +22,8 @@ import type {
   DefinitionMetadata,
   DefinitionPresentationRepository,
   DefinitionRepository,
+  DirectProcessInstanceHost,
+  ExactArtifactStore,
   DefinitionScheduleRepository,
   HumanTaskCatalogRepository,
   MessageStartPublicationRepository,
@@ -37,11 +44,48 @@ export type DefinitionsRepositoryContractFactory =
 
 export const sourceBytes = new TextEncoder().encode("<exact-definition/>");
 export const sourceSha256 = createHash("sha256").update(sourceBytes).digest("hex");
+export const overlayBytes = new TextEncoder().encode('{"selection":"original"}');
+export const laterOverlayBytes = new TextEncoder().encode('{"selection":"later"}');
+export const overlayIdentity = { id: "overlay-🚀\u0000", sha256: digest(overlayBytes) };
+export const laterOverlayIdentity = { id: overlayIdentity.id, sha256: digest(laterOverlayBytes) };
+
+function digest(bytes: Uint8Array): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
 
 export function registerDefinitionsRepositoryContract(
   label: string,
   createFixture: DefinitionsRepositoryContractFactory,
 ): void {
+  test(`${label}: nonnull overlay identities remain detached and distinct across exact versions and snapshots`, async () => {
+    await usingFixture(createFixture, async ({ definitions, confirmed, schedules, messages }) => {
+      const candidate = { ...metadata("Overlay_Process"), sourceOverlay: { ...overlayIdentity } };
+      const first = await definitions.allocateNext(candidate);
+      Object.assign(candidate.sourceOverlay, { id: "changed", sha256: "f".repeat(64) });
+      Object.assign(first.sourceOverlay!, { id: "changed", sha256: "f".repeat(64) });
+      const retained = await definitions.get({ processId: first.processId, version: first.version });
+      assert.ok(retained !== null);
+      assert.deepEqual(retained.sourceOverlay, overlayIdentity);
+      const second = await definitions.allocateNext({ ...metadata(first.processId), sourceOverlay: { ...laterOverlayIdentity } });
+      assert.deepEqual((await definitions.listVersions(first.processId)).map(({ version, sourceOverlay }) => ({ version, sourceOverlay })), [
+        { version: 1, sourceOverlay: overlayIdentity }, { version: 2, sourceOverlay: laterOverlayIdentity },
+      ]);
+      assert.deepEqual((await definitions.listLatest())[0]?.sourceOverlay, laterOverlayIdentity);
+      const publication = { instance: { processInstanceId: "retained-overlay", definition: retained }, locator: "opaque" };
+      await confirmed.confirm(publication);
+      assert.deepEqual((await confirmed.get(publication.instance.processInstanceId))?.instance.definition.sourceOverlay, overlayIdentity);
+      await assert.rejects(confirmed.confirm({ ...publication, instance: { ...publication.instance, definition: { ...retained, sourceOverlay: { ...laterOverlayIdentity } } } }), ConfirmedProcessInstanceIntegrityError);
+      const scheduled = await definitions.allocateNext({ ...timerMetadata(), sourceOverlay: { ...overlayIdentity } });
+      const scheduleRecord = schedule(scheduled, "retained-overlay", 1);
+      await schedules.reserve(scheduleRecord);
+      assert.deepEqual((await schedules.get(scheduleRecord.reference))?.definition.sourceOverlay, overlayIdentity);
+      const messaged = await definitions.allocateNext({ ...messageMetadata(), sourceOverlay: { ...laterOverlayIdentity } });
+      await messages.reserve(messagePublication(messaged, "retained-overlay", 1));
+      assert.deepEqual((await messages.get("retained-overlay"))?.definition.sourceOverlay, laterOverlayIdentity);
+      assert.equal(second.version, 2);
+    });
+  });
+
   test(`${label}: definitions preserve process-local versions and canonical catalogs`, async () => {
     await usingFixture(createFixture, async ({ definitions }) => {
       const candidate = metadata("Process_🚀");
@@ -419,6 +463,102 @@ async function usingFixture(
   }
 }
 
+export type RetainedOverlayRecoveryFixture = Readonly<{
+  definitions: DefinitionRepository;
+  confirmed: ConfirmedProcessInstanceRepository;
+  artifacts: ExactArtifactStore;
+  reopen: () => Promise<void>;
+  recover: (host: DirectProcessInstanceHost, processInstanceId: string) => Promise<void>;
+  removeArtifact: (sha256: string) => Promise<void>;
+  corruptArtifact: (sha256: string, bytes: Uint8Array) => Promise<void>;
+  dispose: () => Promise<void>;
+}>;
+
+export function registerRetainedOverlayRecoveryContract(
+  label: string,
+  createFixture: () => Promise<RetainedOverlayRecoveryFixture>,
+): void {
+  const intent = { protocol: "bpmn-direct-start-v1", intentSha256: "e".repeat(64) } as const;
+  const command = '{"initialVariables":[{"name":"request","value":{"kind":"string","value":"retained request"}}]}';
+  async function reserved(run: (value: Awaited<ReturnType<typeof reserve>>) => Promise<void>) {
+    const fixture = await createFixture();
+    try { await run(await reserve(fixture)); } finally { await fixture.dispose(); }
+  }
+  async function reserve(fixture: RetainedOverlayRecoveryFixture) {
+    await fixture.artifacts.put({ sha256: sourceSha256, bytes: sourceBytes });
+    await fixture.artifacts.put({ ...overlayIdentity, bytes: overlayBytes });
+    await fixture.artifacts.put({ ...laterOverlayIdentity, bytes: laterOverlayBytes });
+    const definition = await fixture.definitions.allocateNext({ ...metadata("Retained_Overlay"), sourceOverlay: { ...overlayIdentity } });
+    const instance = { processInstanceId: "reserved-🚀\u0000", definition };
+    await fixture.confirmed.reserveDirect({ instance, locator: "opaque", intent, startCommandBytes: new TextEncoder().encode(command) });
+    await fixture.definitions.allocateNext({ ...metadata(definition.processId), sourceOverlay: { ...laterOverlayIdentity } });
+    await fixture.reopen();
+    assert.deepEqual((await fixture.definitions.get(definition))?.sourceOverlay, overlayIdentity);
+    assert.deepEqual((await fixture.definitions.listLatest())[0]?.sourceOverlay, laterOverlayIdentity);
+    fixture.definitions.get = async () => { assert.fail("recovery must use its reserved snapshot"); };
+    fixture.definitions.listLatest = async () => { assert.fail("recovery must never select latest"); };
+    const calls: PreparedDefinitionVersionStartRequest[] = [];
+    const descriptions: string[] = [];
+    const starter: DefinitionVersionStarter = {
+      prepareDefinitionVersion: async () => { assert.fail("recovery must not prepare again"); },
+      startDefinitionVersion: async () => { assert.fail("recovery must not use an unbound start"); },
+      startPreparedDefinitionVersion: async (selected) => {
+        calls.push(structuredClone(selected));
+        return { status: "started", processInstanceId: selected.processInstanceId, source: definition.source, definition: { processId: definition.processId, semanticProfile: definition.semanticProfile, sourceOverlay: selected.sourceOverlay === undefined || selected.sourceOverlay === null ? null : { id: selected.sourceOverlay.id, sha256: selected.sourceOverlay.sha256 } } };
+      },
+      describeDefinitionVersionStart: async (selected) => { descriptions.push(selected.processInstanceId); assert.deepEqual(selected.expectedIntent, intent); return { status: DefinitionStartDescriptionStatus.Matching }; },
+    };
+    const publication = new ConfirmedProcessInstancePublicationService({ repository: fixture.confirmed, operate: { recordConfirmedProcessInstance: async () => {} }, work: { recordConfirmedProcessInstance: async () => {} } });
+    const service = new DefinitionStartService(starter, fixture.artifacts, fixture.definitions, () => { assert.fail("recovery must not allocate an instance"); }, publication);
+    return { fixture, instance, calls, descriptions, host: service.directStartRecoveryHost() };
+  }
+  test(`${label}: restart dispatch reconstructs the reserved nonnull overlay and command despite a later same-ID version`, async () => {
+    await reserved(async ({ fixture, instance, calls, descriptions, host }) => {
+      await fixture.recover(host, instance.processInstanceId);
+      assert.equal(calls.length, 1);
+      assert.deepEqual(calls[0]?.bytes, sourceBytes);
+      assert.deepEqual(calls[0]?.sourceOverlay, { ...overlayIdentity, bytes: overlayBytes });
+      assert.deepEqual(calls[0]?.initialVariables, JSON.parse(command).initialVariables);
+      assert.deepEqual(calls[0]?.expectedIntent, intent);
+      assert.deepEqual((await fixture.confirmed.get(instance.processInstanceId))?.instance, instance);
+      assert.deepEqual(descriptions, []);
+      await fixture.recover(host, instance.processInstanceId);
+      assert.equal(calls.length, 1);
+    });
+  });
+  for (const mutation of ["missing", "corrupt", "wrongDigest", "storeRejectsCorruption"] as const) {
+    test(`${label}: reserved overlay ${mutation} refuses before SDK dispatch or describe`, async () => {
+      await reserved(async ({ fixture, instance, calls, descriptions, host }) => {
+        switch (mutation) {
+          case "missing": await fixture.removeArtifact(overlayIdentity.sha256); break;
+          case "corrupt": await fixture.corruptArtifact(overlayIdentity.sha256, new TextEncoder().encode("corrupt")); break;
+          case "wrongDigest": await fixture.corruptArtifact(overlayIdentity.sha256, laterOverlayBytes); break;
+          case "storeRejectsCorruption": fixture.artifacts.get = async () => { throw new ArtifactConflictError(overlayIdentity.sha256); }; break;
+        }
+        try { await fixture.recover(host, instance.processInstanceId); } catch (error) {
+          if (!(error instanceof ConfirmedProcessInstanceIntegrityError)) throw error;
+        }
+        assert.deepEqual(calls, []);
+        assert.deepEqual(descriptions, []);
+        assert.equal((await fixture.confirmed.get(instance.processInstanceId))?.state, "integrityFailure");
+      });
+    });
+  }
+  test(`${label}: indeterminate nonnull-overlay recovery describes only when retained artifacts are unavailable`, async () => {
+    await reserved(async ({ fixture, instance, calls, descriptions, host }) => {
+      await fixture.confirmed.compareAndSetState(instance.processInstanceId, "reserved", "starting");
+      await fixture.confirmed.compareAndSetState(instance.processInstanceId, "starting", "indeterminate");
+      await fixture.removeArtifact(overlayIdentity.sha256);
+      fixture.artifacts.get = async () => { assert.fail("already-dispatched recovery must not read artifacts"); };
+      await fixture.recover(host, instance.processInstanceId);
+      assert.deepEqual(calls, []);
+      assert.deepEqual(descriptions, [instance.processInstanceId]);
+      assert.equal((await fixture.confirmed.get(instance.processInstanceId))?.state, "confirmed");
+      assert.deepEqual((await fixture.confirmed.get(instance.processInstanceId))?.instance, instance);
+    });
+  });
+}
+
 function metadata(processId: string): NewDefinitionMetadata {
   return {
     processId,
@@ -432,6 +572,7 @@ function metadata(processId: string): NewDefinitionMetadata {
     },
     semanticProfile: "profile-v1",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
 }
 

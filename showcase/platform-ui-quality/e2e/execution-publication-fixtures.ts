@@ -43,6 +43,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "cib-seven-2.2.0:committed-execution-publication-parallel-review",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
 

@@ -119,6 +119,33 @@ test("wrong stored Timer Start identity creates neither Schedule nor Workflow", 
   assert.equal(fake.describes, 0);
 });
 
+test("retained overlays reach Timer profile admission instead of being silently dropped", async () => {
+  const bytes = await readFile(sourceUrl);
+  const overlayBytes = new TextEncoder().encode(JSON.stringify({
+    kind: "bpmnSourceOverlay",
+    id: "timer-overlay",
+    semanticProfile: profile,
+    effectBindings: [],
+    inertAttributes: [],
+  }));
+  for (const digest of [sha256(overlayBytes), "0".repeat(64)]) {
+    const fake = new FakeScheduleClient();
+    const request = {
+      ...requestFor(bytes, fake.client),
+      sourceOverlay: { id: "timer-overlay", sha256: digest, bytes: overlayBytes },
+    };
+    const result = await createBpmnDefinitionSchedule(request);
+    assert.equal(result.status, EngineDefinitionScheduleStatus.IntegrityFailure);
+    assert.equal(result.failure.code, EngineDefinitionScheduleIntegrityCode.CompilationRejected);
+    assert.match(result.failure.evidence, digest === sha256(overlayBytes)
+      ? /does not admit a source overlay/u
+      : /expected SHA-256/u);
+    assert.equal(fake.scheduleCreates, 0);
+    assert.equal(fake.workflowStarts, 0);
+    assert.equal(fake.describes, 0);
+  }
+});
+
 test("stored capability collection drift creates no host resource", async () => {
   const bytes = await readFile(sourceUrl);
   const fake = new FakeScheduleClient();

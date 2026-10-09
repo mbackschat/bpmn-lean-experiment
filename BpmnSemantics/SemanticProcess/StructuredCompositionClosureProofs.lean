@@ -22,13 +22,8 @@ theorem task_execution_preserves_valid_bindings
           analyzed (List.mem_of_find?_eq_some selected) executed]
         exact ih
   | completion commandId taskId bindings reachable ih =>
-      rcases completion_admission_dispatch_or_refusal program _ commandId taskId bindings
-          with dispatched | refused
-      · rw [dispatched]
-        exact completion_dispatch_preserves_valid_bindings program analysis _ commandId taskId
-          bindings profile analyzed ih
-      · rw [refused]
-        exact ih
+      exact completion_admission_preserves_valid_bindings program analysis _ commandId taskId
+        bindings profile analyzed ih
 
 theorem task_execution_preserves_binding_presence
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState) (name : String)
@@ -47,13 +42,8 @@ theorem task_execution_preserves_binding_presence
           analyzed (List.mem_of_find?_eq_some selected) executed]
         exact ih
   | completion commandId taskId bindings reachable ih =>
-      rcases completion_admission_dispatch_or_refusal program _ commandId taskId bindings
-          with dispatched | refused
-      · rw [dispatched]
-        exact completion_dispatch_preserves_binding_presence program analysis _ commandId taskId
-          bindings name ih analyzed
-      · rw [refused]
-        exact ih
+      exact completion_admission_preserves_binding_presence program analysis _ commandId taskId
+        bindings name ih analyzed
 
 theorem committed_start_process_bindings
     (program : Program) (analysis : Analysis)
@@ -250,7 +240,7 @@ theorem process_merge_preserves_input_positions
     obtain ⟨operation, member, matched, inputs⟩ := positions.2 wait live
     exact ⟨operation, member, matched, fun name needed => merge_preserves_binding_presence _ _ name (inputs name needed)⟩
 
-theorem completion_dispatch_preserves_input_positions
+theorem completion_admission_preserves_input_positions
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (wellFormed : programWellFormed program = true)
@@ -258,8 +248,8 @@ theorem completion_dispatch_preserves_input_positions
     (analyzed : programAnalysis program = some analysis) (graph : analyze vertices = some analysis)
     (positions : RuntimeInputPositions program vertices analysis before) (bounded : ControlUnitBound before) :
     RuntimeInputPositions program vertices analysis
-      (dispatchStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_dispatch_cases program analysis before commandId taskId bindings analyzed with
+      (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ |
       ⟨after, completed, call, _, result⟩
   · simpa [refused] using positions
@@ -292,12 +282,8 @@ theorem task_execution_preserves_input_positions
           (List.mem_of_find?_eq_some selected) ih bound executed
   | completion commandId taskId bindings reachable ih =>
       have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed bounded reachable
-      rcases completion_admission_dispatch_or_refusal program _ commandId taskId bindings with dispatched | refused
-      · rw [dispatched]
-        exact completion_dispatch_preserves_input_positions program vertices analysis _ commandId taskId bindings
-          wellFormed profile analyzed graph ih bound
-      · rw [refused]
-        exact ih
+      exact completion_admission_preserves_input_positions program vertices analysis _ commandId taskId bindings
+        wellFormed profile analyzed graph ih bound
 
 theorem reached_data_task_input_is_available
     (program : Program) (analysis : Analysis)
@@ -745,19 +731,16 @@ theorem accepted_completion_within_burst_bound
   have positions := task_execution_preserves_input_positions program vertices analysis _ reached wellFormed profile
     analyzed graph startPositions startBound reachable
   have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed startBound reachable
-  rcases completion_admission_dispatch_or_refusal program reached commandId taskId bindings with dispatched | refused
-  · rw [dispatched] at accepted ⊢
-    rcases completion_dispatch_cases program analysis reached commandId taskId bindings analyzed with refused |
-      ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
-    · simp [refused] at accepted
-    · rw [result]
-      exact data_completion_within_burst_bound program vertices analysis reached after taskId.processInstanceId
-        ⟨taskId.elementId.value⟩ taskId.activation bindings analyzed graph bounded completed
-    · rw [result]
-      exact ordinary_completion_within_burst_bound program vertices analysis reached after taskId bindings
-        wellFormed profile analyzed graph positions bounded ordinary completed
-    · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
+  rcases completion_admission_cases program analysis reached commandId taskId bindings analyzed with refused |
+    ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
   · simp [refused] at accepted
+  · rw [result]
+    exact data_completion_within_burst_bound program vertices analysis reached after taskId.processInstanceId
+      ⟨taskId.elementId.value⟩ taskId.activation bindings analyzed graph bounded completed
+  · rw [result]
+    exact ordinary_completion_within_burst_bound program vertices analysis reached after taskId bindings
+      wellFormed profile analyzed graph positions bounded ordinary completed
+  · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
 
 /-- A finite sequence of actual operation selections spends one rank unit per successful step. -/
 theorem internal_sequence_spends_burst_rank

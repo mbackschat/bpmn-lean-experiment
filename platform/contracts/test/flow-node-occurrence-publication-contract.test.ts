@@ -57,6 +57,7 @@ test("derives the Product 1 identity from one exact public Process instance", ()
       },
       semanticProfile: occurrenceIdentity.definition.semanticProfile,
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   }), occurrenceIdentity);
 });

@@ -215,6 +215,7 @@ function confirmedPublication(
         },
         semanticProfile: "profile-1",
         startCapabilities: { messageStarts: [], timerStarts: [] },
+        sourceOverlay: null,
       },
     },
     locator,

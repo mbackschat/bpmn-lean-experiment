@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   DefinitionCompilationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
@@ -13,6 +14,7 @@ import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
 import {
   DefinitionArtifactIntegrityError,
   DefinitionDeploymentStatus,
+  DefinitionDeploymentIntegrityError,
 } from "./contracts.js";
 import type {
   DefinitionDeploymentRequest,
@@ -26,6 +28,8 @@ import type {
 import {
   cloneDefinitionMetadata,
   cloneDefinitionSource,
+  cloneSourceOverlayIdentity,
+  equalSourceOverlayIdentity,
 } from "./definition-values.js";
 import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
 
@@ -65,15 +69,25 @@ export class DefinitionDeploymentService {
     const sourceId = request.sourceId;
     const semanticProfile = request.semanticProfile;
     const expectedSha256 = request.expectedSha256;
+    const sourceOverlay = request.sourceOverlay === undefined || request.sourceOverlay === null
+      ? null
+      : { id: request.sourceOverlay.id, sha256: request.sourceOverlay.sha256, bytes: Uint8Array.from(request.sourceOverlay.bytes) };
+    const capturedSourceSha256 = createHash("sha256").update(sourceBytes).digest("hex");
     const compilation = await this.#compiler.compileDefinition({
       bytes: Uint8Array.from(sourceBytes),
       sourceId,
       semanticProfile,
       expectedSha256,
+      sourceOverlay: sourceOverlay === null ? null : { ...sourceOverlay, bytes: Uint8Array.from(sourceOverlay.bytes) },
     });
 
     switch (compilation.status) {
       case DefinitionCompilationStatus.Accepted: {
+        if (compilation.source.id !== sourceId || compilation.source.sha256 !== capturedSourceSha256 ||
+          compilation.source.byteLength !== sourceBytes.byteLength || compilation.definition.semanticProfile !== semanticProfile ||
+          !equalSourceOverlayIdentity(compilation.definition.sourceOverlay, sourceOverlay)) {
+          throw new DefinitionDeploymentIntegrityError();
+        }
         const source = cloneDefinitionSource(compilation.source);
         const processId = compilation.definition.processId;
         const acceptedSemanticProfile = compilation.definition.semanticProfile;
@@ -98,12 +112,16 @@ export class DefinitionDeploymentService {
           sha256: source.sha256,
           bytes: sourceBytes,
         });
+        if (sourceOverlay !== null) {
+          await this.#artifacts.put({ sha256: sourceOverlay.sha256, bytes: sourceOverlay.bytes });
+        }
         const definition = await this.#repository.allocateNext(
           {
             processId,
             source,
             semanticProfile: acceptedSemanticProfile,
             startCapabilities,
+            sourceOverlay: cloneSourceOverlayIdentity(sourceOverlay),
           },
           catalog.catalog,
         );

@@ -6,6 +6,8 @@
 
 Deploy exact BPMN bytes, list and inspect versioned definitions, retrieve source or presentation, start an exact version, manage one-shot schedules, publish an addressed Message Start, publish a target-free correlated Message through exact-byte capability reconstruction, and recover confirmed starts without redispatching uncertain host work. Correlation capability is not persisted or reconstructed by Product 2: the engine gateway recompiles the immutable admitted source for discovery and again for content-bound publication. For the structured Human Work profile, deployment also projects and atomically retains the exact-source-bound Human Task catalog after engine admission.
 
+Deployment can retain an explicitly selected source overlay alongside BPMN bytes. Exact-version starts and capability reconstruction reuse that retained selection; the [public-delivery contract](../../../docs/BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md#public-deployment-contract) specifies the closed multipart transport and its identity requirements.
+
 The module reaches Product 1 only through the [engine gateway](../../foundation/engine-gateway/README.md) and stores exact bytes only through the [artifact store](../../foundation/artifact-store/README.md).
 
 Local mode uses the existing SQLite repositories. Shared mode uses caller-owned PostgreSQL runtime sessions and the Definitions-owned ordinal-0002 migration after the artifact-store migration. Both modes execute the same environment-neutral repository contract. PostgreSQL stores unrestricted exact Unicode identifiers as UTF-8 `bytea`, so the shared adapter does not narrow SQLite's accepted value domain.

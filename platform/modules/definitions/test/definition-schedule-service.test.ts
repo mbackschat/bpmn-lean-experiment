@@ -366,6 +366,7 @@ function timerDefinition(): DefinitionMetadata {
       messageStarts: [],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     },
+    sourceOverlay: null,
   };
 }
 
@@ -555,6 +556,7 @@ class MemoryHost implements DefinitionScheduleHost {
       processId: this.definition.processId,
       semanticProfile: this.definition.semanticProfile,
       startCapabilities: structuredClone(this.definition.startCapabilities),
+      sourceOverlay: null,
     };
   }
 

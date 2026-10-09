@@ -28,6 +28,11 @@ def stimulusAdmitted (program : Program) (state : RuntimeState) (stimulus : Stim
           (ParallelScopeStart.programStateCapacity program state).isSome && SerialBusinessTask.bindingsValid analysis.handlers bindings
       | _ => false
 
+@[simp] theorem stimulusAdmitted_of_unselected (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) (unselected : ParallelScopeStart.programSelected program = false) :
+    stimulusAdmitted program state stimulus = true := by
+  simp [stimulusAdmitted, unselected]
+
 def completeTask? (program : Program) (state : RuntimeState) (id : UserTaskInstanceId)
     (values : List VariableBinding) : Option RuntimeState := do
   let [wait] := state.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&

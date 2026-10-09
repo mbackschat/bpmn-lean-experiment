@@ -1,3 +1,6 @@
+import { DefinitionArtifactIntegrityError } from "./contracts.js";
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import type { ExactArtifactStore } from "./contracts.js";
@@ -101,7 +104,8 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
     let result;
     try {
       result = await this.#options.host[operation](request);
-    } catch {
+    } catch (error: unknown) {
+      if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
       return retryHostUnavailable();
     }
     return applyHostResult(record, result, false);
@@ -170,17 +174,14 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
   async #request(
     record: DefinitionScheduleRecord,
   ): Promise<DefinitionScheduleHostRequest | PostgresqlDefinitionsRecoveryStepResult> {
-    const artifact = await this.#options.artifacts.get(
-      record.definition.source.sha256,
-    );
-    if (artifact === null || artifact.byteLength !== record.definition.source.byteLength) {
-      return failRecovery(
-        PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact,
-        PostgresqlDefinitionsRecoveryFailureEvidence.Artifact,
-      );
+    let retained: RetainedDefinitionArtifacts;
+    try {
+      retained = await readRetainedDefinitionArtifacts(this.#options.artifacts, record.definition);
+    } catch {
+      return failRecovery(PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact, PostgresqlDefinitionsRecoveryFailureEvidence.Artifact);
     }
     return {
-      bytes: Uint8Array.from(artifact),
+      ...retained,
       definition: structuredClone(record.definition),
       timerStart: { ...record.timerStart },
       activationAt: record.activationAt,

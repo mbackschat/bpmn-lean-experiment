@@ -1,3 +1,5 @@
+import type { DefinitionSourceOverlaySelection } from "./index.js";
+import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
 /** Product 2's cohesive, representation-free definition Schedule host collaborator. */
 import {
   EngineDefinitionCompilationStatus,
@@ -31,6 +33,7 @@ export type DefinitionScheduleValidationRequest = Readonly<{
   expectedSha256: string;
   semanticProfile: string;
   expectedProcessId: string;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
 type AcceptedCompilation = Extract<
@@ -45,11 +48,13 @@ export type DefinitionScheduleValidationResult =
       processId: string;
       semanticProfile: string;
       startCapabilities: DefinitionStartCapabilities;
+      sourceOverlay: PublicSourceOverlayIdentity | null;
     }>
   | Readonly<{ status: "rejected"; evidence: string }>;
 
 export type DefinitionScheduleHostRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: Readonly<{
     processId: string;
     source: Readonly<{
@@ -153,6 +158,7 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
           source: result.source,
           processId: result.definition.processId,
           semanticProfile: result.definition.semanticProfile,
+          sourceOverlay: result.definition.sourceOverlay,
           startCapabilities: mapDefinitionStartCapabilities(
             result.startCapabilities,
           ),
@@ -202,6 +208,7 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
   private boundRequest(request: DefinitionScheduleHostRequest) {
     return {
       bytes: request.bytes,
+      sourceOverlay: request.sourceOverlay ?? null,
       sourceId: request.definition.source.id,
       expectedSha256: request.definition.source.sha256,
       expectedByteLength: request.definition.source.byteLength,

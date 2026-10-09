@@ -55,7 +55,7 @@ test("direct start suppresses success when recording the exact identity fails", 
         status: EngineDefinitionStartStatus.Admitted,
         source: structuredClone(definition.source),
         definition: {
-          sourceOverlay: null,
+        sourceOverlay: null,
           processId: definition.processId,
           semanticProfile: definition.semanticProfile,
         },
@@ -72,7 +72,7 @@ test("direct start suppresses success when recording the exact identity fails", 
           status: EngineDefinitionStartStatus.Started,
           source: structuredClone(definition.source),
           definition: {
-            sourceOverlay: null,
+          sourceOverlay: null,
             processId: definition.processId,
             semanticProfile: definition.semanticProfile,
           },
@@ -195,7 +195,7 @@ test("non-confirmed producer states never record an instance", async () => {
         status: EngineDefinitionStartStatus.Rejected,
         source: structuredClone(definition.source),
         definition: {
-          sourceOverlay: null,
+        sourceOverlay: null,
           processId: definition.processId,
           semanticProfile: definition.semanticProfile,
         },
@@ -516,6 +516,7 @@ function scheduleHost(
       processId: definition.processId,
       semanticProfile: definition.semanticProfile,
       startCapabilities: structuredClone(definition.startCapabilities),
+      sourceOverlay: null,
     }),
     createOrCompare: async () => {
       onCreate?.();
@@ -625,5 +626,6 @@ function exactDefinition(): DefinitionMetadata {
       }],
       timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
     },
+    sourceOverlay: null,
   };
 }

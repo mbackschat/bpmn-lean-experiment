@@ -38,6 +38,7 @@ const definition = {
   },
   semanticProfile: "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 };
 
 const task = {

@@ -1,3 +1,4 @@
+import type { DefinitionSourceOverlaySelection } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionMessageStartCapability,
   DefinitionMetadata,
@@ -15,9 +16,11 @@ export function messageStartPublicationHostRequest(
   definition: DefinitionMetadata,
   messageStart: DefinitionMessageStartCapability,
   identity: MessageStartPublicationPrivateIdentity,
+  sourceOverlay: DefinitionSourceOverlaySelection | null,
 ): MessageStartPublicationHostRequest {
   return {
     bytes: Uint8Array.from(bytes),
+    sourceOverlay: sourceOverlay === null ? null : { ...sourceOverlay, bytes: Uint8Array.from(sourceOverlay.bytes) },
     definition: {
       processId: definition.processId,
       source: {

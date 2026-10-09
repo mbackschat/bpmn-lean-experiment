@@ -40,6 +40,7 @@ const definition = {
   },
   semanticProfile: "bpmn-2.0.2-bpmn-lean-message-key-correlation-v1",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const satisfies DefinitionMetadata;
 const capability = {
   catchEventId: "Catch_Settlement",
@@ -73,6 +74,7 @@ test("discovers target-free capabilities from exact stored definition bytes", as
   });
   assert.deepEqual(fixture.describes, [{
     bytes,
+    sourceOverlay: null,
     definition: {
       processId: definition.processId,
       source: {
@@ -81,6 +83,7 @@ test("discovers target-free capabilities from exact stored definition bytes", as
         byteLength: definition.source.byteLength,
       },
       semanticProfile: definition.semanticProfile,
+      sourceOverlay: null,
     },
   }]);
   assert.equal("processInstanceId" in fixture.describes[0]!, false);

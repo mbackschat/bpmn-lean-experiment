@@ -1,3 +1,4 @@
+import type { DefinitionSourceOverlaySelection } from "./index.js";
 /** Product 2's representation-free direct Message Start host collaborator. */
 import {
   EngineDefinitionMessageStartDescriptionStatus,
@@ -23,6 +24,7 @@ export type DefinitionMessageStartIntent = EngineDefinitionMessageStartIntent;
 
 export type DefinitionMessageStartRequest = Readonly<{
   bytes: Uint8Array;
+  sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: Readonly<{
     processId: string;
     source: Readonly<{
@@ -162,6 +164,7 @@ export class BpmnDefinitionMessageStartGateway
   private boundRequest(request: DefinitionMessageStartRequest) {
     return {
       bytes: request.bytes,
+      sourceOverlay: request.sourceOverlay ?? null,
       sourceId: request.definition.source.id,
       expectedSha256: request.definition.source.sha256,
       expectedByteLength: request.definition.source.byteLength,

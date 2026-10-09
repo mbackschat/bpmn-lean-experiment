@@ -44,6 +44,7 @@ const definition = {
     messageStarts: [messageStart],
     timerStarts: [],
   },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 const request = {

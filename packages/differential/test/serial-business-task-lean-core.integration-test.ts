@@ -17,6 +17,8 @@ import { compile, profile, source } from "../../bpmn-source/test/serial-business
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
+import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
 const binding = (name: string, value: string): VariableBinding => ({ name, value: { kind: VariableValueKind.String, value } });
@@ -47,6 +49,8 @@ test("serial business lowering, local data, refusals and complete publications a
     { id: "literal", xml: original.replace('${request}', 'literal-invoice'), nullResult: false, empty: false },
     { id: "empty", xml: original.replace(/<extensionElements>[\s\S]*?<\/extensionElements>/u, ''), nullResult: false, empty: true },
     { id: "missing-input", xml: original, nullResult: false, empty: false },
+    { id: "string-metadata", xml: original.replace(/<userTask\b([^>]*?)\s*\/>/gu,
+      '<userTask$1 camunda:candidateGroups="reviewers"><extensionElements><camunda:formData><camunda:formField id="request" type="string"/></camunda:formData></extensionElements></userTask>'), nullResult: false, empty: false },
   ];
   const inputs = await Promise.all(cases.map(async selected => {
     const compiled = await compile(selected.xml);
@@ -159,6 +163,29 @@ test("serial business lowering, local data, refusals and complete publications a
       }
       assert.deepEqual(record.commandPublications, publications, `${scenario.id} E2`);
     }
+    const metadataInput = inputs.find(input => input.id === "string-metadata");
+    assert.ok(metadataInput);
+    const metadataPath = paths[inputs.indexOf(metadataInput)]!;
+    const admissionInputs: DefinitionAdmissionInput[] = [{ scenarioId: "string-control",
+      checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program }];
+    const expectedAdmissions: DefinitionAdmissionResult[] = [{ scenarioId: "string-control",
+      checkedWellFormed: true, programWellFormed: true, programProfileCapabilitiesValid: true }];
+    for (const [id, from, to] of [['boolean', '"type":"string"', '"type":"boolean"'],
+      ['handler-key', '"key":"request"', '"key":"invoiceValidator"']]) {
+      const mutate = <T>(value: T): T => JSON.parse(JSON.stringify(value).replaceAll(from!, to!));
+      const invalid = mutate({ scenarioId: metadataInput.scenario.id, checkedProcess: metadataInput.checkedProcess, semanticProcess: metadataInput.program });
+      admissionInputs.push({ ...invalid, scenarioId: `${id}-checked-and-il` }, {
+        scenarioId: `${id}-il-only`, checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) });
+      expectedAdmissions.push({ scenarioId: `${id}-checked-and-il`, checkedWellFormed: false, programWellFormed: true,
+        programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
+        programWellFormed: true, programProfileCapabilitiesValid: false });
+      await writeFile(definitions, JSON.stringify(invalid) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
+        checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+    }
+    assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

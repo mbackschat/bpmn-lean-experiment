@@ -25,6 +25,7 @@ test("Process instance cards explain values and keep technical details optional 
     definition: {
       processId: "Process_Order", version: 3, semanticProfile: "example-execution-profile",
       source: { kind: "bpmnSource", id: "orders.bpmn", sha256: "d".repeat(64), byteLength: 1, declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+      sourceOverlay: null,
       startCapabilities: { messageStarts: [], timerStarts: [] },
     },
   };

@@ -43,6 +43,7 @@ const definition = {
   },
   semanticProfile: "bpmn-2.0.2-message-start-event-draft",
   startCapabilities: { messageStarts: [messageStart], timerStarts: [] },
+  sourceOverlay: null,
 } as const;
 const accepted = {
   publicationId: "publication/one",

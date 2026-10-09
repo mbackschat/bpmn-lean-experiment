@@ -15,6 +15,7 @@ function definition(model: ProcessShowcaseEntry): DeployedDefinitionVersion {
     processId: model.id, version: 1, semanticProfile: model.profile,
     source: { kind: "bpmnSource", id: "process.bpmn", sha256: model.sha256,
       byteLength: Buffer.byteLength(model.xml), declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+    sourceOverlay: null,
     startCapabilities: { messageStarts: [], timerStarts: [] },
   };
 }
@@ -59,6 +60,22 @@ for (const mismatch of ["source", "profile"] as const) {
       return Response.json({ status: DefinitionDeployStatus.Deployed, definition: mismatch === "source"
         ? { ...expected, source: { ...expected.source, sha256: "f".repeat(64) } }
         : { ...expected, semanticProfile: "another-profile" } }, { status: 201 });
-    }), /different source or profile/u);
+    }), /different source, overlay, or profile/u);
+  });
+}
+
+for (const sourceOverlay of [
+  { id: "overlay-a", sha256: "a".repeat(64) },
+  { id: "overlay-b", sha256: "a".repeat(64) },
+  { id: "overlay-a", sha256: "b".repeat(64) },
+]) {
+  test(`refuses matching source/profile preparation with overlay ${sourceOverlay.id}/${sourceOverlay.sha256.slice(0, 8)}`, async () => {
+    let attempts = 0;
+    await assert.rejects(prepareRcShowcases("http://localhost:3000", entries, async () => {
+      const model = curated[attempts++]!;
+      return Response.json({ status: DefinitionDeployStatus.Deployed,
+        definition: { ...definition(model), sourceOverlay } }, { status: 201 });
+    }), /different source, overlay, or profile/u);
+    assert.equal(attempts, 1);
   });
 }

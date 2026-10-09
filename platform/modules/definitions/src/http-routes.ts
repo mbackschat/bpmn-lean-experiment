@@ -22,6 +22,7 @@ import type {
   DefinitionVersionStartResult,
 } from "./contracts.js";
 import type { DefinitionDeploymentService } from "./definition-deployment-service.js";
+import { readDefinitionDeploymentBody } from "./http-deployment-request.js";
 import { readDefinitionVersionStartCommand } from "./definition-start-http-request.js";
 import {
   toPublicDefinition,
@@ -39,8 +40,6 @@ import {
   HttpRequestFailure,
   parseDeploymentQuery,
   parsePositiveVersion,
-  readBoundedBody,
-  requireDeploymentMediaType,
 } from "./http-request.js";
 
 const definitionsPath = "/api/v1/definitions";
@@ -189,10 +188,9 @@ export class DefinitionHttpRoutes {
 
   async #deploy(request: Request, url: URL): Promise<Response> {
     const query = parseDeploymentQuery(url);
-    requireDeploymentMediaType(request.headers);
-    const bytes = await readBoundedBody(request, this.#maxSourceBytes);
+    const body = await readDefinitionDeploymentBody(request, this.#maxSourceBytes);
     const result = await this.#deploymentService.deploy({
-      bytes,
+      ...body,
       sourceId: query.sourceId,
       semanticProfile: query.semanticProfile,
       expectedSha256: undefined,

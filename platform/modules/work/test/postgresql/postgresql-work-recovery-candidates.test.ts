@@ -212,6 +212,7 @@ function processIdentity(processInstanceId: string) {
       },
       semanticProfile: "profile",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   };
 }

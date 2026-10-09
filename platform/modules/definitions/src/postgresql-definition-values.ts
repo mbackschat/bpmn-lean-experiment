@@ -1,3 +1,4 @@
+import { decodeStoredSourceOverlayIdentity, sourceOverlaySqlValues } from "./definition-overlay-values.js";
 import {
   decodeCanonicalHumanTaskCatalogV1,
   serializeHumanTaskCatalogV1,
@@ -28,6 +29,7 @@ export function snapshotNewDefinitionMetadata(
     source: exact.source,
     semanticProfile: exact.semanticProfile,
     startCapabilities: exact.startCapabilities,
+    sourceOverlay: exact.sourceOverlay,
   };
 }
 
@@ -52,6 +54,8 @@ function definitionValueRow(
       metadata.source.declaredEncoding,
     ),
     source_decoded_as: metadata.source.decodedAs,
+    source_overlay_id: encodeNullablePostgresqlText(sourceOverlaySqlValues(metadata.sourceOverlay)[0]),
+    source_overlay_sha256: sourceOverlaySqlValues(metadata.sourceOverlay)[1],
     semantic_profile: encodePostgresqlText(metadata.semanticProfile),
     start_capabilities_json: encodeDefinitionStartCapabilities(
       metadata.startCapabilities,
@@ -82,6 +86,7 @@ export function decodeDefinitionMetadata(
       decodedAs,
     },
     semanticProfile: requireByteText(row, "semantic_profile"),
+    sourceOverlay: decodeStoredSourceOverlayIdentity(requireNullableByteText(row, "source_overlay_id"), requireNullableString(row, "source_overlay_sha256")),
     startCapabilities: decodeDefinitionStartCapabilities(
       requireString(row, "start_capabilities_json"),
     ),
@@ -148,6 +153,8 @@ export function metadataSqlValues(
     metadata.source.byteLength,
     encodeNullablePostgresqlText(metadata.source.declaredEncoding),
     metadata.source.decodedAs,
+    encodeNullablePostgresqlText(sourceOverlaySqlValues(metadata.sourceOverlay)[0]),
+    sourceOverlaySqlValues(metadata.sourceOverlay)[1],
     encodePostgresqlText(metadata.semanticProfile),
     encodeDefinitionStartCapabilities(metadata.startCapabilities),
   ];

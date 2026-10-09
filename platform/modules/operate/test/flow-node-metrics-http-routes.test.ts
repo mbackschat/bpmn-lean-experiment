@@ -65,6 +65,7 @@ test("serves available exact-version metrics and maps absence to 404", async () 
     },
     semanticProfile: "profile",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
   const result = {
     kind: "available" as const,
@@ -97,6 +98,7 @@ test("adds shared freshness only to successful metrics responses", async () => {
     },
     semanticProfile: "profile",
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
   const result: FlowNodeMetricsResult = {
     kind: "available",

@@ -31,6 +31,7 @@ import {
   confirmedPublication,
   continueIntermediate,
   createTestRuntime,
+  createRetainedOverlayRecoveryFixture,
   directKey,
   directReservation,
   messageKey,
@@ -43,6 +44,7 @@ import {
   seedDefinition,
   subscriber,
 } from "./support/definitions-recovery-step-fixture.ts";
+import { registerRetainedOverlayRecoveryContract } from "../support/definitions-repository-contract.ts";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 
@@ -75,6 +77,9 @@ if (baseUrl === undefined) {
   after(async () => {
     await runtime.close();
   });
+
+  registerRetainedOverlayRecoveryContract("PostgreSQL retained overlay", async () =>
+    await createRetainedOverlayRecoveryFixture(baseUrl));
 
   test("direct recovery fences dispatch ownership and ignores a stale callback", async () => {
     await resetDatabase(runtime);

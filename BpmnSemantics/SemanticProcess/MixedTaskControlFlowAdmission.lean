@@ -204,7 +204,9 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   match node with
   | .noneStartEvent _ => return { id, kind := .start, outputs }
   | .noneEndEvent _ => return { id, kind := .finish, outputs }
-  | .userTask _ _ none => return { id, kind := .human, outputs }
+  | .userTask _ _ metadata =>
+      if !SerialBusinessTask.metadataValid (SerialBusinessTask.checkedHandlers source) metadata then none
+      else return { id, kind := .human, outputs }
   | .serviceTask _ descriptor inputs mappings none =>
       if !(outputs.length == 1 && SerialBusinessTask.descriptorValid descriptor &&
           SerialBusinessTask.mappingsValid (SerialBusinessTask.checkedHandlers source) inputs mappings)
@@ -311,7 +313,8 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
   | .initiate _ _ output => return { id, kind := .start, outputs := [← consumer? program output] }
   | .reachNoneEnd .. => return { id, kind := .finish, outputs := [] }
   | .awaitUserTask _ origin _ output task =>
-      if !(task.metadata.isNone && task.id.value == origin.elementId.value) then none
+      if !(SerialBusinessTask.metadataValid (SerialBusinessTask.programHandlers program) task.metadata &&
+          task.id.value == origin.elementId.value) then none
       else return { id, kind := .human, outputs := [← consumer? program output] }
   | .awaitEffect _ origin _ output effect none =>
       if !(origin.elementId == effect.elementId && SerialBusinessTask.descriptorValid effect.descriptor &&

@@ -1,3 +1,5 @@
+import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
+
 import type {
   DefinitionMetadata,
   DefinitionSourceIdentity,
@@ -19,6 +21,7 @@ export function cloneDefinitionMetadata(
     startCapabilities: cloneDefinitionStartCapabilities(
       definition.startCapabilities,
     ),
+    sourceOverlay: cloneSourceOverlayIdentity(definition.sourceOverlay),
   };
 }
 
@@ -43,6 +46,7 @@ export function equalDefinitionMetadata(
     left.version === right.version &&
     left.semanticProfile === right.semanticProfile &&
     equalDefinitionSource(left.source, right.source) &&
+    equalSourceOverlayIdentity(left.sourceOverlay, right.sourceOverlay) &&
     equalDefinitionStartCapabilities(
       left.startCapabilities,
       right.startCapabilities,
@@ -59,4 +63,12 @@ export function equalDefinitionSource(
     left.byteLength === right.byteLength &&
     left.declaredEncoding === right.declaredEncoding &&
     left.decodedAs === right.decodedAs;
+}
+
+export function cloneSourceOverlayIdentity(value: PublicSourceOverlayIdentity | null): PublicSourceOverlayIdentity | null {
+  return value === null ? null : { id: value.id, sha256: value.sha256 };
+}
+
+export function equalSourceOverlayIdentity(left: PublicSourceOverlayIdentity | null, right: PublicSourceOverlayIdentity | null): boolean {
+  return left === null || right === null ? left === right : left.id === right.id && left.sha256 === right.sha256;
 }

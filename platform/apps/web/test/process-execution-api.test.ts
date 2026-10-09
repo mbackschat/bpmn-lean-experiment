@@ -28,6 +28,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "profile-publication",
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
 

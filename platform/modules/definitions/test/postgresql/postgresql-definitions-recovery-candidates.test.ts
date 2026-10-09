@@ -247,6 +247,7 @@ async function seedDefinition(
         },
       }],
     },
+    sourceOverlay: null,
   });
 }
 

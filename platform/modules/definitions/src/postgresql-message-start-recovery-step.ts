@@ -1,3 +1,6 @@
+import { DefinitionArtifactIntegrityError } from "./contracts.js";
+import { readRetainedDefinitionArtifacts } from "./definition-artifacts.js";
+import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import type { PostgresqlRuntime } from "@bpmn-lean/platform-postgresql-runtime";
 
 import type { ExactArtifactStore } from "./contracts.js";
@@ -94,18 +97,19 @@ export class PostgresqlMessageStartRecoveryStep {
   async #dispatch(
     record: MessageStartPublicationRecord,
   ): Promise<PostgresqlDefinitionsRecoveryStepResult> {
-    const artifact = await this.#options.artifacts.get(record.definition.source.sha256);
-    if (artifact === null || artifact.byteLength !== record.definition.source.byteLength) {
-      return failRecovery(
-        PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact,
-        PostgresqlDefinitionsRecoveryFailureEvidence.Artifact,
-      );
+    let retained: RetainedDefinitionArtifacts;
+    try {
+      retained = await readRetainedDefinitionArtifacts(this.#options.artifacts, record.definition);
+    } catch (error: unknown) {
+      if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
+      return failRecovery(PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact, PostgresqlDefinitionsRecoveryFailureEvidence.Artifact);
     }
     const request = messageStartPublicationHostRequest(
-      artifact,
+      retained.bytes,
       record.definition,
       record.messageStart,
       record.identity,
+      retained.sourceOverlay,
     );
     const starting = {
       ...structuredClone(record),

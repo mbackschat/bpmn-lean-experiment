@@ -13,6 +13,7 @@ const definition = {
   semanticProfile: entry.profile,
   source: { kind: "bpmnSource", id: "travel.bpmn", sha256: entry.sha256,
     byteLength: 1, declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
+  sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DeployedDefinitionVersion;
 

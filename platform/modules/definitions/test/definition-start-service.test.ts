@@ -283,6 +283,7 @@ test("requires one synchronous nonempty well-formed generated instance identity"
 });
 
 type MutableDefinition = {
+  sourceOverlay: null;
   processId: string;
   version: number;
   source: {
@@ -336,6 +337,7 @@ function mutableDefinition(
     },
     semanticProfile: `profile-v${version}`,
     startCapabilities: { messageStarts: [], timerStarts: [] },
+    sourceOverlay: null,
   };
 }
 
@@ -430,7 +432,7 @@ function createFixture(
           decodedAs: "UTF-8",
         },
         definition: {
-          sourceOverlay: null,
+        sourceOverlay: null,
           processId: options.startOnlyDrift ? request.expectedProcessId :
             options.startedDrift?.processId ?? request.expectedProcessId,
           semanticProfile:
@@ -481,7 +483,7 @@ function createFixture(
           decodedAs: "UTF-8",
         },
         definition: {
-          sourceOverlay: null,
+        sourceOverlay: null,
           processId: options.startedDrift?.processId ?? request.expectedProcessId,
           semanticProfile:
             options.startedDrift?.semanticProfile ?? request.semanticProfile,

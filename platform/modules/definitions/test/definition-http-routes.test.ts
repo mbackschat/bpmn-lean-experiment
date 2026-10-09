@@ -138,6 +138,7 @@ test("forwards exact bytes and returns only the closed deployed projection", asy
     sourceId: "upload file.bpmn",
     semanticProfile: "test/profile",
     expectedSha256: undefined,
+    sourceOverlay: null,
   }]);
   assert.deepEqual(await responseJson(response), {
     status: "deployed",
@@ -154,6 +155,7 @@ test("forwards exact bytes and returns only the closed deployed projection", asy
       },
       semanticProfile: "test/profile",
       startCapabilities: { messageStarts: [], timerStarts: [] },
+      sourceOverlay: null,
     },
   });
 });

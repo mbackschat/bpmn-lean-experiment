@@ -37,6 +37,7 @@ const definition = {
     messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],
   },
+  sourceOverlay: null,
 } as const satisfies DefinitionMetadata;
 const scheduled = {
   scheduleId: "schedule/one",

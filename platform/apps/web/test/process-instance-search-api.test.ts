@@ -27,6 +27,7 @@ const definition = {
     decodedAs: "UTF-8",
   },
   semanticProfile: "cib-seven-2.2.0:message-start",
+  sourceOverlay: null,
   startCapabilities: {
     messageStarts: [],
     timerStarts: [],

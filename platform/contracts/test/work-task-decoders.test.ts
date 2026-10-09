@@ -29,6 +29,7 @@ const definition = {
   },
   semanticProfile: "cib-seven-2.2.0:user-task-assignment-form-metadata",
   startCapabilities: { messageStarts: [], timerStarts: [] },
+  sourceOverlay: null,
 } as const;
 
 const workTask = {

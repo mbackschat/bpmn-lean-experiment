@@ -29,6 +29,7 @@ const definition = {
     messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_1", durationMs: 1000 }],
   },
+  sourceOverlay: null,
 } as const satisfies DeployedDefinitionVersion;
 
 test("decodes a started instance while reconstructing its complete public identity", () => {

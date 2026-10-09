@@ -61,6 +61,9 @@ export type PublicDefinitionStartCapabilities = Readonly<{
   timerStarts: readonly PublicTimerStartCapability[];
 }>;
 
+/** Exact identity of an optional immutable admission overlay. */
+export type PublicSourceOverlayIdentity = Readonly<{ id: string; sha256: string }>;
+
 /** Durable public identity of one deployed definition version. */
 export type DeployedDefinitionVersion = Readonly<{
   processId: string;
@@ -68,6 +71,7 @@ export type DeployedDefinitionVersion = Readonly<{
   source: ExactPublicSourceIdentity;
   semanticProfile: string;
   startCapabilities: PublicDefinitionStartCapabilities;
+  sourceOverlay: PublicSourceOverlayIdentity | null;
 }>;
 
 export type DeployedDefinitionResult = Readonly<{
