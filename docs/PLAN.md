@@ -65,14 +65,14 @@ Integration state: `satisfied`.
 
 ### Practical CIB7 Coverage goal
 
-On 2026-10-03 the owner selected Practical CIB7 Coverage, superseding separate MUE acceptance. Reconfirmed 2026-10-04: MUE RC was sufficient; only Practical CIB7 Coverage is intended for showing and releasing. Review practical element depth and useful combinations within the [CIB7 implementation ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Both Multi-Instance Sub-Process forms remain required, with priority determined by that inventory.
+The owner selected Practical CIB7 Coverage on 2026-10-03, superseding separate MUE acceptance, and reconfirmed on 2026-10-04. MUE RC was sufficient; Practical CIB7 Coverage alone governs showing and releasing. Review depth and combinations within the [CIB7 ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). Both Multi-Instance Sub-Process forms remain required; the inventory determines priority.
 
 | Added obligation | State | Acceptance boundary |
 |---|---|---|
 | `SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS` | `queued` | Collection-driven repeated subprocess work, per-instance identity/data isolation, completion and outer interruption; exact CIB-supported data behavior is selected in the proposal. |
 | `PARALLEL-MULTI-INSTANCE-SUBPROCESS` | `queued` | Concurrent subprocess instances, completion accounting, selected early completion and cancellation; exact CIB-supported result handling is selected in the proposal. |
 
-Acceptance covers source/Lean/TypeScript, applicable CIB evidence, Temporal refinement/replay and whole-model journeys across the reviewed practical inventory. No separate MUE gate or new version/tag is selected; preserve existing release evidence and unresolved failures.
+Acceptance covers source/Lean/TypeScript, CIB evidence, Temporal refinement/replay and whole-model journeys across the reviewed inventory. No separate MUE gate or new version/tag; preserve release evidence and failures.
 
 ## Ordered work
 
@@ -98,7 +98,7 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| Next | Qualify and publish the approved security fix before new feature work. | Finish review, preserve PMIS work, qualify clean HEAD and push (owner direction, 2026-10-09). |
+| At qualification | Publish the approved security fix. | Runtime qualification blocks push; continue selected business delivery. Qualify clean HEAD before the authorized push. |
 | At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. Total remaining stays unknown until denominator review. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
@@ -112,7 +112,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Push qualification. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 1`. Date: `2026-10-09`. Commit: `730d3217`. `/tmp/prepush-730d3217-20261009` passes security, 661 infrastructure tests and normative XML; library compilation reaches the fixed 120-second ceiling. Bounded continuation exposes two sequential dispatch proof failures; focused repair passes. [Scheduled failure](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/37927827922) still checks published `46632f02`; approved `source-map-js@1.2.2` fixes its advisory ([evidence](CONTRIBUTOR-SETUP-GUIDE.md#active-security-release-age-exceptions)). Owner requests push after qualification. Preserve TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002` (`3ee96954`, Temporal 819/820).
+- Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-09`. Commit: `d187fad4`. `/tmp/publication-runtime-d187fad4-20261009` passes infrastructure, source/core, CIB and port-free Temporal checks; live Temporal reports 398/399 with the repeatable-subscription child failing. Retained `node-crash.ips` records V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash). Security audit passes with approved `source-map-js@1.2.2`; [published failure](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/37927827922) still checks `46632f02`. Push remains unqualified; retain TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`.
 
 - Published RC evaluation. Command: `env BPMN_EVALUATION_PROJECT_NAME=mue-acceptance-rc1-1d11abc0 /tmp/mue-acceptance-distribution-1d11abc0/deploy/evaluation/demo start`. Status: `exit 0` for restart; browser qualification incomplete. Date: `2026-10-01`. Commit: `16c5b9f6`, fixed distribution source. Receipt: `/tmp/mue-bundle-restart`; browser evidence: `/tmp/mue-acceptance-distribution-1d11abc0/browser-receipt.json`. Docker Desktop restarts without building/pulling, retaining claimed parallel work and its sibling. Playwright reaches human approval, request changes, parallel completion, incident Retry and Cancel, with terminal History and Action history. Earlier unavailable Work/execution/audit reads remain failures. The browser shows `0.2.0-rc.1`, which still contains the selection defect. Rancher smoke remains open by owner direction. Task containers stopped; volumes/images retained.
 
@@ -120,17 +120,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: qualify and publish the security correction, then resume business-process public delivery.
+Current task: resolve hosted qualification failures, then complete public delivery and security publication.
 
-Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) checkpoint `3f64ddd0` passed correction audit `9133ea7b`. [Tracker](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind identities, not acceptance.
+Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) audit `9133ea7b`, reselection `5a7ceb19`, metrics `58227a5b`, UTF-8 transport and Docker walkthrough pass. Host/browser delivery remains uncommitted; Node 26 V8 witness and distribution journey pass.
 
-Last verification: Dispatch and consumer gates pass. `/tmp/prepush-31007563-20261009` passes security and 661 infrastructure tests. Call conformance passes in 149 seconds under the [full-library allowance](VERIFICATION-INFRASTRUCTURE-POLICY.md#command-deadline-selection), correcting the mistaken focused-build cutoff. Compilation continues; stop before Lean checks, commit guidance, then qualify clean HEAD.
+Last verification: Node 26 V8, infrastructure, platform, core/source/differential and Docker pass. `/tmp/node26-migration-20261009/temporal` fails hosted publication Queries and held PMIS admission; all serial checks pass. Retain CIB/PostgreSQL/browser evidence and Error/native/Lean failures. Runtime qualification failed.
 
-Next action: finish bounded library qualification, pass clean-HEAD pre-push and push, then restore PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce`; verify eight file hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. Resume metadata fixtures, explicit handlers, generic string Start inputs and three production journeys; UI preflight is complete. No model switch or metadata-only commit.
+Next action: resolve separate hosted Query/admission failures before delivery commit and independent closure. Retain investigation holds; serialize. Preserve PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce` and eight hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. No model switches or metadata-only commit.
 
 Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Pending sources are stashed for qualification; no helper commit.
 
-Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime/performance/cold-library investigations remain on hold. One Lean tree, one CPU/3 GiB, no extra swap.
+Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime migration qualification is authorized; unrelated runtime/performance/cold-library investigations remain on hold. The owner withdrew per-job CPU approval; retain bounded serialized verification and leave Lean stopped. One Lean tree, one CPU/3 GiB, no extra swap remain ceilings, not permission to restart.
 
 Oracle: exact public deployment/start, occurrence-bound Work completion, full-state/E1/E2 agreement and replay.
 

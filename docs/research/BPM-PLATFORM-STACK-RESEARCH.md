@@ -399,7 +399,7 @@ Recorded for traceability; the durable owners are [PROJECT-DESIGN.md](../PROJECT
 
 ## 11. Remaining open decisions
 
-1. **`node:sqlite`** for the read model, verified available without a flag on the pinned Node 24.18.0, exporting `DatabaseSync`, `StatementSync`, `Session`, and `backup`. No approval needed as part of the runtime, but its upstream experimental status should be recorded.
+1. **`node:sqlite`** for the read model, verified available without a flag on the then-pinned Node 24.18.0, exporting `DatabaseSync`, `StatementSync`, `Session`, and `backup`. No separate dependency approval needed as part of the runtime, but its upstream experimental status should be recorded.
 2. **Charting**, if hand-rolled SVG proves insufficient. uPlot is dependency-free.
 3. **Long-polling for live views**, on the Temporal pattern of 6.1.
 4. Resolved. `a12/a12-widgets` is registered in [SOURCES.md](../SOURCES.md) and the external-sources lock at revision `f924a85`, because [SOURCES.md](../SOURCES.md) holds that local presence alone never makes a tree a project input, and the finding drawn from it is now a durable owner decision.

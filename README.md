@@ -256,7 +256,7 @@ The maintained [browser walkthrough](docs/BPM-PLATFORM-BROWSER-WALKTHROUGH.md) t
 
 ### Run the Temporal engine
 
-The runtime path needs Node `24.18.0`, pnpm `11.20.0`, and a Temporal service. It does not need Lean, Java, or the CIB checkout.
+The runtime path needs Node `26.10.0`, pnpm `11.20.0`, and a Temporal service. It does not need Lean, Java, or the CIB checkout.
 
 Start a local Temporal service in one terminal:
 
@@ -301,6 +301,7 @@ The full verification environment additionally needs Git, `curl`, `jq`, `xmllint
 ```sh
 nvm install
 nvm use
+npm install --global --ignore-scripts --no-audit --no-fund pnpm@11.20.0
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
 ./scripts/doctor.sh verify

@@ -133,7 +133,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 | Browser navigation | `@tanstack/react-router` 1.170.36, code-based typed hash routes | Owner-adopted 2026-09-27; implemented with composed acceptance |
 | Component kit | Platform-owned, written over the primitives | Our source, roughly 2,000 lines expected |
 | Diagram rendering | `bpmn-js` 18.22.1 `NavigatedViewer` with its marker and `overlays` APIs | Owner-approved 2026-08-09 with the bpmn.io watermark and notice obligations retained |
-| Read-model store | `node:sqlite`, part of the pinned Node 24.18.0 | No approval needed; upstream experimental status to be recorded |
+| Read-model store | `node:sqlite`, part of [the pinned Node runtime](SOURCES.md#project-license-audit) | No separate dependency approval needed; upstream experimental status to be recorded |
 | Styling method | CSS Modules, natively compiled by Vite to ordinary CSS | Owner-selected 2026-08-12 |
 | Charting | Hand-rolled SVG first; a dependency-free library if that proves insufficient | **Open decision** |
 | Live updates | HTTP long-polling on the Temporal pattern, no WebSockets or server-sent events | Proposed |
@@ -142,7 +142,7 @@ Evidence, alternatives, measured footprints, and the rationale are owned by [the
 
 ### Approval record for the selected four
 
-Measured on 2026-08-07 by installing into an empty project on the pinned Node 24.18.0. Resolved tree: **24 packages, 15 MIT, 8 Apache-2.0, 1 0BSD, zero copyleft, zero unknown, zero install scripts.**
+Measured on 2026-08-07 by installing into an empty project on the then-pinned Node 24.18.0. Resolved tree: **24 packages, 15 MIT, 8 Apache-2.0, 1 0BSD, zero copyleft, zero unknown, zero install scripts.**
 
 | Package | Version | Licence | Role | Removal cost |
 |---|---|---|---|---|

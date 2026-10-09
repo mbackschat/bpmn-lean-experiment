@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { glob, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -17,7 +17,6 @@ const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const derivedConsumers = [
   "scripts/pnpm.sh",
   "scripts/doctor.sh",
-  ".github/workflows/verify.yml",
 ] as const;
 
 /** Prose that states the pins for contributors and therefore must state the current ones. */
@@ -97,8 +96,13 @@ test("keeps every machine-readable pin copy on the owner's versions", async () =
 
 test("derives the pins in every wrapper, doctor, and CI consumer", async () => {
   const pins = await ownerPins();
+  const workflows: string[] = [];
+  for await (const workflow of glob(".github/workflows/*.{yml,yaml}", { cwd: projectRoot })) {
+    workflows.push(workflow);
+  }
+  assert.ok(workflows.length > 0, "no workflows checked for derived pins");
 
-  for (const consumer of derivedConsumers) {
+  for (const consumer of [...derivedConsumers, ...workflows]) {
     const text = await readProjectFile(consumer);
     assert.match(text, /pinned-toolchain\.sh/u, consumer);
     assert.deepEqual(pinnedVersions(text, /pnpm/u), [], consumer);
@@ -116,4 +120,36 @@ test("derives the pins in every wrapper, doctor, and CI consumer", async () => {
     assert.deepEqual(new Set(statedPnpm), new Set([pins.pnpm]), document);
     assert.deepEqual(new Set(statedNode), new Set([pins.node]), document);
   }
+});
+
+function assertEvaluationNodeImage(dockerfile: string, sources: string, nodeVersion: string): void {
+  const image = /^ARG NODE_IMAGE=(node:(\d+\.\d+\.\d+)-[^@\s]+)@(sha256:[0-9a-f]{64})$/mu.exec(dockerfile);
+  assert.ok(image, "the evaluation Node image must have an exact version and digest");
+  const [, imageName, imageVersion, digest] = image;
+  assert.ok(imageName && digest);
+  assert.equal(imageVersion, nodeVersion);
+  const provenance = sources.split("\n").find((line) => line.startsWith("| Evaluation Node base image |"));
+  assert.ok(provenance, "the evaluation Node image must have recorded provenance");
+  assert.ok(provenance.includes(imageName), "the documented Node image differs");
+  assert.ok(provenance.includes(digest), "the documented Node image digest differs");
+}
+
+test("keeps the evaluation Node image on the runtime pin and recorded digest", async () => {
+  const pins = await ownerPins();
+  const [dockerfile, sources] = await Promise.all([
+    readProjectFile("Dockerfile"),
+    readProjectFile("docs/SOURCES.md"),
+  ]);
+  assertEvaluationNodeImage(dockerfile, sources, pins.node);
+});
+
+test("rejects a stale evaluation runtime or mismatched image provenance", () => {
+  const digest = `sha256:${"a".repeat(64)}`;
+  const dockerfile = `ARG NODE_IMAGE=node:26.10.0-bookworm-slim@${digest}`;
+  const sources = `| Evaluation Node base image | node:26.10.0-bookworm-slim | ${digest} |`;
+  assertEvaluationNodeImage(dockerfile, sources, "26.10.0");
+  assert.throws(() => assertEvaluationNodeImage(dockerfile, sources, "24.18.0"));
+  assert.throws(() => assertEvaluationNodeImage(dockerfile, sources.replace(digest, "different"), "26.10.0"));
+  assert.throws(() => assertEvaluationNodeImage(dockerfile, sources.replace("26.10.0", "24.18.0"), "26.10.0"));
+  assert.throws(() => assertEvaluationNodeImage(dockerfile.replace(`@${digest}`, ""), sources, "26.10.0"));
 });
