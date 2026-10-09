@@ -152,7 +152,7 @@ test("raw IL rejects duplicate consumers, reused source identities and unbound o
   for (const candidate of badPrograms) assert.equal(isWellFormedSemanticProcessProgram(candidate), false);
 });
 
-test("Exclusive wire cardinality broadens while Inclusive and old profile admission retain two", async () => {
+test("mixed profiles admit nonempty Exclusive choices while Inclusive and other profiles retain two", async () => {
   type OperationModule = typeof import("../../semantic-core/src/semantic-process-operation-admission.ts");
   const { isWellFormedSemanticOperation } = await import(new URL("../../semantic-core/dist/semantic-process-operation-admission.js", import.meta.url).href) as OperationModule;
   const { semanticProcess: program } = await accepted();
@@ -164,8 +164,16 @@ test("Exclusive wire cardinality broadens while Inclusive and old profile admiss
     const ids = new Set([choice.input, choice.defaultOutput, ...candidates.map(candidate => candidate.output)]);
     const origins = new Map([[choice.defaultOutput, choice.defaultOrigin.elementId], ...candidates.map(candidate => [candidate.output, candidate.origin.elementId] as const)]);
     assert.equal(isWellFormedSemanticOperation(operation, ids, origins, new Map(), profile), count > 0);
-    for (const oldProfile of Object.values(SemanticProfileId)) {
-      assert.equal(isWellFormedSemanticOperation(operation, ids, origins, new Map(), oldProfile), count === 2, oldProfile);
+    for (const registeredProfile of Object.values(SemanticProfileId)) {
+      const admitted = isWellFormedSemanticOperation(operation, ids, origins, new Map(), registeredProfile);
+      switch (registeredProfile) {
+        case SemanticProfileId.MixedTaskControlFlow:
+        case SemanticProfileId.MixedTaskBusinessError:
+          assert.equal(admitted, count > 0, registeredProfile);
+          break;
+        default:
+          assert.equal(admitted, count === 2, registeredProfile);
+      }
     }
     const node = { kind: CheckedNodeKind.ExclusiveGateway, id: "choice", direction: "diverging", candidateFlowIds: candidates.map(candidate => candidate.origin.elementId), defaultFlowId: "fallback" };
     assert.equal(nodeValid(node), count > 0);

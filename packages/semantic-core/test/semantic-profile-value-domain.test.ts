@@ -91,6 +91,21 @@ const stringNullBoolean = [
 ] as const;
 
 const expectedCapabilities = new Map<string, ProfileCapabilities>([
+  [SemanticProfileId.SerialBusinessTaskComposition, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
+    effectCompletion: capability(stringNull, "exact-string-null-local-result-patch"),
+  }],
+  [SemanticProfileId.MixedTaskControlFlow, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
+    effectCompletion: capability(stringNull, "exact-string-null-local-result-patch"),
+  }],
+  [SemanticProfileId.MixedTaskBusinessError, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
+    effectCompletion: capability(stringNull, "exact-string-null-local-result-patch"),
+  }],
   [SemanticProfileId.CallActivityDataBoundaries, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),

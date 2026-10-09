@@ -123,6 +123,9 @@ function preservationCapabilityKind(
     case SemanticProfileId.ActivityDataOutputUserTask:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.CallActivityDataBoundaries:
+    case SemanticProfileId.SerialBusinessTaskComposition:
+    case SemanticProfileId.MixedTaskControlFlow:
+    case SemanticProfileId.MixedTaskBusinessError:
     case SemanticProfileId.Compensation:
     case SemanticProfileId.TransactionCancellation:
     case SemanticProfileId.ConfiguredTask:

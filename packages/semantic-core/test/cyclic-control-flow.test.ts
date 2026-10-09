@@ -48,21 +48,28 @@ const instanceId = "Instance_1";
 const owner = rootScopeOccurrence(processId, instanceId);
 const cycleProgram = makeCycleProgram();
 
-test("selects one shared resumption policy only for the cycle profile", () => {
-  assert.deepEqual(
-    semanticGraphPolicyForProfile(SemanticProfileId.UserTaskCycle),
-    {
-      kind: SemanticGraphPolicyKind.ResumptionBounded,
-      checkedResumptionNodeKinds: [CheckedNodeKind.UserTask],
-      semanticResumptionOperationKinds: [SemanticOperationKind.AwaitUserTask],
-    },
-  );
-  for (const profile of Object.values(SemanticProfileId).filter(
-    (profileId) => profileId !== SemanticProfileId.UserTaskCycle,
-  )) {
-    assert.deepEqual(semanticGraphPolicyForProfile(profile), {
-      kind: SemanticGraphPolicyKind.Acyclic,
-    });
+test("selects each registered profile's exact graph resumption policy", () => {
+  for (const profile of Object.values(SemanticProfileId)) {
+    const policy = semanticGraphPolicyForProfile(profile);
+    switch (profile) {
+      case SemanticProfileId.UserTaskCycle:
+        assert.deepEqual(policy, {
+          kind: SemanticGraphPolicyKind.ResumptionBounded,
+          checkedResumptionNodeKinds: [CheckedNodeKind.UserTask],
+          semanticResumptionOperationKinds: [SemanticOperationKind.AwaitUserTask],
+        }, profile);
+        break;
+      case SemanticProfileId.MixedTaskControlFlow:
+      case SemanticProfileId.MixedTaskBusinessError:
+        assert.deepEqual(policy, {
+          kind: SemanticGraphPolicyKind.ResumptionBounded,
+          checkedResumptionNodeKinds: [CheckedNodeKind.UserTask, CheckedNodeKind.ServiceTask],
+          semanticResumptionOperationKinds: [SemanticOperationKind.AwaitUserTask, SemanticOperationKind.AwaitEffect],
+        }, profile);
+        break;
+      default:
+        assert.deepEqual(policy, { kind: SemanticGraphPolicyKind.Acyclic }, profile);
+    }
   }
   assert.equal(semanticGraphPolicyForProfile("unknown-profile"), undefined);
 });

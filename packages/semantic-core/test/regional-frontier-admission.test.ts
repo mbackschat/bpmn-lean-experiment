@@ -66,6 +66,17 @@ test("classifies every registered profile against the regional exclusion investi
     const excluded = retainsRegionalExclusionPremises(requiredProgramShape(profile),
       semanticGraphPolicyForProfile(profile));
     switch (profile) {
+      case SemanticProfileId.SerialBusinessTaskComposition:
+        assert.equal(excluded, false, "serial business-task admission owns its single-control graph guarantee outside the legacy fixed-shape premises");
+        assert.equal(requiredProgramShape(profile), undefined);
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
+        break;
+      case SemanticProfileId.MixedTaskControlFlow:
+      case SemanticProfileId.MixedTaskBusinessError:
+        assert.equal(excluded, false, "mixed-task admission owns its single-control resumption guarantee outside the legacy fixed-shape premises");
+        assert.equal(requiredProgramShape(profile), undefined);
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.ResumptionBounded);
+        break;
       case SemanticProfileId.CallActivityDataBoundaries:
         assert.equal(excluded, false, "CALL-ACTIVITY-DATA-BOUNDARIES owns scalar-interface scheduled closure outside the legacy regional premises");
         break;

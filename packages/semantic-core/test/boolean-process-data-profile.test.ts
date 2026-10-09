@@ -12,6 +12,7 @@ import {
   MappingExpressionKind,
   ScenarioDocumentKind,
   SemanticGraphPolicyKind,
+  SemanticOperationKind,
   SemanticOriginKind,
   SemanticProfileId,
   SimpleBooleanExpressionKind,
@@ -36,6 +37,10 @@ import type {
 } from "@bpmn-lean/semantic-core";
 
 import { semanticProcessFor } from "./user-task-fixture.ts";
+
+const { requiredProgramShape } = await import(
+  new URL("../dist/semantic-program-profile-shape.js", import.meta.url).href
+) as typeof import("../src/semantic-program-profile-shape.ts");
 
 const booleanProfile = SemanticProfileId.UserTaskBooleanCompletionData;
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -95,51 +100,16 @@ function completeBoolean(value: boolean): CompleteUserTaskInstanceStimulus {
 }
 
 test("registers the Boolean profile with the exact sequential User Task shape", () => {
-  assert.deepEqual(Object.values(SemanticProfileId), [
-    "bpmn-2.0.2-activity-boundary-message-draft",
-    "bpmn-2.0.2-activity-boundary-timer-draft",
-    "bpmn-2.0.2-activity-data-input-user-task-draft",
-    "bpmn-2.0.2-activity-data-input-output-user-task-draft",
-    "bpmn-2.0.2-activity-data-output-user-task-draft",
-    "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
-    "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
-    "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
-    "bpmn-2.0.2-called-process-call-activity-draft",
-    "bpmn-2.0.2-call-activity-data-boundaries-draft",
-    "bpmn-2.0.2-compensation-source-checkpoint-draft",
-    "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
-    "cibseven-2.0.0-mapped-success-service-task-draft",
-    "bpmn-2.0.2-message-start-event-draft",
-    "bpmn-2.0.2-timer-start-event-draft",
-    "bpmn-2.0.2-terminate-end-event-draft",
-    "cibseven-2.2.0-embedded-subprocess-completion-draft",
-    "bpmn-2.0.2-subprocess-boundary-timer-draft",
-    "cibseven-2.2.0-subprocess-error-propagation-draft",
-    "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
-    "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
-    "bpmn-2.0.2-event-based-gateway-message-timer-draft",
-    "cibseven-2.2.0-intermediate-catch-timer-draft",
-    "bpmn-2.0.2-intermediate-catch-message-draft",
-    "bpmn-2.0.2-message-payload-catch-draft",
-    "bpmn-2.0.2-message-key-correlation-draft",
-    "cibseven-2.2.0-message-addressed-receive-task-draft",
-    "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
-    "bpmn-2.0.2-repeatable-event-subscriptions-draft",
-    "parallel-fork-join-draft",
-    "cibseven-2.2.0-service-task-effect-draft",
-    "cibseven-2.2.0-service-task-incident-draft",
-    "cibseven-2.2.0-service-task-incident-cancellation-draft",
-    "bpmn-2.0.2-timer-user-task-composition-draft",
-    "cibseven-2.2.0-user-task-process-data-draft",
-    "bpmn-2.0.2-user-task-cycle-draft",
-    "bpmn-2.0.2-user-task-preserved-notation-draft",
-    "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
-    "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
-    booleanProfile,
-    "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
-    "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
-    "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
-  ]);
+  assert.equal(booleanProfile, "cibseven-2.2.0-user-task-boolean-completion-data-draft");
+  assert.deepEqual(requiredProgramShape(booleanProfile), {
+    definitionScopeCount: 1,
+    operationKinds: [
+      SemanticOperationKind.Initiate,
+      SemanticOperationKind.AwaitUserTask,
+      SemanticOperationKind.ReachNoneEnd,
+      SemanticOperationKind.CompleteScope,
+    ],
+  });
   assert.deepEqual(semanticGraphPolicyForProfile(booleanProfile), {
     kind: SemanticGraphPolicyKind.Acyclic,
   });

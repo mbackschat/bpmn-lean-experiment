@@ -109,18 +109,18 @@ Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualifi
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: qualify public registration of approved serial/mixed-task/business Error journeys; no new family or topology.
+Current task: qualify registered [serial](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md), mixed-task and business Error journeys; no new family or topology.
 
-Current result: owner-directed worktree checkpoint preserves unfinished parallel MI work and public-registration corrections together; it does not establish acceptance. Maintained-proof checkpoint `da2b3ca3` is approved. Public registration `7d9e60d8` received required edits: R1 catalog members, exact-source examples and an artifact-derived completeness guard are implemented, but catalog-consumer corrections remain; R2 corrects two stale cycle exclusions.
+Current result: checkpoint `6fdae8fb` preserves unfinished parallel MI work alongside registration corrections without acceptance. R1 repairs catalog completeness, exact-source examples and catalog consumers; R2 corrects stale cycle exclusions. Semantic accounts and host mechanisms are unchanged by these corrections.
 
-Last verification: prior registered checkpoint evidence includes the passing bounded Lean library, 99 infrastructure files, harness types, six standard-axiom checks, scope-data fixture measurement, whole-process Lean/core results, E1/E2, mutations, public starts and replay. This evidence does not qualify the combined worktree checkpoint. The new catalog completeness guard reproduced all three omissions and the corrected core builds; focused examples and harness types currently fail at missing preservation-capability classifications. Complete affected gates and independent correction review remain outstanding.
+Last verification: current TypeScript build, strict harness types, semantic shape checks and 32 runner checks pass. Complete inventory batches pass for all 264 core/source test files and 99 infrastructure test files. The earlier monolithic timeouts remain failed invocations; bounded batches supply the complete coverage. Earlier Lean/Temporal evidence does not qualify the combined checkpoint.
 
-Next action: correct the four catalog consumers, pass affected gates and obtain the same reviewer’s R1/R2 correction audit. Resume actual implementation without further commit partitioning; preserve the runtime-investigation hold.
+Next action: commit the registration corrections and obtain the original reviewer's R1/R2 audit, then resume applicable delivery qualification. No further commit partitioning.
 
-Unresolved: installed-runtime qualification, original concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/publication-query failures, independent public review and closure, and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation remains on hold; performance qualification remains excluded. Lean stays one process tree, one CPU/3 GiB without extra swap; no cold-library investigation is selected.
+Unresolved: installed-runtime qualification, concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/query failures, public closure and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation stays on hold; performance qualification and cold-library investigation remain excluded. Lean stays one process tree, one CPU/3 GiB without extra swap.
 
 Oracle: exact lowering/results/E1/E2, fresh-occurrence/current-data recovery, mutations and applicable acceptance gates.
 
-Stop if a correction weakens guarantees or broadens scope; reassess the shared invariant.
+Stop if correction weakens guarantees or broadens scope.
 
-Preserve release tags, mixed worktree and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
+Preserve release tags and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
