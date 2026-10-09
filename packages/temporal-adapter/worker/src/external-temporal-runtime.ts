@@ -213,9 +213,10 @@ export class ExternalTemporalRuntime {
   }
 
   private async stop(): Promise<void> {
-    this.worker.shutdown();
     let failure: unknown;
     try {
+      // SDK 1.21.0's Runtime signal hook may already drain the Worker; shutdown() accepts only RUNNING.
+      if (this.worker.getState() === "RUNNING") this.worker.shutdown();
       await withDeadline(
         this.workerRun,
         shutdownDeadlineMs,

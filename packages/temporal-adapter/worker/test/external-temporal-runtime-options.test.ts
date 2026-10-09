@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
+import { setImmediate } from "node:timers/promises";
 
 import { NativeConnection, Worker } from "@temporalio/worker";
 import type { WorkerOptions } from "@temporalio/worker";
@@ -31,6 +32,7 @@ test("binds native PINNED deployment to a snapshot of the actual polling bytes",
     received = input;
     return {
       run: () => stopped.promise,
+      getState: () => "RUNNING",
       shutdown: () => { closed.push("worker"); stopped.resolve(); },
     };
   });
@@ -52,7 +54,83 @@ test("binds native PINNED deployment to a snapshot of the actual polling bytes",
   } finally {
     await runtime.shutdown();
   }
+  await runtime.shutdown();
   assert.deepEqual(closed, ["worker", "connection"]);
+});
+
+for (const sdkState of ["STOPPING", "DRAINING"] as const) {
+  test(`shutdown joins an SDK-initiated ${sdkState} Worker before closing its connection`, async (context) => {
+    const closed: string[] = [];
+    const stopped = Promise.withResolvers<void>();
+    let state: ReturnType<Worker["getState"]> = "RUNNING";
+    context.mock.method(NativeConnection, "connect", async () => ({
+      close: async () => { closed.push("connection"); },
+    }));
+    const nativeShutdown = context.mock.fn(() => {
+      if (state !== "RUNNING") throw new Error(`Not running. Current state: ${state}`);
+      state = "DRAINING";
+      stopped.resolve();
+    });
+    context.mock.method(Worker, "create", async () => ({
+      run: () => stopped.promise,
+      getState: () => state,
+      shutdown: nativeShutdown,
+    }));
+    const runtime = await ExternalTemporalRuntime.connectBundle(
+      options, activities, { code: "shutdown lifecycle bytes", sourceMap: "{}" },
+    );
+    state = sdkState;
+    const shutdown = runtime.shutdown();
+    let settled = false;
+    const outcome = shutdown.then(
+      () => { settled = true; return undefined; },
+      (error: unknown) => { settled = true; return error; },
+    );
+    try {
+      assert.equal(runtime.shutdown(), shutdown);
+      await setImmediate();
+      assert.equal(settled, false);
+      assert.deepEqual(closed, []);
+      assert.equal(nativeShutdown.mock.callCount(), 0);
+    } finally {
+      stopped.resolve();
+    }
+    assert.equal(await outcome, undefined);
+    await runtime.shutdown();
+    assert.deepEqual(closed, ["connection"]);
+    assert.equal(nativeShutdown.mock.callCount(), 0);
+  });
+}
+
+test("shutdown preserves an SDK-initiated Worker failure and closes its connection once", async (context) => {
+  const workerFailure = new Error("SDK Worker run failed while draining");
+  const closed: string[] = [];
+  const stopped = Promise.withResolvers<void>();
+  let state: ReturnType<Worker["getState"]> = "RUNNING";
+  context.mock.method(NativeConnection, "connect", async () => ({
+    close: async () => { closed.push("connection"); },
+  }));
+  const nativeShutdown = context.mock.fn(() => {
+    if (state !== "RUNNING") throw new Error(`Not running. Current state: ${state}`);
+    state = "DRAINING";
+    stopped.resolve();
+  });
+  context.mock.method(Worker, "create", async () => ({
+    run: () => stopped.promise,
+    getState: () => state,
+    shutdown: nativeShutdown,
+  }));
+  const runtime = await ExternalTemporalRuntime.connectBundle(
+    options, activities, { code: "failed shutdown lifecycle bytes", sourceMap: "{}" },
+  );
+  state = "DRAINING";
+  const rejected = assert.rejects(runtime.shutdown(), (error: unknown) => error === workerFailure);
+  stopped.reject(workerFailure);
+  await rejected;
+  await assert.rejects(runtime.shutdown(), (error: unknown) => error === workerFailure);
+  assert.throws(() => runtime.assertHealthy(), (error: unknown) => error === workerFailure);
+  assert.deepEqual(closed, ["connection"]);
+  assert.equal(nativeShutdown.mock.callCount(), 0);
 });
 
 test("refuses a configured digest mismatch before native connection or polling", async (context) => {
