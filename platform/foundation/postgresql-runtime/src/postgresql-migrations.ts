@@ -236,11 +236,9 @@ async function withLockedMigrationSession<Result>(
     lock_timeout: migrationStatementTimeoutMs,
     idle_in_transaction_session_timeout: migrationStatementTimeoutMs,
   });
-  await client.connect();
-  let locked = false;
   try {
+    await client.connect();
     await client.query("SELECT pg_advisory_lock($1)", [migrationLockId]);
-    locked = true;
     const session: MigrationSession = {
       driverClient: client,
       query: async (text, values) => {
@@ -252,9 +250,8 @@ async function withLockedMigrationSession<Result>(
     };
     return await run(session);
   } finally {
-    if (locked) {
-      await client.query("SELECT pg_advisory_unlock($1)", [migrationLockId]);
-    }
+    // Ending the dedicated session releases its lock even after failed SQL aborts the transaction;
+    // postgresql-migration-failure.test.ts checks both rollback and lock release without another query.
     await client.end();
   }
 }
