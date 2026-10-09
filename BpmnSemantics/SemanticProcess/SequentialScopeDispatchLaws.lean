@@ -42,7 +42,7 @@ theorem dispatch_sequential_scope_effect (program : Program) (state after : Runt
     (owned : effectId.processInstanceId = instanceId) :
     dispatchStimulus program state (.completeEffect commandId effectId result) =
       { outcome := .committed, state := after } := by
-  simp only [sequentialScopeProgramSelected] at selected
+  simp only [sequentialScopeProgramSelected, beq_iff_eq] at selected
   simp [dispatchStimulus, absent, running, compensation, unique, selected, bodyDeclared, completed, owned]
 
 /-- Human completion uses the same selected body for data writes and command commitment. -/
@@ -58,7 +58,7 @@ theorem dispatch_sequential_scope_user (program : Program) (state after : Runtim
     (owned : taskId.processInstanceId = instanceId) :
     dispatchStimulus program state (.completeUserTaskInstance commandId taskId values) =
       { outcome := .committed, state := after } := by
-  simp only [sequentialScopeProgramSelected] at selected
+  simp only [sequentialScopeProgramSelected, beq_iff_eq] at selected
   simp [dispatchStimulus, absent, running, selected, bodyDeclared, completed, owned]
 
 /-- Direct Service arming commits exactly the input snapshot selected before activation. -/
