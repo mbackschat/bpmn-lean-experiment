@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InvoiceValidation" targetNamespace="urn:bpmn-lean:business-effect-data">
+  <process id="Process_InvoiceValidation" name="Validate a reviewed invoice" isExecutable="true">
+    <startEvent id="Start" />
+    <userTask id="Review" name="Review invoice details" />
+    <serviceTask id="Validate" name="Validate reviewed invoice"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${invoiceValidator}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${request}</camunda:inputParameter>
+          <camunda:inputParameter name="echo">${payload}</camunda:inputParameter>
+          <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="Classify" name="Classify the validated invoice"
+  implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${invoiceClassifier}" camunda:asyncBefore="true">
+  <extensionElements><camunda:inputOutput><camunda:inputParameter name="payload">${decision}</camunda:inputParameter>
+  <camunda:outputParameter name="classification">${result}</camunda:outputParameter></camunda:inputOutput></extensionElements>
+  </serviceTask><sequenceFlow id="Flow_Classify" sourceRef="Classify" targetRef="Finalize"/>
+    <userTask id="Finalize" name="Record validation decision" />
+    <endEvent id="End" />
+    <sequenceFlow id="Flow_Start" sourceRef="Start" targetRef="Review" />
+    <sequenceFlow id="Flow_Review" sourceRef="Review" targetRef="Validate" />
+    <sequenceFlow id="Flow_Validate" sourceRef="Validate" targetRef="Classify" />
+    <sequenceFlow id="Flow_Finalize" sourceRef="Finalize" targetRef="End" />
+  </process>
+</definitions>

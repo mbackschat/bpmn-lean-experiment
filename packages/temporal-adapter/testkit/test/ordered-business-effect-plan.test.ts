@@ -51,7 +51,7 @@ for (const repeatedOperation of [false, true]) {
     const start = scenario.stimuli[0]!;
     assert.equal(start.kind, StimulusKind.StartProcess);
     if (start.kind !== StimulusKind.StartProcess) throw new Error("Business Start missing");
-    assert.throws(() => requireScenarioAdmission(start, program), /serialBusinessTaskQualificationUnavailable/);
+    assert.doesNotThrow(() => requireScenarioAdmission(start, program));
     const completions = scenario.stimuli.filter(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
     assert.equal(completions.length, 2);
     const requests: EffectRequest[] = [];
@@ -110,7 +110,7 @@ test("ordered business Error recovery binds repeated occurrences, corrected inpu
   const start = scenario.stimuli[0]!;
   assert.equal(start.kind, StimulusKind.StartProcess);
   if (start.kind !== StimulusKind.StartProcess) throw new Error("Business Error Start missing");
-  assert.throws(() => requireScenarioAdmission(start, program), /mixedTaskControlFlowQualificationUnavailable/);
+  assert.doesNotThrow(() => requireScenarioAdmission(start, program));
   const expected = [
     ["Validate", 1, "invoiceValidator", "missing-reference"],
     ["Validate", 2, "invoiceValidator", "policy-review"],

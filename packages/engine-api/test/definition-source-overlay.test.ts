@@ -27,9 +27,9 @@ import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-dep
 const limits = { maxBytes: 1_048_576, parserDeadlineMs: 1_000 };
 const taskQueue = "overlay-start-queue";
 const businessCases = [
-  ["serial-classification", "serial-invoice-classification.bpmn", "serialBusinessTaskQualificationUnavailable"],
-  ["mixed-invoice-rework", "mixed-task-invoice-rework.bpmn", "mixedTaskControlFlowQualificationUnavailable"],
-  ["business-error", "mixed-task-invoice-business-error.bpmn", "mixedTaskControlFlowQualificationUnavailable"],
+  ["serial-classification", "serial-invoice-classification.bpmn"],
+  ["mixed-invoice-rework", "mixed-task-invoice-rework.bpmn"],
+  ["business-error", "mixed-task-invoice-business-error.bpmn"],
 ] as const;
 
 test("public compilation preserves the exact overlays accepted by private business compilation", async () => {
@@ -45,19 +45,22 @@ test("public compilation preserves the exact overlays accepted by private busine
   }
 });
 
-test("overlay-selected private business starts retain their separate hosting qualification refusals", async () => {
-  for (const [fixture, source, code] of businessCases) {
+test("overlay-selected business starts preserve the admitted source identity through public dispatch", async () => {
+  for (const [fixture, source] of businessCases) {
     const calls: CapturedStart[] = [];
     const request = await businessRequest(fixture, source, calls);
-    for (const result of [
-      await prepareBpmnDefinitionVersionStart(request),
-      await startBpmnDefinitionVersion(request),
-    ]) {
-      assert.equal(result.status, EngineDefinitionStartStatus.Rejected, fixture);
-      assert.equal(result.failure.code, code, fixture);
-      assert.deepEqual(result.definition.sourceOverlay, identity(request.sourceOverlay));
-    }
+    const prepared = await prepareBpmnDefinitionVersionStart(request);
+    assert.equal(prepared.status, EngineDefinitionStartStatus.Admitted, fixture);
+    assert.deepEqual(prepared.definition.sourceOverlay, identity(request.sourceOverlay));
     assert.equal(calls.length, 0);
+    const started = await startPreparedBpmnDefinitionVersion({ ...request, expectedIntent: prepared.intent });
+    assert.equal(started.status, EngineDefinitionStartStatus.Started, fixture);
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0]?.options.args[1].identity.sourceOverlay, identity(request.sourceOverlay));
+    assert.equal(calls[0]?.options.memo.bpmnLeanDirectStartIntentSha256, prepared.intent.intentSha256);
+    const invalid = await startBpmnDefinitionVersion({ ...request, initialVariables: [] });
+    assert.equal(invalid.status, EngineDefinitionStartStatus.Rejected);
+    assert.equal(calls.length, 1, "missing required input must not reach Temporal");
   }
 });
 

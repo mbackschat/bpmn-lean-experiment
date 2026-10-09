@@ -474,14 +474,14 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 408 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 279 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 157 | canonical encoding and selected publication dispatch |
-| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 535 | failed receipt arm only |
+| [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 537 | failed receipt arm only |
 | [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 75 | failed discriminator only; extract state validation before other growth |
 | [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 511 | one exact operation and result registration only |
 | [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) | 592 | failed terminal case only |
 | [product interaction driver](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 350 | failed terminal predicate only |
-| [runnable Product 1 result](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 394 | failed receipt event/result arms only |
+| [runnable Product 1 result](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 386 | failed receipt event/result arms only |
 | [runnable command exit](../../packages/temporal-adapter/runner/cli/runnable-mvp-command.ts) | 686 | one distinct failed-Process exit arm only |
 | [terminal receipt](../../packages/temporal-adapter/workflow/src/terminal-process-receipt.ts) | 670 | failed construction only |
 | [terminal envelope](../../packages/temporal-adapter/workflow/src/workflow-terminal-completion.ts) | 554 | failed validation only |

@@ -1,0 +1,137 @@
+{
+  "kind": "scenario",
+  "id": "classification",
+  "profile": "cibseven-2.2.0-serial-business-tasks-draft",
+  "bpmn": {
+    "id": "classified-invoice",
+    "relativePath": "scenarios/serial-business-task-composition/process.bpmn",
+    "sha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
+    "sourceOverlay": {
+      "id": "invoice-handlers",
+      "sha256": "b4a778099c78ae9cda0074b2e79ea6ce12b76ff95ce1f983cebde460d106dc75"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_InvoiceValidation",
+      "instanceId": "invoice",
+      "initialVariables": [
+        {
+          "name": "payload",
+          "value": {
+            "kind": "string",
+            "value": "parent-payload"
+          }
+        },
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "initial"
+          }
+        },
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "parent-result"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "review",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "INV-42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Classify",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "standard"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "finalize",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Finalize",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015"
+    ]
+  }
+}

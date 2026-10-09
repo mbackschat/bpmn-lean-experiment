@@ -98,6 +98,9 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "transaction-cancellation-retained-active",
   "transaction-cancellation-retained-ended",
   "transaction-cancellation-handler-failed",
+  "classification",
+  "invoice-rework",
+  "invoice-business-error-recovery",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];

@@ -226,7 +226,9 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **BPMN basis:** Clauses 13.3.3 and 13.5.3, Table 8.41 and Tables 10.90, 10.91 and 10.92 require the selected matching Error to interrupt its attached Service Task and follow the boundary Sequence Flow instead of normal completion.
 
-**Pinned CIB observation:** CIB Seven `2.2.0`, revision `5a45b47ea22688d774de97277c3ff7013f54fdd2`, routes the exact `InvoiceRejected` result to Recover, permits reentry through Review with fresh task/automation occurrences, and takes normal continuation on subsequent success. Technical failure does not activate this boundary; changing the declared code removes the catch. The default unmatched path has the separate mapping-sensitive host outcomes recorded in the experiment.
+**Pinned CIB observation:** Published CIB Seven `2.2.0`, whose `v2.2.0` source revision is `834a9874760de8a0107f7c1b32806e37f17fb017`, executes through the [Maven oracle](../runners/cibseven/pom.xml) and routes the exact `InvoiceRejected` result to Recover, permits reentry through Review with fresh task/automation occurrences, and takes normal continuation on subsequent success. Technical failure does not activate this boundary; changing the declared code removes the catch. The default unmatched path has the separate mapping-sensitive host outcomes recorded in the experiment.
+
+**Source inspection:** The diagnostic checkout is separately pinned at `5a45b47ea22688d774de97277c3ff7013f54fdd2`. [Source provenance](SOURCES.md#cib-seven) records byte-identical relevant BPMN engine and model-API trees between that checkout and the published release.
 
 **Evidence:** The [eight-probe experiment](experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java) and [registered-relationship guard](../scripts/contract-artifact-projections.test.ts). No project semantic profile is qualified by this observation alone.
 

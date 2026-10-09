@@ -191,11 +191,19 @@ export async function runRunnableTemporalMvp(
   dependencies: RunnableMvpDependencies = productionDependencies,
 ): Promise<RunnableMvpResult> {
   validateRunnableMvpConfig(config);
+  const sourceOverlay = config.bpmn.sourceOverlay === undefined ||
+      config.bpmn.sourceOverlay === null
+    ? null
+    : { ...config.bpmn.sourceOverlay };
   const compilation = await compileBpmnToSemanticProcess({
     bytes: await readFile(config.bpmn.file),
     sourceId: config.bpmn.sourceId,
     expectedSha256: undefined,
-    sourceOverlay: null,
+    sourceOverlay: sourceOverlay === null ? null : {
+      id: sourceOverlay.id,
+      sha256: sourceOverlay.sha256,
+      bytes: await readFile(sourceOverlay.file),
+    },
     semanticProfile: config.bpmn.semanticProfile,
     limits: config.bpmn.limits,
   });

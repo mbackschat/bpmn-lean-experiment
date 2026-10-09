@@ -69,11 +69,16 @@ async function exampleConfigPaths(): Promise<ReadonlyArray<string>> {
 }
 
 async function compileExample(config: RunnableMvpConfig) {
+  const sourceOverlay = config.bpmn.sourceOverlay;
   return compileBpmnToSemanticProcess({
     bytes: await readFile(config.bpmn.file),
     sourceId: config.bpmn.sourceId,
     expectedSha256: undefined,
-    sourceOverlay: null,
+    sourceOverlay: sourceOverlay === undefined || sourceOverlay === null ? null : {
+      id: sourceOverlay.id,
+      sha256: sourceOverlay.sha256,
+      bytes: await readFile(sourceOverlay.file),
+    },
     semanticProfile: config.bpmn.semanticProfile,
     limits: config.bpmn.limits,
   });

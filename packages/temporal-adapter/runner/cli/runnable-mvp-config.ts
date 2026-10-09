@@ -58,6 +58,11 @@ export type RunnableMvpConfig = DeepReadonly<{
     file: string;
     sourceId: string;
     semanticProfile: string;
+    sourceOverlay?: {
+      file: string;
+      id: string;
+      sha256: string;
+    } | null;
     limits: {
       maxBytes: number;
       parserDeadlineMs: number;
@@ -81,11 +86,18 @@ export async function loadRunnableMvpConfig(
     absoluteConfigPath,
   );
   validateRunnableMvpConfig(value);
+  const sourceOverlay = value.bpmn.sourceOverlay;
   return {
     ...value,
     bpmn: {
       ...value.bpmn,
       file: path.resolve(path.dirname(absoluteConfigPath), value.bpmn.file),
+      ...(sourceOverlay === undefined || sourceOverlay === null ? {} : {
+        sourceOverlay: {
+          ...sourceOverlay,
+          file: path.resolve(path.dirname(absoluteConfigPath), sourceOverlay.file),
+        },
+      }),
     },
   };
 }
@@ -106,10 +118,26 @@ export function validateRunnableMvpConfig(
     root.bpmn,
     ["file", "sourceId", "semanticProfile", "limits"],
     "MVP bpmn config",
+    ["sourceOverlay"],
   );
   requireNonemptyString(bpmn.file, "MVP BPMN file");
   requireNonemptyString(bpmn.sourceId, "MVP BPMN sourceId");
   requireNonemptyString(bpmn.semanticProfile, "MVP semantic profile");
+  if (Object.hasOwn(bpmn, "sourceOverlay") && bpmn.sourceOverlay !== null) {
+    const sourceOverlay = requireExactObject(
+      bpmn.sourceOverlay,
+      ["file", "id", "sha256"],
+      "MVP source overlay",
+    );
+    requireNonemptyString(sourceOverlay.file, "MVP source overlay file");
+    requireNonemptyString(sourceOverlay.id, "MVP source overlay id");
+    if (
+      typeof sourceOverlay.sha256 !== "string" ||
+      !/^[0-9a-f]{64}$/u.test(sourceOverlay.sha256)
+    ) {
+      throw new TypeError("MVP source overlay sha256 must be a lowercase SHA-256 digest");
+    }
+  }
   const limits = requireExactObject(
     bpmn.limits,
     ["maxBytes", "parserDeadlineMs"],
@@ -216,11 +244,12 @@ function requireExactObject(
   value: unknown,
   expectedKeys: ReadonlyArray<string>,
   label: string,
+  optionalKeys: ReadonlyArray<string> = [],
 ): Record<string, unknown> {
   if (!isRecord(value)) {
     throw new TypeError(`${label} must be an object`);
   }
-  const expected = new Set(expectedKeys);
+  const expected = new Set([...expectedKeys, ...optionalKeys]);
   for (const key of Object.keys(value)) {
     if (!expected.has(key)) {
       throw new TypeError(`${label} has unknown field ${key}`);

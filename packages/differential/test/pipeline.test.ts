@@ -4,7 +4,6 @@ import { test } from "node:test";
 import {
   CanonicalObservationKind,
   CommandOutcome,
-  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   CanonicalObservation,
@@ -13,6 +12,7 @@ import type {
 import {
   ProcessCommandResultKind,
   EffectExecutionSchedule,
+  TemporalExecutionSchedule,
 } from "@bpmn-lean/temporal-testkit";
 
 import {
@@ -413,12 +413,9 @@ test(
         } else {
           assert.equal(caseEvidence.cibEffectRetryEvidence, null);
         }
-        if (
-          caseReport.scenario.profile === SemanticProfileId.Compensation ||
-          caseReport.scenario.profile === SemanticProfileId.TransactionCancellation
-        ) {
-          // OrderedEffectExecution.requireHistory binds every handler; legacy probe counters describe one Service Task mutation.
-          assert.equal(pipelineCase.effectSchedules, null);
+        if (pipelineCase.effectSchedules === null) {
+          // OrderedEffectExecution.requireHistory binds every occurrence and result; probe counters describe a separately selected single-effect schedule.
+          assert.equal(pipelineCase.executionSchedule, TemporalExecutionSchedule.StimulusOrder);
           assert.equal(caseEvidence.primaryEffectProbeEvidence, null);
           assert.equal(caseEvidence.isolationEffectProbeEvidence, null);
         } else {

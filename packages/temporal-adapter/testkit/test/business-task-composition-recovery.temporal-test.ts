@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
+import { isDeepStrictEqual } from "node:util";
 import test from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
@@ -24,7 +25,7 @@ import { decodeJsonPayload, historyEvents } from "./temporal-history-facts.ts";
 import { temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
 import { replayBpmnHistory, startBpmnTestWorker, stopBpmnTestWorker } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
-import { workflowChainRuns } from "./workflow-chain-test-support.ts";
+import { waitForPublishedWorkflowChainState, workflowChainRuns } from "./workflow-chain-test-support.ts";
 
 const scalar = (name: string, value: string): VariableBinding => ({ name, value: { kind: VariableValueKind.String, value } });
 const success = (value: string | null): EffectExecutionResult => ({ kind: EffectExecutionResultKind.Success,
@@ -85,18 +86,23 @@ for (const scenario of cases) {
       instanceId: scenario.name, initialVariables: scenario.initial } as const;
     const workflowId = processWorkflowId(start.instanceId);
     const requests: EffectRequest[] = [];
-    const attempts = new Map<string, number>();
+    // MTCF-HOST-01: an idempotent caller cache must distinguish a new occurrence from its retry.
+    const completedResults = new Map<string, EffectActivityImplementationResult>();
     const pending = Promise.withResolvers<void>();
     const activities = { executeBpmnEffect: async (request: EffectRequest) => {
+      const callbackIndex = requests.length;
       requests.push(structuredClone(request));
-      const attempt = (attempts.get(request.idempotencyKey) ?? 0) + 1;
-      attempts.set(request.idempotencyKey, attempt);
-      if ([...attempts.keys()].indexOf(request.idempotencyKey) === scenario.recoverEffect && attempt === 1) {
+      // Select Worker loss independently of key uniqueness, so a reused key still reaches the discriminator.
+      if (callbackIndex === scenario.recoverEffect) {
         pending.resolve();
         // SERVICE-TASK-EFFECT's approved Worker-loss witness outlives the 2 s Activity attempt.
         await delay(2_500);
       }
-      return executeBusinessOperation(request);
+      const cached = completedResults.get(request.idempotencyKey);
+      if (cached !== undefined) return structuredClone(cached);
+      const result = await executeBusinessOperation(request);
+      completedResults.set(request.idempotencyKey, structuredClone(result));
+      return structuredClone(result);
     } };
     const environment = await withDeadline(createCachedLocalEnvironment({ identity: scenario.name,
       downloadDirectory: temporalCacheDirectory }), 40_000, "business composition environment startup");
@@ -119,18 +125,33 @@ for (const scenario of cases) {
           case StimulusKind.CompleteUserTaskInstance:
             await oracle.completeHuman(step.element, `human-${stepIndex}`, step.values);
             break;
-          case StimulusKind.CompleteEffect:
-            assert.equal(oracle.state.effectWaits[0]?.id.elementId, step.element);
-            if (effectIndex === scenario.recoverEffect) {
+          case StimulusKind.CompleteEffect: {
+            const effectId = oracle.state.effectWaits[0]?.id;
+            assert.ok(effectId !== undefined);
+            assert.equal(effectId.elementId, step.element);
+            const recovering = effectIndex === scenario.recoverEffect;
+            if (recovering) {
               await withDeadline(pending.promise, 20_000, "business Activity pending");
+              const predecessor = await waitForPublishedWorkflowChainState(environment, workflowId, program, start.instanceId,
+                state => state.openEffects.some(wait => isDeepStrictEqual(wait.id, effectId)));
+              assert.deepEqual(predecessor, observeStableState(program, oracle.state));
               carriedExpected = oracle.state;
               await stopBpmnTestWorker(worker);
               worker = undefined;
               worker = await startBpmnTestWorker(environment, bundle, "business-replacement", activities);
             }
             oracle.completeEffect(step.result);
+            if (recovering) {
+              // Each selected recovery ends at a human wait. Inspect the current head after the observed
+              // predecessor retires, without filtering on the expected route (MTCF-HOST-01).
+              const successor = await waitForPublishedWorkflowChainState(environment, workflowId, program, start.instanceId,
+                state => !state.openEffects.some(wait => isDeepStrictEqual(wait.id, effectId)));
+              assert.deepEqual(successor, observeStableState(program, oracle.state), "Recovered effect must publish its current-input result");
+              await oracle.assertPublications();
+            }
             effectIndex++;
             break;
+          }
         }
       }
       const terminal = await withDeadline(readTestProcessTerminalResult(handle), 20_000, "business composition completion");

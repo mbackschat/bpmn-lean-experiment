@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
+import { compareCanonicalStrings, isWellFormedWireString } from "../packages/semantic-core/src/wire.ts";
+import type { SourceOverlayIdentity } from "../packages/semantic-core/src/source-overlay-identity.ts";
+import type { SourceOverlaySelection } from "../packages/bpmn-source/src/contracts.ts";
 import {
   CibCapabilityEvidenceKind,
   mvpBpmnCapabilities,
@@ -39,6 +41,7 @@ type PipelineCase = Readonly<{
   id: string;
   scenarioRelativePath: string;
   bpmnRelativePath: string;
+  sourceOverlayRelativePath?: string;
   cib: Readonly<{ version: "2.0.0" | "2.2.0" }> | null;
   temporalRelation: string;
   injectMutation: unknown;
@@ -64,7 +67,7 @@ export type CorpusCompiler = (
     sourceId: string;
     expectedSha256: string;
     semanticProfile: string;
-    sourceOverlay: null;
+    sourceOverlay: SourceOverlaySelection | null;
     limits: Readonly<{ maxBytes: number; parserDeadlineMs: number }>;
   }>,
 ) => Promise<Readonly<{
@@ -199,6 +202,7 @@ function detectedConstructs(xml: string): ReadonlyArray<string> {
 type BpmnBinding = Readonly<{
   relativePath: string;
   sha256: string;
+  sourceOverlay: SourceOverlayIdentity | null;
 }>;
 
 type ScenarioBinding =
@@ -234,7 +238,31 @@ function bpmnBinding(value: unknown, label: string): BpmnBinding {
   if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(sha256)) {
     throw new TypeError(`${label}.sha256 must be a lowercase SHA-256 digest`);
   }
-  return { relativePath, sha256 };
+  const sourceOverlay = bpmn.sourceOverlay;
+  if (sourceOverlay === null) return { relativePath, sha256, sourceOverlay };
+  if (typeof sourceOverlay !== "object" || sourceOverlay === null || Array.isArray(sourceOverlay)) {
+    throw new TypeError(`${label}.sourceOverlay must be null or an exact identity`);
+  }
+  const overlay = sourceOverlay as Record<string, unknown>;
+  if (Object.keys(overlay).length !== 2 || !isWellFormedWireString(overlay.id) || overlay.id.length === 0 ||
+      typeof overlay.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(overlay.sha256)) {
+    throw new TypeError(`${label}.sourceOverlay must be null or an exact identity`);
+  }
+  return { relativePath, sha256, sourceOverlay: { id: overlay.id, sha256: overlay.sha256 } };
+}
+
+async function readBoundSourceOverlay(
+  binding: BpmnBinding,
+  selectedPath: string | undefined,
+  projectRoot: string,
+  modelId: string,
+): Promise<SourceOverlaySelection | null> {
+  if (binding.sourceOverlay === null) {
+    if (selectedPath !== undefined) throw new Error(`model ${modelId} source overlay path requires a scenario identity`);
+    return null;
+  }
+  if (selectedPath === undefined) throw new Error(`model ${modelId} source overlay requires a selected pipeline path`);
+  return { ...binding.sourceOverlay, bytes: await readFile(path.join(projectRoot, selectedPath)) };
 }
 
 function populationExecutionTargets(
@@ -428,6 +456,7 @@ export async function inspectExecutableModelCorpus(
       ? detectExecutableBpmnCapabilities(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
       : [];
 
+    let sourceOverlay: SourceOverlaySelection | null = null;
     let pipelineCase: PipelineCase | undefined;
     let populationCase: PopulationCase | undefined;
     let license: string;
@@ -468,6 +497,9 @@ export async function inspectExecutableModelCorpus(
           ) {
             throw new Error(`model ${model.id} has no exact protected pipeline route`);
           }
+          sourceOverlay = await readBoundSourceOverlay(
+            scenario.bpmn, pipelineCase.sourceOverlayRelativePath, options.projectRoot, model.id,
+          );
           break;
         case "enginePopulationScenario": {
           populationCase = options.populationCases.find(
@@ -490,6 +522,9 @@ export async function inspectExecutableModelCorpus(
               `model ${model.id} has no exact protected population route`,
             );
           }
+          const definition = matchingDefinitions[0];
+          if (definition === undefined) throw new Error(`model ${model.id} has no bound definition`);
+          sourceOverlay = await readBoundSourceOverlay(definition, undefined, options.projectRoot, model.id);
           break;
         }
       }
@@ -506,7 +541,7 @@ export async function inspectExecutableModelCorpus(
       sourceId: model.id,
       expectedSha256: model.source.sha256,
       semanticProfile: model.profile,
-      sourceOverlay: null,
+      sourceOverlay,
       limits: { maxBytes: maxCorpusModelBytes, parserDeadlineMs: 1_000 },
     });
     const expectedStatus = model.admission.kind;

@@ -1,0 +1,47 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/call-activity-data-boundaries/process.bpmn",
+    "sourceId": "supplier-call-recovery",
+    "semanticProfile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_supplier_onboarding_1",
+    "initialVariables": [
+      { "name": "Property_DueDiligenceDecision", "value": { "kind": "string", "value": "prior-decision" } },
+      { "name": "Property_InternalNote", "value": { "kind": "string", "value": "caller-only" } },
+      { "name": "Property_SupplierSummary", "value": { "kind": "string", "value": "supplier-summary" } }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Task_AssessSupplier",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": [
+        { "name": "Output_TaskDecision", "value": { "kind": "string", "value": "supplier-summary" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "Task_FinalReview",
+      "delayMs": 250,
+      "inputVariableNames": ["Property_DueDiligenceDecision"],
+      "submittedValues": [
+        { "name": "Output_FinalReviewReceipt", "value": { "kind": "string", "value": "onboarded" } }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

@@ -4,6 +4,9 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 
 ## Artifact registry
 
+- [Serial business task composition](cibseven-2.2.0-serial-business-tasks-draft/README.md) binds the [normative profile](cibseven-2.2.0-serial-business-tasks-draft/profile.json) to human work, named automation and complete scalar mappings.
+- [Mixed-task control flow](cibseven-2.2.0-mixed-task-control-flow-draft/README.md) binds the [normative profile](cibseven-2.2.0-mixed-task-control-flow-draft/profile.json) to ordered choice, merging and task-separated rework.
+- [Mixed-task business Error](cibseven-2.2.0-mixed-task-business-error-draft/README.md) binds the [normative profile](cibseven-2.2.0-mixed-task-business-error-draft/profile.json) to attached exact-code recovery and caught-path mappings.
 - [Scalar Call Activity data](bpmn-2.0.2-call-activity-data-boundaries-draft/README.md) registers isolated String-or-null input/output across one in-document Call.
 - [BPMN 2.0.2 Activity boundary Message draft](bpmn-2.0.2-activity-boundary-message-draft/README.md)
 - [BPMN 2.0.2 Activity boundary Timer draft](bpmn-2.0.2-activity-boundary-timer-draft/README.md)

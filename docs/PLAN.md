@@ -111,13 +111,13 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: qualify public registration of approved serial/mixed-task/business Error journeys; no new family or topology.
 
-Current result: the public-registration candidate remains separate from this proof prerequisite. Corrections preserve composed guarantees and runtime behavior; the [serial assurance lane](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#lean-assurance-lane) owns the strengthened reachable frame and explicit helper domains. Serial proof owners meet their unchanged strict size bound.
+Current result: maintained-proof checkpoint `da2b3ca3` is independently approved without required corrections. The serial/mixed-task/business Error registration checkpoint retains existing semantic accounts and handlers; public-boundary review and complete hosted qualification remain open.
 
-Last verification: the complete Lean library passes under the fixed resource bound. Isolated types, components/API, differential/artifacts, exact three-journey Lean/core results/E1/E2/mutations and public journeys/replays pass. Installed-SDK composition, Error and 28/29 remaining hosted groups pass; all 18 serial groups pass. Current Call recovery and public-candidate infrastructure pass; prerequisite infrastructure remains incomplete. Serial fixtures pass bounded measurement. Latest mixed-tree documentation check hits the runtime-map word limit and a timeout; no green claim.
+Last verification: all 804 Lean/build inputs match the passing bounded library. All 99 checkpoint infrastructure files, harness types, six standard-axiom checks and the changed scope-data fixture measurement pass. Registered whole-process Lean/core results, E1/E2, mutations, public starts and replay pass; retained installed-runtime failures remain unresolved.
 
-Next action: complete remaining infrastructure qualification and independent proof review after the owner-directed checkpoint, then integrate public registration. No further commit partitioning.
+Next action: review the committed registration boundary and close its remaining acceptance obligations. No further commit partitioning; preserve the runtime-investigation hold.
 
-Unresolved: installed-runtime qualification, original concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/publication-query failures, independent proof/public review and closure, and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation remains on hold; performance qualification remains excluded. Lean stays one process tree, one CPU/3 GiB without extra swap; no cold-library investigation is selected.
+Unresolved: installed-runtime qualification, original concurrent testkit batch 13, zero-item MI publication unavailability, prior SIGSEGV/publication-query failures, independent public review and closure, and [parallel MI proof gaps](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). Broad runtime investigation remains on hold; performance qualification remains excluded. Lean stays one process tree, one CPU/3 GiB without extra swap; no cold-library investigation is selected.
 
 Oracle: exact lowering/results/E1/E2, fresh-occurrence/current-data recovery, mutations and applicable acceptance gates.
 

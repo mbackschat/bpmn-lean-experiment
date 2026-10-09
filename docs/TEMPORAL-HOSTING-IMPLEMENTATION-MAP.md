@@ -6,7 +6,9 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 [MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 
-Private [serial/mixed recovery witnesses](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) retain installed-SDK failures and private-Core diagnostics. Private [business Error hosting evidence](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) covers recovery, continuation, replacement, E1/E2, replay and technical-failure separation; production admission and closure remain open. The same record owns the diagnosed 23-byte Multi-Instance serialization refresh; capacity bounds are unchanged.
+Private [serial/mixed](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) and [business Error](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) recovery/replay witnesses pass; [mixed host-cache mutations](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) fail through public state. The [registration candidate](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) passes public start/replay; qualification and review remain open.
+
+Runner [overlay selection](RUNNABLE-TEMPORAL-MVP-SPEC.md#public-operating-contract) preserves identity/bytes before connection. Non-material wiring: runner/example/types/Temporal guards; simulations and host refusals unchanged.
 
 Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runners: late Workers shut down, start failures join shutdown, and trace-termination failures cannot skip it. Normal queue matching, hosting and timeouts are unchanged.
 

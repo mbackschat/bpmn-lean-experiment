@@ -29,12 +29,12 @@ function skipErrorRecovery(result: MutableScenarioResult): void {
   state.openUserTasks[0] = { ...task, id: { ...task.id, elementId: "Finalize" } };
 }
 
-function businessCase(id: string, fixture: string, source: string,
-  injectMutation: PipelineCase<string>["injectMutation"], path: string,
-  expected: string | number, actual: string | number): PipelineCase<string> {
-  return { id, scenarioRelativePath: `packages/differential/test/fixtures/${fixture}.scenario.json`,
-    bpmnRelativePath: `packages/bpmn-source/test/fixtures/${source}.bpmn`,
-    sourceOverlayRelativePath: `packages/differential/test/fixtures/${fixture}.overlay.json`,
+function businessCase(id: PipelineCase["id"], family: string,
+  injectMutation: PipelineCase["injectMutation"], path: string,
+  expected: string | number, actual: string | number): PipelineCase {
+  return { id, scenarioRelativePath: `scenarios/${family}/scenario.json`,
+    bpmnRelativePath: `scenarios/${family}/process.bpmn`,
+    sourceOverlayRelativePath: `scenarios/${family}/source-overlay.json`,
     workflowIdPrefix: id, cib: null, expectedWaitTraceLength: 3,
     completionDelivery: TemporalCompletionDelivery.Ordered,
     temporalRelation: TemporalCaseRelation.ExactSemantic,
@@ -44,10 +44,10 @@ function businessCase(id: string, fixture: string, source: string,
 }
 
 export const businessTaskCompositionPipelineCases = Object.freeze([
-  businessCase("classification", "serial-classification", "serial-invoice-classification", reusePrecedingTask,
+  businessCase("classification", "serial-business-task-composition", reusePrecedingTask,
     "trace[6].openEffects[0].id.elementId", "Classify", "Validate"),
-  businessCase("invoice-rework", "mixed-invoice-rework", "mixed-task-invoice-rework", reusePreviousOccurrence,
+  businessCase("invoice-rework", "mixed-task-control-flow", reusePreviousOccurrence,
     "trace[8].openEffects[0].id.activation", 2, 1),
-  businessCase("invoice-business-error-recovery", "business-error", "mixed-task-invoice-business-error", skipErrorRecovery,
+  businessCase("invoice-business-error-recovery", "mixed-task-business-error", skipErrorRecovery,
     "trace[6].openUserTasks[0].id.elementId", "CorrectData", "Finalize"),
 ]);

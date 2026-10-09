@@ -1,0 +1,36 @@
+<definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="urn:invoice-business-error" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Invoice" isExecutable="true">
+    <startEvent id="Start"/>
+    <exclusiveGateway id="Reentry" gatewayDirection="Converging"/>
+    <userTask id="Review" name="Review invoice"/>
+    <serviceTask id="Validate" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:asyncBefore="true" camunda:delegateExpression="${invoiceValidator}">
+      <extensionElements><camunda:inputOutput>
+        <camunda:inputParameter name="payload">${request}</camunda:inputParameter>
+        <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+      </camunda:inputOutput></extensionElements>
+    </serviceTask>
+    <serviceTask id="Authorize" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:asyncBefore="true" camunda:delegateExpression="${policyChecker}">
+      <extensionElements><camunda:inputOutput>
+        <camunda:inputParameter name="payload">${request}</camunda:inputParameter>
+        <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+      </camunda:inputOutput></extensionElements>
+    </serviceTask>
+    <boundaryEvent id="InvalidInvoice" attachedToRef="Validate"><errorEventDefinition id="CatchInvalidInvoice" errorRef="ReviewRequired"/></boundaryEvent>
+    <boundaryEvent id="PolicyRefusal" attachedToRef="Authorize"><errorEventDefinition id="CatchPolicyRefusal" errorRef="ReviewRequired"/></boundaryEvent>
+    <userTask id="CorrectData" name="Correct invoice data"/>
+    <userTask id="ReviewPolicy" name="Review purchasing policy"/>
+    <userTask id="Finalize" name="Finalize invoice"/>
+    <endEvent id="End"/>
+    <sequenceFlow id="Begin" sourceRef="Start" targetRef="Reentry"/>
+    <sequenceFlow id="EnterReview" sourceRef="Reentry" targetRef="Review"/>
+    <sequenceFlow id="Check" sourceRef="Review" targetRef="Validate"/>
+    <sequenceFlow id="CheckPolicy" sourceRef="Validate" targetRef="Authorize"/>
+    <sequenceFlow id="Accept" sourceRef="Authorize" targetRef="Finalize"/>
+    <sequenceFlow id="CorrectInvoice" sourceRef="InvalidInvoice" targetRef="CorrectData"/>
+    <sequenceFlow id="CorrectPolicy" sourceRef="PolicyRefusal" targetRef="ReviewPolicy"/>
+    <sequenceFlow id="RetryData" sourceRef="CorrectData" targetRef="Reentry"/>
+    <sequenceFlow id="RetryPolicy" sourceRef="ReviewPolicy" targetRef="Reentry"/>
+    <sequenceFlow id="Finish" sourceRef="Finalize" targetRef="End"/>
+  </process>
+  <error id="ReviewRequired" name="Invoice requires correction" errorCode="REVIEW_REQUIRED"/>
+</definitions>

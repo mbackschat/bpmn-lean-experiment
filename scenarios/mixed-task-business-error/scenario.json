@@ -1,0 +1,255 @@
+{
+  "kind": "scenario",
+  "id": "invoice-business-error-recovery",
+  "profile": "cibseven-2.2.0-mixed-task-business-error-draft",
+  "bpmn": {
+    "id": "invoice-business-error",
+    "sha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+    "sourceOverlay": {
+      "id": "invoice-handlers",
+      "sha256": "078fb081badfc264e638492d7cfe32c0c6d7d0f6f5e290d3c28e15c3b9cd1fe6"
+    },
+    "relativePath": "scenarios/mixed-task-business-error/process.bpmn"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Invoice",
+      "instanceId": "invoice",
+      "initialVariables": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "initial"
+          }
+        },
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "parent-result"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "review-1",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "missing-reference"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:0e5077a72746f8c686f1ed8f0510517c57f00fffe54e9292d5126b8dd0286949",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 1
+      },
+      "result": {
+        "kind": "bpmnError",
+        "code": "REVIEW_REQUIRED",
+        "message": "Invoice requires correction",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "correct"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "correct-data",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "CorrectData",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "policy-review"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "review-2",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:a7404b44ff76b67a6712f81b2e3b66fa9c2d8b6ffaec6d67accabf56714ae72b",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Authorize",
+        "activation": 1
+      },
+      "result": {
+        "kind": "bpmnError",
+        "code": "REVIEW_REQUIRED",
+        "message": "Invoice requires correction",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "correct"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "correct-policy",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "ReviewPolicy",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "INV-42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "review-3",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Review",
+        "activation": 3
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:89ee5d353237830a7b3c8aecfe7a7845ad19083f4b44471529114487a8e3137b",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Validate",
+        "activation": 3
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:2f95a9cebed27bae681ee902ab1e1fa96cf0c76d1980716a7a26f8bcf5b4cc1b",
+      "effectId": {
+        "processInstanceId": "invoice",
+        "elementId": "Authorize",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "finalize",
+      "taskId": {
+        "processInstanceId": "invoice",
+        "elementId": "Finalize",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-AGR-0012",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016"
+    ]
+  }
+}

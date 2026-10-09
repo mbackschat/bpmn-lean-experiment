@@ -82,8 +82,6 @@ export enum TemporalHostAdmissionFailureCode {
   SequentialSubProcessQualificationUnavailable = "sequentialSubProcessQualificationUnavailable",
   InterruptingMessageEventSubProcessQualificationUnavailable = "interruptingMessageEventSubProcessQualificationUnavailable",
   StructuredCompositionQualificationUnavailable = "structuredCompositionQualificationUnavailable",
-  MixedTaskControlFlowQualificationUnavailable = "mixedTaskControlFlowQualificationUnavailable",
-  SerialBusinessTaskQualificationUnavailable = "serialBusinessTaskQualificationUnavailable",
   InternalChoiceSchedulerUnavailable = "internalChoiceSchedulerUnavailable",
   ConcurrentHostDrivenWaits = "concurrentHostDrivenWaits",
   CompensationSchedulerUnavailable = "compensationSchedulerUnavailable",

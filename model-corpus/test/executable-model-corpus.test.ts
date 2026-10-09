@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -39,10 +41,10 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 53);
-  assert.equal(report.retainedModels, 46);
+  assert.equal(report.models.length, 56);
+  assert.equal(report.retainedModels, 49);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 46);
+  assert.equal(report.acceptedModels, 49);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 12);
   assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
@@ -100,6 +102,9 @@ test("binds every retained and external model to exact local evidence", async ()
       "subscription-receive-task-resume",
       "compensation-success-b-c-a",
       "transaction-cancellation-retained-active",
+      "classification",
+      "invoice-rework",
+      "invoice-business-error-recovery",
     ],
   );
 });
@@ -463,4 +468,92 @@ test("ranks reusable mechanism gaps by independent model family", async () => {
     cloneFamilies: 4,
     models: 5,
   });
+});
+
+
+test("corpus compilation preserves exact scenario overlays and rejects incomplete bindings", async t => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-corpus-overlay-"));
+  const relativePaths = new Set(pipelineCases.flatMap(c => [c.bpmnRelativePath, c.scenarioRelativePath,
+    ...("sourceOverlayRelativePath" in c && typeof c.sourceOverlayRelativePath === "string"
+      ? [c.sourceOverlayRelativePath] : [])]));
+  for (const c of messageKeyCorrelationPopulationCases) {
+    relativePaths.add(c.scenarioRelativePath);
+    const scenario = JSON.parse(await readFile(path.join(projectRoot, c.scenarioRelativePath), "utf8"));
+    for (const definition of scenario.definitions) relativePaths.add(definition.relativePath);
+  }
+  for (const model of manifest.models) {
+    if (model.source.kind === "retainedScenario") {
+      relativePaths.add(model.source.bpmnRelativePath);
+      relativePaths.add(model.source.scenarioRelativePath);
+    }
+    if (model.product2.kind !== "notCatalogReady") relativePaths.add(model.product2.journeyTestRelativePath);
+  }
+  try {
+    await Promise.all([...relativePaths].map(async relativePath => {
+      const destination = path.join(directory, relativePath);
+      await mkdir(path.dirname(destination), { recursive: true });
+      await copyFile(path.join(projectRoot, relativePath), destination);
+    }));
+    for (const caseId of ["mapped-success-service-task", "mapped-boundary-error-service-task-caught"]) {
+      const selected = pipelineCases.find(c => c.id === caseId);
+      assert.ok(selected !== undefined);
+      const scenarioPath = path.join(directory, selected.scenarioRelativePath);
+      const originalScenario = await readFile(scenarioPath, "utf8");
+      const scenario = JSON.parse(originalScenario);
+      // Built-in bindings remain executable, so acceptance alone cannot hide dropped overlay provenance.
+      const overlay = { kind: "bpmnSourceOverlay", id: `corpus-${caseId}`, semanticProfile: scenario.profile,
+        effectBindings: [], inertAttributes: [] };
+      const bytes = new TextEncoder().encode(JSON.stringify(overlay));
+      const identity = { id: overlay.id, sha256: createHash("sha256").update(bytes).digest("hex") };
+      const sourceOverlayRelativePath = `${selected.scenarioRelativePath}.overlay.json`;
+      const overlayPath = path.join(directory, sourceOverlayRelativePath);
+      await writeFile(overlayPath, bytes);
+      scenario.bpmn.sourceOverlay = identity;
+      const inspect = (cases: ReadonlyArray<(typeof pipelineCases)[number] & { sourceOverlayRelativePath?: string }>, observe = false) =>
+        inspectExecutableModelCorpus(manifest, {
+          projectRoot: directory,
+          externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(projectRoot, "../oss"),
+          pipelineCases: cases,
+          populationCases: messageKeyCorrelationPopulationCases,
+          compileModel: async request => {
+            if (observe && request.semanticProfile === scenario.profile) {
+              assert.deepEqual(request.sourceOverlay, { ...identity, bytes: Buffer.from(bytes) });
+            }
+            return compileCorpusModel(request);
+          },
+        });
+      const selectedCases = pipelineCases.map(c => c.id === caseId ? { ...c, sourceOverlayRelativePath } : c);
+      await t.test(`${caseId}: exact identity and bytes reach the production compiler`, async () => {
+        await writeFile(scenarioPath, JSON.stringify(scenario));
+        const report = await inspect(selectedCases, true);
+        assert.equal(report.acceptedModels, 49);
+      });
+      await t.test(`${caseId}: declared identity requires its selected path`, async () => {
+        await assert.rejects(inspect(pipelineCases), /source overlay.*path/i);
+      });
+      await t.test(`${caseId}: selected path requires a scenario identity`, async () => {
+        await writeFile(scenarioPath, originalScenario);
+        await assert.rejects(inspect(selectedCases), /source overlay.*identity/i);
+        await writeFile(scenarioPath, JSON.stringify(scenario));
+      });
+      for (const [name, changed] of [
+        ["digest", { ...identity, sha256: "0".repeat(64) }],
+        ["ID", { ...identity, id: "another-overlay" }],
+      ] as const) {
+        await t.test(`${caseId}: ${name} drift cannot fall back to built-in bindings`, async () => {
+          await writeFile(scenarioPath, JSON.stringify({ ...scenario, bpmn: { ...scenario.bpmn, sourceOverlay: changed } }));
+          await assert.rejects(inspect(selectedCases), /expected accepted admission but was rejected/);
+        });
+      }
+      await t.test(`${caseId}: absent identity is malformed rather than null`, async () => {
+        const { sourceOverlay: _ignored, ...bpmn } = scenario.bpmn;
+        await writeFile(scenarioPath, JSON.stringify({ ...scenario, bpmn }));
+        await assert.rejects(inspect(pipelineCases), /sourceOverlay/);
+      });
+      await writeFile(scenarioPath, originalScenario);
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

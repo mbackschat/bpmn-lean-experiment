@@ -1768,6 +1768,133 @@
       }
     },
     {
+      "id": "invoice-validation-classification",
+      "title": "Validate and classify an invoice",
+      "businessPurpose": "Review an invoice, validate its current request, retain its classification and complete final human review.",
+      "cloneFamily": "invoice-validation-classification",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/serial-business-task-composition/process.bpmn",
+        "sha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
+        "scenarioRelativePath": "scenarios/serial-business-task-composition/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-serial-business-tasks-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "classification",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The engine regression journey has no public assignment/form metadata or production browser journey."
+      }
+    },
+    {
+      "id": "invoice-validation-rework",
+      "title": "Review and rework an invoice",
+      "businessPurpose": "Review an invoice, validate it, revise the request after conditional rework and complete final human review.",
+      "cloneFamily": "invoice-validation-rework",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch",
+        "userTaskWait",
+        "userTaskCompletion",
+        "businessDecision",
+        "conditionalRouting",
+        "cyclicControlFlow"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/mixed-task-control-flow/process.bpmn",
+        "sha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
+        "scenarioRelativePath": "scenarios/mixed-task-control-flow/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "invoice-rework",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The engine regression journey has no public assignment/form metadata or production browser journey."
+      }
+    },
+    {
+      "id": "invoice-business-error-recovery",
+      "title": "Recover from invoice business Errors",
+      "businessPurpose": "Correct missing invoice data, revise a policy-rejected request and complete final human review after successful validation.",
+      "cloneFamily": "invoice-business-error-recovery",
+      "constructs": [
+        "boundaryEvent",
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch",
+        "userTaskWait",
+        "userTaskCompletion",
+        "businessDecision",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "boundaryError"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/mixed-task-business-error/process.bpmn",
+        "sha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+        "scenarioRelativePath": "scenarios/mixed-task-business-error/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-mixed-task-business-error-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "invoice-business-error-recovery",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The engine regression journey has no public assignment/form metadata or production browser journey."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

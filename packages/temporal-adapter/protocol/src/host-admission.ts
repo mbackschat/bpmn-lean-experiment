@@ -2,9 +2,6 @@ import {
   InternalSchedulingMode,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
-  MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
-  MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
-  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -64,25 +61,6 @@ export function assessTemporalHostCapability(
       code: TemporalHostAdmissionFailureCode.SequentialSubProcessQualificationUnavailable,
       evidence: "Sequential MI Sub-Process hosting requires repeated-scope recovery and replay qualification.",
     } };
-  }
-  if (program.identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ||
-      program.identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) {
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code: TemporalHostAdmissionFailureCode.MixedTaskControlFlowQualificationUnavailable,
-        evidence: "Mixed-task control flow and business Error recovery require their pending recovery and replay qualification.",
-      },
-    };
-  }
-  if (program.identity.semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) {
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code: TemporalHostAdmissionFailureCode.SerialBusinessTaskQualificationUnavailable,
-        evidence: "Serial business tasks require the capsule's pending hosting and handler qualification.",
-      },
-    };
   }
   // IMES hosting preflight requires listener continuity, response-loss recovery and replay qualification.
   if (program.identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {

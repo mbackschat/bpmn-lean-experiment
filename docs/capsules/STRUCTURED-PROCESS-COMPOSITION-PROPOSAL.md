@@ -76,7 +76,7 @@ Lane shape: proved
 
 Evidence: reuse the [composed data relation](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutput.lean), [command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean), and existing [execution assembly](../../BpmnSemantics/SemanticProcess/Execution.lean). Composition proofs must connect structural/data admission to actual reachable execution, not merely prove a private graph walk or an evaluator-equals-result premise.
 
-Discovery helper hypotheses name the selected structured checkpoint profile rather than derive its identity from structural analysis. `reached_scheduled_closure_is_bounded` retains the same statement and derives that domain from its existing profile premise. This proof correction changes no executable definition or admission rule; independent review remains pending.
+Discovery helper hypotheses name the selected structured checkpoint profile rather than derive its identity from structural analysis. `reached_scheduled_closure_is_bounded` retains the same statement and derives that domain from its existing profile premise. This proof correction changes no executable definition or admission rule; independent review approved this correction at `da2b3ca3`.
 
 | Proof owner | Established boundary | Assembly boundary |
 |---|---|---|
@@ -204,8 +204,10 @@ The [source witnesses](../../packages/bpmn-source/test/structured-process-compos
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `477fb99c` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `b6b6c447` | `fork-turns-none` | `approve-with-required-edits` | `fe720080` |
+| Semantic checkpoint | `da2b3ca3` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Maintained-proof corrections at `da2b3ca3` are independently approved; the [shared receipt](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#independent-cold-review-receipt) records the packet, scope and qualification limits.
 
 The cold checkpoint review of `b6b6c447` returned `approve-with-required-edits` and required global data-role ownership at checked/Program admission and precise finite Lean evidence accounting. The correction rejects same-role cross-task reuse and cross-role aliases before graph analysis erases those identities, while retaining shared root Properties and predecessor profiles.
 

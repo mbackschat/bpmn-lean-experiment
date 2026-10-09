@@ -176,7 +176,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact registered bindings only: payload-free effect, bounded literal mappings, and one generation-1 incident account.",
+    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. No general JUEL or Java delegate compatibility.",
     cibEvidence: exactCib("service-task-effect-success"),
   },
   {
@@ -272,7 +272,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Exclusive Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact two-condition-plus-default split and one bounded cycle merge; Simple Boolean v1 only.",
+    restriction: "Simple Boolean v1 only: existing exact two-condition splits and bounded cycle merge, or single-control mixed task graphs with any nonempty ordered condition list plus required default, pass-through merges and task-separated cycles. Every mixed resumption closes within eight automatic steps; termination is not guaranteed.",
     cibEvidence: notSelected,
   },
   {
@@ -416,7 +416,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Boundary Events",
     element: "Error Boundary Event on Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One exact mapped business-error code on the approved mapped Service Task binding.",
+    restriction: "The legacy mapped Service Task binding or single-control mixed task graphs with at most one interrupting exact-code Error boundary per Service Task. Match only the active occurrence's attached route, require complete String/null local results on success and Error, and clean its exact owner atomically. No catch-all, ancestor propagation or technical-failure conversion.",
     cibEvidence: exactCib("mapped-boundary-error-service-task-caught", "2.0.0"),
   },
   {

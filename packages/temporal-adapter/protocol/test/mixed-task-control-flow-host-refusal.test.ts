@@ -6,7 +6,7 @@ import { StimulusKind, VariableValueKind, supportsSemanticProcessExecution } fro
 import { assessTemporalHostCapability, TemporalHostCapabilityResultKind } from "@bpmn-lean/temporal-protocol";
 import { compile, source } from "../../../bpmn-source/test/mixed-task-control-flow-fixture.ts";
 
-test("mixed-task semantics cannot bypass the pending hosting qualification", async () => {
+test("mixed-task hosting admits the qualified single-control account", async () => {
   const compiled = await compile(await readFile(source, "utf8"));
   assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
   if (compiled.status !== BpmnCompilationStatus.Accepted) assert.fail("Expected serial business fixture");
@@ -16,7 +16,9 @@ test("mixed-task semantics cannot bypass the pending hosting qualification", asy
     initialVariables: ["request"].map(name => ({ name, value: { kind: VariableValueKind.String, value: "ready" } })),
   }, program), true);
   const result = assessTemporalHostCapability(program);
-  assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected);
-  if (result.kind !== TemporalHostCapabilityResultKind.Rejected) assert.fail("Unqualified business handlers reached hosting");
-  assert.equal(result.failure.code, "mixedTaskControlFlowQualificationUnavailable");
+  assert.equal(result.kind, TemporalHostCapabilityResultKind.Admitted);
+  assert.equal(supportsSemanticProcessExecution({
+    kind: StimulusKind.StartProcess, commandId: "missing-input", processId: program.processId, instanceId: "invoice",
+    initialVariables: [],
+  }, program), false);
 });

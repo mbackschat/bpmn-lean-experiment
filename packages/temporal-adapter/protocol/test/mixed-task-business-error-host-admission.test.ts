@@ -6,7 +6,7 @@ import { StimulusKind, VariableValueKind, supportsSemanticProcessExecution } fro
 import { assessTemporalHostCapability, TemporalHostCapabilityResultKind } from "@bpmn-lean/temporal-protocol";
 import { compile, source } from "../../../bpmn-source/test/mixed-task-business-error-fixture.ts";
 
-test("business Error execution remains unavailable to Temporal until recovery and replay qualify", async () => {
+test("business Error hosting admits the qualified account without relaxing semantic admission", async () => {
   const compiled = await compile(await readFile(source, "utf8"));
   assert.equal(compiled.status, BpmnCompilationStatus.Accepted);
   if (compiled.status !== BpmnCompilationStatus.Accepted) assert.fail("Expected business Error fixture");
@@ -15,10 +15,9 @@ test("business Error execution remains unavailable to Temporal until recovery an
     processId: program.processId, instanceId: "invoice", initialVariables: [
       { name: "request", value: { kind: VariableValueKind.String, value: "ready" } }],
   }, program), true);
-  for (const candidate of [program, { ...program, operations: [] }]) {
-    const result = assessTemporalHostCapability(candidate);
-    assert.equal(result.kind, TemporalHostCapabilityResultKind.Rejected);
-    if (result.kind !== TemporalHostCapabilityResultKind.Rejected) assert.fail("Unqualified business Error reached hosting");
-    assert.equal(result.failure.code, "mixedTaskControlFlowQualificationUnavailable");
-  }
+  assert.equal(assessTemporalHostCapability(program).kind, TemporalHostCapabilityResultKind.Admitted);
+  assert.equal(supportsSemanticProcessExecution({ kind: StimulusKind.StartProcess, commandId: "invalid-program",
+    processId: program.processId, instanceId: "invoice", initialVariables: [
+      { name: "request", value: { kind: VariableValueKind.String, value: "ready" } }],
+  }, { ...program, operations: [] }), false);
 });
