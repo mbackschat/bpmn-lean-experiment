@@ -110,7 +110,7 @@ export function WorkInboxPanel({
     returnFocusRef.current = null;
   }, [selected]);
   const detail = useQuery({
-    queryKey: ["work", "task", selected === null ? "none" : workTaskRowId(selected)],
+    queryKey: ["work", "task", selected === null ? "none" : workTaskRowId(selected), selected?.claimGeneration ?? null],
     queryFn: () => api.getTask(selected!.task.id),
     enabled: selected !== null,
   });
