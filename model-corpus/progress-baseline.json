@@ -1,0 +1,2303 @@
+{
+  "schemaVersion": 1,
+  "kind": "deliveryTrackerSnapshot",
+  "capturedAt": "2026-10-09T11:30:33.634Z",
+  "target": {
+    "path": "docs/PRACTICAL-CIB7-COVERAGE-TARGET.md",
+    "sha256": "56303add734abdea68c56691ff33f70fffbb3efb2200ed3191e71683c403bc94",
+    "status": "present"
+  },
+  "inputs": [
+    {
+      "path": "docs/BPMN-REQUIREMENT-LEDGER.md",
+      "sha256": "ed5eccf65d1d3b2b2f0cfcaf6453dc80e838322c1be4dea6162827269e6093a1",
+      "status": "present"
+    },
+    {
+      "path": "docs/PRACTICAL-CIB7-COVERAGE-TARGET.md",
+      "sha256": "56303add734abdea68c56691ff33f70fffbb3efb2200ed3191e71683c403bc94",
+      "status": "present"
+    },
+    {
+      "path": "docs/SEMANTIC-VERIFICATION-POLICY.md",
+      "sha256": "5ea94e1e5f5e53fc14b5f0a9b7e289a6590fb9026a013063adf436c17964ac92",
+      "status": "present"
+    },
+    {
+      "path": "model-corpus/manifest.json",
+      "sha256": "75fee48890e0eada7c6887dd10b0e5455860b547f6246318b2ab656fb6f6a840",
+      "status": "present"
+    },
+    {
+      "path": "model-corpus/mvp-capabilities.ts",
+      "sha256": "4329b5e587322ae102497a25f8c09a4375bbd54c98c656e3d5e8379c2530a111",
+      "status": "present"
+    }
+  ],
+  "tracks": {
+    "bpmnRequirements": {
+      "basis": "Reviewed requirement dispositions; supported/rejected is a decided disposition, not delivery acceptance.",
+      "rows": [
+        {
+          "id": "BPMN-ABSTRACT-TASK-01",
+          "scopeSha256": "045913466a2de69fbc033fcde9c73e711120e7dfb5f99101af8a0089737a8736",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CONFIGURED-GENERIC-TASK-SPEC.md\"]",
+            "evidenceStatusSha256": "ea37acd225d160bdf7c56f23fa9f6e6b934157162b7ae8d2cde149a7962d5652"
+          }
+        },
+        {
+          "id": "BPMN-ACTIVITY-DATA-INPUT-01",
+          "scopeSha256": "342e16632e6fd90141406a2e1c1f6b1fc6525cb70d58740e9794330cc83422a6",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md\",\"capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md\"]",
+            "evidenceStatusSha256": "c7f9d54e1ecc1c22058ae3d552ac151ac5c20cab67b109b1b3d786456d15ace2"
+          }
+        },
+        {
+          "id": "BPMN-ACTIVITY-DATA-OUTPUT-01",
+          "scopeSha256": "294004205328c8372525d2a221dda0ec2aa26356a065aab22f0218023ddfbe74",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md\",\"capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md\"]",
+            "evidenceStatusSha256": "ad649c53ed2c6a2471a596094800d847b0f38e79a9a92983fc9d4624a046a9b4"
+          }
+        },
+        {
+          "id": "BPMN-ADHOC-01",
+          "scopeSha256": "25162afad9eab244e28ba79f5c388e9978ad7a924b6881d7ee608b656aba3e72",
+          "stage": "undecided",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#elements-that-process-execution-conformance-may-ignore\"]",
+            "evidenceStatusSha256": "1724398ef53f5e0c4b0a0abe298d00273d335eede5e727e0e0b41589bcca8729"
+          }
+        },
+        {
+          "id": "BPMN-BOUNDARY-ERROR-01",
+          "scopeSha256": "69cce0f5383c8585e893731e2a69d9fce3a4071367a4fdff685de35974390b4e",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/BOUNDARY-ERROR-SPEC.md\"]",
+            "evidenceStatusSha256": "b957d42ec68cf36de1ea23dc8985d8a61427e31c9898bfd23d6e8092bd8a10e4"
+          }
+        },
+        {
+          "id": "BPMN-BOUNDARY-MESSAGE-01",
+          "scopeSha256": "f5ba5ed1215b6378eae06a2b2f3f962ac2313bf63ce7f10bc29b1c02f14fefd2",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/ACTIVITY-BOUNDARY-MESSAGE-SPEC.md\"]",
+            "evidenceStatusSha256": "35a1bcb394c55316aef8fef7b154ee36cbb52ba8c2c4232056a3b4a60d3e8e06"
+          }
+        },
+        {
+          "id": "BPMN-BOUNDARY-TIMER-01",
+          "scopeSha256": "94ead50b56cf93732f249422aed0e5a94ba969fc0e82c75b8c3682d982410643",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md#proposed-semantic-rules\"]",
+            "evidenceStatusSha256": "19ccf4b2b11fe61aba24626ff47691a6d9cd3065cc51d9cb2049c188e62fbff2"
+          }
+        },
+        {
+          "id": "BPMN-CALL-ACTIVITY-01",
+          "scopeSha256": "130d5fc6f39182acf58b63695fbf735dc83019afdd4a8b4ea701599fcd45218b",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CALL-ACTIVITY-SPEC.md\"]",
+            "evidenceStatusSha256": "a7c963af7b584bf93ab8ededda9771b45b4415a5dd9f0cbb89c83e2a0ffbe25f"
+          }
+        },
+        {
+          "id": "BPMN-CALL-DATA-01",
+          "scopeSha256": "9b3bb6909e220160620672ca1a860610b75aee3eb9774ce1cc2f6cbd499f3fc7",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md\"]",
+            "evidenceStatusSha256": "42abf7fbcdfbc56850e01cb6b934191fd21df2741f9647407653ddc44bedb358"
+          }
+        },
+        {
+          "id": "BPMN-COMPENSATION-ACTIVITY-RETENTION-01",
+          "scopeSha256": "9fbd9e7fc4e386f0de67fef287e3b7298a3df358e6737f98d2bf6da5d8da9e35",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/COMPENSATION-BOUNDARY-HANDLER-RETENTION-PROPOSAL.md\"]",
+            "evidenceStatusSha256": "021eec4ec70c84c3b1a219dbed0fe7fab2776f51240630cbad2afaf4ad423c1d"
+          }
+        },
+        {
+          "id": "BPMN-COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-01",
+          "scopeSha256": "2760c123ae0b1695fc1a3360af7751e4c9c2f3c11394aa41e811a5a4e755c8b8",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md\"]",
+            "evidenceStatusSha256": "310389cc24ee235407972bfeb271db2ba9beade7303ddbfe1b6197e57812b1de"
+          }
+        },
+        {
+          "id": "BPMN-COMPENSATION-TRIGGER-HANDLER-01",
+          "scopeSha256": "49602a848f68d47fa4ed7dd73f5e97d3e9a87cad272f4c1c99528acc5dac5d90",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md\"]",
+            "evidenceStatusSha256": "a9ffb2a88815a6c39e5a23863447f9a6909617e87f926d43221e63badbf456cc"
+          }
+        },
+        {
+          "id": "BPMN-CONF-EXEC-IMPORT-01",
+          "scopeSha256": "9183455db3f11295e4a7fa37709bb7138c5836e9f325fac4ec7a0a4a2f1d43c5",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#import-and-admission-policy\"]",
+            "evidenceStatusSha256": "484c3fffd89e015fa85e567a110688b6f41ac25778e6b80736a08f0d2fc14adc"
+          }
+        },
+        {
+          "id": "BPMN-CONF-EXEC-SEM-01",
+          "scopeSha256": "73f2ded48bac2f7af5724b9af23df73e28115dfa4e0be8196031d15f7ce0d6f3",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#process-execution-boundary\"]",
+            "evidenceStatusSha256": "fecb02a8566ad19cab4074ac43be78aedbaf6a0c2949af7d52ad99163ed419da"
+          }
+        },
+        {
+          "id": "BPMN-CONF-IMPORT-EXPORT-01",
+          "scopeSha256": "c8fbf61012ecba7df8fc154171068a6aea531f69680c8d39cb607da09c35cefb",
+          "stage": "undecided",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#import-and-admission-policy\"]",
+            "evidenceStatusSha256": "f951abc1bd9b479e5cf8a0ea664e63a36b0197385a8cdbe724ba8a8a92341841"
+          }
+        },
+        {
+          "id": "BPMN-ERROR-PROPAGATION-01",
+          "scopeSha256": "03383102eea2aa444d645dcaf7b04799c3244b51634d27bc7b6c4129e4c9ba3f",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md\"]",
+            "evidenceStatusSha256": "78b350ddbefae1e09e94faf66e8e0849b1eba9712aedd4706c6df889164aa72f"
+          }
+        },
+        {
+          "id": "BPMN-EVENT-BASED-GATEWAY-01",
+          "scopeSha256": "d4131e2f8e4df6b082f13b3bbc52c4ba5ff006b051663e1b4927e91ff068c681",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/EVENT-BASED-GATEWAY-SPEC.md\"]",
+            "evidenceStatusSha256": "7237b5cb0dfde6738be9ae1e36cca6aee4d0e4dcb2a7284664c8ad146e70e762"
+          }
+        },
+        {
+          "id": "BPMN-EXCLUSIVE-GATEWAY-01",
+          "scopeSha256": "67c0c6e0b08b8f446c0ee02e457828d60ea3e2bed399537ca87d70822bfc7aff",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md\"]",
+            "evidenceStatusSha256": "5f04932a2d7603ec92f550141ea34cfc7aead3214be746bbb38636cc036ba8a3"
+          }
+        },
+        {
+          "id": "BPMN-EXCLUSIVE-MERGE-01",
+          "scopeSha256": "c33ed37a869a44eecf3d1e261c59c7210e89c055cd62a4fc6f9ad43793024eaa",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CYCLIC-CONTROL-FLOW-SPEC.md\"]",
+            "evidenceStatusSha256": "a313efab00964114db7907be7d4c54ef9fc146b0dab5e273b97074f26710c5fb"
+          }
+        },
+        {
+          "id": "BPMN-IMPORT-LOCATION-01",
+          "scopeSha256": "f10a46d4b43bcb6e834ecd49b94f55d599355616db3895a30ce52aef2515a4d4",
+          "stage": "undecided",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#formalization-consequences\"]",
+            "evidenceStatusSha256": "4a9467773097d5663828dfc725473614e7dbf2c4e4d4346ea63172e414dd22d4"
+          }
+        },
+        {
+          "id": "BPMN-INCLUSIVE-GATEWAY-01",
+          "scopeSha256": "7ed9795b4b3f48d664bc46cd243b10395580defe056b2448e3edfbe0a4216efb",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INCLUSIVE-GATEWAY-SPEC.md\"]",
+            "evidenceStatusSha256": "161f683f42a9a3051005a23887bc51c425db412f0e1a5f069602fd87d6de691a"
+          }
+        },
+        {
+          "id": "BPMN-INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-01",
+          "scopeSha256": "97170f5ced37f6ba242bcc67e0a8c04fe356fa22bd4afe08d3ca7c545551a660",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md\"]",
+            "evidenceStatusSha256": "0a874156bc8c8867233e734a7edb33a8aab8adc2b2d0f0e7a7c52d5dd6f599c8"
+          }
+        },
+        {
+          "id": "BPMN-MESSAGE-CATCH-01",
+          "scopeSha256": "ca684c5fa4cccdd2f721e2f6ca3652c7bff87371dd3b97ea39ac4898838abe2d",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md#stable-semantic-rules\"]",
+            "evidenceStatusSha256": "3034ae2b21e42e27ec3450c82cc93465fa674a0c6cf1387d581ba401dc5b0f51"
+          }
+        },
+        {
+          "id": "BPMN-MESSAGE-CORRELATION-01",
+          "scopeSha256": "2f80e2604039307d14996ba3156d8062c38ac091bed6fac83f82a1ec760d1c45",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/MESSAGE-KEY-CORRELATION-SPEC.md\"]",
+            "evidenceStatusSha256": "a9382ce99295bb2a937796fa5fe6170a5bafd93fa59154d8d6e30ee60d7961cb"
+          }
+        },
+        {
+          "id": "BPMN-MESSAGE-DEFINITION-01",
+          "scopeSha256": "3bca70e6226114a20d2456b6e35ec20d79027863a0a13b9b3df86309e970556c",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md#selected-source-profile\"]",
+            "evidenceStatusSha256": "2b5c5966737fb52a4ce43109e9a12629ba7aee2b1443381ed1792a6c5ab7cd85"
+          }
+        },
+        {
+          "id": "BPMN-MESSAGE-PAYLOAD-CATCH-01",
+          "scopeSha256": "dee953de04bcc9b94e2688de05f188a6e06e728d24261f11ac7583d61006d651",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md\"]",
+            "evidenceStatusSha256": "0f8381aab54849ccab4842e5ea91d7606fb81f7632eb457f5f4c30c3bb1199dc"
+          }
+        },
+        {
+          "id": "BPMN-MESSAGE-START-01",
+          "scopeSha256": "52325e72481bfad76dbbbc796f56723d994b4934a8af9af9140955e6931ab58c",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/MESSAGE-START-EVENT-SPEC.md\"]",
+            "evidenceStatusSha256": "d20f5483a4e1b55dfef44027617bd97b4e630ee6fe11514375efa4401a150c18"
+          }
+        },
+        {
+          "id": "BPMN-NON-INTERRUPTING-BOUNDARY-TIMER-01",
+          "scopeSha256": "612db99e6bac44f30a2b821d21f1313e02ab6730cde525bc543aacbff56ae39f",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/NON-INTERRUPTING-BOUNDARY-TIMER-SPEC.md\"]",
+            "evidenceStatusSha256": "03fbcf074143cba812f42a5dd0eb7ec857f569fee62ea9df1db4ff750ad5c981"
+          }
+        },
+        {
+          "id": "BPMN-PARALLEL-GATEWAY-01",
+          "scopeSha256": "4ddb87bb326a8d240e2f24dcb5547a95e9d03a8b28709d720c8df6636466e63f",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/PARALLEL-FORK-JOIN-SPEC.md\"]",
+            "evidenceStatusSha256": "49e38bdd261b559981be80ae73646796cfde337cc462188abd7af3a9c96899e9"
+          }
+        },
+        {
+          "id": "BPMN-PARALLEL-MULTI-INSTANCE-01",
+          "scopeSha256": "e5c9b63326b8d9693dc2872e0d927850120113bdd7459069f3994fe2f391ff9e",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/PARALLEL-MULTI-INSTANCE-SPEC.md\"]",
+            "evidenceStatusSha256": "e331f0b83b5c487a9c7fcd7f53887aae2f8fa9099d2e194bdb2e64ac62c05551"
+          }
+        },
+        {
+          "id": "BPMN-PROCESS-EXECUTABLE-01",
+          "scopeSha256": "78c1590ab802d5a7946ca61740e563401df55ae0bc8cb15ea8834f6b86f599af",
+          "stage": "rejected",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPMN-CONFORMANCE-TARGET.md#import-and-admission-policy\"]",
+            "evidenceStatusSha256": "18e3bac76e22abaca5fafb8eb9ce95ce7d978be189b130a886827e478644540b"
+          }
+        },
+        {
+          "id": "BPMN-PROCESS-SEQUENTIAL-01",
+          "scopeSha256": "60ef71a07ff85f8d06dbc3d2167845b26d64994c82ebd3bc9806640220c9e052",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"CIB-BPMN-RELATION-REGISTER.md#cib-agr-0001--sequential-process-and-user-task-lifecycle\",\"capsules/USER-TASK-INTERACTION-SPEC.md\"]",
+            "evidenceStatusSha256": "5b1bc91c82ae00e99998dcf8358e9a0f17f89b8c1302d1809c03d8437d0b525c"
+          }
+        },
+        {
+          "id": "BPMN-RECEIVE-TASK-01",
+          "scopeSha256": "62bdb30270b24eb7ff94acae53a8ec80c341cc1c2147748a6d3706e4a2e03da1",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/RECEIVE-TASK-MESSAGE-SPEC.md\"]",
+            "evidenceStatusSha256": "efaff8f7a0344649dd0ba9cdc832470becd253a28b7e6c656bf760caa8005f0e"
+          }
+        },
+        {
+          "id": "BPMN-RECEIVE-TASK-IMPLEMENTATION-01",
+          "scopeSha256": "6f3c19e99ab5dabcf9c94934ad9a82d07dcdebd66ab19e5617f1828cfef3c88c",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/RECEIVE-TASK-MESSAGE-SPEC.md\"]",
+            "evidenceStatusSha256": "3b988c63b541c182507ccb7bab81ba0f039accc4971863ed9a2a3da3dcba789a"
+          }
+        },
+        {
+          "id": "BPMN-REPEATABLE-SUBSCRIPTION-LIFETIME-01",
+          "scopeSha256": "f943b2fa36745b163ef3cc9ad8941762325166d2d95309563d55cc4226bea7e7",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md\"]",
+            "evidenceStatusSha256": "dc6efba93c870fe3f480758832f91fc1faa634e2ca90fe6883146b28f3e2555d"
+          }
+        },
+        {
+          "id": "BPMN-SEQUENCE-FLOW-CYCLE-01",
+          "scopeSha256": "aca65ab988a53337d0dc6443a0e8a89c3cee8d23664c619946380fa4973c26ff",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CYCLIC-CONTROL-FLOW-SPEC.md\"]",
+            "evidenceStatusSha256": "7fb072b04cd3b0d4c9d0c35fae318051f58218cffc9920bb5d786321052762e4"
+          }
+        },
+        {
+          "id": "BPMN-SEQUENTIAL-MULTI-INSTANCE-01",
+          "scopeSha256": "b751314e564058e1df683650c29342337ade48e7b8033e4a41c44c1527aa364b",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md\",\"capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md#normative-basis\"]",
+            "evidenceStatusSha256": "568105083458a8fd4502450889a7f23cbc0d8ee529024a664e43f745558fe9c6"
+          }
+        },
+        {
+          "id": "BPMN-SERVICE-TASK-01",
+          "scopeSha256": "f3c410be7af11918049ac5b9275215a2ce3c0427757c2c24209a19a9dc22423c",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/SERVICE-TASK-EFFECT-SPEC.md\",\"capsules/CREATE-DOCUMENT-DATA-SPEC.md\"]",
+            "evidenceStatusSha256": "01068a0781ed1d3566288506ad0d2c416f4fc2f33e738cd28ce8e50300b22979"
+          }
+        },
+        {
+          "id": "BPMN-SERVICE-TASK-FAULT-01",
+          "scopeSha256": "b9b1d6a2383bc5421d834a6d42e5783899ed74eed6a06f8fb3d00e23c78cde7d",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/BOUNDARY-ERROR-SPEC.md\"]",
+            "evidenceStatusSha256": "343b7ff32dfd77979d0fa43f60fcd17b8da5a6ea58aa0f955454bce2a8335aef"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-ARTIFACT-01",
+          "scopeSha256": "efefa716f7ed5b5d37cb4a49752a55ff525d706d5ae9c03cdb2f80dd7baf7b34",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d2--a-closed-recursive-classifier-not-a-flat-list\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "279473357c3bc5c885112b694645c882b320edaa0a17da59d8aac2f1f72c5b34"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-COLLABORATION-01",
+          "scopeSha256": "a8bab2e1c97ad18f0ec580af4b852f8b36c8953e15deb0b0987e62e099ee0882",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d4--one-executable-entry-process-for-generic-profiles-without-breaking-existing-ones\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "5f6c4c1dba870244096cf6b7331a68cf8eb9d064bd280353685203b2d9c8c945"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-DEFINITIONS-METADATA-01",
+          "scopeSha256": "c52f6b89541c4666123d839c0b68f45e987f8c2640654ddce7e6b20211afa0a8",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d2--a-closed-recursive-classifier-not-a-flat-list\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "f3401a9e9104040e40d51001b7051db5f674d4708b694f13b9cd122097f639b1"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-DIAGRAM-INTERCHANGE-01",
+          "scopeSha256": "24dd1217f84c5bf6909ed2e3da3dd4091f6a761c9ae160068038524b25f26670",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d2--a-closed-recursive-classifier-not-a-flat-list\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "4200a504cd53ca0109fe7322da414888054e4b018d0dec44e6eadb390696606b"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-DOCUMENTATION-01",
+          "scopeSha256": "f8d736795114ec22c075e9514e44ad87a3db8f0b579280a23f5207c5f20914b7",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d2--a-closed-recursive-classifier-not-a-flat-list\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "4b480ca3fe4043f5190e476a170d08897e3d6b0e927b5d33eb1426e86ad03b75"
+          }
+        },
+        {
+          "id": "BPMN-STRUCT-LANE-01",
+          "scopeSha256": "73265426b8658429334b06248ae60c9281110b35c65038d2eb3bf935e40803e3",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"PRESERVE-ONLY-ADMISSION-SPEC.md#d2--a-closed-recursive-classifier-not-a-flat-list\",\"../profiles/bpmn-2.0.2-user-task-preserved-notation-draft/README.md\"]",
+            "evidenceStatusSha256": "2af543b056f7cfcd83fecf9b4e8d041a8700aee1f122379696a893ab75cf02c6"
+          }
+        },
+        {
+          "id": "BPMN-SUBPROCESS-BOUNDARY-TIMER-01",
+          "scopeSha256": "8781adafe97b0129c93767fcf8a77afbeb544f0e1b5df5f73b791830364ca810",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/SUBPROCESS-BOUNDARY-TIMER-SPEC.md\"]",
+            "evidenceStatusSha256": "4b8923620af3df90f6baa3e26ef862f06a02a33f6812b24eb5fcbaa97d5ea90b"
+          }
+        },
+        {
+          "id": "BPMN-SUBPROCESS-COMPLETION-01",
+          "scopeSha256": "aa8b028a906c96dee7c1f47a271d9d566435bfe002c2cbbce9e1fd6d53581b58",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md\"]",
+            "evidenceStatusSha256": "c7c367836cea578e14ffebb9acad90084fd74aaabe191127bc2dff90bcbc261b"
+          }
+        },
+        {
+          "id": "BPMN-SUBPROCESS-ENTRY-01",
+          "scopeSha256": "48508a215e294a4fc735ca8c89f24b7848bb5e74477e7de172de075a058c2e05",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md\"]",
+            "evidenceStatusSha256": "0263c9ea21f16cd52a6f0ee4730f2c924c76d8ede38b32a66790f1e7e5ca42a0"
+          }
+        },
+        {
+          "id": "BPMN-TASK-EXTENSION-01",
+          "scopeSha256": "fe8d8f497e2c8f3bf615fc11a4e1b2e78106f664d167e8d10fe7348a35e2543c",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/CONFIGURED-GENERIC-TASK-SPEC.md\"]",
+            "evidenceStatusSha256": "cda5c923d89a0809e68af822e6acdf9d74ddc4a49ea443e9032ab8ebbd084ec1"
+          }
+        },
+        {
+          "id": "BPMN-TERMINATE-END-01",
+          "scopeSha256": "931c2e687cb41baceae3705a68e52bd8790fa500299873e46f57156a7e047b73",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/TERMINATE-END-EVENT-SPEC.md\"]",
+            "evidenceStatusSha256": "9c595e3180853d35eb0f4886638a9c925e3da44733acc8d8367b3c4be3333ce0"
+          }
+        },
+        {
+          "id": "BPMN-TIMER-CATCH-01",
+          "scopeSha256": "0a29e58addc2ed5016a9217b4649de0232c3b84e4a3f11a2fb5c7156fd5400e9",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#stable-semantic-rules\"]",
+            "evidenceStatusSha256": "92a9fac5e236323dbb6cc4f90dbb94cf67b275b42f67bc417da781d24ee7c950"
+          }
+        },
+        {
+          "id": "BPMN-TIMER-DURATION-01",
+          "scopeSha256": "ca7b9193bbddb055d5ff7936e776b9d809b859237266ce3d7d4390830bbda26a",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/INTERMEDIATE-CATCH-TIMER-SPEC.md#source-profile\"]",
+            "evidenceStatusSha256": "75e50acc01480846fac9f18b9f4f096572a84687c32815bc363082fc1c3a3c30"
+          }
+        },
+        {
+          "id": "BPMN-TIMER-START-01",
+          "scopeSha256": "52ab537339eb911bb26ab2b93d9b74ec837359f55b97d41e5ce476b45bf89c5b",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/TIMER-START-EVENT-SPEC.md\"]",
+            "evidenceStatusSha256": "6c7481671d61c27c2ecc634981603a042ed59fb3e35c665b0befc14574e78430"
+          }
+        },
+        {
+          "id": "BPMN-TRANSACTION-CANCELLATION-01",
+          "scopeSha256": "cef4aabbb4694f6d3e54909e421763adf43e4045f1e22b5d30d112e538ebeff6",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/TRANSACTION-CANCELLATION-SPEC.md\"]",
+            "evidenceStatusSha256": "f6fb7691e784ed5ca40a226dc5fb6c2734a6ab38a9e90c41640ed253367abf9a"
+          }
+        },
+        {
+          "id": "BPMN-UTASK-LIFECYCLE-01",
+          "scopeSha256": "d64492d3be4d4a8cd1fd14396327338b3ea37d3c7ee1f29adfb95e1da53d1f3b",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/USER-TASK-INTERACTION-SPEC.md#stable-semantic-rules-and-evidence\"]",
+            "evidenceStatusSha256": "0179073ef22cc28d804de2e153c400421c032f0dd770c82c02082ae8b4dd3c58"
+          }
+        },
+        {
+          "id": "BPMN-UTASK-POTENTIAL-OWNER-01",
+          "scopeSha256": "994e2ca08d1483364c9d8fee21e1a3cccd1e760ad9cd2d21cb7542dc4359099e",
+          "stage": "unsupported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md#authority-and-forward-compatible-boundary\"]",
+            "evidenceStatusSha256": "ce82ab03766a5bb22e383b57dbfc159dfd9ec40e065261206d13907cd026c09d"
+          }
+        },
+        {
+          "id": "BPMN-UTASK-REFUSAL-01",
+          "scopeSha256": "efd7e7f485d85cccdb55c92db6584c3251a9959c77356e3cf3f19c83ee41fc1c",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"capsules/USER-TASK-INTERACTION-SPEC.md#stable-semantic-rules-and-evidence\"]",
+            "evidenceStatusSha256": "dceb2f269207fa00550a0ffa09f0a41767f95d76b60c28add5da7de3b5a45e28"
+          }
+        },
+        {
+          "id": "BPMN-UTASK-RENDERING-01",
+          "scopeSha256": "2cd94a18d2eafe0635859d087e4cc5355022ff65cd1ea56dd9586280094bea81",
+          "stage": "supported",
+          "facts": {
+            "semanticOwnerReferences": "[\"BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#source-admission-and-rendering-projection\"]",
+            "evidenceStatusSha256": "b093221795d2c3c9d2ec5b28d8300c840d8ce0f14fccd83b2e1ef808d12a307f"
+          }
+        }
+      ]
+    },
+    "cibVariants": {
+      "basis": "Canonical registered variants with selected CIB evidence; selection is not current qualification.",
+      "rows": [
+        {
+          "id": "callActivity",
+          "scopeSha256": "8b765644e735ee3338789020646d2df2b0530f96f6ad19127106738941159f68",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "callActivityScalarData",
+          "scopeSha256": "225165d6507f7f513e737fa9c6654295cb7964b64234c9dd6677e854d40b1e4e",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "cancelEndEvent",
+          "scopeSha256": "07c851ce8021f82bd62901a1019e1c8720277ffc192bd2b584255a9e8a4865e1",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "compensationBoundaryEvent",
+          "scopeSha256": "19bde2d7a28ad96e0b53182764238c1b0b80478ba221b9822c39ae696af5f862",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "compensationEventSubProcess",
+          "scopeSha256": "b7ae9e6ea62f30d313058936fca67c3dd8a8101f5efde22c3893900d80ffde88",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "compensationHandlerServiceTask",
+          "scopeSha256": "e1b5f83728af34c0a22559fe30eb9373719e36d0ec4a9b2d4daa033e1b74d100",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "compensationIntermediateThrowEvent",
+          "scopeSha256": "b0931c4168b533167f613a8b5e10c682de466f15f12d8da7ccf2e7dabc18aba3",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "configuredTask",
+          "scopeSha256": "d2bb256aa2ffb0fd39c0be40d47ce52c1be12ce7619380e71d1d7440a5c698ef",
+          "stage": "notApplicable",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notApplicable\"}"
+          }
+        },
+        {
+          "id": "directDataInputOutputUserTask",
+          "scopeSha256": "9a8a5124d7cd9a6860b1aea1832c5bc691c52524c5f7df5ad1a7a035f35e67d9",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "directDataInputUserTask",
+          "scopeSha256": "985ba8dda83157daee8ca7c6d92bf07eb03a610e8c02c938c89a262e3f3de3e8",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "directDataOutputUserTask",
+          "scopeSha256": "222cb578efd22e30beefb92e1a4b1eff2ead3bf15c718c6c8466a807590ae770",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "embeddedSubProcess",
+          "scopeSha256": "5586afe00eaf945e7a8affcfc6b2914788f0bd8296eddaf36ba5c3549b418cd3",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"embedded-subprocess-completion-a-then-b\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "errorEndEvent",
+          "scopeSha256": "620cd89c61e04d324d87e2322566718da27229f12b40599877be6f8699723008",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"subprocess-error-propagation-trigger-first\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "eventBasedGateway",
+          "scopeSha256": "a6f117b8f28207722bc276ed04daa401ed1bade2fd7d5a007cf2ce119729e932",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "exclusiveGateway",
+          "scopeSha256": "44a287843bef05929877a45c19ae0896e387feac4f75bf4db09ca27e721978e3",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "inclusiveGateway",
+          "scopeSha256": "d166bcd8b1f1941cbf7c8c3f73c08ae5b0b4d225d417e31b1820716d99f308d3",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "intermediateCatchMessageEvent",
+          "scopeSha256": "bd35b4157b1c4fc177fec02f387714a0d408111bff391b297558d6ce4d7ca93f",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "intermediateCatchTimerEvent",
+          "scopeSha256": "e3b9a45db4c2dfb47d03bea1508a5d5992cf9c9bdf7e0cd175df59de1acaaf00",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"intermediate-catch-timer-pt1s\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "interruptingParallelMultiInstanceBoundaryTimerEvent",
+          "scopeSha256": "580122de9d3f5df625e60c50d81a2868a29a2b285947e8130f96bd7629eb687a",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "interruptingSequentialMultiInstanceBoundaryTimerEvent",
+          "scopeSha256": "ca33e51fcecaa9b964a692b0e6de485ed649674c0f28ca5a96171c1a174d7360",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "interruptingSubProcessBoundaryTimerEvent",
+          "scopeSha256": "d62acd2f54bd440f31da464093d6cfc9e7e9ca11be519936e19098489b1fbd6b",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "interruptingUserTaskBoundaryMessageEvent",
+          "scopeSha256": "a397ba880dc2562b28eca1f8d2b8f0e14405b91fad934fca51acc5d478e45b17",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "interruptingUserTaskBoundaryTimerEvent",
+          "scopeSha256": "6881078041bc24e85efdad307d4770d12b89f9b2a3f3fb0cc35d8e2a304956ab",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "messageKeyCorrelation",
+          "scopeSha256": "a992c0c8bc752152a2afa37310633913d8e09e002486f93a5558eb72ba01e69d",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "messagePayloadCatchEvent",
+          "scopeSha256": "3b45bdffa226965142bbe5e7c6ae089802eb818ef83568dd7e4bec3da447c9a1",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "messageStartEvent",
+          "scopeSha256": "f723c6e6b2dee28863d9d1a3f4637b78df536c778423d5e185434866a7426693",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "nonInterruptingSubProcessBoundaryTimerEvent",
+          "scopeSha256": "745e979eedf5e25a3721c75847b61b944a1ad466b6b13b0e499d8a50f7e00a35",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "nonInterruptingUserTaskBoundaryMessageEvent",
+          "scopeSha256": "917bc786814f7c5b1dfa3685821a9a8f8755248dccbdbce87d7c3f6536d0b06d",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "nonInterruptingUserTaskBoundaryTimerEvent",
+          "scopeSha256": "603c60f09f39a8e1b334104a40c0d733d70bcfb3481bad956073d1b9d38bb8ee",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "noneEndEvent",
+          "scopeSha256": "b8a15cf67f1ececb72cb91d6dc5190378c7bd0afbd1d6e359d56068a6bfc5b1e",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"user-task-assignment-form-metadata\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "noneStartEvent",
+          "scopeSha256": "c676adb47b274b07732850122be1b42b6897a1bd18a8950b6e5089336706b8d2",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"user-task-assignment-form-metadata\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "parallelGateway",
+          "scopeSha256": "fc5caf4ff2dc7f1024b5a2ee278549afe0ac0f1b1aa6471e46331c6b0781c17b",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"parallel-fork-join-a-then-b\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "parallelMultiInstanceUserTask",
+          "scopeSha256": "a366c81dfd98b3b8ca6141ea08ac8b57c4e1183204e5d4a7dc0d652fafd21050",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "process",
+          "scopeSha256": "cc301069d31e325ddcaff134cbbf4022b6939ac6c8d24a0b2e53e6af16c380de",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"user-task-assignment-form-metadata\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "receiveTask",
+          "scopeSha256": "937b23e10defadaacced099dd3aae0186345164dc39c5ccaea3dbc7a66b16bdf",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"message-addressed-receive-task\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "recurringSubProcessBoundaryTimerEvent",
+          "scopeSha256": "d1feb76ccf138c57d35bdeb21075b6912c0f1ed3768d04462580e622b6f12580",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "recurringUserTaskBoundaryTimerEvent",
+          "scopeSha256": "05f58aa2b0501e25719fb3c80de1b2dd567ae3908d1898f9e4848bfa86ce59d8",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "sequenceFlow",
+          "scopeSha256": "0c5f6df4b7ece677c9a97d2e68d2934a7769832bb0179c56efe4f720923c4fd5",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"user-task-assignment-form-metadata\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "sequentialMultiInstanceUserTask",
+          "scopeSha256": "0543c2d7dcd7967be56c4f7b8f3c78cfd8ea3ef3df96101c98a6c87463b6bf88",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "serviceTask",
+          "scopeSha256": "ec9428ddf39181d3058e48770a513fc3c04b17001c8316c667265f14d62c09a0",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"service-task-effect-success\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "serviceTaskBoundaryErrorEvent",
+          "scopeSha256": "a709768358ad33bb1fdec168326ab258021884268d6c8690ca64a17df3884ed8",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"mapped-boundary-error-service-task-caught\",\"version\":\"2.0.0\"}"
+          }
+        },
+        {
+          "id": "subProcessBoundaryErrorEvent",
+          "scopeSha256": "756686c3030fe38816cacde885a511ca6c3fa3079c5434cbef34c31d5c9f836a",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"subprocess-error-propagation-trigger-first\",\"version\":\"2.2.0\"}"
+          }
+        },
+        {
+          "id": "terminateEndEvent",
+          "scopeSha256": "ca58c462e0761adb38650e1b3b73e213b5db5183864f8a2796229e7b5cbd949c",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "timerStartEvent",
+          "scopeSha256": "45af07e6a5ff8977644e1557844499e17dcfb5a19a947634ed7c565e6744e929",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "transaction",
+          "scopeSha256": "88dba924ea0c3a35d187b5d80a41d9288ab630086cff13b182d79217e28d1cd8",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "transactionCancelBoundaryEvent",
+          "scopeSha256": "22c48830c6c56a8c3c8b1079ca7aa5d66c06ae817846a23384a712f80b62ccf9",
+          "stage": "notSelected",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"notSelected\"}"
+          }
+        },
+        {
+          "id": "userTask",
+          "scopeSha256": "c1d661961205092da6dec4357f772cc8f17b2af9840f7c8d32d5a8e06947d9e5",
+          "stage": "exactSelectedProfile",
+          "facts": {
+            "evidenceSelection": "{\"kind\":\"exactSelectedProfile\",\"pipelineCaseId\":\"user-task-assignment-form-metadata\",\"version\":\"2.2.0\"}"
+          }
+        }
+      ]
+    },
+    "wholeModelJourneys": {
+      "basis": "Corpus declarations and local content bindings; catalog eligibility is not a passing journey result.",
+      "rows": [
+        {
+          "id": "applicable-review-tracks",
+          "scopeSha256": "065cb3a94302be7ba71a37571dcb06ec0afd912e6bf81b7455654a8dca2d030e",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "inclusive-gateway-both-true-a-then-b",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+            "profileSha256": "b9b42ea128e305dd97cfe51d281ca1f6b38aeb98509f349840d9210c1f9f406d",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/inclusive-gateway-selected-branches/process.bpmn",
+            "expectedSourceSha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1",
+            "sourceBinding": "present",
+            "observedSourceSha256": "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1",
+            "scenarioPath": "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.scenario.json",
+            "scenarioSha256": "0a915b14caf19da4499b38a07636d48ed4ce6ca7243efde9b68610619fa0584b",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-boundary-message",
+          "scopeSha256": "c8841bad8965487e575e16fa6de0be2490a5b52966856ed75180369c56b76a02",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-boundary-message-repeat",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/boundary-message.bpmn",
+            "expectedSourceSha256": "953b2c1dac712e890414f335029e5701b25828b928540b8597133e105196c9b8",
+            "sourceBinding": "present",
+            "observedSourceSha256": "953b2c1dac712e890414f335029e5701b25828b928540b8597133e105196c9b8",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/boundary-message-repeat.scenario.json",
+            "scenarioSha256": "1e95825b66902ce6122dadd9e42860a94bbf802074423dec151578fb48f6c1e6",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "application-subscription-boundary-timer",
+          "scopeSha256": "8772cdbcee068e59ec923cbea719ce40ed68972ec90d4003dbfda0c91f74fa79",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-boundary-timer-repeat",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/boundary-timer.bpmn",
+            "expectedSourceSha256": "0e25596daf5e47f538f5dd60d014a0777618bdbf988565e83ab006852d6fab2e",
+            "sourceBinding": "present",
+            "observedSourceSha256": "0e25596daf5e47f538f5dd60d014a0777618bdbf988565e83ab006852d6fab2e",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.scenario.json",
+            "scenarioSha256": "6a87d1f9386ef2545222d786b27ceb7c285e243575ad9e64a13006e3b532efd4",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-catch-message",
+          "scopeSha256": "bdfc946ad37f6f5728be0d5f519eeb2b71969de9bee6cd5917369509ce404b55",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-catch-message-resume",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/catch-message.bpmn",
+            "expectedSourceSha256": "d766dfa39222a3ee7857f8e5ac142bff0d2b90b8689edf56df0ec11629e23fd3",
+            "sourceBinding": "present",
+            "observedSourceSha256": "d766dfa39222a3ee7857f8e5ac142bff0d2b90b8689edf56df0ec11629e23fd3",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/catch-message-resume.scenario.json",
+            "scenarioSha256": "34e96d70cb8ea855b46c7c326db6eee96619b4942094374e76db11adc2a48efc",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-catch-timer",
+          "scopeSha256": "7545a30de90c527a73f191365ea251e1a59ccd2aec899490498b5ef97b8128a3",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-catch-timer-resume",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/catch-timer.bpmn",
+            "expectedSourceSha256": "10b28698faec8d5f45d8cdd7eb56fa35132dfbe1d71c25b28849141317b4980f",
+            "sourceBinding": "present",
+            "observedSourceSha256": "10b28698faec8d5f45d8cdd7eb56fa35132dfbe1d71c25b28849141317b4980f",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/catch-timer-resume.scenario.json",
+            "scenarioSha256": "216e440a0eaffed94f29db09e20509782463d06961b9334e2071a562bdc158ad",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-message-host-with-child-entry",
+          "scopeSha256": "0d76f960d5731f9905e8ff350b0f212321573e779c2901e59fab8050b5610b5a",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-message-host-with-child-entry-repeat",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/message-host-with-child-entry.bpmn",
+            "expectedSourceSha256": "abd94b5573a93bca58da1ca2afba8645c4b60668c0f56893f2b86120d8e3a7f2",
+            "sourceBinding": "present",
+            "observedSourceSha256": "abd94b5573a93bca58da1ca2afba8645c4b60668c0f56893f2b86120d8e3a7f2",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/message-host-with-child-entry-repeat.scenario.json",
+            "scenarioSha256": "f6f46de454d1e0b0a7328da760067f4adfc850a7e9abfff850229602b8d39f13",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-receive-task",
+          "scopeSha256": "638eb2d9bc164290ef7f5d1daa3e279aee0ffddaaaec1cb7aba0f5649c790e95",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-receive-task-resume",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/receive-task.bpmn",
+            "expectedSourceSha256": "63d1bd04e2eecd93b669272956e06124eea601cbd82ed83fabb0488f4fed3fb0",
+            "sourceBinding": "present",
+            "observedSourceSha256": "63d1bd04e2eecd93b669272956e06124eea601cbd82ed83fabb0488f4fed3fb0",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json",
+            "scenarioSha256": "67910d67345938d72ef7af984429b7dd35003263592180c9724f15c0bbe5bfde",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-subprocess-boundary-one-shot",
+          "scopeSha256": "a53a683c11723eafd06310269ad68907d7c14f2b00c19a5342d3c69632fa64af",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-subprocess-boundary-one-shot-fire",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot.bpmn",
+            "expectedSourceSha256": "612d19bb38abe546ac9181b82c81420ca3050a7257c805b842771ba122088e3d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "612d19bb38abe546ac9181b82c81420ca3050a7257c805b842771ba122088e3d",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot-fire.scenario.json",
+            "scenarioSha256": "2dacb6e21c005a80e1ce6ab9682e3bd60965d654329b228026de52f59c3c63e0",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-subscription-subprocess-boundary-timer",
+          "scopeSha256": "89a025711dd8c0a7a2e9bf79b8245542f6ccc6bdef7eaccaa1eaaa4b1f4fd8e7",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subscription-subprocess-boundary-timer-repeat",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+            "profileSha256": "5f1cebd754a1383b3920766cb8385bd0cba83c2562bd58abf2177d1650e7e8d9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer.bpmn",
+            "expectedSourceSha256": "90bdc2526628f55d9c205ab18c87d23e3bad708a2440e059b884b5848c1e5bf6",
+            "sourceBinding": "present",
+            "observedSourceSha256": "90bdc2526628f55d9c205ab18c87d23e3bad708a2440e059b884b5848c1e5bf6",
+            "scenarioPath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.scenario.json",
+            "scenarioSha256": "560d5a71c5c2f55a686e461ae87f2e046262088340ec5757aa547d420d46b240",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "application-withdrawal-during-review",
+          "scopeSha256": "57b61a189ef0e81157c0fcaa9b008721570fde10df27d475e355dcceed9e2c18",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "activity-boundary-message-message-wins",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-activity-boundary-message-draft",
+            "profileSha256": "31b274ed2ef119fe5e9c19abae69bdfdb4444ac42cddf2c70f8f0b8436d89c54",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/activity-boundary-message/process.bpmn",
+            "expectedSourceSha256": "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16",
+            "sourceBinding": "present",
+            "observedSourceSha256": "5481e9dd1639c9bdf5b640b7cbeff7b6d44c6b6b661756c743b50efa7319fd16",
+            "scenarioPath": "scenarios/activity-boundary-message/message-wins.scenario.json",
+            "scenarioSha256": "8a86e7a4f2ad12451e653dc9768a815783144a3cef20319a31ccad88c13ac478",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "betsy-deferred-choice",
+          "scopeSha256": "302ed54f435f6cd760d277974a174443965ef8e8feda1ee1e63eac4285a9efb9",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+            "profileSha256": "5b711fe677239e0edf867dbeab049aae6c330ad184ee4194eae5141a17fd2d14",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "eef0551b234e71da1c55daca2a0c9ebbe4fa174e8c7605b512abad4430ed44f8",
+            "externalSourceId": "betsy",
+            "sourcePath": "pebl-builder/src/main/resources/files/bpmn/cfpatterns/WCP16_DeferredChoice.bpmn"
+          }
+        },
+        {
+          "id": "boolean-decision-routing",
+          "scopeSha256": "abb9c1b688c38c10f2df130da5999d0da7d05045c57e791dfd2bde2bfd1148d3",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "exclusive-gateway-simple-boolean-first-true",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+            "profileSha256": "dff8b657e39efbaaa92a2e35ab8d7a35e21e234579f1e36e5b95c33f69c55ac3",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/exclusive-gateway-simple-boolean/process.bpmn",
+            "expectedSourceSha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+            "sourceBinding": "present",
+            "observedSourceSha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+            "scenarioPath": "scenarios/exclusive-gateway-simple-boolean/scenario.json",
+            "scenarioSha256": "87e930e636724c389c2774c862de4002d30d72b7c6037dd1da39d3da3c52e260",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "called-process-fulfilment",
+          "scopeSha256": "76ad5fd15c194f124c2027ef87ebd9edca321f226ad1b4142a4d2846e8762a43",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "called-process-call-activity",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-called-process-call-activity-draft",
+            "profileSha256": "2256161e751601198854d08a7a83f45d6e356ee0aaeb8157f6a368d6629c496a",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/called-process-call-activity/process.bpmn",
+            "expectedSourceSha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+            "sourceBinding": "present",
+            "observedSourceSha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+            "scenarioPath": "scenarios/called-process-call-activity/scenario.json",
+            "scenarioSha256": "0c73c79a5ca1596d447b6e740944fa5d4e3b99757ae88b54ebe0cec4f5b58d77",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "cib-invoice-receipt-v1",
+          "scopeSha256": "c0f24e2bcf2f2fb2f6df2c1d93500d7899bf4d4c5c8e6b5bab204b3aff1fc857",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+            "profileSha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "65882530f1be2d0e094b34ab4bb4bb01b22603f35c1d2bf36425421274cb29f8",
+            "externalSourceId": "cibseven-2.2.0",
+            "sourcePath": "examples/invoice/src/main/resources/invoice.v1.bpmn"
+          }
+        },
+        {
+          "id": "cib-invoice-receipt-v2",
+          "scopeSha256": "2b79b627268d48ee72ef8d86ff56c21a21280e7459bae345a84e49589c450bab",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+            "profileSha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "229b3db18f9fc99db7078e4142938a1c8a533a8a3ebca68d1cc46ed6eb5546cb",
+            "externalSourceId": "cibseven-2.2.0",
+            "sourcePath": "examples/invoice/src/main/resources/invoice.v2.bpmn"
+          }
+        },
+        {
+          "id": "cib-order-goods",
+          "scopeSha256": "81b9cff834d492980807f2b2ebd2ce51b1f30c5fa14fafcb6f72d7d0e1204f8b",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+            "profileSha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "5868192ac735538edc6b087e72459d63e20261f2854057c4c0216f30414377d6",
+            "externalSourceId": "cibseven-2.2.0",
+            "sourcePath": "webapps/assembly/src/main/runtime/develop/resources/pa1/order-process.bpmn"
+          }
+        },
+        {
+          "id": "cib-review-invoice",
+          "scopeSha256": "b1aa669d086b6e1dddfe07eb5566edf96fb45f7ac9157cd7ee2de0dd768d3d7d",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+            "profileSha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "da8ca354b4c56afff9962041fdeb3127529a8c2fe02b2f8714b60a6c2c74c929",
+            "externalSourceId": "cibseven-2.2.0",
+            "sourcePath": "examples/invoice/src/main/resources/reviewInvoice.bpmn"
+          }
+        },
+        {
+          "id": "cib-vacation-request",
+          "scopeSha256": "206623501b3fd68451feba93006986a1d28ff79409783bc205e65cd433e11826",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+            "profileSha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "5e6d9f3367c314f6375c908a996a70da60bd6550177cda45c345badf0c3bf121",
+            "externalSourceId": "cibseven-2.2.0",
+            "sourcePath": "engine/src/test/resources/org/cibseven/bpm/engine/test/api/form/util/VacationRequest.bpmn20.xml"
+          }
+        },
+        {
+          "id": "claim-assessment-with-input-and-decision",
+          "scopeSha256": "3532f19c5c70524bfc848eb8955ddbb5d21943dd1638d77e7e839eaae40e4076",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "activity-data-input-output-present",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+            "profileSha256": "f12dbcbd8ccf5d6dc9887b28f09754f544993b5b0ccd617ff8e53fe4be2941fa",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/activity-data-input-output-user-task/process.bpmn",
+            "expectedSourceSha256": "32a1fbbb0fe6035d0c80eeadd951e5f1f244e0f03417330cbb46c4904a666724",
+            "sourceBinding": "present",
+            "observedSourceSha256": "32a1fbbb0fe6035d0c80eeadd951e5f1f244e0f03417330cbb46c4904a666724",
+            "scenarioPath": "scenarios/activity-data-input-output-user-task/present.scenario.json",
+            "scenarioSha256": "aebe37ebf031667decbd60c9397b2a2b6146005d316b6ea00e1f1443f477a6c6",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "configured-integration-review",
+          "scopeSha256": "e1667b261677ba14f761f3db0b3bd2f73c9a32280f08aafddb074c0c2ac98f75",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "configured-task",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+            "profileSha256": "9abb74b2c5e960f94fdf668393f063a914c0f1d28da94c9d8ae0870ee6da7ab4",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/configured-task/process.bpmn",
+            "expectedSourceSha256": "0e50a82a24ac4f2a61e1ddafcc2cf4d2e71b7beffcfb6c06bd5120ce100934ba",
+            "sourceBinding": "present",
+            "observedSourceSha256": "0e50a82a24ac4f2a61e1ddafcc2cf4d2e71b7beffcfb6c06bd5120ce100934ba",
+            "scenarioPath": "scenarios/configured-task/scenario.json",
+            "scenarioSha256": "eb72e3f6701ded2ad04d55b3c25add2e82f2e63cd1656fcf308e6d98b02fcde1",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "confirmed-travel-cancellation",
+          "scopeSha256": "52398766a513d71722ca4b5055fb53e38066ab322ad75a53d3087a1f497ad522",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "compensation-success-b-c-a",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-compensation-source-checkpoint-draft",
+            "profileSha256": "3ea2f1a92aad90122d85cc4886bcb12620af38ceabc31882bfd0a0c2e8812f5b",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/compensation/travel-cancellation.bpmn",
+            "expectedSourceSha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+            "sourceBinding": "present",
+            "observedSourceSha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+            "scenarioPath": "scenarios/compensation/success-b-c-a.scenario.json",
+            "scenarioSha256": "247fa90c53802b78378a071d44c88cac703a3d26b372430fd6aa8a0bf7601865",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "correlated-settlement-confirmation",
+          "scopeSha256": "bfdf6bf3a0198394a48fc1127d4cb23aa3a9aebc516992af82517311a7653fe6",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "message-key-correlation-unique",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-message-key-correlation-draft",
+            "profileSha256": "8a59d76d52c24f04a3e2615ed5090909b50aea0d4e70cd122f2cf7f2dc0af3b3",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/message-key-correlation/process.bpmn",
+            "expectedSourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+            "sourceBinding": "present",
+            "observedSourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+            "scenarioPath": "scenarios/message-key-correlation/unique.population-scenario.json",
+            "scenarioSha256": "16ef3020f4cf324be348299aa622a38020404e2354a2b8129db491a500d67155",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "deadline-escalated-batch-review",
+          "scopeSha256": "d3769e16e7bb7982bb612a065a5366ffedbb51bf14e8cedb49b8001364c04689",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "sequential-multi-instance-interrupted",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+            "profileSha256": "2c2e08e4865289e0cd3d93b57fca2ccead2d094ecc9182c03b98de366b4daf9a",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/sequential-multi-instance/process.bpmn",
+            "expectedSourceSha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+            "sourceBinding": "present",
+            "observedSourceSha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+            "scenarioPath": "scenarios/sequential-multi-instance/interrupted.scenario.json",
+            "scenarioSha256": "3601444acb0aad59187f51028fa9992a35ada91e87455db4599e4ef0c2e0ee61",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "deadline-escalated-parallel-risk-review",
+          "scopeSha256": "445be992b292687dceef540203ce6e330b919d8013294e448f3af81666e6de5f",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "parallel-multi-instance-interrupted",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+            "profileSha256": "7b058d4f2a256a4055d52ce73611158e02686e97ea0fcff03a487c3a3271b4e7",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/parallel-multi-instance/process.bpmn",
+            "expectedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "scenarioPath": "scenarios/parallel-multi-instance/interrupted.scenario.json",
+            "scenarioSha256": "a71b274442d98dfccafc8d8fdd4732c0dcf4f5b68e104b70e0d26de4ac6bb6b5",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "expense-exception-review",
+          "scopeSha256": "c78fb15062399b2a4bc55b90ede7fcacae8c19b208f164b00c58372145c1c09d",
+          "stage": "journeyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "expense-exception-review-approve",
+            "product2Declaration": "journeyBacked",
+            "profile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+            "profileSha256": "05f8fa9d6027ecdaafeb11ec524dfbf194c17200d8321fb16cad616c01389e72",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/expense-exception-review/process.bpmn",
+            "expectedSourceSha256": "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e",
+            "sourceBinding": "present",
+            "observedSourceSha256": "a904b67218ae2a72e4e48ae93a6a14350ac55b1ca5f63e5ddcb55e3c1c8c734e",
+            "scenarioPath": "scenarios/expense-exception-review/approve.scenario.json",
+            "scenarioSha256": "d4336baa71eeb4312bb11620b9ddaa1bb60f78fcbfe59d4e0d678b99a47feb0f",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/m3-human-work/e2e/structured-human-work-journey.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "0fef9d3c7705a96ec53df9ec13035e623d9ecdbb37da54df59cafbbfa948c1aa"
+          }
+        },
+        {
+          "id": "external-service-recording",
+          "scopeSha256": "4dabb0f89b4e5f2fa0c492dda61c52d8d0f4af4f072c439daf9227e9c2a85f77",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "service-task-effect-success",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "cibseven-2.2.0-service-task-effect-draft",
+            "profileSha256": "0d6e2bad3cd98e49bf8c283fdf8aceb38b8d3bf24c5f5f04a13d671c511fb698",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/service-task-effect/process.bpmn",
+            "expectedSourceSha256": "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d",
+            "scenarioPath": "scenarios/service-task-effect/scenario.json",
+            "scenarioSha256": "8f1574665e864fa3054b6c4ccf8b3a996cf290ba6ef4b72869b1e155ac9ebc56",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "invoice-business-error-recovery",
+          "scopeSha256": "37156a084b973aacf4f64509d41ad916e3d4e4c3ff8a69d77f12fc28a4ae4ca4",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "invoice-business-error-recovery",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-mixed-task-business-error-draft",
+            "profileSha256": "3779682e7676d20f8dd707fb1c2ebd5d3f8b2b00c9257795dfa771450098a3d5",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/mixed-task-business-error/process.bpmn",
+            "expectedSourceSha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+            "sourceBinding": "present",
+            "observedSourceSha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+            "scenarioPath": "scenarios/mixed-task-business-error/scenario.json",
+            "scenarioSha256": "d3b73a47e11fa72842b1673816123c112445ad09b7eeb00a2f3831eb6063f28e",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "invoice-receipt-wait",
+          "scopeSha256": "08289c40158fd002a5259919b623900d0c7d7631fd7705753f97a5e9621634fe",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "message-addressed-receive-task",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+            "profileSha256": "65d4f76c2205c746b86949aed93a92052841363bbe6b3e4c86cd2246c7073d97",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/message-addressed-receive-task/process.bpmn",
+            "expectedSourceSha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a",
+            "sourceBinding": "present",
+            "observedSourceSha256": "2793f384239ccc0cc4fd9a6d558b53f97c8a3ec724083cf1702d684861397b2a",
+            "scenarioPath": "scenarios/message-addressed-receive-task/scenario.json",
+            "scenarioSha256": "a23bb3c311f78c3484d7340303a6b48093c41b76d0e7b4e5a35cf74602c3ed8b",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "invoice-review-with-context",
+          "scopeSha256": "f6e949f37f751103c461d4e8f793504a979fe5fb086c9756e5f38f1457bb1213",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "activity-data-input-present",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-activity-data-input-user-task-draft",
+            "profileSha256": "283cfcf1f2df5d93ac6fea8361374a307a58e85bd750015839bd429fedb46cd2",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/activity-data-input-user-task/process.bpmn",
+            "expectedSourceSha256": "d495a656950873515d17b25f4dd8a45bd4edcaceea85a30695b3d217d37e779d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "d495a656950873515d17b25f4dd8a45bd4edcaceea85a30695b3d217d37e779d",
+            "scenarioPath": "scenarios/activity-data-input-user-task/present.scenario.json",
+            "scenarioSha256": "683560f4503ee6d5b8f10f052d496a912375b4e4d22f303c4ff37d4a42449c1b",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "invoice-validation-classification",
+          "scopeSha256": "f6c79c283bb90f6fac8e7a1909a971f02592d09e4d7fa827bfc18603405cad2a",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "classification",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-serial-business-tasks-draft",
+            "profileSha256": "4fdbbe96cf7a51cf3626ef3adb961bd69f759344d473ec3c2341acbecc547042",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/serial-business-task-composition/process.bpmn",
+            "expectedSourceSha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
+            "scenarioPath": "scenarios/serial-business-task-composition/scenario.json",
+            "scenarioSha256": "b850d3a2c9522c40aec8196224080da7a4c8d63a92afe74da773971ee3b3ccbc",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "invoice-validation-rework",
+          "scopeSha256": "8394b292b13fa3cbfa18efd9f6ba12dbf76c900ddf437adc91fd7ca0aa6b9b1a",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "invoice-rework",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+            "profileSha256": "4af16727f45dc8e296e66975432a67a97f393bfc652f8eaf808b6056d31a7aa9",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/mixed-task-control-flow/process.bpmn",
+            "expectedSourceSha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
+            "sourceBinding": "present",
+            "observedSourceSha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
+            "scenarioPath": "scenarios/mixed-task-control-flow/scenario.json",
+            "scenarioSha256": "454e184a25ed4631088712e5a7b50b5ae2df37ba294b9c0e84caed259af8a710",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "mapped-business-error-review",
+          "scopeSha256": "1db7ffa102312b1c3b2e4e1e172d80dec5f33d34c4c4369bdd3a9c89f5d44a61",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "mapped-boundary-error-service-task-caught",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+            "profileSha256": "e7756064f3790f5935f45466d41c3625a7fa6b2388ae1d5d84ab59b638589e4d",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/mapped-boundary-error-service-task/process.bpmn",
+            "expectedSourceSha256": "0102c7af3c934157dc235485e956f49ec166c16ea2d503bb2ab5a14ad1714386",
+            "sourceBinding": "present",
+            "observedSourceSha256": "0102c7af3c934157dc235485e956f49ec166c16ea2d503bb2ab5a14ad1714386",
+            "scenarioPath": "scenarios/mapped-boundary-error-service-task/scenario.json",
+            "scenarioSha256": "c89c095aeb3e5be95b7f50f2caab40ec2fd70f981a91e1ef5522582603ebc8ee",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "mapped-service-result",
+          "scopeSha256": "abd2b25c0e7b25262925224c5020d227b5a7251a57b6e55f2001f1c36649d9d8",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "mapped-success-service-task",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+            "profileSha256": "9c9997f75b4822d47943616cbdf10a14626cffa4c903467f77fe3219a55daea3",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/mapped-success-service-task/process.bpmn",
+            "expectedSourceSha256": "3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",
+            "sourceBinding": "present",
+            "observedSourceSha256": "3b5bcd5167f4d48753f8efede35f47484bddf9c278cc8fe2f4dc87549da26b4a",
+            "scenarioPath": "scenarios/mapped-success-service-task/scenario.json",
+            "scenarioSha256": "a116f41c7e1b9a7321196effc443c3ad1d00dfb5553da347d47de108ea7eefad",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "message-or-deadline-routing",
+          "scopeSha256": "0465389dc4d75b1b1d913185b48bfd6c325f99c47d8c28bf30b65a84cda9860f",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "event-based-gateway-message-wins",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+            "profileSha256": "5b711fe677239e0edf867dbeab049aae6c330ad184ee4194eae5141a17fd2d14",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/event-based-gateway-message-timer/process.bpmn",
+            "expectedSourceSha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039",
+            "sourceBinding": "present",
+            "observedSourceSha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039",
+            "scenarioPath": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
+            "scenarioSha256": "2d01585dfc1230d6b520bce0f9ac98044d835d8ac9a0262e7ac10962bb31d8ef",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "message-started-approval",
+          "scopeSha256": "0cdac0b3911d8197432116b8b834bbe8aabf173fe8c0d1004353088430091fce",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "message-start-event",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-message-start-event-draft",
+            "profileSha256": "3b54165071aa82e259b4b5cdb05692546bf9b5c6eb377cafef32249002b99ce7",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/message-start-event/process.bpmn",
+            "expectedSourceSha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+            "sourceBinding": "present",
+            "observedSourceSha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+            "scenarioPath": "scenarios/message-start-event/scenario.json",
+            "scenarioSha256": "84c267386a813ac2cdd8ae37dc1aa73f502359d626f59db01549f62ce36be974",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "message-triggered-review",
+          "scopeSha256": "24f00697c31d0ebdc070b9f2e814f179559d08bb12ca37132ef46679e4ce3596",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "intermediate-catch-message",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-intermediate-catch-message-draft",
+            "profileSha256": "4d9f1b4d86b8d64b29135037987d7338dac56c5d02eac5a41d3f292d526b3683",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/intermediate-catch-message/process.bpmn",
+            "expectedSourceSha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515",
+            "sourceBinding": "present",
+            "observedSourceSha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515",
+            "scenarioPath": "scenarios/intermediate-catch-message/scenario.json",
+            "scenarioSha256": "966afc90e9e13038fe042c483f4ace85f6538dee3eb6c0567232b5e59ff55d22",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "non-interrupting-work-reminder",
+          "scopeSha256": "bedfb82b11e4659a355554103888c70247ac81ea6fa0eb3099e60f1c75a94371",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "non-interrupting-boundary-timer-deadline-then-both-branches",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+            "profileSha256": "a4eb8c82c73b907134ac9d3d1c0f43bdf301eb2c766fa344ad456f1ac7516938",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/non-interrupting-boundary-timer/process.bpmn",
+            "expectedSourceSha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f",
+            "sourceBinding": "present",
+            "observedSourceSha256": "032948b26d8c177d722036267cca71b2399fe947aeebb180900108fea3267b2f",
+            "scenarioPath": "scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
+            "scenarioSha256": "ec6b7d0b731a8defc72737cfbc6c584087f3075295638830bd38659f88923081",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "omg-incident-management-executable",
+          "scopeSha256": "b723b6a555ee85a91711fd51b89277888ccd279694c09c15b77722ca1bcd8d0a",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "rejected",
+            "pipelineCaseId": "none",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-user-task-process-data-draft",
+            "profileSha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f",
+            "profileBinding": "present",
+            "sourceBinding": "externalDeclarationOnly",
+            "expectedSourceSha256": "d3fe409262aa380289cc93bb8871ea7a48e1251bca5b77f78fa007f7c6ea734b",
+            "externalSourceId": "omg-bpmn-2.0.2-machine-readable-examples",
+            "sourcePath": "2010-06-03/Incident Management/Incident Management(Process Engine Executable).bpmn"
+          }
+        },
+        {
+          "id": "ordered-batch-document-review",
+          "scopeSha256": "6c69183c012e3eeb3dbbf7e2c27d9bb0c62eb9bc0becfb7f3fdaa3217be9264a",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "sequential-multi-instance-natural",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+            "profileSha256": "2c2e08e4865289e0cd3d93b57fca2ccead2d094ecc9182c03b98de366b4daf9a",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/sequential-multi-instance/process.bpmn",
+            "expectedSourceSha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+            "sourceBinding": "present",
+            "observedSourceSha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+            "scenarioPath": "scenarios/sequential-multi-instance/natural.scenario.json",
+            "scenarioSha256": "de480fbccc32635ef55cf851ca832bf11f8b5d0fcb5c3025734e38dadfe146fd",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "parallel-content-and-risk-review",
+          "scopeSha256": "79b7c72a1b0c2605a7a0a650977eaea505d420aaa60b193eb5bb93347c273486",
+          "stage": "journeyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "parallel-user-task-metadata-content-then-risk",
+            "product2Declaration": "journeyBacked",
+            "profile": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+            "profileSha256": "dd144120a9bac8fb093a6fc4542b3385eab5f2b5364ab730e90473e30724761b",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/parallel-user-task-metadata-composition/process.bpmn",
+            "expectedSourceSha256": "91494fe36496b343d50e1851f1d0b6dda8212ac358f3a1f9bc0833af2ea6c605",
+            "sourceBinding": "present",
+            "observedSourceSha256": "91494fe36496b343d50e1851f1d0b6dda8212ac358f3a1f9bc0833af2ea6c605",
+            "scenarioPath": "scenarios/parallel-user-task-metadata-composition/content-then-risk.scenario.json",
+            "scenarioSha256": "cd2eaedd0f97a9734900836558db212eb9fd88b66e74a9f60da3460b227654b4",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/m3-human-work/e2e/parallel-user-task-metadata-journey.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "66050aeb8193fd2e09bc467b6b5fd010dad91514833e178e3859e7452eca7b9f"
+          }
+        },
+        {
+          "id": "parallel-risk-review-all",
+          "scopeSha256": "03e191a2a8067d99af09a8e753adf14ebb701308a82017597a4c2ac14bd832dc",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "parallel-multi-instance-all",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+            "profileSha256": "7b058d4f2a256a4055d52ce73611158e02686e97ea0fcff03a487c3a3271b4e7",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/parallel-multi-instance/process.bpmn",
+            "expectedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "scenarioPath": "scenarios/parallel-multi-instance/all.scenario.json",
+            "scenarioSha256": "d70943a80bc64cb0f2d25e8e8f71a119f9e8d1aa0051b15497a0918335170898",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "parallel-risk-review-first",
+          "scopeSha256": "76e3425ab15b9c6d31dab545f5bc46930de7c9be8dd6690f7c5b5a1a635532df",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "parallel-multi-instance-first",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+            "profileSha256": "7b058d4f2a256a4055d52ce73611158e02686e97ea0fcff03a487c3a3271b4e7",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/parallel-multi-instance/process.bpmn",
+            "expectedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "sourceBinding": "present",
+            "observedSourceSha256": "c538084225483bcebd42bb0a07394ca6268cbcd7680b310aae8f76979cd4b90d",
+            "scenarioPath": "scenarios/parallel-multi-instance/first.scenario.json",
+            "scenarioSha256": "61585b7156189a38549d2accacde8fb6d532c06bd0673e43e963261f09d8c1be",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "parallel-work-preparation",
+          "scopeSha256": "c1d8407aea08aced34a44b26fae5771177ebaa44cb837abf78a1cd8fed69cfc8",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "parallel-fork-join-a-then-b",
+            "product2Declaration": "notCatalogReady",
+            "profile": "parallel-fork-join-draft",
+            "profileSha256": "5b7e357092e2e2b8c3c0759a5c660d5d6a656deea4352500409cf42753d6ed1e",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/parallel-fork-join/process.bpmn",
+            "expectedSourceSha256": "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6",
+            "sourceBinding": "present",
+            "observedSourceSha256": "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6",
+            "scenarioPath": "scenarios/parallel-fork-join/a-then-b.scenario.json",
+            "scenarioSha256": "84c866d738243de4698db66759e4e35d511a66ed69df69710f2d9c0ea64353a9",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "request-review-rework",
+          "scopeSha256": "950d3c4093228346861581c6b7c7b7bb23d26c94eebe21ed4e9f1d19c32bb954",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "user-task-cycle-repeat-rework-exit",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-user-task-cycle-draft",
+            "profileSha256": "94b4c130969f8a771e2760ad9bd195cc841d6a693341e6548b53582895c9c9b1",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/user-task-cycle/process.bpmn",
+            "expectedSourceSha256": "bce35b0b73934026f7da34e8c26eb74d590ad1010a847e34aca6858e2dbdf8b9",
+            "sourceBinding": "present",
+            "observedSourceSha256": "bce35b0b73934026f7da34e8c26eb74d590ad1010a847e34aca6858e2dbdf8b9",
+            "scenarioPath": "scenarios/user-task-cycle/scenario.json",
+            "scenarioSha256": "f9ba10e2514b73c93804041d1ecb6e6076e71c2b18e035fa3de1c354bda24073",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "request-review-with-form",
+          "scopeSha256": "912f70c97ba2d6de5cdbc2c788073c1309e39d8944153167d12d61c141a3b197",
+          "stage": "journeyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "user-task-assignment-form-metadata",
+            "product2Declaration": "journeyBacked",
+            "profile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+            "profileSha256": "57711188e531e739db2af463ce269f0f7a16678537d8f9fb5a21f3b4668eec97",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/user-task-assignment-form-metadata/process.bpmn",
+            "expectedSourceSha256": "ee52c64a7365c47ba95a520b19a2d91ae37fe224e526473c4ebec46bb8af1aaf",
+            "sourceBinding": "present",
+            "observedSourceSha256": "ee52c64a7365c47ba95a520b19a2d91ae37fe224e526473c4ebec46bb8af1aaf",
+            "scenarioPath": "scenarios/user-task-assignment-form-metadata/scenario.json",
+            "scenarioSha256": "325458f5bbae5ee0f3fab3d7d973a16da1b5cdf90b60e9b430dc993ab99d5e55",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "38b01fdb50fc2f81bd8ecb7534ee35876a65553efa19624e3646ba0777d9e28c"
+          }
+        },
+        {
+          "id": "reservation-withdrawal",
+          "scopeSha256": "7bd392d300093c74aeb3917b2772ca41f017345f5c27c85b260b45f5f00107a5",
+          "stage": "guidedJourneyBacked",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "transaction-cancellation-retained-active",
+            "product2Declaration": "guidedJourneyBacked",
+            "profile": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+            "profileSha256": "d1221bc0756cc5192955f95ecf344c8dba7bc51023b58a8a806e9090e2de3498",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
+            "expectedSourceSha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+            "sourceBinding": "present",
+            "observedSourceSha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+            "scenarioPath": "scenarios/transaction-cancellation/retained-active.scenario.json",
+            "scenarioSha256": "6e4016822bafe6457f6cb0fa1e9d87e6f041bff81079140a40ef330b91ff2502",
+            "scenarioBinding": "present",
+            "journeySourcePath": "showcase/mue-preview-alpha/e2e/rc-showcase-journeys.spec.ts",
+            "journeySourceBinding": "present",
+            "journeySourceSha256": "2ed52527940d69c79dd989d286579b6d98102e1692676d270cc891919ec9d334"
+          }
+        },
+        {
+          "id": "scheduled-review-start",
+          "scopeSha256": "3f706c4f952503bdd9f75740d1447fdeac31100119229ba7f3e0ba97abfc0cf2",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "timer-start-event",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-timer-start-event-draft",
+            "profileSha256": "2a0f44d1ab4ff4d884abd8faff97fa90e5ebf4aed82baeb9c668a9779de95843",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/timer-start-event/process.bpmn",
+            "expectedSourceSha256": "16ede7a6d5090be3a481ce7a4af97745bba96375272a59da66384091dd2c02b0",
+            "sourceBinding": "present",
+            "observedSourceSha256": "16ede7a6d5090be3a481ce7a4af97745bba96375272a59da66384091dd2c02b0",
+            "scenarioPath": "scenarios/timer-start-event/scenario.json",
+            "scenarioSha256": "aa485a7e79934b9305363fb95e1feebf3ddd57e25d6dc28d8d4588e543b7c69b",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "scoped-business-error-recovery",
+          "scopeSha256": "762566ad12ade17f952df50f4902ec94e1ace10adfcbf97057d5f990b578c3e4",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subprocess-error-propagation-trigger-first",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+            "profileSha256": "0e2656dcdc0f7f7b5b74991a23aa3dcd407ca05c0e33b1295fc7e5a1db31e28c",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/subprocess-error-propagation/process.bpmn",
+            "expectedSourceSha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
+            "sourceBinding": "present",
+            "observedSourceSha256": "f920ed0454a56b6649d0ecaa915a0ab5b3ed4f3bb974fba9c6255039ecb801a2",
+            "scenarioPath": "scenarios/subprocess-error-propagation/trigger-first.scenario.json",
+            "scenarioSha256": "1c6c9dd75c3a0fccc7c5903c150ba09ef0011fc08f05b9aeec55071f712e256f",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "scoped-parallel-work",
+          "scopeSha256": "536b7575afbf27bffd8ea6fe1f4ce52802f0a2d5bf566baa1d1ebe7d23ba8fe5",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "embedded-subprocess-completion-a-then-b",
+            "product2Declaration": "notCatalogReady",
+            "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+            "profileSha256": "3de6654f4dcd437ae2d5dbafc200fdd077046f9e6587bb5677d08e962ef39a52",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/embedded-subprocess-completion/process.bpmn",
+            "expectedSourceSha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36",
+            "sourceBinding": "present",
+            "observedSourceSha256": "6ca0aa3bccb005de1ac4b6ef6283f2a29c4f4ef7c3e8aff6bf29d79247f09a36",
+            "scenarioPath": "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
+            "scenarioSha256": "7fdeaa1f732c42e8f4da98aa7c617ad6d789ed49895db7fd454738f675c352ed",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "scoped-termination",
+          "scopeSha256": "fc7c1b0f327a02b2952317482644d7443ae88ff52d79c265ba483d472b9ec235",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "terminate-end-event-trigger-first",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-terminate-end-event-draft",
+            "profileSha256": "a4e2c7c1af318ee141d30be5f2dacbc901d67944262376f9835ae5b0ac09ce74",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/terminate-end-event/process.bpmn",
+            "expectedSourceSha256": "dc1626de4e85d318ad99c4e0841e2b25dd1e09dadea09bc1ab84384dcf1f7e8c",
+            "sourceBinding": "present",
+            "observedSourceSha256": "dc1626de4e85d318ad99c4e0841e2b25dd1e09dadea09bc1ab84384dcf1f7e8c",
+            "scenarioPath": "scenarios/terminate-end-event/trigger-first.scenario.json",
+            "scenarioSha256": "374371bd930286b003eba6ab73c6160ba5d93bfb4aa8bbcd0c4c148b9939801f",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "settlement-confirmation-review",
+          "scopeSha256": "62292e72507ff1a795b8dcf4e778a432aec426e61886cd6523113a7155a32a45",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "message-payload-catch-supplied-scalar",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-message-payload-catch-draft",
+            "profileSha256": "e4b840bddbc34ce3108660657440e07c59b1b34d5079bcd99ea3e6275fee9c2f",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/message-payload-catch/process.bpmn",
+            "expectedSourceSha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+            "sourceBinding": "present",
+            "observedSourceSha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+            "scenarioPath": "scenarios/message-payload-catch/supplied-scalar.scenario.json",
+            "scenarioSha256": "26158873455cd85b626c1374be8d12ca901ee60a7f501e9341cc367228086db5",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "supplier-onboarding-call-data",
+          "scopeSha256": "064329227951a2d08f054ced5404958f3f0560aedaf2e6b0117d56f74875a767",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "call-data-supplier-string",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+            "profileSha256": "af5f584e0468016f669e4697e2a323822ad6893fc317aaa140e7b6421fb5a676",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/call-activity-data-boundaries/process.bpmn",
+            "expectedSourceSha256": "5a34dfb4272520cecf3c23971f295bcf44a8bc27a5513166d0c0c8cc56d828f1",
+            "sourceBinding": "present",
+            "observedSourceSha256": "5a34dfb4272520cecf3c23971f295bcf44a8bc27a5513166d0c0c8cc56d828f1",
+            "scenarioPath": "scenarios/call-activity-data-boundaries/string.scenario.json",
+            "scenarioSha256": "2099fb3311d616aa5e8562adcdd9f44dca806a6cffa004391c53652454c37a78",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "task-deadline-escalation",
+          "scopeSha256": "5c21056988857d55c7dbde8f46373e88061f5e01a30a51f9e55dd52237eb4a74",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "activity-boundary-timer-deadline-wins",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-activity-boundary-timer-draft",
+            "profileSha256": "1e959f995d3b7cbfe6f1f1ab974b14aed30799d6a74e52195d00610f1261fb62",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/activity-boundary-timer/process.bpmn",
+            "expectedSourceSha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e",
+            "sourceBinding": "present",
+            "observedSourceSha256": "564a36ffc3815bbadc78d739892ae1e74c7137ff44beaa76eb20fad47401f30e",
+            "scenarioPath": "scenarios/activity-boundary-timer/deadline-wins.scenario.json",
+            "scenarioSha256": "718119fc24e9acb3644b73f744fc3bad810967672d1c6bb7cbe0e116faad75bb",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "timed-review-window",
+          "scopeSha256": "6e90f23e45ea42dea640ed8f0abd240bd868a00222a88f004cda1d3d9bf39408",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "timer-user-task-composition",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+            "profileSha256": "86119805bebbb349cf65d5c99bb0d8211d7f8c05d56bc8cf2304f672c2ca8cfb",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/timer-user-task-composition/process.bpmn",
+            "expectedSourceSha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
+            "sourceBinding": "present",
+            "observedSourceSha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
+            "scenarioPath": "scenarios/timer-user-task-composition/scenario.json",
+            "scenarioSha256": "679b8ef4c4bcf73244e40babd9598090c24be8ddf2470879fc1ce540adc6530b",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "underwriting-decision-recorded",
+          "scopeSha256": "8c439e75e0c2c7f612e26df38722f3124f037f2bc373a48c6215c63b4b30fc04",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "activity-data-output-supplied",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-activity-data-output-user-task-draft",
+            "profileSha256": "3c144b9a3a9338192a9d63a23fb04e4e11fc6434cc5adbc3f3c958f2e1245c9c",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/activity-data-output-user-task/process.bpmn",
+            "expectedSourceSha256": "de5a4f547f30a2137f8836130f2bbf6156bed14ca8d172d4effd80de2dac0b1b",
+            "sourceBinding": "present",
+            "observedSourceSha256": "de5a4f547f30a2137f8836130f2bbf6156bed14ca8d172d4effd80de2dac0b1b",
+            "scenarioPath": "scenarios/activity-data-output-user-task/supplied.scenario.json",
+            "scenarioSha256": "dba80340455865719023e5dd262ee299ac71ddad8e42cd1dc19c86758fa29ff4",
+            "scenarioBinding": "present"
+          }
+        },
+        {
+          "id": "work-package-deadline-escalation",
+          "scopeSha256": "0f904c7fa2548f33783f2b7ccc2e0725fcdbce08845a4286f1167bfc5ebbed5b",
+          "stage": "notCatalogReady",
+          "facts": {
+            "recordedAdmission": "accepted",
+            "pipelineCaseId": "subprocess-boundary-timer-deadline-wins",
+            "product2Declaration": "notCatalogReady",
+            "profile": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+            "profileSha256": "1fb24a4905bb3be76df956993185ae01a914a7cc7196fb16c3f91cf1aa8c4c48",
+            "profileBinding": "present",
+            "sourcePath": "scenarios/subprocess-boundary-timer/process.bpmn",
+            "expectedSourceSha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
+            "sourceBinding": "present",
+            "observedSourceSha256": "dc2875fb0c24deeab9d8f180fa4adf44652a504778f3dda187ac19839e60016e",
+            "scenarioPath": "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
+            "scenarioSha256": "d80cfc47465cf59d86f2e342bc3787371041d40bfa6841f25446c669a2760aab",
+            "scenarioBinding": "present"
+          }
+        }
+      ]
+    },
+    "mechanismMaturity": {
+      "basis": "Existing non-conformance family classifications; no completion stage is inferred.",
+      "rows": [
+        {
+          "id": "BPMN-MECH-ACTIVITY-01",
+          "scopeSha256": "0337f503914054ec60938eeb7674c57ecfff23000af3073a141fe94ac92bbdf7",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules",
+            "activityOccurrenceAdoption": "shared",
+            "activityEvidence": "docs/RUNTIME-STATE-INVARIANT-SPEC.md#epistemic-boundary",
+            "multipleEnabledClosure": "order-invariant",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "reusable",
+            "compositionEvidenceReference": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#stable-semantic-rules"
+          }
+        },
+        {
+          "id": "BPMN-MECH-COLLABORATION-01",
+          "scopeSha256": "64ec43d706599fb1e51f813a0b3fc9674ceaf044f50d658459ee2a9fbbf779db",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "open",
+            "invariantEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "open",
+            "multipleEnabledEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "compositionEvidence": "open",
+            "compositionEvidenceReference": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map"
+          }
+        },
+        {
+          "id": "BPMN-MECH-COMPENSATION-01",
+          "scopeSha256": "b23a90d71a15d2602d61b365da94a69cef00e0b026cb6d96d7a43fea6f536af4",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation",
+            "activityOccurrenceAdoption": "slice-local",
+            "activityEvidence": "docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/INTERNAL-COMMUTATION-PROPOSAL.md#rc-admission-dependency-assessment",
+            "compositionEvidence": "reusable",
+            "compositionEvidenceReference": "docs/capsules/TRANSACTION-CANCELLATION-SPEC.md#evidence-strategy"
+          }
+        },
+        {
+          "id": "BPMN-MECH-DATA-01",
+          "scopeSha256": "de83e18261faac93df218cc3ed9e3b113ad19f7939a13e762e409b16f11c4073",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/capsules/SCOPED-DATA-SPEC.md#rule-to-evidence-matrix",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "profile-local",
+            "compositionEvidenceReference": "docs/capsules/SCOPED-DATA-SPEC.md#rule-to-evidence-matrix"
+          }
+        },
+        {
+          "id": "BPMN-MECH-DEFINITION-01",
+          "scopeSha256": "825cf2d256bc7cf66d9b43b4cbb3c812f75cc7c25f350513b73953b5946335d9",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/BPMN-XML-INGESTION-DECISION.md#implemented-first-slice",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-contract-and-artifact-gate",
+            "compositionEvidence": "profile-local",
+            "compositionEvidenceReference": "docs/BPMN-XML-INGESTION-DECISION.md#implemented-first-slice"
+          }
+        },
+        {
+          "id": "BPMN-MECH-EVENT-01",
+          "scopeSha256": "a3cfd1b53d1e1902211653939f75b969f8f1c6ea28c33b409afffe934ac49756",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/capsules/EVENT-BASED-GATEWAY-SPEC.md#evidence-and-layer-ownership",
+            "activityOccurrenceAdoption": "slice-local",
+            "activityEvidence": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#question-and-current-boundary",
+            "multipleEnabledClosure": "order-invariant",
+            "multipleEnabledEvidence": "docs/INTERNAL-COMMUTATION-PROPOSAL.md#implemented-checkpoint-boundary",
+            "compositionEvidence": "mixed",
+            "compositionEvidenceReference": "docs/capsules/EVENT-BASED-GATEWAY-SPEC.md#epistemic-closure"
+          }
+        },
+        {
+          "id": "BPMN-MECH-EXPRESSION-01",
+          "scopeSha256": "28f994a35ca56287a74d8642a2509b3ceb4c397e9d3898e0668ce507bcfbac50",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md#evidence-boundary",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "profile-local",
+            "compositionEvidenceReference": "docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md#evidence-boundary"
+          }
+        },
+        {
+          "id": "BPMN-MECH-FLOW-01",
+          "scopeSha256": "1e97ef6bc63c8a2c6533658be3d6e9101f024baca3f0c4d9b567bd5e77a273a5",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "order-invariant",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "reusable",
+            "compositionEvidenceReference": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate"
+          }
+        },
+        {
+          "id": "BPMN-MECH-GATEWAY-01",
+          "scopeSha256": "5fb8c23375feb70f887a57dc2f4cb89a1191b5830329f7b59dbbd3aa8644d320",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "slice-local",
+            "invariantEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "mixed",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "mixed",
+            "compositionEvidenceReference": "docs/SEMANTIC-VERIFICATION-POLICY.md#complete-differentialrefinement-pipeline"
+          }
+        },
+        {
+          "id": "BPMN-MECH-LOOP-01",
+          "scopeSha256": "5bdf1c1c67ef2c4ea1012329066ac8879651e699ff380aa4e7da282a0982db4c",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#lean-assurance-lane",
+            "activityOccurrenceAdoption": "shared",
+            "activityEvidence": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#epistemic-closure-and-reopen-conditions",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#stable-semantic-rules",
+            "compositionEvidence": "reusable",
+            "compositionEvidenceReference": "docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#evidence-strategy"
+          }
+        },
+        {
+          "id": "BPMN-MECH-PROCESS-01",
+          "scopeSha256": "8135e541a3d86f029bfe8b284c773ea0a41e81e409253532ae47cb8725b9b4b3",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/RUNTIME-STATE-INVARIANT-SPEC.md#contract",
+            "activityOccurrenceAdoption": "not-applicable",
+            "activityEvidence": "docs/BPMN-REQUIREMENT-LEDGER.md#process-execution-mechanism-family-map",
+            "multipleEnabledClosure": "not-reachable",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "reusable",
+            "compositionEvidenceReference": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate"
+          }
+        },
+        {
+          "id": "BPMN-MECH-SCOPE-01",
+          "scopeSha256": "08ffc581f2a61f60d0c19934041ef93fad09696e092c26a38438aa545018e125",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/capsules/CALL-ACTIVITY-SPEC.md#evidence-and-cross-target-invariant-matrix",
+            "activityOccurrenceAdoption": "slice-local",
+            "activityEvidence": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#question-and-current-boundary",
+            "multipleEnabledClosure": "order-invariant",
+            "multipleEnabledEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "compositionEvidence": "mixed",
+            "compositionEvidenceReference": "docs/capsules/CALL-ACTIVITY-SPEC.md#epistemic-closure"
+          }
+        },
+        {
+          "id": "BPMN-MECH-TASK-01",
+          "scopeSha256": "acceca365df65640e37a30a8185f395672715e5327579697e5986bfc376e91d1",
+          "stage": "unsupported",
+          "facts": {
+            "invariantCoverage": "reusable",
+            "invariantEvidence": "docs/SEMANTIC-VERIFICATION-POLICY.md#current-lean-and-semantic-core-gate",
+            "activityOccurrenceAdoption": "slice-local",
+            "activityEvidence": "docs/ACTIVITY-OCCURRENCE-OWNERSHIP-SPEC.md#question-and-current-boundary",
+            "multipleEnabledClosure": "order-invariant",
+            "multipleEnabledEvidence": "docs/INTERNAL-COMMUTATION-PROPOSAL.md#implemented-checkpoint-boundary",
+            "compositionEvidence": "mixed",
+            "compositionEvidenceReference": "docs/SEMANTIC-VERIFICATION-POLICY.md#complete-differentialrefinement-pipeline"
+          }
+        }
+      ]
+    }
+  },
+  "commandCost": null,
+  "deliveryAcceptance": {
+    "status": "unknown",
+    "acceptedVariants": null,
+    "remainingVariants": null,
+    "missingInputs": [
+      "A reviewed complete mapping from required Practical CIB7 behavioral variants/combinations to stable variant IDs and exact scope.",
+      "Dated acceptance evidence bound to each stable variant, exact source/profile and scope, covering applicable Lean/core, CIB, Temporal recovery/replay, whole-model journey and independent closure; pending, failed and missing evidence stays open."
+    ]
+  },
+  "limitations": [
+    "Tracker stages do not establish end-to-end Practical CIB7 acceptance or its exact remaining variants.",
+    "Reviewed requirements and registered variants are bounded inventories, not complete conformance or Practical CIB7 denominators.",
+    "Command receipt durations measure command cost, not engineering effort; snapshot elapsed windows are calendar time.",
+    "No percentage or delivery ETA is inferred. External source declarations are not revalidated by this command."
+  ]
+}

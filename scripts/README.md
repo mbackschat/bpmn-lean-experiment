@@ -24,6 +24,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |
 | Assert a long-command verdict | [`assert-command-receipt.ts`](assert-command-receipt.ts) | Accept one completed receipt as green only when its exact durable exit status is zero. |
 | Summarize an increment's commands | [`summarize-command-receipts.ts`](summarize-command-receipts.ts) | Report direct-child receipt span, interval union, command-family totals, and optional lane labels; expose incomplete evidence without inferring effort or agent counts. |
+| Snapshot or compare delivery trackers | [`delivery-progress.ts`](delivery-progress.ts) | Produce owner-controlled JSON from existing requirement, CIB-selection, corpus/journey and maturity owners; compare stable ID/scope cohorts while separating additions, removals and changed scope. See [usage and acceptance limits](#delivery-tracker-snapshots). |
 | Start PostgreSQL 18 work | [`with-postgresql-18.sh`](with-postgresql-18.sh) | Run an explicit Product 2 PostgreSQL command with the repository-owned local service boundary. |
 | Prepare, restart, or inspect the live demo | [`live-demo.ts`](live-demo.ts) | Use online `demo:prepare` for one fresh clean-commit-bound Compose build and explicit native Namespace enrollment in the separate native demo project. Use `demo:start` to restart matching cached images without building, pulling, or reinitializing, `demo:status` to recheck its public origin, and `demo:stop` to preserve its volumes. |
 
@@ -73,3 +74,17 @@ Tests stay beside their scripts intentionally:
 - exact package commands and typecheck ownership live in [`package.json`](../package.json), while [`verify.sh`](verify.sh) composes the complete applicable infrastructure lane.
 
 This README is a task router, not a manually maintained reachability claim. Imports, package commands, workflows, and executable tests remain the authority for whether a script is live. Add a row only when a new direct maintainer task needs a discoverable entry point; do not enumerate every internal helper or test here.
+
+## Delivery tracker snapshots
+
+Keep deliberate baseline/current JSON checkpoints in the repository so the same observations travel between machines. Suggested paths are `model-corpus/progress-baseline.json` and `model-corpus/progress-current.json`; replace them for a new comparison window instead of appending a diary. The command reads current owners and local content bindings; it does not run qualification gates or reconstruct Git history. Snapshots retain IDs, scope digests, stages and evidence bindings while the existing owners retain meaning.
+
+```sh
+node scripts/delivery-progress.ts snapshot > model-corpus/progress-baseline.json
+node scripts/delivery-progress.ts snapshot --receipt-root /chosen/receipts > model-corpus/progress-current.json
+node scripts/delivery-progress.ts compare model-corpus/progress-baseline.json model-corpus/progress-current.json
+```
+
+Comparison reports each tracker separately, with exact remaining stage IDs, added/removed IDs, changed scope under the same ID, stable-cohort stage transitions and the calendar window. `enteredStageIds` means a decided requirement disposition, selected CIB evidence or declared catalog eligibility according to that track's `basis`; it does not mean delivery closure. Optional receipt totals preserve failures and incomplete evidence and measure command cost, not engineering effort.
+
+Practical CIB7 accepted/remaining variants, opened/closed acceptance deltas and acceptance rate stay unknown. The missing input is a reviewed complete mapping of required behavioral variants/combinations to stable IDs and scope, with dated exact-source/profile-bound evidence for applicable semantic, CIB, Temporal, whole-model and independent acceptance. Named journeys, registration and supported dispositions cannot supply that input. No percentage or ETA is inferred.

@@ -90,14 +90,24 @@ The six external reviews and correction audits are complete; the [repair cost le
 6. `PARALLEL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Resume bounded parallel MI command closure after the selected business-task delivery gate; public closure remains open.
 7. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Audit remaining standards claims within the CIB7 implementation ceiling; no implementation beyond that ceiling is selected.
 
-Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualification deferrals with [balanced delivery](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery), superseding earlier checkpoint timing deferrals. Qualify business Error prerequisites and recovery before another independent family. Preserve missing evidence; MUE acceptance stays superseded and release publication separate.
+[Balanced delivery](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) governs these batches; preserve failed evidence and the runtime-investigation hold. MUE acceptance stays superseded.
 
-| Priority | Task | Acceptance condition |
+### Scheduled delivery batches
+
+Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). Finish the preserved proof handoff first; dependencies may reorder batches without expanding scope.
+
+| Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| P1 | Close serial/mixed-task and Error delivery, then resume parallel MI command closure. | Complete command correctness/review, reusable public handlers, Temporal recovery/replay, atomic registration/corpus/disclosure and whole-process closure. Preserve [runtime failures](TEMPORAL-DEFECTS-LEDGER.md); they block affected qualification, not independent delivery work. No broad runtime investigation. |
-| P2 | Qualify the selected capability’s supported user journey using the [walkthrough](BPM-PLATFORM-BROWSER-WALKTHROUGH.md) and existing production-browser gates. | Discover and start a human process, claim/edit/complete its task, inspect outcome and Action history; retain navigation, disclosures, recovery and incident journeys. Human evaluation has no simulated participants. |
-| P3 | Qualify distribution behavior needed by the selected journey; broader RC acceptance stays separate. | Image-only desktop Compose execution, visible release version and passing advertised journeys; reuse valid evidence and run missing gates. No failed, missing or running gate counts as acceptance. |
-| P4 | Qualify Practical CIB7 Coverage when its reviewed inventory is complete. | Required variants and whole-model journeys pass applicable gates; restrictions remain explicit. Owner acceptance, release versioning and scale qualification stay separate decisions. |
+| Next | Repair progression reporting alongside business qualification. | Extend existing corpus/maturity/receipt tools with dated acceptance snapshots, stable variant IDs, opened/closed deltas and elapsed windows. Separate requirements, CIB, journeys and command cost; expose unknowns. Test changed denominators and failed/missing evidence; no Git-history reconstruction or diary. |
+| 1 | Close serial/mixed-task/business Error delivery. | Shared handler/command recovery and publication; installed-runtime, whole-model and independent closure evidence. |
+| 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
+| 3 | Extend business data/expressions. | Shared typed values, collections, scoped visibility, mappings and predicates. |
+| 4 | Complete task/control/source breadth. | Plain/Manual, Send, Script, Rule, remaining gateway compositions and Link/interoperability; reuse effect/control contracts. |
+| 5 | Complete event breadth. | Timer/Message loci and payloads, Signal/Conditional, Error/Escalation; shared subscription lifetime, eligibility and scoped handlers. |
+| 6 | Extend Compensation/Transactions. | Targeting, repeated/MI retention, handler outcomes and Cancel propagation through shared retention/cancellation. |
+| 7 | Qualify the integrated target. | Cross-family journeys, disclosures, production browser and distribution gates; owner acceptance. Release/version/scale decisions remain separate. |
+
+Batch command guarantees, reuse reviewed models/evidence, retain review/resource limits. MEDIUM owns implementation, HIGH acceptance. Report progression only when requested.
 
 ## Current evidence
 
@@ -109,17 +119,17 @@ Owner direction on 2026-10-04 replaces semantics-only work and October 5 qualifi
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: advance [parallel MI command publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) while installed-runtime qualification of the registered business-task journeys remains open.
+Current task: finish reporting integration and [parallel MI command publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), reusing existing position-construction/insertion laws. Retained runtime failures constrain business qualification.
 
-Current result: public registration `7d9e60d8` is independently approved through first correction audit `9048174d`; both required findings are closed. Checkpoint `6fdae8fb` preserves unfinished parallel MI work without acceptance.
+Current result: actual Running prefixes/boundaries now derive open-occurrence projection, composed with command commitment/stability in `ParallelScopeCommandFuelProofs`; no assumed projection success or new history model. Business registration is approved at `9048174d`; installed-runtime qualification remains open. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots) and the [first baseline](../model-corpus/progress-baseline.json) preserve dated scopes/stages; reviewed variant-bound acceptance mapping remains missing.
 
-Last verification: TypeScript build/types, semantic shape checks, 264 core/source test files and 99 infrastructure test files pass. The reviewer independently passed 61 focused checks and verified receipt/input bindings. Earlier Lean/Temporal evidence does not qualify the combined checkpoint.
+Last verification: asserted exit 0 for `/tmp/pmis-open-projection-owned-12-20261009` and `/tmp/pmis-open-projection-command-consumer-20261009`; all three Lean owners compile. Reporting tests/types and all 100 infrastructure files pass; exact inventory/receipts: `/tmp/delivery-progress-infrastructure-batches-20261009/complete.json`.
 
-Next action: compose full occurrence-to-Program correspondence for reachable Running prefixes using existing structural and wait-preservation laws; connect it to actual command results without assumed predecessor validity or publication success. This advances complete command publication, not a helper-only commit. Reassess before another replay hierarchy or prerequisite owner; reuse the existing execution induction.
+Next action: finish reached `runtimePositionValid` and its command consumer using existing `position_iff`/`position_insert`, token-patch/removal frames and PMIS reachability; no second history induction. Worker `assess_pmis_publication_composition` owns the bounded proof; its missing-consumer red is `/tmp/pmis-runtime-position-red-20261009`. Then continue business qualification and reviewed acceptance mapping; tracker tooling cannot yet calculate accepted-variant rate. Generic/arming owners are 710/772 nonblank lines against 800. Complete the command outcome rather than commit a helper checkpoint.
 
-Unresolved: reachable resumption admission, stable-wait existence, complete publication, combined Lean qualification, installed-runtime qualification, concurrent testkit batch 13, zero-item MI publication unavailability and prior SIGSEGV/query failures. Runtime investigation, performance qualification and cold-library investigation stay on hold. Lean stays one process tree, one CPU/3 GiB without extra swap.
+Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime/performance/cold-library investigations remain on hold. One Lean tree, one CPU/3 GiB, no extra swap.
 
-Oracle: actual accepted-Start reachability, kernel-checked command result and exact full-state/E1/E2 differential witnesses.
+Oracle: actual Start reachability, kernel-checked command guarantees and full-state/E1/E2 differential witnesses.
 
 Stop if correction weakens guarantees or broadens scope.
 
