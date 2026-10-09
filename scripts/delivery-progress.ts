@@ -10,6 +10,8 @@ import { markdownTableRows, withoutBackticks } from "./markdown-tables.ts";
 import { scanMarkdownLinks } from "./markdown-link-lexer.ts";
 import { loadMechanismMaturityVector } from "./mechanism-maturity.ts";
 import { summarizeCommandReceipts } from "./summarize-command-receipts.ts";
+import { compareSelectedDeliveryCohorts, deliveryEvidenceReader, readSelectedDeliveryCohort, requireSelectedDeliveryCohort } from "./delivery-acceptance.ts";
+import type { SelectedDeliveryCohort } from "./delivery-acceptance.ts";
 
 const TrackStages = {
   bpmnRequirements: ["supported", "rejected", "unsupported", "undecided"],
@@ -62,7 +64,7 @@ type BoundFile = Readonly<{
 }>;
 type Tracker = Readonly<{ basis: string; rows: ReadonlyArray<TrackerRow> }>;
 export type DeliverySnapshot = Readonly<{
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   kind: "deliveryTrackerSnapshot";
   capturedAt: string;
   target: BoundFile;
@@ -74,6 +76,7 @@ export type DeliverySnapshot = Readonly<{
     acceptedVariants: null;
     remainingVariants: null;
     missingInputs: ReadonlyArray<string>;
+    selectedCohort?: SelectedDeliveryCohort;
   }>;
   limitations: ReadonlyArray<string>;
 }>;
@@ -142,6 +145,14 @@ export async function loadDeliverySnapshot(
   if (target.status !== "present") throw new Error(`missing tracker owner: ${target.path}`);
   const maturity = await loadMechanismMaturityVector(projectRoot);
   const ownerBindings = [...files.values()];
+  const evidenceReader = deliveryEvidenceReader(projectRoot);
+  const selectedCohort = await readSelectedDeliveryCohort(contents.get(target.path)!.toString("utf8"), manifest.models, {
+    ...evidenceReader,
+    current: async relativePath => {
+      await boundFile(relativePath);
+      return contents.get(relativePath) ?? null;
+    },
+  });
 
   async function modelRow(model: CorpusModel): Promise<TrackerRow> {
     const profile = await boundFile(`profiles/${model.profile}/profile.json`);
@@ -202,11 +213,11 @@ export async function loadDeliverySnapshot(
     })),
   };
   return requireDeliverySnapshot({
-    schemaVersion: 1, kind: "deliveryTrackerSnapshot", capturedAt, target,
+    schemaVersion: 2, kind: "deliveryTrackerSnapshot", capturedAt, target,
     inputs: ownerBindings.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0),
     tracks: Object.fromEntries(trackIds.map(id => [id, { basis: Bases[id], rows: sortedRows(rows[id]) }])),
     commandCost: receiptRoot === undefined ? null : summarizeCommandReceipts(receiptRoot),
-    deliveryAcceptance: { status: "unknown", acceptedVariants: null, remainingVariants: null, missingInputs }, limitations,
+    deliveryAcceptance: { status: "unknown", acceptedVariants: null, remainingVariants: null, missingInputs, selectedCohort }, limitations,
   });
 }
 
@@ -234,7 +245,7 @@ function requireBoundFile(value: unknown): void {
 /** Rejects malformed persisted snapshots before their IDs or stages can affect a comparison. */
 export function requireDeliverySnapshot(value: unknown): DeliverySnapshot {
   const snapshot = record(value, "snapshot");
-  if (snapshot.kind !== "deliveryTrackerSnapshot" || snapshot.schemaVersion !== 1) throw new TypeError("unsupported snapshot kind/version");
+  if (snapshot.kind !== "deliveryTrackerSnapshot" || snapshot.schemaVersion !== 1 && snapshot.schemaVersion !== 2) throw new TypeError("unsupported snapshot kind/version");
   if (!validTimestamp(snapshot.capturedAt)) throw new TypeError("invalid snapshot timestamp");
   requireBoundFile(snapshot.target);
   if (!Array.isArray(snapshot.inputs)) throw new TypeError("missing snapshot input bindings");
@@ -258,6 +269,8 @@ export function requireDeliverySnapshot(value: unknown): DeliverySnapshot {
   const acceptance = record(snapshot.deliveryAcceptance, "delivery acceptance");
   if (acceptance.status !== "unknown" || acceptance.acceptedVariants !== null || acceptance.remainingVariants !== null ||
       JSON.stringify(acceptance.missingInputs) !== JSON.stringify(missingInputs)) throw new TypeError("unsupported delivery acceptance claim");
+  if (snapshot.schemaVersion === 2) requireSelectedDeliveryCohort(acceptance.selectedCohort);
+  else if (acceptance.selectedCohort !== undefined) throw new TypeError("legacy snapshot cannot claim a selected acceptance cohort");
   if (JSON.stringify(snapshot.limitations) !== JSON.stringify(limitations)) throw new TypeError("snapshot limitations changed");
   if (snapshot.commandCost !== null) {
     const cost = record(snapshot.commandCost, "command cost");
@@ -308,7 +321,8 @@ export function compareDeliverySnapshots(beforeValue: unknown, afterValue: unkno
       Record<TrackId, ReturnType<typeof compareTracker>>,
     commandCost: { before: before.commandCost, after: after.commandCost },
     deliveryAcceptance: { status: "unknown" as const, openedVariantIds: null, closedVariantIds: null,
-      acceptedVariants: null, remainingVariants: null, ratePerDay: null, missingInputs },
+      acceptedVariants: null, remainingVariants: null, ratePerDay: null, missingInputs,
+      selectedCohort: compareSelectedDeliveryCohorts(before.deliveryAcceptance.selectedCohort, after.deliveryAcceptance.selectedCohort, elapsedWindowMs) },
     limitations,
   };
 }

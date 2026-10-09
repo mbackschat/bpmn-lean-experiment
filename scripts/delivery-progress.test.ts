@@ -13,10 +13,80 @@ import {
   requireDeliverySnapshot,
 } from "./delivery-progress.ts";
 import type { DeliverySnapshot, TrackerRow } from "./delivery-progress.ts";
+import type { SelectedDeliveryCohort, SelectedDeliveryRow } from "./delivery-acceptance.ts";
 import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const current = await loadDeliverySnapshot(projectRoot, "2026-10-09T12:00:00.000Z");
+
+function selectedRow(id: string, status: SelectedDeliveryRow["status"], scope = "a", modelId = "model"): SelectedDeliveryRow {
+  return { id, modelId, status, scopeSha256: scope.repeat(64), bindingSha256: "f".repeat(64),
+    reasons: status === "accepted" ? [] : ["closurePending"],
+    closure: { owner: "docs/DELIVERY-PROPOSAL.md", target: status === "accepted" ? "2ddab36d" : null,
+      verdict: status === "accepted" ? "approve" : "pending" } };
+}
+function withSelected(rows: ReadonlyArray<SelectedDeliveryRow>, capturedAt: string): DeliverySnapshot {
+  const acceptedVariants = rows.filter(row => row.status === "accepted").length;
+  const selectedCohort: SelectedDeliveryCohort = { rows, acceptedVariants, openVariants: rows.length - acceptedVariants };
+  return requireDeliverySnapshot({ ...current, schemaVersion: 2, capturedAt,
+    deliveryAcceptance: { ...current.deliveryAcceptance, selectedCohort } });
+}
+
+test("reports current selected variants as open while the complete denominator stays unknown", () => {
+  assert.equal(current.schemaVersion, 2);
+  assert.equal(current.deliveryAcceptance.selectedCohort?.rows.length, 3);
+  assert.equal(current.deliveryAcceptance.selectedCohort?.acceptedVariants, 0);
+  assert.equal(current.deliveryAcceptance.selectedCohort?.openVariants, 3);
+  assert.ok(current.deliveryAcceptance.selectedCohort?.rows.every(row => row.status === "open" && row.reasons.length > 0));
+  assert.equal(current.deliveryAcceptance.remainingVariants, null);
+});
+
+test("counts acceptance changes only on an unchanged bound cohort and separates denominator, identity and scope drift", () => {
+  const before = withSelected([
+    selectedRow("closed", "open"), selectedRow("reopened", "accepted"), selectedRow("drift", "open"),
+    selectedRow("identity", "open"), selectedRow("removed", "open"),
+    { ...selectedRow("introduced-binding", "open"), bindingSha256: null },
+  ], "2026-10-08T12:00:00.000Z");
+  const after = withSelected([
+    selectedRow("closed", "accepted"), selectedRow("reopened", "open"), selectedRow("drift", "accepted", "b"),
+    selectedRow("identity", "accepted", "a", "another-model"), selectedRow("added", "accepted"),
+    selectedRow("introduced-binding", "accepted"),
+  ], "2026-10-09T12:00:00.000Z");
+  const delta = compareDeliverySnapshots(before, after).deliveryAcceptance.selectedCohort;
+  assert.deepEqual(delta.addedIds, ["added"]);
+  assert.deepEqual(delta.removedIds, ["removed"]);
+  assert.deepEqual(delta.identityChangedIds, ["identity"]);
+  assert.deepEqual(delta.scopeChangedIds, ["drift"]);
+  assert.deepEqual(delta.bindingIntroducedIds, ["introduced-binding"]);
+  assert.deepEqual(delta.closedVariantIds, ["closed"]);
+  assert.deepEqual(delta.openedVariantIds, ["reopened"]);
+  assert.equal(delta.stableBoundCount, 2);
+  assert.equal(delta.ratePerDay, 0);
+  assert.equal(compareDeliverySnapshots(before, after).deliveryAcceptance.remainingVariants, null);
+  const acceptedOnly = compareDeliverySnapshots(
+    withSelected([selectedRow("closed", "open")], before.capturedAt),
+    withSelected([selectedRow("closed", "accepted")], after.capturedAt),
+  ).deliveryAcceptance.selectedCohort;
+  assert.equal(acceptedOnly.ratePerDay, 1);
+});
+
+test("an old snapshot has an unknown cohort and cannot supply a historical acceptance baseline", async () => {
+  const baseline = JSON.parse(await readFile(path.join(projectRoot, "model-corpus/progress-baseline.json"), "utf8"));
+  assert.equal(requireDeliverySnapshot(baseline).schemaVersion, 1);
+  const delta = compareDeliverySnapshots(baseline, current).deliveryAcceptance.selectedCohort;
+  assert.equal(delta.beforeTotal, null);
+  assert.equal(delta.stableBoundCount, 0);
+  assert.deepEqual(delta.closedVariantIds, []);
+  assert.equal(delta.ratePerDay, null);
+});
+
+test("malformed selected claims cannot change counts or become acceptance in a persisted snapshot", () => {
+  const accepted = selectedRow("example", "accepted");
+  assert.throws(() => withSelected([accepted, accepted], current.capturedAt), /duplicate/u);
+  assert.throws(() => withSelected([{ ...accepted, bindingSha256: null }], current.capturedAt), /acceptance/u);
+  assert.throws(() => withSelected([{ ...accepted, reasons: ["inputMismatch"] }], current.capturedAt), /acceptance/u);
+  assert.throws(() => withSelected([{ ...accepted, closure: { ...accepted.closure, verdict: "reject" } }], current.capturedAt), /acceptance/u);
+});
 
 function row(id: string, stage: string, scopeValue = "bounded variant"): TrackerRow {
   const scope = { boundary: scopeValue };
