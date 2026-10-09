@@ -33,6 +33,18 @@ These are obligation families, not a support percentage or a claim to enumerate 
 
 Each row inherits the same observation and durability obligations: exact instance/occurrence identity, committed state only, content-bound commands and recovery, truthful rejection versus semantic/infrastructure failure, public lifecycle observations, restart and replay. Reuse established hosting mechanisms rather than rebuilding a full stack per model; add a new refinement witness when a composition creates a new preservation risk.
 
+## Selected behavioral variants
+
+This crosswalk identifies the selected delivery cohort, not the complete required denominator. Each stable variant ID refers to its owner's bounded contract, rules, exclusions, assurance lane and hosting obligations. It covers only part of the named obligation families. The [corpus manifest](../model-corpus/manifest.json) binds each representative to its exact source, profile and scenario; the linked closure owner determines acceptance. Keep results in those owners rather than maintaining a second status column here.
+
+| Variant ID | Obligation families | Contract owner | Representative model ID | Acceptance owner |
+|---|---|---|---|---|
+| `SERIAL-BUSINESS-TASK-COMPOSITION` | Control-flow composition; business data and expressions; human and automated tasks | [Serial business tasks](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#scope) | `invoice-validation-classification` | [Serial closure](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#review-and-closure) |
+| `MIXED-TASK-CONTROL-FLOW` | Control-flow composition; business data and expressions; human and automated tasks | [Mixed-task control flow](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md#basis-and-selected-scope) | `invoice-validation-rework` | [Mixed-task closure](capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md#review-and-closure) |
+| `MIXED-TASK-BUSINESS-ERROR` | Control-flow composition; human and automated tasks; Error, Escalation and termination | [Business Error recovery](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#required-contract-and-exclusions) | `invoice-business-error-recovery` | [Business Error closure](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#review-and-closure) |
+
+A changed contract or source/profile/configuration binding under the same ID is scope drift, not completed work. Registration approval, pipeline agreement and catalog eligibility do not substitute for the owning closure requirements. Dated snapshots may establish an observed acceptance window; they do not establish an exact historical acceptance date. Remaining families and cross-family combinations still need reviewed variant partitions before an overall remaining count or percentage can be calculated.
+
 ## Optional integrations and exclusions
 
 Optional integrations are Java delegate or REST drop-in compatibility, CIB external-task fetch-and-lock APIs, connectors, execution/task listener APIs, every scripting language, arbitrary beans/host-object access, vendor administration/history storage and production-scale qualification. Optional integration does not make a required Task family optional: Script and Business Rule task closure still needs an explicit usable execution contract, while its language/provider choice remains governed by the [compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md).

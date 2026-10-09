@@ -94,12 +94,12 @@ The six external reviews and correction audits are complete; the [repair cost le
 
 ### Scheduled delivery batches
 
-Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). Finish the preserved proof handoff first; dependencies may reorder batches without expanding scope.
+Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). The proof attempt reached its bound; usable business delivery takes priority.
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| Next | Repair progression reporting alongside business qualification. | Extend existing corpus/maturity/receipt tools with dated acceptance snapshots, stable variant IDs, opened/closed deltas and elapsed windows. Separate requirements, CIB, journeys and command cost; expose unknowns. Test changed denominators and failed/missing evidence; no Git-history reconstruction or diary. |
-| 1 | Close serial/mixed-task/business Error delivery. | Shared handler/command recovery and publication; installed-runtime, whole-model and independent closure evidence. |
+| Next | Finish acceptance reporting alongside business qualification. | Tracker comparison/baseline: `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind owners/models. Derive acceptance from exact source/profile/configuration, scope and closure evidence; test missing/failed closure and scope drift. Keep total remaining unknown until denominator review. |
+| 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
 | 3 | Extend business data/expressions. | Shared typed values, collections, scoped visibility, mappings and predicates. |
 | 4 | Complete task/control/source breadth. | Plain/Manual, Send, Script, Rule, remaining gateway compositions and Link/interoperability; reuse effect/control contracts. |
@@ -107,7 +107,7 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 | 6 | Extend Compensation/Transactions. | Targeting, repeated/MI retention, handler outcomes and Cancel propagation through shared retention/cancellation. |
 | 7 | Qualify the integrated target. | Cross-family journeys, disclosures, production browser and distribution gates; owner acceptance. Release/version/scale decisions remain separate. |
 
-Batch command guarantees, reuse reviewed models/evidence, retain review/resource limits. MEDIUM owns implementation, HIGH acceptance. Report progression only when requested.
+Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements, HIGH accepts. Report progression only when requested.
 
 ## Current evidence
 
@@ -119,17 +119,19 @@ Batch command guarantees, reuse reviewed models/evidence, retain review/resource
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: finish reporting integration and [parallel MI command publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), reusing existing position-construction/insertion laws. Retained runtime failures constrain business qualification.
+Current task: deliver registered business processes through public deployment, exact-version start and Work using shared mechanisms.
 
-Current result: actual Running prefixes/boundaries now derive open-occurrence projection, composed with command commitment/stability in `ParallelScopeCommandFuelProofs`; no assumed projection success or new history model. Business registration is approved at `9048174d`; installed-runtime qualification remains open. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots) and the [first baseline](../model-corpus/progress-baseline.json) preserve dated scopes/stages; reviewed variant-bound acceptance mapping remains missing.
+Current result: business registration is approved at `9048174d`; public delivery still lacks retained handler overlays and admitted task metadata. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots) and [baseline](../model-corpus/progress-baseline.json) are committed; the [selected crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) supplies identities, not acceptance.
 
-Last verification: asserted exit 0 for `/tmp/pmis-open-projection-owned-12-20261009` and `/tmp/pmis-open-projection-command-consumer-20261009`; all three Lean owners compile. Reporting tests/types and all 100 infrastructure files pass; exact inventory/receipts: `/tmp/delivery-progress-infrastructure-batches-20261009/complete.json`.
+Last verification: `/tmp/business-human-metadata-red-20261009` reproduces metadata rejection in all three profiles after accepted baselines. `/tmp/business-public-overlay-gap-confirmed-20261009` confirms public deployment refusal and lost retained overlay/start integrity in all three. `/tmp/practical-crosswalk-docs-20261009` passes 35 checks; reporting's complete infrastructure inventory remains in `/tmp/delivery-progress-infrastructure-batches-20261009/complete.json`.
 
-Next action: finish reached `runtimePositionValid` and its command consumer using existing `position_iff`/`position_insert`, token-patch/removal frames and PMIS reachability; no second history induction. Worker `assess_pmis_publication_composition` owns the bounded proof; its missing-consumer red is `/tmp/pmis-runtime-position-red-20261009`. Then continue business qualification and reviewed acceptance mapping; tracker tooling cannot yet calculate accepted-variant rate. Generic/arming owners are 710/772 nonblank lines against 800. Complete the command outcome rather than commit a helper checkpoint.
+Next action: independently review the [public-delivery proposal](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md), then implement its shared overlay lifecycle, passive metadata and configured-handler journeys. Draft gates pass: `/tmp/business-public-delivery-proposal-final-text-20261009`. Reuse artifact storage and Work; no metadata-only checkpoint or model-identity switch.
+
+Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Preserve pending sources; no helper commit. The Lean lane is released.
 
 Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime/performance/cold-library investigations remain on hold. One Lean tree, one CPU/3 GiB, no extra swap.
 
-Oracle: actual Start reachability, kernel-checked command guarantees and full-state/E1/E2 differential witnesses.
+Oracle: exact public deployment/start, occurrence-bound Work completion, full-state/E1/E2 agreement and replay.
 
 Stop if correction weakens guarantees or broadens scope.
 
