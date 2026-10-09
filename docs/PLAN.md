@@ -1,6 +1,6 @@
 # Plan
 
-Execution order, blockers, evidence and resume action live here; linked owners retain meaning and history.
+Execution order and resume state live here; linked owners retain contracts.
 
 ## Current checkpoint
 
@@ -94,11 +94,12 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Scheduled delivery batches
 
-Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md). Business delivery precedes further proof work.
+Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md).
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| Next | Bind qualified delivery evidence at closure. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. Total remaining stays unknown until denominator review. |
+| Next | Qualify and publish the approved security fix before new feature work. | Finish review, preserve PMIS work, qualify clean HEAD and push (owner direction, 2026-10-09). |
+| At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. Total remaining stays unknown until denominator review. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
 | 3 | Extend business data/expressions. | Shared typed values, collections, scoped visibility, mappings and predicates. |
@@ -111,7 +112,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Push qualification. Command: `./scripts/pnpm.sh run test:pre-push`. Status: `exit 1`. Date: `2026-10-06`. Commit: `fd9b8750`. `/tmp/prepush-fd9b8750` failed security (`GHSA-68fv-2mgg-jv7q`); later lanes were unrun. Owner-approved `source-map-js@1.2.2` exception: installed; security/bundle checks pass ([evidence](CONTRIBUTOR-SETUP-GUIDE.md#active-security-release-age-exceptions)). One authorized push awaits clean qualification. Published `46632f02` still [fails scheduled security](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/37617909927); publication bypassed `verify-complete`. Preserve TD-001 failure `/tmp/mue-prepush-3ee96954-v8-fixed-20261002` (`3ee96954`, Temporal 819/820).
+- Push qualification. Command: `./scripts/pnpm.sh run test:dependency-security`. Status: `exit 0`. Date: `2026-10-09`. Commit: `9133ea7b`. `/tmp/dependency-security-current-network-20261009` reports no vulnerabilities. [Scheduled failure](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/37927827922) checks published `46632f02`; approved `source-map-js@1.2.2` fixes its advisory ([evidence](CONTRIBUTOR-SETUP-GUIDE.md#active-security-release-age-exceptions)). Owner requests publication; clean-HEAD `test:pre-push` remains required. Prior `/tmp/prepush-fd9b8750` stopped at security; preserve TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002` (`3ee96954`, Temporal 819/820).
 
 - Published RC evaluation. Command: `env BPMN_EVALUATION_PROJECT_NAME=mue-acceptance-rc1-1d11abc0 /tmp/mue-acceptance-distribution-1d11abc0/deploy/evaluation/demo start`. Status: `exit 0` for restart; browser qualification incomplete. Date: `2026-10-01`. Commit: `16c5b9f6`, fixed distribution source. Receipt: `/tmp/mue-bundle-restart`; browser evidence: `/tmp/mue-acceptance-distribution-1d11abc0/browser-receipt.json`. Docker Desktop restarts without building/pulling, retaining claimed parallel work and its sibling. Playwright reaches human approval, request changes, parallel completion, incident Retry and Cancel, with terminal History and Action history. Earlier unavailable Work/execution/audit reads remain failures. The browser shows `0.2.0-rc.1`, which still contains the selection defect. Rancher smoke remains open by owner direction. Task containers stopped; volumes/images retained.
 
@@ -119,15 +120,15 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver business processes through public deployment, exact-version start and Work.
+Current task: qualify and publish the security correction, then resume business-process public delivery.
 
-Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) checkpoint `3f64ddd0` has required review edits: preserve retry classification for Schedule artifact/host failures and reject malformed UTF-8 multipart identities before replacement decoding. [Tracker](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind identities, not acceptance.
+Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) checkpoint `3f64ddd0` passed correction audit `9133ea7b`. Current dependency policy/audit passes with no known vulnerabilities. [Tracker](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) bind identities, not acceptance.
 
-Last verification: both review defects reproduce red and pass corrected gates: multipart 38/38, PostgreSQL recovery 24/24 and Definitions 217/217; build, harness types and shape/review guards pass. Receipts: `/tmp/business-multipart-encoding-green-20261009`, `/tmp/business-overlay-schedule-recovery-focused-green-20261009`, `/tmp/business-overlay-review-corrections-definitions-package-20261009`. Checkpoint source/core, independent admission/parity, server/web, complete PostgreSQL integration and shared Lean/conformance gates remain green. Infrastructure retains the unrelated unreached PMIS proof failure.
+Last verification: independent audit passes multipart 38/38, real PostgreSQL 38/38, seven immutable-source Lean targets and three Lean/core parity witnesses. Receipts: `/tmp/business-audit-postgresql-host-9133ea7b`, `/tmp/business-audit-lean-progress-9133ea7b`, `/tmp/business-audit-parity-9133ea7b-result`. All handles reaped. Earlier bounded Lean warm-up timeouts remain retained; no full repository qualification is claimed.
 
-Next action: commit both corrections, then first audit by `/root/review_business_delivery_checkpoint`, including deferred applicable checks. UI preflight is complete. After approval: metadata fixtures, explicit handlers, generic string Start inputs and three production journeys. Preserve required bindings; no model switch or metadata-only commit.
+Next action: qualify clean HEAD and push, then restore PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce`; verify eight file hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. Resume metadata fixtures, explicit handlers, generic string Start inputs and three production journeys; UI preflight is complete. No model switch or metadata-only commit.
 
-Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Preserve pending sources; no helper commit.
+Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Pending sources are stashed for qualification; no helper commit.
 
 Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime/performance/cold-library investigations remain on hold. One Lean tree, one CPU/3 GiB, no extra swap.
 

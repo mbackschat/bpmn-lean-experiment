@@ -134,5 +134,5 @@ The review must decide whether the transport bounds, passive current-profile wid
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `4715564a6feaaf3fe92d75daae322806432100c3` | `fork-turns-none` | `approve-with-required-edits` | `6e7261a89b379f124071ed4d9feefe99093f5974` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `3f64ddd07d24c895689822160acd0f8f44836e73` | `fork-turns-none` | `approve-with-required-edits` | `9133ea7b4ad406e6e45063551179b1348163da25` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
