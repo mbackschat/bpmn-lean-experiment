@@ -8,13 +8,16 @@
     "type-test": "tsc -p tsconfig.json",
     "test:built": "pnpm run type-test && node --test --test-concurrency=1 test/*.test.ts",
     "test": "pnpm run test:built",
-    "test:e2e:built": "playwright test",
+    "test:e2e:built": "playwright test && pnpm run test:e2e:invoice:built && pnpm run test:e2e:invoice-recovery:built",
+    "test:e2e:invoice:built": "playwright test --config playwright.invoice.config.ts",
+    "test:e2e:invoice-recovery:built": "playwright test --config playwright.invoice-recovery.config.ts",
     "test:e2e": "pnpm run type-test && pnpm run test:e2e:built"
   },
   "devDependencies": {
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-server": "workspace:*",
     "@bpmn-lean/platform-web": "workspace:*",
+    "@bpmn-lean/temporal-runner": "workspace:*",
     "@bpmn-lean/temporal-testkit": "workspace:*",
     "@playwright/test": "1.62.1"
   }

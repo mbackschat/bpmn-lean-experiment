@@ -10,6 +10,7 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 import { DefinitionApiClient } from "./definitions-api.ts";
+import type { DefinitionDeploymentInput } from "./definitions-api.ts";
 import { CorrelatedMessageApiClient } from "./correlated-message-api.ts";
 import { DefinitionScheduleApiClient } from "./definition-schedule-api.ts";
 import {
@@ -154,26 +155,12 @@ export function DeferredDefinitionWorkspace({
   async function deploy(event: FormEvent<HTMLFormElement>): Promise<boolean> {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const source = form.get("source");
-    const semanticProfile = form.get("semanticProfile");
-    if (!(source instanceof File) || source.size === 0) {
-      setError("Choose a nonempty BPMN XML file.");
-      return false;
-    }
-    if (typeof semanticProfile !== "string" || semanticProfile.length === 0) {
-      setError("Enter the exact semantic profile ID.");
-      return false;
-    }
     const generation = requests.current.begin();
     setLoading(true);
     setError(null);
     setDeployment(null);
     try {
-      const result = await api.deploy({
-        bytes: new Uint8Array(await source.arrayBuffer()),
-        sourceId: source.name,
-        semanticProfile,
-      });
+      const result = await api.deploy(await readDefinitionDeploymentInput(form));
       if (!requests.current.isCurrent(generation)) return false;
       setDeployment(result);
       switch (result.status) {
@@ -239,6 +226,33 @@ export function DeferredDefinitionWorkspace({
     </div>
     </Activity>
   </>;
+}
+
+/** Captures literal form selection before file reads; filenames select no overlay identity. */
+export async function readDefinitionDeploymentInput(form: FormData): Promise<DefinitionDeploymentInput> {
+  const source = form.get("source");
+  const semanticProfile = form.get("semanticProfile");
+  const overlay = form.get("sourceOverlay");
+  const id = form.get("sourceOverlayId");
+  const sha256 = form.get("sourceOverlaySha256");
+  if (!(source instanceof File) || source.size === 0) throw new TypeError("Choose a nonempty BPMN XML file.");
+  if (typeof semanticProfile !== "string" || semanticProfile.length === 0) throw new TypeError("Enter the exact semantic profile ID.");
+  const sourceId = source.name;
+  const hasOverlay = overlay instanceof File && (overlay.name.length > 0 || overlay.size > 0);
+  if (!hasOverlay && (id === null || id === "") && (sha256 === null || sha256 === "")) {
+    return { bytes: new Uint8Array(await source.arrayBuffer()), sourceId, semanticProfile };
+  }
+  if (!hasOverlay || !(overlay instanceof File) || typeof id !== "string" || id.length === 0 || typeof sha256 !== "string" || sha256.length === 0) {
+    throw new TypeError("Supply the source overlay file, ID and SHA-256 together.");
+  }
+  if (overlay.size === 0 || overlay.size > 65_536) throw new TypeError("Choose a nonempty source overlay file of at most 65536 bytes.");
+  if (!id.isWellFormed() || Array.from(id).length > 256) throw new TypeError("Source overlay ID must contain 1–256 well-formed Unicode characters.");
+  if (!/^[0-9a-f]{64}$/u.test(sha256)) throw new TypeError("Source overlay SHA-256 must contain exactly 64 lowercase hexadecimal characters.");
+  const [bytes, overlayBytes] = await Promise.all([source.arrayBuffer(), overlay.arrayBuffer()]);
+  return {
+    bytes: new Uint8Array(bytes), sourceId, semanticProfile,
+    sourceOverlay: { id, sha256, bytes: new Uint8Array(overlayBytes) },
+  };
 }
 
 function errorMessage(error: unknown): string {

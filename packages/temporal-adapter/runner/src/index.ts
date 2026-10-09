@@ -7,3 +7,7 @@ export * from "./evaluation-worker-main.js";
 export * from "./host-effect-activities.js";
 export * from "./host-interaction-driver.js";
 export * from "./host-interaction-plan.js";
+export {
+  createInvoiceEffectActivities,
+  createInvoiceRecoveryEffectActivities,
+} from "./invoice-effect-activities.js";

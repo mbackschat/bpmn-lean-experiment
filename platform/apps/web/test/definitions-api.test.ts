@@ -85,6 +85,98 @@ test("encodes deployment metadata and snapshots exact bytes before fetch can yie
   assert.equal(new Headers(capturedInit?.headers).get("content-type"), "application/bpmn+xml");
 });
 
+test("captures an explicit overlay triple in native multipart without rewriting its bytes", async () => {
+  const bytes = encoder.encode("<definitions id=\"overlay\"/>");
+  const overlayBytes = encoder.encode('{ "id": "not-the-selected-id", "spacing": [ 1, 2 ] }\n');
+  const expectedOverlayBytes = overlayBytes.slice();
+  const overlay = { id: "literal overlay 🚀", sha256: sha256(overlayBytes), bytes: overlayBytes };
+  const expectedOverlay = { id: overlay.id, sha256: overlay.sha256 };
+  const input = { bytes, sourceId: "explicit.bpmn", semanticProfile: "explicit-profile", sourceOverlay: overlay };
+  const release = Promise.withResolvers<void>();
+  let captured: RequestInit | undefined;
+  const client = new DefinitionApiClient("https://platform.test/", async (_url, init) => {
+    captured = init;
+    await release.promise;
+    return jsonResponse(201, {
+      ...deployedResult(bytes),
+      definition: { ...deployedResult(bytes).definition, sourceOverlay: expectedOverlay },
+    });
+  });
+
+  const pending = client.deploy(input);
+  overlayBytes.fill(0);
+  overlay.id = "changed";
+  overlay.sha256 = "f".repeat(64);
+  release.resolve();
+  await pending;
+
+  assert.ok(captured?.body instanceof FormData);
+  assert.equal(new Headers(captured.headers).get("content-type"), null);
+  assert.deepEqual([...captured.body.keys()], ["bpmn", "sourceOverlay", "sourceOverlayId", "sourceOverlaySha256"]);
+  const id = captured.body.get("sourceOverlayId");
+  assert.ok(id instanceof File);
+  assert.equal(id.type, "text/plain");
+  assert.equal(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await id.arrayBuffer()), expectedOverlay.id);
+  assert.equal(captured.body.get("sourceOverlaySha256"), expectedOverlay.sha256);
+  const uploaded = captured.body.get("sourceOverlay");
+  assert.ok(uploaded instanceof File);
+  assert.equal(uploaded.type, "application/json");
+  assert.deepEqual(new Uint8Array(await uploaded.arrayBuffer()), expectedOverlayBytes);
+  const bpmn = captured.body.get("bpmn");
+  assert.ok(bpmn instanceof File);
+  assert.equal(bpmn.type, "application/bpmn+xml");
+  assert.deepEqual(new Uint8Array(await bpmn.arrayBuffer()), bytes);
+});
+
+for (const [name, id] of [["bare LF", "literal\nID"], ["bare CR", "literal\rID"], ["paired CRLF", "literal\r\nID"]] as const) {
+  test(`serialized deployment preserves an overlay ID containing ${name}`, async () => {
+    const bytes = encoder.encode("<definitions>literal\r\nID</definitions>");
+    const sourceOverlay = { id, sha256: "a".repeat(64), bytes: encoder.encode("{}") };
+    let received: FormData | undefined;
+    const client = new DefinitionApiClient("https://platform.test/", async (url, init) => {
+      received = await new Request(String(url), init).formData();
+      return jsonResponse(201, {
+        ...deployedResult(bytes),
+        definition: { ...deployedResult(bytes).definition, sourceOverlay: { id, sha256: sourceOverlay.sha256 } },
+      });
+    });
+    await client.deploy({ bytes, sourceId: "literal.bpmn", semanticProfile: "profile", sourceOverlay });
+    const transmittedId = received?.get("sourceOverlayId");
+    assert.ok(transmittedId instanceof File);
+    assert.equal(transmittedId.type, "text/plain");
+    assert.equal(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await transmittedId.arrayBuffer()), id);
+    assert.equal(received?.get("sourceOverlaySha256"), sourceOverlay.sha256);
+    const bpmn = received?.get("bpmn");
+    const overlay = received?.get("sourceOverlay");
+    assert.ok(bpmn instanceof File);
+    assert.ok(overlay instanceof File);
+    assert.deepEqual(new Uint8Array(await bpmn.arrayBuffer()), bytes);
+    assert.deepEqual(new Uint8Array(await overlay.arrayBuffer()), sourceOverlay.bytes);
+  });
+}
+
+test("refuses invalid explicit overlay selections before sending a deployment", async () => {
+  let requests = 0;
+  const client = new DefinitionApiClient("https://platform.test/", async () => {
+    requests += 1;
+    return jsonResponse(201, deployedResult(encoder.encode("<definitions/>")));
+  });
+  const valid = { id: "literal", sha256: "a".repeat(64), bytes: encoder.encode("{}") };
+  for (const sourceOverlay of [
+    { ...valid, id: "" },
+    { ...valid, id: "\ud800" },
+    { ...valid, id: "🚀".repeat(257) },
+    { ...valid, sha256: "A".repeat(64) },
+    { ...valid, bytes: new Uint8Array() },
+    { ...valid, bytes: new Uint8Array(65_537) },
+  ]) {
+    await assert.rejects(client.deploy({
+      bytes: encoder.encode("<definitions/>"), sourceId: "literal.bpmn", semanticProfile: "profile", sourceOverlay,
+    }), TypeError);
+  }
+  assert.equal(requests, 0);
+});
+
 test("retains the browser receiver when using the ambient fetch implementation", async () => {
   const originalFetch = globalThis.fetch;
   const bytes = encoder.encode("<definitions id=\"receiver\"/>");
@@ -340,6 +432,22 @@ test("accepts closed start rejection and rejects private or status-inconsistent 
       DefinitionProtocolError,
     );
   }
+});
+
+test("binds Start to the retained overlay digest even when its literal ID agrees", async () => {
+  const bytes = encoder.encode("<definitions id=\"overlay-start\"/>");
+  const definition = {
+    ...deployedResult(bytes).definition,
+    sourceOverlay: { id: "literal-policy", sha256: "a".repeat(64) },
+  };
+  const client = new DefinitionApiClient("https://platform.test/", async () => jsonResponse(201, {
+    status: ProcessInstanceStartStatus.Started,
+    instance: {
+      processInstanceId: "overlay-instance",
+      definition: { ...definition, sourceOverlay: { ...definition.sourceOverlay, sha256: "b".repeat(64) } },
+    },
+  }));
+  await assert.rejects(client.start(definition, { initialVariables: [] }), DefinitionProtocolError);
 });
 
 test("rejects private response fields and preserves closed public API errors", async () => {

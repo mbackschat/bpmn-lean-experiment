@@ -13,6 +13,8 @@ import styles from "./definition-start-panel.module.css";
 import { resolveMuePreviewAlphaStart } from "./mue-preview-alpha-start";
 import { findProcessShowcase } from "./process-showcase-catalog.ts";
 import { LatestRequest } from "./latest-request.ts";
+import { prepareDefinitionStartCommand } from "./definition-start-input.ts";
+import type { DefinitionStartInput } from "./definition-start-input.ts";
 
 export type DefinitionStartPanelProps = Readonly<{
   api: DefinitionApiClient;
@@ -28,12 +30,19 @@ export function DefinitionStartPanel({
   const [result, setResult] = useState<ProcessInstanceStartResult | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inputs, setInputs] = useState<readonly (DefinitionStartInput & Readonly<{ id: number }>)[]>([]);
+  const nextInputId = useRef(0);
+  const addInputButton = useRef<HTMLButtonElement>(null);
+  const startPending = useRef(false);
   const automaticNavigation = useRef(new LatestRequest());
   useEffect(() => () => { automaticNavigation.current.invalidate(); }, []);
   const alphaStart = resolveMuePreviewAlphaStart(definition);
   const showcase = findProcessShowcase(definition);
+  const preset = showcase?.showcase?.start ?? alphaStart?.command ?? null;
 
   async function start(): Promise<void> {
+    if (startPending.current) return;
+    startPending.current = true;
     const navigationGeneration = automaticNavigation.current.begin();
     setStarting(true);
     setError(null);
@@ -41,7 +50,7 @@ export function DefinitionStartPanel({
     try {
       const started = await api.start(
         definition,
-        showcase?.showcase?.start ?? alphaStart?.command ?? { initialVariables: [] },
+        prepareDefinitionStartCommand(inputs, preset),
       );
       setResult(started);
       if (started.status === ProcessInstanceStartStatus.Started && showcase?.showcase?.mode === "guided"
@@ -51,6 +60,7 @@ export function DefinitionStartPanel({
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Unknown platform failure");
     } finally {
+      startPending.current = false;
       setStarting(false);
     }
   }
@@ -69,6 +79,39 @@ export function DefinitionStartPanel({
           {starting ? "Starting…" : `Start version ${definition.version}`}
         </Button>
       </div>
+      {preset === null ? (
+        <div className={styles.inputs}>
+          <h3>Start inputs</h3>
+          <p>Add named String values when this definition requires initial data. Values are supplied exactly as entered.</p>
+          {inputs.map((input, index) => (
+            <fieldset className={styles.inputRow} key={input.id} disabled={starting}>
+              <legend>Input {index + 1} · String</legend>
+              <label>
+                Name
+                <input autoFocus type="text" value={input.name} onChange={(event) => {
+                  const name = event.currentTarget.value;
+                  setInputs((rows) => rows.map((row) => row.id === input.id ? { ...row, name } : row));
+                }} />
+              </label>
+              <label>
+                String value
+                <input type="text" value={input.value} onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setInputs((rows) => rows.map((row) => row.id === input.id ? { ...row, value } : row));
+                }} />
+              </label>
+              <Button variant={ButtonVariant.Secondary} isDisabled={starting} aria-label={`Remove input ${index + 1}`} onPress={() => {
+                setInputs((rows) => rows.filter((row) => row.id !== input.id));
+                addInputButton.current?.focus();
+              }}>Remove input</Button>
+            </fieldset>
+          ))}
+          <Button ref={addInputButton} variant={ButtonVariant.Secondary} isDisabled={starting} onPress={() => {
+            const id = nextInputId.current++;
+            setInputs((rows) => [...rows, { id, name: "", value: "" }]);
+          }}>Add input</Button>
+        </div>
+      ) : null}
       {alphaStart === null ? null : (
         <div className={styles.previewInput} data-testid="mue-preview-alpha-start-input">
           <strong>Example input</strong>

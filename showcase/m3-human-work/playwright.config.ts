@@ -13,6 +13,7 @@ const webBuild = process.env.PLAYWRIGHT_PREBUILT_WEB === "true"
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/business-invoice*.spec.ts",
   fullyParallel: false,
   forbidOnly: process.env.CI === "true",
   retries: process.env.CI === "true" ? 1 : 0,

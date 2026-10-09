@@ -1,16 +1,16 @@
 # Temporal adapter source map
 
-The caller-owned [invoice Activity example](runner/examples/invoice-effect-activities.ts) demonstrates argument-derived validation/classification and modeled Error recovery through the existing Worker contract. [Focused tests](testkit/test/invoice-effect-activities.test.ts) cover current input, malformed/unknown requests and retry determinism. Public admission remains closed.
+The caller-selected [invoice Activity factories](runner/src/invoice-effect-activities.ts) are named exports of the runner package root; the [example](runner/examples/invoice-effect-activities.ts) forwards those exports. They provide argument-derived validation/classification and modeled Error recovery through the existing Worker contract. [Handler tests](testkit/test/invoice-effect-activities.test.ts) cover current input, malformed/unknown requests and retry determinism; [delivery composition tests](testkit/test/business-public-delivery-host.test.ts) check explicit host selection, unchanged lifecycle registration and the exact metadata-bearing business fixtures. The [public recovery witness](testkit/test/business-public-delivery-recovery.temporal-test.ts) separately checks metadata-bearing human/effect waits across Worker replacement, exact publications and replay; [the evidence map](../../docs/TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) owns its bounded claim.
 
 This contributor map assigns package responsibilities and Temporal SDK ownership. Human orientation and commands start in the [README](README.md); lifecycle semantics and current evidence remain in the linked specifications and evidence map.
 
-## Private serial business-task boundary
+## Registered business-task boundaries
 
-[Host admission](protocol/src/host-admission.ts) returns `serialBusinessTaskQualificationUnavailable` for the private [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). The [refusal witness](protocol/test/serial-business-task-host-refusal.test.ts) first verifies semantic execution support, then checks that pending handler/hosting qualification cannot be bypassed by the existing scheduler.
+[Host admission](protocol/src/host-admission.ts) admits the registered [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). Its [admission witness](protocol/test/serial-business-task-host-refusal.test.ts) checks hosted support while preserving semantic rejection of missing required start data.
 
-The [mixed-task refusal witness](protocol/test/mixed-task-control-flow-host-refusal.test.ts) likewise checks `mixedTaskControlFlowQualificationUnavailable` after confirming semantic execution support for the [mixed-task profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md).
+The [mixed-task admission witness](protocol/test/mixed-task-control-flow-host-refusal.test.ts) checks the same distinction for the registered [mixed-task profile](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md).
 
-The [business Error refusal witness](protocol/test/mixed-task-business-error-host-admission.test.ts) verifies the same typed refusal for the [Error-recovery extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md), including a Program with its operations removed.
+The [business Error admission witness](protocol/test/mixed-task-business-error-host-admission.test.ts) admits the registered [Error-recovery extension](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md) while semantic admission rejects a Program with its operations removed. Host admission alone establishes neither configured handlers nor public-delivery closure.
 
 ## Private repeated-scope continuation
 

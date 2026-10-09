@@ -6,11 +6,11 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 [MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 
-Private [serial/mixed](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#retained-verification-evidence) and [business Error](capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) recovery/replay witnesses pass; [mixed host-cache mutations](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory) fail through public state. The [registration candidate](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) passes public start/replay and registration review at `9048174d`; qualification remains open.
+Registered [business profiles](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary), [metadata-bearing replacement/replay](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory), configured handlers and three public journeys pass; complete runtime qualification and independent closure remain open.
 
 Runner [overlay selection](RUNNABLE-TEMPORAL-MVP-SPEC.md#public-operating-contract) preserves identity/bytes before connection. Non-material wiring: runner/example/types/Temporal guards; simulations and host refusals unchanged.
 
-Disposable mutation probes isolate queues by Workflow ID. [Lifecycle regressions](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) cover both runners: late Workers shut down, start failures join shutdown, and trace-termination failures cannot skip it. Normal queue matching, hosting and timeouts are unchanged.
+Disposable mutation queues remain Workflow-ID-isolated. [Runner cleanup](../packages/temporal-adapter/testkit/test/bypass-worker-startup.test.ts) and [SDK-initiated shutdown](TEMPORAL-TEST-EVIDENCE-MAP.md#external-review-question-reconciliation) pass. These non-material lifecycle corrections preserve routing, semantics and deadlines; the evidence owner records their cleanup invariants.
 
 Client RPCs use SDK connection deadlines for task/incident and execution/occurrence-publication Queries, retained results, Workflow creation/description, Schedules, and correlation ingress/publication. The [RPC matrix](../packages/temporal-adapter/client/test/client-rpc-deadline.test.ts) rejects timeout with an unfinished request. Publication expiry settles the RPC before returning `unavailable`; segment reselection retains the original five-second allowance. Creation/Update expiry retains recovery classification and does not prove service refusal.
 

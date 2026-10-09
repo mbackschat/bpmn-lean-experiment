@@ -15,6 +15,64 @@
   gap: var(--ui-space-4) var(--ui-space-5);
 }
 
+.inputs {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-4);
+  min-width: 0;
+}
+
+.inputs h3,
+.inputs p {
+  margin: 0;
+}
+
+.inputRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: end;
+  gap: var(--ui-space-4);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3);
+}
+
+.inputRow legend {
+  color: var(--ui-color-muted);
+  font: var(--ui-font-label);
+}
+
+.inputRow label {
+  display: grid;
+  gap: var(--ui-space-2);
+  min-width: 0;
+  font: var(--ui-font-label);
+}
+
+.inputRow input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-3);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text);
+}
+
+.inputRow input:focus-visible {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+}
+
+.inputRow:disabled input {
+  background: var(--ui-color-inset);
+  color: var(--ui-color-muted);
+}
+
 .eyebrow {
   margin-bottom: var(--ui-space-2);
   color: var(--ui-color-accent);
@@ -94,6 +152,7 @@
 
 @container (max-width: 44rem) {
   .layout,
+  .inputRow,
   .result {
     grid-template-columns: 1fr;
   }

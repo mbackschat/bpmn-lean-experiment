@@ -25,10 +25,12 @@ Keep `POST /api/v1/definitions?sourceId=…&semanticProfile=…`. Existing raw X
 |---|---|
 | `bpmn` | Exactly one nonempty file; existing XML media types; exact bytes bounded by configured `maxSourceBytes`. |
 | `sourceOverlay` | Optional nonempty `application/json` file; exact UTF-8 bytes, at most 65,536 bytes. |
-| `sourceOverlayId` | Required iff overlay file is present; literal well-formed Unicode, 1–256 code points. |
+| `sourceOverlayId` | Required iff overlay file is present; literal well-formed Unicode, 1–256 code points. Accept a scalar text part or a `text/plain` file containing at most 1,024 bytes of strict UTF-8. Preserve BOM and line endings. |
 | `sourceOverlaySha256` | Required iff overlay file is present; exactly 64 lowercase hexadecimal ASCII characters. |
 
 The overlay triple is present together or absent together. Reject unknown/duplicate parts or query fields, nested multipart, unsupported part media types and partial triples. Filenames carry no authority. Count actual received bytes before unbounded parsing: the complete multipart envelope is bounded by `maxSourceBytes + 81,920`, including overlay and 16,384 bytes of framing/text overhead; enforce each part's independent bound. Transport malformation, excessive size, unsupported media and engine rejection retain the existing `400`, `413`, `415` and `422` distinctions. Do not parse/re-encode an overlay or infer its identity from its contents.
+
+The owner-approved UTF-8 ID-file alternative preserves literal line endings that [HTML multipart scalar serialization](https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart/form-data-encoding-algorithm) normalizes. The browser client uses native `FormData` with that file representation; it neither rewrites the serialized envelope nor chooses its boundary. Existing scalar clients remain supported. This transport extension changes no source-overlay identity, semantic admission or observation contract; closure must include serialized client and actual-route discriminators.
 
 The [engine API](../packages/engine-api/src/index.ts) remains admission authority. Its existing input is:
 
@@ -122,7 +124,8 @@ Measured 2026-10-09 against the 800-nonblank review target. Each row's headroom 
 | [SQLite definitions](../platform/modules/definitions/src/sqlite-definition-repository.ts) | 447 |
 | [PostgreSQL definitions](../platform/modules/definitions/src/postgresql-definition-repository.ts) | 663 |
 | [PostgreSQL values](../platform/modules/definitions/src/postgresql-definition-values.ts) | 535 |
-| [Journey host](../showcase/m3-human-work/src/host.ts) | 704 |
+| [Journey host](../showcase/m3-human-work/src/host.ts) | 793 |
+| [Shared journey lifecycle](../showcase/m3-human-work/src/host-runtime.ts) | 709 |
 | [Browser journey](../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts) | 687 |
 
 ## Review question and stop conditions

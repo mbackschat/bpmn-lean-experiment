@@ -281,7 +281,7 @@ Retained recurrence evidence: [Finding 12](process-assessment/SEMANTIC-EVIDENCE-
 A new guard's first formulation did not reject the defect it was written for, and was only found by seeding that exact defect: an unreferenced schema branch credited as reachable, a helper enum read as an empty value list, and a fabricated table row accepted on its table number alone.
 
 Instances
-: 16
+: 17
 
 Disposition
 : `executable guard`
@@ -292,6 +292,8 @@ Evidence
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
 A new guard needs a seeded defect at each syntactic position, dispatch path and direction of its claimed relation. Verify the seed reaches the artifact the assertion reads and read unfiltered runner output; changing an expected verdict or trusting a proxy certifies neither mechanism nor execution.
+
+The public-delivery client checked `FormData.get()` before serialization, so its byte-preservation assertion missed native CR/LF normalization. [Serialized client tests](../platform/apps/web/test/definitions-api.test.ts), [client-to-route integration](../showcase/m3-human-work/test/definition-overlay-transport.test.ts) and [server transport controls](../platform/modules/definitions/test/definition-overlay-multipart.test.ts) compare received literals and opaque file bytes; the separate Chromium probe rejects Node-only assumptions about empty filenames.
 
 Retained recurrence evidence: [Finding 13](process-assessment/VERIFICATION-LEDGER.md#finding-13).
 

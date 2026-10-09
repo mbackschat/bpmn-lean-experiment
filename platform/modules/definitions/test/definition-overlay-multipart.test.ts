@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { DefinitionHttpRoutes, DefinitionDeploymentService, DefinitionStartService, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompilationRequest } from "@bpmn-lean/platform-engine-gateway";
@@ -23,6 +24,13 @@ function form(): FormData {
   return result;
 }
 
+function selectedOverlay(id: string) {
+  const bytes = new TextEncoder().encode(JSON.stringify({
+    kind: "bpmnSourceOverlay", id, semanticProfile: "profile", effectBindings: [], inertAttributes: [],
+  }));
+  return { id, sha256: createHash("sha256").update(bytes).digest("hex"), bytes };
+}
+
 for (const [name, mutate, status] of [
   ["partial overlay file", (body: FormData) => body.delete("sourceOverlay"), 400],
   ["partial overlay ID", (body: FormData) => body.delete("sourceOverlayId"), 400],
@@ -30,7 +38,12 @@ for (const [name, mutate, status] of [
   ["missing BPMN file", (body: FormData) => body.delete("bpmn"), 400],
   ["text BPMN part", (body: FormData) => body.set("bpmn", "<bpmn/>"), 400],
   ["text overlay part", (body: FormData) => body.set("sourceOverlay", "{}"), 400],
-  ["file ID part", (body: FormData) => body.set("sourceOverlayId", new Blob(["id"]), "id"), 400],
+  ["unsupported ID file media", (body: FormData) => body.set("sourceOverlayId", new Blob(["id"]), "id"), 415],
+  ["JSON ID file media", (body: FormData) => body.set("sourceOverlayId", new Blob(["id"], { type: "application/json" }), "id"), 415],
+  ["non-UTF-8 ID file media", (body: FormData) => body.set("sourceOverlayId", new Blob(["id"], { type: "text/plain; charset=iso-8859-1" }), "id"), 415],
+  ["empty ID file", (body: FormData) => body.set("sourceOverlayId", new Blob([], { type: "text/plain" }), "id"), 400],
+  ["ID file exceeds its byte bound before decoding", (body: FormData) => body.set("sourceOverlayId", new Blob([new Uint8Array(1025).fill(0xff)], { type: "text/plain" }), "id"), 413],
+  ["ID file exceeds its code point bound", (body: FormData) => body.set("sourceOverlayId", new Blob(["a".repeat(257)], { type: "text/plain" }), "id"), 400],
   ["unknown part", (body: FormData) => body.set("other", "smuggled"), 400],
   ["duplicate BPMN", (body: FormData) => body.append("bpmn", new Blob([source], { type: "application/xml" }), "duplicate"), 400],
   ["duplicate overlay", (body: FormData) => body.append("sourceOverlay", new Blob([overlay], { type: "application/json" }), "duplicate"), 400],
@@ -103,9 +116,15 @@ for (const [name, bytes] of [
     const response = await routes.handle(await literalIdRequest(Uint8Array.from(bytes)));
     assert.equal(response?.status, 400);
   });
+  test(`multipart refuses ${name} in a UTF-8 ID file before deployment`, async () => {
+    const body = form();
+    body.set("sourceOverlayId", new Blob([Uint8Array.from(bytes)], { type: "text/plain" }), "id.txt");
+    const response = await routes.handle(new Request(endpoint, { method: "POST", body }));
+    assert.equal(response?.status, 400);
+  });
 }
 
-for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000"]) {
+for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000", "scalar-compatible"]) {
   test(`multipart forwards literal Unicode ID ${JSON.stringify(id)} and opaque file bytes unchanged`, async () => {
     const calls: DefinitionCompilationRequest[] = [];
     const capture = new DefinitionDeploymentService({ compileDefinition: async request => {
@@ -120,5 +139,27 @@ for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000"]) {
     assert.equal(calls[0]?.sourceOverlay?.id, id);
     assert.deepEqual(calls[0]?.bytes, bytes);
     assert.deepEqual(calls[0]?.sourceOverlay?.bytes, overlay);
+  });
+}
+
+for (const filename of ["identity-does-not-come-from-filename.txt", ""]) {
+  test(`UTF-8 ID file preserves its literal value independently of filename ${JSON.stringify(filename)}`, async () => {
+    const id = "\uFEFFliteral\u0000\r\n\r\n\n🚀";
+    const sourceOverlay = selectedOverlay(id);
+    const calls: DefinitionCompilationRequest[] = [];
+    const capture = new DefinitionDeploymentService({ compileDefinition: async request => {
+      calls.push(request);
+      throw new Error("compiler witness stops before storage");
+    } }, artifacts, repository);
+    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64 });
+    const body = form();
+    body.set("sourceOverlay", new Blob([sourceOverlay.bytes], { type: "application/json" }), "overlay.json");
+    body.set("sourceOverlaySha256", sourceOverlay.sha256);
+    body.set("sourceOverlayId", new Blob([id], { type: "text/plain" }), filename);
+    const response = await captureRoutes.handle(new Request(endpoint, { method: "POST", body }));
+    assert.equal(response?.status, 500);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.sourceOverlay?.id, id);
+    assert.deepEqual(calls[0]?.sourceOverlay, sourceOverlay);
   });
 }

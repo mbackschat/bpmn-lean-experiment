@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { EffectExecutionResultKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { EffectRequest } from "@bpmn-lean/temporal-protocol";
-import { createInvoiceEffectActivities, createInvoiceRecoveryEffectActivities } from "../../runner/examples/invoice-effect-activities.ts";
+import { createInvoiceEffectActivities, createInvoiceRecoveryEffectActivities } from "@bpmn-lean/temporal-runner";
 
 const request = (operation: string, value: string): EffectRequest => ({
   protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation,

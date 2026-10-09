@@ -126,6 +126,19 @@ export function DefinitionWorkspace({
             Semantic profile ID
             <input disabled={deploying} name="semanticProfile" type="text" placeholder="parallel-fork-join-draft" required />
           </label>
+          <label>
+            Source overlay JSON file (optional)
+            <input disabled={deploying} name="sourceOverlay" type="file" accept=".json,application/json" />
+          </label>
+          <p>If the model needs a source overlay, supply its exact file, ID and SHA-256 together.</p>
+          <label>
+            Source overlay ID
+            <input disabled={deploying} name="sourceOverlayId" type="text" />
+          </label>
+          <label>
+            Source overlay SHA-256
+            <input disabled={deploying} name="sourceOverlaySha256" type="text" />
+          </label>
           {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
           {deployment?.status === DefinitionDeployStatus.Rejected ? <DeploymentResult result={deployment} /> : null}
           {deploying ? <p role="status">Deploying… Please wait for the result before closing this dialog.</p> : null}

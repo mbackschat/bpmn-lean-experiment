@@ -80,6 +80,8 @@
     "showcase:m2-message-start-ingress:host": "node showcase/m2-message-start-ingress/src/host.ts",
     "showcase:m2-process-instance-search:host": "node showcase/m2-process-instance-search/src/host.ts",
     "showcase:m3-human-work:host": "node showcase/m3-human-work/src/host.ts",
+    "showcase:m3-human-work:invoice-host": "node showcase/m3-human-work/src/invoice-host.ts",
+    "showcase:m3-human-work:invoice-recovery-host": "node showcase/m3-human-work/src/invoice-recovery-host.ts",
     "showcase:m4-incident-operations:host": "node showcase/m4-incident-operations/src/host.ts",
     "replace:cib-evidence": "node scripts/replace-cibseven-evidence.ts --replace",
     "research:cib-breadth": "node scripts/cib-bpmn-breadth.ts",

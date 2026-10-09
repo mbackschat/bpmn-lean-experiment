@@ -120,17 +120,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: resolve hosted qualification failures, then complete public delivery and security publication.
+Current task: finish public-delivery acceptance, hosted qualification and security publication.
 
-Current result: [public-delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) audit `9133ea7b`, reselection `5a7ceb19`, metrics `58227a5b`, UTF-8 transport and Docker walkthrough pass. Host/browser delivery remains uncommitted; Node 26 V8 witness and distribution journey pass.
+Current result: owner authorized this [delivery](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) checkpoint on 2026-10-10 despite outstanding qualification. Three Node 26 invoice journeys and duplicate-name/overlay rejection pass. Checkpoint audit `9133ea7b` remains approved; complete hosted qualification and independent closure remain open.
 
-Last verification: Node 26 V8, infrastructure, platform, core/source/differential and Docker pass. `/tmp/node26-migration-20261009/temporal` fails hosted publication Queries and held PMIS admission; all serial checks pass. Retain CIB/PostgreSQL/browser evidence and Error/native/Lean failures. Runtime qualification failed.
+Last verification: `/tmp/cib7-delivery-web-complete-20261010` passes 178 tests; `/tmp/cib7-delivery-browser-negatives-wide-20261010` passes four browser checks. Node 26 V8, infrastructure, platform, core/source/differential and Docker pass. `/tmp/node26-migration-20261009/temporal` fails hosted publication Queries and held PMIS admission; serial checks pass. Retain CIB/PostgreSQL evidence and Error/native/Lean failures.
 
-Next action: resolve separate hosted Query/admission failures before delivery commit and independent closure. Retain investigation holds; serialize. Preserve PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce` and eight hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. No model switches or metadata-only commit.
+Next action: fix Query/admission failures before independent closure and publication, as owner-directed on 2026-10-10. The private SDK binary is missing; evidence archives contain no replacement. Preserve PMIS stash `9a443912db9ea02a5d4f362aa4cbf02b192004ce` and eight hashes in `/tmp/business-publication-20261009/pending-pmis-sha256.json`. No model switches or metadata-only commit.
 
 Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Pending sources are stashed for qualification; no helper commit.
 
-Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Runtime migration qualification is authorized; unrelated runtime/performance/cold-library investigations remain on hold. The owner withdrew per-job CPU approval; retain bounded serialized verification and leave Lean stopped. One Lean tree, one CPU/3 GiB, no extra swap remain ceilings, not permission to restart.
+Unresolved: resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, testkit batch 13, zero-item MI publication and SIGSEGV/query failures. Owner-directed fixes reopen only the blocking Query/admission work; unrelated runtime/performance/cold-library investigations remain held. Serialize bounded verification without per-job approval. One Lean tree, one CPU/3 GiB, no extra swap.
 
 Oracle: exact public deployment/start, occurrence-bound Work completion, full-state/E1/E2 agreement and replay.
 

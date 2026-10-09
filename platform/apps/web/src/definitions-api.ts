@@ -32,10 +32,12 @@ import {
   snapshotExactDefinition,
 } from "./exact-definition.ts";
 
+/** Caller-owned bytes are borrowed; deploy captures every byte and literal before I/O. */
 export type DefinitionDeploymentInput = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
   semanticProfile: string;
+  sourceOverlay?: Readonly<{ id: string; sha256: string; bytes: Uint8Array }>;
 }>;
 
 export class DefinitionApiError extends Error {
@@ -72,19 +74,29 @@ export class DefinitionApiClient {
   }
 
   async deploy(input: DefinitionDeploymentInput): Promise<DefinitionDeployResult> {
-    requireNonempty(input.sourceId, "sourceId");
-    requireNonempty(input.semanticProfile, "semanticProfile");
+    const sourceId = input.sourceId;
+    const semanticProfile = input.semanticProfile;
+    requireNonempty(sourceId, "sourceId");
+    requireNonempty(semanticProfile, "semanticProfile");
     const bytes = input.bytes.slice();
+    const selectedOverlay = input.sourceOverlay;
+    const overlaySelection = selectedOverlay === undefined ? undefined : {
+      id: selectedOverlay.id, sha256: selectedOverlay.sha256, bytes: selectedOverlay.bytes,
+    };
+    if (overlaySelection !== undefined) requireSourceOverlay(overlaySelection);
+    const sourceOverlay = overlaySelection === undefined ? undefined : {
+      ...overlaySelection, bytes: overlaySelection.bytes.slice(),
+    };
     const url = this.#url(definitionsCollectionPath());
-    url.searchParams.set("sourceId", input.sourceId);
-    url.searchParams.set("semanticProfile", input.semanticProfile);
+    url.searchParams.set("sourceId", sourceId);
+    url.searchParams.set("semanticProfile", semanticProfile);
     const response = await this.#fetch(url, {
       method: "POST",
-      headers: {
+      headers: sourceOverlay === undefined ? {
         accept: "application/json",
         "content-type": "application/bpmn+xml",
-      },
-      body: bytes,
+      } : { accept: "application/json" },
+      body: sourceOverlay === undefined ? bytes : deploymentMultipart(bytes, sourceOverlay),
     });
     if (response.status !== 201 && response.status !== 422) {
       return await this.#throwApiError(response);
@@ -255,6 +267,32 @@ export class DefinitionApiClient {
       decoded.error.message,
     );
   }
+}
+
+function requireSourceOverlay(overlay: NonNullable<DefinitionDeploymentInput["sourceOverlay"]>): void {
+  if (!overlay.id.isWellFormed() || Array.from(overlay.id).length < 1 || Array.from(overlay.id).length > 256) {
+    throw new TypeError("Source overlay ID must contain 1–256 well-formed Unicode characters.");
+  }
+  if (!/^[0-9a-f]{64}$/u.test(overlay.sha256)) {
+    throw new TypeError("Source overlay SHA-256 must contain exactly 64 lowercase hexadecimal characters.");
+  }
+  if (overlay.bytes.byteLength === 0 || overlay.bytes.byteLength > 65_536) {
+    throw new TypeError("Choose a nonempty source overlay file of at most 65536 bytes.");
+  }
+}
+
+function deploymentMultipart(
+  bytes: Uint8Array,
+  overlay: NonNullable<DefinitionDeploymentInput["sourceOverlay"]>,
+): FormData {
+  const form = new FormData();
+  form.append("bpmn", new Blob([Uint8Array.from(bytes).buffer], { type: "application/bpmn+xml" }), "definition.bpmn");
+  form.append("sourceOverlay", new Blob([Uint8Array.from(overlay.bytes).buffer], { type: "application/json" }), "source-overlay.json");
+  // HTML §4.10.22.8 normalizes scalar line endings; BPD-CAPTURE-01 requires literal IDs.
+  form.append("sourceOverlayId", new Blob([overlay.id], { type: "text/plain" }), "source-overlay-id.txt");
+  form.append("sourceOverlaySha256", overlay.sha256);
+  // BPD-CAPTURE-01 preserves literal bytes; native FormData owns its matching transport boundary.
+  return form;
 }
 
 async function readJson(response: Response): Promise<unknown> {
