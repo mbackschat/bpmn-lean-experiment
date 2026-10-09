@@ -7,6 +7,7 @@ import {
   FlowNodeMetricsResultKind,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  DeployedDefinitionVersion,
   ExecutionPublicationPage,
   FlowNodeOccurrencePage,
 } from "@bpmn-lean/platform-contracts";
@@ -58,6 +59,84 @@ if (baseUrl === undefined) {
 
   before(async () => await migrateOperateDatabase(baseUrl));
   after(async () => await runtime.close());
+
+  test("metrics accepts equivalent top-level definition key ordering", async () => {
+    await resetOperateDatabase(runtime);
+    const exact = await register(runtime, registration.instance.processInstanceId);
+    await observeComplete(runtime, exact);
+    const original = registration.instance.definition;
+    // decodeDefinitionMetadata in postgresql-definition-values.ts returns overlay before capabilities.
+    const definition = {
+      processId: original.processId,
+      version: original.version,
+      source: original.source,
+      semanticProfile: original.semanticProfile,
+      sourceOverlay: original.sourceOverlay,
+      startCapabilities: original.startCapabilities,
+    } as const satisfies DeployedDefinitionVersion;
+    assert.deepEqual(definition, original);
+    assert.notEqual(JSON.stringify(definition), JSON.stringify(original));
+
+    const metrics = await new PostgresqlFlowNodeMetricsReader({ runtime, maxAgeMs: 60_000 })
+      .read(definition);
+    assert.equal(metrics.kind, PostgresqlProjectionReadKind.Available);
+    if (metrics.kind === PostgresqlProjectionReadKind.Available) {
+      assert.equal(metrics.read.value.kind, FlowNodeMetricsResultKind.Available);
+    }
+    if (metrics.kind === PostgresqlProjectionReadKind.Available &&
+      metrics.read.value.kind === FlowNodeMetricsResultKind.Available) {
+      assert.deepEqual(metrics.read.value.snapshot.definition, definition);
+      assert.equal(metrics.read.value.snapshot.population.processInstances, 1);
+      assert.deepEqual(metrics.read.value.snapshot.flowNodes, [{
+        elementId: "Task_1", frequency: 1, running: 1, completed: 0,
+        cancelled: 0, completedDuration: null,
+      }]);
+    }
+  });
+
+  test("metrics accepts reordered source identity and start capability keys", async () => {
+    await resetOperateDatabase(runtime);
+    const exact = await register(runtime, registration.instance.processInstanceId);
+    await observeComplete(runtime, exact);
+    const definition = registration.instance.definition;
+    const reordered = {
+      ...definition,
+      source: {
+        decodedAs: definition.source.decodedAs,
+        declaredEncoding: definition.source.declaredEncoding,
+        byteLength: definition.source.byteLength,
+        sha256: definition.source.sha256,
+        id: definition.source.id,
+        kind: definition.source.kind,
+      },
+      startCapabilities: { timerStarts: [], messageStarts: [] },
+    } as const satisfies DeployedDefinitionVersion;
+    assert.deepEqual(reordered, definition);
+    assert.notEqual(JSON.stringify(reordered), JSON.stringify(definition));
+    const reader = new PostgresqlFlowNodeMetricsReader({ runtime, maxAgeMs: 60_000 });
+    const baseline = await reader.read(definition);
+    assert.equal(baseline.kind, PostgresqlProjectionReadKind.Available);
+    assert.deepEqual(await reader.read(reordered), baseline);
+  });
+
+  test("metrics refuses full definition metadata drift despite matching indexed identity", async () => {
+    await resetOperateDatabase(runtime);
+    const exact = await register(runtime, registration.instance.processInstanceId);
+    await observeComplete(runtime, exact);
+    const definition = registration.instance.definition;
+    const reader = new PostgresqlFlowNodeMetricsReader({ runtime, maxAgeMs: 60_000 });
+    for (const drifted of [
+      { ...definition, semanticProfile: "other-profile" },
+      { ...definition, source: { ...definition.source, id: "other-source" } },
+      { ...definition, source: { ...definition.source, byteLength: definition.source.byteLength + 1 } },
+      { ...definition, source: { ...definition.source, declaredEncoding: null } },
+      { ...definition, source: { ...definition.source, decodedAs: null } },
+      { ...definition, sourceOverlay: { id: "other-overlay", sha256: "b".repeat(64) } },
+      { ...definition, startCapabilities: { messageStarts: [], timerStarts: [{ startEventId: "Other_Start", durationMs: 1 }] } },
+    ] as const satisfies readonly DeployedDefinitionVersion[]) {
+      assert.equal((await reader.read(drifted)).kind, PostgresqlProjectionReadKind.Unavailable);
+    }
+  });
 
   test("one metrics statement includes a registration committed after cut H and fails closed", async () => {
     await resetOperateDatabase(runtime);

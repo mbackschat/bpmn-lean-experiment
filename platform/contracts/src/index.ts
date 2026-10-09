@@ -10,6 +10,7 @@ export * from "./definition-schedule-decoders.js";
 export * from "./definition-schedule-routes.js";
 export * from "./definition-schedules.js";
 export {
+  decodeDeployedDefinitionVersion,
   decodePublicDefinitionStartCapabilities,
   decodePublicSourceOverlayIdentity,
   decodePublicMessageStartCapability,

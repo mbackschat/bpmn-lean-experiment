@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 
 import {
+  decodeDeployedDefinitionVersion,
   FlowNodeMetricsResultKind,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -73,7 +74,9 @@ export class PostgresqlFlowNodeMetricsReader {
   async read(
     definitionValue: DeployedDefinitionVersion,
   ): Promise<PostgresqlProjectionRead<FlowNodeMetricsResult>> {
-    const definition = structuredClone(definitionValue);
+    // Stored registrations use this decoder's field order; FNOM-AGGREGATE-01 requires value
+    // identity independent of caller key order.
+    const definition = decodeDeployedDefinitionVersion(definitionValue, "metrics definition");
     const result = await this.#runtime.query<MetricsReadRow>({
       text: metricsReadSql,
       values: [
