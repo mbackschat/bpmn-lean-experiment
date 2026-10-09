@@ -200,7 +200,9 @@ Prefer enum-based pattern matching or switch statements for semantic variants. K
 
 ### Delegated implementation
 
-The root integrator is HIGH and resolves the active CLI's tiers from the loaded global [model mappings](https://github.com/mbackschat/coding-setup/blob/main/CLAUDE.md#model-tier-mappings). Delegate bounded work to MEDIUM when it repays the handoff cost; keep judgment, integration and acceptance with HIGH. Delegation within these rules is authorized without per-task permission.
+Model tiers are symbolic (HIGH, MEDIUM). Resolve them through the tier table in your global instructions; the maintainer's table is [Model tier mappings](https://github.com/mbackschat/coding-setup/blob/main/CLAUDE.md#model-tier-mappings). Without such a table, run HIGH on your most capable model and MEDIUM on a faster, cheaper one, and say which models you used.
+
+The root integrator is HIGH. Delegate bounded work to MEDIUM when it repays the handoff cost; keep judgment, integration and acceptance with HIGH. Delegation within these rules is authorized without per-task permission.
 
 Prefer reusing a completed MEDIUM agent for related follow-ups while its assumptions remain valid. Keep the same agent through implementation, assigned testing and corrections with explicit file ownership. While a delegated Lean lane is active, defer edits to its targets’ transitive dependencies. Confirm its prior work has stopped and replace its assignment explicitly. Use fresh context for unrelated work, changed assumptions or required independence.
 
