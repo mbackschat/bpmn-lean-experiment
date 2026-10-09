@@ -119,13 +119,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver registered business processes through public deployment, exact-version start and Work using shared mechanisms.
+Current task: deliver registered business processes through public deployment, exact-version start and Work.
 
-Current result: business registration is approved at `9048174d`; public delivery still lacks retained handler overlays and admitted task metadata. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots) and [baseline](../model-corpus/progress-baseline.json) are committed; the [selected crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) supplies identities, not acceptance.
+Current result: business registration is approved at `9048174d`; [public-delivery design](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) is approved after audit `6e7261a8`. Overlay lifecycle and metadata implementation remain open. [Tracker tooling](../scripts/README.md#delivery-tracker-snapshots), [baseline](../model-corpus/progress-baseline.json) and [selected crosswalk](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) supply identities, not acceptance.
 
 Last verification: `/tmp/business-human-metadata-red-20261009` reproduces metadata rejection in all three profiles after accepted baselines. `/tmp/business-public-overlay-gap-confirmed-20261009` confirms public deployment refusal and lost retained overlay/start integrity in all three. `/tmp/practical-crosswalk-docs-20261009` passes 35 checks; reporting's complete infrastructure inventory remains in `/tmp/delivery-progress-infrastructure-batches-20261009/complete.json`.
 
-Next action: `review_business_public_delivery_proposal` audits the [proposal](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md)'s upgrade oracle against `4715564a`; then implement overlay lifecycle, metadata and handler journeys. Review gates: `/tmp/business-delivery-cold-docs-4715564`. Reuse artifact storage and Work; no metadata-only checkpoint or model-identity switch.
+Next action: `implement_delivery_progress_reporting` owns source/core/Lean metadata and tests; `implement_public_overlay_lifecycle` owns platform overlay contracts/services/persistence/tests. Root owns integration, docs and three production journeys. Reuse artifact storage/Work; no metadata-only commit or model switch. One shared checkpoint; audit `/tmp/business-delivery-cold-audit-docs-6e7261a8`.
 
 Proof hold: [parallel MI publication](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) derives open occurrences; current-position composition remains open. `/tmp/pmis-runtime-position-owned-8-20261009` fails at issuer ordinal closure and absent reached consumer. Start/static bindings elaborate; entry, native/reserved steps, ingress, retirement and existing reachability composition remain. Preserve pending sources; no helper commit. The Lean lane is released.
 

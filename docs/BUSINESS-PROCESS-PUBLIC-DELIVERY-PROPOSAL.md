@@ -2,14 +2,14 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and boundary
 
 Can the three registered business models become usable through public deployment, exact-version start and claimed Work without adding a semantic transition family? This proposal selects one complete increment: retained source overlays, optional complete string-field task metadata in the current business profiles, and caller-selected real handlers. The [selected behavioral variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants) own their stable identities and model links. Registration and private engine evidence do not establish this public acceptance.
 
-The existing public deployment accepts only XML and omits overlay selection; stored versions and reconstructed starts omit overlay identity. Business admission separately excludes human metadata. These are shared contract gaps, not invoice-specific behavior. This draft authorizes no implementation and does not amend historical review receipts.
+The existing public deployment accepts only XML and omits overlay selection; stored versions and reconstructed starts omit overlay identity. Business admission separately excludes human metadata. These are shared contract gaps, not invoice-specific behavior. Historical review receipts remain unchanged.
 
 ## Basis and scope
 
@@ -133,6 +133,6 @@ The review must decide whether the transport bounds, passive current-profile wid
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4715564a6feaaf3fe92d75daae322806432100c3` | `fork-turns-none` | `approve-with-required-edits` | `6e7261a89b379f124071ed4d9feefe99093f5974` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
