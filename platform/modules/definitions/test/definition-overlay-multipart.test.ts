@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DefinitionHttpRoutes, DefinitionDeploymentService, DefinitionStartService, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
+import type { DefinitionCompilationRequest } from "@bpmn-lean/platform-engine-gateway";
 
 const endpoint = "http://test/api/v1/definitions?sourceId=source&semanticProfile=profile";
 const source = new TextEncoder().encode("<bpmn/>");
@@ -76,3 +77,48 @@ test("multipart refuses malformed framing and a missing boundary", async () => {
     assert.equal((await routes.handle(new Request(endpoint, { method: "POST", headers: { "content-type": contentType }, body: "not a multipart envelope" })))?.status, 400);
   }
 });
+
+async function literalIdRequest(id: Uint8Array, fileBytes: Uint8Array = source): Promise<Request> {
+  const body = form();
+  body.set("sourceOverlayId", "literal-id-marker");
+  body.set("bpmn", new Blob([Uint8Array.from(fileBytes)], { type: "application/xml" }), "source.bpmn");
+  const encoded = new Request(endpoint, { method: "POST", body });
+  const envelope = Buffer.from(await encoded.arrayBuffer());
+  const marker = Buffer.from("literal-id-marker");
+  const offset = envelope.indexOf(marker);
+  assert.notEqual(offset, -1);
+  assert.equal(envelope.lastIndexOf(marker), offset);
+  return new Request(endpoint, { method: "POST", headers: encoded.headers,
+    body: Buffer.concat([envelope.subarray(0, offset), id, envelope.subarray(offset + marker.length)]) });
+}
+
+for (const [name, bytes] of [
+  ["invalid leading byte", [0xff]],
+  ["encoded surrogate", [0xed, 0xa0, 0x80]],
+  ["overlong sequence", [0xc0, 0x80]],
+  ["out-of-range scalar", [0xf4, 0x90, 0x80, 0x80]],
+  ["truncated sequence", [0xe2, 0x82]],
+] as const) {
+  test(`multipart refuses ${name} in an overlay ID before deployment`, async () => {
+    const response = await routes.handle(await literalIdRequest(Uint8Array.from(bytes)));
+    assert.equal(response?.status, 400);
+  });
+}
+
+for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000"]) {
+  test(`multipart forwards literal Unicode ID ${JSON.stringify(id)} and opaque file bytes unchanged`, async () => {
+    const calls: DefinitionCompilationRequest[] = [];
+    const capture = new DefinitionDeploymentService({ compileDefinition: async request => {
+      calls.push(request);
+      throw new Error("compiler witness stops before storage");
+    } }, artifacts, repository);
+    const captureRoutes = new DefinitionHttpRoutes(capture, start, { maxSourceBytes: 64 });
+    const bytes = Uint8Array.from([0xff, 0xfe, 0, 60, 0, 62]);
+    const response = await captureRoutes.handle(await literalIdRequest(new TextEncoder().encode(id), bytes));
+    assert.equal(response?.status, 500);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.sourceOverlay?.id, id);
+    assert.deepEqual(calls[0]?.bytes, bytes);
+    assert.deepEqual(calls[0]?.sourceOverlay?.bytes, overlay);
+  });
+}

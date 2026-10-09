@@ -19,7 +19,12 @@ import {
 import {
   PostgresqlDefinitionsRecoveryIntermediateResult,
   PostgresqlDefinitionsRecoveryStepKind,
+  PostgresqlDefinitionsRecoveryRetryReason,
+  PostgresqlDefinitionsRecoveryFailureCode,
+  PostgresqlDefinitionsRecoveryFailureEvidence,
+  DefinitionScheduleHostPhase,
 } from "@bpmn-lean/platform-definitions";
+import type { PostgresqlDefinitionScheduleRecoveryStepOptions } from "@bpmn-lean/platform-definitions";
 import { PostgresqlDirectStartRecoveryStep } from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlMessageStartRecoveryStep,
@@ -44,7 +49,7 @@ import {
   seedDefinition,
   subscriber,
 } from "./support/definitions-recovery-step-fixture.ts";
-import { registerRetainedOverlayRecoveryContract } from "../support/definitions-repository-contract.ts";
+import { overlayBytes, overlayIdentity, registerRetainedOverlayRecoveryContract } from "../support/definitions-repository-contract.ts";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 
@@ -229,6 +234,95 @@ if (baseUrl === undefined) {
       "confirmed",
     );
   });
+
+  async function retainedSchedule(operation: "createOrCompare" | "inspect") {
+    await resetDatabase(runtime);
+    const definition = await seedDefinition(runtime, artifacts, { ...overlayIdentity, bytes: overlayBytes });
+    const schedules = new PostgresqlDefinitionScheduleRepository(runtime);
+    const record = scheduleRecord(definition, "classification", "classification-instance");
+    await schedules.reserve(record);
+    await schedules.compareAndSet(record.reference, "creating", { state: "creatingHost" });
+    if (operation === "inspect") await schedules.compareAndSet(record.reference, "creatingHost", { state: "scheduled" });
+    const before = await schedules.get(record.reference);
+    const calls: string[] = [];
+    const host: PostgresqlDefinitionScheduleRecoveryStepOptions["host"] = {
+      createOrCompare: async (request) => {
+        calls.push("createOrCompare");
+        assert.deepEqual(request.sourceOverlay, { ...overlayIdentity, bytes: overlayBytes });
+        return { phase: DefinitionScheduleHostPhase.Pending, paused: false };
+      },
+      inspect: async (request) => {
+        calls.push("inspect");
+        assert.deepEqual(request.sourceOverlay, { ...overlayIdentity, bytes: overlayBytes });
+        return { phase: DefinitionScheduleHostPhase.Pending, paused: false };
+      },
+      pause: async () => { assert.fail("observation must not pause a schedule"); },
+      delete: async () => { assert.fail("observation must not delete a schedule"); },
+    };
+    return { definition, schedules, record, before, calls, host };
+  }
+
+  for (const operation of ["createOrCompare", "inspect"] as const) {
+    for (const artifact of ["source", "overlay"] as const) {
+      test(`Schedule ${operation} propagates an ordinary ${artifact} artifact-store exception without terminal classification`, async () => {
+        const value = await retainedSchedule(operation);
+        const failedSha256 = artifact === "source" ? value.definition.source.sha256 : overlayIdentity.sha256;
+        const unavailable = new Error(`${artifact} artifact transport unavailable`);
+        const reads: string[] = [];
+        const recovery = new PostgresqlDefinitionScheduleRecoveryStep({ runtime, host: value.host, artifacts: {
+          put: async (request) => await artifacts.put(request),
+          get: async (sha256) => {
+            reads.push(sha256);
+            if (sha256 === failedSha256) throw unavailable;
+            return await artifacts.get(sha256);
+          },
+        } });
+        await assert.rejects(recovery.prepare(scheduleKey(value.record)), (error) => error === unavailable);
+        assert.deepEqual(reads, artifact === "source" ? [failedSha256] : [value.definition.source.sha256, failedSha256]);
+        assert.deepEqual(value.calls, []);
+        assert.deepEqual(await value.schedules.get(value.record.reference), value.before);
+      });
+      for (const fault of ["missing", "corrupt"] as const) {
+        test(`Schedule ${operation} refuses a genuinely ${fault} retained ${artifact} artifact before host entry`, async () => {
+          const value = await retainedSchedule(operation);
+          const failedSha256 = artifact === "source" ? value.definition.source.sha256 : overlayIdentity.sha256;
+          if (fault === "missing") {
+            await runtime.transaction(async (session) => {
+              await session.query({ text: "SET LOCAL session_replication_role = replica" });
+              await session.query({ text: "DELETE FROM bpmn_platform.exact_artifacts WHERE sha256 = $1", values: [failedSha256] });
+            });
+          } else {
+            const corrupt = Buffer.from("corrupt retained bytes");
+            await runtime.query({ text: "UPDATE bpmn_platform.exact_artifacts SET bytes = $1, byte_length = $2 WHERE sha256 = $3", values: [corrupt, corrupt.length, failedSha256] });
+          }
+          const recovery = new PostgresqlDefinitionScheduleRecoveryStep({ runtime, artifacts, host: value.host });
+          assert.deepEqual(await recovery.prepare(scheduleKey(value.record)), {
+            kind: PostgresqlDefinitionsRecoveryStepKind.Fail,
+            code: PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact,
+            evidence: PostgresqlDefinitionsRecoveryFailureEvidence.Artifact,
+          });
+          assert.deepEqual(value.calls, []);
+          assert.deepEqual(await value.schedules.get(value.record.reference), value.before);
+        });
+      }
+    }
+    test(`Schedule ${operation} returns hostUnavailable retry for an ordinary host exception`, async () => {
+      const value = await retainedSchedule(operation);
+      const unavailable = new Error(`${operation} host transport unavailable`);
+      value.host[operation] = async (request) => {
+        value.calls.push(operation);
+        assert.deepEqual(request.sourceOverlay, { ...overlayIdentity, bytes: overlayBytes });
+        throw unavailable;
+      };
+      const recovery = new PostgresqlDefinitionScheduleRecoveryStep({ runtime, artifacts, host: value.host });
+      assert.deepEqual(await recovery.prepare(scheduleKey(value.record)), {
+        kind: PostgresqlDefinitionsRecoveryStepKind.Retry,
+        reason: PostgresqlDefinitionsRecoveryRetryReason.HostUnavailable,
+      });
+      assert.deepEqual(value.calls, [operation]);
+      assert.deepEqual(await value.schedules.get(value.record.reference), value.before);
+    });
+  }
 
   test("Message Start recovery never redispatches and accepted repair performs zero host calls", async () => {
     await resetDatabase(runtime);

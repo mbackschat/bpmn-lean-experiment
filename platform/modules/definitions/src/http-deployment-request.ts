@@ -43,17 +43,18 @@ export async function readDefinitionDeploymentBody(request: Request, maxSourceBy
   if (!deploymentMediaType.test(bpmn.type)) throw unsupportedMedia("The BPMN file must use an XML media type.");
   requirePartSize(bpmn, maxSourceBytes);
   const sourceOverlay = parts.get("sourceOverlay");
-  const id = parts.get("sourceOverlayId");
-  const sha256 = parts.get("sourceOverlaySha256");
-  if (sourceOverlay === undefined && id === undefined && sha256 === undefined) {
+  const idPart = parts.get("sourceOverlayId");
+  const digestPart = parts.get("sourceOverlaySha256");
+  if (sourceOverlay === undefined && idPart === undefined && digestPart === undefined) {
     requireFramingSize(envelope, bpmn.size);
     return { bytes: new Uint8Array(await bpmn.arrayBuffer()), sourceOverlay: null };
   }
-  if (!(sourceOverlay instanceof File) || typeof id !== "string" || typeof sha256 !== "string") {
+  if (!(sourceOverlay instanceof File) || typeof idPart !== "string" || typeof digestPart !== "string") {
     throw failure(400, PublicApiErrorCode.InvalidRequest, "The source overlay file, ID and digest are required together.");
   }
   if (sourceOverlay.type !== "application/json") throw unsupportedMedia("The source overlay file must use application/json.");
   requirePartSize(sourceOverlay, maxOverlayBytes);
+  const { id, sha256 } = await readLiteralFields(envelope, mediaType);
   if (!id.isWellFormed() || Array.from(id).length < 1 || Array.from(id).length > 256 || !overlayDigest.test(sha256)) {
     throw failure(400, PublicApiErrorCode.InvalidRequest, "The source overlay ID or digest is invalid.");
   }
@@ -62,6 +63,27 @@ export async function readDefinitionDeploymentBody(request: Request, maxSourceBy
     bytes: new Uint8Array(await bpmn.arrayBuffer()),
     sourceOverlay: { id, sha256, bytes: new Uint8Array(await sourceOverlay.arrayBuffer()) },
   };
+}
+
+async function readLiteralFields(envelope: Uint8Array, mediaType: string): Promise<Readonly<{ id: string; sha256: string }>> {
+  // BPD-CAPTURE-01 requires literal identities. Native FormData replaces malformed UTF-8;
+  // a Latin-1 byte view preserves every byte through that parser for fatal decoding below.
+  // File bytes always come from the original parse, including non-UTF-8 BPMN sources.
+  try {
+    const form = await new Response(Buffer.from(envelope).toString("latin1"), {
+      headers: { "content-type": mediaType },
+    }).formData();
+    const decode = (name: "sourceOverlayId" | "sourceOverlaySha256"): string => {
+      const value = form.get(name);
+      if (typeof value !== "string" || Array.from(value).some(character => character.charCodeAt(0) > 255)) {
+        throw new TypeError("Multipart scalar bytes were not preserved");
+      }
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(Buffer.from(value, "latin1"));
+    };
+    return { id: decode("sourceOverlayId"), sha256: decode("sourceOverlaySha256") };
+  } catch {
+    throw failure(400, PublicApiErrorCode.InvalidRequest, "The source overlay ID or digest is not valid UTF-8.");
+  }
 }
 
 function requirePartSize(file: File, limit: number): void {

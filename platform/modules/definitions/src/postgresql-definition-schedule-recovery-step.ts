@@ -104,8 +104,7 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
     let result;
     try {
       result = await this.#options.host[operation](request);
-    } catch (error: unknown) {
-      if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
+    } catch {
       return retryHostUnavailable();
     }
     return applyHostResult(record, result, false);
@@ -177,7 +176,8 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
     let retained: RetainedDefinitionArtifacts;
     try {
       retained = await readRetainedDefinitionArtifacts(this.#options.artifacts, record.definition);
-    } catch {
+    } catch (error: unknown) {
+      if (!(error instanceof DefinitionArtifactIntegrityError)) throw error;
       return failRecovery(PostgresqlDefinitionsRecoveryFailureCode.MissingArtifact, PostgresqlDefinitionsRecoveryFailureEvidence.Artifact);
     }
     return {

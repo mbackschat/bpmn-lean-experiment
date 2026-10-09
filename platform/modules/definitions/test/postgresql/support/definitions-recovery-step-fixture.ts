@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import type { DefinitionSourceOverlaySelection } from "@bpmn-lean/platform-engine-gateway";
 
 import { PostgresqlExactArtifactStore } from "@bpmn-lean/platform-artifact-store";
 import { PostgresqlDefinitionRepository } from "@bpmn-lean/platform-definitions";
@@ -221,10 +222,12 @@ export async function registrationCounts(runtime: PostgresqlRuntime) {
 export async function seedDefinition(
   runtime: PostgresqlRuntime,
   artifacts: PostgresqlExactArtifactStore,
+  sourceOverlay: DefinitionSourceOverlaySelection | null = null,
 ): Promise<DefinitionMetadata> {
   const artifact = new TextEncoder().encode("lease-fenced recovery definition");
   const sha256 = createHash("sha256").update(artifact).digest("hex");
   await artifacts.put({ sha256, bytes: artifact });
+  if (sourceOverlay !== null) await artifacts.put(sourceOverlay);
   return await new PostgresqlDefinitionRepository(runtime).allocateNext({
     processId: "Recovery\u0000😀",
     source: {
@@ -248,7 +251,7 @@ export async function seedDefinition(
         },
       }],
     },
-    sourceOverlay: null,
+    sourceOverlay: sourceOverlay === null ? null : { id: sourceOverlay.id, sha256: sourceOverlay.sha256 },
   });
 }
 export function confirmedPublication(
