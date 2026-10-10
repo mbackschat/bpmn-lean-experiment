@@ -63,7 +63,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 16
+: 17
 
 Disposition
 : `executable guard`
@@ -82,7 +82,7 @@ Retained recurrence evidence: [Finding 01](process-assessment/PLANNING-AND-OWNER
 Which module or conjunct enforced a behavior was asserted without opening or probing it, and the claim was wrong.
 
 Instances
-: 10
+: 11
 
 Disposition
 : `unguardable`
