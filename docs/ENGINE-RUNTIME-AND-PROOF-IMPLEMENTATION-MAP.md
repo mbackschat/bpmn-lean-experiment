@@ -68,7 +68,7 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 ## Implemented
 
-Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): checkpoint approved; retained execution/parity; helper correction approved `da2b3ca3`. Hosting unavailable.
+Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): checkpoint approved; retained [execution](../BpmnSemantics/SemanticProcess/StructuredCompositionCompletionAvailabilityProofs.lean)/parity; helper correction approved `da2b3ca3`. Hosting unavailable.
 
 [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; registered; closure pending.
 
@@ -100,18 +100,17 @@ Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-a
 
 ### Lean
 
-- Project-owned strict JSON parser with duplicate-key, unpaired-surrogate, and safe-integer rejection
-- strict checked-graph, Semantic Process, and external scenario decoders with exact-key and closed-variant rejection
+- strict project-owned JSON parsing/decoding: duplicate-key, unpaired-surrogate, safe-integer, exact-key and closed-variant rejection for checked graphs, Semantic Processes and scenarios; [shared exhaustive observation encoding](../BpmnSemantics/SemanticProcessJson/Observation.lean)
 - executable JSON edge-case and Unicode scalar-order locks
-- separate checked-process admission, Semantic Process validation, cross-artifact binding, canonical lowering, and exact lowering-equality owners
-- responsibility-split kernel-decided admission, profile, binding, lowering, runtime-closure, and evaluator conformance modules
-- a separate `runtimeStateIdentityBound` owner over User Task, Timer, and Activity identities, composed into `runtimeStateWellFormed`, with one kernel-decided negative per implemented family and the existing exact-attribution fixtures split into independently memory-bounded Activity and remaining-state owners
+- checked admission, IL validation, cross-artifact binding and exact canonical lowering
+- runtime operators and relation bridges separated from [higher laws](../BpmnSemantics/SemanticProcess/RuntimeStateCollectionCounterLaws.lean); serial [issuance](../BpmnSemantics/SemanticProcess/SerialBusinessTaskCounterLaws.lean), [storage](../BpmnSemantics/SemanticProcess/SerialBusinessTaskCollectionStorageProofs.lean), [ingress](../BpmnSemantics/SemanticProcess/SerialBusinessTaskRuntimeGuardProofs.lean); theorem-free [publication fixtures](../BpmnSemantics/CommittedExecutionPublicationFixtures.lean); unchanged kernel-decided semantic contracts
+- `runtimeStateIdentityBound` composes User Task, Timer and Activity identities into `runtimeStateWellFormed`; kernel-decided negatives cover every implemented family, with exact-attribution fixtures in separate Activity and remaining-state owners
 - body-claim uniqueness and guarded writer preservation, consumed by unconditional Parallel Multi-Instance entry, progress, final, early, and Timer preservation
 - conditional initialization and task-owner/Compensation preservation; [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md#runtime-state-well-formedness)
 - Activity-only `RSI-ISSUE-01` in `RuntimeStateMonotone`, independently checkpoint-approved with issuer-root freshness, predecessor-identity preservation/removal proofs, and a three-state exact-reissue negative
-- generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical public projection
+- generic scope-owned token, occurrence, wait, selected-branch, called-Process, and scoped-variable runtime with canonical [wait matchers](../BpmnSemantics/SemanticProcess/ActivityOccurrence.lean), quantified [uniqueness-key links](../BpmnSemantics/SemanticProcess/RuntimeStateWaitIdentity.lean), and public projection
 - declarative execution relations with per-capsule evaluator soundness, plus proposal-bound cross-language operation-family and RuntimeState atom-domain classification that enables no transition or footprint
-- independent decoding, lowering, execution traces, refusal or preservation facts, and non-laws for every closed family named in [the current boundary](#current-boundary); the three boundary-Timer proof boundaries remain explicit in their sections below
+- independent decoding, lowering, execution traces, refusal or [preservation facts](../BpmnSemantics/SemanticProcess/StructuredCompositionCounterProofs.lean), and non-laws for every closed family named in [the current boundary](#current-boundary); the three boundary-Timer proof boundaries remain explicit in their sections below
 - cyclic-control-flow proofs: checked/program graph policy; actual-lowering merge, cut and candidate order; selected-cut full-cycle interception; per-offered-token merge relation and unique-offer soundness; finite repeat/rework then exit; reachable active-unit bounds; cut-DAG closure within six operations; stale/wrong/future identity preservation; excluded internal-cycle, fan-in, scope and wait shapes. [Executable full-program equality](capsules/CYCLIC-CONTROL-FLOW-SPEC.md#lean-assurance-lane) compares independent Lean lowering with the received Program and rejects altered expressions.
 - Message Start proofs for strict checked/program/stimulus decoding, exact source-to-IL channel and root binding, distinct Message initiation, fresh root occurrence and outgoing-token production, wrong-operation refusal with exact state preservation, bounded closure to the existing User Task wait, and excluded second start or passive-subscription interpretations
 - Timer Start proofs for strict checked/program/stimulus decoding, exact source-to-IL Process/Start Event/duration/output binding, distinct Timer initiation, fresh root occurrence and outgoing-token production, wrong-identity refusal with exact state preservation, exact closure bounds and stable User Task resumption, normalized post-initiation observation agreement with None and Message starts, and excluded non-`PT1S` or recurring interpretations

@@ -16,6 +16,11 @@ structure InternalTransitionStateFootprint where
   writes : List InternalStateAtom
   deriving Repr, DecidableEq
 
+def localControlStateFootprintsNonInterfering
+    (left right : InternalTransitionStateFootprint) : Bool :=
+  listsDisjoint left.writes right.reads && listsDisjoint left.writes right.writes &&
+    listsDisjoint right.writes left.reads && listsDisjoint right.writes left.writes
+
 /-- Instantaneous local-control lifecycle entries share one transition anchor supplied only when
 the batch assigns indices; the selected account forbids numbering predecessor templates. -/
 structure InternalLocalControlPublicationTemplate where

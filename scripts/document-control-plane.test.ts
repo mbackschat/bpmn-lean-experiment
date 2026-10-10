@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import {
   AreaId,
   assertDetailImplementationMap,
+  assertNoImplementationMapCount,
   assertPlanControlPlane,
   assertRootImplementationMap,
   assertTrackedPathRoutes,
@@ -21,7 +22,9 @@ import {
   planReviewRestatementFindings,
   perFileSourceMapTrees,
   routeImplementationPath,
+  reviewedPlanWordBudget,
   unclaimedSourceOwners,
+  wordCount,
 } from "./document-control-plane.ts";
 import {
   ReviewStage,
@@ -33,6 +36,7 @@ import {
   validateStructuralMapRoutes,
   type ImplementationMapDirectoryEntry,
 } from "./structural-map-routes.ts";
+import { assuranceAssessmentFindings, assuranceChangedPaths, assuranceRegisterPath, parseAssuranceFindings } from "./assurance-register.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -85,6 +89,14 @@ test("uses the compact routed documentation control plane", async () => {
     const document = await readFile(path.join(projectRoot, entry.path), "utf8");
     assertDetailImplementationMap(entry.path, document);
   }
+});
+
+test("selected changed owners cannot omit assurance trigger assessment before or after commit", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  const register = await readFile(path.join(projectRoot, assuranceRegisterPath), "utf8");
+  assert.deepEqual(assuranceAssessmentFindings(
+    plan, assertPlanControlPlane(plan), parseAssuranceFindings(register), assuranceChangedPaths(projectRoot, plan),
+  ), []);
 });
 
 test("the plan never restates a review state its receipt owns", async () => {
@@ -385,6 +397,23 @@ test("the router prose states no map count", async () => {
       seeded,
     );
   }
+});
+
+test("the documentation-discipline introduction cannot duplicate the authoritative map population", async () => {
+  const discipline = await readFile(path.join(projectRoot, "docs/DOC-DISCIPLINE.md"), "utf8");
+  assertNoImplementationMapCount(documentSection(discipline, "Purpose and alignment"));
+  for (const seeded of ["five cohesive detail maps", "seven detail implementation maps"]) {
+    assert.throws(() => assertNoImplementationMapCount(seeded), /map count/u);
+  }
+});
+
+test("the approved PLAN ceiling agrees with its policy and still rejects oversized task state", async () => {
+  const plan = await readFile(path.join(projectRoot, "docs/PLAN.md"), "utf8");
+  const discipline = await readFile(path.join(projectRoot, "docs/DOC-DISCIPLINE.md"), "utf8");
+  const continuity = documentSection(discipline, "Specs and moving results");
+  assert.match(continuity, new RegExp(`PLAN.md.*${reviewedPlanWordBudget.toLocaleString("en-US")}-word`));
+  const oversized = plan.replace("## Current checkpoint\n", `## Current checkpoint\n\n${" excess".repeat(reviewedPlanWordBudget - wordCount(plan) + 1)}\n`);
+  assert.throws(() => assertPlanControlPlane(oversized), /PLAN.md exceeds/u);
 });
 
 test("rejects every noncanonical repository-relative routing path", () => {

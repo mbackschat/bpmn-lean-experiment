@@ -23,14 +23,12 @@ theorem dataInputOutputTaskWait_facts {state : RuntimeState} {processInstanceId 
   split at found
   · next singleton =>
       cases found
-      have selected : wait ∈ state.waits.filter fun candidate =>
-          decide (candidate.processInstanceId = processInstanceId) &&
-            decide (candidate.task.id = taskId) && decide (candidate.activation = activation) := by
+      have selected : wait ∈ state.waits.filter (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation }) := by
         rw [singleton]
         simp
       obtain ⟨member, keyFacts⟩ := List.mem_filter.mp selected
-      simp only [Bool.and_eq_true, decide_eq_true_eq] at keyFacts
-      exact ⟨member, keyFacts.1.1, keyFacts.1.2, keyFacts.2⟩
+      simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at keyFacts
+      exact ⟨member, keyFacts.1.1.symm, taskDefinitionId_eq_of_value keyFacts.1.2.symm, keyFacts.2.symm⟩
   · exact absurd found (by simp)
 
 /-- A contract returned by the unique composed-task lookup projects one actual declared operation. -/
@@ -173,13 +171,6 @@ theorem dataInputOutputActivationPreservesProcessScope {state after : RuntimeSta
               obtain ⟨_, rfl⟩ := step
               rfl
 
-/-- The complete Activity occurrence identity minted by one composed activation. -/
-def dataInputOutputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
-    (taskId : TaskDefinitionId) : ActivityOccurrenceId :=
-  { processInstanceId := instanceId
-    activityElementId := ⟨taskId.value⟩
-    activation := activityActivationCount state taskId + 1 }
-
 /-- An existing local scope for the next Activity identity refuses activation instead of creating an
 ambiguous second owner. -/
 theorem dataInputOutputExistingLocalOwnerRefusesActivation (state : RuntimeState)
@@ -214,19 +205,6 @@ theorem activateDataInputOutputUserTask_localOwnerFresh {state after : RuntimeSt
   | some binding =>
       simp [owned, hosted, source] at step
       exact step.1
-
-/-- The exact Activity record inserted by one composed activation. -/
-def dataInputOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (taskId : TaskDefinitionId) : ActivityOccurrence :=
-  { processInstanceId := instanceId
-    activityElementId := ⟨taskId.value⟩
-    activation := activityActivationCount state taskId + 1
-    owner
-    body := .userTask
-      { processInstanceId := instanceId
-        elementId := ⟨taskId.value⟩
-        activation := activationCount state taskId + 1 }
-    attachedHandlers := [] }
 
 /-- `ADIO-SCOPE-01`. The selected activation-time source is copied exactly once into the newly
 minted Activity owner. -/

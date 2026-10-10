@@ -32,6 +32,17 @@ test("binding corpus excludes tracked paths deleted by an unstaged rename", () =
   );
 });
 
+test("the report routes active assurance owners without enrolling unrelated siblings or resolved repairs", () => {
+  const output = execFileSync(process.execPath, [
+    "scripts/what-binds.ts", "packages/semantic-core/src/internal-choice-schedule.ts", "BpmnSemantics/SemanticProcess/WaitCompletion.lean",
+  ], { cwd: projectRoot, encoding: "utf8" });
+  assert.match(output, /ASSURANCE AA-11 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-11/u);
+  assert.match(output, /ASSURANCE AA-23 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-23/u);
+  assert.match(output, /ASSURANCE AA-26 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-26/u);
+  assert.doesNotMatch(output, /ASSURANCE AA-06\b/u);
+  assert.doesNotMatch(output, /ASSURANCE AA-03\b/u);
+});
+
 // Import chains and imported enumeration helpers are followed through non-guard sources, so those
 // must reach the corpus even though they are never reported themselves.
 test("binding corpus keeps non-guard TypeScript sources for import chains and nothing else", () => {

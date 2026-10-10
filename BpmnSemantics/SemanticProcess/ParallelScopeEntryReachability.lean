@@ -37,14 +37,13 @@ inductive ParallelScopeParentHistory (program : Program) (entry : ParallelScopeE
       ParallelScopeParentHistory program entry parent after
   | human {before after : RuntimeState} (history : ParallelScopeParentHistory program entry parent before)
       (id : UserTaskInstanceId) (values : List VariableBinding) (wait : UserTaskWait)
-      (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-        wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+      (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
       (ordinary : hasParallelScopeDefinition program wait.owner = false)
       (applied : ParallelScopeCommand.completeTask? program before id values = some after) :
       ParallelScopeParentHistory program entry parent after
   | service {before after : RuntimeState} (history : ParallelScopeParentHistory program entry parent before)
       (id : EffectOccurrenceId) (values : List VariableBinding) (wait : EffectWait)
-      (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+      (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
       (ordinary : hasParallelScopeDefinition program wait.owner = false)
       (applied : ParallelScopeCommand.completeEffect? program before id (.success values) = some after) :
       ParallelScopeParentHistory program entry parent after

@@ -225,6 +225,31 @@ private def cyclicParent (state : RuntimeState) : RuntimeState :=
 theorem private_parallel_resumption_uses_real_scoped_waits :
     commandResume? id = some (.committed, some 12) := by decide +kernel
 
+private def duplicateStorageCounters : List (RuntimeState → RuntimeState) :=
+  [ fun state => { state with activations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with messageActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with timerActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with effectActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with activityActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with scopeActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with callActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
+  , fun state => { state with eventRaceActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] } ]
+
+theorem private_parallel_resumption_refuses_all_duplicate_storage_counter_keys :
+    commandResume? id = some (.committed, some 12) ∧
+      duplicateStorageCounters.all (fun change => commandResume? change == some (.rejected, none)) = true := by
+  decide +kernel
+
+theorem private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys :
+    let start := Stimulus.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 2)
+    ParallelScopeStart.commandClosureLimit? rawCapacityProgram initialState start = some 12 ∧
+      duplicateStorageCounters.all (fun change =>
+        let state := change initialState
+        ParallelScopeStart.commandClosureLimit? rawCapacityProgram state start == none &&
+          (admitStimulus rawCapacityProgram state start).outcome == .rejected &&
+          (admitStimulus rawCapacityProgram state start).state == state) = true := by
+  decide +kernel
+
 private def assertRejectedResumption (name : String)
     (variants : List (String × (RuntimeState → RuntimeState))) : IO Unit := do
   let actual := variants.map fun (label, change) => (label, commandResume? change)

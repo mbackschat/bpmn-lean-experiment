@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
@@ -489,9 +491,10 @@ theorem ordinary_completion_has_exact_continuation
     have live := List.mem_of_find?_eq_some found
     obtain ⟨single, noTokens, _⟩ := live_wait_under_bound_is_single before wait bounded live
     have matched := List.find?_some found
-    simp only [decide_eq_true_eq, Bool.and_eq_true] at matched
+    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
+    have sameTask : wait.task.id = taskId := congrArg TaskDefinitionId.mk matched.1.2.symm
     cases Option.some.inj completed
-    refine ⟨wait, live, { placeId := wait.output, owner := wait.owner }, matched.1.2, ?_⟩
+    refine ⟨wait, live, { placeId := wait.output, owner := wait.owner }, sameTask, ?_⟩
     simp [single, noTokens, addToken, canonicalInsertBy]
 
 theorem data_completion_has_exact_continuation

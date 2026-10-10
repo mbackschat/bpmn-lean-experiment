@@ -128,6 +128,58 @@ function importedModules(code: string): readonly string[] {
   return [...code.matchAll(/^\s*import\s+([A-Za-z0-9_.]+)\s*$/gmu)].map(match => match[1]!);
 }
 
+export function maintainedExecutableRoots(lakefile: string): readonly string[] {
+  const roots = [...lakefile.matchAll(/\[\[lean_exe\]\]([\s\S]*?)(?=\n\[\[|$)/gu)].flatMap((block) => {
+    const root = /^root\s*=\s*"([^"]+)"\s*$/mu.exec(block[1]!)?.[1];
+    assert.ok(root, "each executable must declare its import root");
+    return root.startsWith(moduleName(experimentTree.slice(0, -1))) ? [] : [root];
+  });
+  // The differential integration test runs this existing source entry without a Lake executable.
+  // Its command owner is packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts.
+  return [...roots, "BpmnSemantics.ParallelScopeReservationMain"];
+}
+
+export function executableProofImportEdges(
+  sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
+  roots: readonly string[],
+): readonly string[] {
+  const graph = new Map(sources.map(({ path: sourcePath, source }) => {
+    const code = analyzeLeanSource(source).code;
+    const kinds = [...code.matchAll(/^[\t ]*(?:@\[[^\]]*\]\s*)*(?:(?:private|protected|noncomputable|partial|unsafe|nonrec)\s+)*(theorem|lemma|example|def|abbrev|inductive|structure|class|instance)\b/gmu)]
+      .map((match) => match[1]!);
+    return [moduleName(sourcePath.replaceAll(path.sep, "/")), {
+      imports: importedModules(code),
+      definitions: kinds.some((kind) => !["theorem", "lemma", "example"].includes(kind)),
+      proofsOnly: kinds.length > 0 && kinds.every((kind) => ["theorem", "lemma", "example"].includes(kind)),
+    }] as const;
+  }));
+  const reachable = new Set<string>();
+  const pending = [...roots];
+  for (const root of roots) assert.ok(graph.has(root), `missing executable import root: ${root}`);
+  while (pending.length > 0) {
+    const current = pending.pop()!;
+    if (reachable.has(current)) continue;
+    reachable.add(current);
+    pending.push(...(graph.get(current)?.imports ?? []));
+  }
+  const edges = new Set<string>();
+  for (const current of reachable) {
+    const facts = graph.get(current);
+    if (!facts?.definitions) continue;
+    const imports = [...facts.imports];
+    const visited = new Set<string>();
+    while (imports.length > 0) {
+      const imported = imports.pop()!;
+      if (visited.has(imported)) continue;
+      visited.add(imported);
+      const dependency = graph.get(imported);
+      if (dependency?.proofsOnly) edges.add(`${current} -> ${imported}`);
+      else if (dependency && !dependency.definitions) imports.push(...dependency.imports);
+    }
+  }
+  return [...edges].sort();
+}
+
 function forbiddenImportPaths(
   sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
   roots: readonly string[],
@@ -433,15 +485,56 @@ test("semantic leaf modules import narrow owners rather than the aggregate umbre
   );
 });
 
-test("PMIS executable entries do not import accounting proof owners", () => {
+test("maintained executable roots have no declaration-based proof dependencies", () => {
   const sources = readWorktreeSources(worktreeLeanSourceFiles());
-  const forbidden = new Set(sources.map(source => moduleName(source.path)).filter(module =>
-    /^BpmnSemantics\.SemanticProcess\.ParallelScope.*(?:Proofs|Accounting|Progress|Reachability|ContinuationMarking|ReplayFrames|CommandReplay|CollectionProvenance)$/u.test(module)));
-  assert.ok(forbidden.size >= 8, "the guard must discover the maintained PMIS proof owners");
-  assert.deepEqual(forbiddenImportPaths(sources, [
-    "BpmnSemantics.ParallelScopeReservationMain",
-    "BpmnSemantics.SemanticProcessJsonMain",
-  ], forbidden), [], "proof-only changes must not invalidate executable PMIS replay consumers");
+  const roots = maintainedExecutableRoots(readFileSync("lakefile.toml", "utf8"));
+  assert.ok(roots.includes("BpmnSemantics.CommittedExecutionPublicationJsonMain"));
+  assert.deepEqual(executableProofImportEdges(sources, roots), []);
+});
+
+test("declaration-based isolation detects real non-PMIS direct and indirect dependencies", () => {
+  const runtime = "BpmnSemantics.SemanticProcess.ExecutionRuntime";
+  const proof = "BpmnSemantics.SemanticProcess.CallDataStateLaws";
+  const sources = ["ExecutionRuntime", "Scenario", "CallDataStateLaws"].map((name) => ({
+    path: `BpmnSemantics/SemanticProcess/${name}.lean`,
+    source: `${name === "ExecutionRuntime" ? `import ${proof}\n` : name === "Scenario" ? `import ${runtime}\n` : ""}${readFileSync(`BpmnSemantics/SemanticProcess/${name}.lean`, "utf8")}`,
+  }));
+  const edge = `${runtime} -> ${proof}`;
+  assert.deepEqual(executableProofImportEdges(sources, [runtime]), [edge]);
+  assert.deepEqual(executableProofImportEdges(sources, ["BpmnSemantics.SemanticProcess.Scenario"]), [edge]);
+});
+
+test("declaration-based isolation covers the existing private source runner", () => {
+  const runner = "BpmnSemantics.ParallelScopeReservationMain";
+  const proof = "BpmnSemantics.SemanticProcess.CallDataStateLaws";
+  const roots = maintainedExecutableRoots(readFileSync("lakefile.toml", "utf8"));
+  const sources = readWorktreeSources(worktreeLeanSourceFiles()).map((source) =>
+    moduleName(source.path) === runner
+      ? { ...source, source: `import ${proof}\n${source.source}` }
+      : source,
+  );
+  assert.deepEqual(executableProofImportEdges(sources, roots), [`${runner} -> ${proof}`]);
+});
+
+test("import-only facades cannot hide an executable proof dependency", () => {
+  const sources = [
+    { path: "Runtime.lean", source: "import Facade\ndef run : Nat := 0\n" },
+    { path: "Facade.lean", source: "import Loop\nimport Proofs\n" },
+    { path: "Loop.lean", source: "import Facade\n" },
+    { path: "Proofs.lean", source: "theorem witness : True := by trivial\n" },
+  ];
+  assert.deepEqual(executableProofImportEdges(sources, ["Runtime"]), ["Runtime -> Proofs"]);
+});
+
+test("executable relations and declaration kinds determine isolation rather than module names", () => {
+  const sources = [
+    { path: "Runtime.lean", source: "import Proofs\ndef run : Nat := 0\n" },
+    { path: "Proofs.lean", source: "inductive Step : Nat → Prop where\n  | zero : Step 0\ntheorem sound : Step 0 := .zero\n" },
+  ];
+  assert.deepEqual(executableProofImportEdges(sources, ["Runtime"]), []);
+  assert.deepEqual(executableProofImportEdges(sources.map((source) => source.path === "Proofs.lean"
+    ? { ...source, source: "/- def fake : Nat := 0 -/\nprivate theorem sound : True := by trivial\n" } : source),
+  ["Runtime"]), ["Runtime -> Proofs"]);
 });
 
 test("runtime proof isolation detects indirect imports and ignores prose and cycles", () => {

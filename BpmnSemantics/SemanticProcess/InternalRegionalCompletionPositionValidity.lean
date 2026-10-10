@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 

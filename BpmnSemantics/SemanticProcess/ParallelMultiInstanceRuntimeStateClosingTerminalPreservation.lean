@@ -63,23 +63,6 @@ private theorem removeParallelChildWaits_lookup_of_not_mem (waits : List UserTas
   · simp only [Bool.not_eq_true] at names
     simp [names]
 
-private theorem activityBodyWaitFilter_eq (waits : List UserTaskWait)
-    (task : UserTaskInstanceId) :
-    waits.filter (taskIdNamesWait task) =
-      waits.filter (fun wait =>
-        decide (wait.processInstanceId = task.processInstanceId) &&
-          decide (wait.task.id.value = task.elementId.value) &&
-          decide (wait.activation = task.activation)) := by
-  apply List.filter_congr
-  intro wait _
-  apply Bool.eq_iff_iff.mpr
-  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
-  constructor
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-
 private def terminalLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then less left right else rest
@@ -651,27 +634,21 @@ theorem sharedParallelTerminal_preserves_runtimeStateWellFormed
             simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
             change ((removeParallelChildWaits before.waits
               (pendingParallelTaskIds controller.slots)).filter
-                (fun wait => decide (wait.processInstanceId = task.processInstanceId) &&
-                  decide (wait.task.id.value = task.elementId.value) &&
-                  decide (wait.activation = task.activation))).length = 1
-            rw [← activityBodyWaitFilter_eq
-              (removeParallelChildWaits before.waits
-                (pendingParallelTaskIds controller.slots)) task]
+                ((taskIdNamesWait task))).length = 1
+
             rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
               (claimNotRemoved task (by simp))]
-            rw [activityBodyWaitFilter_eq before.waits task]
+
             exact prior.1.1.1
         | parallelUserTasks first rest =>
             simp only [activityBodyLive, shape, List.all_eq_true,
               decide_eq_true_eq] at prior ⊢
             intro task taskMember
             simp only [after, closeSharedParallelRegion, attachedTimer]
-            rw [← activityBodyWaitFilter_eq
-              (removeParallelChildWaits before.waits
-                (pendingParallelTaskIds controller.slots)) task]
+
             rw [removeParallelChildWaits_lookup_of_not_mem before.waits _ task
               (claimNotRemoved task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
-            rw [activityBodyWaitFilter_eq before.waits task]
+
             exact prior.1.1.1 task taskMember
       · simp only [List.all_eq_true] at prior ⊢
         intro candidateTimer candidateTimerMember

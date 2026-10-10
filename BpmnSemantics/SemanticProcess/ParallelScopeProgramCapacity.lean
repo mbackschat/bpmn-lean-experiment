@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 import BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 
 /-! PMIS-ADMIT-01 binds private command capacity to the original decoded Program and its retained collection. -/
 
@@ -98,7 +99,8 @@ def programStartCapacity (program : Program) (bindings : List VariableBinding) :
 
 /-- The retained Process collection and exact surviving controller population settle resumption capacity. -/
 def programStateCapacity (program : Program) (state : RuntimeState) : Option ProgramCapacity := do
-  if !InternalCommutation.occurrenceReservationStateValid state then none else pure ()
+  if !committedStateCollectionAdmitted state ||
+      !InternalCommutation.occurrenceReservationStateValid state then none else pure ()
   let analysis ← analyzeProgram program
   let capacity ← programStartCapacity program state.variables.process.bindings
   let [entryOwner] := program.operationScopes.filter (·.operationId == analysis.entry.id) | none
@@ -127,7 +129,8 @@ def programStateCapacity (program : Program) (state : RuntimeState) : Option Pro
 
 def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : Stimulus) : Option Nat :=
   if !programSelected program then some scenarioClosureLimit
-  else if !InternalCommutation.occurrenceReservationStateValid state then none
+  else if !committedStateCollectionAdmitted state ||
+      !InternalCommutation.occurrenceReservationStateValid state then none
   else match state.control, stimulus with
     | .notStarted, .startProcess _ _ _ bindings => (programStartCapacity program bindings).map (·.closureBound)
     | _, _ => (programStateCapacity program state).map (·.closureBound)

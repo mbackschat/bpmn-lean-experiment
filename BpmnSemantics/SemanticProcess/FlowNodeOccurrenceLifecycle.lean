@@ -485,9 +485,7 @@ private def messageBoundedTaskCompletionDelta? (program : Program) (before : Run
     (taskId : UserTaskInstanceId) (submitted : List VariableBinding) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
   if !submitted.isEmpty then none
-  let task ← match before.waits.filter fun wait => decide
-      (wait.processInstanceId = taskId.processInstanceId &&
-        wait.task.id.value = taskId.elementId.value && wait.activation = taskId.activation) with
+  let task ← match before.waits.filter (taskIdNamesWait taskId) with
     | [task] => some task
     | _ => none
   let pair ← messageBoundedPairForTask? program before task
@@ -556,15 +554,11 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
                 messageMonitoredTaskCompletionDelta? program before taskId submitted
               else if isMessageBoundedTaskDefinition program ⟨taskId.elementId.value⟩ then
                 messageBoundedTaskCompletionDelta? program before taskId submitted
-              else if before.waits.any fun wait => decide
-                (wait.processInstanceId = taskId.processInstanceId &&
-                  wait.task.id.value = taskId.elementId.value &&
-                  wait.activation = taskId.activation) then
+              else if before.waits.any (taskIdNamesWait taskId) then
                   some (canonicalFlowNodeOccurrenceDelta [] [waitEnd taskId .completed])
                 else none
   | .deliverMessage _ subscriptionId channel =>
-      if !(before.messageWaits.any fun wait => decide (wait.processInstanceId = subscriptionId.processInstanceId &&
-          wait.elementId.value = subscriptionId.elementId.value && wait.activation = subscriptionId.activation)) then none
+      if !(before.messageWaits.any (messageIdNamesWait subscriptionId)) then none
       else match lifecycleEventRaceForMessage? before subscriptionId with
         | some race => some (canonicalFlowNodeOccurrenceDelta []
             [waitEnd race.messageSubscriptionId .completed, waitEnd race.timerOccurrenceId .cancelled])
@@ -576,24 +570,16 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
                 transitionIndex
             else some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
   | .deliverPayloadMessage _ subscriptionId _ _ =>
-      if before.messageWaits.any fun wait => decide
-          (wait.processInstanceId = subscriptionId.processInstanceId &&
-            wait.elementId.value = subscriptionId.elementId.value &&
-            wait.activation = subscriptionId.activation) then
+      if before.messageWaits.any (messageIdNamesWait subscriptionId) then
         some (canonicalFlowNodeOccurrenceDelta [] [waitEnd subscriptionId .completed])
       else none
   | .deliverCorrelatedPayloadMessage delivery =>
-      if before.messageWaits.any fun wait => decide
-          (wait.processInstanceId = delivery.subscriptionId.processInstanceId &&
-            wait.elementId.value = delivery.subscriptionId.elementId.value &&
-            wait.activation = delivery.subscriptionId.activation) then
+      if before.messageWaits.any (messageIdNamesWait delivery.subscriptionId) then
         some (canonicalFlowNodeOccurrenceDelta []
           [waitEnd delivery.subscriptionId .completed])
       else none
   | .fireTimer _ timerId _ => do
-      let timer ← before.timerWaits.find? fun wait => decide
-        (wait.processInstanceId = timerId.processInstanceId &&
-          wait.elementId.value = timerId.elementId.value && wait.activation = timerId.activation)
+      let timer ← before.timerWaits.find? (timerIdNamesWait timerId)
       match lifecycleEventRaceForTimer? before timerId with
       | some race => pure (canonicalFlowNodeOccurrenceDelta []
           [waitEnd race.timerOccurrenceId .completed, waitEnd race.messageSubscriptionId .cancelled])
@@ -630,7 +616,7 @@ def candidateFlowNodeOccurrenceDeltaForStimulus? (program : Program) (before : R
                         | none => pure (canonicalFlowNodeOccurrenceDelta []
                             [waitEnd timerId .completed])
   | .completeEffect _ effectId result => do
-      let wait ← before.effectWaits.find? (effectOccurrenceMatches effectId)
+      let wait ← before.effectWaits.find? (effectIdNamesWait effectId)
       match result with
       | .success _ => pure (canonicalFlowNodeOccurrenceDelta [] [waitEnd effectId .completed])
       | .bpmnError code _ _ => do
@@ -731,16 +717,10 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
             race.id.activation = activation) with
         | [race] => some race
         | _ => none
-      let messageWait ← match after.messageWaits.filter fun wait => decide
-          (wait.processInstanceId = race.messageSubscriptionId.processInstanceId &&
-            wait.elementId.value = race.messageSubscriptionId.elementId.value &&
-            wait.activation = race.messageSubscriptionId.activation) with
+      let messageWait ← match after.messageWaits.filter (messageIdNamesWait race.messageSubscriptionId) with
         | [wait] => some wait
         | _ => none
-      let timerWait ← match after.timerWaits.filter fun wait => decide
-          (wait.processInstanceId = race.timerOccurrenceId.processInstanceId &&
-            wait.elementId.value = race.timerOccurrenceId.elementId.value &&
-            wait.activation = race.timerOccurrenceId.activation) with
+      let timerWait ← match after.timerWaits.filter (timerIdNamesWait race.timerOccurrenceId) with
         | [wait] => some wait
         | _ => none
       let starts ← candidateEventRaceStarts? program operation owner race messageWait timerWait

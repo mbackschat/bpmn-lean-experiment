@@ -233,11 +233,7 @@ private theorem boundedPairForTask_pairing (program : Program)
 def completeBoundedUserTask? (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) : Option RuntimeState := do
-  let task ← state.waits.find? fun wait =>
-    decide (
-      wait.processInstanceId = processInstanceId &&
-        wait.task.id = taskId &&
-        wait.activation = activation)
+  let task ← state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })
   let pair ← boundedPairForTask? program state task
   commitVictory state pair pair.taskOutput state.logicalTimeMs
 
@@ -245,11 +241,7 @@ def completeBoundedUserTask? (program : Program) (state : RuntimeState)
 def interruptBoundedUserTask? (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) :
     Option RuntimeState := do
-  let timer ← state.timerWaits.find? fun wait =>
-    decide (
-      wait.processInstanceId = timerId.processInstanceId &&
-        wait.elementId.value = timerId.elementId.value &&
-        wait.activation = timerId.activation)
+  let timer ← state.timerWaits.find? (timerIdNamesWait timerId)
   let pair ← boundedPairForTimer? program state timer
   if logicalTimeMs = timer.deadlineMs then
     commitVictory state pair pair.timerOutput timer.deadlineMs
@@ -268,11 +260,7 @@ theorem completeBoundedUserTask_none_of_no_deadline_wait (program : Program)
     completeBoundedUserTask? program state processInstanceId taskId activation =
       none := by
   unfold completeBoundedUserTask? boundedPairForTask?
-  cases found : state.waits.find? fun wait =>
-      decide (
-        wait.processInstanceId = processInstanceId &&
-          wait.task.id = taskId &&
-          wait.activation = activation) with
+  cases found : state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation }) with
   | none => simp
   | some _ => simp [noTimers]
 
@@ -283,11 +271,7 @@ theorem interruptBoundedUserTask_none_of_no_task_wait (program : Program)
     (noTasks : state.waits = []) :
     interruptBoundedUserTask? program state timerId logicalTimeMs = none := by
   unfold interruptBoundedUserTask? boundedPairForTimer?
-  cases found : state.timerWaits.find? fun wait =>
-      decide (
-        wait.processInstanceId = timerId.processInstanceId &&
-          wait.elementId.value = timerId.elementId.value &&
-          wait.activation = timerId.activation) with
+  cases found : state.timerWaits.find? (timerIdNamesWait timerId) with
   | none => simp
   | some _ => simp [noTasks]
 
@@ -336,10 +320,7 @@ theorem completeBoundedUserTask_sound (program : Program)
       activation = some after) :
     BoundedTaskVictoryStep program before after := by
   unfold completeBoundedUserTask? at success
-  cases taskFound : before.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) with
+  cases taskFound : before.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) with
   | none => simp [taskFound] at success
   | some task =>
       cases pairFound : boundedPairForTask? program before task with
@@ -371,10 +352,7 @@ theorem interruptBoundedUserTask_sound (program : Program)
       some after) :
     BoundedTaskVictoryStep program before after := by
   unfold interruptBoundedUserTask? at success
-  cases timerFound : before.timerWaits.find? (fun wait =>
-      decide (wait.processInstanceId = timerId.processInstanceId) &&
-        decide (wait.elementId.value = timerId.elementId.value) &&
-        decide (wait.activation = timerId.activation)) with
+  cases timerFound : before.timerWaits.find? ((timerIdNamesWait timerId)) with
   | none => simp [timerFound] at success
   | some timer =>
       cases pairFound : boundedPairForTimer? program before timer with
@@ -409,10 +387,7 @@ chosen instant is refused. -/
 theorem interruptBoundedUserTask_none_of_not_due (program : Program)
     (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
     (timer : TimerWait)
-    (found : state.timerWaits.find? (fun wait =>
-      decide (wait.processInstanceId = timerId.processInstanceId) &&
-        decide (wait.elementId.value = timerId.elementId.value) &&
-        decide (wait.activation = timerId.activation)) = some timer)
+    (found : state.timerWaits.find? ((timerIdNamesWait timerId)) = some timer)
     (notDue : logicalTimeMs ≠ timer.deadlineMs) :
     interruptBoundedUserTask? program state timerId logicalTimeMs = none := by
   unfold interruptBoundedUserTask?
@@ -463,10 +438,7 @@ for the three the conformance fixture happens to try. -/
 theorem completeBoundedUserTask_none_of_no_match (program : Program)
     (state : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat)
-    (missing : state.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) = none) :
+    (missing : state.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) = none) :
     completeBoundedUserTask? program state processInstanceId taskId activation =
       none := by
   unfold completeBoundedUserTask?

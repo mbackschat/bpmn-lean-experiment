@@ -112,9 +112,7 @@ def isDataInputOutputTaskDefinition (program : Program) (taskId : TaskDefinition
 refused rather than resolved by list order. -/
 def dataInputOutputTaskWait? (state : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) : Option UserTaskWait :=
-  match state.waits.filter fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) && decide (wait.activation = activation) with
+  match state.waits.filter (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation }) with
   | [wait] => some wait
   | _ => none
 
@@ -182,5 +180,25 @@ def completeDataInputOutputUserTask? (program : Program) (state : RuntimeState)
       none
   else
     none
+
+/-- The complete Activity occurrence identity minted by one composed activation. -/
+def dataInputOutputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
+    (taskId : TaskDefinitionId) : ActivityOccurrenceId :=
+  { processInstanceId := instanceId
+    activityElementId := ⟨taskId.value⟩
+    activation := activityActivationCount state taskId + 1 }
+
+/-- The exact Activity record inserted by one composed activation. -/
+def dataInputOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
+    (owner : ScopeOccurrenceId) (taskId : TaskDefinitionId) : ActivityOccurrence :=
+  { processInstanceId := instanceId
+    activityElementId := ⟨taskId.value⟩
+    activation := activityActivationCount state taskId + 1
+    owner
+    body := .userTask
+      { processInstanceId := instanceId
+        elementId := ⟨taskId.value⟩
+        activation := activationCount state taskId + 1 }
+    attachedHandlers := [] }
 
 end BpmnSemantics.SemanticProcess

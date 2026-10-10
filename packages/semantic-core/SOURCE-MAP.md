@@ -133,7 +133,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [activity-occurrence.ts](src/activity-occurrence.ts) | Activity occurrence identity, complete task/scope ownership claims and attached-handler lookup |
 | [activity-body-turnover.ts](src/activity-body-turnover.ts) | Replacing what an Activity occurrence owns without replacing the occurrence |
 | [runtime-state-defect.ts](src/runtime-state-defect.ts) | Stable classes of malformed committed runtime state |
-| [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Internal canonical ordering for commutation-affected RuntimeState collections |
+| [runtime-state-collection-ordering.ts](src/runtime-state-collection-ordering.ts) | Shared strict keyed-storage and token-bucket defects for committed admission, restoration, PMIS checkpoint and command/frontier ingress validation |
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
 | [internal-choice-schedule.ts](src/internal-choice-schedule.ts) | Universal independent normalization, exact directive consumption and failure precedence, whole-command rollback, and retained prepared publication; [schedule tests](test/internal-choice-schedule.test.ts) cover both Merge choices and late failure |
@@ -235,6 +235,8 @@ The [exact-operation tests](test/internal-operation-occurrence.test.ts) distingu
 The [Call pairing tests](test/call-activity-pairing.test.ts) distinguish a bijection from equal invoke/return counts using duplicated and distinct invoke identities that share one return while leaving another unclaimed.
 
 The [canonical token storage tests](test/canonical-token-storage.test.ts) check raw complete-key order, multiplicity, and admitted execution prefixes. Position-valid reversed controls isolate the aggregate order check; separate projection controls retain duplicate-bucket and nonpositive-multiplicity refusal.
+
+The [committed storage tests](test/committed-state-ordering.test.ts) reject duplicate keys in all eight counter families at ordinary commands and PMIS command/frontier ingress boundaries, preserve exact rejected state, and distinguish one positive multiplicity bucket from duplicate or zero buckets. [Continuation tests](../temporal-adapter/testkit/test/workflow-continuation-state.test.ts) independently check restoration refusal for the same counter families. Raw occurrence discovery, token evaluators and scheduler frame laws retain their owner/readiness and permutation contracts; they do not validate committed storage.
 
 The [canonical scope storage tests](test/canonical-scope-storage.test.ts) check complete occurrence-key order and Scope, Call, and event-race counter order. Projectable reversed scope controls isolate aggregate refusal; ordinary child entry/removal and event-race arming/winner paths retain exact occurrence identity and high-water counters.
 

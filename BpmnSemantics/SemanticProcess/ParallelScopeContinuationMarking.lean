@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Actual body-operation continuation balance
 

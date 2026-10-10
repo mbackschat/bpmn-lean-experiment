@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 
@@ -17,7 +17,7 @@ inductive SerialEffectCompletionStep (program : Program) :
     RuntimeState → EffectOccurrenceId → EffectExecutionResult → RuntimeState → Prop where
   | commit (state : RuntimeState) (effectId : EffectOccurrenceId) (wait : EffectWait)
       (scope : ActivityVariableScope) (patch bindings : List VariableBinding)
-      (occurrence : state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+      (occurrence : state.effectWaits.filter (effectIdNamesWait effectId) = [wait])
       (owner : state.variables.activities.filter (activityScopeMatches effectId) = [scope])
       (mapping : serialEffectPatch? (SerialBusinessTask.programHandlers program)
         wait.outputMappings state.variables.process.bindings patch = some bindings) :
@@ -211,16 +211,6 @@ theorem selected_completion_is_root (program : Program) (state : RuntimeState)
     noBounded, List.find?_nil]
   cases completeScopeState? state scope none <;> rfl
 
-theorem program_analysis_declarations_absent (program : Program) (analysis : Analysis)
-    (analyzed : programAnalysis program = some analysis) :
-    program.compensationActivityRetention = none ∧ program.compensationEventSubProcessSnapshots = none ∧
-      program.compensationExecution = none ∧ program.interruptingMessageEventSubProcesses = [] := by
-  unfold programAnalysis at analyzed
-  split at analyzed
-  · contradiction
-  · rename_i admitted
-    simp at admitted
-    exact ⟨admitted.1.1.1.2, admitted.1.1.2, admitted.1.2, admitted.2⟩
 
 private theorem allowed_filterMap_absent (program : Program) (project : SemanticOperation → Option α)
     (allowed : ∀ operation ∈ program.operations, OperationAllowed operation)
@@ -400,23 +390,6 @@ theorem committed_start_has_exact_builder (program : Program) (analysis : Analys
         show initialState.control = .notStarted from rfl] at committed ⊢
       repeat' (split at committed <;> simp_all)
 
-/-- The serial frame excludes the foreign-family gates, so an admitted completion reaches its payload dispatcher exactly. -/
-theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : Analysis)
-    (before : RuntimeState) (stimulus : Stimulus)
-    (profile : program.identity.semanticProfile = serialBusinessTaskProfileId)
-    (analyzed : programAnalysis program = some analysis) (foreign : ForeignRuntimeEmpty before)
-    (guarded : serialBusinessCommandAdmitted program before stimulus = true)
-    (completion : IsSerialCompletion stimulus) :
-    admitStimulus program before stimulus = dispatchStimulus program before stimulus := by
-  obtain ⟨_, snapshots, _, messages⟩ := program_analysis_declarations_absent program analysis analyzed
-  have messageValid : interruptingMessageEventSubProcessStateValid program before = true := by
-    simp_all [interruptingMessageEventSubProcessStateValid, ForeignRuntimeEmpty,
-      serialBusinessTaskProfileId, interruptingMessageEventSubProcessProfileId]
-  have incidents : before.effectIncidents = [] := foreign.2.2.1
-  cases stimulus <;> simp only [IsSerialCompletion] at completion <;> try contradiction
-  all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, messageValid, incidents,
-    callDataRuntimeStateValid, SequentialScopeData.stimulusAdmitted, profile,
-    serialBusinessTaskProfileId, callDataCheckpointProfileId]
 
 theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
@@ -441,10 +414,6 @@ theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) 
       · exact Or.inr ⟨after, rfl, rfl⟩
       · exact Or.inl rfl
   · exact Or.inl rfl
-
-def frontierFields (state : RuntimeState) :
-    Bool × List ControlToken × List UserTaskWait × List EffectWait × List ActivityVariableScope :=
-  (state.initiationPending, state.tokens, state.waits, state.effectWaits, state.variables.activities)
 
 /-- The suffix points at the unique current operation; an armed effect retains exactly its captured local snapshot. -/
 inductive OrderedPosition (program : Program) (ordered : List Vertex) (state : RuntimeState) : List Vertex → Prop where
@@ -485,6 +454,13 @@ def AtOrderedSuffix (program : Program) (analysis : Analysis) (state : RuntimeSt
     OrderedPosition program analysis.ordered state remaining ∧
     SuffixAvailable state.variables.process.bindings remaining ∧
     bindingsValid (programHandlers program) state.variables.process.bindings = true
+
+theorem ordered_suffix_collection_storage (program : Program) (analysis : Analysis) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state) :
+    committedStateCollectionAdmitted state = true := by
+  apply root_frontier_collection_storage state owner framed
+  obtain ⟨_, _, _, position, _⟩ := indexed
+  cases position <;> simp_all [frontierFields]
 
 /-- SBT internal work distinguishes the transient empty running root from committed completion. -/
 def positionDepth (state : RuntimeState) (remaining : List Vertex) : Nat :=
@@ -742,7 +718,7 @@ theorem human_completion_preserves_ordered_suffix (program : Program) (analysis 
         refine ⟨?_, ?_⟩
         · refine ⟨?_, ?_, effectsOwned, Or.inl runningLife, foreign, ?_⟩ <;>
             simp [fields.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy, IssuanceFrame] <;>
-            exact ⟨issued.1, issued.2.1, issued.2.2.1⟩
+            exact ⟨issued.1, issued.2.1, issued.2.2.1, issued.2.2.2.2⟩
         refine ⟨earlier ++ [vertex], rest, by simpa [List.append_assoc] using orderEq, ?_, ?_, ?_⟩
         · rw [restEq]
           apply OrderedPosition.token next more ⟨wait.output, wait.owner⟩
@@ -829,7 +805,7 @@ theorem admissible_completion_dispatch_commits (program : Program) (analysis : A
       have running : state.control = .running wait.processInstanceId := by
         rcases framed.2.2.2.1 with ⟨running, _⟩ | ⟨_, _, _, empty, _⟩ <;> simp_all
       rcases human_dispatch_cases program analysis state commandId ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ patch profile analyzed with ⟨_, refused⟩ | ⟨after, _, _, committed⟩
-      · simp [running, valid, completeUserTask, single] at refused
+      · simp [taskIdNamesWait, running, valid, completeUserTask, single] at refused
       · rw [committed]
   | effect commandId wait patch sources live valid collected count covered =>
       have fields : state.effectWaits = [wait] ∧ state.variables.activities =
@@ -841,7 +817,7 @@ theorem admissible_completion_dispatch_commits (program : Program) (analysis : A
       have noCompensation : state.compensationHandlerEffectWaits = [] := framed.2.2.2.2.1.2.2.2.2.2.2.2.2.2.2.2.2.1
       obtain ⟨bindings, mapped⟩ := serial_patch_exists (programHandlers program) wait.outputMappings state.variables.process.bindings patch sources collected valid count covered
       simp [dispatchStimulus, snapshots, running, noCompensation, profile, completeSerialEffect?, fields.1,
-        effectOccurrenceMatches, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
+        effectIdNamesWait, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
 
 end SerialBusinessTask
 

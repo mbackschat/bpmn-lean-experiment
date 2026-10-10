@@ -16,9 +16,14 @@ import { fileURLToPath } from "node:url";
 import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   analyzeLeanSource,
+  inlineWaitIdentityLookups,
   leanSelfComparisons,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
+
+test("wait identity lookups use named matchers", () => {
+  assert.deepEqual(worktreeLeanSourceFiles().flatMap(file => inlineWaitIdentityLookups(file, readFileSync(file, "utf8"))), []);
+});
 import {
   readWorktreeSource,
   readWorktreeSources,
@@ -182,7 +187,7 @@ const evaluatorIndependentRelations = Object.freeze([
     evaluator: "applyEventSubProcessInterruption",
   }),
   Object.freeze({
-    path: "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessCompletionLaws.lean",
+    path: "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessCompletion.lean",
     relation: "EventSubProcessCompletionStep",
     evaluator: "completeEventSubProcessState?",
   }),
@@ -479,7 +484,7 @@ test("Transition relations reject evaluator-defined successors", () => {
   for (const [file, relation, evaluator, sibling] of [
     ["InterruptingMessageEventSubProcessRegistrationLaws", "EventSubProcessRegistrationStep", "installEventSubProcessListener", "UnusedSibling"],
     ["InterruptingMessageEventSubProcessInterruptionLaws", "EventSubProcessInterruptionStep", "applyEventSubProcessInterruption", "UnusedSibling"],
-    ["InterruptingMessageEventSubProcessCompletionLaws", "EventSubProcessCompletionStep", "completeEventSubProcessState?", "UnusedSibling"],
+    ["InterruptingMessageEventSubProcessCompletion", "EventSubProcessCompletionStep", "completeEventSubProcessState?", "UnusedSibling"],
     ["TransactionCancellationSemantics", "TransactionCancellationStep", "attemptTransactionCancellation", "TransactionCancellationReady"],
     ["TransactionCancellation", "TransactionCancellationJoin", "finishTransactionCancellation?", "CompensationCompletionRouting"],
     ["TransactionCancellation", "CompensationCompletionRouting", "compensationCompletionRoute?", "TransactionCancellationJoin"],
@@ -695,14 +700,11 @@ test("the native_decide inventory counts tactic sites and not prose", () => {
  * coming back.
  */
 const exhaustiveVariantInventories = Object.freeze([
-  Object.freeze({
-    path: "BpmnSemantics/SemanticProcess/Scenario.lean",
-    declaration: "ownedWaitDefinitions",
-  }),
-  Object.freeze({
-    path: "BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean",
-    declaration: "attachedBoundaryHost?",
-  }),
+  Object.freeze({ path: "BpmnSemantics/SemanticProcess/Scenario.lean", declaration: "ownedWaitDefinitions" }),
+  Object.freeze({ path: "BpmnSemantics/SemanticProcess/CheckedGraphValidation.lean", declaration: "attachedBoundaryHost?" }),
+  ...["processStatusJson", "waitKindJson", "userTaskLifecycleStateJson", "programIdentityJson",
+    "openEffectIncidentJson", "openMultiInstanceJson", "enabledInteractionJson"].map(declaration =>
+    Object.freeze({ path: "BpmnSemantics/SemanticProcessJson/Observation.lean", declaration })),
 ]);
 
 function declarationBody(source: string, declaration: string): string {

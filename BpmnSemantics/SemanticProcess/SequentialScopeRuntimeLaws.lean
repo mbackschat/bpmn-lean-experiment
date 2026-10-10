@@ -73,7 +73,7 @@ theorem sequentialScope_writes_refuse_unbound (program : Program) (state : Runti
 theorem sequentialScope_effect_completion (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (wait : EffectWait) (patch : List BpmnSemantics.VariableBinding)
     (variables : ScopedVariables)
-    (unique : state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+    (unique : state.effectWaits.filter (effectIdNamesWait effectId) = [wait])
     (owned : wait.processInstanceId = wait.owner.processInstanceId)
     (unrouted : wait.bpmnErrorRoute = none)
     (written : completeSequentialScopeEffectData? program state wait.owner effectId wait.outputMappings patch = some variables) :
@@ -86,7 +86,7 @@ theorem sequentialScope_effect_completion (program : Program) (state : RuntimeSt
 /-- Failed scoped result validation cannot release a continuation or consume its wait. -/
 theorem sequentialScope_effect_data_refusal (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (wait : EffectWait) (patch : List BpmnSemantics.VariableBinding)
-    (unique : state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+    (unique : state.effectWaits.filter (effectIdNamesWait effectId) = [wait])
     (refused : completeSequentialScopeEffectData? program state wait.owner effectId wait.outputMappings patch = none) :
     completeSequentialScopeEffect? program state effectId (.success patch) = none := by
   simp [completeSequentialScopeEffect?, unique, refused]

@@ -121,7 +121,7 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 | [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 688 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 | [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 12 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 
 These are nonblank margins before the 800-line review target, not growth budgets. If planned growth exceeds a margin, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.

@@ -182,10 +182,7 @@ private def CompensationCompletionFacts.operationFamily :
 /-- TXC-RETAIN-01 joins the pre-removal wait by complete Activity identity before checking its owner. -/
 def childCompensationCompletionOwnerValid (owner : ScopeOccurrenceId)
     (activity : ActivityOccurrenceId) (state : RuntimeState) : Bool :=
-  match state.waits.filter fun wait =>
-      wait.processInstanceId == activity.processInstanceId &&
-        wait.task.id.value == activity.activityElementId.value &&
-        wait.activation == activity.activation with
+  match state.waits.filter (taskIdNamesWait { processInstanceId := activity.processInstanceId, elementId := ⟨activity.activityElementId.value⟩, activation := activity.activation }) with
   | [wait] => wait.owner == owner
   | _ => false
 
@@ -204,15 +201,12 @@ theorem childCompensationCompletionOwnerValid_joined (owner : ScopeOccurrenceId)
   unfold childCompensationCompletionOwnerValid at valid
   split at valid
   · rename_i wait matching
-    have member : wait ∈ state.waits.filter (fun candidate =>
-        candidate.processInstanceId == activity.processInstanceId &&
-          candidate.task.id.value == activity.activityElementId.value &&
-          candidate.activation == activity.activation) := by
+    have member : wait ∈ state.waits.filter ((taskIdNamesWait { processInstanceId := activity.processInstanceId, elementId := ⟨activity.activityElementId.value⟩, activation := activity.activation })) := by
       rw [matching]
       exact List.mem_singleton_self wait
     obtain ⟨member, identity⟩ := List.mem_filter.mp member
-    simp only [Bool.and_eq_true, beq_iff_eq] at identity valid
-    exact ⟨wait, member, identity.1.1, identity.1.2, identity.2, valid⟩
+    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at identity valid
+    exact ⟨wait, member, identity.1.1.symm, identity.1.2.symm, identity.2.symm, valid⟩
   · contradiction
 
 private def completionOwnerValid (program : Program) (owner : ScopeOccurrenceId)

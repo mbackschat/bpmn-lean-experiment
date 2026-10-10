@@ -1,4 +1,6 @@
 import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Internal commutation transition-record bridge
 

@@ -523,32 +523,12 @@ theorem turnoverWait_hit_transfers (state : RuntimeState) (wait : UserTaskWait)
   · exact taskDefinitionId_of_value (by rw [← hit.1.2]; exact names.1.2)
   · rw [← hit.2]; exact names.2
 
-private theorem taskIdNamesWait_filter_eq (waits : List UserTaskWait) (task : OccurrenceId) :
-    waits.filter (taskIdNamesWait task) =
-      waits.filter fun wait =>
-        decide (wait.processInstanceId = task.processInstanceId) &&
-          decide (wait.task.id.value = task.elementId.value) &&
-          decide (wait.activation = task.activation) := by
-  apply List.filter_congr
-  intro candidate _
-  simp only [taskIdNamesWait]
-  congr 1
-  · congr 1 <;> exact decide_eq_decide.mpr eq_comm
-  · exact decide_eq_decide.mpr eq_comm
-
 /-- `activityBodyLive` is the body-keyed wait lookup, written with the shared predicate. -/
 theorem activityBodyLive_userTask (state : RuntimeState) (record : ActivityOccurrence)
     (task : OccurrenceId) (isTask : record.body = .userTask task) :
     activityBodyLive state record =
       decide ((state.waits.filter (taskIdNamesWait task)).length = 1) := by
   simp only [activityBodyLive, isTask]
-  congr 3
-  apply List.filter_congr
-  intro candidate _
-  simp only [taskIdNamesWait]
-  congr 1
-  · congr 1 <;> exact decide_eq_decide.mpr eq_comm
-  · exact decide_eq_decide.mpr eq_comm
 
 /-- Every task claim of a live Activity record resolves to a concrete wait. -/
 theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
@@ -573,7 +553,7 @@ theorem activityBodyTaskClaim_has_live_wait (state : RuntimeState)
         simp only [activityBodyLive, bodyShape, List.all_eq_true] at recordLive
         have live := recordLive.1.1.1 task
           (by simpa [activityBodyTaskClaims, bodyShape] using claimMem)
-        rw [taskIdNamesWait_filter_eq]
+
         exact of_decide_eq_true live
   have positive : 0 < (state.waits.filter (taskIdNamesWait task)).length := by omega
   obtain ⟨wait, filtered⟩ := List.exists_mem_of_ne_nil _ (List.length_pos_iff.mp positive)
@@ -744,10 +724,10 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
         have excluded := soleBody candidate memOther h
         simp only [recordBodyExcludesWait, bodyShape, List.all_eq_true, beq_iff_eq] at excluded
         have priorTask : (state.waits.filter (taskIdNamesWait task)).length = 1 := by
-          rw [taskIdNamesWait_filter_eq]
+
           exact of_decide_eq_true (prior task taskMem)
         simp only [decide_eq_true_eq]
-        rw [← taskIdNamesWait_filter_eq]
+
         exact taskBodyLive_replacedState state record wait body task unique fresh
           (excluded task taskMem) priorTask
   have ownersAfter : activityTaskBodyOwnersAgree

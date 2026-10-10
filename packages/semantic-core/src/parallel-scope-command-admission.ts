@@ -1,3 +1,4 @@
+import { committedStateCollectionDefects } from "./runtime-state-collection-ordering.js";
 import { StimulusKind } from "./contract.js";
 import type { Stimulus } from "./contract.js";
 import { internalOccurrenceReservationStateIsValid } from "./internal-operation-occurrence.js";
@@ -13,7 +14,7 @@ import { isWellFormedStimulus } from "./stimulus.js";
 /** PMIS-ADMIT-01 derives command capacity from exact Program and the write-protected captured collection. */
 export function parallelScopeCommandCapacity(program: SemanticProcessProgram, state: RuntimeState,
   stimulus: Stimulus): ParallelScopeStartCapacity | undefined {
-  if (!isWellFormedStimulus(stimulus)) return undefined;
+  if (!isWellFormedStimulus(stimulus) || committedStateCollectionDefects(state).length > 0) return undefined;
   const bindings = stimulus.kind === StimulusKind.StartProcess ? stimulus.initialVariables : state.variables.process.bindings;
   const capacity = parallelScopeProgramStartCapacity(program, bindings);
   const data = capacity === undefined ? undefined : analyzeParallelScopeData(program);

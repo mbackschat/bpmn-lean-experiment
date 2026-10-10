@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Token patches retain complete unit counts for the publication bridge in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

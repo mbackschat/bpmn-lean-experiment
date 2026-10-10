@@ -43,10 +43,11 @@ theorem callData_valid_completion_has_composed_definition
   · contradiction
   · rename_i wait found
     have key := List.find?_some found
-    simp only [Bool.and_eq_true, decide_eq_true_eq] at key
+    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at key
     obtain ⟨contract, declared⟩ := callData_valid_wait_has_contract program state host wait
       profile running valid (List.mem_of_find?_eq_some found)
-    rw [key.1.2] at declared
+    have sameTask : wait.task.id = taskId := congrArg TaskDefinitionId.mk key.1.2.symm
+    rw [sameTask] at declared
     unfold dataInputOutputTaskContract? at declared
     split at declared
     · rename_i singleton

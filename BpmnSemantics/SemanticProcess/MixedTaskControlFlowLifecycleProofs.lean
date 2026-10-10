@@ -48,6 +48,13 @@ def AtPosition (program : Program) (analysis : Analysis) (state : RuntimeState) 
       | none => True) ∧
     SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) state.variables.process.bindings = true
 
+theorem indexed_collection_storage (program : Program) (analysis : Analysis) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (framed : RootFrame owner state) (indexed : AtPosition program analysis state) :
+    committedStateCollectionAdmitted state = true := by
+  apply SerialBusinessTask.root_frontier_collection_storage state owner framed
+  obtain ⟨_, position, _⟩ := indexed
+  cases position <;> simp_all [frontierFields]
+
 theorem analyzed_definition_root (program : Program) (analysis : Analysis)
     (analyzed : programAnalysis program = some analysis) :
     ∃ root, program.definitionScopes = [root] ∧ programOwnershipValid program root = true := by
@@ -245,7 +252,7 @@ theorem human_completion_preserves_position (program : Program) (analysis : Anal
         refine ⟨?_, ?_⟩
         · refine ⟨?_, ?_, effectsOwned, Or.inl runningLife, foreign, ?_⟩ <;>
             simp [fields.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy, IssuanceFrame] <;>
-            exact ⟨issued.1, issued.2.1, issued.2.2.1⟩
+            exact ⟨issued.1, issued.2.1, issued.2.2.1, issued.2.2.2.2⟩
         refine ⟨some next, ?_, ?_, ?_⟩
         · apply Position.token next nextMember ⟨wait.output, wait.owner⟩
           · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
@@ -273,7 +280,7 @@ theorem effect_completion_preserves_position (program : Program) (analysis : Ana
     business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
   subst after
   have live : selected ∈ before.effectWaits := (List.mem_filter.mp
-    (show selected ∈ before.effectWaits.filter (effectOccurrenceMatches effectId) by rw [occurrence]; simp)).1
+    (show selected ∈ before.effectWaits.filter (effectIdNamesWait effectId) by rw [occurrence]; simp)).1
   have runningLife : before.control = .running owner.processInstanceId ∧
       before.scopeOccurrences = [{ id := owner, parent := none }] := by
     rcases life with running | ⟨_, _, _, _, empty, _⟩
@@ -677,7 +684,7 @@ theorem admissible_completion_dispatch_commits (program : Program) (analysis : A
       have running : state.control = .running wait.processInstanceId := by
         rcases framed.2.2.2.1 with ⟨running, _⟩ | ⟨_, _, _, empty, _⟩ <;> simp_all
       rcases human_dispatch_cases program analysis state commandId ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ patch profile analyzed with ⟨_, refused⟩ | ⟨after, _, _, committed⟩
-      · simp [running, valid, completeUserTask, single] at refused
+      · simp [taskIdNamesWait, running, valid, completeUserTask, single] at refused
       · rw [committed]
   | effect commandId wait patch sources live valid collected count covered =>
       have fields : state.effectWaits = [wait] ∧ state.variables.activities =
@@ -690,7 +697,7 @@ theorem admissible_completion_dispatch_commits (program : Program) (analysis : A
       obtain ⟨bindings, mapped⟩ := SerialBusinessTask.serial_patch_exists (SerialBusinessTask.programHandlers program) wait.outputMappings state.variables.process.bindings patch sources collected valid count covered
       rcases profile with profile | profile <;>
         simp [dispatchStimulus, snapshots, running, noCompensation, profile, completeSerialEffect?, completeBusinessEffect?, effectResultOutput, fields.1,
-          effectOccurrenceMatches, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
+          effectIdNamesWait, completeSerialActivityScope?, fields.2, activityScopeMatches, localDataOwnerMatches, mapped]
 
 theorem human_admission_preserves_position (program : Program) (analysis : Analysis)
     (before : RuntimeState) (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
@@ -705,7 +712,8 @@ theorem human_admission_preserves_position (program : Program) (analysis : Analy
   cases guarded : serialBusinessCommandAdmitted program before (.completeUserTaskInstance commandId taskId bindings) with
   | false => simpa [admitStimulus, snapshots, guarded] using And.intro framed indexed
   | true =>
-    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1 guarded trivial]
+    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1
+      (indexed_collection_storage program analysis before owner framed indexed) guarded trivial]
     rcases human_dispatch_cases program analysis before commandId taskId bindings profile analyzed with
       ⟨refused, _⟩ | ⟨after, _patchValid, completed, accepted⟩
     · simpa [refused] using And.intro framed indexed
@@ -725,7 +733,8 @@ theorem effect_admission_preserves_position (program : Program) (analysis : Anal
   cases guarded : serialBusinessCommandAdmitted program before (.completeEffect commandId effectId result) with
   | false => simpa [admitStimulus, snapshots, guarded] using And.intro framed indexed
   | true =>
-    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1 guarded trivial]
+    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1
+      (indexed_collection_storage program analysis before owner framed indexed) guarded trivial]
     rcases business_profile_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
       refused | ⟨after, completed, accepted⟩
     · simpa [refused] using And.intro framed indexed
@@ -756,30 +765,33 @@ theorem completion_preserves_issuance (program : Program) (analysis : Analysis) 
     (completion : SerialBusinessTask.IsSerialCompletion stimulus) :
     (admitStimulus program before stimulus).state.activations = before.activations ∧
       (admitStimulus program before stimulus).state.effectActivations = before.effectActivations := by
-  obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  cases guarded : serialBusinessCommandAdmitted program before stimulus with
-  | false => simp [admitStimulus, snapshots, guarded]
+  cases storageAdmitted : committedStateCollectionAdmitted before with
+  | false => simp [admitStimulus_invalid_collection_storage program before stimulus storageAdmitted]
   | true =>
-    rw [serial_completion_admission_eq_dispatch program analysis before stimulus profile analyzed foreign guarded completion]
-    cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
-    case completeUserTaskInstance commandId taskId bindings =>
-      rcases human_dispatch_cases program analysis before commandId taskId bindings profile analyzed with
-        ⟨refused, _⟩ | ⟨after, _, completed, committed⟩
-      · simp [refused]
-      · rw [committed]
-        unfold completeUserTask at completed
-        split at completed
-        · contradiction
-        · cases Option.some.inj completed
+    obtain ⟨_, snapshots, _⟩ := program_analysis_declarations_absent program analysis analyzed
+    cases guarded : serialBusinessCommandAdmitted program before stimulus with
+    | false => simp [admitStimulus, snapshots, guarded]
+    | true =>
+      rw [serial_completion_admission_eq_dispatch program analysis before stimulus profile analyzed foreign storageAdmitted guarded completion]
+      cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
+      case completeUserTaskInstance commandId taskId bindings =>
+        rcases human_dispatch_cases program analysis before commandId taskId bindings profile analyzed with
+          ⟨refused, _⟩ | ⟨after, _, completed, committed⟩
+        · simp [refused]
+        · rw [committed]
+          unfold completeUserTask at completed
+          split at completed
+          · contradiction
+          · cases Option.some.inj completed
+            exact ⟨rfl, rfl⟩
+      case completeEffect commandId effectId result =>
+        rcases business_profile_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
+          refused | ⟨after, completed, committed⟩
+        · simp [refused]
+        · rw [committed]
+          obtain ⟨_, _, _, _, _, _, _, _, _, _, successor⟩ :=
+            business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
+          rw [successor]
           exact ⟨rfl, rfl⟩
-    case completeEffect commandId effectId result =>
-      rcases business_profile_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
-        refused | ⟨after, completed, committed⟩
-      · simp [refused]
-      · rw [committed]
-        obtain ⟨_, _, _, _, _, _, _, _, _, _, successor⟩ :=
-          business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
-        rw [successor]
-        exact ⟨rfl, rfl⟩
 
 end BpmnSemantics.SemanticProcess.MixedTaskControlFlow

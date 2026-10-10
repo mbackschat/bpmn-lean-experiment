@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 

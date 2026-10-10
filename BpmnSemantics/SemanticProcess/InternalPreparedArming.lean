@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 
 /-! Complete retained preparations implement the predecessor-only finite-batch classification account. -/
 
@@ -18,6 +19,14 @@ def PreparedInternalArming.operation : PreparedInternalArming → SemanticOperat
 def PreparedInternalArming.footprint : PreparedInternalArming → InternalTransitionFootprint
   | .ordinary _ patch => footprintOfPatch patch
   | .data contract patch => footprintOfDataPatch contract patch
+
+def PreparedInternalArming.stateFootprint (prepared : PreparedInternalArming) :
+    InternalTransitionStateFootprint :=
+  { reads := prepared.footprint.reads, writes := prepared.footprint.writes }
+
+def PreparedInternalArming.scopeFramePatch : PreparedInternalArming → InternalArmingPatch
+  | .ordinary _ patch => patch
+  | .data _ patch => patch.arm
 
 def PreparedInternalArming.apply (state : RuntimeState) : PreparedInternalArming → RuntimeState
   | .ordinary _ patch => applyInternalArmingPatch state patch

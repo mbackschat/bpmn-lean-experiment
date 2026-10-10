@@ -162,7 +162,7 @@ def completeSequentialScopeEffectData? (program : Program) (state : RuntimeState
 /-- SMIS-DATA-01 commits the selected body's successful result and continuation atomically. -/
 def completeSequentialScopeEffect? (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
-  let [wait] := state.effectWaits.filter (effectOccurrenceMatches effectId) | none
+  let [wait] := state.effectWaits.filter (effectIdNamesWait effectId) | none
   let .success patch := result | none
   if wait.processInstanceId != wait.owner.processInstanceId || wait.bpmnErrorRoute.isSome then none
   else
@@ -173,8 +173,7 @@ def completeSequentialScopeEffect? (program : Program) (state : RuntimeState)
       tokens := addToken state.tokens wait.output wait.owner }
 
 def sequentialScopeTaskWaits (state : RuntimeState) (taskId : UserTaskInstanceId) : List UserTaskWait :=
-  state.waits.filter fun wait => wait.processInstanceId == taskId.processInstanceId &&
-    wait.task.id.value == taskId.elementId.value && wait.activation == taskId.activation
+  state.waits.filter (taskIdNamesWait taskId)
 
 /-- SMIS-DATA-01 and SMIS-EARLY-01 bind human writes and continuation to one current body. -/
 def completeSequentialScopeUserTask? (program : Program) (state : RuntimeState)

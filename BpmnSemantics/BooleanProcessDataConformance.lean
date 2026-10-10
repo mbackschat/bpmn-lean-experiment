@@ -1,5 +1,6 @@
 import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.SemanticProcess.JsonSupport
+import BpmnSemantics.SemanticProcess.Execution
 
 /-! # Boolean Process-data conformance
 

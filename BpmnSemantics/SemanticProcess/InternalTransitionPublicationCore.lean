@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 import BpmnSemantics.SemanticProcess.TransitionRecord

@@ -452,12 +452,6 @@ theorem correlatedDeliveryRechecks_exact (candidate : CorrelatedMessageCandidate
         candidate.key = delivery.payload := by
   simp only [correlatedDeliveryRechecks, Bool.and_eq_true, decide_eq_true_eq, and_assoc]
 
-def correlatedWaitOccurrenceMatches (subscriptionId : MessageSubscriptionId)
-    (wait : MessageWait) : Bool :=
-  wait.processInstanceId = subscriptionId.processInstanceId &&
-    wait.elementId.value = subscriptionId.elementId.value &&
-    wait.activation = subscriptionId.activation
-
 def currentCorrelatedMessageWaitForCandidate? (program : Program) (state : RuntimeState)
     (candidate : CorrelatedMessageCandidate) : Option MessageWait := do
   let operation ← soleCorrelatedPayloadMessageOperation? program
@@ -465,7 +459,7 @@ def currentCorrelatedMessageWaitForCandidate? (program : Program) (state : Runti
   | .awaitCorrelatedPayloadMessage _ _ _ output message _ _ _ _ => do
       let wait ← selectedCorrelatedMessageWait? program state candidate.processInstanceId
         operation message output
-      if correlatedWaitOccurrenceMatches candidate.subscriptionId wait then some wait else none
+      if messageIdNamesWait candidate.subscriptionId wait then some wait else none
   | _ => none
 
 theorem currentCorrelatedMessageWaitForCandidate?_facts
@@ -480,7 +474,7 @@ theorem currentCorrelatedMessageWaitForCandidate?_facts
       selectedCorrelatedMessageWait? program state candidate.processInstanceId
         (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
           correlationPropertyId payloadSelector processPropertySelector) message output = some wait ∧
-      correlatedWaitOccurrenceMatches candidate.subscriptionId wait = true := by
+      messageIdNamesWait candidate.subscriptionId wait = true := by
   unfold currentCorrelatedMessageWaitForCandidate? at current
   cases operationEq : soleCorrelatedPayloadMessageOperation? program with
   | none => simp [operationEq] at current
@@ -494,7 +488,7 @@ theorem currentCorrelatedMessageWaitForCandidate?_facts
           | none => simp [operationEq, waitEq] at current
           | some selectedWait =>
               cases occurrence :
-                  correlatedWaitOccurrenceMatches candidate.subscriptionId selectedWait with
+                  messageIdNamesWait candidate.subscriptionId selectedWait with
               | false => simp [operationEq, waitEq, occurrence] at current
               | true =>
                 simp [operationEq, waitEq, occurrence] at current

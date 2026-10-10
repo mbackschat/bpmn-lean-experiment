@@ -1,4 +1,5 @@
 import BpmnSemantics.SequentialUserTask
+import BpmnSemantics.SemanticProcess.Execution
 
 /-! # BpmnSemantics.UserTaskCompletionDataConformance — exact completion-patch locks
 

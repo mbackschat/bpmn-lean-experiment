@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.RuntimeState
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
@@ -9,13 +10,6 @@ This module owns external effect-occurrence matching, successful typed result ro
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-def effectOccurrenceMatches (effectId : EffectOccurrenceId)
-    (wait : EffectWait) : Bool :=
-  decide (
-    wait.processInstanceId = effectId.processInstanceId &&
-      wait.elementId.value = effectId.elementId.value &&
-      wait.activation = effectId.activation)
 
 def effectResultOutput (wait : EffectWait) :
     EffectExecutionResult → Option ControlPlaceId
@@ -37,7 +31,7 @@ inductive EffectCompletionStep :
       (variables : ScopedVariables)
       (output : ControlPlaceId)
       (occurrence :
-        state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
+        state.effectWaits.find? (effectIdNamesWait effectId) = some wait)
       (mapping :
         completeActivityVariableScope state.variables effectId
           wait.outputMappings result = some variables)
@@ -50,7 +44,7 @@ inductive EffectCompletionStep :
 
 def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState :=
-  match state.effectWaits.find? (effectOccurrenceMatches effectId) with
+  match state.effectWaits.find? (effectIdNamesWait effectId) with
   | none => none
   | some wait =>
       match completeActivityVariableScope state.variables effectId
@@ -159,7 +153,7 @@ def completeSerialActivityScope? (handlers : List String) (variables : ScopedVar
 
 def completeSerialEffect? (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
-  match state.effectWaits.filter (effectOccurrenceMatches effectId) with
+  match state.effectWaits.filter (effectIdNamesWait effectId) with
   | [wait] =>
       let variables ← completeSerialActivityScope? (SerialBusinessTask.programHandlers program)
         state.variables effectId wait.outputMappings result
@@ -172,7 +166,7 @@ def completeSerialEffect? (program : Program) (state : RuntimeState)
 /-- MBERR-MAP-01 combines exact local-result mapping with the active occurrence's attached route. -/
 def completeBusinessEffect? (handlers : List String) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
-  match state.effectWaits.filter (effectOccurrenceMatches effectId) with
+  match state.effectWaits.filter (effectIdNamesWait effectId) with
   | [wait] =>
       let output ← effectResultOutput wait result
       let patch := match result with

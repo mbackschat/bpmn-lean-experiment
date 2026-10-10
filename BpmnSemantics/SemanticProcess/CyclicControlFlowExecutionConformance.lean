@@ -107,7 +107,7 @@ theorem representative_review_completion_is_exact
       waits := []
       tokens :=
         [{ placeId := ⟨"place:Flow_Review_Choice"⟩, owner := cyclicOwner }] }
-  · simp [completeUserTask, cyclicWaitingState, cyclicWait,
+  · simp [completeUserTask, taskIdNamesWait, cyclicWaitingState, cyclicWait,
       singletonWaitingState, initialState, addToken, canonicalInsertBy]
   · cases previousRoute <;>
       simp [cyclicRoutePatch, cyclicWaitingState, cyclicPostCompletionState,

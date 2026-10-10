@@ -12,13 +12,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-theorem selectProcessInterface_iff {variables : ScopedVariables} {owner : ScopeOccurrenceId}
-    {scope : ProcessInterfaceScope} :
-    selectProcessInterface? variables owner = some scope ↔
-      variables.processInterfaces.filter (fun candidate => decide (candidate.owner = owner)) = [scope] := by
-  unfold selectProcessInterface?
-  split <;> simp_all
-
 theorem selectProcessInterface_exact_owner {variables : ScopedVariables}
     {owner : ScopeOccurrenceId} {scope : ProcessInterfaceScope}
     (selected : selectProcessInterface? variables owner = some scope) : scope.owner = owner := by
@@ -46,31 +39,6 @@ theorem selectProcessInterface_duplicate_refused
     selectProcessInterface? { variables with processInterfaces := [first, second] } owner = none := by
   simp [selectProcessInterface?, firstOwner, secondOwner]
 
-private theorem readInterfaceBinding_iff {bindings : List VariableBinding} {name : String}
-    {binding : VariableBinding} : readInterfaceBinding? bindings name = some binding ↔
-    bindings.filter (fun candidate => decide (candidate.name = name)) = [binding] ∧
-      processInterfaceScalar binding.value = true := by
-  unfold readInterfaceBinding?
-  split
-  · split <;> simp_all <;> intro equal <;> subst binding <;> assumption
-  · simp_all
-
-theorem readProcessInterfaceInput_iff {variables : ScopedVariables} {owner : ScopeOccurrenceId}
-    {name : String} {binding : VariableBinding} :
-    readProcessInterfaceInput? variables owner name = some binding ↔
-      ∃ scope, selectProcessInterface? variables owner = some scope ∧
-        scope.inputs.filter (fun candidate => decide (candidate.name = name)) = [binding] ∧
-        processInterfaceScalar binding.value = true := by
-  simp [readProcessInterfaceInput?, Option.bind_eq_some_iff, readInterfaceBinding_iff]
-
-theorem readProcessInterfaceOutput_iff {variables : ScopedVariables} {owner : ScopeOccurrenceId}
-    {name : String} {binding : VariableBinding} :
-    readProcessInterfaceOutput? variables owner name = some binding ↔
-      ∃ scope, selectProcessInterface? variables owner = some scope ∧
-        scope.outputs.filter (fun candidate => decide (candidate.name = name)) = [binding] ∧
-        processInterfaceScalar binding.value = true := by
-  simp [readProcessInterfaceOutput?, Option.bind_eq_some_iff, readInterfaceBinding_iff]
-
 theorem processInterfaceScalar_iff (value : VariableValue) :
     processInterfaceScalar value = true ↔ value = .null ∨ ∃ text, value = .string text := by
   cases value <;> simp [processInterfaceScalar]
@@ -94,17 +62,6 @@ theorem addProcessInterface_nonscalar_refused (variables : ScopedVariables) (own
     addProcessInterface? variables owner input = none := by
   simp [addProcessInterface?, unsupported]
 
-theorem addProcessInterface_success_iff {variables result : ScopedVariables} {owner : ScopeOccurrenceId}
-    {input : VariableBinding} : addProcessInterface? variables owner input = some result ↔
-    variables.processInterfaces.any (fun scope => decide (scope.owner = owner)) = false ∧
-      processInterfaceScalar input.value = true ∧
-      result = { variables with processInterfaces :=
-        (canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
-          { owner, inputs := [input], outputs := [] } variables.processInterfaces) } := by
-  cases fresh : variables.processInterfaces.any (fun scope => decide (scope.owner = owner)) <;>
-    cases scalar : processInterfaceScalar input.value <;>
-    simp [addProcessInterface?, fresh, scalar] <;> exact eq_comm
-
 theorem addProcessInterface_preserves_caller {variables result : ScopedVariables}
     {owner : ScopeOccurrenceId} {input : VariableBinding}
     (added : addProcessInterface? variables owner input = some result) :
@@ -122,38 +79,6 @@ theorem writeProcessInterfaceOutput_nonscalar_refused (variables : ScopedVariabl
     (unsupported : processInterfaceScalar output.value = false) :
     writeProcessInterfaceOutput? variables owner output = none := by
   simp [writeProcessInterfaceOutput?, unsupported]
-
-theorem writeProcessInterfaceOutput_success_iff {variables result : ScopedVariables}
-    {owner : ScopeOccurrenceId} {output : VariableBinding} :
-    writeProcessInterfaceOutput? variables owner output = some result ↔
-      ∃ scope, selectProcessInterface? variables owner = some scope ∧
-        processInterfaceScalar output.value = true ∧
-        (scope.outputs = [] ∨ ∃ previous, scope.outputs = [previous] ∧ previous.name = output.name) ∧
-        result = { variables with processInterfaces := variables.processInterfaces.map fun candidate =>
-          if candidate.owner = owner then { candidate with outputs := [output] } else candidate } := by
-  cases selected : selectProcessInterface? variables owner with
-  | none => simp [writeProcessInterfaceOutput?, selected]
-  | some scope =>
-      simp only [writeProcessInterfaceOutput?, selected, bind, Option.bind,
-        Option.some.injEq, exists_eq_left']
-      have slot : outputSlotAccepts scope.outputs output.name = true ↔
-          scope.outputs = [] ∨ ∃ previous, scope.outputs = [previous] ∧ previous.name = output.name := by
-        unfold outputSlotAccepts
-        split <;> simp_all
-      split
-      · next accepted =>
-        simp only [Bool.and_eq_true] at accepted
-        have scalar := accepted.1
-        have acceptedSlot := slot.mp accepted.2
-        simp only [scalar, acceptedSlot, true_and, Option.some.injEq]
-        exact eq_comm
-      · next rejected =>
-        have refused : ¬ (processInterfaceScalar output.value = true ∧
-            (scope.outputs = [] ∨ ∃ previous, scope.outputs = [previous] ∧ previous.name = output.name)) := by
-          intro accepted
-          apply rejected
-          simp [accepted.1, slot.mpr accepted.2]
-        simp_all
 
 theorem writeProcessInterfaceOutput_preserves_caller {variables result : ScopedVariables}
     {owner : ScopeOccurrenceId} {output : VariableBinding}

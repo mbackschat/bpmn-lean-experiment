@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionBinding
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 

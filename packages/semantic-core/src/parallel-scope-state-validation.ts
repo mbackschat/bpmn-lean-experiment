@@ -2,6 +2,7 @@ import { ActivityBodyKind } from "./activity-occurrence.js";
 import { VariableValueKind } from "./contract.js";
 import { candidateProcessId } from "./flow-node-occurrence-candidates.js";
 import { internalOccurrenceReservationStateIsValid } from "./internal-operation-occurrence.js";
+import { committedStateCollectionDefects } from "./runtime-state-collection-ordering.js";
 import { parallelScopeProgramStartCapacity } from "./parallel-scope-program-capacity.js";
 import { parallelScopeBinding } from "./parallel-scope-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -10,7 +11,7 @@ import type { RuntimeState } from "./semantic-process-state.js";
 
 /** PMIS-IDENTITY-01 binds the entire live population to its captured collection and issued wait identities. */
 export function parallelScopeStateValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
-  if (!internalOccurrenceReservationStateIsValid(state)) return false;
+  if (committedStateCollectionDefects(state).length > 0 || !internalOccurrenceReservationStateIsValid(state)) return false;
   const entry = program.operations.find(operation => operation.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
   if (entry?.kind !== SemanticOperationKind.EnterParallelMultiInstanceScope) return false;
   const activities = state.activityOccurrences.filter(activity => activity.operationId === entry.id ||

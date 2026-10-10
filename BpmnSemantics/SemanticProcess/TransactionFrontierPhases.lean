@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.TransactionProgramRoles
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction scope barriers between frontier phases
 
@@ -231,9 +232,7 @@ theorem transaction_selected_task_arming_keeps_scope_blocked
 theorem transaction_selected_task_completion_keeps_scope_blocked
     (before after : RuntimeState) (instanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) (wait : UserTaskWait)
-    (selected : before.waits.find? (fun candidate => decide
-      (candidate.processInstanceId = instanceId && candidate.task.id = taskId &&
-        candidate.activation = activation)) = some wait)
+    (selected : before.waits.find? ((taskIdNamesWait { processInstanceId := instanceId, elementId := ⟨taskId.value⟩, activation := activation })) = some wait)
     (completed : completeUserTask before instanceId taskId activation = some after) :
     TransactionScopeBarrier after wait.owner := by
   simp only [completeUserTask, selected, Option.some.injEq] at completed
@@ -246,9 +245,7 @@ theorem transaction_selected_task_completion_keeps_scope_blocked
 theorem transaction_task_completion_preserves_other_wait
     (before after : RuntimeState) (instanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) (selectedWait otherWait : UserTaskWait)
-    (selected : before.waits.find? (fun candidate => decide
-      (candidate.processInstanceId = instanceId && candidate.task.id = taskId &&
-        candidate.activation = activation)) = some selectedWait)
+    (selected : before.waits.find? ((taskIdNamesWait { processInstanceId := instanceId, elementId := ⟨taskId.value⟩, activation := activation })) = some selectedWait)
     (completed : completeUserTask before instanceId taskId activation = some after)
     (different : otherWait ≠ selectedWait) (present : otherWait ∈ before.waits) :
     otherWait ∈ after.waits := by
@@ -298,9 +295,7 @@ theorem transaction_ordinary_completion_from_waiting
     obtain ⟨staged, retained, completed⟩ := Option.bind_eq_some_iff.mp completed
     have frame := transaction_retention_staging_preserves_frontier program .ordinaryUserTask
       wait.owner _ _ staged retained
-    have found : staged.waits.find? (fun candidate => decide
-        (candidate.processInstanceId = taskId.processInstanceId &&
-          candidate.task.id = ⟨taskId.elementId.value⟩ && candidate.activation = taskId.activation)) =
+    have found : staged.waits.find? ((taskIdNamesWait taskId)) =
         some wait := by
       rw [frame.2.1]
       exact matched
@@ -318,9 +313,7 @@ theorem transaction_ordinary_completion_from_waiting
       change before.waits.find? _ = none at matched
       simp only [completeUserTask, matched, reduceCtorEq] at completed
     | some wait =>
-      have found : before.waits.find? (fun candidate => decide
-          (candidate.processInstanceId = taskId.processInstanceId &&
-            candidate.task.id = ⟨taskId.elementId.value⟩ && candidate.activation = taskId.activation)) =
+      have found : before.waits.find? ((taskIdNamesWait taskId)) =
           some wait := matched
       simp only [completeUserTask, found, Option.some.injEq] at completed
       subst after

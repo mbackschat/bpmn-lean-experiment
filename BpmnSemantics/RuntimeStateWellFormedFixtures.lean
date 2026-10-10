@@ -1,5 +1,4 @@
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import BpmnSemantics.ActivityBoundaryTimerFixtures
 
 /-! # Runtime-state well-formedness fixtures
 

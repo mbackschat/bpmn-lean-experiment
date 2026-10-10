@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
 import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Transaction execution-phase invariant
 
@@ -133,9 +134,14 @@ private theorem admitted_task_invariant (p : Program) (roles : TransactionAdmitt
     (running : before.control = .running instanceId) (emptyTokens : before.tokens = []) :
     TransactionContinuationInvariant roles
       (admitStimulusWithCompensationSnapshots p before (.completeUserTaskInstance commandId taskId submitted)).state := by
+  by_cases storage : committedStateCollectionAdmitted before = true
+  case neg =>
+    rw [admitStimulusWithCompensationSnapshots_withoutDeclaration _ _ _ roles.snapshotsAbsent,
+      admitStimulus_invalid_collection_storage _ _ _ (Bool.eq_false_iff.mpr storage)]
+    exact invariant
   by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
   case neg =>
-    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, handlerValid,
       callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
       callDataCheckpointProfileId]
     exact invariant
@@ -143,7 +149,7 @@ private theorem admitted_task_invariant (p : Program) (roles : TransactionAdmitt
   obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,
       dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [handlerValid, running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
+  simp [storage, handlerValid, running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
@@ -162,15 +168,20 @@ private theorem admitted_handler_invariant (p : Program) (roles : TransactionAdm
     (running : before.control = .running instanceId) (emptyTokens : before.tokens = []) :
     TransactionContinuationInvariant roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
+  by_cases storage : committedStateCollectionAdmitted before = true
+  case neg =>
+    rw [admitStimulusWithCompensationSnapshots_withoutDeclaration _ _ _ roles.snapshotsAbsent,
+      admitStimulus_invalid_collection_storage _ _ _ (Bool.eq_false_iff.mpr storage)]
+    exact invariant
   by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
   case neg =>
-    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, handlerValid,
       callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
       callDataCheckpointProfileId]
     exact invariant
 
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [handlerValid, running, invariant.inert.2.2.2.1, invariant.inert.2.2.1, callDataRuntimeStateValid,
+  simp [storage, handlerValid, running, invariant.inert.2.2.2.1, invariant.inert.2.2.1, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with
@@ -214,23 +225,28 @@ theorem transaction_admission_commits_or_preserves_state (p : Program) (roles : 
     (inert : TransactionInertCollections before) (stimulus : Stimulus) :
     (admitStimulusWithCompensationSnapshots p before stimulus).outcome = .committed ∨
       (admitStimulusWithCompensationSnapshots p before stimulus).state = before := by
+  by_cases storage : committedStateCollectionAdmitted before = true
+  case neg =>
+    rw [admitStimulusWithCompensationSnapshots_withoutDeclaration _ _ _ roles.snapshotsAbsent,
+      admitStimulus_invalid_collection_storage _ _ _ (Bool.eq_false_iff.mpr storage)]
+    exact Or.inr rfl
   cases stimulus
   case startProcess commandId processId instanceId submitted =>
     cases control : before.control
-    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control, inert.2.2.2.1,
+    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control, inert.2.2.2.1,
       roles.profileSelected, transactionCancellationCheckpointProfileId, serialBusinessTaskProfileId, mixedTaskControlFlowProfileId]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeUserTaskInstance commandId taskId submitted =>
     obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,
         dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph ⟨taskId.elementId.value⟩
     cases control : before.control
-    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control,
+    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control,
       inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded, bounded, composed,
       dataInput, dataOutput, monitored]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeEffect commandId effectId result =>
     cases control : before.control
-    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, control,
+    all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control,
       inert.2.2.2.1, inert.2.2.1]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | contradiction | split
   all_goals

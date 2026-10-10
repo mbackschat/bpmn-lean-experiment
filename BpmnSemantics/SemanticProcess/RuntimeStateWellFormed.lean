@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CompensationActivityRetention
@@ -14,9 +15,10 @@ import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 
 /-! # Runtime-state well-formedness
 
-This module owns `runtimeStateWellFormed`, the executable predicate deciding which `RuntimeState`
-values the semantic account admits, and `RuntimeStateMonotone`, the separate two-state relation for
-facts that belong to a transition rather than to a state.
+This module owns the proof predicate `runtimeStateWellFormed` and the separate two-state relation
+`RuntimeStateMonotone`. Committed ingress and retained-state capacity use the narrower executable
+collection gate in `RuntimeStateCollectionStorage`; this predicate alone does not establish that
+stronger unique-key storage guarantee.
 
 The two have different types on purpose. Whether a counter decreased or an identity was reissued
 cannot be decided from one state without inventing a history field. The single-state predicate does
@@ -45,10 +47,10 @@ Conjuncts that an existing predicate already decides are consumed rather than re
 `runtimePositionValid` supplies lifecycle agreement, unique live occurrence identity, scope binding,
 the hosting-root count, token binding, and, for a running state, the called-process associations,
 while `eventRaceAssociationsValid` and `effectIncidentAssociationsValid` supply their families'
-association facts. What this module adds is every remaining single-state conjunct, and
-`runtimeStateWellFormed` below is that enumeration. Restating the list here would be a second copy of
-it, and the copy is what drifts; membership is decided by a criterion instead, namely that the fact
-constrains one state and no predicate this one consumes already decides it.
+association facts. `runtimeStateWellFormed` below enumerates its remaining reviewed single-state
+conjuncts. Its weak canonical-order conjunct permits equal keys; counter-name uniqueness belongs to
+the separate committed collection gate. Neither predicate extends the selected identity-bound
+families or encodes transition history.
 
 `calledProcessAssociationsValid` is deliberately not conjoined here. It decides a running state and
 answers `false` when there is no root instance identity, so stating it outside the running case
@@ -60,15 +62,6 @@ to be two.
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-/-- A list is in canonical order when no element strictly precedes the one before it. The insertion
-helpers that maintain these collections place a new element ahead of the first element it precedes,
-so consecutive pairs satisfy exactly this and nothing stronger: equal keys may appear in either
-order, which is why this is not stated as strict sortedness. -/
-def orderedBy {α : Type} (before : α → α → Bool) : List α → Bool
-  | [] => true
-  | [_] => true
-  | left :: right :: rest => !before right left && orderedBy before (right :: rest)
 
 /-! ## Layer 1: lifecycle and structure -/
 
@@ -104,42 +97,6 @@ def waitOwnersLive (state : RuntimeState) : Bool :=
     state.calledProcessOccurrences.all (fun record => exactLiveOccurrence state record.caller) &&
     state.activityOccurrences.all (fun record => exactLiveOccurrence state record.owner)
 
-def occursOnce {α : Type} (key : α → α → Bool) (values : List α) (value : α) : Bool :=
-  (values.filter (key value)).length = 1
-
-/-- `RSI-UNIQ-02`. Within each wait family the family's occurrence key appears at most once.
-
-This is the fact the boundary-Timer stale-identity laws currently assume away: two Timer waits
-sharing `(instance, element, activation)` make "the" wait for a fired deadline ambiguous, and the
-evaluator would resolve the ambiguity by list order rather than by meaning. -/
-def userTaskWaitKeyMatches (left right : UserTaskWait) : Bool :=
-  decide (left.processInstanceId = right.processInstanceId) &&
-    decide (left.task.id = right.task.id) &&
-    decide (left.activation = right.activation)
-
-def messageWaitKeyMatches (left right : MessageWait) : Bool :=
-  decide (left.processInstanceId = right.processInstanceId) &&
-    decide (left.elementId = right.elementId) &&
-    decide (left.activation = right.activation)
-
-/-- The key `fireTimer` looks a deadline up by. It is named rather than inlined so the uniqueness
-conjunct and the withdrawal-finality law below cannot drift apart into two different keys. -/
-def timerWaitKeyMatches (left right : TimerWait) : Bool :=
-  decide (left.processInstanceId = right.processInstanceId) &&
-    decide (left.elementId = right.elementId) &&
-    decide (left.activation = right.activation)
-
-def effectWaitKeyMatches (left right : EffectWait) : Bool :=
-  decide (left.processInstanceId = right.processInstanceId) &&
-    decide (left.elementId = right.elementId) &&
-    decide (left.activation = right.activation)
-
-def waitIdentitiesUnique (state : RuntimeState) : Bool :=
-  state.waits.all (occursOnce userTaskWaitKeyMatches state.waits) &&
-    state.messageWaits.all (occursOnce messageWaitKeyMatches state.messageWaits) &&
-    state.timerWaits.all (occursOnce timerWaitKeyMatches state.timerWaits) &&
-    state.effectWaits.all (occursOnce effectWaitKeyMatches state.effectWaits)
-
 /-! ## Activity occurrence ownership
 
 Two directions, and neither implies the other. A record whose body is gone is an Activity that
@@ -153,16 +110,10 @@ it.
 def activityBodyLive (state : RuntimeState) (record : ActivityOccurrence) : Bool :=
   match record.body with
   | .userTask task =>
-      (state.waits.filter fun wait =>
-        decide (wait.processInstanceId = task.processInstanceId) &&
-          decide (wait.task.id.value = task.elementId.value) &&
-          decide (wait.activation = task.activation)).length = 1
+      (state.waits.filter (taskIdNamesWait task)).length = 1
   | .parallelUserTasks first rest =>
       (first :: rest).all fun task =>
-        (state.waits.filter fun wait =>
-          decide (wait.processInstanceId = task.processInstanceId) &&
-            decide (wait.task.id.value = task.elementId.value) &&
-            decide (wait.activation = task.activation)).length = 1
+        (state.waits.filter (taskIdNamesWait task)).length = 1
   | .childScope scope => exactLiveOccurrence state scope
   | .parallelChildScopes first rest =>
       validParallelScopeIterations record.owner.processInstanceId (first :: rest) &&
@@ -224,11 +175,6 @@ theorem attachedTimersUnambiguous_frame (before after : RuntimeState)
     (records : after.activityOccurrences = before.activityOccurrences) :
     attachedTimersUnambiguous after = attachedTimersUnambiguous before := by
   simp [attachedTimersUnambiguous, timers, records]
-
-/-- `AOO-ID-01`. The Activity occurrence triple appears at most once. -/
-def activityIdentitiesUnique (state : RuntimeState) : Bool :=
-  state.activityOccurrences.all
-    (occursOnce sameActivityOccurrence state.activityOccurrences)
 
 /-- `AOO-ID-01` turns an identity match between live records into equality of the complete record. -/
 theorem activityIdentitiesUnique_member_eq (state : RuntimeState)
@@ -442,40 +388,6 @@ creates no controller at all. -/
 def controllersNotExhausted (state : RuntimeState) : Bool :=
   state.sequentialMultiInstanceControllers.all fun controller =>
     completedInstanceCount controller < controller.snapshot.length
-
-/-- `RSI-ORDER-01`. The collections whose every add site canonically inserts hold that order.
-
-The membership rule is a criterion rather than a list: a collection belongs here when all of its add
-sites insert canonically. Process bindings are excluded because they take submitted order at Process
-start. Asserting order for them would be refuted by ordinary reachable states, since `RuntimeState`
-derives `DecidableEq` and therefore retains list order as state.
-
-The controller collection is included although this capsule adds no Lean insertion site for it, because
-the independently written core does maintain and check that order: admitting an unordered controller
-list here would be a state one target refuses and the other accepts. -/
-def canonicalCollectionOrder (state : RuntimeState) : Bool :=
-  orderedBy controlTokenBefore state.tokens &&
-    orderedBy activationBefore state.activityActivations &&
-    orderedBy userTaskWaitBefore state.waits &&
-    orderedBy activationBefore state.activations &&
-    orderedBy messageWaitBefore state.messageWaits &&
-    orderedBy timerWaitBefore state.timerWaits &&
-    orderedBy effectWaitBefore state.effectWaits &&
-    orderedBy messageActivationBefore state.messageActivations &&
-    orderedBy timerActivationBefore state.timerActivations &&
-    orderedBy effectActivationBefore state.effectActivations &&
-    orderedBy activityVariableScopeBefore state.variables.activities &&
-    orderedBy selectionBefore state.selectedBranchSets &&
-    orderedBy eventRaceBefore state.eventRaces &&
-    orderedBy callRecordBefore state.calledProcessOccurrences &&
-    orderedBy activityOccurrenceBefore state.activityOccurrences &&
-    orderedBy sequentialMultiInstanceControllerBefore
-      state.sequentialMultiInstanceControllers &&
-    parallelMultiInstanceControllersOrdered state.parallelMultiInstanceControllers &&
-    orderedBy scopeOccurrenceBefore state.scopeOccurrences &&
-    orderedBy scopeActivationBefore state.scopeActivations &&
-    orderedBy callActivationBefore state.callActivations &&
-    orderedBy eventRaceActivationBefore state.eventRaceActivations
 
 /-! ## Layer 2: program agreement -/
 

@@ -78,8 +78,7 @@ theorem scopeQuiescent_owner_local_wait_token_exchange
 theorem completeParallelScopeUserTask_quiescence_locality
     (program : Program) (before after : RuntimeState) (id : UserTaskInstanceId)
     (values : List VariableBinding) (wait : UserTaskWait)
-    (selected : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (completed : completeParallelScopeUserTask? program before id values = some after) :
     scopeQuiescent after wait.owner = false ∧
       ∀ sibling, wait.owner ≠ sibling → scopeQuiescent after sibling = scopeQuiescent before sibling := by
@@ -95,7 +94,7 @@ theorem completeParallelScopeUserTask_quiescence_locality
 theorem completeParallelScopeEffect_quiescence_locality
     (program : Program) (before after : RuntimeState) (id : EffectOccurrenceId)
     (result : EffectExecutionResult) (wait : EffectWait)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (completed : completeParallelScopeEffect? program before id result = some after) :
     scopeQuiescent after wait.owner = false ∧
       ∀ sibling, wait.owner ≠ sibling → scopeQuiescent after sibling = scopeQuiescent before sibling := by
@@ -119,8 +118,7 @@ theorem completeParallelScopeEffect_quiescence_locality
 theorem parallelScopeCommand_task_quiescence_locality
     (program : Program) (before after : RuntimeState) (id : UserTaskInstanceId)
     (values : List VariableBinding) (wait : UserTaskWait)
-    (selected : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (body : hasParallelScopeDefinition program wait.owner = true)
     (completed : ParallelScopeCommand.completeTask? program before id values = some after) :
     scopeQuiescent after wait.owner = false ∧
@@ -132,7 +130,7 @@ theorem parallelScopeCommand_task_quiescence_locality
 theorem parallelScopeCommand_effect_quiescence_locality
     (program : Program) (before after : RuntimeState) (id : EffectOccurrenceId)
     (result : EffectExecutionResult) (wait : EffectWait)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (body : hasParallelScopeDefinition program wait.owner = true)
     (completed : ParallelScopeCommand.completeEffect? program before id result = some after) :
     scopeQuiescent after wait.owner = false ∧
@@ -181,8 +179,7 @@ theorem completeParallelScopeUserTask_token_offer_frame
     (program : Program) (before after : RuntimeState) (id : UserTaskInstanceId)
     (values : List VariableBinding) (wait : UserTaskWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
-    (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-      wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (completed : completeParallelScopeUserTask? program before id values = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
@@ -203,8 +200,7 @@ theorem completeParallelScopeUserTask_foreign_token_absence
     (values : List VariableBinding) (wait : UserTaskWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
-    (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-      wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (completed : completeParallelScopeUserTask? program before id values = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
@@ -222,7 +218,7 @@ theorem completeParallelScopeEffect_token_offer_frame
     (program : Program) (before after : RuntimeState) (id : EffectOccurrenceId)
     (result : EffectExecutionResult) (wait : EffectWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (completed : completeParallelScopeEffect? program before id result = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
@@ -291,7 +287,7 @@ theorem completeParallelScopeEffect_foreign_token_absence
     (result : EffectExecutionResult) (wait : EffectWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (completed : completeParallelScopeEffect? program before id result = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
@@ -636,8 +632,7 @@ theorem completeParallelScopeUserTask_foreign_body_refusal
     (values : List VariableBinding) (wait : UserTaskWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
-    (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-      wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (completed : completeParallelScopeUserTask? program before id values = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
@@ -659,7 +654,7 @@ theorem completeParallelScopeEffect_foreign_body_refusal
     (result : EffectExecutionResult) (wait : EffectWait) (candidate : InternalOperationOccurrence)
     (operation : SemanticOperation)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (completed : completeParallelScopeEffect? program before id result = some after)
     (outside : wait.owner ≠ candidate.owner)
     (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)

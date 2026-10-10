@@ -74,9 +74,7 @@ inductive EventSubProcessRegistrationStep : Program → RuntimeState → ScopeOc
         occurrence.id.definitionScopeId == declaration.handlerScopeId) = false)
       (counter : eventSubProcessMessageCount? before declaration.startEventId = some previous)
       (capacity : previous + 1 ≤ SemanticProcessJson.maxSafeWireNat)
-      (disjoint : before.messageWaits.any (fun wait =>
-        wait.processInstanceId == parent.processInstanceId &&
-        wait.elementId == declaration.startEventId && wait.activation == previous + 1) = false) :
+      (disjoint : before.messageWaits.any ((messageIdNamesWait { processInstanceId := parent.processInstanceId, elementId := ⟨declaration.startEventId.value⟩, activation := previous + 1 })) = false) :
       EventSubProcessRegistrationStep program before parent
         { before with
           eventSubProcessMessageSubscriptions := [{

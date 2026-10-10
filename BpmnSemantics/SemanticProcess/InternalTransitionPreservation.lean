@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
+import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication

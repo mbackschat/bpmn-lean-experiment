@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
 
 /-! # Progress after parallel subprocess retirement

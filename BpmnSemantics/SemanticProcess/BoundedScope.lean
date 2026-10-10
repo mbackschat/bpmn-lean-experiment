@@ -33,11 +33,7 @@ def isBoundedScopeDeadlineDefinition (program : Program) (elementId : NodeId) :
 /-- The live deadline named by this full occurrence identity. -/
 def boundedScopeDeadlineWait? (state : RuntimeState)
     (timerId : TimerOccurrenceId) : Option TimerWait :=
-  state.timerWaits.find? fun candidate =>
-    decide (
-      candidate.processInstanceId = timerId.processInstanceId &&
-        candidate.elementId.value = timerId.elementId.value &&
-        candidate.activation = timerId.activation)
+  state.timerWaits.find? (timerIdNamesWait timerId)
 
 /-- The committed operation whose boundary Timer this deadline realizes. -/
 def boundedScopeDefinitionFor? (program : Program) (deadline : TimerWait) :

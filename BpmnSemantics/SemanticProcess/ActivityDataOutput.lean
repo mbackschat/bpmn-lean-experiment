@@ -115,11 +115,7 @@ Named rather than inlined so the laws below, and the refusal laws of neighbourin
 def dataOutputTaskWait? (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) : Option UserTaskWait :=
-  state.waits.find? fun wait =>
-    decide (
-      wait.processInstanceId = processInstanceId &&
-        wait.task.id = taskId &&
-        wait.activation = activation)
+  state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })
 
 /-- `ADOUTPUT-ATOMIC-01`. Fills the declared output, executes its association into Process scope, disposes the exact active task with its Activity record and local scope, and follows the sole outgoing route, all in one step.
 

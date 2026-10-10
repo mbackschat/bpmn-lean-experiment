@@ -171,12 +171,14 @@ theorem committed_start_has_lifecycle_frame
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     LifecycleFrame (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state := by
+  have storageAdmitted := admitStimulus_committed_collection_storage program initialState _ committed
+  simp only [initialState] at storageAdmitted
   obtain ⟨_, _, noRetention, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   have noListeners := committed_foreign_profile_has_no_message_declarations program initialState _
     (by rw [profile]; decide +kernel) committed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed
     split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have framed : LifecycleFrame started := by
@@ -185,7 +187,7 @@ theorem committed_start_has_lifecycle_frame
       cases Option.some.inj created
       refine ⟨by simp [ForeignRuntimeEmpty, noRetention, noListeners, runningStartState, initialState], Or.inl ?_⟩
       exact ⟨{ processInstanceId := instanceId, definitionScopeId := root.id, activation := 1 }, rfl, rfl⟩
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noListeners, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed
     · simp_all
     · contradiction
@@ -259,10 +261,12 @@ theorem committed_start_has_task_lifetime_shape
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     TaskLifetimeShape program (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state := by
+  have storageAdmitted := admitStimulus_committed_collection_storage program initialState _ committed
+  simp only [initialState] at storageAdmitted
   obtain ⟨_, _, _, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
     split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have shaped : TaskLifetimeShape program started := by
@@ -270,7 +274,7 @@ theorem committed_start_has_task_lifetime_shape
       obtain ⟨_, _, created⟩ := created
       cases Option.some.inj created
       exact Or.inl ⟨rfl, rfl, rfl⟩
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed <;> first | contradiction | (split at committed <;> simp_all)
 
 theorem root_owner_matches_running_instance
@@ -616,11 +620,13 @@ theorem committed_start_has_declared_root_owner
     ∃ root owner, program.definitionScopes = [root] ∧ owner.definitionScopeId = root.id ∧
       RootOwnedControl owner (admitStimulus program initialState
         (.startProcess commandId processId instanceId bindings)).state := by
+  have storageAdmitted := admitStimulus_committed_collection_storage program initialState _ committed
+  simp only [initialState] at storageAdmitted
   obtain ⟨oneScope, _, _, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
   obtain ⟨sole, soleEq⟩ := List.length_eq_one_iff.mp oneScope
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed
     split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
     have owned : ∃ owner, owner.definitionScopeId = sole.id ∧ RootOwnedControl owner started := by
@@ -636,7 +642,7 @@ theorem committed_start_has_declared_root_owner
       simp [RootOwnedControl, runningStartState, initialState]
     obtain ⟨owner, key, owned⟩ := owned
     refine ⟨sole, owner, soleEq, key, ?_⟩
-    simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
+    simp [admitStimulus, storageAdmitted, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid, noSnapshots, initialState, profile, created] at committed ⊢
     split at committed <;> first | contradiction | (split at committed <;> simp_all)
 
 

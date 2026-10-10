@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 

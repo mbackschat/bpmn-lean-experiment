@@ -133,8 +133,7 @@ theorem preparedOccurrenceBatch_preserves_owner_frame (program : Program) (stabl
 /-- PMIS-DATA-01 changes only the resumed Human owner among body-read token buckets. -/
 theorem completeParallelScopeUserTask_owner_frame (program : Program) (before after : RuntimeState)
     (id : UserTaskInstanceId) (values : List VariableBinding) (wait : UserTaskWait)
-    (selected : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (completed : completeParallelScopeUserTask? program before id values = some after) :
     ParallelScopeOwnerFrame before after wait.owner := by
   have population : ∀ parent, ParallelScopeStructuralFrame parent before → ParallelScopeStructuralFrame parent after :=
@@ -155,7 +154,7 @@ theorem completeParallelScopeUserTask_owner_frame (program : Program) (before af
 /-- PMIS-DATA-01 retains foreign body reads through Service projection and Activity-local disposal. -/
 theorem completeParallelScopeEffect_owner_frame (program : Program) (before after : RuntimeState)
     (id : EffectOccurrenceId) (result : EffectExecutionResult) (wait : EffectWait)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (completed : completeParallelScopeEffect? program before id result = some after) :
     ParallelScopeOwnerFrame before after wait.owner := by
   have population : ∀ parent, ParallelScopeStructuralFrame parent before → ParallelScopeStructuralFrame parent after :=
@@ -185,11 +184,10 @@ def scopedWaitCompletionOwner (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) (owner : ScopeOccurrenceId) : Prop :=
   match stimulus with
   | .completeUserTaskInstance _ id _ => ∃ wait : UserTaskWait,
-      state.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-        candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait] ∧
+      state.waits.filter ((taskIdNamesWait id)) = [wait] ∧
       hasParallelScopeDefinition program wait.owner = true ∧ wait.owner = owner
   | .completeEffect _ id (.success _) => ∃ wait : EffectWait,
-      state.effectWaits.filter (effectOccurrenceMatches id) = [wait] ∧
+      state.effectWaits.filter (effectIdNamesWait id) = [wait] ∧
       hasParallelScopeDefinition program wait.owner = true ∧ wait.owner = owner
   | _ => False
 

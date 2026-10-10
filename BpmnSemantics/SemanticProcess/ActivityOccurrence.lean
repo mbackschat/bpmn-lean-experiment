@@ -212,6 +212,12 @@ def messageIdNamesWait (message : OccurrenceId) (wait : MessageWait) : Bool :=
     message.elementId.value == wait.elementId.value &&
     message.activation == wait.activation
 
+/-- Whether one Effect occurrence identity names one live Effect wait. -/
+def effectIdNamesWait (effect : OccurrenceId) (wait : EffectWait) : Bool :=
+  effect.processInstanceId == wait.processInstanceId &&
+    effect.elementId.value == wait.elementId.value &&
+    effect.activation == wait.activation
+
 /-- Whether one task occurrence identity names one live User Task wait.
 
 The wrapper asymmetry is the same one `timerIdNamesWait` documents: a wait carries a

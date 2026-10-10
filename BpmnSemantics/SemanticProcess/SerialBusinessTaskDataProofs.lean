@@ -1,7 +1,9 @@
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.WaitActivation
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 
@@ -708,37 +710,6 @@ def ForeignRuntimeEmpty (state : RuntimeState) : Prop :=
   state.sequentialScopeControllers = [] ∧ state.variables.scopes = [] ∧
   state.parallelScopeControllers = []
 
-/-- These issuance facts are exactly the retained counter/order checks read by serial command admission. -/
-def IssuanceFrame (state : RuntimeState) : Prop :=
-  orderedBy activationBefore state.activations = true ∧
-  orderedBy effectActivationBefore state.effectActivations = true ∧
-  orderedBy scopeActivationBefore state.scopeActivations = true ∧
-  state.waits.all (fun wait => decide (wait.activation ≤ activationCount state wait.task.id)) = true
-
-theorem user_activation_issuance (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId) (task : UserTaskDefinition)
-    (issued : IssuanceFrame state) (empty : state.waits = []) :
-    IssuanceFrame (activateUserTask state instanceId owner input output task) := by
-  have order := InternalCommutation.orderedBy_replaceStringKey (fun value : TaskActivation => value.taskId.value)
-    activationBefore (fun _ _ => rfl) { taskId := task.id, count := activationCount state task.id + 1 }
-    (fun activation => decide (activation.taskId ≠ task.id)) state.activations issued.1
-  have count := activationCount_setActivationCount_self state task.id (activationCount state task.id + 1)
-  change taskActivationCount (setActivationCount state.activations task.id (activationCount state task.id + 1)) task.id = _ at count
-  simpa [IssuanceFrame, activateUserTask, empty, insertUserTaskWait, activationCount,
-    setActivationCount, insertTaskActivation_eq_canonicalInsertBy] using
-    And.intro order (And.intro issued.2.1 (And.intro issued.2.2.1 (show
-      (activationCount state task.id + 1 ≤ taskActivationCount
-        (setActivationCount state.activations task.id (activationCount state task.id + 1)) task.id) from by rw [count]; exact Nat.le_refl _)))
-
-theorem effect_activation_issuance (state : RuntimeState) (instanceId : SemanticId)
-    (owner : ScopeOccurrenceId) (input output : ControlPlaceId) (effect : EffectDefinition)
-    (issued : IssuanceFrame state) :
-    IssuanceFrame (activateEffect state instanceId owner input output effect none) := by
-  have order := InternalCommutation.orderedBy_replaceStringKey (fun value : EffectActivation => value.elementId.value)
-    effectActivationBefore (fun _ _ => rfl)
-    { elementId := effect.elementId, count := effectActivationCount state effect.elementId + 1 }
-    (fun activation => decide (activation.elementId ≠ effect.elementId)) state.effectActivations issued.2.1
-  exact ⟨issued.1, order, issued.2.2.1, issued.2.2.2⟩
 
 def RootFrame (owner : ScopeOccurrenceId) (state : RuntimeState) : Prop :=
   (∀ token ∈ state.tokens, token.owner = owner) ∧

@@ -82,13 +82,13 @@ test("fork and join use exact owned token multiplicity even with the same defini
     forked, candidate(second)), null);
 });
 
-test("the complete control frontier retains both bodies and drops only the consumed candidate", () => {
+test("the raw complete frontier retains canonical bodies independently of storage order", () => {
   const offers = deriveInternalOccurrenceFrontier(program, running);
   assert.ok(offers);
   assert.deepEqual(offers.map(offer => offer.candidate), [candidate(first), candidate(second)]);
   const reversed = deriveInternalOccurrenceFrontier(program, { ...running,
     scopeOccurrences: [...running.scopeOccurrences].reverse(), controlTokens: [...running.controlTokens].reverse() });
-  assert.deepEqual(reversed?.map(offer => offer.candidate), offers.map(offer => offer.candidate));
+  assert.deepEqual(reversed?.map(offer => offer.candidate), [candidate(first), candidate(second)]);
   assert.deepEqual(deriveInternalOccurrenceFrontier(program, offers[0]!.successor)?.map(offer => offer.candidate),
     [candidate(second)]);
 });

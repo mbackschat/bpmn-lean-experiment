@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.GraphValidation
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Checked BPMN graph validation
 

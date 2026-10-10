@@ -620,4 +620,13 @@ def footprintsNonInterfering (left right : InternalTransitionFootprint) : Bool :
     InternalCommutation.listsDisjoint left.publications right.publications
 
 
+open InternalCommutation
+
+private def operationBefore (left right : SemanticOperation) : Bool := left.id.value < right.id.value
+
+def canonicalInternalOperations (operations : List SemanticOperation) : List SemanticOperation := sortBy operationBefore operations
+
+def canonicalEnabledInternalTransitions (transitions : List (SemanticOperation × RuntimeState)) : List (SemanticOperation × RuntimeState) :=
+  sortBy (fun left right => operationBefore left.1 right.1) transitions
+
 end BpmnSemantics.SemanticProcess

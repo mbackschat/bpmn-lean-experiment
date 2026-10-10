@@ -204,7 +204,7 @@ test("requires exactly one parentless hosting root occurrence", () => {
   assert.equal(isStableStateResumable(duplicateHostingRootState), false);
 });
 
-test("commits task completion before a malformed association strands closure", () => {
+test("rejects duplicate call keys before task completion can strand closure", () => {
   const { record, started } = returnReadyContext();
   const malformed = {
     ...started.state,
@@ -213,14 +213,14 @@ test("commits task completion before a malformed association strands closure", (
       record,
     ],
   };
-  const committed = applyStimulus(
+  const refused = applyStimulus(
     program,
     malformed,
     completion(expectedCalledInstanceId, "Task_Called", "commit-before-strand"),
   );
-  assert.equal(committed.outcome, CommandOutcome.Committed);
-  assert.equal(committed.state.userTaskWaits.length, 0);
-  assert.equal(isStableStateResumable(committed.state), false);
+  assert.equal(refused.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(refused.state, malformed);
+  assert.equal(isStableStateResumable(refused.state), false);
   assert.equal(
     isStableStateResumable({
       ...started.state,

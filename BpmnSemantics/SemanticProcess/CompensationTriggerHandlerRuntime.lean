@@ -388,13 +388,8 @@ private def handlerHasOneWait (waits : List CompensationHandlerEffectWait)
 
 private def waitCollidesWithOrdinaryState (state : RuntimeState)
     (wait : CompensationHandlerEffectWait) : Bool :=
-  (state.effectWaits.any fun ordinary =>
-      ordinary.processInstanceId == wait.id.processInstanceId &&
-        ordinary.elementId.value == wait.id.elementId.value && ordinary.activation == wait.id.activation)
-    || state.effectIncidents.any fun incident =>
-      incident.wait.processInstanceId == wait.id.processInstanceId &&
-        incident.wait.elementId.value == wait.id.elementId.value &&
-        incident.wait.activation == wait.id.activation
+  (state.effectWaits.any (effectIdNamesWait wait.id))
+    || state.effectIncidents.any fun incident => effectIdNamesWait wait.id incident.wait
 
 private def controlLifecycleValid (program : Program) (state : RuntimeState) : Bool :=
   match state.control with
@@ -515,17 +510,14 @@ theorem compensationExecutionStateValid_running_insertEffect_of_matches
         simp only [Bool.not_eq_true', waitCollidesWithOrdinaryState, Bool.or_eq_false_iff] at old ⊢
         constructor
         · rw [effectsFrame]
-          have rejected : (inserted.processInstanceId == wait.id.processInstanceId &&
-              inserted.elementId.value == wait.id.elementId.value &&
-              inserted.activation == wait.id.activation) = false := by simp [disjoint wait member]
+          have rejected : effectIdNamesWait wait.id inserted = false := by
+            apply Bool.eq_false_iff.mpr
+            intro matched
+            simp only [effectIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
+            exact disjoint wait member matched.1.2.symm
           have frame : ∀ values : List EffectWait,
-              ((insertEffectWait inserted values).any fun ordinary =>
-                ordinary.processInstanceId == wait.id.processInstanceId &&
-                  ordinary.elementId.value == wait.id.elementId.value &&
-                  ordinary.activation == wait.id.activation) =
-              (values.any fun ordinary => ordinary.processInstanceId == wait.id.processInstanceId &&
-                ordinary.elementId.value == wait.id.elementId.value &&
-                ordinary.activation == wait.id.activation) := by
+              ((insertEffectWait inserted values).any (effectIdNamesWait wait.id)) =
+              (values.any (effectIdNamesWait wait.id)) := by
             intro values
             induction values with
             | nil => simp [insertEffectWait, canonicalInsertBy, rejected]
@@ -700,28 +692,20 @@ theorem compensationExecutionStateValid_running_insertEffect_frame (program : Pr
   have collisionFrame (wait : CompensationHandlerEffectWait)
       (member : wait ∈ before.compensationHandlerEffectWaits) :
       waitCollidesWithOrdinaryState after wait = waitCollidesWithOrdinaryState before wait := by
-    have rejected : (inserted.processInstanceId == wait.id.processInstanceId &&
-        inserted.elementId.value == wait.id.elementId.value &&
-        inserted.activation == wait.id.activation) = false := by
-      simp [disjoint wait member]
-    have incidentsAbsent : (before.effectIncidents.any fun incident =>
-        incident.wait.processInstanceId == wait.id.processInstanceId &&
-          incident.wait.elementId.value == wait.id.elementId.value &&
-          incident.wait.activation == wait.id.activation) = false := by
+    have rejected : effectIdNamesWait wait.id inserted = false := by
+      apply Bool.eq_false_iff.mpr
+      intro matched
+      simp only [effectIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
+      exact disjoint wait member matched.1.2.symm
+    have incidentsAbsent : (before.effectIncidents.any fun incident => effectIdNamesWait wait.id incident.wait) = false := by
       apply Bool.eq_false_iff.mpr
       intro present
       obtain ⟨incident, incidentMember, matched⟩ := List.any_eq_true.mp present
-      simp only [Bool.and_eq_true, beq_iff_eq] at matched
-      exact incidentDisjoint incident incidentMember wait member matched.1.2
+      simp only [effectIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
+      exact incidentDisjoint incident incidentMember wait member matched.1.2.symm
     have anyFrame : ∀ values : List EffectWait,
-        (canonicalInsertBy effectWaitBefore inserted values).any (fun ordinary =>
-          ordinary.processInstanceId == wait.id.processInstanceId &&
-            ordinary.elementId.value == wait.id.elementId.value &&
-            ordinary.activation == wait.id.activation) =
-        values.any (fun ordinary =>
-          ordinary.processInstanceId == wait.id.processInstanceId &&
-            ordinary.elementId.value == wait.id.elementId.value &&
-            ordinary.activation == wait.id.activation) := by
+        (canonicalInsertBy effectWaitBefore inserted values).any ((effectIdNamesWait wait.id)) =
+        values.any ((effectIdNamesWait wait.id)) := by
       intro values
       induction values with
       | nil => simp [canonicalInsertBy, rejected]

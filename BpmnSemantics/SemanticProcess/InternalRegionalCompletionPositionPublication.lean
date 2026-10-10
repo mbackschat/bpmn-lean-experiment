@@ -1,6 +1,8 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
 import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 
 /-! Completion publication follows the actual root or child update, including bounded withdrawal.
 Root quiescence establishes empty tokens before terminal cleanup; child completion adds one unit.

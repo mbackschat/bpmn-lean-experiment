@@ -1,10 +1,9 @@
 import BpmnSemantics.SemanticProcess.OpenWaitProjection
 import BpmnSemantics.SemanticProcess.ScenarioAdmission
-import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 import BpmnSemantics.SemanticProcess.Lowering
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 
 /-! REG-OWN-FRAME-01 requires re-derived Call masks, not just closure under a fixed mask.

@@ -42,10 +42,7 @@ def selectEventSubProcessMessageDelivery? (program : Program) (state : RuntimeSt
       if listener.channel = channel ∧
           listener.id.processInstanceId = parent.id.processInstanceId ∧
           state.control = .running parent.id.processInstanceId ∧
-          state.messageWaits.any (fun wait =>
-            wait.processInstanceId == listener.id.processInstanceId &&
-            wait.elementId.value == listener.id.elementId.value &&
-            wait.activation == listener.id.activation) = false ∧
+          state.messageWaits.any ((messageIdNamesWait listener.id)) = false ∧
           (state.scopeActivations.filter (fun counter => counter.scopeId == declaration.handlerScopeId)).length ≤ 1 ∧
           state.scopeOccurrences.any (fun occurrence =>
             occurrence.id.definitionScopeId == declaration.handlerScopeId) = false ∧

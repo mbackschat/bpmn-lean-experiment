@@ -1,5 +1,5 @@
+import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 
 /-! # Atomic scalar Call transfers
 
@@ -99,63 +99,6 @@ theorem scalarReturnRecord_iff {state : RuntimeState} {id : OperationId} {origin
   unfold scalarReturnRecord?
   split <;> simp_all
 
-theorem invokeProcessWithDataState_sound (before after : RuntimeState)
-    (origin input calledProcessId calledRootScopeId calledEntry returnOperationId data)
-    (result : invokeProcessWithDataState? before origin input calledProcessId calledRootScopeId
-      calledEntry returnOperationId (.scalar data) = some after) :
-    InvokeScalarProcessStep before origin input calledProcessId calledRootScopeId calledEntry returnOperationId data after := by
-  by_cases valid : callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value = true
-  · simp [invokeProcessWithDataState?, valid, Option.bind_eq_some_iff] at result
-    obtain ⟨caller, owned, binding, available, variables, added, controlAfter, invoked, rfl⟩ := result
-    obtain ⟨fresh, scalar, rfl⟩ := addProcessInterface_success_iff.mp added
-    exact .permitted before origin input calledProcessId calledRootScopeId calledEntry returnOperationId data
-      caller binding controlAfter valid owned available fresh scalar
-      (invokeProcessState_sound _ _ _ _ _ _ _ _ invoked)
-  · simp [invokeProcessWithDataState?, valid] at result
-
-theorem returnProcessWithDataState_sound (before after : RuntimeState)
-    (id origin calledProcessId calledRootScopeId callerOutput data)
-    (result : returnProcessWithDataState? before id origin calledProcessId calledRootScopeId
-      callerOutput (.scalar data) = some after) :
-    ReturnScalarProcessStep before id origin calledProcessId calledRootScopeId callerOutput data after := by
-  by_cases valid : callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value = true
-  · simp [returnProcessWithDataState?, valid, Option.bind_eq_some_iff] at result
-    obtain ⟨record, selected, binding, available, controlAfter, returned, variables, written, rfl⟩ := result
-    obtain ⟨scope, owned, output, scalar⟩ := readProcessInterfaceOutput_iff.mp available
-    exact .permitted before id origin calledProcessId calledRootScopeId callerOutput data
-      record scope binding controlAfter variables valid (scalarReturnRecord_iff.mp selected)
-      (selectProcessInterface_iff.mp owned) output scalar
-      (returnProcessState_sound _ _ _ _ _ _ _ returned) (writeActivityDataOutput_sound written)
-  · simp [returnProcessWithDataState?, valid] at result
-
-theorem invokeScalarProcessStep_snapshot {before after : RuntimeState}
-    {origin input calledProcessId calledRootScopeId calledEntry returnOperationId data}
-    (step : InvokeScalarProcessStep before origin input calledProcessId calledRootScopeId
-      calledEntry returnOperationId data after) :
-    ∃ caller binding,
-      onlyTokenOwner? before input = some caller ∧
-      readActivityDataInput? before caller data.directInput = some binding ∧
-      selectProcessInterface? after.variables (scalarInvocationRoot before caller origin calledRootScopeId) =
-        some { owner := scalarInvocationRoot before caller origin calledRootScopeId
-               inputs := [{ name := data.called.input.id, value := binding.value }], outputs := [] } ∧
-      readProcessInterfaceOutput? after.variables (scalarInvocationRoot before caller origin calledRootScopeId)
-        data.called.output.id = none ∧
-      after.variables.process = before.variables.process ∧
-      after.variables.activities = before.variables.activities ∧
-      after.variables.processInterfaces.filter (fun scope => decide
-        (scope.owner ≠ scalarInvocationRoot before caller origin calledRootScopeId)) =
-      before.variables.processInterfaces.filter (fun scope => decide
-        (scope.owner ≠ scalarInvocationRoot before caller origin calledRootScopeId)) := by
-  cases step with
-  | permitted caller binding controlAfter valid owned available fresh scalar control =>
-      refine ⟨caller, binding, owned, available, ?_, ?_, rfl, rfl, ?_⟩
-      · exact addProcessInterface_installs (addProcessInterface_success_iff.mpr ⟨fresh, scalar, rfl⟩)
-      · exact (addProcessInterface_input_available_output_unavailable
-          (input := { name := data.called.input.id, value := binding.value })
-          (addProcessInterface_success_iff.mpr ⟨fresh, scalar, rfl⟩) _).2
-      · exact addProcessInterface_frames_others (input := { name := data.called.input.id, value := binding.value })
-          (addProcessInterface_success_iff.mpr ⟨fresh, scalar, rfl⟩)
-
 private theorem scalarCallOutput_is_property {data : ScalarCallData} {callId processId : String}
     (valid : callDataInterfaceValid (.scalar data) callId processId = true) :
     ∃ property, data.directOutput.target = .property property := by
@@ -227,5 +170,34 @@ theorem invokeProcessWithDataState_missing_input_refused
     invokeProcessWithDataState? state origin input calledProcessId calledRootScopeId
       calledEntry returnOperationId (.scalar data) = none := by
   simp [invokeProcessWithDataState?, selected, missing]
+
+theorem invokeProcessWithDataState_sound (before after : RuntimeState)
+    (origin input calledProcessId calledRootScopeId calledEntry returnOperationId data)
+    (result : invokeProcessWithDataState? before origin input calledProcessId calledRootScopeId
+      calledEntry returnOperationId (.scalar data) = some after) :
+    InvokeScalarProcessStep before origin input calledProcessId calledRootScopeId calledEntry returnOperationId data after := by
+  by_cases valid : callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value = true
+  · simp [invokeProcessWithDataState?, valid, Option.bind_eq_some_iff] at result
+    obtain ⟨caller, owned, binding, available, variables, added, controlAfter, invoked, rfl⟩ := result
+    obtain ⟨fresh, scalar, rfl⟩ := addProcessInterface_success_iff.mp added
+    exact .permitted before origin input calledProcessId calledRootScopeId calledEntry returnOperationId data
+      caller binding controlAfter valid owned available fresh scalar
+      (invokeProcessState_sound _ _ _ _ _ _ _ _ invoked)
+  · simp [invokeProcessWithDataState?, valid] at result
+
+theorem returnProcessWithDataState_sound (before after : RuntimeState)
+    (id origin calledProcessId calledRootScopeId callerOutput data)
+    (result : returnProcessWithDataState? before id origin calledProcessId calledRootScopeId
+      callerOutput (.scalar data) = some after) :
+    ReturnScalarProcessStep before id origin calledProcessId calledRootScopeId callerOutput data after := by
+  by_cases valid : callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value = true
+  · simp [returnProcessWithDataState?, valid, Option.bind_eq_some_iff] at result
+    obtain ⟨record, selected, binding, available, controlAfter, returned, variables, written, rfl⟩ := result
+    obtain ⟨scope, owned, output, scalar⟩ := readProcessInterfaceOutput_iff.mp available
+    exact .permitted before id origin calledProcessId calledRootScopeId callerOutput data
+      record scope binding controlAfter variables valid (scalarReturnRecord_iff.mp selected)
+      (selectProcessInterface_iff.mp owned) output scalar
+      (returnProcessState_sound _ _ _ _ _ _ _ returned) (writeActivityDataOutput_sound written)
+  · simp [returnProcessWithDataState?, valid] at result
 
 end BpmnSemantics.SemanticProcess

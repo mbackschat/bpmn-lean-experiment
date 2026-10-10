@@ -12,14 +12,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- The exact live subscription identity used by both payload-free and payload-bearing delivery. -/
-def payloadMessageOccurrenceMatches (subscriptionId : MessageSubscriptionId)
-    (wait : MessageWait) : Bool :=
-  decide (
-    wait.processInstanceId = subscriptionId.processInstanceId &&
-      wait.elementId.value = subscriptionId.elementId.value &&
-      wait.activation = subscriptionId.activation)
-
 /-- The unique payload declarer agreeing with the wait's element, channel, output, and owner. -/
 def payloadMessageOperation? (program : Program) (wait : MessageWait) :
     Option (SemanticOperation × DirectCatchEventPayloadOutput) :=
@@ -102,7 +94,7 @@ association target into Process scope. Event-race ownership and non-scalar paylo
 def deliverPayloadMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel)
     (payload : VariableValue) : Option RuntimeState :=
-  match state.messageWaits.find? (payloadMessageOccurrenceMatches subscriptionId) with
+  match state.messageWaits.find? (messageIdNamesWait subscriptionId) with
   | none => none
   | some wait =>
       if state.eventRaces.any (eventRaceHasMessage · wait) then none
@@ -136,7 +128,7 @@ inductive PayloadMessageDeliveryStep :
       (payload : VariableValue) (wait : MessageWait)
       (operation : SemanticOperation) (directOutput : DirectCatchEventPayloadOutput)
       (occurrence : before.messageWaits.find?
-        (payloadMessageOccurrenceMatches subscriptionId) = some wait)
+        (messageIdNamesWait subscriptionId) = some wait)
       (ordinary : before.eventRaces.any (eventRaceHasMessage · wait) = false)
       (unattached : activityRecordsAttachMessageWait before.activityOccurrences wait = false)
       (callerChannel : wait.channel = channel)

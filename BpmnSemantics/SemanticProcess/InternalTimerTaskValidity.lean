@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 
@@ -117,18 +118,9 @@ theorem prepared_timer_task_preserves_activity_work
         contradiction
     refine ⟨⟨⟨?_, owners⟩, ?_⟩, ?_⟩
     · simp only [activityBodyLive, selected, makeInternalTimerTaskPatch, decide_eq_true_eq]
-      change ((insertUserTaskWait wait state.waits).filter fun candidate =>
-        decide (candidate.processInstanceId = owner.processInstanceId) &&
-          decide (candidate.task.id.value = contract.task.id.value) &&
-          decide (candidate.activation = activationCount state contract.task.id + 1)).length = 1
-      have keyFrame : userTaskWaitKeyMatches wait = (fun candidate =>
-          decide (candidate.processInstanceId = owner.processInstanceId) &&
-            decide (candidate.task.id.value = contract.task.id.value) &&
-            decide (candidate.activation = activationCount state contract.task.id + 1)) := by
-        funext candidate
-        simp [userTaskWaitKeyMatches, wait, taskEquality, eq_comm]
-      rw [← keyFrame]
-      exact selectedCount
+      change ((insertUserTaskWait wait state.waits).filter (taskIdNamesWait { processInstanceId := owner.processInstanceId, elementId := ⟨contract.task.id.value⟩, activation := activationCount state contract.task.id + 1 })).length = 1
+      rw [← taskIdNamesWait_key_function wait] at selectedCount
+      simpa only [wait] using selectedCount
     · simp only [selected, makeInternalTimerTaskPatch, ActivityOccurrence.timerHandlerOccurrences,
         List.filterMap_cons, List.filterMap_nil, List.mem_singleton]
       intro timer same

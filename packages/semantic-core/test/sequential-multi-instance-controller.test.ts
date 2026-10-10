@@ -321,7 +321,7 @@ test("two controllers of one identity are refused", () => {
   const controller = boundController(before);
   assert.deepEqual(
     defects(withControllers(before, [controller, controller])),
-    [RuntimeStateDefect.DuplicateSequentialMultiInstanceController],
+    [RuntimeStateDefect.DuplicateSequentialMultiInstanceController, RuntimeStateDefect.UnorderedCollection],
   );
 });
 

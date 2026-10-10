@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
 
 /-! The subscription proof-domain amendment excludes pairs through the immutable admitted
 Program and exact predecessor preparation, without changing footprint independence. -/

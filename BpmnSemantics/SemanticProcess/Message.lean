@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Semantic Process Message delivery
@@ -8,13 +9,6 @@ This module owns direct Message-subscription correlation, committed delivery, it
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-def messageOccurrenceMatches (subscriptionId : MessageSubscriptionId)
-    (wait : MessageWait) : Bool :=
-  decide (
-    wait.processInstanceId = subscriptionId.processInstanceId &&
-      wait.elementId.value = subscriptionId.elementId.value &&
-      wait.activation = subscriptionId.activation)
 
 def messageDefinitionMatches (program : Program) (wait : MessageWait) : Bool :=
   program.operations.any fun
@@ -35,7 +29,7 @@ inductive MessageDeliveryStep :
       (channel : MessageChannel)
       (wait : MessageWait)
       (occurrence :
-        state.messageWaits.find? (messageOccurrenceMatches subscriptionId) =
+        state.messageWaits.find? (messageIdNamesWait subscriptionId) =
           some wait)
       (callerChannel : wait.channel = channel)
       (unattached : activityRecordsAttachMessageWait state.activityOccurrences wait = false)
@@ -56,7 +50,7 @@ inductive MessageDeliveryStep :
 def deliverMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel) :
     Option RuntimeState :=
-  match state.messageWaits.find? (messageOccurrenceMatches subscriptionId) with
+  match state.messageWaits.find? (messageIdNamesWait subscriptionId) with
   | none => none
   | some wait =>
       if state.eventRaces.any (eventRaceHasMessage · wait) then

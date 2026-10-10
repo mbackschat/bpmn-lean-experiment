@@ -11,7 +11,7 @@ import BpmnSemantics.SemanticProcess.TerminateEnd
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.MonitoredScope
 import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CallDataTransfer
@@ -26,7 +26,7 @@ import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletionLaws
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
 
 /-! # Semantic Process internal transitions
 

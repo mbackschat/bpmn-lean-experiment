@@ -114,9 +114,9 @@ private theorem incident_scope_rejects_open_waits (state : RuntimeState)
     have same := of_decide_eq_true named
     rw [owner] at same
     exact LocalDataOwner.effectOccurrence.inj same
-  have matched : effectOccurrenceMatches incident.id.effectId wait = true := by
+  have matched : effectIdNamesWait incident.id.effectId wait = true := by
     rw [← identity]
-    simp [effectOccurrenceMatches, effectWaitOccurrenceId]
+    simp [effectIdNamesWait, effectWaitOccurrenceId]
   have present := List.any_eq_true.mpr ⟨wait, member, matched⟩
   simp only [effectIncidentAssociationValid, Bool.and_eq_true, Bool.not_eq_true'] at valid
   rw [valid.2] at present

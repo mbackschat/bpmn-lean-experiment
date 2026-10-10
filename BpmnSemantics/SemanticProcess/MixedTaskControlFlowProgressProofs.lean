@@ -745,7 +745,8 @@ theorem reached_invariant (program : Program) (analysis : Analysis)
     cases admissible <;> trivial
   have guarded := indexed_completion_guard program analysis reached owner stimulus profile wellFormed capabilities
     joint.1 joint.2 associations runtime completion
-  rw [serial_completion_admission_eq_dispatch program analysis reached stimulus profile analyzed joint.1.2.2.2.2.1 guarded completion]
+  rw [serial_completion_admission_eq_dispatch program analysis reached stimulus profile analyzed joint.1.2.2.2.2.1
+    (indexed_collection_storage program analysis reached owner joint.1 joint.2) guarded completion]
   exact admissible_completion_dispatch_commits program analysis reached owner stimulus profile analyzed joint.1 joint.2 admissible
 
 open InternalCommutation in

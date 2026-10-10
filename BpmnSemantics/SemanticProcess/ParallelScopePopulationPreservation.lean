@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Parallel repeated-scope population preservation
 

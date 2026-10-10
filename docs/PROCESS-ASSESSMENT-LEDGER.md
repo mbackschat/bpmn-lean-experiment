@@ -1,4 +1,4 @@
-# Process assessment ledger
+# Process findings and controls ledger
 
 **Status:** Maintained process-finding ledger.
 
@@ -101,7 +101,7 @@ Retained recurrence evidence: [Finding 02](process-assessment/SEMANTIC-EVIDENCE-
 A verification claim was made without establishing both the exact gate invocation's own result and the scope that invocation exercised.
 
 Instances
-: 16
+: 17
 
 Disposition
 : `unguardable`

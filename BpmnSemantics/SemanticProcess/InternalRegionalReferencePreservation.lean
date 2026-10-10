@@ -23,14 +23,6 @@ theorem allMatchingRetained_preserves_refined_census {α : Type} (values : List 
     simpa [named, selected] using retained
   · simp [Bool.eq_false_iff.mpr selected]
 
-private theorem task_names_agree (task : OccurrenceId) (wait : UserTaskWait) :
-    (decide (wait.processInstanceId = task.processInstanceId) &&
-      decide (wait.task.id.value = task.elementId.value) &&
-      decide (wait.activation = task.activation)) = taskIdNamesWait task wait := by
-  apply Bool.eq_iff_iff.mpr
-  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
-  simp only [eq_comm]
-
 private theorem retained_activity_body_equal (before after : RuntimeState)
     (keep : RegionalReferenceRetention) (record : ActivityOccurrence)
     (fields : regionalReferenceFieldsMatch before after keep)
@@ -43,7 +35,7 @@ private theorem retained_activity_body_equal (before after : RuntimeState)
     simp only [body] at bodyClosed
     have census := allMatchingRetained_preserves_census before.waits keep.task
       (taskIdNamesWait task) bodyClosed
-    simp only [activityBodyLive, activityTaskBodyOwnersAgree, body, task_names_agree,
+    simp only [activityBodyLive, activityTaskBodyOwnersAgree, body,
       fields.2.2.1, census, and_self]
   | parallelUserTasks first rest =>
     simp only [body] at bodyClosed
@@ -51,7 +43,7 @@ private theorem retained_activity_body_equal (before after : RuntimeState)
       allMatchingRetained_preserves_census before.waits keep.task (taskIdNamesWait task)
         (List.all_eq_true.mp bodyClosed task member)
     constructor
-    · simp only [activityBodyLive, body, task_names_agree, fields.2.2.1]
+    · simp only [activityBodyLive, body, fields.2.2.1]
       apply Bool.eq_iff_iff.mpr
       simp only [List.all_eq_true]
       constructor <;> intro valid task member

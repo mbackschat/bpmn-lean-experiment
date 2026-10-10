@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! SBT-REFUSE-01 and MBERR-REFUSE-01 require complete declaration/wait/local ownership checks before any public command can mutate a business-task state. -/

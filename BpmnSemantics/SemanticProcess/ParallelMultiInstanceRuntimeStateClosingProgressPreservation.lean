@@ -111,23 +111,6 @@ private def activityOrderKeyBefore (left right : String × String × Nat) : Bool
   else if left.2.1 ≠ right.2.1 then left.2.1 < right.2.1
   else left.2.2 < right.2.2
 
-private theorem activityBodyWaitFilter_eq (waits : List UserTaskWait)
-    (task : UserTaskInstanceId) :
-    waits.filter (taskIdNamesWait task) =
-      waits.filter (fun wait =>
-        decide (wait.processInstanceId = task.processInstanceId) &&
-          decide (wait.task.id.value = task.elementId.value) &&
-          decide (wait.activation = task.activation)) := by
-  apply List.filter_congr
-  intro wait _
-  apply Bool.eq_iff_iff.mpr
-  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
-  constructor
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-
 /-- Completing one child while pending siblings remain preserves the complete production invariant. -/
 theorem sharedParallelProgress_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId instanceId : SemanticId)
@@ -231,9 +214,9 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
             simpa [activityBodyParallelTasks?, shape] using oldBody
           have oldCount := recordLive.1.1.1 task
             (by rw [oldList]; exact (pendingFacts task member).1)
-          rw [activityBodyWaitFilter_eq before.waits task]
+
           exact oldCount
-    rw [← activityBodyWaitFilter_eq after.waits task]
+
     change ((removeParallelChildWaits before.waits [taskId]).filter
         (taskIdNamesWait task)).length = 1
     rw [removeParallelChildWaits_lookup_of_ne before.waits taskId task
@@ -297,22 +280,22 @@ theorem sharedParallelProgress_preserves_runtimeStateWellFormed
             have priorBody := prior.1.1.1
             simp only [activityBodyLive, shape, decide_eq_true_eq] at priorBody
             simp only [activityBodyLive, shape, decide_eq_true_eq]
-            rw [← activityBodyWaitFilter_eq after.waits task]
+
             change ((removeParallelChildWaits before.waits [taskId]).filter
               (taskIdNamesWait task)).length = 1
             rw [removeParallelChildWaits_lookup_of_ne before.waits taskId task
               (excludesTarget task (by simp))]
-            rw [activityBodyWaitFilter_eq before.waits task]
+
             exact priorBody
         | parallelUserTasks first rest =>
             simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at prior ⊢
             intro task taskMember
-            rw [← activityBodyWaitFilter_eq after.waits task]
+
             change ((removeParallelChildWaits before.waits [taskId]).filter
               (taskIdNamesWait task)).length = 1
             rw [removeParallelChildWaits_lookup_of_ne before.waits taskId task
               (excludesTarget task (by simpa [activityBodyTaskClaims, shape] using taskMember))]
-            rw [activityBodyWaitFilter_eq before.waits task]
+
             exact prior.1.1.1 task taskMember
       have ownersAfter := activityTaskOwnersAgree_of_subsets before after original original
         prior.1.1.2 rfl (fun _ member => member)

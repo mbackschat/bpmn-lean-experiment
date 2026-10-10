@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ExecutionRuntime
 import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario

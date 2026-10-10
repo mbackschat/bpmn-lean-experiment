@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs

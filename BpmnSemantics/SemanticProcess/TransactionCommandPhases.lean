@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Transaction command admission and continuation
 
@@ -102,9 +103,14 @@ theorem transaction_admitted_task_continuation (p : Program) (roles : Transactio
     TransactionContinuationState roles
       (admitStimulusWithCompensationSnapshots p before
         (.completeUserTaskInstance commandId taskId submitted)).state := by
+  by_cases storage : committedStateCollectionAdmitted before = true
+  case neg =>
+    rw [admitStimulusWithCompensationSnapshots_withoutDeclaration _ _ _ roles.snapshotsAbsent,
+      admitStimulus_invalid_collection_storage _ _ _ (Bool.eq_false_iff.mpr storage)]
+    exact phase
   by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
   case neg =>
-    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, handlerValid,
       callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
       callDataCheckpointProfileId]
     exact phase
@@ -112,7 +118,7 @@ theorem transaction_admitted_task_continuation (p : Program) (roles : Transactio
       dataInput, dataOutput, monitored⟩ := transaction_task_dispatch_selectors p graph
     ⟨taskId.elementId.value⟩
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [handlerValid, running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
+  simp [storage, handlerValid, running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
     roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
@@ -132,14 +138,19 @@ theorem transaction_admitted_handler_continuation (p : Program) (roles : Transac
     (noEffects : before.effectWaits = []) (emptyTokens : before.tokens = []) :
     TransactionContinuationState roles
       (admitStimulusWithCompensationSnapshots p before (.completeEffect commandId effectId result)).state := by
+  by_cases storage : committedStateCollectionAdmitted before = true
+  case neg =>
+    rw [admitStimulusWithCompensationSnapshots_withoutDeclaration _ _ _ roles.snapshotsAbsent,
+      admitStimulus_invalid_collection_storage _ _ _ (Bool.eq_false_iff.mpr storage)]
+    exact phase
   by_cases handlerValid : interruptingMessageEventSubProcessStateValid p before = true
   case neg =>
-    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, handlerValid,
+    simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, handlerValid,
       callDataRuntimeStateValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
       callDataCheckpointProfileId]
     exact phase
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
-  simp [handlerValid, running, noIncidents, noEffects, callDataRuntimeStateValid, roles.profileSelected,
+  simp [storage, handlerValid, running, noIncidents, noEffects, callDataRuntimeStateValid, roles.profileSelected,
     transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
   split
   · cases completed : attemptCompensationHandlerEffectCompletion p before effectId result with
@@ -249,14 +260,15 @@ theorem transaction_committed_start_empty_normal_form (p : Program) (roles : Tra
     (admitStimulusWithCompensationSnapshots p initialState
       (.startProcess commandId processId instanceId submitted)).state =
         transactionRootStartState roles instanceId [] := by
+  have storage : committedStateCollectionAdmitted initialState = true := rfl
   have handlerValid : interruptingMessageEventSubProcessStateValid p initialState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid p initialState with
-    | false => simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, checked] at committed
+    | false => simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, checked] at committed
     | true => rfl
 
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent] at committed ⊢
-  simp only [initialState] at handlerValid committed ⊢
-  simp [handlerValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
+  simp only [initialState] at storage handlerValid committed ⊢
+  simp [storage, handlerValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
     callDataRuntimeStateValid, callDataCheckpointProfileId] at committed ⊢
   simp only [transaction_start_builder_normal_form p roles wellFormed] at committed ⊢
   split at committed

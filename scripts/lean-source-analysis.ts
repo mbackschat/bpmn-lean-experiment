@@ -182,6 +182,33 @@ export function worktreeLeanSourceFiles(worktree = "."): string[] {
     .filter((sourcePath) => existsSync(join(worktree, sourcePath)));
 }
 
+/** AA-26's complete wait occurrence key: instance, element/task, and activation.
+ * Match the predicate shape in masked code; owner/definition-only lookups have different keys. */
+export function inlineWaitIdentityLookups(path: string, source: string):
+  ReadonlyArray<{ path: string; line: number; predicate: string }> {
+  const code = analyzeLeanSource(source).code;
+  const identifier = String.raw`[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)*`;
+  const operand = String.raw`(?:${identifier}|⟨\s*${identifier}\s*⟩)`;
+  const comparison = (field: string, projection: string): string => {
+    const selected = String.raw`\k<wait>\.${projection}${field}`;
+    return String.raw`(?:decide\s*\(\s*)?(?:${selected}\s*(?:==|=)\s*${operand}|${operand}\s*(?:==|=)\s*${selected})\s*\)?`;
+  };
+  const fields = ["processInstanceId", String.raw`(?:task\.id|elementId)(?:\.value)?`, "activation"];
+  const orders = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  const predicates = ["", String.raw`wait\.`].flatMap(projection =>
+    orders.map(order => order.map(index => comparison(fields[index]!, projection)).join(String.raw`\s*(?:&&|∧)\s*`)));
+  const pattern = new RegExp(
+    String.raw`fun\s+\(?(?<wait>[A-Za-z_][\w']*)\s*(?::\s*(?:UserTaskWait|MessageWait|TimerWait|EffectWait))?\s*\)?\s*=>\s*(?:decide\s*\(\s*)?` +
+      `(?:${predicates.join("|")})`,
+    "gu",
+  );
+  return [...code.matchAll(pattern)].map((match) => ({
+    path,
+    line: source.slice(0, match.index).split("\n").length,
+    predicate: source.slice(match.index, match.index + match[0].length),
+  }));
+}
+
 /** AA-25's direct `E = expected` pattern, where a visible zero-argument alias defines `expected := E`.
  * This masked text scan recognizes identifier applications, not arbitrary Lean propositions. */
 export function leanSelfComparisons(sources: ReadonlyArray<{ path: string; source: string }>):

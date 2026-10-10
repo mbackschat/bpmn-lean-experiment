@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
@@ -322,26 +323,16 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
           simpa [childState] using waitMember)
         have identity := pendingParallelSlotsFrom_identity instanceId arm.taskId taskHighWater 0
           items slot (by simpa [slots, pendingParallelSlots] using slotMember)
-        change (timerState.waits.filter fun candidate =>
-          decide (candidate.processInstanceId = slot.taskId.processInstanceId) &&
-            decide (candidate.task.id.value = slot.taskId.elementId.value) &&
-            decide (candidate.activation = slot.taskId.activation)).length = 1
-        change (childState.waits.filter fun candidate =>
-          decide (candidate.processInstanceId = slot.taskId.processInstanceId) &&
-            decide (candidate.task.id.value = slot.taskId.elementId.value) &&
-            decide (candidate.activation = slot.taskId.activation)).length = 1
-        have filterEq : childState.waits.filter (fun candidate =>
-              decide (candidate.processInstanceId = slot.taskId.processInstanceId) &&
-                decide (candidate.task.id.value = slot.taskId.elementId.value) &&
-                decide (candidate.activation = slot.taskId.activation)) =
-            childState.waits.filter
-              (userTaskWaitKeyMatches (parallelEntryChildWait arm owner slot)) := by
-          congr 1
-          funext candidate
-          simp [userTaskWaitKeyMatches, parallelEntryChildWait,
-            taskDefinitionId_eq_iff_value_eq, identity.2.1, eq_comm]
-        rw [filterEq]
-        simpa [occursOnce] using unique
+        change (timerState.waits.filter (taskIdNamesWait slot.taskId)).length = 1
+        change (childState.waits.filter (taskIdNamesWait slot.taskId)).length = 1
+        simp only [occursOnce, decide_eq_true_eq] at unique
+        rw [← taskIdNamesWait_key_function (parallelEntryChildWait arm owner slot)] at unique
+        simp only [parallelEntryChildWait] at unique
+        generalize slot.taskId = task at identity unique ⊢
+        rcases task with ⟨process, ⟨element⟩, activation⟩
+        simp only at identity unique ⊢
+        cases identity.2.1
+        exact unique
       have recordTimersLive : record.timerHandlerOccurrences.all (fun timer =>
           timerState.timerWaits.any fun wait =>
             timerIdNamesWait timer wait && decide (wait.owner = record.owner)) = true := by

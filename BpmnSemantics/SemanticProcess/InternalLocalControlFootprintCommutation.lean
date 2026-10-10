@@ -9,11 +9,6 @@ footprints supply the frames and unit separation required by the
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
-def localControlStateFootprintsNonInterfering
-    (left right : InternalTransitionStateFootprint) : Bool :=
-  listsDisjoint left.writes right.reads && listsDisjoint left.writes right.writes &&
-    listsDisjoint right.writes left.reads && listsDisjoint right.writes left.writes
-
 theorem localControlStateFootprintsNonInterfering_symm
     (left right : InternalTransitionStateFootprint)
     (separated : localControlStateFootprintsNonInterfering left right = true) :

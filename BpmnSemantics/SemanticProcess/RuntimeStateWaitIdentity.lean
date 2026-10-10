@@ -20,6 +20,49 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- The public Task occurrence matcher selects exactly the canonical uniqueness key. -/
+theorem taskIdNamesWait_key (left right : UserTaskWait) :
+    taskIdNamesWait { processInstanceId := left.processInstanceId, elementId := ⟨left.task.id.value⟩, activation := left.activation } right =
+      userTaskWaitKeyMatches left right := by
+  apply Bool.eq_iff_iff.mpr
+  cases leftId : left.task.id
+  cases rightId : right.task.id
+  simp [taskIdNamesWait, userTaskWaitKeyMatches, leftId, rightId]
+
+/-- The public Message occurrence matcher selects exactly the canonical uniqueness key. -/
+theorem messageIdNamesWait_key (left right : MessageWait) :
+    messageIdNamesWait { processInstanceId := left.processInstanceId, elementId := ⟨left.elementId.value⟩, activation := left.activation } right =
+      messageWaitKeyMatches left right := by
+  apply Bool.eq_iff_iff.mpr
+  cases leftId : left.elementId
+  cases rightId : right.elementId
+  simp [messageIdNamesWait, messageWaitKeyMatches, leftId, rightId]
+
+/-- The Timer evaluator's matcher selects exactly the canonical uniqueness key. -/
+theorem timerIdNamesWait_key (left right : TimerWait) :
+    timerIdNamesWait { processInstanceId := left.processInstanceId, elementId := ⟨left.elementId.value⟩, activation := left.activation } right =
+      timerWaitKeyMatches left right := by
+  apply Bool.eq_iff_iff.mpr
+  cases leftId : left.elementId
+  cases rightId : right.elementId
+  simp [timerIdNamesWait, timerWaitKeyMatches, leftId, rightId]
+
+/-- The public Effect occurrence matcher selects exactly the canonical uniqueness key. -/
+theorem effectIdNamesWait_key (left right : EffectWait) :
+    effectIdNamesWait { processInstanceId := left.processInstanceId, elementId := ⟨left.elementId.value⟩, activation := left.activation } right =
+      effectWaitKeyMatches left right := by
+  apply Bool.eq_iff_iff.mpr
+  cases leftId : left.elementId
+  cases rightId : right.elementId
+  simp [effectIdNamesWait, effectWaitKeyMatches, leftId, rightId]
+
+/-- The higher-order lookup boundary uses the same quantified Task key equation. -/
+theorem taskIdNamesWait_key_function (wait : UserTaskWait) :
+    taskIdNamesWait { processInstanceId := wait.processInstanceId, elementId := ⟨wait.task.id.value⟩, activation := wait.activation } =
+      userTaskWaitKeyMatches wait := by
+  funext candidate
+  exact taskIdNamesWait_key wait candidate
+
 /-- The one law the family results below specialize.
 
 Both hypotheses are load-bearing. Without `member` the filter's single selected element could be some

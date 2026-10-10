@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import BpmnSemantics.SemanticProcess.GraphReachability
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Fuel-bounded graph validation
 

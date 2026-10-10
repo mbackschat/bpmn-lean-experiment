@@ -106,7 +106,7 @@ def cancellationCounterexampleState : RuntimeState :=
       , { id := calledChildOwner, parent := some calledRootOwner }
       , { id := calledRootOwner, parent := none }
       , { id := childOwner, parent := some rootOwner }
-      , { id := rootOwner, parent := none } ]
+      , { id := rootOwner, parent := none } ].foldr insertScopeOccurrence []
     tokens :=
       [ { placeId := ⟨"place:CalledLiveWork"⟩, owner := calledChildOwner }
       , { placeId := ⟨"place:RootLiveWork"⟩, owner := rootOwner } ]
@@ -172,7 +172,7 @@ def cancellationCounterexampleState : RuntimeState :=
           [ { owner := .effectOccurrence incidentId.effectId
               bindings := [{ name := "suspended", value := .string "gone" }] }
           , { owner := .effectOccurrence extraEffectId
-              bindings := [{ name := "open", value := .string "gone" }] } ]
+              bindings := [{ name := "open", value := .string "gone" }] } ].foldr insertActivityVariableScope []
         processInterfaces := [], scopes := [] }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 6 }]
@@ -318,7 +318,7 @@ def orphanOwner : ScopeOccurrenceId :=
 def orphanLiveRegionState : RuntimeState :=
   { incidentState with
     scopeOccurrences :=
-      { id := orphanOwner, parent := none } :: incidentState.scopeOccurrences
+      insertScopeOccurrence { id := orphanOwner, parent := none } incidentState.scopeOccurrences
     waits :=
       [{ processInstanceId := orphanInstanceId
          owner := orphanOwner
@@ -330,9 +330,10 @@ def residualActivityState : RuntimeState :=
   { incidentState with
     variables :=
       { incidentState.variables with
-        activities := incidentState.variables.activities ++
-          [{ owner := .effectOccurrence extraEffectId
-             bindings := [{ name := "orphan", value := .string "live" }] }] } }
+        activities := insertActivityVariableScope
+          { owner := .effectOccurrence extraEffectId
+            bindings := [{ name := "orphan", value := .string "live" }] }
+          incidentState.variables.activities } }
 
 def malformedDerivedRootOwner : ScopeOccurrenceId :=
   { nestedCalledRootOwner with
@@ -370,6 +371,27 @@ def duplicateHostingRootState : RuntimeState :=
 def duplicateIncidentState : RuntimeState :=
   { incidentState with
     effectIncidents := incidentState.effectIncidents ++ incidentState.effectIncidents }
+
+theorem canonical_cancellation_fixtures_pass_collection_storage_admission :
+    [cancellationCounterexampleState, orphanLiveRegionState, residualActivityState,
+      malformedDerivedCallState, malformedCallerState, duplicateHostingRootState].all
+        committedStateCollectionAdmitted = true := by
+  decide +kernel
+
+theorem unordered_activity_storage_refuses_before_eligible_cancellation :
+    let unordered : RuntimeState :=
+      { cancellationCounterexampleState with
+        variables := { cancellationCounterexampleState.variables with
+          activities := cancellationCounterexampleState.variables.activities.reverse } }
+    uniqueCollectionKeys unordered = true ∧
+      committedStateCollectionAdmitted unordered = false ∧
+      (cancelIncidentProcess program unordered instanceId incidentId).isSome = true ∧
+      applyStimulus 0 program unordered cancellationStimulus =
+        { outcome := .rejected
+          state := unordered
+          internalStepBoundExceeded := false
+          ambiguousInternalChoice := false } := by
+  decide +kernel
 
 theorem valid_incident_with_orphan_live_region_refuses_unchanged :
     effectIncidentAssociationsValid orphanLiveRegionState = true ∧

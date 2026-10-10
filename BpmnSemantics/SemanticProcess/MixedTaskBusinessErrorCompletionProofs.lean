@@ -14,7 +14,7 @@ theorem valid_business_error_maps_and_establishes_continuation_data
     (available : InputsAvailable vertices vertex.id before.variables.process.bindings)
     (canonical : SerialBusinessTask.bindingsValid handlers before.variables.process.bindings = true)
     (mappings : SerialBusinessTask.mappingsValid handlers inputs wait.outputMappings = true)
-    (occurrence : before.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+    (occurrence : before.effectWaits.filter (effectIdNamesWait effectId) = [wait])
     (owned : before.variables.activities.filter (activityScopeMatches effectId) = [localScope])
     (attached : wait.bpmnErrorRoute = some route)
     (collected : wait.outputMappings.mapM (fun mapping => match mapping.expression with
@@ -41,7 +41,7 @@ theorem valid_business_error_maps_and_establishes_continuation_data
 theorem business_error_without_matching_route_refuses (handlers : List String)
     (before : RuntimeState) (effectId : EffectOccurrenceId) (wait : EffectWait)
     (code : String) (message : Option String) (patch : List VariableBinding)
-    (occurrence : before.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+    (occurrence : before.effectWaits.filter (effectIdNamesWait effectId) = [wait])
     (unmatched : effectResultOutput wait (.bpmnError code message patch) = none) :
     completeBusinessEffect? handlers before effectId (.bpmnError code message patch) = none := by
   simp [completeBusinessEffect?, occurrence, unmatched]
@@ -52,7 +52,7 @@ theorem business_completion_facts (handlers : List String) (before after : Runti
     (completed : completeBusinessEffect? handlers before effectId result = some after) :
     ∃ (wait : EffectWait) (localScope : ActivityVariableScope)
       (patch bindings : List VariableBinding) (output : ControlPlaceId),
-      before.effectWaits.filter (effectOccurrenceMatches effectId) = [wait] ∧
+      before.effectWaits.filter (effectIdNamesWait effectId) = [wait] ∧
       before.variables.activities.filter (activityScopeMatches effectId) = [localScope] ∧
       (result = .success patch ∨ ∃ code message, result = .bpmnError code message patch) ∧
       effectResultOutput wait result = some output ∧

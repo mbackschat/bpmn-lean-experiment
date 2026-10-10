@@ -20,52 +20,30 @@ theorem activityRecords_insertUserTaskWait (state : RuntimeState)
   intro record member
   have prior := records record member
   have taskBodyFresh (body : OccurrenceId)
-        (priorCount : (state.waits.filter fun wait =>
-          decide (wait.processInstanceId = body.processInstanceId) &&
-            decide (wait.task.id.value = body.elementId.value) &&
-            decide (wait.activation = body.activation)).length = 1) :
-        (decide (inserted.processInstanceId = body.processInstanceId) &&
-          decide (inserted.task.id.value = body.elementId.value) &&
-          decide (inserted.activation = body.activation)) = false := by
+        (priorCount : (state.waits.filter (taskIdNamesWait body)).length = 1) :
+        taskIdNamesWait body inserted = false := by
         apply Bool.eq_false_iff.mpr
         intro matched
-        simp only [Bool.and_eq_true, decide_eq_true_eq] at matched
+        simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
         obtain ⟨old, oldMember⟩ := List.exists_mem_of_ne_nil _
-          (List.length_pos_iff.mp (by omega : 0 < (state.waits.filter fun wait =>
-            decide (wait.processInstanceId = body.processInstanceId) &&
-              decide (wait.task.id.value = body.elementId.value) &&
-              decide (wait.activation = body.activation)).length))
+          (List.length_pos_iff.mp (by omega : 0 < (state.waits.filter (taskIdNamesWait body)).length))
         obtain ⟨oldRaw, oldMatches⟩ := List.mem_filter.mp oldMember
-        simp only [Bool.and_eq_true, decide_eq_true_eq] at oldMatches
+        simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at oldMatches
         have oldBound := bounds.1.1 old oldRaw
         have taskEq : old.task.id = inserted.task.id := taskDefinitionId_eq_of_value_eq _ _
-          (oldMatches.1.2.trans matched.1.2.symm)
-        rw [taskEq, oldMatches.2.trans matched.2.symm, next] at oldBound
+          (oldMatches.1.2.symm.trans matched.1.2)
+        rw [taskEq, oldMatches.2.symm.trans matched.2, next] at oldBound
         omega
   have taskBodyPreserved (body : OccurrenceId)
-      (priorCount : (state.waits.filter fun wait =>
-        decide (wait.processInstanceId = body.processInstanceId) &&
-          decide (wait.task.id.value = body.elementId.value) &&
-          decide (wait.activation = body.activation)).length = 1) :
-      ((insertUserTaskWait inserted state.waits).filter fun wait =>
-        decide (wait.processInstanceId = body.processInstanceId) &&
-          decide (wait.task.id.value = body.elementId.value) &&
-          decide (wait.activation = body.activation)).length = 1 := by
+      (priorCount : (state.waits.filter (taskIdNamesWait body)).length = 1) :
+      ((insertUserTaskWait inserted state.waits).filter (taskIdNamesWait body)).length = 1 := by
     rw [length_filter_insertUserTaskWait, taskBodyFresh body priorCount]
     simpa using priorCount
   have taskOwnersPreserved (body : OccurrenceId)
-      (priorCount : (state.waits.filter fun wait =>
-        decide (wait.processInstanceId = body.processInstanceId) &&
-          decide (wait.task.id.value = body.elementId.value) &&
-          decide (wait.activation = body.activation)).length = 1) :
+      (priorCount : (state.waits.filter (taskIdNamesWait body)).length = 1) :
       (insertUserTaskWait inserted state.waits).filter (taskIdNamesWait body) =
         state.waits.filter (taskIdNamesWait body) := by
-    have rejected : taskIdNamesWait body inserted = false := by
-      apply Bool.eq_false_iff.mpr
-      intro matched
-      have fresh := taskBodyFresh body priorCount
-      simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
-      simp [matched.1.1, matched.1.2, matched.2] at fresh
+    have rejected := taskBodyFresh body priorCount
     rw [insertUserTaskWait_eq_canonicalInsertBy]
     exact filter_canonicalInsertBy_rejected _ _ _ _ rejected
   refine ⟨⟨⟨?_, ?_⟩, prior.1.2⟩, prior.2⟩

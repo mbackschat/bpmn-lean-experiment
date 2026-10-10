@@ -1,7 +1,6 @@
 import BpmnSemantics.SemanticProcess.TransitionRecord
 import BpmnSemantics.SemanticProcess.ClosureLimit
 import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution

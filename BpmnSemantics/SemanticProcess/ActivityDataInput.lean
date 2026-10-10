@@ -97,11 +97,7 @@ on the same term the evaluator reads. -/
 def dataInputTaskWait? (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) : Option UserTaskWait :=
-  state.waits.find? fun wait =>
-    decide (
-      wait.processInstanceId = processInstanceId &&
-        wait.task.id = taskId &&
-        wait.activation = activation)
+  state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })
 
 /-- `ADINPUT-COMPLETE-01`. Disposes the exact active task, its Activity record, and its local scope together, leaving Process data untouched and following the sole outgoing route.
 
@@ -351,9 +347,10 @@ private theorem dataInputTaskWait_sound {state : RuntimeState}
       task.task.id = taskId ∧ task.activation = activation := by
   unfold dataInputTaskWait? at found
   have selected := List.find?_some found
-  simp [Bool.and_eq_true, decide_eq_true_eq] at selected
+  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at selected
   obtain ⟨⟨sameInstance, sameTask⟩, sameActivation⟩ := selected
-  exact ⟨List.mem_of_find?_eq_some found, sameInstance, sameTask, sameActivation⟩
+  exact ⟨List.mem_of_find?_eq_some found, sameInstance.symm,
+    congrArg TaskDefinitionId.mk sameTask.symm, sameActivation.symm⟩
 
 /-- Every completion the evaluator produces is permitted by the declarative relation.
 

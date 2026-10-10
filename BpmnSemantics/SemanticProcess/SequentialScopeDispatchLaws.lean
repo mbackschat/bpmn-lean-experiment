@@ -35,7 +35,7 @@ theorem dispatch_sequential_scope_effect (program : Program) (state after : Runt
     (absent : program.compensationEventSubProcessSnapshots = none)
     (running : state.control = .running instanceId)
     (compensation : state.compensationHandlerEffectWaits.filter (fun wait => wait.id == effectId) = [])
-    (unique : state.effectWaits.filter (effectOccurrenceMatches effectId) = [wait])
+    (unique : state.effectWaits.filter (effectIdNamesWait effectId) = [wait])
     (selected : sequentialScopeProgramSelected program = true)
     (bodyDeclared : hasSequentialScopeDefinition program wait.owner = true)
     (completed : completeSequentialScopeEffect? program state effectId result = some after)

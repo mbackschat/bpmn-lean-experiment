@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
 
 
 /-! Individual family acceptance is shared by pair and finite-batch consumers, without depending on their unified preparation type. -/

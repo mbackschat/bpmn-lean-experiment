@@ -8,49 +8,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- IMES-CLOSE-01 binds disposal to one declared child, its live parent and actual quiescence. -/
-inductive EventSubProcessCompletionStep : Program → RuntimeState → DefinitionScopeId → NodeId → RuntimeState → Prop where
-  | close (program : Program) (before : RuntimeState) (scopeId : DefinitionScopeId) (elementId : NodeId)
-      (declaration : InterruptingMessageEventSubProcessDeclaration)
-      (child : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId)
-      (declared : program.interruptingMessageEventSubProcesses.filter
-        (fun candidate => candidate.handlerScopeId == scopeId) = [declaration])
-      (selected : before.scopeOccurrences.filter
-        (fun candidate => candidate.id.definitionScopeId == scopeId) = [child])
-      (parented : child.parent = some parent)
-      (bound : declaration.elementId = elementId ∧
-        before.control = .running child.id.processInstanceId ∧
-        parent.processInstanceId = child.id.processInstanceId ∧
-        parent.definitionScopeId = declaration.parentScopeId ∧
-        program.definitionScopes.filter (fun candidate => candidate.id == scopeId) =
-          [{ id := scopeId, parentScopeId := some declaration.parentScopeId,
-             originElementId := declaration.elementId }] ∧
-        (program.definitionScopes.filter
-          (fun candidate => candidate.id == declaration.parentScopeId)).length = 1 ∧
-        (before.scopeOccurrences.filter (fun candidate => candidate.id == parent)).length = 1 ∧
-        scopeQuiescent before child.id = true) :
-      EventSubProcessCompletionStep program before scopeId elementId
-        { before with
-          scopeOccurrences := before.scopeOccurrences.filter (fun occurrence => decide (occurrence.id ≠ child.id)) }
-
-theorem completeEventSubProcessState_sound (program : Program) (before after : RuntimeState)
-    (scopeId : DefinitionScopeId) (elementId : NodeId)
-    (result : completeEventSubProcessState? program before scopeId elementId = some after) :
-    EventSubProcessCompletionStep program before scopeId elementId after := by
-  unfold completeEventSubProcessState? at result
-  split at result
-  · rename_i declaration child declared selected
-    split at result
-    · simp at result
-    · rename_i parent parented
-      split at result
-      · rename_i bound
-        simp only [Option.some.injEq] at result
-        subst after
-        exact .close program before scopeId elementId declaration child parent declared selected parented bound
-      · simp at result
-  · simp at result
-
 /-- IMES-CLOSE-01 permits a declared, quiescent handler to retire without a parent continuation. -/
 theorem completeEventSubProcessState_accepts_quiescent_handler
     (program : Program) (before : RuntimeState) (scopeId : DefinitionScopeId) (elementId : NodeId)

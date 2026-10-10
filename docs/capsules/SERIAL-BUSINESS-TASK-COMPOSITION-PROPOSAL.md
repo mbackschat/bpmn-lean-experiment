@@ -108,9 +108,9 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the serial capability analysis. |
 | [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 446 | Preserve all existing alternatives. |
 | [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 299 | Reuse mapping semantics and preserve existing output restrictions. |
-| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 627 | Keep independently stated transition premises and soundness separate. |
+| [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 632 | Keep independently stated transition premises and soundness separate. |
 | [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not place serial analysis here. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 | Delegate; preserve closed profile decisions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Delegate; preserve closed profile decisions. |
 
 These measurements are the nonblank margin before the 800-line review target, derived through `what-binds`. If planned growth exceeds its margin, extract a cohesive existing responsibility without changing its contract and remeasure. New owners require ordinary source-map and default-library reachability coverage. This is not permission to compress existing proof or absence claims.
 

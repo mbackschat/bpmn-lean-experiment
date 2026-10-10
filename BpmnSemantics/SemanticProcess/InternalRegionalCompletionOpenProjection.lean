@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
 

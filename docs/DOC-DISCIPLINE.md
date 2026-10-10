@@ -6,7 +6,7 @@ This document owns the repository’s documentation roles, filename contracts, l
 
 The convention deliberately aligns with the sibling `a12-rulekit` documentation discipline inspected at the revision recorded in [SOURCES.md](SOURCES.md). The central shared rule is lifecycle-sensitive: `-SPEC` means an implemented current contract, while approved intent that is not implemented remains `-PROPOSAL`.
 
-This project retains two deliberate assurance-specific control surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact current claims to five cohesive detail implementation maps. Neither is a feature-history board.
+This project retains two deliberate assurance-specific control surfaces that `a12-rulekit` does not use in the same way: [PLAN.md](PLAN.md) owns immediate execution order and [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes exact current claims through its authoritative routing table. Neither is a feature-history board.
 
 ## Filename grammar
 
@@ -127,6 +127,8 @@ Current measured verification results and exact resume state belong in [PLAN.md]
 ### Active-task continuity
 
 Maintain `PLAN.md`'s `Exact resume point` as one replaceable account of the active task: its intended outcome, current result, decisive verification, unresolved blockers, and next action. Update it in place as work advances. When another task becomes active, replace the previous task's details; retain only constraints or unresolved failures that still affect the new task. Keep the existing four-section structure and word limits. `Current evidence` likewise holds current decision-relevant results, not successive runs.
+
+PLAN.md has a 2,400-word backstop; `Exact resume point` retains its 250-word backstop. On 2026-10-11 the owner authorized the organizational change: the previous 1,984-word plan plus individually scannable task-bound assurance assessments measured 2,220 words, so this ceiling supplies 180 words of current-task completion margin. Keep finding history and correction contracts in the [assurance register](ASSURANCE-IMPROVEMENT-REGISTER.md#activation-and-ownership); PLAN holds reviewed trigger results, bounded actions and acceptance links. Its immutable pre-task assurance base remains fixed through commits and closure, and is replaced with the assessments only for a genuinely new selected task. Every other document/source ceiling is unchanged.
 
 Do not append session summaries, helper-proof updates, failed elaboration attempts, command transcripts, or temporary-log inventories to proposals, specs, implementation maps, or the plan. Keep raw command output in execution receipts; link only the decisive current receipt when resumption needs it. Git retains superseded tracked text. Preserve unique durable decisions, evidence boundaries and unresolved obligations in their owning document, and keep required immutable approval receipts under [the review-receipt contract](REVIEW-POLICY.md#review-receipt). An interruption or handoff does not create another documentation owner or justify a work diary.
 

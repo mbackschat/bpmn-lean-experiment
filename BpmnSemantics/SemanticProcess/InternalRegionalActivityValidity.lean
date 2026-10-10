@@ -120,18 +120,10 @@ private theorem retained_body_live (state : RuntimeState) (root : ScopeOccurrenc
     activityBodyLive (cancelScopeSubtree state root disposition) record = true := by
   have ownerOutside := (Bool.or_eq_false_iff.mp outside).1
   have census := task_census_preserved state root disposition record
-  have taskNames (task : OccurrenceId) (wait : UserTaskWait) :
-      (decide (wait.processInstanceId = task.processInstanceId) &&
-        decide (wait.task.id.value = task.elementId.value) &&
-        decide (wait.activation = task.activation)) = taskIdNamesWait task wait := by
-    apply Bool.eq_iff_iff.mpr
-    simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
-    simp only [eq_comm]
   cases body : record.body with
   | userTask task =>
     simp only [activityBodyLive, body] at live ⊢
     simp only [activityTaskBodyOwnersAgree, body] at owners
-    simp only [taskNames] at live ⊢
     rw [census task ownerOutside owners]
     exact live
   | parallelUserTasks first rest =>
@@ -140,7 +132,6 @@ private theorem retained_body_live (state : RuntimeState) (root : ScopeOccurrenc
     apply List.all_eq_true.mpr
     intro task member
     have taskLive := List.all_eq_true.mp live task member
-    simp only [taskNames] at taskLive ⊢
     rw [census task ownerOutside (List.all_eq_true.mp owners task member)]
     exact taskLive
   | childScope scope =>

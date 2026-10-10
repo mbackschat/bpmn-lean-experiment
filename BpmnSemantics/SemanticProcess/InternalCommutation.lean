@@ -403,13 +403,6 @@ def internalOperationFrontierPairwiseIndependent? (program : Program)
       internalOperationPairsIndependent? program state operations
   | _ => false
 
-private def operationBefore (left right : SemanticOperation) : Bool := left.id.value < right.id.value
-
-def canonicalInternalOperations (operations : List SemanticOperation) : List SemanticOperation := sortBy operationBefore operations
-
-def canonicalEnabledInternalTransitions (transitions : List (SemanticOperation × RuntimeState)) : List (SemanticOperation × RuntimeState) :=
-  sortBy (fun left right => operationBefore left.1 right.1) transitions
-
 def fireInternalPair? (program : Program) (state : RuntimeState) (first second : SemanticOperation) : Option RuntimeState := do
   let intermediate ← fire? program first state
   fire? program second intermediate

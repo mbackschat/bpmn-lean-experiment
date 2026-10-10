@@ -15,11 +15,7 @@ open BpmnSemantics
 
 def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) : Option RuntimeState :=
-  match state.waits.find? fun wait =>
-      decide (
-        wait.processInstanceId = processInstanceId &&
-          wait.task.id = taskId &&
-          wait.activation = activation) with
+  match state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation }) with
   | none => none
   | some wait =>
       some
@@ -207,11 +203,7 @@ theorem spawnFromSelectedMonitoredUserTask_sound (program : Program) (before aft
 def fireTimer (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId)
     (logicalTimeMs : Nat) : Except RecurringBoundaryTimerRefusal (Option RuntimeState) :=
-  match state.timerWaits.find? fun wait =>
-      decide (
-        wait.processInstanceId = timerId.processInstanceId &&
-          wait.elementId.value = timerId.elementId.value &&
-          wait.activation = timerId.activation) with
+  match state.timerWaits.find? (timerIdNamesWait timerId) with
   | none => .ok none
   | some wait =>
       if state.eventRaces.any (eventRaceHasTimer · wait) then

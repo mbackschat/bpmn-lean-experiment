@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
 import BpmnSemantics.WireNatural
 
@@ -50,9 +50,7 @@ def registerEventSubProcessListener? (program : Program) (state : RuntimeState)
     else
       let previous ← eventSubProcessMessageCount? state declaration.startEventId
       if previous + 1 > SemanticProcessJson.maxSafeWireNat then none
-      else if state.messageWaits.any (fun wait =>
-        wait.processInstanceId == parent.processInstanceId &&
-        wait.elementId == declaration.startEventId && wait.activation == previous + 1) then none
+      else if state.messageWaits.any ((messageIdNamesWait { processInstanceId := parent.processInstanceId, elementId := ⟨declaration.startEventId.value⟩, activation := previous + 1 })) then none
       else some (installEventSubProcessListener state declaration parent previous)
   | _ => none
 

@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.Data
 
@@ -34,11 +34,6 @@ def sortOpenWaitOccurrences (identity : α → OccurrenceId) (values : List α) 
       leftId.processInstanceId.value < rightId.processInstanceId.value
     else if leftId.elementId ≠ rightId.elementId then leftId.elementId.value < rightId.elementId.value
     else leftId.activation ≤ rightId.activation) values
-
-/-- Canonical presentation retains every occurrence, including multiplicity. -/
-theorem sortOpenWaitOccurrences_perm (identity : α → OccurrenceId) (values : List α) :
-    (sortOpenWaitOccurrences identity values).Perm values :=
-  InternalCommutation.sortBy_permutation _ values
 
 def projectOpenUserTasks (tasks : List UserTaskDefinition) (state : RuntimeState) :
     List OpenUserTask :=

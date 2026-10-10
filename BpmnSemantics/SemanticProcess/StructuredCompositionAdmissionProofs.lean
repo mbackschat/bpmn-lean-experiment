@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 
 /-! SPC-STRUCTURE-01 and SPC-AVAILABLE-01 derive complete forward order and input obligations from actual admission. Operation projection and committed-start facts link that analysis to execution without assuming control uniqueness or input availability. -/
 

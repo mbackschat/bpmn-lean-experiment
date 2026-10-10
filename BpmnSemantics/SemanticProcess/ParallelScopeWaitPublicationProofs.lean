@@ -185,13 +185,15 @@ theorem completeEffect_success_wait_program_validity (program : Program)
   unfold completeEffect? at completed
   split at completed <;> try contradiction
   rename_i candidates wait selected
-  have chosen : wait ∈ before.effectWaits.filter (effectOccurrenceMatches id) := by rw [selected]; simp
+  have chosen : wait ∈ before.effectWaits.filter (effectIdNamesWait id) := by rw [selected]; simp
   have member := (List.mem_filter.mp chosen).1
   have identity : id = effectWaitOccurrenceId wait := by
     have matched := (List.mem_filter.mp chosen).2
-    simp only [effectOccurrenceMatches, decide_eq_true_eq] at matched
-    cases id
-    simp_all [effectWaitOccurrenceId]
+    simp only [effectIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
+    cases id with
+    | mk process element activation =>
+      cases element
+      simp_all [effectWaitOccurrenceId]
   split at completed
   · simp only [completeParallelScopeEffect?, selected] at completed
     split at completed <;> try contradiction

@@ -181,7 +181,7 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 | [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 492 | Classify string/null start and completion surfaces. |
 | [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Independently select the checked analysis. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not put the analysis in this nearly full owner. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 49 | Delegate start and completion decisions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Delegate start and completion decisions. |
 
 These are measured nonblank lines before the existing 800-line review target. If planned growth exceeds available headroom, first extract a cohesive existing responsibility without changing its contract. The guard remeasures these figures; rerun `what-binds` when target paths change. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
 

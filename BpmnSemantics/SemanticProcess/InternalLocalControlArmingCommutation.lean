@@ -8,10 +8,6 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-def PreparedInternalArming.stateFootprint (prepared : PreparedInternalArming) :
-    InternalTransitionStateFootprint :=
-  { reads := prepared.footprint.reads, writes := prepared.footprint.writes }
-
 private def armingPatch : PreparedInternalArming → InternalArmingPatch
   | .ordinary _ patch => patch
   | .data _ patch => patch.arm

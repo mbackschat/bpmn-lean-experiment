@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Boundary Compensation Activity retention declaration
 

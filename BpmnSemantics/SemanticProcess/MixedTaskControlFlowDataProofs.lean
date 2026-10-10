@@ -624,6 +624,7 @@ theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : 
     (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
       program.identity.semanticProfile = mixedTaskBusinessErrorProfileId)
     (analyzed : programAnalysis program = some analysis) (foreign : SerialBusinessTask.ForeignRuntimeEmpty before)
+    (storage : committedStateCollectionAdmitted before = true)
     (guarded : serialBusinessCommandAdmitted program before stimulus = true)
     (completion : SerialBusinessTask.IsSerialCompletion stimulus) :
     admitStimulus program before stimulus = dispatchStimulus program before stimulus := by
@@ -637,7 +638,7 @@ theorem serial_completion_admission_eq_dispatch (program : Program) (analysis : 
         mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, interruptingMessageEventSubProcessProfileId]
     have incidents : before.effectIncidents = [] := foreign.2.2.1
     cases stimulus <;> simp only [SerialBusinessTask.IsSerialCompletion] at completion <;> try contradiction
-    all_goals simp [admitStimulus, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents,
+    all_goals simp [admitStimulus, storage, dispatchStimulus, snapshots, guarded, dataValid, messageValid, incidents,
       profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
 
 theorem guarded_effect_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)

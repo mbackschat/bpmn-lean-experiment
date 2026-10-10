@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.ExecutionRuntime
 import BpmnSemantics.TerminateEndEventFixtures
 
 /-! # Terminate End Event conformance

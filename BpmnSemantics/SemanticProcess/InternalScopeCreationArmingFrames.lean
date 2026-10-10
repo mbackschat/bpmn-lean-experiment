@@ -10,10 +10,6 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-def PreparedInternalArming.scopeFramePatch : PreparedInternalArming → InternalArmingPatch
-  | .ordinary _ patch => patch
-  | .data _ patch => patch.arm
-
 theorem scopeArming_input_read (arm : PreparedInternalArming) :
     .tokenOwners arm.scopeFramePatch.input ∈ arm.stateFootprint.reads := by
   cases arm with

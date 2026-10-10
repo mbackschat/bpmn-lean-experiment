@@ -53,6 +53,9 @@ export type OrderedWorkEntry = Readonly<{
   detailMaps: ReadonlyArray<string>;
 }>;
 
+/** Owner-authorized on 2026-10-11; the measured basis belongs to DOC-DISCIPLINE's active-task continuity. */
+export const reviewedPlanWordBudget = 2400;
+
 export function parseOrderedWork(plan: string): ReadonlyArray<OrderedWorkEntry> {
   return documentSection(plan, "Ordered work").split("\n").flatMap((line) => {
     const match = /^\d+\. `([A-Z][A-Z0-9-]*)` · \*\*(active|queued|later)\*\* · Owners?: (.+?) · Maps?: (.+?) · Action: \S.+$/u.exec(line);
@@ -73,7 +76,7 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
     "Current evidence",
     "Exact resume point",
   ]);
-  assert.ok(wordCount(plan) <= 2000, "PLAN.md exceeds its 2,000-word backstop");
+  assert.ok(wordCount(plan) <= reviewedPlanWordBudget, `PLAN.md exceeds its ${reviewedPlanWordBudget.toLocaleString("en-US")}-word backstop`);
   assert.ok(
     wordCount(documentSection(plan, "Exact resume point")) <= 250,
     "the exact resume point exceeds its 250-word backstop",
@@ -244,6 +247,11 @@ export function planReviewRestatementFindings(
 const mapCountProse =
   /\b(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:[\w-]+\s+){0,2}maps?\b/iu;
 
+/** The root Routing table owns the map population; another prose count cannot stay synchronized. */
+export function assertNoImplementationMapCount(document: string): void {
+  assert.doesNotMatch(document, mapCountProse, "the routing-owner prose states a map count; the Routing table is the one count owner");
+}
+
 export function assertRootImplementationMap(rootMap: string): void {
   assert.deepEqual(levelTwoHeadings(rootMap), [
     "Current claim",
@@ -256,7 +264,7 @@ export function assertRootImplementationMap(rootMap: string): void {
     wordCount(documentSection(rootMap, "Cross-area invariants")) > 0,
     "cross-area invariants must not be empty",
   );
-  assert.doesNotMatch(rootMap, mapCountProse, "the router prose states a map count; the Routing table is the one count owner");
+  assertNoImplementationMapCount(rootMap);
   const parsed = parseImplementationMapDirectory(rootMap);
   assert.deepEqual(parsed.errors, []);
   for (const line of documentSection(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {

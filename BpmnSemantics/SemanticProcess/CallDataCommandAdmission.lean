@@ -30,8 +30,7 @@ def callDataCalledTaskInstanceAdmitted (program : Program) (state : RuntimeState
   else match CallDataAdmission.program? program, state.control with
     | some data, .running host =>
         calledProcessAssociationsValid state &&
-          match state.waits.filter (fun wait => wait.processInstanceId == taskId.processInstanceId &&
-            wait.task.id.value == taskId.elementId.value && wait.activation == taskId.activation) with
+          match state.waits.filter ((taskIdNamesWait taskId)) with
           | [wait] =>
               (state.calledProcessOccurrences.filter fun record =>
                 record.id.elementId.value == data.call.ownerId && record.caller.processInstanceId == host &&

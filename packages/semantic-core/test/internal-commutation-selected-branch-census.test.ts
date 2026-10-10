@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ControlStateKind,
+  RuntimeStateDefect,
   SemanticOperationKind,
   SemanticOriginKind,
   VariableValueKind,
@@ -144,16 +145,16 @@ for (const extraInputs of [
   ["place:Flow_Extra", "place:Flow_Extra"],
   ["place:Flow_Extra", "place:Flow_B_Join"],
 ]) {
-  test(`selected join deduplicates dependencies while retaining other-owner records ${extraInputs.join(",")}`, () => {
+  test(`raw selected join deduplicates dependencies while retaining duplicate-key other-owner records ${extraInputs.join(",")}`, () => {
     const retained = extraInputs.map((input) => record(second, input));
     const before = state([token(first, "place:Flow_A_Join")], [
       record(first, "place:Flow_A_Join"), ...retained,
     ]);
     const original = structuredClone(before);
-    assertValid(before);
+    assert.deepEqual(runtimeStateDefects(program, instanceId, before), [RuntimeStateDefect.UnorderedCollection]);
     const actual = applyInternalOperationStep(program, join, before)?.successor;
     assert.ok(actual);
-    assertValid(actual);
+    assert.deepEqual(runtimeStateDefects(program, instanceId, actual), [RuntimeStateDefect.UnorderedCollection]);
     const prepared = prepare(program, before, join);
     assert.ok(prepared);
     assert.deepEqual(applyPreparedInternalLocalControl(program, before, prepared), actual);

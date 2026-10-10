@@ -232,20 +232,6 @@ theorem armEventRaceState_sound (before after : RuntimeState)
         (eventRaceTimerActivationCount before timer.elementId + 1)
         ownedEq runningEq rfl rfl rfl
 
-def eventRaceMessageOccurrenceMatches (subscriptionId : MessageSubscriptionId)
-    (wait : MessageWait) : Bool :=
-  decide (
-    wait.processInstanceId = subscriptionId.processInstanceId &&
-      wait.elementId.value = subscriptionId.elementId.value &&
-      wait.activation = subscriptionId.activation)
-
-def eventRaceTimerOccurrenceMatches (timerId : TimerOccurrenceId)
-    (wait : TimerWait) : Bool :=
-  decide (
-    wait.processInstanceId = timerId.processInstanceId &&
-      wait.elementId.value = timerId.elementId.value &&
-      wait.activation = timerId.activation)
-
 def eventRaceForMessage? (state : RuntimeState) (wait : MessageWait) :
     Option EventRace :=
   match state.eventRaces.filter (eventRaceHasMessage · wait) with
@@ -292,7 +278,7 @@ def eventRaceMessageWinner? (program : Program) (state : RuntimeState)
     Option RuntimeState :=
   if eventRaceAssociationsValid state then
     match state.messageWaits.find?
-        (eventRaceMessageOccurrenceMatches subscriptionId) with
+        (messageIdNamesWait subscriptionId) with
       | none => none
       | some messageWait =>
           match eventRaceForMessage? state messageWait with
@@ -312,7 +298,7 @@ def eventRaceMessageWinner? (program : Program) (state : RuntimeState)
 def eventRaceTimerWinner? (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) : Option RuntimeState :=
   if eventRaceAssociationsValid state then
-    match state.timerWaits.find? (eventRaceTimerOccurrenceMatches timerId) with
+    match state.timerWaits.find? (timerIdNamesWait timerId) with
       | none => none
       | some timerWait =>
           match eventRaceForTimer? state timerWait with
@@ -336,7 +322,7 @@ inductive EventRaceMessageWinnerStep : Program → RuntimeState →
       (subscriptionId : MessageSubscriptionId) (channel : MessageChannel)
       (messageWait : MessageWait) (race : EventRace) (timerWait : TimerWait)
       (occurrence : before.messageWaits.find?
-        (eventRaceMessageOccurrenceMatches subscriptionId) = some messageWait)
+        (messageIdNamesWait subscriptionId) = some messageWait)
       (association : eventRaceForMessage? before messageWait = some race)
       (sibling : before.timerWaits.find? (eventRaceHasTimer race) =
         some timerWait)
@@ -359,7 +345,7 @@ inductive EventRaceTimerWinnerStep : Program → RuntimeState →
       (logicalTimeMs : Nat) (timerWait : TimerWait) (race : EventRace)
       (messageWait : MessageWait)
       (occurrence : before.timerWaits.find?
-        (eventRaceTimerOccurrenceMatches timerId) = some timerWait)
+        (timerIdNamesWait timerId) = some timerWait)
       (association : eventRaceForTimer? before timerWait = some race)
       (sibling : before.messageWaits.find? (eventRaceHasMessage race) =
         some messageWait)

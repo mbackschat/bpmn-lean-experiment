@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Stored Service mapping provenance
 
@@ -328,10 +329,11 @@ private theorem admitted_wait_scalar_read (program : Program) (analysis : Parall
     (notCondition : analysis.entry.completionBooleanName ≠ some name)
     (available : ∃ value, enclosingVariable? before.variables.process.bindings name = some value) :
     ∃ value, enclosingVariable? (admitStimulus program before stimulus).state.variables.process.bindings name = some value := by
+  have storage := admitStimulus_committed_collection_storage program before stimulus committed
   have admitted : ParallelScopeCommand.stimulusAdmitted program before stimulus = true := by
     cases checked : ParallelScopeCommand.stimulusAdmitted program before stimulus with
     | false =>
-      cases snapshot : program.compensationEventSubProcessSnapshots <;> simp [admitStimulus, snapshot, checked] at committed
+      cases snapshot : program.compensationEventSubProcessSnapshots <;> simp [admitStimulus, snapshot, storage, checked] at committed
     | true => rfl
   cases stimulus <;> simp only [waitCompletionStimulus] at completion <;> try contradiction
   case completeUserTaskInstance commandId id values =>
@@ -340,7 +342,7 @@ private theorem admitted_wait_scalar_read (program : Program) (analysis : Parall
       split at admitted <;> try contradiction
       exact (Bool.and_eq_true_iff.mp admitted).2
     cases snapshot : program.compensationEventSubProcessSnapshots <;>
-      cases control : before.control <;> simp [admitStimulus, snapshot, selected, control]
+      cases control : before.control <;> simp [admitStimulus, snapshot, storage, selected, control]
     all_goals repeat' first
       | exact available
       | (apply ParallelScopeCommand.completeTask_scalar_read program analysis analyzed before _ id values dataAdmitted _ name notCondition available; assumption)
@@ -349,7 +351,7 @@ private theorem admitted_wait_scalar_read (program : Program) (analysis : Parall
     cases result <;> simp only at completion <;> try contradiction
     rename_i values
     cases snapshot : program.compensationEventSubProcessSnapshots <;>
-      cases control : before.control <;> simp [admitStimulus, snapshot, selected, control]
+      cases control : before.control <;> simp [admitStimulus, snapshot, storage, selected, control]
     all_goals repeat' first
       | exact available
       | (apply ParallelScopeCommand.completeEffect_scalar_read program analysis analyzed before _ id (.success values) outputs _ name notCondition available; assumption)

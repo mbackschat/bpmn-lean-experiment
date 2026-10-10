@@ -52,8 +52,7 @@ theorem writeParallelScopeValues_preserves_collection
 theorem completeParallelScopeUserTask_preserves_collection
     {program : Program} {before after : RuntimeState} {id : UserTaskInstanceId} {values : List VariableBinding}
     (wait : UserTaskWait) (entry : ParallelScopeEntry) (binding : VariableBinding)
-    (selectedWait : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selectedWait : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (selectedEntry : ((program.operations.filterMap parallelScopeEntry?).filter
       (·.childScopeId == wait.owner.definitionScopeId)) = [entry])
     (unique : before.variables.process.bindings.filter (·.name == entry.collectionName) = [binding])
@@ -69,7 +68,7 @@ theorem completeParallelScopeUserTask_preserves_collection
 theorem completeParallelScopeEffect_preserves_collection
     {program : Program} {before after : RuntimeState} {id : EffectOccurrenceId} {result : EffectExecutionResult}
     (wait : EffectWait) (entry : ParallelScopeEntry) (binding : VariableBinding)
-    (selectedWait : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selectedWait : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (selectedEntry : ((program.operations.filterMap parallelScopeEntry?).filter
       (·.childScopeId == wait.owner.definitionScopeId)) = [entry])
     (unique : before.variables.process.bindings.filter (·.name == entry.collectionName) = [binding])
@@ -204,8 +203,6 @@ private theorem admitted_human_collection (program : Program) (analysis : Parall
   split at admitted <;> try contradiction
   rename_i valid
   simp only [Bool.and_eq_true] at admitted
-  have validState : InternalCommutation.occurrenceReservationStateValid before = true := by
-    cases result : InternalCommutation.occurrenceReservationStateValid before <;> simp_all
   have patch := admitted.2
   simp only [humanValuesAdmitted, Bool.and_eq_true] at patch
   have untouched : ∀ value ∈ values, value.name ≠ analysis.entry.collectionName := by
@@ -217,8 +214,9 @@ private theorem admitted_human_collection (program : Program) (analysis : Parall
   cases capacity : ParallelScopeStart.programStateCapacity program before with
   | none => simp [capacity] at admitted
   | some result =>
-    simp only [ParallelScopeStart.programStateCapacity, validState, Bool.not_true, Bool.false_eq_true, if_false,
-      analyzed, bind, Option.bind_some, pure] at capacity
+    unfold ParallelScopeStart.programStateCapacity at capacity
+    split at capacity <;> try contradiction
+    simp only [analyzed, bind, Option.bind_some, pure] at capacity
     obtain ⟨initialCapacity, _, capacity⟩ := Option.bind_eq_some_iff.mp capacity
     split at capacity <;> try contradiction
     split at capacity <;> try contradiction
@@ -232,8 +230,7 @@ theorem completeTask_ordinary_preserves_admitted_collection
     (before after : RuntimeState) (commandId : SemanticId) (id : UserTaskInstanceId)
     (values : List VariableBinding) (wait : UserTaskWait)
     (admitted : stimulusAdmitted program before (.completeUserTaskInstance commandId id values) = true)
-    (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-      wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (ordinary : hasParallelScopeDefinition program wait.owner = false)
     (completed : completeTask? program before id values = some after) :
     after.variables.process.bindings.filter (·.name == analysis.entry.collectionName) =
@@ -255,8 +252,7 @@ theorem completeTask_scoped_preserves_admitted_collection
     (before after : RuntimeState) (commandId : SemanticId) (id : UserTaskInstanceId)
     (values : List VariableBinding) (wait : UserTaskWait)
     (admitted : stimulusAdmitted program before (.completeUserTaskInstance commandId id values) = true)
-    (selectedWait : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selectedWait : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (selectedEntry : ((program.operations.filterMap parallelScopeEntry?).filter
       (·.childScopeId == wait.owner.definitionScopeId)) = [analysis.entry])
     (parallel : hasParallelScopeDefinition program wait.owner = true)
@@ -334,7 +330,7 @@ theorem completeSerialEffect_stringList_provenance (program : Program) (before a
 /-- The real ordinary dispatch branch inherits mapped-result provenance without wait-to-declaration or cardinality premises. -/
 theorem completeEffect_ordinary_stringList_provenance (program : Program) (before after : RuntimeState)
     (id : EffectOccurrenceId) (result : EffectExecutionResult) (wait : EffectWait)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (ordinary : hasParallelScopeDefinition program wait.owner = false)
     (completed : completeEffect? program before id result = some after)
     (name : String) (items : List String)

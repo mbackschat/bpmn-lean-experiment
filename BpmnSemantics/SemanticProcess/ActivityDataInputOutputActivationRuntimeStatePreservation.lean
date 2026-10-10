@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
@@ -389,20 +390,9 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
           ActivityOccurrence.messageHandlerOccurrences]⟩
       simp only [activityBodyLive, record, dataInputOutputActivityRecord]
       simp only [decide_eq_true_eq]
-      change (successor.waits.filter fun wait =>
-        decide (wait.processInstanceId = instanceId) &&
-          decide (wait.task.id.value = taskId.value) &&
-          decide (wait.activation = activationCount before taskId + 1)).length = 1
-      have keyFrame : (fun wait => userTaskWaitKeyMatches insertedWait wait) =
-          (fun wait =>
-            decide (wait.processInstanceId = instanceId) &&
-              decide (wait.task.id.value = taskId.value) &&
-              decide (wait.activation = activationCount before taskId + 1)) := by
-        funext wait
-        simp [userTaskWaitKeyMatches, insertedWait,
-          taskDefinitionId_eq_iff_value_eq, eq_comm]
-      rw [← keyFrame]
-      exact insertedUnique
+      change (successor.waits.filter (taskIdNamesWait { processInstanceId := instanceId, elementId := ⟨taskId.value⟩, activation := activationCount before taskId + 1 })).length = 1
+      rw [← taskIdNamesWait_key_function insertedWait] at insertedUnique
+      simpa only [insertedWait] using insertedUnique
     · have prior := List.all_eq_true.mp oldBodies candidate old
       simpa [successor, activityRecordsOwnLiveWork, activityBodyLive,
         activityTaskBodyOwnersAgree,

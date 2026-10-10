@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.TokenPatch
 

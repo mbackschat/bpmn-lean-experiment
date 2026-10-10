@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 
 /-! # Regional dependency atoms

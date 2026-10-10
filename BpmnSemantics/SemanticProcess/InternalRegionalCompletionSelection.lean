@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Bounded completion withdrawal selection
 
@@ -242,6 +242,30 @@ theorem completionWithdrawal_unbounded_facts (program : Program) (state : Runtim
     · contradiction
   · contradiction
 
+/-- Monitored selection yields the predecessor certificate used by the actual completion;
+no successful evaluator or successor validity is assumed by preparation. -/
+theorem subscribedWithdrawal_monitored_facts (program : Program) (state : RuntimeState)
+    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
+    (record : ActivityOccurrence) (timer : Option TimerWait)
+    (selected : selectSubscribedCompletionWithdrawal? program state scopeId output =
+      some (.monitored record timer)) :
+    ∃ pair : { pair : MonitoredScopePair // MonitoredScopeBinding program state pair },
+      isMonitoredScopeDefinition program scopeId = true ∧
+      monitoredScopePairForChild? program state scopeId = some pair ∧
+      pair.val.definition.childScopeId = scopeId ∧ output = some pair.val.output ∧
+      pair.val.record = record ∧ pair.val.timer = timer := by
+  unfold selectSubscribedCompletionWithdrawal? at selected
+  split at selected
+  · next monitored =>
+      obtain ⟨pair, found, selected⟩ := Option.bind_eq_some_iff.mp selected
+      split at selected
+      · next addressed =>
+          cases selected
+          exact ⟨pair, monitored, found, addressed.1, addressed.2, rfl, rfl⟩
+      · contradiction
+  · exact (boundedWithdrawal_not_monitored program state scopeId record timer selected).elim
+
+
 /-- Selection and actual ordinary completion compose into the unchanged bounded evaluator.
 This derives the update, rather than comparing two assumed successful successor states. -/
 theorem completionWithdrawal_refines (program : Program) (before completed : RuntimeState)
@@ -267,45 +291,6 @@ theorem completionWithdrawal_refines (program : Program) (before completed : Run
       refine ⟨_, ?_, rfl⟩
       simp [completeBoundedScope?, ordinary, definitionFound, childFound, deadlineFound, body]
   | monitored record deadline => exact (boundedWithdrawal_not_monitored program before scopeId record deadline selected).elim
-
-/-- The admitted completion law now applies to the predecessor-selected bounded withdrawal. -/
-theorem completionWithdrawal_preserves_position (program : Program) (before completed : RuntimeState)
-    (expectedInstanceId instanceId : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
-    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId) (withdrawal : InternalCompletionWithdrawal)
-    (valid : runtimePositionValid program expectedInstanceId before = true)
-    (structural : flowNodeOccurrenceStructuralProgramValidity program before = true)
-    (running : before.control = .running instanceId)
-    (operation : .completeScope id origin scopeId output ∈ program.operations)
-    (selected : selectInternalCompletionWithdrawal? program before scopeId = some withdrawal)
-    (ordinary : completeScopeState? before scopeId output = some completed) :
-    ∃ after, completeBoundedScope? program before scopeId output = some after ∧
-      runtimePositionValid program expectedInstanceId after = true := by
-  obtain ⟨after, result, _⟩ := completionWithdrawal_refines program before completed scopeId output withdrawal selected ordinary
-  exact ⟨after, result, declaredBoundedComplete_preserves_position program before after expectedInstanceId instanceId
-    id origin scopeId output valid structural running operation result⟩
-
-/-- Monitored selection yields the predecessor certificate used by the actual completion;
-no successful evaluator or successor validity is assumed by preparation. -/
-theorem subscribedWithdrawal_monitored_facts (program : Program) (state : RuntimeState)
-    (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)
-    (record : ActivityOccurrence) (timer : Option TimerWait)
-    (selected : selectSubscribedCompletionWithdrawal? program state scopeId output =
-      some (.monitored record timer)) :
-    ∃ pair : { pair : MonitoredScopePair // MonitoredScopeBinding program state pair },
-      isMonitoredScopeDefinition program scopeId = true ∧
-      monitoredScopePairForChild? program state scopeId = some pair ∧
-      pair.val.definition.childScopeId = scopeId ∧ output = some pair.val.output ∧
-      pair.val.record = record ∧ pair.val.timer = timer := by
-  unfold selectSubscribedCompletionWithdrawal? at selected
-  split at selected
-  · next monitored =>
-      obtain ⟨pair, found, selected⟩ := Option.bind_eq_some_iff.mp selected
-      split at selected
-      · next addressed =>
-          cases selected
-          exact ⟨pair, monitored, found, addressed.1, addressed.2, rfl, rfl⟩
-      · contradiction
-  · exact (boundedWithdrawal_not_monitored program state scopeId record timer selected).elim
 
 theorem subscribedWithdrawal_monitored_refines (program : Program) (before completed : RuntimeState)
     (scopeId : DefinitionScopeId) (output : Option ControlPlaceId)

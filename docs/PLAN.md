@@ -85,12 +85,39 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 1. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the private checkpoint; hosting, registration and closure remain deferred.
 2. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve approved scalar semantics and private recovery; registration is implemented, but independent public qualification failed and closure remains open.
 3. `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS` · **later** · Owner: [Message handler proposal](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the independently approved private checkpoint at `c2132704`; hosting, registration and closure remain deferred.
-4. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: prioritize the owner-directed [assurance architecture repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) across Lean, TypeScript and causal guidelines/scripts. Preserve delivery checkpoint `2f38e92d` and the [parallel MI proof/acceptance boundary](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint); both MI Sub-Process forms remain required.
+4. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: finish the [assurance batch](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#bounded-closure-amendment), review retirement, report and stop; preserve the [PMIS checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) and both required MI Sub-Process forms.
 5. `SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Required practical scope; select the bounded account and implementation order through the coverage inventory.
 6. `PARALLEL-MULTI-INSTANCE-SUBPROCESS` · **later** · Owner: [practical coverage goal](#practical-cib7-coverage-goal), [CIB scope ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Resume bounded parallel MI command closure after the selected business-task delivery gate; public closure remains open.
 7. `CONFORMANCE-CLOSURE` · **later** · Owner: [requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [conformance target](BPMN-CONFORMANCE-TARGET.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Audit remaining standards claims within the CIB7 implementation ceiling; no implementation beyond that ceiling is selected.
 
 [Balanced delivery](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) governs these batches; preserve failed evidence and the runtime-investigation hold. MUE acceptance stays superseded.
+
+### Assurance trigger assessment
+
+Assurance base: `1a61e0fd54cd1d8357a73af8f5b11932bed6ef3f`.
+
+Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
+
+| Finding | Result | Reason | Bounded action | Acceptance |
+|---|---|---|---|---|
+| AA-01 | not-met | No third transport consumer or new fuel guarantee is selected. | — | — |
+| AA-02 | not-met | Existing batch evidence is preserved; member-walk extension is unselected. | — | — |
+| AA-03 | not-met | Storage integration uses existing traversals; no forcing delivery amendment. | — | — |
+| AA-04 | not-met | This batch requires no named-view extraction. | — | — |
+| AA-05 | met | Runtime/proof separation needs unchanged conformance and cost acceptance. | Finish affected conformance, costs and integration. | [AA-05 acceptance](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05) |
+| AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
+| AA-09 | not-met | Generic-law relocation is outside the selected repair. | — | — |
+| AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
+| AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
+| AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
+| AA-16 | met | Routing changes and its documentation owner are selected. | Enforce declared assessments; preserve map routes and remove duplicated count. | [AA-16 acceptance](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-16) |
+| AA-18 | met | Ordering/uniqueness needs acceptance; family domination remains deferred. | Finish reached consumers and integration; retain family/resource restriction. | [AA-18 acceptance](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-18) |
+| AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
+| AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
+| AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
+| AA-23 | not-met | Refusal/ambiguity contract changes remain held. | — | — |
+| AA-24 | not-met | No conditional progress guarantee or satisfiability search is selected. | — | — |
+| AA-26 | met | Named matchers and shared encoding need unchanged-conformance acceptance. | Finish conformance, costs and registered semantic agreement. | [AA-26 acceptance](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-26) |
 
 ### Scheduled delivery batches
 
@@ -120,18 +147,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the approved [assurance repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) rows below.
+Current task: finish the [assurance batch](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#bounded-closure-amendment). [The register](ASSURANCE-IMPROVEMENT-REGISTER.md) owns residuals, holds and reopening conditions.
 
-Current result: the material checkpoint and correction are approved. AA-05 reduces executable-to-proof-only edges from 51 to zero; source/type guards, runtime bridges, extracted fixtures and retention-law checks pass. Names, evaluator bodies and theorem propositions are preserved; broad consumer acceptance remains pending.
+Current result: AA-05/AA-18/AA-26 implementation passes complete Lean integration, refreshed costs, infrastructure, semantic-core, differential and registered parity. Routing guards enforce task-bound assessments; unchanged reached-family guarantees remain checked.
 
-Next action: implement AA-26 named identity matchers/shared encoders, then AA-18 ordering/uniqueness. Reuse evidence; integrate stable slices together, including executable consumers and affected cost rows. Done: AA-07, AA-12, AA-14 to AA-17, AA-21, AA-24, AA-25 and Amendment 1. Deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/13/20/23. One MEDIUM agent at a time; batch reviews.
+Next action: commit the validated batch and obtain one cold amendment/checkpoint/closure review; retire only after approval. Then report and stop.
 
-Last verification: material repair passed 857 Lean jobs, 21 new axiom guards, five resource measurements, ownership tests, AA-07 replay, 734 infrastructure tests and 70 independent correction-audit tests. AA-05 passes 101 source/document checks and focused Lean slices; full acceptance remains open. Compiler failures and timeouts are retained.
+Unresolved: PMIS resumption, stable-wait/publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
+Oracle: complete Lean receipt `/tmp/assurance-final-stable-library-transaction-chain-20261011` and infrastructure `/tmp/assurance-final-routing-infrastructure-permitted-20261011`; semantic-core, differential, registered pipeline and population parity pass. Failed receipts remain retained.
 
-Oracle: document guards and independent proposal review; subsequent implementation requires actual composed guarantees under the proposal and [PMIS command checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint).
-
-Stop if implementation crosses a boundary the approved revision does not authorize.
-
-Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, all stashes (including `f35bdd6b`, `76a2b017` and pending PMIS sources `9a443912`) and checkpoint `2f38e92d`.
+Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.

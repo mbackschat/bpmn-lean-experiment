@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
@@ -95,7 +96,7 @@ theorem deliverCorrelatedPayloadMessage_preserves_nonselected_wait
     (program : Program) (before after : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) (other : MessageWait)
     (success : deliverCorrelatedPayloadMessage program before delivery = some after)
-    (different : ¬ correlatedWaitOccurrenceMatches delivery.subscriptionId other = true) :
+    (different : ¬ messageIdNamesWait delivery.subscriptionId other = true) :
     other ∈ after.messageWaits ↔ other ∈ before.messageWaits := by
   obtain ⟨candidate, wait, projected, subscriptionEq, selected, waitsEq, _tokensEq⟩ :=
     deliverCorrelatedPayloadMessage_exact_rewrite program before after delivery success
@@ -103,7 +104,7 @@ theorem deliverCorrelatedPayloadMessage_preserves_nonselected_wait
       payloadSelector, processPropertySelector, operationEq, selectedEq, waitMatches⟩ :=
     currentCorrelatedMessageWaitForCandidate?_facts program before candidate wait selected
   have deliveryWaitMatches :
-      correlatedWaitOccurrenceMatches delivery.subscriptionId wait = true := by
+      messageIdNamesWait delivery.subscriptionId wait = true := by
     rw [← subscriptionEq]
     exact waitMatches
   have otherNe : other ≠ wait := by

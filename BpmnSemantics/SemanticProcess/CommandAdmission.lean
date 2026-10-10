@@ -6,14 +6,14 @@ import BpmnSemantics.SemanticProcess.CallDataStateValidation
 import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.IncidentCancellation
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.MessageBoundedTask
@@ -358,7 +358,7 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
           else
           let compensationMatches := state.compensationHandlerEffectWaits.filter fun wait =>
             wait.id == effectId
-          let ordinaryMatches := state.effectWaits.filter (effectOccurrenceMatches effectId)
+          let ordinaryMatches := state.effectWaits.filter (effectIdNamesWait effectId)
           match compensationMatches, ordinaryMatches with
           | [_], [] =>
               match attemptCompensationHandlerEffectCompletion program state effectId result with
@@ -441,7 +441,8 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
 @[simp] private def admitStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
-  if !serialBusinessCommandAdmitted program state stimulus then { outcome := .rejected, state }
+  if !committedStateCollectionAdmitted state then { outcome := .rejected, state }
+  else if !serialBusinessCommandAdmitted program state stimulus then { outcome := .rejected, state }
   else if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
   else if !interruptingMessageEventSubProcessStateValid program state then { outcome := .rejected, state }
   else if !SequentialScopeData.stimulusAdmitted program stimulus then { outcome := .rejected, state }
@@ -646,6 +647,7 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
       stimulus).outcome = .committed) :
     ∃ variables, runningProgramStartState? program instanceId variables =
       some (admitStimulusWithoutCompensationSnapshots program initialState stimulus).state := by
+  have collectionValid : committedStateCollectionAdmitted initialState = true := rfl
   have serialValid : serialBusinessCommandAdmitted program initialState stimulus = true := by
     cases checked : serialBusinessCommandAdmitted program initialState stimulus with
     | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
@@ -669,7 +671,7 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, scopeValid, parallelValid, Bool.not_true,
+    simp only [admitStimulusWithoutCompensationSnapshots, collectionValid, serialValid, valid, handlerValid, scopeValid, parallelValid, Bool.not_true,
       Bool.false_eq_true, ↓reduceIte] at committed ⊢
     simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>

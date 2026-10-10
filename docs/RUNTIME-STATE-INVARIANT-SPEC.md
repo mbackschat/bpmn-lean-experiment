@@ -28,7 +28,7 @@ Two monotonicity facts are separate relations rather than conjuncts, because whe
 | `RSI-UNIQ-01` | the occurrence identity triple `(processInstanceId, definitionScopeId, activation)` appears exactly once in `scopeOccurrences` |
 | `RSI-UNIQ-02` | within each wait family the family's occurrence key appears at most once: User Task `(instance, element, activation)`, Message subscription identity, Timer occurrence identity, effect occurrence identity |
 | `RSI-DISJ-01` | one effect occurrence appears in `effectWaits` or in `effectIncidents`, never in both |
-| `RSI-ORDER-01` | every collection selected by the canonical-insertion criterion below holds its declared order; the executable `canonicalCollectionOrder` owns membership |
+| `RSI-ORDER-01` | every collection selected by the canonical-insertion criterion below holds its declared order; committed unique-key collections additionally require distinct keys, including counter element names. The raw proof predicate retains weak `canonicalCollectionOrder` |
 | `RSI-BOUND-01` | no live counter-minted identity exceeds its key's recorded count, with an absent counter read as zero. **Implemented narrower than stated:** the consumer-required User Task, Timer, and Activity families only. Message, Effect, Event race, Call, and ordinary Scope remain unstated, and called roots remain excluded from the general Scope account |
 
 ### Layer 2: program agreement
@@ -69,7 +69,7 @@ TypeScript requires the collection absent before Start and under older profiles,
 
 ### Facts the rules depend on
 
-**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. Both implementations now include `scopeOccurrences` and all eight activation-counter families after the [canonical scope and counter-storage correction](INTERNAL-COMMUTATION-PROPOSAL.md#canonical-scope-and-counter-storage-checkpoint). Process bindings take submitted order at Process start, so no whole-`variables` order is claimed. The nested `variables.activities` collection is separately ordered by both current predicates. The criterion decides whether a future collection joins the conjunct; [the Lean aggregate](../BpmnSemantics/SemanticProcess/RuntimeStateWellFormed.lean) and [TypeScript defect owner](../packages/semantic-core/src/runtime-state-well-formedness.ts) decide the current membership.
+**`RSI-ORDER-01` membership criterion.** A collection is listed when every one of its add sites canonically inserts, and excluded when its add sites disagree. Both implementations now include `scopeOccurrences` and all eight activation-counter families after the [canonical scope and counter-storage correction](INTERNAL-COMMUTATION-PROPOSAL.md#canonical-scope-and-counter-storage-checkpoint). Process bindings take submitted order at Process start, so no whole-`variables` order is claimed. The nested `variables.activities` collection is separately ordered by both current predicates. The criterion decides whether a future collection joins the conjunct; [the shared Lean collection owner](../BpmnSemantics/SemanticProcess/RuntimeStateCollectionStorage.lean) and [TypeScript collection owner](../packages/semantic-core/src/runtime-state-collection-ordering.ts) decide current storage membership. Their named committed defect compositions combine canonical order with unique keys. Lean tokens are repeated units; TypeScript uses one positive-multiplicity bucket per key, so duplicate units remain valid Lean multiplicity while duplicate or zero TypeScript buckets reject.
 
 ### Collection-to-conjunct inventory
 
@@ -142,9 +142,11 @@ Reopen when a consumer needs a stated conjunct discharged rather than assumed, w
 
 ## Enforcement
 
-The predicate gates the fail-closed command path and the Workflow-continuation boundary in TypeScript. The generic predicate gates no Lean command path: its general pre-dispatch gate is **excluded**, because gating on a predicate whose preservation is unproved risks refusing a reachable state. The private Message Event Sub-Process command path separately enforces its bounded family predicate; this does not change that generic enforcement boundary.
+The predicate gates the fail-closed command path and the Workflow-continuation boundary in TypeScript. The generic predicate gates no Lean command path: its general pre-dispatch gate is **excluded**, because gating on a predicate whose preservation is unproved risks refusing a reachable state. The private Message Event Sub-Process command path separately enforces its bounded family predicate. The separate shared committed collection subset now gates Lean admission and PMIS retained-state capacity, including the Start capacity branch; it does not install the complete Lean well-formedness predicate.
 
-The gate decides a narrower set than the predicate. Program-agreement classes are excluded from it, because deciding them needs the complete definition and the program handed to a command is only the hosting one. `LiveIdentityAboveCounter` is included because the implemented branches read one state and no called definition.
+TypeScript admission, Workflow restoration, and PMIS command/frontier ingress validation consume the same committed collection defects. Lean PMIS `programStateCapacity` and `commandClosureLimit?` consume the corresponding subset before scheduling. Raw occurrence discovery, operation evaluation and internal-prefix laws remain unchanged; neither target claims raw discovery validates committed storage or establishes a universal storage-preservation theorem.
+
+The TypeScript gate decides a narrower set than the full predicate. Program-agreement classes are excluded from it, because deciding them needs the complete definition and the program handed to a command is only the hosting one. `LiveIdentityAboveCounter` is included because the implemented branches read one state and no called definition.
 
 Enforcement should follow preservation. It did not: the gate landed at the semantic checkpoint and the core preservation lane at closure. A newly refused state is therefore treated as a defect in the validator until the state is shown unreachable.
 

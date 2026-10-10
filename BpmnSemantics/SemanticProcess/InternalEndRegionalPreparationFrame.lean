@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalEndCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra

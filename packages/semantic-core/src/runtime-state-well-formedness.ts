@@ -15,33 +15,17 @@ import {
   activityBodyScopeClaims,
   ActivityHandlerKind,
   attachedTimerOccurrences,
-  compareActivityOccurrences,
   sameActivityOccurrence,
   type ActivityOccurrence,
 } from "./activity-occurrence.js";
 import {
-  compareCalledProcessOccurrences,
-  compareEffectWaits,
-  compareEventRaces,
-  compareMessageWaits,
-  compareScopeOccurrenceIds,
-  compareSelectedBranchSets,
-  compareTimerWaits,
-  compareTokenPlaces,
-  compareUserTaskWaits,
   ControlStateKind,
   sameOccurrence,
   sameScopeOccurrence,
   type RuntimeState,
   type ScopeOccurrenceId,
 } from "./semantic-process-state.js";
-import {
-  compareSequentialMultiInstanceControllers,
-} from "./sequential-multi-instance-controller.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
-import {
-  compareParallelMultiInstanceControllers,
-} from "./parallel-multi-instance-controller.js";
 import {
   parallelMultiInstanceStateDefectCodes,
 } from "./parallel-multi-instance-state-validation.js";
@@ -50,10 +34,9 @@ import {
 } from "./runtime-state-defect.js";
 export { RuntimeStateDefect };
 import { sequentialMultiInstanceBindingsForState } from "./sequential-multi-instance-binding.js";
-import { compareCanonicalStrings } from "./wire.js";
 import { runtimeStateIdentityBound } from "./runtime-state-identity-bound.js";
 import { interruptingMessageEventSubProcessStateIsValid } from "./interrupting-message-event-subprocess-state-validation.js";
-import { compareActivityVariableScopes } from "./runtime-state-collection-ordering.js";
+import { committedStateCollectionDefects } from "./runtime-state-collection-ordering.js";
 import {
   compensationRetentionStateDefects,
 } from "./compensation-activity-retention-state-validation.js";
@@ -217,15 +200,6 @@ function assertNeverDeclarer(operation: never): never {
   );
 }
 
-function isSorted<T>(
-  values: ReadonlyArray<T>,
-  compare: (left: T, right: T) => number,
-): boolean {
-  return values.every(
-    (value, index) => index === 0 || compare(values[index - 1] as T, value) <= 0,
-  );
-}
-
 /**
  * The defect classes this owner decides, in a stable order.
  *
@@ -259,6 +233,7 @@ export function runtimeStateDefects(
   state: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
   const defects: RuntimeStateDefect[] = [];
+  const collectionDefects = committedStateCollectionDefects(state);
 
   if (!interruptingMessageEventSubProcessStateIsValid(program, state)) {
     defects.push(RuntimeStateDefect.EventSubProcessMessageInvalid);
@@ -351,8 +326,8 @@ export function runtimeStateDefects(
       (state.compensationTriggers?.length ?? 0) > 0 ||
       (state.compensationHandlerEffectWaits?.length ?? 0) > 0;
     return started
-      ? [...defects, RuntimeStateDefect.NotStartedWithWork]
-      : defects;
+      ? [...defects, RuntimeStateDefect.NotStartedWithWork, ...collectionDefects]
+      : [...defects, ...collectionDefects];
   }
 
   if (state.control.instanceId !== expectedInstanceId) {
@@ -443,44 +418,7 @@ export function runtimeStateDefects(
   defects.push(...parallelMultiInstanceStateDefectCodes(program, state));
   if (!sequentialScopeStateValid(program, state)) defects.push(RuntimeStateDefect.SequentialScopeControllerBindingMismatch);
 
-  const affectedActivationCounters = [
-    state.taskActivations,
-    state.messageActivations,
-    state.timerActivations,
-    state.effectActivations,
-    state.activityActivations,
-    state.scopeActivations,
-    state.callActivations,
-    state.eventRaceActivations,
-  ];
-  const ordered =
-    isSorted(state.scopeOccurrences, (left, right) => compareScopeOccurrenceIds(left.id, right.id)) &&
-    isSorted(state.controlTokens, compareTokenPlaces) &&
-    isSorted(state.activityOccurrences, compareActivityOccurrences) &&
-    isSorted(state.userTaskWaits, compareUserTaskWaits) &&
-    isSorted(state.messageWaits, compareMessageWaits) &&
-    isSorted(state.timerWaits, compareTimerWaits) &&
-    isSorted(state.effectWaits, compareEffectWaits) &&
-    isSorted(state.variables.activities, compareActivityVariableScopes) &&
-    isSorted(state.selectedBranchSets, compareSelectedBranchSets) &&
-    isSorted(state.eventRaces, compareEventRaces) &&
-    isSorted(state.calledProcessOccurrences, compareCalledProcessOccurrences) &&
-    isSorted(
-      state.sequentialMultiInstanceControllers ?? [],
-      compareSequentialMultiInstanceControllers,
-    ) &&
-    isSorted(
-      state.parallelMultiInstanceControllers ?? [],
-      compareParallelMultiInstanceControllers,
-    ) &&
-    affectedActivationCounters.every((counters) =>
-      isSorted(counters, (left, right) =>
-        compareCanonicalStrings(left.elementId, right.elementId),
-      )
-    );
-  if (!ordered) {
-    defects.push(RuntimeStateDefect.UnorderedCollection);
-  }
+  defects.push(...collectionDefects);
 
   return defects;
 }
@@ -739,6 +677,7 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.DuplicateWaitIdentity,
   RuntimeStateDefect.LiveIdentityAboveCounter,
   RuntimeStateDefect.UnorderedCollection,
+  RuntimeStateDefect.InvalidTokenMultiplicity,
   // All four are decidable from one state without the called definitions, which is what the gate
   // excludes program-agreement classes for. Leaving them out meant no boundary refused a record whose
   // body was gone, so a continuation could carry one across a Run and `AOO-REFUSE-01`'s state clause

@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
 
 /-! # Internal commutation publication

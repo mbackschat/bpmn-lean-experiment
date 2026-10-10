@@ -204,7 +204,7 @@ private theorem exact_review_completion_before_patch
     completeUserTask (cyclicWaitingWithBindings activation route)
       cyclicInstanceId ⟨"Review"⟩ activation =
         some (cyclicPostCompletionWithBindings activation route) := by
-  simp [completeUserTask, cyclicWaitingWithBindings,
+  simp [taskIdNamesWait, completeUserTask, cyclicWaitingWithBindings,
     cyclicPostCompletionWithBindings, cyclicWait, cyclicScopedVariables,
     singletonWaitingState, initialState, addToken, canonicalInsertBy]
 
@@ -372,7 +372,7 @@ private theorem selected_action_preserves_shape
             have rawExact : raw = cyclicPostCompletionWithBindings
                 currentActivation route := by
               symm
-              simpa [completeUserTask, cyclicWaitingWithBindings,
+              simpa [taskIdNamesWait, completeUserTask, cyclicWaitingWithBindings,
                 cyclicPostCompletionWithBindings, cyclicWait,
                 cyclicScopedVariables, singletonWaitingState, initialState,
                 addToken, canonicalInsertBy] using completion
@@ -390,11 +390,9 @@ private theorem selected_action_preserves_shape
             exact afterExact.symm ▸
               CyclicReachableShape.completedTask currentActivation
                 (patch.apply route)
-          · have reversed : currentActivation ≠ activation := fun equal =>
-              activationExact equal.symm
-            simp [completeUserTask, cyclicWaitingWithBindings, cyclicWait,
+          · simp [taskIdNamesWait, completeUserTask, cyclicWaitingWithBindings, cyclicWait,
               cyclicScopedVariables, singletonWaitingState, initialState,
-              reversed] at completion
+              activationExact] at completion
       | completedTask activation route =>
           simp [completeUserTask, cyclicPostCompletionWithBindings,
             cyclicWaitingWithBindings, singletonWaitingState, initialState] at completion

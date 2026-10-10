@@ -79,7 +79,7 @@ def writeParallelScopeValues? (program : Program) (state : RuntimeState) (owner 
 /-- PMIS-DATA-01 commits exact effect disposal, explicit result mapping and body continuation together. -/
 def completeParallelScopeEffect? (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
-  let [wait] := state.effectWaits.filter (effectOccurrenceMatches effectId) | none
+  let [wait] := state.effectWaits.filter (effectIdNamesWait effectId) | none
   let .success patch := result | none
   if wait.processInstanceId != wait.owner.processInstanceId || wait.bpmnErrorRoute.isSome then none
   else
@@ -94,8 +94,7 @@ def completeParallelScopeEffect? (program : Program) (state : RuntimeState)
 /-- PMIS-DATA-01 binds human writes and continuation to one exact live wait and body. -/
 def completeParallelScopeUserTask? (program : Program) (state : RuntimeState)
     (taskId : UserTaskInstanceId) (values : List VariableBinding) : Option RuntimeState := do
-  let [wait] := state.waits.filter (fun wait => wait.processInstanceId == taskId.processInstanceId &&
-    wait.task.id.value == taskId.elementId.value && wait.activation == taskId.activation) | none
+  let [wait] := state.waits.filter ((taskIdNamesWait taskId)) | none
   if wait.processInstanceId != wait.owner.processInstanceId then none
   else
     let variables ← writeParallelScopeValues? program state wait.owner values .userTask
@@ -387,8 +386,7 @@ theorem completeParallelScopeUserTask_preserves_condition
     {program : Program} {before after : RuntimeState} {id : UserTaskInstanceId}
     {values : List VariableBinding} (wait : UserTaskWait) (entry : ParallelScopeEntry)
     (name : String) (original : Bool)
-    (selectedWait : before.waits.filter (fun candidate => candidate.processInstanceId == id.processInstanceId &&
-      candidate.task.id.value == id.elementId.value && candidate.activation == id.activation) = [wait])
+    (selectedWait : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (selectedEntry : ((program.operations.filterMap parallelScopeEntry?).filter
       (·.childScopeId == wait.owner.definitionScopeId)) = [entry])
     (named : entry.completionBooleanName = some name)
@@ -408,7 +406,7 @@ theorem completeParallelScopeEffect_preserves_condition
     {program : Program} {before after : RuntimeState} {id : EffectOccurrenceId}
     {result : EffectExecutionResult} (wait : EffectWait) (entry : ParallelScopeEntry)
     (name : String) (original : Bool)
-    (selectedWait : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selectedWait : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (selectedEntry : ((program.operations.filterMap parallelScopeEntry?).filter
       (·.childScopeId == wait.owner.definitionScopeId)) = [entry])
     (named : entry.completionBooleanName = some name)

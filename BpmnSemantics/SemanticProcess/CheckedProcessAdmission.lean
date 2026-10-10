@@ -2,7 +2,7 @@ import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.Data
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.SemanticProcess.ErrorDefinition
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 

@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.ExecutionRuntime
+import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario

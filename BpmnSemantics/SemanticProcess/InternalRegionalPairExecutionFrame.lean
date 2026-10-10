@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 

@@ -36,9 +36,7 @@ def stageDeclaredCompensationCompletion? (program : Program)
 
 def matchingOrdinaryUserTaskWait? (state : RuntimeState) (taskId : UserTaskInstanceId) :
     Option UserTaskWait :=
-  state.waits.find? fun wait =>
-    decide (wait.processInstanceId = taskId.processInstanceId &&
-      wait.task.id = ⟨taskId.elementId.value⟩ && wait.activation = taskId.activation)
+  state.waits.find? (taskIdNamesWait taskId)
 
 /-- Exact ordinary `awaitUserTask` completion with retention staged before wait consumption. -/
 def completeOrdinaryUserTaskWithCompensation?

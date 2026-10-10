@@ -12,47 +12,6 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- Direct output routing describes the declared destination, without consulting the evaluator. -/
-def ActivityDataOutputRouting (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (before : ScopedVariables) (output : DirectActivityDataOutput) (filled : VariableBinding)
-    (after : ScopedVariables) : Prop :=
-  processInterfaceScalar filled.value = true ∧
-  match output.target with
-  | .property propertyId =>
-      activityDataPropertyOwner state owner = true ∧
-      after = { before with process := { bindings :=
-        (mergeProcessVariableBindings before.process.bindings
-          [{ name := propertyId, value := filled.value }]) } }
-  | .processDataOutput dataOutputId =>
-      ∃ scope, before.processInterfaces.filter
-          (fun candidate => decide (candidate.owner = owner)) = [scope] ∧
-        (scope.outputs = [] ∨ ∃ previous,
-          scope.outputs = [previous] ∧ previous.name = dataOutputId) ∧
-        after = { before with processInterfaces := before.processInterfaces.map fun candidate =>
-          if candidate.owner = owner then
-            { candidate with outputs := [{ name := dataOutputId, value := filled.value }] }
-          else candidate }
-
-theorem writeActivityDataOutput_sound {state : RuntimeState} {owner : ScopeOccurrenceId}
-    {before after : ScopedVariables} {output : DirectActivityDataOutput} {filled : VariableBinding}
-    (written : writeActivityDataOutput? state owner before output filled = some after) :
-    ActivityDataOutputRouting state owner before output filled after := by
-  unfold writeActivityDataOutput? at written
-  split at written
-  · next scalar =>
-    refine ⟨scalar, ?_⟩
-    cases endpoint : output.target with
-    | property propertyId =>
-        simp only [endpoint] at written ⊢
-        split at written
-        · next hosted => cases written; exact ⟨hosted, rfl⟩
-        · simp at written
-    | processDataOutput dataOutputId =>
-        simp only [endpoint] at written ⊢
-        obtain ⟨scope, selected, _, slot, result⟩ := writeProcessInterfaceOutput_success_iff.mp written
-        exact ⟨scope, selectProcessInterface_iff.mp selected, slot, result⟩
-  · simp at written
-
 theorem writeActivityDataOutput_preserves_activities {state : RuntimeState} {owner : ScopeOccurrenceId}
     {before after : ScopedVariables} {output : DirectActivityDataOutput} {filled : VariableBinding}
     (written : writeActivityDataOutput? state owner before output filled = some after) :

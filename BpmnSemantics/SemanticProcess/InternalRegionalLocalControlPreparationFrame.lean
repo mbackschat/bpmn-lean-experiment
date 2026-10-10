@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
 

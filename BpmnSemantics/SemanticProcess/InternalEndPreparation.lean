@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Ordinary End preparation reuses token-patch validity and the existing relative End atom from
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome).
@@ -175,32 +175,6 @@ theorem prepareInternalEnd_refines (program : Program) (state : RuntimeState)
   obtain ⟨snapshots, selected, _, instanceId, _, _, selection, _, running,
     _, _, _, _, _, rfl⟩ := prepareInternalEnd_facts program state operation prepared found
   exact selectInternalEnd_refines program state operation selected instanceId snapshots running selection
-
-/-- End counting is outside the state invariant; token removal uses the existing owned patch law. -/
-theorem InternalEndSelection.preserves_runtimeStateWellFormed (program : Program)
-    (state : RuntimeState) (selected : InternalEndSelection) (instanceId : SemanticId)
-    (valid : runtimeStateWellFormed program instanceId state = true)
-    (live : exactLiveOccurrence state selected.owner = true) :
-    runtimeStateWellFormed program instanceId (selected.apply state) = true := by
-  have separated : selected.tokens.SeparatesActiveCancelOwners program state := by
-    unfold TokenPatch.SeparatesActiveCancelOwners
-    cases declared : program.compensationExecution with
-    | none => trivial
-    | some declaration =>
-        simp only
-        split <;> simp [InternalEndSelection.tokens]
-  have tokenValid := selected.tokens.preserves_runtimeStateWellFormed program instanceId state
-    valid separated live (by simp [InternalEndSelection.tokens]) (by simp [InternalEndSelection.tokens])
-  exact tokenValid
-
-theorem prepareInternalEnd_preserves_runtimeStateWellFormed (program : Program)
-    (state : RuntimeState) (operation : SemanticOperation) (prepared : PreparedInternalEnd)
-    (instanceId : SemanticId) (valid : runtimeStateWellFormed program instanceId state = true)
-    (found : prepareInternalEnd? program state operation = some prepared) :
-    runtimeStateWellFormed program instanceId (prepared.selection.apply state) = true := by
-  obtain ⟨_, selected, _, _, _, _, _, _, _, live, _, _, _, _, rfl⟩ :=
-    prepareInternalEnd_facts program state operation prepared found
-  exact selected.preserves_runtimeStateWellFormed program state instanceId valid live
 
 theorem InternalEndSelection.open_occurrences_frame (program : Program)
     (state : RuntimeState) (selected : InternalEndSelection) (instanceId : SemanticId)

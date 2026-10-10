@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 

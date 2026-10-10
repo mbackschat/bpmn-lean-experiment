@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
 import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 

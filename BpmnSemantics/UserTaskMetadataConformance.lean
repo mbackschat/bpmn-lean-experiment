@@ -2,6 +2,7 @@ import BpmnSemantics.BooleanProcessDataConformance
 import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import BpmnSemantics.SemanticProcessJson.Program
 import BpmnSemantics.SemanticProcessJsonMain
+import BpmnSemantics.SemanticProcess.Execution
 
 /-! # User Task assignment and form metadata conformance
 
@@ -481,6 +482,7 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
+    (rightStorage := by rfl)
     (noRepeatedScope := by decide +kernel)
     (noParallelRepeatedScope := by decide +kernel)
     (serialGuardAgreement := by
@@ -510,10 +512,10 @@ theorem completion_is_metadata_irrelevant
   · rfl
   · rfl
   · simpa [programFor, checkedProcessFor, lowerCheckedProcess] using valuesAdmitted
-  · simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+  · simp [taskIdNamesWait, completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
       SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
       successor]
-  · simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+  · simp [taskIdNamesWait, completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
       SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId,
       successor]
 
@@ -525,7 +527,7 @@ theorem completion_is_metadata_irrelevant
         SequentialUserTask.exactTaskInstanceId.processInstanceId
         ⟨SequentialUserTask.exactTaskInstanceId.elementId.value⟩
         SequentialUserTask.exactTaskInstanceId.activation = some successor := by
-      simp [completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
+      simp [taskIdNamesWait, completeUserTask, waitingStateFor, waitFor, taskDefinitionFor,
         SequentialUserTask.exactWait, SequentialUserTask.exactTaskInstanceId, successor]
     have serialGuard : serialBusinessCommandAdmitted (programFor exactMetadata)
         (waitingStateFor leftMetadata)

@@ -14,6 +14,7 @@ export const RuntimeStateDefect = {
   UndeclaredWaitIdentity: "undeclaredWaitIdentity",
   UndeclaredHiddenRecord: "undeclaredHiddenRecord",
   UnorderedCollection: "unorderedCollection",
+  InvalidTokenMultiplicity: "invalidTokenMultiplicity",
   ActivityOccurrenceBodyAbsent: "activityOccurrenceBodyAbsent",
   DuplicateActivityBodyClaim: "duplicateActivityBodyClaim",
   UnownedAttachedWait: "unownedAttachedWait",

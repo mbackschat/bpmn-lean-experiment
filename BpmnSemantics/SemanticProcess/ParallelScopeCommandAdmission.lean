@@ -35,8 +35,7 @@ def stimulusAdmitted (program : Program) (state : RuntimeState) (stimulus : Stim
 
 def completeTask? (program : Program) (state : RuntimeState) (id : UserTaskInstanceId)
     (values : List VariableBinding) : Option RuntimeState := do
-  let [wait] := state.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-    wait.task.id.value == id.elementId.value && wait.activation == id.activation) | none
+  let [wait] := state.waits.filter ((taskIdNamesWait id)) | none
   if hasParallelScopeDefinition program wait.owner then completeParallelScopeUserTask? program state id values
   else do
     let completed ← completeUserTask state id.processInstanceId ⟨id.elementId.value⟩ id.activation
@@ -45,7 +44,7 @@ def completeTask? (program : Program) (state : RuntimeState) (id : UserTaskInsta
 
 def completeEffect? (program : Program) (state : RuntimeState) (id : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState := do
-  let [wait] := state.effectWaits.filter (effectOccurrenceMatches id) | none
+  let [wait] := state.effectWaits.filter (effectIdNamesWait id) | none
   if hasParallelScopeDefinition program wait.owner then completeParallelScopeEffect? program state id result
   else completeSerialEffect? program state id result
 
@@ -91,8 +90,7 @@ theorem completeTask_preserves_clean_entry (program : Program) (before after : R
     (id : UserTaskInstanceId) (values : List VariableBinding) (entry : ParallelScopeEntry)
     (parent : ScopeOccurrenceId) (wait : UserTaskWait)
     (clean : ParallelScopeCleanEntry entry parent before)
-    (selected : before.waits.filter (fun wait => wait.processInstanceId == id.processInstanceId &&
-      wait.task.id.value == id.elementId.value && wait.activation == id.activation) = [wait])
+    (selected : before.waits.filter ((taskIdNamesWait id)) = [wait])
     (ordinary : hasParallelScopeDefinition program wait.owner = false)
     (completed : completeTask? program before id values = some after) : ParallelScopeCleanEntry entry parent after := by
   simp only [completeTask?, selected, ordinary, Bool.false_eq_true, ↓reduceIte] at completed
@@ -108,7 +106,7 @@ theorem completeEffect_preserves_clean_entry (program : Program) (before after :
     (id : EffectOccurrenceId) (result : EffectExecutionResult) (entry : ParallelScopeEntry)
     (parent : ScopeOccurrenceId) (wait : EffectWait)
     (clean : ParallelScopeCleanEntry entry parent before)
-    (selected : before.effectWaits.filter (effectOccurrenceMatches id) = [wait])
+    (selected : before.effectWaits.filter (effectIdNamesWait id) = [wait])
     (ordinary : hasParallelScopeDefinition program wait.owner = false)
     (completed : completeEffect? program before id result = some after) : ParallelScopeCleanEntry entry parent after := by
   simp only [completeEffect?, selected, ordinary, Bool.false_eq_true, ↓reduceIte,

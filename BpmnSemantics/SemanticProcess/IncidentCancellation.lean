@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.Incident
 import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ScopeCancellation
 

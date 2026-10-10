@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval

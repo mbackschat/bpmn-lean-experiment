@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! SPC-AVAILABLE-01 and SPC-CLOSURE-01 connect admitted starts and local preservation laws to finite actual execution. This owner assembles reachable-state consequences without replacing the existing evaluator or its transition relations. -/
 
@@ -54,11 +55,13 @@ theorem committed_start_process_bindings
       (.startProcess commandId processId instanceId bindings)).outcome = .committed) :
     (admitStimulus program initialState
       (.startProcess commandId processId instanceId bindings)).state.variables.process.bindings = bindings := by
+  have storage := admitStimulus_committed_collection_storage program initialState _ committed
+  simp only [initialState] at storage
   obtain ⟨_, _, _, noSnapshots, _⟩ :=
     program_analysis_excludes_foreign_declarations program analysis analyzed
   cases created : runningProgramStartState? program instanceId bindings with
   | none =>
-      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
+      simp [admitStimulus, storage, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
         noSnapshots, initialState, profile, created] at committed
       split at committed <;> first | contradiction | (split at committed <;> contradiction)
   | some started =>
@@ -67,7 +70,7 @@ theorem committed_start_process_bindings
         obtain ⟨root, found, created⟩ := created
         cases Option.some.inj created
         rfl
-      simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
+      simp [admitStimulus, storage, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
         noSnapshots, initialState, profile, created] at committed ⊢
       split at committed
       · split at committed <;> simp_all

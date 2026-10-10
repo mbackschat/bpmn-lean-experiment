@@ -241,6 +241,21 @@ test("a resumable checkpoint is accepted unchanged", () => {
   );
 });
 
+for (const field of [
+  "taskActivations", "messageActivations", "timerActivations", "effectActivations",
+  "activityActivations", "scopeActivations", "callActivations", "eventRaceActivations",
+] as const) {
+  test(`continuation refuses duplicated ${field} keys with unequal retained marks`, () => {
+    assert.deepEqual(requireBpmnWorkflowContinuationStateV1(resumable, program, instanceId), resumable);
+    const elementId = resumable[field][0]?.elementId ?? "Retained_Probe";
+    const candidate: RuntimeState = { ...resumable, [field]: [
+      { elementId, count: 5 }, { elementId, count: 9 },
+    ] };
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(candidate, program, instanceId),
+      /RuntimeState is not one representable committed state/u);
+  });
+}
+
 test("continuation requires the Process interface collection without a legacy default", () => {
   const { processInterfaces: omitted, ...legacyVariables } = resumable.variables;
   assert.deepEqual(omitted, []);

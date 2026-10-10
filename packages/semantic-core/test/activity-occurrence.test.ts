@@ -187,7 +187,7 @@ test("the fail-closed command gate refuses an unconsulted record, one class at a
     },
     {
       // Duplicate identity, with a live body so the body conjunct cannot fire instead. Two records
-      // of equal identity also satisfy canonical order. Their task and scope bodies are disjoint, so
+      // of equal identity violate committed unique-key storage too. Their task and scope bodies are disjoint, so
       // body-claim uniqueness cannot obscure the exact duplicate-identity attribution.
       defect: "duplicateActivityOccurrence",
       state: withUnconsultedRecords(control, (template) => {
@@ -206,7 +206,8 @@ test("the fail-closed command gate refuses an unconsulted record, one class at a
   ] as const;
 
   for (const { defect, state } of cases) {
-    assert.deepEqual(defects(state), [defect], `exactly ${defect} must fire`);
+    const expected = defect === "duplicateActivityOccurrence" ? [defect, "unorderedCollection"] : [defect];
+    assert.deepEqual(defects(state), expected, `the exact defects for ${defect} must fire`);
     assert.deepEqual(
       { ...state, activityOccurrences: control.activityOccurrences },
       control,
@@ -608,7 +609,7 @@ test("a duplicated record identity is refused, and the admitted control is not",
       ...state,
       activityOccurrences: [record, sameIdentityWithDisjointBody],
     }),
-    ["duplicateActivityOccurrence"],
+    ["duplicateActivityOccurrence", "unorderedCollection"],
   );
 });
 

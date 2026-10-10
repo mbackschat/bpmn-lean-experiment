@@ -1,63 +1,9 @@
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskRuntimeGuardProofs
 
 /-! SBT-AVAILABLE-01 and SBT-CLOSURE-01 share an accepted-start reachable invariant: exact root and local ownership, ordered remaining suffix, required-input presence and canonical Process data. The proof index is not serialized execution data.
 Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
-
-/-- Canonical issuance and the foreign-family frame close the remaining conjuncts of the actual ingress validator. -/
-theorem ordered_suffix_runtime_guard (program : Program) (analysis : Analysis) (state : RuntimeState)
-    (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
-    (analyzed : programAnalysis program = some analysis) (nonempty : owner.processInstanceId.value ≠ "")
-    (root : DeclaredRoot program owner) (framed : RootFrame owner state)
-    (indexed : AtOrderedSuffix program analysis state) : runtimeStateWellFormed program owner.processInstanceId state = true := by
-  have positionValid := ordered_suffix_position_guard program analysis state owner wellFormed analyzed nonempty root framed indexed
-  have declarations := (ordered_suffix_wait_guards program analysis state owner wellFormed root framed indexed).2
-  obtain ⟨retention, snapshots, compensation, _⟩ := program_analysis_declarations_absent program analysis analyzed
-  have allowed := program_analysis_operations_allowed program analysis analyzed
-  have sequential : program.operations.all (sequentialMultiInstanceOperationBindingComplete program state) = true := by
-    apply List.all_eq_true.mpr
-    intro operation member
-    have selected := allowed operation member
-    cases operation <;> simp_all [OperationAllowed, sequentialMultiInstanceOperationBindingComplete]
-  have compensationDeclaration : compensationExecutionDeclarationValid program = true := by
-    simp only [compensationExecutionDeclarationValid, compensation, Bool.not_eq_true', List.any_eq_false]
-    intro operation member
-    have selected := allowed operation member
-    cases operation <;> simp_all [OperationAllowed]
-  have repeated : sequentialScopeStateValid program state = true := by
-    have noRepeated : program.operations.filterMap sequentialScopeEntry? = [] := by
-      apply List.filterMap_eq_nil_iff.mpr
-      intro operation member
-      have selected := allowed operation member
-      cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
-    have foreign := framed.2.2.2.2.1
-    simp_all [ForeignRuntimeEmpty, sequentialScopeStateValid]
-  have parallel : parallelMultiInstanceProgramBindingsValid program state = true := by
-    unfold parallelMultiInstanceProgramBindingsValid
-    have empty : state.parallelMultiInstanceControllers = [] := by
-      have foreign := framed.2.2.2.2.1
-      simp_all [ForeignRuntimeEmpty]
-    simp only [empty, List.all_nil, Bool.true_and, parallelMultiInstanceControllersOrdered]
-    apply List.all_eq_true.mpr
-    intro operation member
-    have selected := allowed operation member
-    cases operation <;> simp_all [OperationAllowed, ParallelMultiInstanceArm.ofOperation?]
-  obtain ⟨_, _, _, position, _⟩ := indexed
-  obtain ⟨tokensOwned, humansOwned, effectsOwned, life, foreign, issued⟩ := framed
-  cases position <;> rcases life with ⟨running, scopes⟩ | ⟨completed, scopes, noTokens, noHumans, noEffects, pending⟩
-  all_goals
-    simp_all [runtimeStateWellFormed, frontierFields, ForeignRuntimeEmpty, IssuanceFrame,
-      eventRaceAssociationsValid, effectIncidentAssociationsValid, waitOwnersLive, exactLiveOccurrence,
-      waitIdentitiesUnique, occursOnce, userTaskWaitKeyMatches, effectWaitKeyMatches,
-      runtimeStateIdentityBound, hiddenRecordDeclarationsValid, canonicalCollectionOrder, orderedBy,
-      activityRecordsOwnLiveWork, attachedTimersUnambiguous, attachedMessagesUnambiguous,
-      activityIdentitiesUnique, controllersOwnLiveActivity, sequentialMultiInstanceProgramBindingsValid,
-      sequentialMultiInstanceControllerProgramBindingsValid, controllerIdentitiesUnique,
-      controllersNotExhausted, activityBodyClaimsUnique, parallelMultiInstanceControllersOrdered,
-      compensationActivityRetentionStateValid, compensationActivityRetentionDeclarationValid,
-      compensationEventSubProcessSnapshotStateValid, compensationEventSubProcessSnapshotDeclarationValid,
-      compensationExecutionStateValid]
 
 /-- The current Service's admitted input expressions are evaluable from the actual canonical suffix bindings. -/
 theorem current_service_inputs_evaluable (program : Program) (state : RuntimeState)
@@ -329,7 +275,7 @@ theorem effect_completion_preserves_ordered_suffix (program : Program) (analysis
   cases sound with
   | commit selected scope patch bindings occurrence owned mapped =>
     have live : selected ∈ before.effectWaits := (List.mem_filter.mp
-      (show selected ∈ before.effectWaits.filter (effectOccurrenceMatches effectId) by rw [occurrence]; simp)).1
+      (show selected ∈ before.effectWaits.filter (effectIdNamesWait effectId) by rw [occurrence]; simp)).1
     have runningLife : before.control = .running owner.processInstanceId ∧
         before.scopeOccurrences = [{ id := owner, parent := none }] := by
       rcases life with running | ⟨_, _, _, _, empty, _⟩
@@ -397,7 +343,8 @@ theorem human_admission_preserves_ordered_suffix (program : Program) (analysis :
   cases guarded : serialBusinessCommandAdmitted program before (.completeUserTaskInstance commandId taskId bindings) with
   | false => simpa [admitStimulus, snapshots, guarded] using And.intro framed indexed
   | true =>
-    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1 guarded trivial]
+    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1
+      (ordered_suffix_collection_storage program analysis before owner framed indexed) guarded trivial]
     rcases human_dispatch_cases program analysis before commandId taskId bindings profile analyzed with
       ⟨refused, _⟩ | ⟨after, _patchValid, completed, accepted⟩
     · simpa [refused] using And.intro framed indexed
@@ -416,7 +363,8 @@ theorem effect_admission_preserves_ordered_suffix (program : Program) (analysis 
   cases guarded : serialBusinessCommandAdmitted program before (.completeEffect commandId effectId result) with
   | false => simpa [admitStimulus, snapshots, guarded] using And.intro framed indexed
   | true =>
-    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1 guarded trivial]
+    rw [serial_completion_admission_eq_dispatch program analysis before _ profile analyzed framed.2.2.2.2.1
+      (ordered_suffix_collection_storage program analysis before owner framed indexed) guarded trivial]
     rcases guarded_effect_dispatch_cases program analysis before commandId effectId result profile analyzed guarded with
       refused | ⟨after, completed, accepted⟩
     · simpa [refused] using And.intro framed indexed
@@ -791,7 +739,8 @@ theorem reached_serial_invariant (program : Program) (analysis : Analysis)
     cases admissible <;> trivial
   have guarded := indexed_completion_guard program analysis reached owner stimulus profile wellFormed capabilities
     joint.1 joint.2 associations runtime completion
-  rw [serial_completion_admission_eq_dispatch program analysis reached stimulus profile analyzed joint.1.2.2.2.2.1 guarded completion]
+  rw [serial_completion_admission_eq_dispatch program analysis reached stimulus profile analyzed joint.1.2.2.2.2.1
+    (ordered_suffix_collection_storage program analysis reached owner joint.1 joint.2) guarded completion]
   exact admissible_completion_dispatch_commits program analysis reached owner stimulus profile analyzed joint.1 joint.2 admissible
 
 open InternalCommutation in

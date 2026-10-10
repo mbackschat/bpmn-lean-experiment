@@ -217,11 +217,7 @@ private def monitoredTaskForTimer? (program : Program) (state : RuntimeState)
 def completeMonitoredUserTask? (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) : Option RuntimeState := do
-  let task ← state.waits.find? fun wait =>
-    decide (
-      wait.processInstanceId = processInstanceId &&
-        wait.task.id = taskId &&
-        wait.activation = activation)
+  let task ← state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })
   let monitored ← monitoredTaskForTask? program state task
   match state.control with
   | .running _ =>
@@ -241,11 +237,7 @@ def completeMonitoredUserTask? (program : Program) (state : RuntimeState)
 def spawnFromMonitoredUserTask? (program : Program) (state : RuntimeState)
     (timerId : TimerOccurrenceId) (logicalTimeMs : Nat) :
     Option RuntimeState := do
-  let timer ← state.timerWaits.find? fun wait =>
-    decide (
-      wait.processInstanceId = timerId.processInstanceId &&
-        wait.elementId.value = timerId.elementId.value &&
-        wait.activation = timerId.activation)
+  let timer ← state.timerWaits.find? (timerIdNamesWait timerId)
   let monitored ← monitoredTaskForTimer? program state timer
   if logicalTimeMs = timer.deadlineMs then
     match state.control with
@@ -345,10 +337,7 @@ theorem spawnFromMonitoredUserTask_sound (program : Program)
       some after) :
     MonitoredSpawnStep program before after := by
   unfold spawnFromMonitoredUserTask? at success
-  cases timerFound : before.timerWaits.find? (fun wait =>
-      decide (wait.processInstanceId = timerId.processInstanceId) &&
-        decide (wait.elementId.value = timerId.elementId.value) &&
-        decide (wait.activation = timerId.activation)) with
+  cases timerFound : before.timerWaits.find? ((timerIdNamesWait timerId)) with
   | none => simp [timerFound] at success
   | some timer =>
       cases pairFound : monitoredTaskForTimer? program before timer with
@@ -381,10 +370,7 @@ theorem completeMonitoredUserTask_sound (program : Program)
       activation = some after) :
     MonitoredCompletionStep program before after := by
   unfold completeMonitoredUserTask? at success
-  cases taskFound : before.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) with
+  cases taskFound : before.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) with
   | none => simp [taskFound] at success
   | some task =>
       cases pairFound : monitoredTaskForTask? program before task with
@@ -500,10 +486,7 @@ consequence, so the claim that matters is that *no* pre-due or post-due firing c
 theorem spawnFromMonitoredUserTask_none_of_not_due (program : Program)
     (state : RuntimeState) (timerId : TimerOccurrenceId) (logicalTimeMs : Nat)
     (timer : TimerWait)
-    (found : state.timerWaits.find? (fun wait =>
-      decide (wait.processInstanceId = timerId.processInstanceId) &&
-        decide (wait.elementId.value = timerId.elementId.value) &&
-        decide (wait.activation = timerId.activation)) = some timer)
+    (found : state.timerWaits.find? ((timerIdNamesWait timerId)) = some timer)
     (notDue : logicalTimeMs ≠ timer.deadlineMs) :
     spawnFromMonitoredUserTask? program state timerId logicalTimeMs = none := by
   unfold spawnFromMonitoredUserTask?
@@ -518,11 +501,7 @@ theorem spawnFromMonitoredUserTask_none_of_no_task_wait (program : Program)
     (noTasks : state.waits = []) :
     spawnFromMonitoredUserTask? program state timerId logicalTimeMs = none := by
   unfold spawnFromMonitoredUserTask? monitoredTaskForTimer?
-  cases found : state.timerWaits.find? fun wait =>
-      decide (
-        wait.processInstanceId = timerId.processInstanceId &&
-          wait.elementId.value = timerId.elementId.value &&
-          wait.activation = timerId.activation) with
+  cases found : state.timerWaits.find? (timerIdNamesWait timerId) with
   | none => simp
   | some _ => simp [noTasks]
 
@@ -530,10 +509,7 @@ theorem spawnFromMonitoredUserTask_none_of_no_task_wait (program : Program)
 theorem completeMonitoredUserTask_none_of_no_match (program : Program)
     (state : RuntimeState) (processInstanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat)
-    (missing : state.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) = none) :
+    (missing : state.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) = none) :
     completeMonitoredUserTask? program state processInstanceId taskId activation =
       none := by
   unfold completeMonitoredUserTask?
@@ -552,10 +528,7 @@ theorem completeMonitoredUserTask_some_of_no_deadline_wait (program : Program)
     (operation : ControlPlaceId × BoundedTaskArm × BoundaryTimerArm)
     (running : state.control = .running instanceId)
     (noTimers : state.timerWaits = [])
-    (taskFound : state.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) &&
-        decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) = some task)
+    (taskFound : state.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) = some task)
     (operationFound : (monitoredTaskOperations program).find? (fun candidate =>
       decide (candidate.2.1.id = task.task.id)) = some operation) :
     completeMonitoredUserTask? program state processInstanceId taskId activation ≠

@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! REG-OWN-CLOSE-01 separates predecessor liveness from survival under selected removal. The
 retention masks describe predecessor records only; no speculative successor supplies the condition.
@@ -91,23 +91,14 @@ def regionalReferenceFieldsMatch (before after : RuntimeState) (keep : RegionalR
     after.timerWaits = before.timerWaits.filter keep.timer ∧
     after.eventRaces = before.eventRaces.filter keep.race
 
-theorem callReferenceRetention_matches_removal (state : RuntimeState) (record : CalledProcessOccurrence) :
-    regionalReferenceFieldsMatch state (removeCalledProcessTree state record)
-      (callReferenceRetention state record) := by
-  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
-
-theorem cancellationReferenceRetention_matches_removal (state : RuntimeState) (root : ScopeOccurrenceId)
-    (disposition : SelectedScopeDisposition) :
-    regionalReferenceFieldsMatch state (cancelScopeSubtree state root disposition)
-      (cancellationReferenceRetention state root disposition) := by
-  cases disposition <;> exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
-
 /-- REG-OWN-FRAME-01 can restrict a target census without inventing a new forbidden reference.
 This law keeps the selected mask fixed; re-derived selection/mask agreement is a separate obligation. -/
 theorem allMatchingRetained_filter {α : Type} (values : List α) (keep names other : α → Bool)
     (closed : allMatchingRetained values keep names = true) :
-    allMatchingRetained (values.filter other) keep names = true :=
-  all_filter _ other values closed
+    allMatchingRetained (values.filter other) keep names = true := by
+  apply List.all_eq_true.mpr
+  intro value member
+  exact List.all_eq_true.mp closed value (List.mem_filter.mp member).1
 
 private theorem regionalActivityReferencesClosed_after_filter (before after : RuntimeState)
     (selected other : RegionalReferenceRetention) (record : ActivityOccurrence)

@@ -1,3 +1,5 @@
+import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationLaws
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs

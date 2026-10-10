@@ -40,7 +40,7 @@ def effectIncidentAssociationValid (state : RuntimeState)
     effectWaitOwnerAssociationValid state incident.wait &&
     (state.variables.activities.filter
       (activityScopeMatches incident.id.effectId)).length = 1 &&
-    !(state.effectWaits.any (effectOccurrenceMatches incident.id.effectId))
+    !(state.effectWaits.any (effectIdNamesWait incident.id.effectId))
 
 /-- The bounded successor admits either no incident or one exact, valid incident. -/
 def effectIncidentAssociationsValid (state : RuntimeState) : Bool :=
@@ -106,11 +106,11 @@ theorem effectIncidentAssociationsValid_insertEffectFrame (state : RuntimeState)
             simp only [effectIncidentAssociationValid, Bool.and_eq_true,
               decide_eq_true_eq] at valid
             exact valid.1.1.1.1.2
-          have waitRejected : effectOccurrenceMatches incident.id.effectId inserted = false := by
+          have waitRejected : effectIdNamesWait incident.id.effectId inserted = false := by
             apply Bool.eq_false_iff.mpr
             intro matched
             apply different
-            simp only [effectOccurrenceMatches, decide_eq_true_eq] at matched
+            simp only [effectIdNamesWait] at matched
             cases inserted
             cases incident.id.effectId
             cases incident.wait
@@ -137,7 +137,7 @@ def effectWaitReadyForIncident (state : RuntimeState) (effectId : EffectOccurren
     effectId = effectWaitOccurrenceId wait &&
     state.effectIncidents.isEmpty &&
     state.effectWaits.length = 1 &&
-    (state.effectWaits.filter (effectOccurrenceMatches effectId)).length = 1 &&
+    (state.effectWaits.filter (effectIdNamesWait effectId)).length = 1 &&
     effectWaitOwnerAssociationValid state wait &&
     (state.variables.activities.filter
       (activityScopeMatches effectId)).length = 1
@@ -150,7 +150,7 @@ inductive EffectIncidentReportStep :
       (effectId : EffectOccurrenceId)
       (wait : EffectWait)
       (occurrence :
-        state.effectWaits.find? (effectOccurrenceMatches effectId) = some wait)
+        state.effectWaits.find? (effectIdNamesWait effectId) = some wait)
       (ready : effectWaitReadyForIncident state effectId wait = true) :
       EffectIncidentReportStep state effectId 1
         { state with
@@ -163,7 +163,7 @@ def reportEffectFailure (state : RuntimeState) (effectId : EffectOccurrenceId)
     (generation : Nat) : Option RuntimeState :=
   if generation ≠ 1 then none
   else
-    match state.effectWaits.find? (effectOccurrenceMatches effectId) with
+    match state.effectWaits.find? (effectIdNamesWait effectId) with
     | none => none
     | some wait =>
         if !effectWaitReadyForIncident state effectId wait then none

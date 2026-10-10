@@ -60,8 +60,8 @@ theorem reached_attached_business_error_commits (program : Program) (analysis : 
   have identity := (framed.2.2.1 wait live).2
   have running : reached.control = .running wait.processInstanceId := by
     rcases framed.2.2.2.1 with ⟨running, _⟩ | ⟨_, _, _, _, empty, _⟩ <;> simp_all
-  have occurrence : reached.effectWaits.filter (effectOccurrenceMatches effectId) = [wait] := by
-    simp [fields.2.1, effectId, effectOccurrenceMatches]
+  have occurrence : reached.effectWaits.filter (effectIdNamesWait effectId) = [wait] := by
+    simp [fields.2.1, effectId, effectIdNamesWait]
   have owned : reached.variables.activities.filter (activityScopeMatches effectId) =
       [{ owner := .effectOccurrence effectId, bindings := wait.arguments }] := by
     simp [fields.2.2, activityScopeMatches, localDataOwnerMatches]
@@ -91,7 +91,8 @@ theorem reached_attached_business_error_commits (program : Program) (analysis : 
       { outcome := .committed, state := after } := by
     rw [serial_completion_admission_eq_dispatch program analysis reached
       (.completeEffect commandId effectId (.bpmnError route.code message patch)) (Or.inr profile)
-      analyzed framed.2.2.2.2.1 guarded trivial]
+      analyzed framed.2.2.2.2.1
+      (indexed_collection_storage program analysis reached owner framed indexed) guarded trivial]
     simp [dispatchStimulus, snapshots, running, noCompensation, occurrence, profile, completed, effectId]
   have preserved := effect_completion_preserves_position program analysis reached after effectId
     (.bpmnError route.code message patch) static.1 analyzed indexed owner framed completed

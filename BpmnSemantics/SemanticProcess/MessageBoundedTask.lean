@@ -191,10 +191,7 @@ def messageBoundedPairForTask? (program : Program) (state : RuntimeState)
 
 def messageBoundedPairForSubscription? (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) : Option MessageBoundedPair := do
-  let message ← state.messageWaits.find? fun candidate =>
-    decide (candidate.processInstanceId = subscriptionId.processInstanceId) &&
-      decide (candidate.elementId.value = subscriptionId.elementId.value) &&
-      decide (candidate.activation = subscriptionId.activation)
+  let message ← state.messageWaits.find? (messageIdNamesWait subscriptionId)
   let operation ← (messageBoundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.2.elementId = message.elementId)
   let record ← activityOccurrenceForMessageWait? state.activityOccurrences message
@@ -269,10 +266,7 @@ private theorem messageBoundedPairForSubscription_pairing (program : Program)
       pair.message ∈ state.messageWaits ∧ pair.task ∈ state.waits ∧
       pair.record ∈ state.activityOccurrences := by
   unfold messageBoundedPairForSubscription? at found
-  cases msgFound : state.messageWaits.find? (fun candidate =>
-      decide (candidate.processInstanceId = subscriptionId.processInstanceId) &&
-        decide (candidate.elementId.value = subscriptionId.elementId.value) &&
-        decide (candidate.activation = subscriptionId.activation)) with
+  cases msgFound : state.messageWaits.find? ((messageIdNamesWait subscriptionId)) with
   | none => simp [msgFound] at found
   | some message =>
       cases opFound : (messageBoundedTaskOperations program).find? (fun candidate =>
@@ -349,9 +343,7 @@ def completeMessageBoundedUserTask? (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId)
     (activation : Nat) (submittedValues : List VariableBinding) : Option RuntimeState := do
   if !submittedValues.isEmpty then none else
-  let task ← state.waits.find? fun wait =>
-    decide (wait.processInstanceId = processInstanceId) &&
-      decide (wait.task.id = taskId) && decide (wait.activation = activation)
+  let task ← state.waits.find? (taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })
   let pair ← messageBoundedPairForTask? program state task
   commitMessageBoundedVictory state pair pair.taskOutput
 
@@ -411,9 +403,7 @@ theorem completeMessageBoundedUserTask_sound (program : Program)
     MessageBoundedTaskVictoryStep program before after := by
   unfold completeMessageBoundedUserTask? at success
   by_cases empty : submittedValues.isEmpty
-  · cases taskFound : before.waits.find? (fun wait =>
-        decide (wait.processInstanceId = processInstanceId) &&
-          decide (wait.task.id = taskId) && decide (wait.activation = activation)) with
+  · cases taskFound : before.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) with
     | none => simp [empty, taskFound] at success
     | some task =>
         cases pairFound : messageBoundedPairForTask? program before task with

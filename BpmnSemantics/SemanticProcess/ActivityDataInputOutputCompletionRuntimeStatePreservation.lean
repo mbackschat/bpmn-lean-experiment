@@ -153,19 +153,6 @@ private theorem localDataOwnerBefore_compose (a b c : LocalDataOwner) :
           | effectOccurrence c => simp [localDataOwnerBefore]
           | activityOccurrence c => exact localActivityOwnerBefore_compose a b c
 
-private theorem taskIdNamesWait_as_decisions (task : OccurrenceId) (wait : UserTaskWait) :
-    taskIdNamesWait task wait =
-      (decide (wait.processInstanceId = task.processInstanceId) &&
-        decide (wait.task.id.value = task.elementId.value) &&
-          decide (wait.activation = task.activation)) := by
-  apply Bool.eq_iff_iff.mpr
-  simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
-  constructor
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-  · rintro ⟨⟨process, element⟩, activation⟩
-    exact ⟨⟨process.symm, element.symm⟩, activation.symm⟩
-
 theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId : SemanticId)
     (before after : RuntimeState)
@@ -441,35 +428,19 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         | userTask claimed =>
             simp only [activityBodyLive, shape, decide_eq_true_eq] at prior ⊢
             simp only [successor]
-            rw [show (fun wait : UserTaskWait =>
-                decide (wait.processInstanceId = claimed.processInstanceId) &&
-                  decide (wait.task.id.value = claimed.elementId.value) &&
-                    decide (wait.activation = claimed.activation)) = taskIdNamesWait claimed by
-              funext wait; exact (taskIdNamesWait_as_decisions claimed wait).symm]
+
             change ((before.waits.erase task).filter (taskIdNamesWait claimed)).length = 1
             rw [waitFrame claimed (by simp [activityBodyTaskClaims, shape])]
-            rw [show taskIdNamesWait claimed = (fun wait : UserTaskWait =>
-                decide (wait.processInstanceId = claimed.processInstanceId) &&
-                  decide (wait.task.id.value = claimed.elementId.value) &&
-                    decide (wait.activation = claimed.activation)) by
-              funext wait; exact taskIdNamesWait_as_decisions claimed wait]
+
             exact prior.1.1.1
         | parallelUserTasks first rest =>
             simp only [activityBodyLive, shape, List.all_eq_true, decide_eq_true_eq] at prior ⊢
             intro claimed claimedMember
             simp only [successor]
-            rw [show (fun wait : UserTaskWait =>
-                decide (wait.processInstanceId = claimed.processInstanceId) &&
-                  decide (wait.task.id.value = claimed.elementId.value) &&
-                    decide (wait.activation = claimed.activation)) = taskIdNamesWait claimed by
-              funext wait; exact (taskIdNamesWait_as_decisions claimed wait).symm]
+
             change ((before.waits.erase task).filter (taskIdNamesWait claimed)).length = 1
             rw [waitFrame claimed (by simpa [activityBodyTaskClaims, shape] using claimedMember)]
-            rw [show taskIdNamesWait claimed = (fun wait : UserTaskWait =>
-                decide (wait.processInstanceId = claimed.processInstanceId) &&
-                  decide (wait.task.id.value = claimed.elementId.value) &&
-                    decide (wait.activation = claimed.activation)) by
-              funext wait; exact taskIdNamesWait_as_decisions claimed wait]
+
             exact prior.1.1.1 claimed claimedMember
       have attachedTimersAfter : attachedTimersUnambiguous successor = true := by
         simp only [attachedTimersUnambiguous, List.all_eq_true, decide_eq_true_eq] at attachedTimers ⊢

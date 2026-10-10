@@ -155,18 +155,13 @@ theorem message_bounded_nonempty_completion_refused (program : Program) (state :
 
 theorem message_bounded_wrong_task_identity_refused (program : Program) (state : RuntimeState)
     (processInstanceId : SemanticId) (taskId : TaskDefinitionId) (activation : Nat)
-    (absent : state.waits.find? (fun wait =>
-      decide (wait.processInstanceId = processInstanceId) && decide (wait.task.id = taskId) &&
-        decide (wait.activation = activation)) = none) :
+    (absent : state.waits.find? ((taskIdNamesWait { processInstanceId := processInstanceId, elementId := ⟨taskId.value⟩, activation := activation })) = none) :
     completeMessageBoundedUserTask? program state processInstanceId taskId activation [] = none := by
   simp [completeMessageBoundedUserTask?, absent]
 
 theorem message_bounded_wrong_subscription_identity_refused (program : Program)
     (state : RuntimeState) (subscriptionId : MessageSubscriptionId) (channel : MessageChannel)
-    (absent : state.messageWaits.find? (fun candidate =>
-      decide (candidate.processInstanceId = subscriptionId.processInstanceId) &&
-        decide (candidate.elementId.value = subscriptionId.elementId.value) &&
-        decide (candidate.activation = subscriptionId.activation)) = none) :
+    (absent : state.messageWaits.find? ((messageIdNamesWait subscriptionId)) = none) :
     interruptMessageBoundedUserTask? program state subscriptionId channel = none := by
   simp [interruptMessageBoundedUserTask?, messageBoundedPairForSubscription?, absent]
 

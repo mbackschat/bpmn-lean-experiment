@@ -53,6 +53,7 @@ import {
   parseImplementationMapDirectory,
   type ImplementationMapDirectoryEntry,
 } from "./structural-map-routes.ts";
+import { assuranceBindingsFor, assuranceRegisterPath, parseAssuranceFindings } from "./assurance-register.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const runCommand = promisify(execFile);
@@ -311,6 +312,7 @@ async function main(args: ReadonlyArray<string>): Promise<void> {
   }
   for (const target of targets) assertCanonicalRepositoryPath(target);
   const corpus = await loadBindingCorpus();
+  const assuranceFindings = parseAssuranceFindings(await readFile(path.join(projectRoot, assuranceRegisterPath), "utf8"));
   const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
   const parsedDirectory = parseImplementationMapDirectory(rootMap);
   if (parsedDirectory.errors.length > 0) {
@@ -330,6 +332,9 @@ async function main(args: ReadonlyArray<string>): Promise<void> {
       targetLine,
       ...implementationMapRoutes(target, parsedDirectory.directory, routing).map(({ id, file }) =>
         `MAP ${id} ${file}`
+      ),
+      ...assuranceBindingsFor(target, assuranceFindings).map(({ id, disposition, trigger }) =>
+        `ASSURANCE ${id} ${assuranceRegisterPath}#${id.toLowerCase()} (${disposition}; trigger review: ${trigger})`
       ),
       ...remainingLines,
     ];
