@@ -122,11 +122,11 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: implement the approved [assurance repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) rows below.
 
-Current result: AA-21/AA-12 Lean, AA-25 and AA-07 cleared their combined cold checkpoint at `9063a867`, with correction `9c414ffd` approved by the same reviewer. AA-05 is the next implementation boundary.
+Current result: the material checkpoint and correction are approved. AA-05 reduces executable-to-proof-only edges from 51 to zero; source/type guards, runtime bridges, extracted fixtures and retention-law checks pass. Names, evaluator bodies and theorem propositions are preserved; broad consumer acceptance remains pending.
 
-Next action: separate AA-05 runtime/proof imports using declaration-based edges and theorem-free executable fixtures; then AA-26 and AA-18 ordering/uniqueness. Reuse valid evidence; focused modules precede integration. Done: AA-14 to AA-17, AA-24, Amendment 1, AA-12 script/TypeScript. Deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/13/20/23. One MEDIUM agent at a time; batch reviews.
+Next action: implement AA-26 named identity matchers/shared encoders, then AA-18 ordering/uniqueness. Reuse evidence; integrate stable slices together, including executable consumers and affected cost rows. Done: AA-07, AA-12, AA-14 to AA-17, AA-21, AA-24, AA-25 and Amendment 1. Deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/13/20/23. One MEDIUM agent at a time; batch reviews.
 
-Last verification: 857 Lean jobs, 21 new axiom guards, five resource measurements, 27 ownership tests and AA-07 replay pass. Scanner correction: 734 infrastructure tests and 70 independent audit tests pass. Failed/interrupted evidence remains retained.
+Last verification: material repair passed 857 Lean jobs, 21 new axiom guards, five resource measurements, ownership tests, AA-07 replay, 734 infrastructure tests and 70 independent correction-audit tests. AA-05 passes 101 source/document checks and focused Lean slices; full acceptance remains open. Compiler failures and timeouts are retained.
 
 Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
