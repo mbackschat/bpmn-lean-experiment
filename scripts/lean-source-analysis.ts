@@ -204,18 +204,26 @@ export function leanSelfComparisons(sources: ReadonlyArray<{ path: string; sourc
         if (scope !== undefined) ({ namespaces, opened } = scope);
         return [];
       }
-      if (kind === "open") { opened.push(name!); return []; }
+      if (kind === "open") {
+        const lineEnd = code.indexOf("\n", command.index!);
+        const opening = code.slice(command.index!, lineEnd < 0 ? code.length : lineEnd);
+        const names = /^[\t ]*open[\t ]+([A-Za-z_][A-Za-z0-9_'.?]*(?:[\t ]+[A-Za-z_][A-Za-z0-9_'.?]*)*)[\t ]*$/u
+          .exec(opening)?.[1]?.split(/[\t ]+/u);
+        const ordinary = names !== undefined && !names.some((item) => ["scoped", "hiding", "renaming"].includes(item));
+        opened.push(...(ordinary ? names : name === undefined ? [] : [name]));
+        return [];
+      }
       if (name === undefined) return [];
       const start = command.index! + command[0].length;
       const end = commands[index + 1]?.index ?? code.length;
       const body = code.slice(start, end);
       const assignment = body.indexOf(":=");
-      if (assignment < 0) return [];
+      const headerEnd = assignment < 0 ? body.length : assignment;
       return [{ path, name: name!, kind, namespace: namespaces.join("."), opened: [...opened],
         line: code.slice(0, command.index).split("\n").length,
-        header: body.slice(0, assignment), value: body.slice(assignment + 2).trim(),
-        headerContainsLiteral: literalRanges.some((literal) => literal.start >= start && literal.start < start + assignment),
-        valueContainsLiteral: literalRanges.some((literal) => literal.start >= start + assignment + 2 && literal.start < end) }];
+        header: body.slice(0, headerEnd), value: assignment < 0 ? "" : body.slice(assignment + 2).trim(),
+        headerContainsLiteral: literalRanges.some((literal) => literal.start >= start && literal.start < start + headerEnd),
+        valueContainsLiteral: assignment >= 0 && literalRanges.some((literal) => literal.start >= start + assignment + 2 && literal.start < end) }];
     });
   });
   const application = /^[A-Za-z_][A-Za-z0-9_'.?]*(?:\s+[A-Za-z_][A-Za-z0-9_'.?]*)+$/u;
@@ -223,13 +231,28 @@ export function leanSelfComparisons(sources: ReadonlyArray<{ path: string; sourc
   const aliases = declarations.filter((declaration) =>
     ["def", "abbrev"].includes(declaration.kind!) && /^\s*:/u.test(declaration.header) &&
     application.test(declaration.value) && !declaration.valueContainsLiteral);
+  const qualifiedName = (declaration: typeof declarations[number]) =>
+    [declaration.namespace, declaration.name].filter(Boolean).join(".");
+  const declaredNames = new Map<string, Array<typeof declarations[number]>>();
+  for (const declaration of declarations) {
+    const name = qualifiedName(declaration);
+    const named = declaredNames.get(name) ?? [];
+    named.push(declaration);
+    declaredNames.set(name, named);
+  }
   return declarations.flatMap((declaration) => {
     if (!["theorem", "lemma"].includes(declaration.kind!)) return [];
     const equality = /^\s*:\s*([^=]+?)\s*=\s*([A-Za-z_][A-Za-z0-9_'.?]*)\s*$/u.exec(declaration.header);
     if (equality === null || declaration.headerContainsLiteral || !application.test(normalized(equality[1]!))) return [];
-    const prefixes = declaration.namespace.split(".").map((_, index, parts) => parts.slice(0, index + 1).join("."));
-    const visible = new Set([equality[2]!, ...[...prefixes, ...declaration.opened].map((prefix) => `${prefix}.${equality[2]}`)]);
-    return aliases.some((alias) => visible.has([alias.namespace, alias.name].filter(Boolean).join(".")) &&
+    const prefixes = declaration.namespace.split(".").filter(Boolean)
+      .map((_, index, parts) => parts.slice(0, index + 1).join(".")).reverse();
+    const introduced = (named: typeof declarations[number]) =>
+      named.path !== declaration.path || named.line < declaration.line;
+    const nearest = [...prefixes.map((prefix) => `${prefix}.${equality[2]}`), equality[2]!]
+      .find((name) => declaredNames.get(name)?.some(introduced));
+    const visible = new Set(nearest === undefined
+      ? declaration.opened.map((prefix) => `${prefix}.${equality[2]}`) : [nearest]);
+    return aliases.some((alias) => introduced(alias) && visible.has(qualifiedName(alias)) &&
       normalized(alias.value) === normalized(equality[1]!))
       ? [{ path: declaration.path, line: declaration.line, theorem: declaration.name, alias: equality[2]! }]
       : [];

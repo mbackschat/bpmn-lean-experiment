@@ -122,11 +122,11 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: implement the approved [assurance repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) rows below.
 
-Current result: AA-07 is committed and replay-checked. AA-21/AA-12 and AA-25 fixtures, cleanup proofs, cyclic execution comparison and five resource measurements pass. Lean integration and axiom guards pass; independent review remains open.
+Current result: AA-07 and AA-21/AA-12 Lean/AA-25 are committed and verified. Cold review requires an AA-25 correction for opened namespaces and declaration shadowing.
 
-Next action: commit AA-21/AA-12 Lean and AA-25, then one cold checkpoint review including AA-07. Reuse accepted evidence; corrections use changed modules and affected consumers before integration. Next: AA-05, AA-26, AA-18 ordering. Done: AA-14 to AA-17, AA-24, Amendment 1, AA-12 script/TypeScript. Deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/13/20/23. One MEDIUM agent at a time; batch reviews.
+Next action: verify the scanner correction and submit its commit to the same reviewer for audit of `9063a867`; then AA-05, AA-26, AA-18 ordering. Reuse accepted evidence; focused guards precede integration. Done: AA-14 to AA-17, AA-24, Amendment 1, AA-12 script/TypeScript. Deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/13/20/23. One MEDIUM agent at a time; batch reviews.
 
-Last verification: focused proof/execution/resource gates and all 730 infrastructure tests pass. All 857 Lean integration jobs, 21 new axiom guards and 27 ownership/removal tests pass after focused classifier repairs. Earlier failed/interrupted builds remain retained.
+Last verification: 857 Lean jobs, 21 new axiom guards, 27 ownership tests and 730 infrastructure tests pass. Scanner correction: 28 focused tests pass; complete infrastructure exposed an oversized PLAN resume, now shortened. Failed/interrupted evidence remains retained.
 
 Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 

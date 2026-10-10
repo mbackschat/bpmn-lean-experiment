@@ -42,3 +42,42 @@ test("section ends retain the enclosing namespace and unqualified ends close it"
     { path: "Scopes.lean", line: 5, theorem: "inside", alias: "expected" },
   ]);
 });
+
+const lexicalScopeProbe = `namespace Fixture
+ def unused : Nat := 0
+end Fixture
+namespace Expected
+ def expected : Nat := Nat.succ Nat.zero
+end Expected
+open Fixture Expected
+theorem missed_direct_alias : Nat.succ Nat.zero = expected := by rfl
+open Expected
+namespace Inner
+ def expected : Nat := 1
+ theorem independent_literal : Nat.succ Nat.zero = expected := by decide
+end Inner
+`;
+
+test("ordinary opens expose every listed namespace", () => {
+  assert.deepEqual(leanSelfComparisons([{ path: "LexicalScopes.lean", source: lexicalScopeProbe }])
+    .filter(({ theorem }) => theorem === "missed_direct_alias"), [
+    { path: "LexicalScopes.lean", line: 8, theorem: "missed_direct_alias", alias: "expected" },
+  ]);
+});
+
+test("a nearer independent declaration shadows an opened candidate alias", () => {
+  assert.deepEqual(leanSelfComparisons([{ path: "LexicalScopes.lean", source: lexicalScopeProbe }])
+    .filter(({ theorem }) => theorem === "independent_literal"), []);
+});
+
+test("nearest declarations resolve before opened aliases through nested namespaces", () => {
+  const source = "namespace Expected\ndef expected : Nat := candidate input\nend Expected\nopen Expected\nnamespace Local\ndef expected : Nat := candidate other\nnamespace Inner\ntheorem distinct : candidate input = expected := by assumption\nend Inner\nend Local\n";
+  assert.deepEqual(leanSelfComparisons([{ path: "Nearest.lean", source }]), []);
+});
+
+test("a declaration shadows an opened alias only after it is introduced", () => {
+  const source = "namespace Expected\ndef expected : Nat := Nat.succ Nat.zero\nend Expected\nopen Expected\ntheorem before : Nat.succ Nat.zero = expected := by rfl\ndef expected : Nat := 1\ntheorem after : Nat.succ Nat.zero = expected := by decide\n";
+  assert.deepEqual(leanSelfComparisons([{ path: "DeclarationOrder.lean", source }]), [
+    { path: "DeclarationOrder.lean", line: 5, theorem: "before", alias: "expected" },
+  ]);
+});
