@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandSuccessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimePositionProofs
 
 /-! # Parallel command fuel sufficiency
 
@@ -232,5 +233,43 @@ theorem ParallelScopeCommandBoundaryReachable.command_result_committed_and_stabl
     simp [applyStimulus, committed, StimulusResult.ofScheduledClosure, StimulusResult.ofClosure,
       success.1.1, success.1.2, success.2]
   exact ⟨result, applyStimulus_committed_frontier_stable fuel program stable stimulus result⟩
+
+/-- Accepted result-only commands commit at a stable frontier and every Running endpoint binds all occurrences to the admitted Program. -/
+theorem ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_program_valid
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (stable : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program stable)
+    (stimulus : Stimulus) (committed : (admitStimulus program stable stimulus).outcome = .committed)
+    (fuel : Nat) (limit : commandClosureLimit? program stable stimulus = some fuel) :
+    (applyStimulus fuel program stable stimulus).outcome = .committed ∧
+      ((deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).offers.isEmpty &&
+        !(deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).preparationFailed) = true ∧
+      ∀ instanceId, (applyStimulus fuel program stable stimulus).state.control = .running instanceId →
+        flowNodeOccurrenceProgramValidity program (applyStimulus fuel program stable stimulus).state = true := by
+  obtain ⟨result, frontier⟩ := reachable.command_result_committed_and_stable program analysis admitted
+    stable stimulus committed fuel limit
+  refine ⟨result, frontier, ?_⟩
+  intro instanceId running
+  exact (ParallelScopeCommandBoundaryReachable.command stable fuel stimulus reachable).program_valid
+    program analysis admitted _ instanceId running
+
+/-- Actual Running command results retain token positions and complete open-occurrence projection; trace and lifecycle-delta acceptance remain separate. -/
+theorem ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_projectable
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (stable : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program stable)
+    (stimulus : Stimulus) (committed : (admitStimulus program stable stimulus).outcome = .committed)
+    (fuel : Nat) (limit : commandClosureLimit? program stable stimulus = some fuel) :
+    (applyStimulus fuel program stable stimulus).outcome = .committed ∧
+      ((deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).offers.isEmpty &&
+        !(deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).preparationFailed) = true ∧
+      ∀ instanceId, (applyStimulus fuel program stable stimulus).state.control = .running instanceId →
+        runtimePositionValid program instanceId (applyStimulus fuel program stable stimulus).state = true ∧
+          ∃ opened, projectOpenFlowNodeOccurrences? program (applyStimulus fuel program stable stimulus).state = some opened := by
+  obtain ⟨result, frontier⟩ := reachable.command_result_committed_and_stable program analysis admitted
+    stable stimulus committed fuel limit
+  refine ⟨result, frontier, ?_⟩
+  intro instanceId running
+  let endpoint := ParallelScopeCommandBoundaryReachable.command stable fuel stimulus reachable
+  exact ⟨endpoint.runtime_position program analysis admitted _ instanceId running,
+    endpoint.open_projection program analysis admitted _ instanceId running⟩
 
 end BpmnSemantics.SemanticProcess

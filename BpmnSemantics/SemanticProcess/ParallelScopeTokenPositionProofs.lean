@@ -15,35 +15,51 @@ namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 
 open BpmnSemantics
 
-/-- PMIS-ADMIT-01 rejects source-origin aliases that raw Program structural validation permits. -/
-theorem analyzeProgram_control_place_origins_unique (program : Program) (analysis : ProgramAnalysis)
+/-- PMIS-ADMIT-01 separates the hosting Process, Sequence Flows, and source nodes;
+scope and token projections consume the same retained source census. -/
+theorem analyzeProgram_source_origins_unique (program : Program) (analysis : ProgramAnalysis)
     (analyzed : analyzeProgram program = some analysis) :
-    (program.controlPlaces.map (·.origin.elementId)).Nodup := by
+    (program.processId.value :: program.controlPlaces.map (·.origin.elementId.value) ++
+      program.operations.filterMap (fun operation => match operation with
+        | .enterParallelMultiInstanceScope _ origin .. => some origin.elementId.value
+        | _ => SequentialScopeProgram.sourceNode? operation)).Nodup := by
+  let key : SemanticOperation → Option String := fun operation => match operation with
+    | .enterParallelMultiInstanceScope _ origin .. => some origin.elementId.value
+    | _ => SequentialScopeProgram.sourceNode? operation
+  change (program.processId.value :: program.controlPlaces.map (·.origin.elementId.value) ++
+    program.operations.filterMap key).Nodup
   have fromGuard (source : SemanticOperation → Option String)
       (checked : (program.processId.value :: program.controlPlaces.map (·.origin.elementId.value) ++
         program.operations.filterMap source).eraseDups.length =
         (program.processId.value :: program.controlPlaces.map (·.origin.elementId.value) ++
-        program.operations.filterMap source).length) :
-      (program.controlPlaces.map (·.origin.elementId.value)).Nodup := by
-    have unique := StructuredComposition.equal_deduplicated_length_has_unique_names _ checked
-    exact (List.nodup_append.mp (List.nodup_cons.mp unique).2).1
-  have strings : (program.controlPlaces.map (·.origin.elementId.value)).Nodup := by
-    unfold analyzeProgram at analyzed
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    try dsimp only at analyzed
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    split at analyzed <;> try contradiction
-    try dsimp only at analyzed
-    split at analyzed <;> try contradiction
-    rename_i checked
-    simp only [bne_iff_ne, Classical.not_not] at checked
-    exact fromGuard _ checked
+        program.operations.filterMap source).length) (same : source = key) :
+      (program.processId.value :: program.controlPlaces.map (·.origin.elementId.value) ++
+        program.operations.filterMap key).Nodup := by
+    rw [same] at checked
+    exact StructuredComposition.equal_deduplicated_length_has_unique_names _ checked
+  unfold analyzeProgram at analyzed
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  try dsimp only at analyzed
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  split at analyzed <;> try contradiction
+  try dsimp only at analyzed
+  split at analyzed <;> try contradiction
+  rename_i checked
+  simp only [bne_iff_ne, Classical.not_not] at checked
+  exact fromGuard _ checked (by funext operation; cases operation <;> rfl)
+
+/-- PMIS-ADMIT-01 rejects source-origin aliases that raw Program structural validation permits. -/
+theorem analyzeProgram_control_place_origins_unique (program : Program) (analysis : ProgramAnalysis)
+    (analyzed : analyzeProgram program = some analysis) :
+    (program.controlPlaces.map (·.origin.elementId)).Nodup := by
+  have unique := analyzeProgram_source_origins_unique program analysis analyzed
+  have strings := (List.nodup_append.mp (List.nodup_cons.mp unique).2).1
   apply List.Pairwise.of_map (S := (· ≠ ·)) SequenceFlowId.value
     (fun _ _ different same => different (congrArg SequenceFlowId.value same))
   rw [List.map_map]

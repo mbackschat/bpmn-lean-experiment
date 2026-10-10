@@ -43,6 +43,12 @@ showcase/                         product 2 executable milestone acceptance gate
 
 `runners/` is reserved for evidence adapters to independent executable oracles. Production Workers belong under `platform/workers/`; in particular, the deferred JUEL evaluator belongs under `platform/workers/juel-evaluator/`, never beside the CIB Seven oracle runner.
 
+## Lean proof composition
+
+The Lean runtime remains the executable semantic account. Proofs expose reusable transition contracts below family-level command guarantees; proof consumers do not become runtime dependencies. [Actual PMIS invariant transport](../BpmnSemantics/SemanticProcess/ParallelScopeReachableInvariantTransport.lean) uses the existing command-boundary and internal-prefix reachability relations. It owns traversal through committed ingress, selected singleton or reserved-batch execution, and unchanged rejection or rollback. Ingress may establish an invariant that the pre-Start state lacks, so Start-certificate, reservation and data-availability consumers use the same traversal as publication and runtime position. Each consumer supplies its own predecessor-preservation laws without repeating that traversal or assuming successful future admission; boundary stability remains a separate command-level fact.
+
+Wait-publication batch preservation consumes the actual `InternalOccurrencePatchStep` evidence, including frozen allocation revalidation, rather than reconstructing the evaluator's recursion. Other batch consumers still use the preparation-level prefix induction. Local validator interfaces expose exact owner and output bindings once for their consumers. Accounting histories retain their distinct purpose: their over-approximation cannot authorize command ingress inside automatic closure. [Lean proof review](REVIEW-POLICY.md#lean-proof-design-and-review) governs composition; the [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes established guarantees and remaining gaps.
+
 ## Temporal adapter subsystem
 
 `packages/temporal-adapter/` is a subsystem directory containing independently built workspace packages. It is not one runtime package and has no production umbrella entry point. The boundaries follow actual execution environments and dependency closures:

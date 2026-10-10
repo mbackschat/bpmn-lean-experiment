@@ -279,14 +279,16 @@ theorem ParallelScopeInternalPrefixReachable.reservation_valid (program : Progra
   have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
     simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
   have wellFormed := (ParallelScopeStart.analyzeProgram_incidence_admission program analysis admitted).1
-  induction reachable with
-  | admitted before stimulus boundary committed =>
-    exact committed_ingress_reservation_valid program analysis admitted selected before boundary stimulus committed
-  | singleton before after ordinal schedule remaining consumed offer candidate preceding chosen alternative applied ih =>
-    exact reachable_singleton_reservation_valid program analysis admitted profile before after preceding candidate applied ih
-  | batch before after ordinal schedule remaining consumed offers batch successors preceding chosen reserved alternatives applied endpoint ih =>
-    obtain ⟨_, absent, _⟩ := preceding.start_certificate program analysis admitted before
-    exact batch_endpoint_reservation_valid program before after batch successors wellFormed absent applied endpoint
+  exact ParallelScopeInternalPrefixReachable.invariant_from_ingress program profile
+    (fun current => occurrenceReservationStateValid current = true)
+    (fun before boundary stimulus _ committed =>
+      committed_ingress_reservation_valid program analysis admitted selected before boundary stimulus committed)
+    (fun before after preceding candidate prior applied =>
+      reachable_singleton_reservation_valid program analysis admitted profile before after preceding candidate applied prior)
+    (fun before after preceding batch successors _ applied endpoint => by
+      obtain ⟨_, absent, _⟩ := preceding.start_certificate program analysis admitted before
+      exact batch_endpoint_reservation_valid program before after batch successors wellFormed absent applied endpoint)
+    state reachable
 
 
 /-- Actual Start capacity and the bounded continuation history leave a safe next

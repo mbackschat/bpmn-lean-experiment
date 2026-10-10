@@ -226,6 +226,20 @@ theorem transaction_start_data_is_empty (bindings : List VariableBinding)
         .processStart head.value = false := by cases head.value <;> rfl
     simp [processDataBindingsAdmitted, denied] at admitted
 
+/-- The shared Start-binding policy reduces to the generic value-domain table under the Transaction profile,
+whose selector chain matches no declaration-bound family. -/
+private theorem transaction_start_bindings_admitted (p : Program) (roles : TransactionAdmittedRoles p)
+    (instanceId : SemanticId) (submitted : List VariableBinding)
+    (admitted : CommandStartBindings.admitted p instanceId submitted = true) :
+    processDataBindingsAdmitted transactionCancellationCheckpointProfileId .processStart submitted = true := by
+  simpa [CommandStartBindings.admitted, CommandStartBindings.parallelMultiInstanceProgramAdmitted,
+    CommandStartBindings.sequentialMultiInstanceProgramAdmitted, ParallelScopeStart.programSelected,
+    roles.profileSelected, transactionCancellationCheckpointProfileId, mixedTaskControlFlowProfileId,
+    mixedTaskBusinessErrorProfileId, serialBusinessTaskProfileId, callDataCheckpointProfileId,
+    structuredCompositionCheckpointProfileId, compensationSourceCheckpointProfileId,
+    parallelMultiInstanceUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId,
+    activityDataInputOutputUserTaskProfileId] using admitted
+
 /-- Actual Start admission selects the empty Transaction data patch before building its root. -/
 theorem transaction_committed_start_empty_normal_form (p : Program) (roles : TransactionAdmittedRoles p)
     (wellFormed : programWellFormed p = true) (commandId processId instanceId : SemanticId)
@@ -243,30 +257,14 @@ theorem transaction_committed_start_empty_normal_form (p : Program) (roles : Tra
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent] at committed ⊢
   simp only [initialState] at handlerValid committed ⊢
   simp [handlerValid, roles.profileSelected, transactionCancellationCheckpointProfileId,
-    compensationSourceCheckpointProfileId, activityDataInputOutputUserTaskProfileId,
     callDataRuntimeStateValid, callDataCheckpointProfileId] at committed ⊢
   simp only [transaction_start_builder_normal_form p roles wellFormed] at committed ⊢
   split at committed
-  · rename_i parallel
-    change (p.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId &&
-      programWellFormed p && programProfileCapabilitiesValid p) = true at parallel
-    simp [roles.profileSelected, transactionCancellationCheckpointProfileId,
-      parallelMultiInstanceUserTaskProfileId] at parallel
-  · rename_i noParallel
-    simp only [if_neg noParallel]
-    split at committed
-    · rename_i sequential
-      change (p.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId &&
-        programWellFormed p && programProfileCapabilitiesValid p) = true at sequential
-      simp [roles.profileSelected, transactionCancellationCheckpointProfileId,
-        sequentialMultiInstanceUserTaskProfileId] at sequential
-    · rename_i noSequential
-      simp only [if_neg noSequential]
-      split at committed
-      · rename_i accepted
-        simp only [if_pos accepted]
-        exact congrArg (transactionRootStartState roles instanceId)
-          (transaction_start_data_is_empty submitted accepted.1.2)
-      · contradiction
+  · rename_i accepted
+    simp only [accepted]
+    exact congrArg (transactionRootStartState roles instanceId)
+      (transaction_start_data_is_empty submitted
+        (transaction_start_bindings_admitted p roles instanceId submitted accepted.1.2))
+  · contradiction
 
 end BpmnSemantics.SemanticProcess

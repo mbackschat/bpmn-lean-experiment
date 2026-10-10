@@ -580,4 +580,159 @@ theorem accepted_delta_preserves_unended_open_occurrence
           (contains_ended_anchor_iff delta.ended occurrence.anchor).mp containsEq
         exact False.elim (unended ending endingMember anchorEq)
 
+/-- Human and Service projections are total when all live owners belong to the hosting Process and their raw anchors are unique. -/
+theorem projectOpenFlowNodeOccurrences_hosting_total (program : Program) (state : RuntimeState)
+    (instanceId : SemanticId) (running : state.control = .running instanceId)
+    (wellFormed : programWellFormed program = true)
+    (valid : flowNodeOccurrenceProgramValidity program state = true)
+    (races : eventRaceAssociationsValid state = true)
+    (calls : calledProcessAssociationsValid state = true)
+    (messagePairs : messageBoundedProjectionValid program state = true)
+    (messagesEmpty : state.messageWaits = []) (timersEmpty : state.timerWaits = [])
+    (incidentsEmpty : state.effectIncidents = []) (callsEmpty : state.calledProcessOccurrences = [])
+    (hosting : ∀ owner, flowNodeOccurrenceOwnerLiveUnique state owner = true →
+      owner.processInstanceId = instanceId)
+    (waitsUnique : ((state.waits.map fun wait =>
+      (⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ : OccurrenceId)) ++
+      state.effectWaits.map fun wait =>
+        (⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩ : OccurrenceId)).Nodup)
+    (scopesUnique : (state.scopeOccurrences.map (·.id)).Nodup) :
+    ∃ occurrences, projectOpenFlowNodeOccurrences? program state = some occurrences := by
+  have mapTotal {α β : Type} (values : List α) (project : α → Option β)
+      (total : ∀ value ∈ values, ∃ result, project value = some result) :
+      ∃ results, values.mapM project = some results := by
+    induction values with
+    | nil => exact ⟨[], rfl⟩
+    | cons head tail ih =>
+        obtain ⟨first, firstEq⟩ := total head (by simp)
+        obtain ⟨rest, restEq⟩ := ih (fun value member => total value (by simp [member]))
+        exact ⟨first :: rest, by simp [firstEq, restEq]⟩
+  have processTotal (owner : ScopeOccurrenceId) (live : flowNodeOccurrenceOwnerLiveUnique state owner = true) :
+      processIdForOwner? program state owner = some program.processId := by
+    simp [processIdForOwner?, hostingInstanceId?, running, live, hosting owner live]
+  have structural : flowNodeOccurrenceStructuralProgramValidity program state = true :=
+    (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp valid).1).1).1
+  have waits : flowNodeOccurrenceWaitProgramValidity program state = true :=
+    (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp valid).1).1).2
+  have humans := (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp waits).1).1).1
+  have effects := (Bool.and_eq_true_iff.mp waits).2
+  have userTotal (wait : UserTaskWait) (member : wait ∈ state.waits) :
+      ∃ start, waitStart? program state wait.owner ⟨wait.task.id.value⟩ wait.activation = some start := by
+    have checked := List.all_eq_true.mp humans wait member
+    have owned : FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid state
+        wait.processInstanceId wait.owner ⟨wait.task.id.value⟩ wait.activation = true := by
+      with_unfolding_all exact (Bool.and_eq_true_iff.mp checked).1
+    have live := (Bool.and_eq_true_iff.mp owned).2
+    refine ⟨{
+      anchor := .wait ⟨wait.owner.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩
+      processId := program.processId, elementId := ⟨wait.task.id.value⟩, owner := wait.owner }, ?_⟩
+    simp [waitStart?, processTotal wait.owner live]
+    with_unfolding_all rfl
+  have effectTotal (wait : EffectWait) (member : wait ∈ state.effectWaits) :
+      ∃ start, waitStart? program state wait.owner wait.elementId wait.activation = some start := by
+    have checked := List.all_eq_true.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp effects).1).1 wait member
+    have owned : FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid state
+        wait.processInstanceId wait.owner wait.elementId wait.activation = true := by
+      with_unfolding_all exact (Bool.and_eq_true_iff.mp checked).1
+    have live := (Bool.and_eq_true_iff.mp owned).2
+    refine ⟨{
+      anchor := .wait ⟨wait.owner.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩
+      processId := program.processId, elementId := wait.elementId, owner := wait.owner }, ?_⟩
+    simp [waitStart?, processTotal wait.owner live]
+    with_unfolding_all rfl
+  obtain ⟨userStarts, usersEq⟩ := mapTotal state.waits _ userTotal
+  obtain ⟨effectStarts, effectsEq⟩ := mapTotal state.effectWaits _ effectTotal
+  have scopeTotal (scope : RuntimeScopeOccurrence)
+      (member : scope ∈ state.scopeOccurrences.filter (fun occurrence => occurrence.parent.isSome)) :
+      ∃ start, scopeStart? program state scope = some start := by
+    obtain ⟨present, parented⟩ := List.mem_filter.mp member
+    obtain ⟨parent, parentEq⟩ := Option.isSome_iff_exists.mp parented
+    have checked := List.all_eq_true.mp (Bool.and_eq_true_iff.mp structural).1 scope present
+    with_unfolding_all
+      change (match program.definitionScopes.filter (fun definition => decide (definition.id = scope.id.definitionScopeId)) with
+        | [definition] => _ | _ => false) = true at checked
+    generalize census : program.definitionScopes.filter
+        (fun definition => decide (definition.id = scope.id.definitionScopeId)) = definitions at checked
+    cases definitions with
+    | nil => simp at checked
+    | cons definition rest =>
+        cases rest with
+        | cons other tail => simp at checked
+        | nil =>
+            simp only [Bool.and_eq_true] at checked
+            have parentLive : flowNodeOccurrenceOwnerLiveUnique state parent = true := by
+              cases definitionParent : definition.parentScopeId <;>
+                simp [definitionParent, parentEq, running] at checked
+              exact checked.2.2
+            refine ⟨{
+              anchor := .scope scope.id, processId := program.processId
+              elementId := definition.originElementId, owner := parent }, ?_⟩
+            simp [scopeStart?, parentEq, processTotal parent parentLive, census]
+  obtain ⟨scopeStarts, scopesEq⟩ := mapTotal
+    (state.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome) _ scopeTotal
+  have scopeAnchors : scopeStarts.map (·.anchor) =
+      (state.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome).map
+        (fun occurrence => SemanticFlowNodeOccurrenceAnchor.scope occurrence.id) := by
+    have transport (values : List RuntimeScopeOccurrence) (starts : List OpenSemanticFlowNodeOccurrence)
+        (mapped : values.mapM (scopeStart? program state) = some starts) :
+        starts.map (·.anchor) = values.map (fun occurrence => SemanticFlowNodeOccurrenceAnchor.scope occurrence.id) := by
+      induction values generalizing starts with
+      | nil => simp_all
+      | cons head tail ih =>
+          simp only [List.mapM_cons, Option.bind_eq_bind] at mapped
+          obtain ⟨first, firstEq, mapped⟩ := Option.bind_eq_some_iff.mp mapped
+          obtain ⟨rest, restEq, result⟩ := Option.bind_eq_some_iff.mp mapped
+          cases Option.some.inj result
+          have anchor : first.anchor = .scope head.id := by
+            unfold scopeStart? at firstEq
+            obtain ⟨_, _, firstEq⟩ := Option.bind_eq_some_iff.mp firstEq
+            obtain ⟨_, _, firstEq⟩ := Option.bind_eq_some_iff.mp firstEq
+            split at firstEq <;> simp_all
+            cases firstEq
+            rfl
+          simp [anchor, ih rest restEq]
+    exact transport _ _ scopesEq
+  have ownerIds := flowNodeOccurrenceProgramValidity_wait_owner_ids program state valid
+  have userAnchors : userStarts.map (·.anchor) = state.waits.map
+      (fun wait => SemanticFlowNodeOccurrenceAnchor.wait
+        ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩) := by
+    rw [mapM_waitStart_anchor_map program state _ _ _ _ _ usersEq]
+    apply List.map_congr_left
+    intro wait member
+    simp [ownerIds.1 wait member]
+  have effectAnchors : effectStarts.map (·.anchor) = state.effectWaits.map
+      (fun wait => SemanticFlowNodeOccurrenceAnchor.wait
+        ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩) := by
+    rw [mapM_waitStart_anchor_map program state _ _ _ _ _ effectsEq]
+    apply List.map_congr_left
+    intro wait member
+    simp [ownerIds.2.2.2.1 wait member]
+  have waitAnchors : ((userStarts ++ effectStarts).map (·.anchor)).Nodup := by
+    simpa only [List.Nodup, List.map_append, userAnchors, effectAnchors, List.map_map, Function.comp_def] using
+      waitsUnique.map (S := (· ≠ ·)) (f := SemanticFlowNodeOccurrenceAnchor.wait)
+        (by intro left right different equal; exact different (SemanticFlowNodeOccurrenceAnchor.wait.inj equal))
+  have scopeKeys : ((state.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome).map (·.id)).Nodup :=
+    ((List.filter_sublist : (state.scopeOccurrences.filter fun occurrence => occurrence.parent.isSome).Sublist
+      state.scopeOccurrences).map RuntimeScopeOccurrence.id).nodup scopesUnique
+  have scopeUnique : (scopeStarts.map (·.anchor)).Nodup := by
+    rw [scopeAnchors]
+    simpa only [List.Nodup, List.map_map, Function.comp_def] using
+      scopeKeys.map (S := (· ≠ ·)) (f := SemanticFlowNodeOccurrenceAnchor.scope)
+        (by intro left right different equal; exact different (SemanticFlowNodeOccurrenceAnchor.scope.inj equal))
+  have disjoint : ∀ left ∈ (userStarts ++ effectStarts).map (·.anchor),
+      ∀ right ∈ scopeStarts.map (·.anchor), left ≠ right := by
+    rw [List.map_append, userAnchors, effectAnchors, scopeAnchors]
+    simp only [List.mem_append, List.mem_map]
+    rintro _ (⟨_, _, rfl⟩ | ⟨_, _, rfl⟩) _ ⟨_, _, rfl⟩ equal <;> contradiction
+  let projected := sortFlowNodeOccurrenceStarts (userStarts ++ effectStarts ++ scopeStarts)
+  have unique : (projected.map (·.anchor)).Nodup :=
+    ((sortFlowNodeOccurrenceStarts_perm _).map (·.anchor)).nodup_iff.mpr
+      (by simpa only [List.map_append] using List.nodup_append.mpr ⟨waitAnchors, scopeUnique, disjoint⟩)
+  have canonicalUnique : ((sortFlowNodeOccurrenceStarts (userStarts ++ (effectStarts ++ scopeStarts))).map (·.anchor)).Nodup :=
+    by simpa only [projected, List.append_assoc] using unique
+  refine ⟨projected, ?_⟩
+  simp [projectOpenFlowNodeOccurrences?, running, wellFormed, valid, races, calls, messagePairs,
+    effectIncidentAssociationsValid, incidentsEmpty, projectWaits?, messagesEmpty, timersEmpty,
+    usersEq, effectsEq, scopesEq, callsEmpty, projected, canonicalUnique, List.append_assoc]
+
 end BpmnSemantics.SemanticProcess

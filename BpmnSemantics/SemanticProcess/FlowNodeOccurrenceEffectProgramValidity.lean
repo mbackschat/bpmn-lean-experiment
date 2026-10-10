@@ -43,6 +43,35 @@ def flowNodeOccurrenceEffectProgramValidity (program : Program) (state : Runtime
     state.effectIncidents.all (fun incident => effectWaitValid program state incident.wait) &&
     effectLocalScopesExact state
 
+/-- Valid waits retain a real owned declaring port, so completion can restore its continuation token. -/
+theorem flowNodeOccurrenceEffectProgramValidity_output_binding (program : Program)
+    (state : RuntimeState) (wait : EffectWait)
+    (valid : flowNodeOccurrenceEffectProgramValidity program state = true)
+    (member : wait ∈ state.effectWaits) :
+    flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
+      ∃ operation ∈ program.operations, operationOwnedBy program operation wait.owner = true ∧
+        operationControlPlacesShareOwner operation = true ∧ wait.output ∈ operationControlPlaces operation := by
+  have checked := List.all_eq_true.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp valid).1).1 wait member
+  simp only [effectWaitValid, Bool.and_eq_true, decide_eq_true_eq] at checked
+  have live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true := by
+    simp only [occurrenceOwnerValid, Bool.and_eq_true] at checked
+    exact checked.1.2
+  obtain ⟨operation, census⟩ := List.length_eq_one_iff.mp checked.2
+  have selected := List.mem_filter.mp (census.symm ▸ List.mem_singleton_self operation)
+  refine ⟨live, operation, selected.1, ?_⟩
+  have matched := selected.2
+  split at matched <;> try contradiction
+  rename_i accepted
+  have owned : operationOwnedBy program operation wait.owner = true := by
+    cases checked : operationOwnedBy program operation wait.owner with
+    | false => simp only [checked, Bool.not_false, not_true_eq_false] at accepted
+    | true => rfl
+  refine ⟨owned, ?_⟩
+  clear checked census selected valid accepted
+  cases operation <;> simp only [Bool.and_eq_true, decide_eq_true_eq] at matched <;> try contradiction
+  all_goals simp_all only [operationControlPlacesShareOwner, operationControlPlaces,
+    operationOutputs, List.mem_append, List.mem_cons, and_true, or_true, true_or]
+
 theorem flowNodeOccurrenceEffectProgramValidity_frame (program : Program)
     (before after : RuntimeState)
     (scopes : after.scopeOccurrences = before.scopeOccurrences)

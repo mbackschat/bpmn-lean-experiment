@@ -53,6 +53,44 @@ private def userTaskWaitValid (program : Program) (state : RuntimeState)
 def flowNodeOccurrenceUserTaskProgramValidity (program : Program) (state : RuntimeState) : Bool :=
   state.waits.all (userTaskWaitValid program state)
 
+/-- Direct continuation ports exclude PMIT's controller-owned normal completion port (operationOutputs). -/
+def UserTaskDirectContinuationDomain (program : Program) : Prop :=
+  ∀ operation ∈ program.operations, match operation with
+    | .awaitParallelMultiInstanceUserTask .. => False
+    | _ => True
+
+/-- Valid waits retain a real owned declaring port, so completion can restore its continuation token. -/
+theorem flowNodeOccurrenceUserTaskProgramValidity_output_binding (program : Program)
+    (state : RuntimeState) (wait : UserTaskWait)
+    (valid : flowNodeOccurrenceUserTaskProgramValidity program state = true)
+    (member : wait ∈ state.waits)
+    (domain : UserTaskDirectContinuationDomain program) :
+    flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
+      ∃ operation ∈ program.operations, operationOwnedBy program operation wait.owner = true ∧
+        operationControlPlacesShareOwner operation = true ∧ wait.output ∈ operationControlPlaces operation := by
+  have checked := List.all_eq_true.mp valid wait member
+  simp only [userTaskWaitValid, Bool.and_eq_true, decide_eq_true_eq] at checked
+  have live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true := by
+    simp only [occurrenceOwnerValid, Bool.and_eq_true] at checked
+    exact checked.1.2
+  obtain ⟨operation, census⟩ := List.length_eq_one_iff.mp checked.2
+  have selected := List.mem_filter.mp (census.symm ▸ List.mem_singleton_self operation)
+  refine ⟨live, operation, selected.1, ?_⟩
+  have excluded := domain operation selected.1
+  have matched := selected.2
+  split at matched <;> try contradiction
+  rename_i accepted
+  have owned : operationOwnedBy program operation wait.owner = true := by
+    cases checked : operationOwnedBy program operation wait.owner with
+    | false => simp only [checked, Bool.not_false, not_true_eq_false] at accepted
+    | true => rfl
+  refine ⟨owned, ?_⟩
+  clear checked census selected valid accepted
+  cases operation <;> simp only at excluded <;>
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at matched <;> try contradiction
+  all_goals simp_all only [operationControlPlacesShareOwner, operationControlPlaces,
+    operationOutputs, List.mem_append, List.mem_cons, List.not_mem_nil, and_true, or_true, true_or, or_false]
+
 theorem flowNodeOccurrenceUserTaskProgramValidity_frame (program : Program)
     (before after : RuntimeState)
     (waits : after.waits = before.waits)

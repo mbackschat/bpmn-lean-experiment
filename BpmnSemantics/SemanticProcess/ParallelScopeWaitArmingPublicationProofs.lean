@@ -1,12 +1,16 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeStructuralPublicationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeExcludedWaitProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
 
-/-! PMIS body arming uses the ordinary publication insertion laws. Actual prefix
-certificates supply owner identity and next-counter freshness; successful scoped
-input evaluation supplies the Service snapshot rather than a projection premise. -/
+/-! PMIS native and reserved arming use the ordinary publication insertion laws.
+Actual command and prefix history establish full Program correspondence at Running
+states. Scoped input evaluation supplies the Service snapshot, and atomic refusal
+retains the predecessor; no successful projection or publication is assumed. -/
 
 namespace BpmnSemantics.SemanticProcess
 
-open BpmnSemantics InternalCommutation ParallelScopeStart
+open BpmnSemantics InternalCommutation ParallelScopeStart ParallelScopeReplay
 
 private theorem guard_tail {α : Type} (guard : Bool) (tail : Option α) (value : α)
     (successful : (if guard then none else tail) = some value) : tail = some value := by
@@ -242,77 +246,6 @@ private theorem reservedArm_wait_program_validity
     simpa only [InternalOccurrencePatch.apply, applyInternalArmingPatch, patchInput, write, next,
       activateEffect, addActivityVariableScope, effectWaitOccurrence] using native
 
-private theorem preparedBatch_raw_wait_program_validity
-    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
-    (before : RuntimeState) (batch : InternalOccurrenceBatch)
-    (prepared : prepareInternalOccurrenceBatch? program before = some batch)
-    (absent : before.compensationHandlerEffectWaits = [])
-    (valid : flowNodeOccurrenceWaitProgramValidity program before = true)
-    (prior rest : List InternalOccurrencePatch) (splitBatch : batch.members = prior ++ rest) :
-    flowNodeOccurrenceWaitProgramValidity program
-      (prior.foldl (fun current patch => patch.apply current) before) = true := by
-  have wellFormed := (analyzeProgram_incidence_admission program analysis admitted).1
-  have reversedValid (reversed : List InternalOccurrencePatch) : ∀ rest,
-      batch.members = reversed.reverse ++ rest →
-      flowNodeOccurrenceWaitProgramValidity program
-        (reversed.reverse.foldl (fun current patch => patch.apply current) before) = true := by
-    induction reversed with
-    | nil => intro _ _; exact valid
-    | cons patch reversed ih =>
-        intro rest splitBatch
-        simp only [List.reverse_cons] at splitBatch ⊢
-        have splitHead : batch.members = reversed.reverse ++ patch :: rest := by
-          simpa only [List.append_assoc, List.singleton_append] using splitBatch
-        have priorValid := ih (patch :: rest) splitHead
-        simp only [List.foldl_append, List.foldl_cons, List.foldl_nil]
-        cases patch with
-        | token patch => exact priorValid
-        | arm arm =>
-            have step := preparedOccurrenceBatch_prefix_step program before batch prepared wellFormed absent
-              reversed.reverse rest (.arm arm) splitHead
-            have reservationValid := preparedOccurrenceBatch_prefix_reservation_valid program before batch prepared
-              wellFormed absent reversed.reverse (.arm arm :: rest) splitHead
-            exact reservedArm_wait_program_validity program analysis admitted _ _ arm step reservationValid priorValid
-  simpa only [List.reverse_reverse] using reversedValid prior.reverse rest
-    (by simpa only [List.reverse_reverse] using splitBatch)
-
-private theorem reservedPrefix_wait_program_validity
-    (program : Program) (before : RuntimeState) (members : List InternalOccurrencePatch)
-    (prefixValid : ∀ prior rest, members = prior ++ rest →
-      flowNodeOccurrenceWaitProgramValidity program
-        (prior.foldl (fun current patch => patch.apply current) before) = true)
-    (successors : List RuntimeState)
-    (applied : applyReservedOccurrencePrefix? program before members = some successors) :
-    ∀ successor ∈ successors, flowNodeOccurrenceWaitProgramValidity program successor = true := by
-  have walk (rest : List InternalOccurrencePatch) : ∀ prior current successors,
-      members = prior ++ rest → current = prior.foldl (fun state patch => patch.apply state) before →
-      applyReservedOccurrencePrefix? program current rest = some successors →
-      ∀ successor ∈ successors, flowNodeOccurrenceWaitProgramValidity program successor = true := by
-    induction rest with
-    | nil =>
-        intro _ _ successors _ _ applied
-        simp only [applyReservedOccurrencePrefix?, Option.some.injEq] at applied
-        subst successors
-        simp
-    | cons patch rest ih =>
-        intro prior current successors splitMembers currentEq applied
-        simp only [applyReservedOccurrencePrefix?] at applied
-        split at applied <;> try contradiction
-        obtain ⟨tail, followed, applied⟩ := Option.bind_eq_some_iff.mp applied
-        cases Option.some.inj applied
-        have splitNext : members = (prior ++ [patch]) ++ rest := by
-          simpa only [List.append_assoc, List.singleton_append] using splitMembers
-        have nextEq : patch.apply current =
-            (prior ++ [patch]).foldl (fun state patch => patch.apply state) before := by
-          simp only [List.foldl_append, List.foldl_cons, List.foldl_nil, currentEq]
-        have later := ih (prior ++ [patch]) (patch.apply current) tail splitNext nextEq followed
-        intro successor present
-        rcases List.mem_cons.mp present with rfl | present
-        · rw [nextEq]
-          exact prefixValid (prior ++ [patch]) rest splitNext
-        · exact later successor present
-  exact walk members [] before successors (by simp) rfl applied
-
 /-- Every actual prepared-batch successor retains complete wait Program correspondence. -/
 theorem ParallelScopeInternalPrefixReachable.batch_wait_program_validity
     (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
@@ -322,14 +255,450 @@ theorem ParallelScopeInternalPrefixReachable.batch_wait_program_validity
     (applied : applyInternalOccurrenceBatch? program before batch = some successors) :
     ∀ successor ∈ successors, flowNodeOccurrenceWaitProgramValidity program successor = true := by
   obtain ⟨_, absent, _⟩ := reachable.start_certificate program analysis admitted before
-  unfold applyInternalOccurrenceBatch? at applied
-  split at applied <;> try contradiction
-  rename_i accepted
-  have prepared : prepareInternalOccurrenceBatch? program before = some batch := by
-    simp only [Bool.or_eq_true, bne_iff_ne, not_or, Classical.not_not] at accepted
-    exact accepted.2
-  exact reservedPrefix_wait_program_validity program before batch.members
-    (fun prior rest splitBatch => preparedBatch_raw_wait_program_validity program analysis admitted before
-      batch prepared absent valid prior rest splitBatch) successors applied
+  have reservation := reachable.reservation_valid program analysis admitted before
+  have wellFormed := (analyzeProgram_incidence_admission program analysis admitted).1
+  have transported := applyInternalOccurrenceBatch_patch_induction program before batch successors
+    (fun state => flowNodeOccurrenceWaitProgramValidity program state = true ∧
+      occurrenceReservationStateValid state = true ∧ state.compensationHandlerEffectWaits = [])
+    ⟨valid, reservation, absent⟩ (by
+      intro state after patch _ actual prior
+      refine ⟨?_, reserved_patch_step_reservation_valid program state after patch wellFormed actual prior.2.1 prior.2.2, ?_⟩
+      · cases patch with
+        | token token => rw [actual.1]; exact prior.1
+        | arm arm => exact reservedArm_wait_program_validity program analysis admitted state after arm actual prior.2.1 prior.1
+      · rw [actual.1, reserved_patch_compensation_waits]; exact prior.2.2) applied
+  intro successor member
+  exact (transported successor member).1
+
+private def WaitPublicationInvariant (program : Program) (state : RuntimeState) : Prop :=
+  (state.messageWaits = [] ∧ state.timerWaits = [] ∧ state.effectIncidents = []) ∧
+    (state.selectedBranchSets = [] ∧ state.eventRaces = []) ∧
+    ∀ instanceId, state.control = .running instanceId →
+      flowNodeOccurrenceWaitProgramValidity program state = true
+
+private theorem issued_choice_frame (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId)
+    (items : List String) (index : Nat) (before after : RuntimeState)
+    (iterations : List ParallelScopeIteration)
+    (issued : issueParallelBodies? entry parent items index before = some (after, iterations)) :
+    after.selectedBranchSets = before.selectedBranchSets ∧ after.eventRaces = before.eventRaces := by
+  induction items generalizing before index iterations with
+  | nil => cases Option.some.inj issued; exact ⟨rfl, rfl⟩
+  | cons item items ih =>
+      unfold issueParallelBodies? at issued
+      obtain ⟨_, _, issued⟩ := Option.bind_eq_some_iff.mp issued
+      obtain ⟨⟨successor, rest⟩, generated, issued⟩ := Option.bind_eq_some_iff.mp issued
+      cases Option.some.inj issued
+      have frame := ih _ _ _ generated
+      exact frame
+
+private theorem entry_choice_frame (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId)
+    (before after : RuntimeState) (entered : enterParallelScope? entry before parent = some after) :
+    after.selectedBranchSets = before.selectedBranchSets ∧ after.eventRaces = before.eventRaces := by
+  unfold enterParallelScope? at entered
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered <;> try contradiction
+  split at entered
+  · cases Option.some.inj entered; exact ⟨rfl, rfl⟩
+  · obtain ⟨⟨issued, iterations⟩, generated, entered⟩ := Option.bind_eq_some_iff.mp entered
+    cases iterations with
+    | nil => contradiction
+    | cons first rest =>
+        cases Option.some.inj entered
+        have frame := issued_choice_frame entry parent _ 0 _ issued (first :: rest) generated
+        exact frame
+
+private theorem cancel_bodies_choices_empty (iterations : List ParallelScopeIteration) (before : RuntimeState)
+    (prior : before.selectedBranchSets = [] ∧ before.eventRaces = []) :
+    let after := iterations.foldl (fun current iteration => cancelScopeSubtree current iteration.scope .remove) before
+    after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+  induction iterations generalizing before with
+  | nil => exact prior
+  | cons first rest ih =>
+      apply ih
+      simp [cancelScopeSubtree, prior.1, prior.2]
+
+private theorem retirement_choices_empty (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
+    (before after : RuntimeState) (prior : before.selectedBranchSets = [] ∧ before.eventRaces = [])
+    (completed : completeParallelScope? entry before target = some after) :
+    after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+  unfold completeParallelScope? at completed
+  obtain ⟨binding, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  dsimp only at completed
+  split at completed <;> try contradiction
+  obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨retirement, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  rcases retirement with ⟨_, _, _, _⟩ | ⟨_, _⟩ | ⟨_, _, first, rest⟩ <;>
+    cases Option.some.inj completed
+  · simp [cancelScopeSubtree, prior.1, prior.2]
+  · simp [cancelScopeSubtree, prior.1, prior.2]
+  · apply cancel_bodies_choices_empty (first :: rest)
+    simp [cancelScopeSubtree, prior.1, prior.2]
+
+private theorem completeTask_choice_frame (program : Program) (before after : RuntimeState)
+    (id : UserTaskInstanceId) (values : List VariableBinding)
+    (completed : ParallelScopeCommand.completeTask? program before id values = some after) :
+    after.selectedBranchSets = before.selectedBranchSets ∧ after.eventRaces = before.eventRaces := by
+  unfold ParallelScopeCommand.completeTask? at completed
+  split at completed <;> try contradiction
+  split at completed
+  · unfold completeParallelScopeUserTask? at completed
+    split at completed <;> try contradiction
+    split at completed <;> try contradiction
+    obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+    cases Option.some.inj completed
+    exact ⟨rfl, rfl⟩
+  · obtain ⟨_, applied, completed⟩ := Option.bind_eq_some_iff.mp completed
+    unfold completeUserTask at applied
+    split at applied <;> try contradiction
+    cases Option.some.inj applied
+    cases Option.some.inj completed
+    exact ⟨rfl, rfl⟩
+
+private theorem completeEffect_choice_frame (program : Program) (before after : RuntimeState)
+    (id : EffectOccurrenceId) (values : List VariableBinding)
+    (completed : ParallelScopeCommand.completeEffect? program before id (.success values) = some after) :
+    after.selectedBranchSets = before.selectedBranchSets ∧ after.eventRaces = before.eventRaces := by
+  unfold ParallelScopeCommand.completeEffect? at completed
+  split at completed <;> try contradiction
+  rename_i candidates wait selected
+  split at completed
+  · simp only [completeParallelScopeEffect?, selected] at completed
+    split at completed <;> try contradiction
+    split at completed <;> try contradiction
+    obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+    obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+    cases Option.some.inj completed
+    exact ⟨rfl, rfl⟩
+  · simp only [completeSerialEffect?, selected] at completed
+    obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+    cases Option.some.inj completed
+    exact ⟨rfl, rfl⟩
+
+private theorem singleton_publication_invariant (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis)
+    (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (before after : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program before)
+    (candidate : InternalOperationOccurrence) (prior : WaitPublicationInvariant program before)
+    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
+    WaitPublicationInvariant program after := by
+  have excluded := applyInternalOperationOccurrence_parallelScope_excluded_waits program analysis admitted
+    before after candidate prior.1 applied
+  obtain ⟨operation, resolved, _, replayed⟩ := applyInternalOperationOccurrence_replay_record
+    program before after candidate profile applied
+  let record : InternalTransitionRecord := {
+    operationId := candidate.operationId, operationKind := operation.kind,
+    origin := operation.origin, owner := candidate.owner, mergeInput := none }
+  have replay : replayInternalOperationOccurrence? program before record = some after := replayed
+  have active : ∃ instanceId, before.control = .running instanceId := by
+    cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control] at applied <;> try contradiction
+    exact ⟨_, rfl⟩
+  obtain ⟨instanceId, running⟩ := active
+  have valid := prior.2.2 instanceId running
+  by_cases body : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect, .duplicate, .synchronize, .reachNoneEnd]
+  · have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+      rcases applyInternalOperationOccurrence_body_effect program before after candidate operation resolved body applied with
+        ⟨patch, _, _, updated⟩ | ⟨patch, _, _, updated⟩
+      · rw [updated]
+        cases write : patch.write <;> simp only [applyInternalArmingPatch, write] <;> exact prior.2.1
+      · rw [updated]; exact prior.2.1
+    exact ⟨excluded, choices, fun _ _ => reachable.body_wait_program_validity program analysis admitted
+      before after candidate operation resolved body valid applied⟩
+  · cases operation <;> simp [SemanticOperation.kind] at body
+    case initiate =>
+      obtain ⟨output, _, _, _, _, _, initiated⟩ := replayed_initiation_execution program before after record rfl replay
+      unfold initiateState? at initiated
+      obtain ⟨_, _, initiated⟩ := Option.bind_eq_some_iff.mp initiated
+      split at initiated <;> try contradiction
+      cases Option.some.inj initiated
+      exact ⟨excluded, prior.2.1, fun _ _ => valid⟩
+    case enterParallelMultiInstanceScope =>
+      have entered := replayed_parallel_entry_execution program analysis admitted before after record rfl replay
+      have choices := entry_choice_frame analysis.entry candidate.owner before after entered
+      exact ⟨excluded, ⟨choices.1.trans prior.2.1.1, choices.2.trans prior.2.1.2⟩, fun _ _ =>
+        enterParallelScope_wait_program_validity program analysis.entry candidate.owner before after
+          (reachable.scope_identities_unique program analysis admitted before instanceId running) valid
+          prior.1.1 prior.1.2.1 prior.1.2.2 entered⟩
+    case completeParallelMultiInstanceScope =>
+      obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record rfl replay
+      exact ⟨excluded, retirement_choices_empty entry candidate.owner before after prior.2.1 completed, fun _ _ =>
+        ParallelScopeCommand.completeParallelScope_wait_program_validity program entry candidate.owner before after
+          valid prior.1.1 prior.1.2.1 prior.1.2.2 completed⟩
+    case completeScope =>
+      obtain ⟨_, _, _, _, _, completed, _⟩ := replayed_final_root_completion program analysis admitted before after record rfl replay
+      obtain ⟨scopeId, output, _, _, _, _, completion⟩ := replayed_scope_completion_execution program before after record rfl replay
+      obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
+      rw [completeSelectedScope?, unmonitored,
+        completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completion
+      have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+        unfold completeScopeState? at completion
+        split at completion <;> try contradiction
+        split at completion <;> try contradiction
+        unfold completeQuiescentScope? at completion
+        all_goals repeat' split at completion
+        all_goals first | contradiction | (cases Option.some.inj completion; exact prior.2.1)
+      exact ⟨excluded, choices, by intro _ active; rw [completed] at active; contradiction⟩
+    all_goals cases control : before.control <;>
+      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+
+private theorem batch_publication_invariant (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis)
+    (before after : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program before)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState)
+    (prior : WaitPublicationInvariant program before)
+    (applied : applyInternalOccurrenceBatch? program before batch = some successors)
+    (endpoint : successors.getLast? = some after) : WaitPublicationInvariant program after := by
+  have member := List.mem_of_getLast? endpoint
+  have excluded := applyInternalOccurrenceBatch_excluded_waits program before batch successors prior.1 applied after member
+  have choices := applyInternalOccurrenceBatch_prefix_induction program before batch successors
+    (fun state => state.control = before.control ∧ state.selectedBranchSets = [] ∧ state.eventRaces = [])
+    ⟨rfl, prior.2.1⟩ (by
+      intro state patch _ _ retained
+      cases patch with
+      | token patch => exact retained
+      | arm arm =>
+          simp only [InternalOccurrencePatch.apply]
+          cases write : arm.write <;> simp only [applyInternalArmingPatch, write] <;> exact retained) applied after member
+  refine ⟨excluded, choices.2, ?_⟩
+  intro instanceId running
+  exact reachable.batch_wait_program_validity program analysis admitted before batch successors
+    (prior.2.2 instanceId (choices.1.symm.trans running)) applied after member
+
+private theorem admission_publication_invariant (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis) (selected : programSelected program = true)
+    (before : RuntimeState) (boundary : ParallelScopeCommandBoundaryReachable program before)
+    (stimulus : Stimulus) (prior : WaitPublicationInvariant program before)
+    (committed : (admitStimulus program before stimulus).outcome = .committed) :
+    WaitPublicationInvariant program (admitStimulus program before stimulus).state := by
+  rcases parallelScope_committed_ingress_kind program selected before stimulus committed with
+    ⟨commandId, processId, instanceId, values, rfl, control⟩ | completion
+  · rcases boundary.start_certificate program analysis admitted before with rfl | ⟨seed, _, phases⟩
+    · obtain ⟨started, _, _⟩ := parallelScope_committed_start_exact program selected commandId processId instanceId values committed
+      unfold runningProgramStartState? at started
+      obtain ⟨_, _, started⟩ := Option.bind_eq_some_iff.mp started
+      rw [← Option.some.inj started]
+      refine ⟨⟨rfl, rfl, rfl⟩, ⟨rfl, rfl⟩, ?_⟩
+      intro _ _
+      rfl
+    · rcases phases ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩ rfl with ready |
+        ⟨_, _, _, initial, records, _, _, phase⟩
+      · have running := runningProgramStartState_control program seed.instanceId seed.values seed.ready seed.started
+        rw [ready, running] at control; contradiction
+      · exact False.elim (phase.not_notStarted program analysis selected _ seed.parent initial before records control)
+  · apply admitStimulus_wait_preserves program before stimulus selected completion
+      (WaitPublicationInvariant program) prior
+    · intro id values after completed
+      have choices := completeTask_choice_frame program before after id values completed
+      refine ⟨ParallelScopeCommand.completeTask_excluded_waits program before after id values prior.1 completed,
+        ⟨choices.1.trans prior.2.1.1, choices.2.trans prior.2.1.2⟩, ?_⟩
+      intro instanceId running
+      have control := ParallelScopeCommand.completeTask_control_frame program before after id values completed
+      exact ParallelScopeCommand.completeTask_wait_program_validity program before after id values
+        (prior.2.2 instanceId (control.symm.trans running)) prior.1.1 prior.1.2.1 completed
+    · intro id values after completed
+      have choices := completeEffect_choice_frame program before after id values completed
+      refine ⟨ParallelScopeCommand.completeEffect_success_excluded_waits program before after id values prior.1 completed,
+        ⟨choices.1.trans prior.2.1.1, choices.2.trans prior.2.1.2⟩, ?_⟩
+      intro instanceId running
+      have control := ParallelScopeCommand.completeEffect_success_control_frame program before after id values completed
+      exact ParallelScopeCommand.completeEffect_success_wait_program_validity program before after id values
+        (prior.2.2 instanceId (control.symm.trans running)) prior.1.1 prior.1.2.1 prior.1.2.2 completed
+
+private theorem boundary_publication_invariant (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis) (selected : programSelected program = true)
+    (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (state : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program state) :
+    WaitPublicationInvariant program state := by
+  exact reachable.invariant_transport program profile (WaitPublicationInvariant program)
+    ⟨⟨rfl, rfl, rfl⟩, ⟨rfl, rfl⟩, by intro _ running; simp [initialState] at running⟩
+    (fun before boundary stimulus prior committed =>
+      admission_publication_invariant program analysis admitted selected before boundary stimulus prior committed)
+    (fun before after preceding candidate prior applied =>
+      singleton_publication_invariant program analysis admitted profile before after preceding candidate prior applied)
+    (fun before after preceding batch successors prior applied endpoint =>
+      batch_publication_invariant program analysis admitted before after preceding batch successors prior applied endpoint) state
+
+private theorem prefix_publication_invariant
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program state) :
+    WaitPublicationInvariant program state := by
+  have selected : programSelected program = true := by
+    cases choice : programSelected program with
+    | false => simp [analyzeProgram, choice] at admitted
+    | true => rfl
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" :=
+    by simpa only [programSelected, beq_iff_eq] using selected
+  exact reachable.invariant_transport program profile (WaitPublicationInvariant program)
+    ⟨⟨rfl, rfl, rfl⟩, ⟨rfl, rfl⟩, by intro _ running; simp [initialState] at running⟩
+    (fun before boundary stimulus prior committed =>
+      admission_publication_invariant program analysis admitted selected before boundary stimulus prior committed)
+    (fun before after preceding candidate prior applied =>
+      singleton_publication_invariant program analysis admitted profile before after preceding candidate prior applied)
+    (fun before after preceding batch successors prior applied endpoint =>
+      batch_publication_invariant program analysis admitted before after preceding batch successors prior applied endpoint) state
+
+/-- Start and actual command history establish full correspondence for Running prefixes; structural provenance alone cannot admit foreign waits. -/
+theorem ParallelScopeInternalPrefixReachable.program_valid
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program state)
+    (instanceId : SemanticId) (running : state.control = .running instanceId) :
+    flowNodeOccurrenceProgramValidity program state = true := by
+  have invariant := prefix_publication_invariant program analysis admitted state reachable
+  simp only [flowNodeOccurrenceProgramValidity, invariant.2.1.1, invariant.2.1.2, List.all_nil,
+    Bool.and_true, Bool.and_eq_true]
+  exact ⟨reachable.structural_program_valid program analysis admitted state instanceId running,
+    invariant.2.2 instanceId running⟩
+
+/-- Actual Running command boundaries inherit correspondence even after unchanged rejection or atomic rollback. -/
+theorem ParallelScopeCommandBoundaryReachable.program_valid
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program state)
+    (instanceId : SemanticId) (running : state.control = .running instanceId) :
+    flowNodeOccurrenceProgramValidity program state = true := by
+  have selected : programSelected program = true := by
+    cases choice : programSelected program with
+    | false => simp [analyzeProgram, choice] at admitted
+    | true => rfl
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" :=
+    by simpa only [programSelected, beq_iff_eq] using selected
+  have invariant := boundary_publication_invariant program analysis admitted selected profile state reachable
+  simp only [flowNodeOccurrenceProgramValidity, invariant.2.1.1, invariant.2.1.2, List.all_nil,
+    Bool.and_true, Bool.and_eq_true]
+  have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
+    rcases reachable.initial_or_prefix program profile state with initial | preceding
+    · subst state; simp [initialState] at running
+    · exact preceding.structural_program_valid program analysis admitted state instanceId running
+  exact ⟨structural, invariant.2.2 instanceId running⟩
+
+theorem prefix_scope_projection_census
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program state)
+    (instanceId : SemanticId) (running : state.control = .running instanceId) :
+    ∃ parent, parent.processInstanceId = instanceId ∧ ParallelScopeStructuralFrame parent state ∧
+      ∀ scope ∈ state.scopeOccurrences, scope = ⟨parent, none⟩ ∨
+        scope.parent = some parent ∧ scope.id.processInstanceId = instanceId := by
+  have selected : programSelected program = true := by
+    cases selection : programSelected program with
+    | false => simp [analyzeProgram, selection] at admitted
+    | true => rfl
+  obtain ⟨seed, _, phases⟩ := reachable.start_certificate program analysis admitted state
+  let observer : ScopeOccurrenceId := ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩
+  rcases phases observer rfl with ready | ⟨_, _, _, _, _, _, _, phase⟩
+  · have raw := seed.started
+    simp only [runningProgramStartState?, seed.rootSelected, bind, Option.bind_some, pure, Option.some.injEq] at raw
+    change _ = seed.ready at raw
+    have identity : seed.instanceId = instanceId := by
+      rw [ready, ← raw] at running
+      exact ProcessControl.running.inj running
+    refine ⟨seed.parent, identity, ?_, ?_⟩
+    · rw [ready]
+      exact runningProgramStartState_structural_parallel_frame program seed.instanceId seed.values seed.ready
+        seed.root seed.rootSelected seed.started
+    · intro scope member
+      rw [ready, ← raw] at member
+      exact Or.inl (by simpa only [ParallelScopeAcceptedStart.parent, List.mem_singleton] using member)
+  have identity : seed.parent.processInstanceId = instanceId :=
+    (phase.running_instance program analysis admitted observer seed.parent _ state _ instanceId running).symm
+  refine ⟨seed.parent, identity, ?_⟩
+  rcases phase with ⟨parents, _⟩ | ⟨before, issued, _, _, suffix, _, parents, _, _, _, entered, following⟩
+  · refine ⟨parents.structural_frame program analysis.entry seed.parent state, ?_⟩
+    intro scope member
+    exact Or.inl (by simpa [(parents.clean_and_foreign_marking program analysis.entry seed.parent state).1.1] using member)
+  rcases following with history | ⟨_, _, _, _, _, _, _, ⟨_, completed⟩, _⟩
+  · have clean := (parents.clean_and_foreign_marking program analysis.entry seed.parent before).1
+    have issuedFrame := enterParallelScope_structural_parallel_frame analysis.entry seed.parent before issued clean
+      (parents.structural_frame program analysis.entry seed.parent before) entered
+    refine ⟨history.structural_frame program observer seed.parent selected issued state suffix issuedFrame, ?_⟩
+    intro scope member
+    have retained := history.scopeOccurrences_sublist program observer selected issued state suffix
+    rcases parallelScope_issued_scope_provenance analysis.entry seed.parent before issued clean entered
+        scope (retained.subset member) with root | ⟨parented, process, _⟩
+    · exact Or.inl root
+    · exact Or.inr ⟨parented, process.trans identity⟩
+  · rw [running] at completed
+    contradiction
+
+/-- Actual Running prefixes derive every guard of the independent open-occurrence projector. -/
+theorem ParallelScopeInternalPrefixReachable.open_projection
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program state)
+    (instanceId : SemanticId) (running : state.control = .running instanceId) :
+    ∃ occurrences, projectOpenFlowNodeOccurrences? program state = some occurrences := by
+  obtain ⟨parent, parentIdentity, frame, census⟩ :=
+    prefix_scope_projection_census program analysis admitted state reachable instanceId running
+  have scopeProcess (scope : RuntimeScopeOccurrence) (member : scope ∈ state.scopeOccurrences) :
+      scope.id.processInstanceId = instanceId := by
+    rcases census scope member with root | body
+    · rw [root]; exact parentIdentity
+    · exact body.2
+  have hosting (owner : ScopeOccurrenceId) (live : flowNodeOccurrenceOwnerLiveUnique state owner = true) :
+      owner.processInstanceId = instanceId := by
+    obtain ⟨scope, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true live)
+    have member : scope ∈ state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = owner)) := by
+      rw [singleton]; simp
+    obtain ⟨member, same⟩ := List.mem_filter.mp member
+    simpa only [of_decide_eq_true same] using scopeProcess scope member
+  have roots : state.scopeOccurrences.filter (fun scope => decide
+      (scope.parent.isNone && scope.id.processInstanceId = instanceId)) = [⟨parent, none⟩] := by
+    rw [← frame.root]
+    apply List.filter_congr
+    intro scope member
+    rcases census scope member with root | ⟨parented, _⟩
+    · simp [root, parentIdentity]
+    · have different : scope.id ≠ parent := by
+        intro same
+        have own : scope ∈ state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = parent)) :=
+          List.mem_filter.mpr ⟨member, by simp [same]⟩
+        rw [frame.root] at own
+        have root : scope = ⟨parent, none⟩ := List.mem_singleton.mp own
+        simp [root] at parented
+      simp [parented, different]
+  have calls : calledProcessAssociationsValid state = true := by
+    have callRoots : state.scopeOccurrences.filter (fun scope =>
+        decide (scope.parent = none) && decide (scope.id.processInstanceId = instanceId)) = [⟨parent, none⟩] := by
+      simpa [Bool.and_eq_true, Option.isNone_iff_eq_none] using roots
+    simp [calledProcessAssociationsValid, rootInstanceId?, running, callRoots, frame.noCalls,
+      List.all_eq_true]
+    intro scope member
+    exact Or.inr (scopeProcess scope member)
+  have invariant := prefix_publication_invariant program analysis admitted state reachable
+  have messagePairs : messageBoundedProjectionValid program state = true := by
+    apply List.all_eq_true.mpr
+    intro operation member
+    have allowed := (analyzeProgram_incidence_admission program analysis admitted).2.2
+    have accepted := List.all_eq_true.mp allowed operation member
+    cases operation <;> try rfl
+    all_goals simp [programOperationAllowed, SequentialScopeProgram.operationAllowed] at accepted
+  have anchors : (openWaitAnchors state).Nodup := by
+    have reservation := reachable.reservation_valid program analysis admitted state
+    simp only [occurrenceReservationStateValid, Bool.and_eq_true] at reservation
+    exact (List.nodup_append.mp (of_decide_eq_true reservation.1.1.1.1.2)).1
+  exact projectOpenFlowNodeOccurrences_hosting_total program state instanceId running
+    (analyzeProgram_incidence_admission program analysis admitted).1
+    (reachable.program_valid program analysis admitted state instanceId running)
+    (by simp [eventRaceAssociationsValid, invariant.2.1.2]) calls messagePairs
+    invariant.1.1 invariant.1.2.1 invariant.1.2.2 frame.noCalls hosting
+    (by simpa [List.Nodup, List.pairwise_append, List.pairwise_map,
+      openWaitAnchors, userTaskWaitOccurrence, effectWaitOccurrence,
+      invariant.1.1, invariant.1.2.1, invariant.1.2.2] using anchors)
+    (reachable.scope_identities_unique program analysis admitted state instanceId running)
+
+/-- Actual command boundaries inherit total Running projection through committed execution or unchanged refusal. -/
+theorem ParallelScopeCommandBoundaryReachable.open_projection
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program state)
+    (instanceId : SemanticId) (running : state.control = .running instanceId) :
+    ∃ occurrences, projectOpenFlowNodeOccurrences? program state = some occurrences := by
+  have selected : programSelected program = true := by
+    cases choice : programSelected program with
+    | false => simp [analyzeProgram, choice] at admitted
+    | true => rfl
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" :=
+    by simpa only [programSelected, beq_iff_eq] using selected
+  rcases reachable.initial_or_prefix program profile state with initial | preceding
+  · subst state; simp [initialState] at running
+  · exact preceding.open_projection program analysis admitted state instanceId running
 
 end BpmnSemantics.SemanticProcess

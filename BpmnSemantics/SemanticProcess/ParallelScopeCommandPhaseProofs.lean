@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
 import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
 
 /-! # Parallel command phase provenance
@@ -473,50 +473,6 @@ private theorem started_phase_occurrence_execution (program : Program) (analysis
       seed.started initiated before after records absent count witness
     exact ⟨nextAbsent, Or.inr ⟨id, origin, output, initial, records ++ added, declared, initiated, nextPhase⟩⟩
 
-private theorem started_phase_closure (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)
-    (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
-    (seed : ParallelScopeAcceptedStart program) (owner : ScopeOccurrenceId)
-    (child : owner.definitionScopeId = analysis.entry.childScopeId) (state : RuntimeState)
-    (phase : ParallelScopeStartedPhase program analysis seed owner state)
-    (absent : state.compensationHandlerEffectWaits = [])
-    (commandId : SemanticId) (fuel index ordinal : Nat) (schedule : InternalChoiceSchedule) :
-    (closeScheduledTraced fuel program commandId index ordinal schedule state).state.compensationHandlerEffectWaits = [] ∧
-      ParallelScopeStartedPhase program analysis seed owner
-        (closeScheduledTraced fuel program commandId index ordinal schedule state).state := by
-  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
-    cases selected : ParallelScopeStart.programSelected program with
-    | false => simp [ParallelScopeStart.analyzeProgram, selected] at admitted
-    | true => simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
-  let predicate : Nat → RuntimeState → Prop := fun _ current =>
-    current.compensationHandlerEffectWaits = [] ∧ ParallelScopeStartedPhase program analysis seed owner current
-  have result := closeScheduledTraced_prefix_induction program commandId predicate (by
-    intro position nextOrdinal nextSchedule current offers remaining consumed step preceding nonempty chosen executed
-    obtain ⟨currentAbsent, currentPhase⟩ := preceding
-    have mechanics := executeSelectedFrontier_parallel_scope_steps program commandId position nextOrdinal nextSchedule
-      current offers remaining consumed step profile nonempty chosen executed
-    have witness : (∃ candidate, offers.length = 1 ∧ applyInternalOperationOccurrence? program current candidate = some step.state) ∨
-        (∃ batch successors, applyInternalOccurrenceBatch? program current batch = some successors ∧
-          successors.length = offers.length ∧ successors.getLast? = some step.state) := by
-      rcases mechanics with ⟨offer, candidate, _, length, _, applied, _⟩ | ⟨batch, successors, _, applied, length, last, _, _⟩
-      · exact Or.inl ⟨candidate, length, applied⟩
-      · exact Or.inr ⟨batch, successors, applied, length, last⟩
-    exact started_phase_occurrence_execution program analysis admitted seed owner child current step.state currentPhase
-      currentAbsent offers.length witness
-    ) fuel index ordinal schedule state ⟨absent, phase⟩
-  exact result.choose_spec.2
-
-private theorem certificate_closure (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)
-    (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
-    (state : RuntimeState) (certificate : ParallelScopeCommandCertificate program analysis state)
-    (commandId : SemanticId) (fuel index ordinal : Nat) (schedule : InternalChoiceSchedule) :
-    ParallelScopeCommandCertificate program analysis
-      (closeScheduledTraced fuel program commandId index ordinal schedule state).state := by
-  obtain ⟨seed, absent, phases⟩ := certificate
-  have result := fun owner child => started_phase_closure program analysis admitted seed owner child state
-    (phases owner child) absent commandId fuel index ordinal schedule
-  exact ⟨seed, (result ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩ rfl).1,
-    fun owner child => (result owner child).2⟩
-
 private theorem certificate_wait_admission (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)
     (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
     (selected : ParallelScopeStart.programSelected program = true)
@@ -564,44 +520,6 @@ private theorem certificate_admission (program : Program) (analysis : ParallelSc
       fun _ _ => Or.inl rfl⟩
   · exact certificate_wait_admission program analysis admitted selected state certificate stimulus committed
 
-private theorem committed_command_state (program : Program) (before : RuntimeState) (stimulus : Stimulus) (fuel : Nat)
-    (committed : (applyStimulus fuel program before stimulus).outcome = .committed) :
-    (admitStimulus program before stimulus).outcome = .committed ∧
-      (applyStimulus fuel program before stimulus).state =
-        (closeScheduledTraced fuel program (stimulusCommandId stimulus) 1 0 [] (admitStimulus program before stimulus).state).state := by
-  cases outcome : (admitStimulus program before stimulus).outcome <;>
-    simp only [applyStimulus, outcome] at committed ⊢ <;> try contradiction
-  refine ⟨trivial, ?_⟩
-  unfold StimulusResult.ofScheduledClosure at committed ⊢
-  split at committed
-  · simp at committed
-  · rename_i accepted
-    simp only [ite_eq_right accepted]
-    unfold StimulusResult.ofClosure at committed ⊢
-    split at committed <;> simp_all
-
-/-- Complete actual commands retain one Start certificate, including exact predecessor
-preservation on refusal and atomic rollback. -/
-theorem ParallelScopeCommandBoundaryReachable.start_certificate (program : Program)
-    (analysis : ParallelScopeStart.ProgramAnalysis)
-    (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
-    (state : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program state) :
-    state = initialState ∨ ParallelScopeCommandCertificate program analysis state := by
-  have selected : ParallelScopeStart.programSelected program = true := by
-    cases selection : ParallelScopeStart.programSelected program with
-    | false => simp [ParallelScopeStart.analyzeProgram, selection] at admitted
-    | true => rfl
-  induction reachable with
-  | initial => exact Or.inl rfl
-  | command before fuel stimulus reachable ih =>
-    rcases parallelScope_applyStimulus_commits_or_preserves_state program selected fuel before stimulus with committed | unchanged
-    · obtain ⟨accepted, endpoint⟩ := committed_command_state program before stimulus fuel committed
-      rw [endpoint]
-      exact Or.inr (certificate_closure program analysis admitted _
-        (certificate_admission program analysis admitted selected before ih stimulus accepted) (stimulusCommandId stimulus) fuel 1 0 [])
-    · rw [unchanged]
-      exact ih
-
 private theorem certificate_occurrence_execution (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)
     (admitted : ParallelScopeStart.analyzeProgram program = some analysis) (before after : RuntimeState)
     (certificate : ParallelScopeCommandCertificate program analysis before)
@@ -627,17 +545,33 @@ theorem ParallelScopeInternalPrefixReachable.start_certificate (program : Progra
     cases selection : ParallelScopeStart.programSelected program with
     | false => simp [ParallelScopeStart.analyzeProgram, selection] at admitted
     | true => rfl
-  induction reachable with
-  | admitted before stimulus boundary committed =>
-    exact certificate_admission program analysis admitted selected before
-      (boundary.start_certificate program analysis admitted before) stimulus committed
-  | singleton before after ordinal schedule remaining consumed offer candidate preceding chosen alternative applied ih =>
-    exact certificate_occurrence_execution program analysis admitted before after ih 1 (Or.inl ⟨candidate, rfl, applied⟩)
-  | batch before after ordinal schedule remaining consumed offers batch successors preceding chosen reserved alternatives applied endpoint ih =>
-    have length := (applyInternalOccurrenceBatch_ordered_steps program before batch successors applied).1
-    have count := congrArg List.length alternatives
-    simp only [List.length_map] at count
-    exact certificate_occurrence_execution program analysis admitted before after ih offers.length (Or.inr ⟨batch, successors, applied, length.trans count.symm, endpoint⟩)
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+    simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
+  exact ParallelScopeInternalPrefixReachable.invariant_from_ingress program profile
+    (ParallelScopeCommandCertificate program analysis)
+    (fun before _ stimulus prior committed =>
+      certificate_admission program analysis admitted selected before prior stimulus committed)
+    (fun before after _ candidate prior applied =>
+      certificate_occurrence_execution program analysis admitted before after prior 1 (Or.inl ⟨candidate, rfl, applied⟩))
+    (fun before after _ batch successors prior applied endpoint =>
+      certificate_occurrence_execution program analysis admitted before after prior successors.length
+        (Or.inr ⟨batch, successors, applied, rfl, endpoint⟩))
+    state reachable
+
+/-- Complete actual commands retain one Start certificate, including exact predecessor
+preservation on refusal and atomic rollback. -/
+theorem ParallelScopeCommandBoundaryReachable.start_certificate (program : Program)
+    (analysis : ParallelScopeStart.ProgramAnalysis)
+    (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
+    (state : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program state) :
+    state = initialState ∨ ParallelScopeCommandCertificate program analysis state := by
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+    cases selection : ParallelScopeStart.programSelected program with
+    | false => simp [ParallelScopeStart.analyzeProgram, selection] at admitted
+    | true => simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selection
+  exact (reachable.initial_or_prefix program profile state).imp id
+    (fun prefixReachable => prefixReachable.start_certificate program analysis admitted state)
+
 /-- Admitted scope ownership resolves the real Start occurrence and executes its
 initiation; an empty successful frontier cannot hide this enabled step. -/
 theorem ParallelScopeAcceptedStart.initiation_enabled (program : Program)

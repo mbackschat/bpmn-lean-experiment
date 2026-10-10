@@ -450,19 +450,21 @@ theorem ParallelScopeInternalPrefixReachable.required_scalar_read (program : Pro
     | true => rfl
   have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
     simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
-  induction reachable with
-  | admitted before stimulus boundary committed =>
-    exact ingress_scalar_read program analysis analyzed selected before boundary stimulus committed name required notCollection notCondition
-  | singleton before after ordinal schedule remaining consumed offer candidate preceding chosen alternative applied ih =>
-    rw [singleton_process_frame program analysis analyzed profile before after candidate applied]
-    exact ih
-  | batch before after ordinal schedule remaining consumed offers batch successors preceding chosen reserved alternatives applied endpoint ih =>
-    have frames := applyInternalOccurrenceBatch_prefix_induction program before batch successors
-      (fun current => current.variables.process = before.variables.process) rfl
-      (fun current patch _ _ prior => (patch.retirement_frame current).2.2.2.2.2.trans prior) applied
-    have member : after ∈ successors := List.mem_of_getLast? endpoint
-    rw [frames after member]
-    exact ih
+  exact ParallelScopeInternalPrefixReachable.invariant_from_ingress program profile
+    (fun current => ∃ value, enclosingVariable? current.variables.process.bindings name = some value)
+    (fun before boundary stimulus _ committed =>
+      ingress_scalar_read program analysis analyzed selected before boundary stimulus committed name required notCollection
+        notCondition)
+    (fun before after _ candidate prior applied => by
+      rw [singleton_process_frame program analysis analyzed profile before after candidate applied]
+      exact prior)
+    (fun before after _ batch successors prior applied endpoint => by
+      have frames := applyInternalOccurrenceBatch_prefix_induction program before batch successors
+        (fun current => current.variables.process = before.variables.process) rfl
+        (fun current patch _ _ earlier => (patch.retirement_frame current).2.2.2.2.2.trans earlier) applied
+      rw [frames after (List.mem_of_getLast? endpoint)]
+      exact prior)
+    state reachable
 
 /-- Native parent Service arming now follows from actual prefix reachability and
 its unique input token. Neither evaluated inputs nor stored mapping validity is

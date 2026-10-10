@@ -9,18 +9,18 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private def Hosting (program : Program) (instanceId : SemanticId)
+def Hosting (program : Program) (instanceId : SemanticId)
     (scope : DefinitionScope) (occurrence : RuntimeScopeOccurrence) : Prop :=
   occurrence.parent.isNone = true ∧ occurrence.id.processInstanceId = instanceId ∧
     scope.parentScopeId.isNone = true ∧ scope.originElementId.value = program.processId.value
 
-private def Called (state : RuntimeState) (scope : DefinitionScope)
+def Called (state : RuntimeState) (scope : DefinitionScope)
     (occurrence : RuntimeScopeOccurrence) : Prop :=
   ∃ record, state.calledProcessOccurrences.filter (fun record =>
     decide (record.calledRoot = occurrence.id)) = [record] ∧
       record.calledProcessId.value = scope.originElementId.value
 
-private def ScopeFacts (program : Program) (instanceId : SemanticId)
+def ScopeFacts (program : Program) (instanceId : SemanticId)
     (state : RuntimeState) (occurrence : RuntimeScopeOccurrence) : Prop :=
   ∃ scope, uniqueDefinitionScope? program occurrence.id.definitionScopeId = some scope ∧
     occurrence.id.processInstanceId.value ≠ "" ∧ occurrence.id.activation > 0 ∧
@@ -32,7 +32,7 @@ private def ScopeFacts (program : Program) (instanceId : SemanticId)
         parent.definitionScopeId = staticParent ∧ exactLiveOccurrence state parent = true
     | _, _ => False
 
-private def TokenFacts (program : Program) (state : RuntimeState) (token : ControlToken) : Prop :=
+def TokenFacts (program : Program) (state : RuntimeState) (token : ControlToken) : Prop :=
   (match uniqueControlPlace? program token.placeId,
       (match program.controlPlaceScopes.filter (fun ownership =>
         decide (ownership.controlPlaceId = token.placeId)) with
@@ -42,7 +42,7 @@ private def TokenFacts (program : Program) (state : RuntimeState) (token : Contr
         staticOwner = token.owner.definitionScopeId && exactLiveOccurrence state token.owner
     | _, _ => false) = true
 
-private def PositionFacts (program : Program) (expected hosting : SemanticId)
+def PositionFacts (program : Program) (expected hosting : SemanticId)
     (state : RuntimeState) : Prop :=
   programWellFormed program = true ∧
   ((program.controlPlaces.all fun place => (program.controlPlaces.filter fun candidate =>
@@ -60,7 +60,9 @@ private def PositionFacts (program : Program) (expected hosting : SemanticId)
     ScopeFacts program hosting state occurrence) ∧
   ∀ token ∈ state.tokens, TokenFacts program state token
 
-private theorem position_iff (program : Program) (expected hosting : SemanticId)
+/-- The checked view is shared by population creation, whose successive siblings
+must retain the same runtime validator as ordinary child creation. -/
+theorem position_iff (program : Program) (expected hosting : SemanticId)
     (state : RuntimeState) (running : state.control = .running hosting) :
     runtimePositionValid program expected state = true ↔ PositionFacts program expected hosting state := by
   change (programWellFormed program &&
@@ -189,7 +191,9 @@ private theorem token_facts_frame (program : Program) (before after : RuntimeSta
       exact ⟨valid.1, live _ valid.2⟩
   · contradiction
 
-private theorem position_insert (program : Program) (expected hosting : SemanticId)
+/-- Fresh insertion preserves every existing owner without requiring another
+entry-token consumption; PMIS-ENTER-01 consumes its parent input only once. -/
+theorem position_insert (program : Program) (expected hosting : SemanticId)
     (before after : RuntimeState) (inserted : RuntimeScopeOccurrence)
     (valid : PositionFacts program expected hosting before)
     (scopes : after.scopeOccurrences = insertScopeOccurrence inserted before.scopeOccurrences)
@@ -453,5 +457,40 @@ theorem prepareInternalScopeCreation_preserves_runtimePositionValid
   exact selectedScopeCreation_preserves_runtimePositionValid program state operation selected
     instanceId hosting ownerRecord origin scope delta valid selection running ownerExact definition checks
     position (fun record kind => callSeparated record programWF found kind)
+
+/-- Population issuance reuses fresh child insertion independently of the single-input
+selection restriction; PMIS-ENTER-01 creates successive siblings at one definition. -/
+theorem runtimePositionValid_insert_child_frame (program : Program) (expected hosting : SemanticId)
+    (before after : RuntimeState) (created : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId)
+    (definition : DefinitionScope) (valid : runtimePositionValid program expected before = true)
+    (running : before.control = .running hosting) (control : after.control = before.control)
+    (scopes : after.scopeOccurrences = insertScopeOccurrence created before.scopeOccurrences)
+    (tokens : after.tokens = before.tokens) (calls : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (fresh : ∀ occurrence ∈ before.scopeOccurrences, occurrence.id ≠ created.id)
+    (lookup : uniqueDefinitionScope? program created.id.definitionScopeId = some definition)
+    (parented : created.parent = some parent) (staticParent : definition.parentScopeId = some parent.definitionScopeId)
+    (aligned : parent.processInstanceId = created.id.processInstanceId)
+    (named : created.id.processInstanceId.value ≠ "") (positive : 0 < created.id.activation)
+    (live : exactLiveOccurrence before parent = true) :
+    runtimePositionValid program expected after = true := by
+  have facts := (position_iff program expected hosting before running).mp valid
+  apply (position_iff program expected hosting after (control.trans running)).mpr
+  apply position_insert program expected hosting before after created facts scopes tokens fresh
+  · refine ⟨definition, lookup, named, positive, ?_⟩
+    rw [staticParent, parented]
+    refine ⟨aligned, rfl, ?_⟩
+    simpa only [exactLiveOccurrence, scopes] using
+      exactLiveOccurrence_insertScopeOccurrence_preserves before created parent fresh live
+  · intro scope _ hostingFact
+    simp [Hosting, parented] at hostingFact
+  · intro occurrence _ scope
+    simp only [Called, calls]
+  · have roots : after.scopeOccurrences.filter (·.parent.isNone) =
+        before.scopeOccurrences.filter (·.parent.isNone) := by
+      rw [scopes]
+      exact filter_canonicalInsertBy_rejected scopeOccurrenceBefore (·.parent.isNone)
+        created before.scopeOccurrences (by simp [parented])
+    rw [calledProcessAssociationsValid_parentless_frame before after control roots calls]
+    exact facts.2.2.2.2.1
 
 end BpmnSemantics.SemanticProcess.InternalCommutation
