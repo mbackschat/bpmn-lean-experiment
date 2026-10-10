@@ -162,7 +162,7 @@ The boundary Sequence Flow is a token-carrying control place in the ordinary `Co
 
 Lowering produces one bounded-scope operation that owns the child scope entry and its deadline together, rather than a standalone `awaitTimer` beside a scope entry. Lean independently lowers the checked graph and requires exact equality with the received program; retaining the exact `PT1S` literal in checked source is what lets Lean normalize it to `1000` independently.
 
-`packages/bpmn-source/src/semantic-process-lowering.ts` is at 25 lines of headroom and its sibling capsule already recorded that budget as expired. A behavior-preserving extraction of that owner is therefore a prerequisite commit, not work to be done inside this semantic change.
+`packages/bpmn-source/src/semantic-process-lowering.ts` is at 25 lines of headroom and its sibling capsule already recorded that budget as expired. A behavior-preserving extraction of that owner must precede further growth; [commit boundaries](../REVIEW-POLICY.md#commit-boundaries) decide whether it is a separate commit or part of the coherent change.
 
 ## Runtime state
 
@@ -297,7 +297,7 @@ This capsule crossed two module-size boundaries and one design boundary, each la
 - The bounded-Activity deadline scheduler became [one family-parameterized owner](../../packages/temporal-adapter/workflow/src/bounded-deadline-scheduler.ts) serving both boundary-deadline host kinds, rather than a third near-duplicate beside it. The refusal identity is a descriptor field, so the two families keep distinct identities without duplicating the mechanism that raises them.
 - The host assertions both direct-VM witnesses use moved to [their own owner](../../packages/temporal-adapter/testkit/test/boundary-deadline-assertions.ts). They read only emitted commands, so they are generic over which wait the deadline bounds, and the refusal identity stays a parameter precisely because the families must not share one.
 
-`packages/temporal-adapter/workflow/src/workflow-implementation.ts` was left effectively full, and that is a standing constraint rather than a completed extraction: the next change touching it needs a behavior-preserving extraction as its own commit first.
+`packages/temporal-adapter/workflow/src/workflow-implementation.ts` was left effectively full, and that is a standing constraint rather than a completed extraction: the next change touching it needs a behavior-preserving extraction first, committed under [commit boundaries](../REVIEW-POLICY.md#commit-boundaries).
 
 **This section deliberately records no headroom figures.** The planning inventory that carried them belonged to this document while it was a proposal, where [the reviewability guard](../../scripts/document-reviewability.test.ts) recomputes every figure against measurement. That guard reads proposals only, so retaining the table past graduation would preserve numbers nothing checks.
 ### Guards and oracles this implementation must change or satisfy

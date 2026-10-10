@@ -122,16 +122,16 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) before further implementation, as directed by the owner. Lean, affected TypeScript and causal guidelines/scripts remain in scope.
 
-Current result: verified findings AA-01 to AA-26; every area has assessor dispositions (295 finding, 271 retain, 312 open of 878 Lean files). AA-24 shows a vacuous proved SMI progress law. AA-11/AA-20/AA-23 outcomes and AA-13 admission need reviewed contracts first.
+Current result: [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26 and area dispositions; required review edits are applied; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
 
-Next action: one fresh cold proposal review of the committed revision; then resolve required edits and start the PMIS pilot placement correction. One sub-agent at a time; census work runs as scripts.
+Next action: complete the correction audit. Approval ends the writing phase and authorizes only boundaries with stated acceptance; first the PMIS pilot placement under AA-01. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
 
 Last verification: document guards 44/44 on this revision; core-Lean numeric probe for AA-13. `/tmp/assurance-pmis-full-library-20261010` stopped at exit 130, so no pilot claim.
 
-Unresolved: remaining whole-tree inspection and proposal findings; PMIS resumption, stable-wait and complete publication; hosted qualification. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
+Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
 Oracle: document guards and independent proposal review; subsequent implementation requires actual composed guarantees under the proposal and [PMIS command checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint).
 
-Stop if writing silently approves unresolved semantics or implementation resumes before this writing phase finishes.
+Stop if implementation crosses a boundary the approved revision does not authorize.
 
-Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, all stashes and delivery checkpoint `2f38e92d`.
+Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`, and checkpoint `2f38e92d`.
