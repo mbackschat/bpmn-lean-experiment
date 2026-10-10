@@ -134,4 +134,4 @@ Oracle: document guards and independent proposal review; subsequent implementati
 
 Stop if implementation crosses a boundary the approved revision does not authorize.
 
-Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`, and checkpoint `2f38e92d`.
+Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, all stashes (including `f35bdd6b`, `76a2b017` and pending PMIS sources `9a443912`) and checkpoint `2f38e92d`.
