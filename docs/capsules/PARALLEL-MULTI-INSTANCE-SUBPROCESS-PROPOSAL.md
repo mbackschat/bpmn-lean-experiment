@@ -389,10 +389,12 @@ Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after cl
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `11b033ea` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `ee9ddace` | `fork-turns-none` | `approve` | `not-required` |
+| Semantic checkpoint | `ff9cc670` | `fork-turns-none` | `approve-with-required-edits` | `98c8bef4` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Independent proposal review approved `11b033ea` without required corrections. Packet digest: `8662eaa9dc3e1afcaf5e0a0656d51a4c642c7a2b41ff668e0d1f0644937e49e3`. The reviewer independently passed 82 proposal/document checks (`/tmp/parallel-mi-cold-review-focused.log`), four CIB cases (`/tmp/parallel-mi-cold-review-cib.log`), the 64-case control experiment and a separate eight/nine/sixteen-operation batch discriminator; fixed-eight failed as intended. Approval covers the proposed account only. Production implementation, quantified progress/ownership proofs, complete cancellation/publication migration, sixteen-body byte capacity and hosting qualification remain open.
+
+Independent cold semantic-checkpoint review of the shared reachability transport `ff9cc670` against `6a3490c6` (packet `f3aab8acce71acf9c1bb77b3bb11eff896cbeb3ce307042166ee43aae2f5111a`) required relocating the actual-step batch walk to the generic batch owner and correcting status scope; the same reviewer approved correction `98c8bef4`, whose full-library receipt `/tmp/aa01-full-library-clean-20261010` is bound to that commit. The prior checkpoint row target was `ee9ddace`.
 
 Independent semantic-checkpoint review approved `fa718a08` against `9cbd5b5d` without required corrections. Packet digest: `5fb981c72f6e62512cbce51e01a0670884195b9356ff7777a35c3a89d0d5d875`. The reviewer independently checked 1,632 retirement steps, mixed-arm conflicts, identity substitutions, aliases, all-member cancellation/retention, eight additional Lean kernel probes, 120 focused tests, strict harness types and the affected cached Lean proof targets. Approval covers the representation/retirement prerequisite only: actual quiescence, atomic controller/body cleanup, reachable progress, full wire agreement and Temporal refinement remain open.
 

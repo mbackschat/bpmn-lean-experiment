@@ -124,9 +124,9 @@ Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-
 
 Current result: the [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26, area dispositions and the rows an approved revision authorizes; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
 
-Next action: correction audit of the boundary-1 semantic checkpoint; then boundary AA-24 (vacuous SMI progress law). Residual: endpoint fuel derivation. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
+Next action: boundary AA-24 (vacuous SMI progress law). Residuals: endpoint fuel derivation and per-consumer batch walks ([AA-01/AA-02](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#findings-and-discriminators)). Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
 
-Last verification: narrow PMIS gates `/tmp/aa01-endpoint-root-gate-20261010` and full library `/tmp/aa01-full-library3-20261010` receipts; decisive theorems depend only on `propext`, `Classical.choice` and `Quot.sound`.
+Last verification: narrow PMIS gates `/tmp/aa01-endpoint-root-gate-20261010` and full library `/tmp/aa01-full-library-clean-20261010` (bound to `98c8bef4`) receipts; decisive theorems depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
