@@ -204,7 +204,7 @@ The armed state publishes exactly one open child User Task and one open Timer th
 
 Lane shape: proved
 
-Evidence: [SubProcessBoundaryTimerConformance.lean](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean) proves the selected quiescence/deadline victory relation, evaluator soundness, atomic child-scope-and-timer withdrawal, preservation, exact-time refusal, closure, and separating schedules. The result does not assume the still-open generic preservation of wait-key uniqueness or claim liveness outside the bounded schedules.
+Evidence: [SubProcessBoundaryTimerConformance.lean](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean) proves the selected quiescence/deadline victory relation, evaluator soundness, atomic child-scope-and-timer withdrawal, preservation, exact-time refusal, closure, and separating schedules. The result does not assume the still-open generic preservation of wait-key uniqueness or claim liveness outside the bounded schedules. Guaranteeing declarations: [`scope_and_deadline_arm_atomically`](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean#scope_and_deadline_arm_atomically), [`deadline_victory_cancels_the_child_region`](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean#deadline_victory_cancels_the_child_region), [`quiescent_completion_withdraws_the_deadline`](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean#quiescent_completion_withdraws_the_deadline), [`an_early_firing_preserves_the_armed_triple`](../../BpmnSemantics/SubProcessBoundaryTimerConformance.lean#an_early_firing_preserves_the_armed_triple).
 
 The proved Lean content is:
 

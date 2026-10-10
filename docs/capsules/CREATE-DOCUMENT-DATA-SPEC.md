@@ -8,7 +8,7 @@ Implemented current capsule contract; exact evidence status belongs in the appli
 
 Lane shape: proved
 
-Evidence: [the generic effect-completion owner](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) proves the declarative effect relation and evaluator soundness, while [the mapped-success conformance owner](../../BpmnSemantics/MappedSuccessConformance.lean) proves the exact mapping, Activity-local scope behavior, refusal preservation, and separating direct-patch non-law used by this CreateDocument profile; neither independently derives the A12 source binding or CIB host behavior.
+Evidence: [the generic effect-completion owner](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) proves the declarative effect relation and evaluator soundness, while [the mapped-success conformance owner](../../BpmnSemantics/MappedSuccessConformance.lean) proves the exact mapping, Activity-local scope behavior, refusal preservation, and separating direct-patch non-law used by this CreateDocument profile; neither independently derives the A12 source binding or CIB host behavior. Guaranteeing declarations: [`completeEffect_sound`](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean#completeEffect_sound), [`successful_result_maps_only_process_target`](../../BpmnSemantics/MappedSuccessConformance.lean#successful_result_maps_only_process_target), [`invalid_patch_is_rejected`](../../BpmnSemantics/MappedSuccessConformance.lean#invalid_patch_is_rejected), [`direct_patch_to_process_scope_is_a_non_law`](../../BpmnSemantics/MappedSuccessConformance.lean#direct_patch_to_process_scope_is_a_non_law).
 
 ## Role
 

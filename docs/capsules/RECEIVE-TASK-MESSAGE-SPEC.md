@@ -8,7 +8,7 @@
 
 Lane shape: proved
 
-Evidence: [ReceiveTaskConformance.lean](../../BpmnSemantics/ReceiveTaskConformance.lean) proves the selected Receive Task's exact source and program admission, direct-Message wait, delivery and refusal laws, and bounded closure witnesses. The result reuses the proved Message transition family without claiming general Receive Task transport or instantiation.
+Evidence: [ReceiveTaskConformance.lean](../../BpmnSemantics/ReceiveTaskConformance.lean) proves the selected Receive Task's exact source and program admission, direct-Message wait, delivery and refusal laws, and bounded closure witnesses. The result reuses the proved Message transition family without claiming general Receive Task transport or instantiation. Guaranteeing declarations: [`exact_definition_is_admitted`](../../BpmnSemantics/ReceiveTaskConformance.lean#exact_definition_is_admitted), [`activation_creates_exact_direct_subscription`](../../BpmnSemantics/ReceiveTaskConformance.lean#activation_creates_exact_direct_subscription), [`exact_direct_delivery_is_permitted`](../../BpmnSemantics/ReceiveTaskConformance.lean#exact_direct_delivery_is_permitted), [`every_direct_address_mismatch_preserves_state`](../../BpmnSemantics/ReceiveTaskConformance.lean#every_direct_address_mismatch_preserves_state).
 
 ### Declarative relation, evaluator, and laws
 

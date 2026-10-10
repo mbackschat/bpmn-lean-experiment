@@ -8,7 +8,7 @@ Implemented current capsule contract; exact evidence status belongs in the appli
 
 Lane shape: proved
 
-Evidence: [ServiceTaskEffectConformance.lean](../../BpmnSemantics/ServiceTaskEffectConformance.lean) proves the selected effect activation, exact-result completion, refusal, observation, and evaluator-soundness laws. This family-local result does not turn Temporal Activity execution or CIB host behavior into Lean semantics.
+Evidence: [ServiceTaskEffectConformance.lean](../../BpmnSemantics/ServiceTaskEffectConformance.lean) proves the selected effect activation, exact-result completion, refusal, observation, and evaluator-soundness laws. This family-local result does not turn Temporal Activity execution or CIB host behavior into Lean semantics. Guaranteeing declarations: [`successful_effect_trace_is_exact`](../../BpmnSemantics/ServiceTaskEffectConformance.lean#successful_effect_trace_is_exact), [`start_prefix_projects_one_effect_intent`](../../BpmnSemantics/ServiceTaskEffectConformance.lean#start_prefix_projects_one_effect_intent), [`wrong_effect_activation_is_rejected`](../../BpmnSemantics/ServiceTaskEffectConformance.lean#wrong_effect_activation_is_rejected), [`accept_any_effect_result_is_a_non_law`](../../BpmnSemantics/ServiceTaskEffectConformance.lean#accept_any_effect_result_is_a_non_law).
 
 ## Role
 

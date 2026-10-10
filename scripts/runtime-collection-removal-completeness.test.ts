@@ -5,26 +5,32 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 /**
- * Both removal routes must clean every live owner-keyed runtime collection.
+ * Both removal routes must assign every live owner-keyed runtime collection: a structural census.
  *
- * Two routes remove a live owner *by filtering every collection*, and they classify by different keys.
+ * Two routes remove a live owner by rebuilding every collection, and they classify by different keys.
  * Regional cancellation selects a scope occurrence and its descendants; called-instance removal
  * selects a process-instance closure, because a called root has no runtime parent and is therefore in
- * no subtree. A collection cleaned by one route and forgotten by the other is not a partial fix: it is
- * a state whose entries name owners that no longer exist, reachable only through the route that forgot
- * it, which is why such an omission survives every schedule the other route covers.
+ * no subtree. A collection assigned by one route and forgotten by the other is not a partial fix: it
+ * is a state whose entries name owners that no longer exist, reachable only through the route that
+ * forgot it, which is why such an omission survives every schedule the other route covers.
+ *
+ * The census reads the keys each route's returned literal assigns, never the value assigned. A
+ * collection passed through unchanged, or filtered by the wrong owner, therefore still counts as
+ * covered; the "still passes the census" tests keep that limit executable. Whether a route removes the
+ * records its owner closure names and keeps the others is owned by the behavioral
+ * packages/semantic-core/test/removal-ownership-graph.test.ts, which runs the real functions.
  *
  * `completeScope` also removes a scope occurrence and is deliberately not a third route here. It
  * removes only a quiescent occurrence, and quiescence excludes every owned wait, so there is nothing
- * for it to filter; a record that nonetheless survived would name a missing owner and trip the already
+ * for it to rebuild; a record that nonetheless survived would name a missing owner and trip the already
  * gated `DanglingWaitOwner`. Its withdrawal path refuses outright when the record is absent rather
- * than filtering collections, so this guard's shape does not describe it.
+ * than rebuilding collections, so this guard's shape does not describe it.
  *
- * The guard is source-derived because neither route is on the package surface and no registered
+ * The census is source-derived because neither route is on the package surface and no registered
  * program composes regional cancellation with a Call Activity, so no executable schedule reaches the
- * called-instance filter. Deriving the required set from `RuntimeState` rather than listing it makes
- * this cover the class: a collection added to the state without a filter in both routes fails here,
- * and so does deleting an existing filter from either.
+ * called-instance route. Deriving the required set from `RuntimeState` rather than listing it makes
+ * this cover the class: a collection added to the state without an assignment in both routes fails
+ * here, and so does deleting an existing assignment from either.
  */
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -45,13 +51,13 @@ const leanRemovalOwners = [
 ] as const;
 
 /**
- * The `RuntimeState` fields no removal route filters, each with the reason it is not an omission.
+ * The `RuntimeState` fields no removal route assigns, each with the reason it is not an omission.
  *
  * Monotonic fields are the substantive entries: activation counters and `endOccurrences` are
  * historical high-water marks, and a cancelled region's counts deliberately survive it so a later
  * occurrence of the same element cannot reuse a spent identity. Rewinding one would be the defect.
  */
-const unfilteredFields = new Map([
+const exemptFields = new Map([
   ["control", "scalar control state, not an owner-keyed collection"],
   ["initiationPending", "scalar admission flag, not an owner-keyed collection"],
   ["logicalTimeMs", "scalar clock, not an owner-keyed collection"],
@@ -146,7 +152,7 @@ function returnedLiteral(relativePath: string, signature: string): string {
  * a pattern narrow enough to match one field is also narrow enough to break on reformatting.
  */
 function withoutField(span: string, field: string): string {
-  const pattern = new RegExp(`^\\s{2,4}${field}:`);
+  const pattern = new RegExp(`^\\s{2,10}${field}:`);
   const kept: string[] = [];
   let depth = 0;
   let dropping = false;
@@ -167,9 +173,9 @@ function renamedField(span: string, field: string): string {
   );
 }
 
-function unfiltered(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>[]): string[] {
+function unassigned(fields: ReadonlySet<string>, ...covered: ReadonlySet<string>[]): string[] {
   return [...fields].filter((field) =>
-    !unfilteredFields.has(field) && !covered.some((keys) => keys.has(field))
+    !exemptFields.has(field) && !covered.some((keys) => keys.has(field))
   );
 }
 
@@ -193,9 +199,9 @@ function leanAssignedFields(literal: string): ReadonlySet<string> {
   return new Set([...literal.matchAll(/^    (\w+) :=/gm)].map((match) => match[1]!));
 }
 
-function leanUnfiltered(fields: ReadonlySet<string>, assigned: ReadonlySet<string>): string[] {
+function leanUnassigned(fields: ReadonlySet<string>, assigned: ReadonlySet<string>): string[] {
   return [...fields].filter((field) =>
-    !unfilteredFields.has(field === "activations" ? "taskActivations" : field) &&
+    !exemptFields.has(field === "activations" ? "taskActivations" : field) &&
     !assigned.has(field)
   );
 }
@@ -211,7 +217,7 @@ function missingScopedCollections(
 for (const [owner, signature] of [
   [calledOwner, calledRemoval], [regionOwner, regionRemoval],
 ] as const) {
-  test(`${owner} removes every nested owner-keyed data collection`, () => {
+  test(`${owner} assigns every nested owner-keyed data collection`, () => {
     const declared = topLevelKeys(braceSpan(read(runtimeStateOwner), "export type ScopedVariables = DeepReadonly<{"));
     const literal = braceSpan(returnedLiteral(owner, signature), "variables: {");
     const assigned = topLevelKeys(literal);
@@ -228,7 +234,7 @@ for (const [owner, signature] of [
 }
 
 for (const [owner, signature] of leanRemovalOwners) {
-  test(`${owner} removes every nested owner-keyed data collection`, () => {
+  test(`${owner} assigns every nested owner-keyed data collection`, () => {
     const declared = leanStructureFields(read(leanDataOwner), "ScopedVariables");
     const literal = leanRemovalLiteral(read(owner), signature);
     const variables = literal.split("    variables :=")[1];
@@ -246,15 +252,15 @@ for (const [owner, signature] of leanRemovalOwners) {
 }
 
 for (const [owner, signature] of leanRemovalOwners) {
-  test(`${owner} classifies every live RuntimeState collection`, () => {
+  test(`${owner} assigns or exempts every live RuntimeState collection`, () => {
     const fields = leanRuntimeFields(read(leanRuntimeStateOwner));
     assert.ok(fields.has("compensationHandlerEffectWaits") && fields.has("activityOccurrences"));
     const assigned = leanAssignedFields(leanRemovalLiteral(read(owner), signature));
-    assert.deepEqual(leanUnfiltered(fields, assigned), [], owner);
+    assert.deepEqual(leanUnassigned(fields, assigned), [], owner);
   });
 }
 
-test("Lean removal coverage discovers new fields and missing assignments independently", () => {
+test("Lean assignment census discovers new fields and missing assignments independently", () => {
   const fields = leanRuntimeFields(read(leanRuntimeStateOwner));
   const extended = leanRuntimeFields(read(leanRuntimeStateOwner).replace(
     "structure RuntimeState where\n",
@@ -263,16 +269,16 @@ test("Lean removal coverage discovers new fields and missing assignments indepen
   for (const [owner, signature] of leanRemovalOwners) {
     const literal = leanRemovalLiteral(read(owner), signature);
     const assigned = leanAssignedFields(literal);
-    const existingOmissions = leanUnfiltered(fields, assigned);
+    const existingOmissions = leanUnassigned(fields, assigned);
     assert.deepEqual(
-      leanUnfiltered(extended, assigned), ["reviewOnlyLiveOwners", ...existingOmissions], owner,
+      leanUnassigned(extended, assigned), ["reviewOnlyLiveOwners", ...existingOmissions], owner,
     );
     for (const field of assigned) {
       if (!fields.has(field)) continue;
       const mutated = literal.replace(new RegExp(`^(    )${field} :=`, "m"), "$1omitted :=");
       assert.notEqual(mutated, literal, `${owner}: ${field}`);
       assert.deepEqual(
-        leanUnfiltered(fields, leanAssignedFields(mutated)),
+        leanUnassigned(fields, leanAssignedFields(mutated)),
         [...fields].filter((key) => key === field || existingOmissions.includes(key)),
         `${owner}: ${field}`,
       );
@@ -280,7 +286,7 @@ test("Lean removal coverage discovers new fields and missing assignments indepen
   }
 });
 
-test("every live runtime collection is filtered by the called-instance removal", () => {
+test("the called-instance removal assigns every live runtime collection", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   assert.ok(fields.has("activityOccurrences"), "RuntimeState fields were not parsed");
   assert.ok(
@@ -288,30 +294,30 @@ test("every live runtime collection is filtered by the called-instance removal",
       fields.has("parallelMultiInstanceControllers"),
     "optional RuntimeState fields were not parsed",
   );
-  const filtered = topLevelKeys(returnedLiteral(calledOwner, calledRemoval));
-  assert.deepEqual(unfiltered(fields, filtered), []);
+  const assigned = topLevelKeys(returnedLiteral(calledOwner, calledRemoval));
+  assert.deepEqual(unassigned(fields, assigned), []);
 });
 
-test("every live runtime collection is filtered by regional cancellation or its delegate", () => {
+test("regional cancellation or its delegate assigns every live runtime collection", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   const regionSource = read(regionOwner);
   // The region route reaches `calledProcessOccurrences` only through the delegate whose result it
   // spreads. Counting that as coverage is sound only while both the call and the spread are present.
   assert.match(regionSource, /const withoutCalledProcesses = removeCalledProcessSubtreesForCallers\(/);
   assert.match(regionSource, /\.\.\.withoutCalledProcesses,/);
-  const filtered = topLevelKeys(braceSpan(braceSpan(regionSource, regionRemoval), "return {"));
-  assert.deepEqual(unfiltered(fields, filtered, regionDelegatedFields), []);
+  const assigned = topLevelKeys(braceSpan(braceSpan(regionSource, regionRemoval), "return {"));
+  assert.deepEqual(unassigned(fields, assigned, regionDelegatedFields), []);
 });
 
-test("no field claims an unfiltered reason while a route still filters it", () => {
-  const filtered = new Set([
+test("no exempt field is still assigned by a removal route", () => {
+  const assigned = new Set([
     ...topLevelKeys(returnedLiteral(calledOwner, calledRemoval)),
     ...topLevelKeys(returnedLiteral(regionOwner, regionRemoval)),
   ]);
-  assert.deepEqual([...unfilteredFields.keys()].filter((field) => filtered.has(field)), []);
+  assert.deepEqual([...exemptFields.keys()].filter((field) => assigned.has(field)), []);
 });
 
-test("dropping one filtered collection from either route is reported", () => {
+test("dropping one assigned collection from either route is reported", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   const noDelegation: ReadonlySet<string> = new Set();
   for (const [relativePath, signature, delegated] of [
@@ -322,14 +328,14 @@ test("dropping one filtered collection from either route is reported", () => {
     const mutated = withoutField(literal, "activityOccurrences");
     assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${relativePath}`);
     assert.deepEqual(
-      unfiltered(fields, topLevelKeys(mutated), delegated),
+      unassigned(fields, topLevelKeys(mutated), delegated),
       ["activityOccurrences"],
       relativePath,
     );
   }
 });
 
-test("renaming either optional controller filter is reported independently in both routes", () => {
+test("renaming either optional controller assignment is reported independently in both routes", () => {
   const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
   const noDelegation: ReadonlySet<string> = new Set();
   for (const [relativePath, signature, delegated] of [
@@ -344,10 +350,62 @@ test("renaming either optional controller filter is reported independently in bo
       const mutated = renamedField(literal, field);
       assert.notEqual(mutated, literal, `seeded mutation matched no ${field} in ${relativePath}`);
       assert.deepEqual(
-        unfiltered(fields, topLevelKeys(mutated), delegated),
+        unassigned(fields, topLevelKeys(mutated), delegated),
         [field],
         `${relativePath}: ${field}`,
       );
     }
   }
+});
+
+// The three tests below pin what this census cannot do. A mutant that keeps every key but filters
+// nothing, or filters by the wrong owner, passes it; only the behavioral ownership-graph test fails it.
+const routes = [
+  [calledOwner, calledRemoval, new Set<string>()],
+  [regionOwner, regionRemoval, regionDelegatedFields],
+] as const;
+
+test("a pass-through or inverted top-level assignment still passes the census", () => {
+  const fields = topLevelKeys(braceSpan(read(runtimeStateOwner), runtimeStateDeclaration));
+  for (const [relativePath, signature, delegated] of routes) {
+    const literal = returnedLiteral(relativePath, signature);
+    for (const [mutant, assignment] of [
+      ["pass-through", "activityOccurrences: state.activityOccurrences,"],
+      ["inverted filter", "activityOccurrences: state.activityOccurrences.filter(({ owner }) => isRemoved(owner)),"],
+    ] as const) {
+      const mutated = `${withoutField(literal, "activityOccurrences")}\n    ${assignment}`;
+      assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${relativePath}`);
+      assert.deepEqual(unassigned(fields, topLevelKeys(mutated), delegated), [], `${relativePath}: ${mutant}`);
+    }
+  }
+});
+
+test("a pass-through nested data assignment still passes the census", () => {
+  const declared = topLevelKeys(braceSpan(read(runtimeStateOwner), "export type ScopedVariables = DeepReadonly<{"));
+  for (const [owner, signature] of routes) {
+    const literal = braceSpan(returnedLiteral(owner, signature), "variables: {");
+    const mutated = `${withoutField(literal, "scopes")}\n      scopes: state.variables.scopes,`;
+    assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${owner}`);
+    assert.deepEqual(missingScopedCollections(declared, topLevelKeys(mutated)), [], owner);
+  }
+});
+
+test("a pass-through or inverted Lean assignment still passes the census", () => {
+  const fields = leanRuntimeFields(read(leanRuntimeStateOwner));
+  for (const [owner, signature] of leanRemovalOwners) {
+    const literal = leanRemovalLiteral(read(owner), signature);
+    const existingOmissions = leanUnassigned(fields, leanAssignedFields(literal));
+    for (const [mutant, pattern, replacement] of [
+      ["pass-through", /^(    eventRaces := state\.eventRaces)\.filter[^\n]*/m, "$1"],
+      ["inverted filter", /^(    eventRaces := state\.eventRaces\.filter fun race => )!/m, "$1"],
+    ] as const) {
+      const mutated = literal.replace(pattern, replacement);
+      assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${owner}`);
+      assert.deepEqual(leanUnassigned(fields, leanAssignedFields(mutated)), existingOmissions, `${owner}: ${mutant}`);
+    }
+  }
+});
+
+test("the behavioral owner of the filtering claim exists", () => {
+  assert.doesNotThrow(() => read("packages/semantic-core/test/removal-ownership-graph.test.ts"));
 });

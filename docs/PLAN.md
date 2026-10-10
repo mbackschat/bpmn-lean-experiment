@@ -124,7 +124,7 @@ Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-
 
 Current result: the [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26, area dispositions and the rows an approved revision authorizes; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
 
-Next action: review-free script rows AA-12, AA-15 (AA-14 committed); then AA-16, AA-17 and AA-26 under approved Amendment 1 (AA-03/04/08/09/19/22 and the AA-18 family extension owner-deferred). Residuals: endpoint fuel derivation, per-consumer batch walks ([AA-01/AA-02](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#findings-and-discriminators)), the AA-24 search of the other 23 hypotheses. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
+Next action: AA-21 with the Lean part of AA-12 (AA-12 script/TypeScript, AA-14 and AA-15 committed); then AA-16, AA-17 and AA-26 under approved Amendment 1 (AA-03/04/08/09/19/22 and the AA-18 family extension owner-deferred). Residuals: endpoint fuel derivation, per-consumer batch walks ([AA-01/AA-02](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#findings-and-discriminators)), the AA-24 search of the other 23 hypotheses. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
 
 Last verification: AA-24 narrow Lean targets and the SMI aggregate pass; cost receipts `/tmp/aa24-cost-progress-20261010` and `/tmp/aa24-cost-aggregate-20261010` (3 GiB cgroup, no events); new theorems depend only on `propext`, `Classical.choice` and `Quot.sound`.
 

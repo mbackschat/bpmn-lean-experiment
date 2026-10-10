@@ -229,7 +229,7 @@ No global subscription registry, broker queue, correlation index, or outbound-me
 
 Lane shape: checked
 
-Evidence: [The Intermediate Catch Message conformance owner](../../BpmnSemantics/IntermediateCatchMessageConformance.lean) kernel-checks the exact Message-first and reverse-order programs, their bounded closures, direct-address refusals, and retained public observations; the six enumerated mismatch fixtures do not quantify over a seventh address outside `mismatchedDeliveries`.
+Evidence: [The Intermediate Catch Message conformance owner](../../BpmnSemantics/IntermediateCatchMessageConformance.lean) kernel-checks the exact Message-first and reverse-order programs, their bounded closures, direct-address refusals, and retained public observations; the six enumerated mismatch fixtures do not quantify over a seventh address outside `mismatchedDeliveries`. Guaranteeing declarations: [`scenario_matches_expected_trace`](../../BpmnSemantics/IntermediateCatchMessageConformance.lean#scenario_matches_expected_trace), [`catch_event_rejects_direct_message_channel`](../../BpmnSemantics/IntermediateCatchMessageConformance.lean#catch_event_rejects_direct_message_channel), [`every_message_mismatch_preserves_state`](../../BpmnSemantics/IntermediateCatchMessageConformance.lean#every_message_mismatch_preserves_state), [`reverse_order_is_admitted_and_preserves_progress`](../../BpmnSemantics/IntermediateCatchMessageConformance.lean#reverse_order_is_admitted_and_preserves_progress).
 
 The new runtime family requires a declarative `ProgramStep` case distinct from the executable evaluator. Every evaluator-produced subscription activation and delivery transition must have a checked soundness proof into that relation.
 

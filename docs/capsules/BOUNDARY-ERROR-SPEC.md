@@ -237,7 +237,7 @@ The committed Error route remains definition-only. The active waiting projection
 
 Lane shape: proved
 
-Evidence: [the mapped boundary Error conformance module](../../BpmnSemantics/MappedBoundaryErrorConformance.lean) proves the bounded matching business-error route, exact mapping and cleanup trace, optional-message independence, mismatch refusal, and evaluator soundness; it does not establish the excluded unhandled or nested-scope Error accounts.
+Evidence: [the mapped boundary Error conformance module](../../BpmnSemantics/MappedBoundaryErrorConformance.lean) proves the bounded matching business-error route, exact mapping and cleanup trace, optional-message independence, mismatch refusal, and evaluator soundness; it does not establish the excluded unhandled or nested-scope Error accounts. Guaranteeing declarations: [`caught_error_trace_is_exact`](../../BpmnSemantics/MappedBoundaryErrorConformance.lean#caught_error_trace_is_exact), [`mismatched_error_code_is_rejected`](../../BpmnSemantics/MappedBoundaryErrorConformance.lean#mismatched_error_code_is_rejected), [`message_does_not_affect_caught_transition`](../../BpmnSemantics/MappedBoundaryErrorConformance.lean#message_does_not_affect_caught_transition).
 
 Checked laws:
 

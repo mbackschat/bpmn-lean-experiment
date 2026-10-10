@@ -158,7 +158,7 @@ Canonical observation publishes the existing Process status, root-owned control 
 
 Lane shape: proved
 
-Evidence: [TimerStartConformance.lean](../../BpmnSemantics/TimerStartConformance.lean) proves the selected Timer Start admission, lowering, evaluator soundness, cross-kind refusal, instance separation, exact closure, and normalized downstream-observation account. It does not prove general Timer expressions, recurrence, deployment scheduling, fairness, or exactly-once product delivery.
+Evidence: [TimerStartConformance.lean](../../BpmnSemantics/TimerStartConformance.lean) proves the selected Timer Start admission, lowering, evaluator soundness, cross-kind refusal, instance separation, exact closure, and normalized downstream-observation account. It does not prove general Timer expressions, recurrence, deployment scheduling, fairness, or exactly-once product delivery. Guaranteeing declarations: [`exact_lowering_preserves_timer_start`](../../BpmnSemantics/TimerStartConformance.lean#exact_lowering_preserves_timer_start), [`timer_initiation_evaluator_is_sound`](../../BpmnSemantics/TimerStartConformance.lean#timer_initiation_evaluator_is_sound), [`distinct_fresh_instances_do_not_alias`](../../BpmnSemantics/TimerStartConformance.lean#distinct_fresh_instances_do_not_alias), [`exact_closure_and_overflow_boundary`](../../BpmnSemantics/TimerStartConformance.lean#exact_closure_and_overflow_boundary), [`normalized_downstream_observations_agree`](../../BpmnSemantics/TimerStartConformance.lean#normalized_downstream_observations_agree).
 
 New cohesive owners hold Timer Start admission, transition, and conformance facts. Existing near-limit execution and lowering owners receive only exhaustive dispatch or extracted shared mechanics.
 

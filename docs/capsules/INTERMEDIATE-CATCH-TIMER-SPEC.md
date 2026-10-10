@@ -20,7 +20,7 @@ Temporal elapsed time is evidence that the physical minimum delay occurred. It i
 
 Lane shape: proved
 
-Evidence: [The Intermediate Catch Timer conformance owner](../../BpmnSemantics/IntermediateCatchTimerConformance.lean) establishes the admitted `PT1S` lowering, exact-deadline transition, declarative early-firing non-law, full occurrence/time refusal, and canonical observation boundary; other duration forms, competing timers, and general timer semantics remain excluded.
+Evidence: [The Intermediate Catch Timer conformance owner](../../BpmnSemantics/IntermediateCatchTimerConformance.lean) establishes the admitted `PT1S` lowering, exact-deadline transition, declarative early-firing non-law, full occurrence/time refusal, and canonical observation boundary; other duration forms, competing timers, and general timer semantics remain excluded. Guaranteeing declarations: [`lowered_program_is_well_formed`](../../BpmnSemantics/IntermediateCatchTimerConformance.lean#lowered_program_is_well_formed), [`exact_deadline_scenario_trace_is_exact`](../../BpmnSemantics/IntermediateCatchTimerConformance.lean#exact_deadline_scenario_trace_is_exact), [`early_timer_firing_is_not_permitted`](../../BpmnSemantics/IntermediateCatchTimerConformance.lean#early_timer_firing_is_not_permitted), [`early_timer_firing_is_rejected`](../../BpmnSemantics/IntermediateCatchTimerConformance.lean#early_timer_firing_is_rejected).
 
 ## Claim boundary
 

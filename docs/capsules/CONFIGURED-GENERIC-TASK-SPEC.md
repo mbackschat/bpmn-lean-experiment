@@ -173,7 +173,7 @@ All rules except `CTASK-HOST-01` are standards-plus-profile rules. `CTASK-HOST-0
 
 Lane shape: checked
 
-Evidence: [the configured Task conformance module](../../BpmnSemantics/ConfiguredTaskConformance.lean) checks the exact configured-node admission, lowering, decoder, closure, and refusal matrix with fixed kernel-decided fixtures; the imported generic effect evaluator and soundness laws establish routing into the selected relation but do not prove configured lowering for arbitrary checked graphs or Programs.
+Evidence: [the configured Task conformance module](../../BpmnSemantics/ConfiguredTaskConformance.lean) checks the exact configured-node admission, lowering, decoder, closure, and refusal matrix with fixed kernel-decided fixtures; the imported generic effect evaluator and soundness laws establish routing into the selected relation but do not prove configured lowering for arbitrary checked graphs or Programs. Guaranteeing declarations: [`checked_binding_topology_and_arity_are_exact`](../../BpmnSemantics/ConfiguredTaskConformance.lean#checked_binding_topology_and_arity_are_exact), [`configured_task_lowering_is_endpoint_only`](../../BpmnSemantics/ConfiguredTaskConformance.lean#configured_task_lowering_is_endpoint_only), [`descriptor_and_order_drift_refuse_before_runtime`](../../BpmnSemantics/ConfiguredTaskConformance.lean#descriptor_and_order_drift_refuse_before_runtime), [`start_closure_is_exact_and_stable`](../../BpmnSemantics/ConfiguredTaskConformance.lean#start_closure_is_exact_and_stable).
 
 Required checked facts are:
 

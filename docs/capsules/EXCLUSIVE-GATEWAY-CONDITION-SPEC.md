@@ -8,7 +8,7 @@
 
 Lane shape: proved
 
-Evidence: [The Simple Boolean gateway conformance owner](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean) proves exact parsing/evaluation laws, first-true tail irrelevance, default selection, and selected-output ownership for the admitted choice account; XPath, JUEL, broader expressions, and other gateway cardinalities remain outside the proof.
+Evidence: [The Simple Boolean gateway conformance owner](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean) proves exact parsing/evaluation laws, first-true tail irrelevance, default selection, and selected-output ownership for the admitted choice account; XPath, JUEL, broader expressions, and other gateway cardinalities remain outside the proof. Guaranteeing declarations: [`string_equals_expression_parses_exactly`](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean#string_equals_expression_parses_exactly), [`first_true_ignores_tail`](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean#first_true_ignores_tail), [`all_false_candidates_select_the_default`](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean#all_false_candidates_select_the_default), [`selected_output_owned`](../../BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean#selected_output_owned).
 
 ## Question
 

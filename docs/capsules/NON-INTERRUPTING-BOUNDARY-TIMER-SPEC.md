@@ -12,7 +12,7 @@ Every evidence lane is closed: source admission and lowering, Lean, the independ
 
 Lane shape: proved
 
-Evidence: [The non-interrupting boundary Timer conformance owner](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) proves exact disposition admission, atomic arming, host-preserving deadline firing, live-or-consumed-deadline completion, refusal, and two-branch quiescence for the admitted one-shot profile; repetition and Multi-Instance remain outside the proof.
+Evidence: [The non-interrupting boundary Timer conformance owner](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean) proves exact disposition admission, atomic arming, host-preserving deadline firing, live-or-consumed-deadline completion, refusal, and two-branch quiescence for the admitted one-shot profile; repetition and Multi-Instance remain outside the proof. Guaranteeing declarations: [`activity_and_deadline_arm_atomically`](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean#activity_and_deadline_arm_atomically), [`firing_spawns_the_handler_and_preserves_its_host`](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean#firing_spawns_the_handler_and_preserves_its_host), [`the_consumed_deadline_cannot_fire_twice`](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean#the_consumed_deadline_cannot_fire_twice), [`the_process_completes_after_both_branches`](../../BpmnSemantics/NonInterruptingBoundaryTimerConformance.lean#the_process_completes_after_both_branches).
 
 ### Laws, non-laws, and separating witnesses
 

@@ -162,7 +162,7 @@ Raw incident evidence adds one optional incident-specific diagnostics snapshot c
 
 Lane shape: proved
 
-Evidence: [ServiceTaskIncidentRetryConformance.lean](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean) proves the selected generation-1 report/retry relations, evaluator soundness, exact wait/incident restoration, state preservation, refusal, and strict wire identity. It does not prove cancellation or incident cleanup beyond retry restoration.
+Evidence: [ServiceTaskIncidentRetryConformance.lean](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean) proves the selected generation-1 report/retry relations, evaluator soundness, exact wait/incident restoration, state preservation, refusal, and strict wire identity. It does not prove cancellation or incident cleanup beyond retry restoration. Guaranteeing declarations: [`report_evaluator_is_sound_for_literal_generation_one`](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean#report_evaluator_is_sound_for_literal_generation_one), [`retry_evaluator_is_sound_for_exact_incident`](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean#retry_evaluator_is_sound_for_exact_incident), [`retry_preserves_complete_suspended_effect_and_runtime_context`](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean#retry_preserves_complete_suspended_effect_and_runtime_context), [`stale_incident_retry_is_rejected_with_exact_state`](../../BpmnSemantics/ServiceTaskIncidentRetryConformance.lean#stale_incident_retry_is_rejected_with_exact_state).
 
 A new `Incident.lean` module owns the report/retry relations and executable clauses. A new conformance module proves:
 

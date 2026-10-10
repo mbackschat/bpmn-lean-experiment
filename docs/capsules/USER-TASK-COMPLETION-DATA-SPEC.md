@@ -8,7 +8,7 @@
 
 Lane shape: proved
 
-Evidence: [UserTaskCompletionDataConformance.lean](../../BpmnSemantics/UserTaskCompletionDataConformance.lean) proves exact string/null Process-binding merge, full scoped-state preservation on mismatched completion, and the capsule's bounded completion-data observations. It does not claim BPMN Data Association, task-local output mapping, or a wider value domain.
+Evidence: [UserTaskCompletionDataConformance.lean](../../BpmnSemantics/UserTaskCompletionDataConformance.lean) proves exact string/null Process-binding merge, full scoped-state preservation on mismatched completion, and the capsule's bounded completion-data observations. It does not claim BPMN Data Association, task-local output mapping, or a wider value domain. Guaranteeing declarations: [`exact_completion_merges_process_bindings`](../../BpmnSemantics/UserTaskCompletionDataConformance.lean#exact_completion_merges_process_bindings), [`mismatched_completion_preserves_all_scoped_variables`](../../BpmnSemantics/UserTaskCompletionDataConformance.lean#mismatched_completion_preserves_all_scoped_variables), [`completion_value_domain_is_profile_closed`](../../BpmnSemantics/UserTaskCompletionDataConformance.lean#completion_value_domain_is_profile_closed).
 
 ## Question
 

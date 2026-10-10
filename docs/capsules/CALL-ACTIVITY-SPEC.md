@@ -159,7 +159,7 @@ Temporal Workflow address and semantic task address become explicitly separate i
 
 Lane shape: proved
 
-Evidence: [the Call Activity conformance module](../../BpmnSemantics/CallActivityConformance.lean) proves the bounded invoke/return relations, derived-identity properties, ownership, quiescence, and exactly-once return under their stated hypotheses; finite fixtures remain evidence only for the exact admitted traces and refusals.
+Evidence: [the Call Activity conformance module](../../BpmnSemantics/CallActivityConformance.lean) proves the bounded invoke/return relations, derived-identity properties, ownership, quiescence, and exactly-once return under their stated hypotheses; finite fixtures remain evidence only for the exact admitted traces and refusals. Guaranteeing declarations: [`called_wait_uses_derived_identity_and_caller_observation_identity`](../../BpmnSemantics/CallActivityConformance.lean#called_wait_uses_derived_identity_and_caller_observation_identity), [`return_refuses_nonquiescent_called_scope`](../../BpmnSemantics/CallActivityConformance.lean#return_refuses_nonquiescent_called_scope), [`called_return_withdraws_exact_controller`](../../BpmnSemantics/CallActivityConformance.lean#called_return_withdraws_exact_controller).
 
 One answer-free schedule starts with empty variables, completes the called User Task by its derived ID, completes the caller User Task by the original caller ID, and reaches terminal state. The two intermediate observations separate this account from embedded-scope identity, early caller continuation, and terminal-only agreement.
 

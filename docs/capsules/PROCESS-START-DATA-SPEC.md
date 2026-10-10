@@ -8,7 +8,7 @@
 
 Lane shape: proved
 
-Evidence: [ProcessStartDataConformance.lean](../../BpmnSemantics/ProcessStartDataConformance.lean) proves the bounded fresh-start installation and wrong-Process refusal laws, including exact Process-scope visibility and the absence of an Activity-local scope. This family-local basis does not claim BPMN data modeling or general start semantics.
+Evidence: [ProcessStartDataConformance.lean](../../BpmnSemantics/ProcessStartDataConformance.lean) proves the bounded fresh-start installation and wrong-Process refusal laws, including exact Process-scope visibility and the absence of an Activity-local scope. This family-local basis does not claim BPMN data modeling or general start semantics. Guaranteeing declarations: [`running_start_installs_only_process_bindings`](../../BpmnSemantics/ProcessStartDataConformance.lean#running_start_installs_only_process_bindings), [`exact_start_data_is_visible_at_first_wait`](../../BpmnSemantics/ProcessStartDataConformance.lean#exact_start_data_is_visible_at_first_wait), [`wrong_process_start_installs_no_data`](../../BpmnSemantics/ProcessStartDataConformance.lean#wrong_process_start_installs_no_data).
 
 ## Question and authority
 

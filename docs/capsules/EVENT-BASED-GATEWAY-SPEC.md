@@ -8,7 +8,7 @@
 
 Lane shape: proved
 
-Evidence: [The Event-Based Gateway conformance owner](../../BpmnSemantics/EventBasedGatewayConformance.lean) proves the selected two-member race's arming relation, evaluator soundness, exact membership and ownership, winner exclusivity, and mismatch preservation; it explicitly excludes general trigger sets, repeated races, and simultaneous host readiness.
+Evidence: [The Event-Based Gateway conformance owner](../../BpmnSemantics/EventBasedGatewayConformance.lean) proves the selected two-member race's arming relation, evaluator soundness, exact membership and ownership, winner exclusivity, and mismatch preservation; it explicitly excludes general trigger sets, repeated races, and simultaneous host readiness. Guaranteeing declarations: [`exact_arming_is_permitted_by_the_declarative_relation`](../../BpmnSemantics/EventBasedGatewayConformance.lean#exact_arming_is_permitted_by_the_declarative_relation), [`both_exact_winners_are_permitted_by_the_declarative_relation`](../../BpmnSemantics/EventBasedGatewayConformance.lean#both_exact_winners_are_permitted_by_the_declarative_relation), [`armed_state_has_exact_members_and_monotonic_identities`](../../BpmnSemantics/EventBasedGatewayConformance.lean#armed_state_has_exact_members_and_monotonic_identities), [`message_winner_withdraws_timer_before_task_observation`](../../BpmnSemantics/EventBasedGatewayConformance.lean#message_winner_withdraws_timer_before_task_observation), [`every_wrong_race_stimulus_preserves_the_armed_state`](../../BpmnSemantics/EventBasedGatewayConformance.lean#every_wrong_race_stimulus_preserves_the_armed_state).
 
 ### Closure, enabledness, laws, and witnesses
 
