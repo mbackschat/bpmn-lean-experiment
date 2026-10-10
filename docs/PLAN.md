@@ -122,11 +122,11 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) before further implementation, as directed by the owner. Lean, affected TypeScript and causal guidelines/scripts remain in scope.
 
-Current result: `b0be1117` plus an uncommitted draft adding verified AA-14 to AA-22 and extending earlier rows. Three areas have per-file dispositions; 428 open Lean files have only a signal census. AA-11/AA-20 outcomes and AA-13 admission need reviewed contracts first.
+Current result: verified findings AA-01 to AA-26; every area has assessor dispositions (295 finding, 271 retain, 312 open of 878 Lean files). AA-24 shows a vacuous proved SMI progress law. AA-11/AA-20/AA-23 outcomes and AA-13 admission need reviewed contracts first.
 
-Next action: commit the draft apart from the PMIS pilot/red tests; obtain one fresh cold proposal review; finish execution, Multi-Instance, events and control-flow assessment. One sub-agent at a time; census work runs as scripts.
+Next action: one fresh cold proposal review of the committed revision; then resolve required edits and start the PMIS pilot placement correction. One sub-agent at a time; census work runs as scripts.
 
-Last verification: `/tmp/assurance-proposal-docs-20261010e` document guards. `/tmp/assurance-pmis-full-library-20261010` stopped at exit 130, so no pilot claim. AA-13/AA-18 probes rerun against existing `dist/`.
+Last verification: document guards 44/44 on this revision; core-Lean numeric probe for AA-13. `/tmp/assurance-pmis-full-library-20261010` stopped at exit 130, so no pilot claim.
 
 Unresolved: remaining whole-tree inspection and proposal findings; PMIS resumption, stable-wait and complete publication; hosted qualification. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
