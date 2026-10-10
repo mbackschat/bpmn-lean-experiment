@@ -560,6 +560,18 @@ test("unbound mentions are counted by default and listed only on request", () =>
   );
 });
 
+test("the command narrows a docs target to its linking maps and keeps all maps for an unlinked path", () => {
+  const maps = (target: string): ReadonlyArray<string> => execFileSync(
+    process.execPath,
+    ["scripts/what-binds.ts", target],
+    { cwd: projectRoot, encoding: "utf8" },
+  ).split("\n").filter((line) => line.startsWith("MAP "));
+  assert.deepEqual(maps("docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md"), [
+    "MAP TEMPORAL-HOSTING docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
+  ]);
+  assert.equal(maps("docs/NO-SUCH-DOCUMENT-LINKED-BY-NO-MAP.md").length, 7);
+});
+
 test("the command reports implementation maps and fails closed for an unknown root path", () => {
   const output = execFileSync(
     process.execPath,

@@ -45,9 +45,14 @@ import {
 } from "./source-measure.ts";
 import {
   assertCanonicalRepositoryPath,
+  documentRouting,
   implementationMapRoutes,
+  type DocumentRouting,
 } from "./document-control-plane.ts";
-import { parseImplementationMapDirectory } from "./structural-map-routes.ts";
+import {
+  parseImplementationMapDirectory,
+  type ImplementationMapDirectoryEntry,
+} from "./structural-map-routes.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const runCommand = promisify(execFile);
@@ -283,6 +288,19 @@ async function readIfPresent(target: string): Promise<string | null> {
   }
 }
 
+/**
+ * Link evidence for narrowing `docs/` targets; loaded only when a target needs it so a code path
+ * never depends on the documents being readable.
+ */
+async function loadDocumentRouting(
+  directory: ReadonlyMap<string, ImplementationMapDirectoryEntry>,
+): Promise<DocumentRouting> {
+  const paths = [...directory.values()].map(({ path: mapPath }) => mapPath).concat("docs/PLAN.md");
+  const documents = await Promise.all(paths.map(async (documentPath) =>
+    [documentPath, await readFile(path.join(projectRoot, documentPath), "utf8")] as const));
+  return documentRouting(directory, new Map(documents));
+}
+
 async function main(args: ReadonlyArray<string>): Promise<void> {
   const listMentions = args.includes("--mentions");
   const targets = args.filter((arg) => arg !== "--mentions");
@@ -298,6 +316,9 @@ async function main(args: ReadonlyArray<string>): Promise<void> {
   if (parsedDirectory.errors.length > 0) {
     throw new Error(parsedDirectory.errors.join("\n"));
   }
+  const routing = targets.some((target) => target.startsWith("docs/"))
+    ? await loadDocumentRouting(parsedDirectory.directory)
+    : undefined;
   for (const target of targets) {
     const bindingLines = reportLines({
       target,
@@ -307,7 +328,7 @@ async function main(args: ReadonlyArray<string>): Promise<void> {
     const [targetLine, ...remainingLines] = bindingLines;
     const lines = [
       targetLine,
-      ...implementationMapRoutes(target, parsedDirectory.directory).map(({ id, file }) =>
+      ...implementationMapRoutes(target, parsedDirectory.directory, routing).map(({ id, file }) =>
         `MAP ${id} ${file}`
       ),
       ...remainingLines,

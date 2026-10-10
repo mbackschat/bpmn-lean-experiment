@@ -408,6 +408,7 @@ import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
 import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorReachabilityProofs
 import BpmnSemantics.SerialBusinessTaskConformance
 import BpmnSemantics.MixedTaskBusinessErrorConformance
+import BpmnSemantics.AssuranceAxiomFootprint
 
 /-! Root of the BPMN semantic contract library.
 

@@ -1,6 +1,6 @@
 # Implementation map
 
-This repository-wide map is the mandatory implementation-status router. Read it after [PLAN.md](PLAN.md), then read every detail map named by the active work item or resolved target paths. Exact family status, evidence, and absences live only in the routed detail maps.
+This repository-wide map is the mandatory implementation-status router. Read it after [PLAN.md](PLAN.md), then read the detail maps resolved for the concrete target paths, or every detail map the active work item names while target paths are unknown. Exact family status, evidence, and absences live only in the routed detail maps.
 
 **Frontend architecture discussion or recommendation:** first follow [Before frontend recommendations](../CLAUDE.md#before-frontend-recommendations). It routes the earlier stack research, adopted architecture decisions and reopen conditions, information architecture, and UI design; reading the implementation map alone is insufficient for choosing a router or state-management approach.
 
@@ -26,7 +26,7 @@ This is not a general BPMN engine, an OMG Process Execution Conformance result, 
 | `BPM-PLATFORM` | `implemented` | [BPM platform](BPM-PLATFORM-IMPLEMENTATION-MAP.md) | `platform/`, `showcase/`, `workers/`, deployment roots, routed `docs/` and root documentation |
 | `ASSURANCE-ADOPTION` | `implemented` | [Assurance and adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) | `adoption/`, `model-corpus/`, `packages/differential/`, `runners/`, `scenarios/`, `scripts/`, root tooling, root Lean entry points, routed `docs/` and root documentation |
 
-The executable inventory conservatively routes an overridden or newly named `docs/` path to all six maps; an active work entry or an explicitly named area may narrow that set by subject. It independently covers tracked and pending implementation-bearing paths and must agree with this table.
+The executable inventory routes a `docs/` path to the detail maps that link it, a detail map to itself, and [PLAN.md](PLAN.md) and this router to the maps the active work item links; a `docs/` path no detail map links keeps every map because nothing identifies its owner. It independently covers tracked and pending implementation-bearing paths and must agree with this table.
 
 ## Cross-area invariants
 

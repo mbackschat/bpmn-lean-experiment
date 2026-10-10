@@ -12,6 +12,7 @@ import {
   assertPlanControlPlane,
   assertRootImplementationMap,
   assertTrackedPathRoutes,
+  documentRouting,
   documentSection,
   parseOrderedWork,
   planGateTokenFindings,
@@ -30,6 +31,7 @@ import {
 import {
   parseImplementationMapDirectory,
   validateStructuralMapRoutes,
+  type ImplementationMapDirectoryEntry,
 } from "./structural-map-routes.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -311,6 +313,78 @@ test("routes overrides and explicit multi-area paths without plan knowledge", ()
   ]);
   assert.throws(() => routeImplementationPath("unknown/product.ts"), /unrouted/u);
   assert.throws(() => routeImplementationPath("root-new-engine.ts"), /unrouted/u);
+});
+
+/**
+ * AA-16 oracle: a `docs/` path routes to the detail maps that link it, so session start loads the
+ * subject's owners instead of every map. Fixtures vary only the link topology; the area directory is
+ * the real root table because the area set is fixed by `AreaId`.
+ */
+async function routingFixture(linksByArea: Partial<Record<AreaId, string>>, activeMaps: ReadonlyArray<AreaId>) {
+  const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
+  const { directory } = parseImplementationMapDirectory(rootMap);
+  const documents = new Map<string, string>();
+  for (const [id, entry] of directory) documents.set(entry.path, linksByArea[id as AreaId] ?? "No links.\n");
+  const activeLinks = activeMaps.map((id) => `[map](${path.posix.basename(directory.get(id)?.path ?? "")})`).join(", ");
+  documents.set(
+    "docs/PLAN.md",
+    `## Ordered work\n\n1. \`ACTIVE-ITEM\` · **active** · Owner: [owner](OWNER.md) · Maps: ${activeLinks} · Action: proceed\n`,
+  );
+  return { directory: directory as ReadonlyMap<string, ImplementationMapDirectoryEntry>, routing: documentRouting(directory, documents) };
+}
+
+test("routes a docs path to the detail maps that link it and keeps all-map routing for an unlinked one", async () => {
+  const { routing } = await routingFixture({
+    [AreaId.EngineRuntimeProof]: "[single](SINGLE.md) [shared](capsules/SHARED.md#anchor) [code](../scripts/x.ts) [web](https://example.org/WEB.md)\n",
+    [AreaId.BpmPlatform]: "[shared](capsules/SHARED.md) [self-link](BPM-PLATFORM-IMPLEMENTATION-MAP.md)\n",
+  }, [AreaId.TemporalHosting]);
+  assert.deepEqual(routeImplementationPath("docs/SINGLE.md", routing), [AreaId.EngineRuntimeProof]);
+  assert.deepEqual(routeImplementationPath("docs/capsules/SHARED.md", routing), [
+    AreaId.EngineRuntimeProof,
+    AreaId.BpmPlatform,
+  ]);
+  assert.deepEqual(routeImplementationPath("docs/UNLINKED.md", routing), Object.values(AreaId));
+  assert.deepEqual(routeImplementationPath("docs/WEB.md", routing), Object.values(AreaId), "an external URL links nothing");
+  assert.deepEqual(routeImplementationPath("docs/UNLINKED.md"), Object.values(AreaId), "without routing evidence routing stays conservative");
+});
+
+test("routes a detail map to itself and the plan and router to the active item's maps", async () => {
+  const { directory, routing } = await routingFixture({
+    [AreaId.EngineRuntimeProof]: "[other map](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md)\n",
+  }, [AreaId.EngineContractsSource, AreaId.AssuranceAdoption]);
+  const temporal = directory.get(AreaId.TemporalHosting)?.path;
+  assert.ok(temporal !== undefined);
+  assert.deepEqual(routeImplementationPath(temporal, routing), [AreaId.TemporalHosting], "a map linked by another map still routes to itself");
+  for (const file of ["docs/PLAN.md", "docs/IMPLEMENTATION-MAP.md"]) {
+    assert.deepEqual(routeImplementationPath(file, routing), [AreaId.EngineContractsSource, AreaId.AssuranceAdoption], file);
+  }
+  assert.deepEqual(routeImplementationPath("scripts/what-binds.ts", routing), [AreaId.AssuranceAdoption], "code routing ignores link evidence");
+});
+
+test("the repository routes every docs path to a subset of areas and its own maps and plan narrowly", async () => {
+  const documents = await maintainedMarkdownDocuments();
+  const rootMap = documents.get("docs/IMPLEMENTATION-MAP.md") ?? "";
+  const { directory } = parseImplementationMapDirectory(rootMap);
+  const routing = documentRouting(directory, documents);
+  const active = parseOrderedWork(documents.get("docs/PLAN.md") ?? "").filter((entry) => entry.state === "active");
+  assert.equal(active.length, 1);
+  assert.deepEqual(
+    routeImplementationPath("docs/PLAN.md", routing).map((id) => directory.get(id)?.path).sort(),
+    active[0]?.detailMaps.map((destination) => path.posix.join("docs", destination)).sort(),
+  );
+  for (const [id, entry] of directory) assert.deepEqual(routeImplementationPath(entry.path, routing), [id]);
+  assertTrackedPathRoutes([...documents.keys()].filter((file) => file.startsWith("docs/")), routing);
+});
+
+test("the router prose states no map count", async () => {
+  const rootMap = await readFile(path.join(projectRoot, "docs/IMPLEMENTATION-MAP.md"), "utf8");
+  for (const seeded of ["all six maps", "all 7 detail maps", "Seven maps route here."]) {
+    assert.throws(
+      () => assertRootImplementationMap(rootMap.replace("Cross-area invariants\n", `Cross-area invariants\n\n${seeded}\n`)),
+      /map count/u,
+      seeded,
+    );
+  }
 });
 
 test("rejects every noncanonical repository-relative routing path", () => {

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 
 import { scanMarkdownLinks } from "./markdown-link-lexer.ts";
 import {
@@ -234,6 +235,15 @@ export function planReviewRestatementFindings(
     );
 }
 
+/**
+ * A numeral or number word before "map(s)", which restates the Routing table's row count.
+ *
+ * The count drifted once ("six maps" beside seven rows) because prose cannot fail when a row is
+ * added; the table is the only owner of how many maps exist.
+ */
+const mapCountProse =
+  /\b(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:[\w-]+\s+){0,2}maps?\b/iu;
+
 export function assertRootImplementationMap(rootMap: string): void {
   assert.deepEqual(levelTwoHeadings(rootMap), [
     "Current claim",
@@ -246,6 +256,7 @@ export function assertRootImplementationMap(rootMap: string): void {
     wordCount(documentSection(rootMap, "Cross-area invariants")) > 0,
     "cross-area invariants must not be empty",
   );
+  assert.doesNotMatch(rootMap, mapCountProse, "the router prose states a map count; the Routing table is the one count owner");
   const parsed = parseImplementationMapDirectory(rootMap);
   assert.deepEqual(parsed.errors, []);
   for (const line of documentSection(rootMap, "Routing").split("\n").filter((candidate) => candidate.startsWith("|"))) {
@@ -375,7 +386,76 @@ function packageRoutes(pathParts: ReadonlyArray<string>): ReadonlyArray<AreaId> 
   }
 }
 
-export function routeImplementationPath(file: string): ReadonlyArray<AreaId> {
+/**
+ * Link evidence that narrows a `docs/` path, derived from the detail maps and the active plan item.
+ *
+ * Ownership is the maps' own links, not a second registry: a document a map links is part of that
+ * area's status account, and a document no map links has no owner to narrow to.
+ */
+export type DocumentRouting = Readonly<{
+  detailMapAreas: ReadonlyMap<string, AreaId>;
+  linkedFrom: ReadonlyMap<string, ReadonlyArray<AreaId>>;
+  activeItemAreas: ReadonlyArray<AreaId>;
+}>;
+
+/** The `docs/` repository path a Markdown link from `docs/` resolves to, or `undefined` outside it. */
+function linkedDocsPath(destination: string): string | undefined {
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(destination) || destination.startsWith("#")) return undefined;
+  const target = path.posix.normalize(path.posix.join("docs", destination.split(/[?#]/u)[0] ?? ""));
+  return target.startsWith("docs/") ? target : undefined;
+}
+
+/**
+ * Builds {@link DocumentRouting}; `documents` must hold every detail map and `docs/PLAN.md`.
+ *
+ * Throws when the active plan item names a map the root table does not register, so a mistyped
+ * plan link cannot silently widen or empty the startup read set.
+ */
+export function documentRouting(
+  directory: ReadonlyMap<string, ImplementationMapDirectoryEntry>,
+  documents: ReadonlyMap<string, string>,
+): DocumentRouting {
+  const detailMapAreas = new Map<string, AreaId>();
+  const linkedFrom = new Map<string, AreaId[]>();
+  for (const area of allAreaIds) {
+    const entry = directory.get(area);
+    assert.ok(entry !== undefined, `${area} is missing from the routing directory`);
+    const markdown = documents.get(entry.path);
+    assert.ok(markdown !== undefined, `${entry.path} is missing from the routing documents`);
+    detailMapAreas.set(entry.path, area);
+    for (const { destination } of scanMarkdownLinks(markdown)) {
+      const target = linkedDocsPath(destination);
+      if (target === undefined) continue;
+      const areas = linkedFrom.get(target) ?? [];
+      if (!areas.includes(area)) linkedFrom.set(target, [...areas, area]);
+    }
+  }
+  const plan = documents.get("docs/PLAN.md");
+  assert.ok(plan !== undefined, "docs/PLAN.md is missing from the routing documents");
+  const active = parseOrderedWork(plan).filter((entry) => entry.state === "active");
+  assert.equal(active.length, 1, "routing requires exactly one active plan item");
+  const activeMaps = new Set(active[0]?.detailMaps.map((destination) => linkedDocsPath(destination)));
+  const activeItemAreas = allAreaIds.filter((area) => activeMaps.has(directory.get(area)?.path));
+  assert.equal(activeItemAreas.length, activeMaps.size, "the active plan item names a map outside the root routing table");
+  return { detailMapAreas, linkedFrom, activeItemAreas };
+}
+
+function routeDocsPath(file: string, routing: DocumentRouting): ReadonlyArray<AreaId> {
+  const own = routing.detailMapAreas.get(file);
+  if (own !== undefined) return [own];
+  if (file === "docs/PLAN.md" || file === "docs/IMPLEMENTATION-MAP.md") return routing.activeItemAreas;
+  const linking = routing.linkedFrom.get(file);
+  return linking !== undefined && linking.length > 0 ? allAreaIds.filter((area) => linking.includes(area)) : allAreaIds;
+}
+
+/**
+ * The detail maps a path binds to.
+ *
+ * Without `routing` a `docs/` path stays conservative (every map); with it the path narrows to the
+ * maps that link it, a detail map to itself, and the plan and router to the active item's maps. A
+ * document no map links keeps every map because nothing identifies its owner.
+ */
+export function routeImplementationPath(file: string, routing?: DocumentRouting): ReadonlyArray<AreaId> {
   assertCanonicalRepositoryPath(file);
   const pathParts = file.split("/");
   if (pathParts.length === 1) return rootPathRoutes(file);
@@ -395,7 +475,7 @@ export function routeImplementationPath(file: string): ReadonlyArray<AreaId> {
     case "deploy":
       return [AreaId.TemporalHosting, AreaId.BpmPlatform];
     case "docs":
-      return allAreaIds;
+      return routing === undefined ? allAreaIds : routeDocsPath(file, routing);
     case "examples":
       return [AreaId.TemporalHosting];
     case "packages":
@@ -417,17 +497,18 @@ export type ImplementationMapRoute = Readonly<{
 export function implementationMapRoutes(
   file: string,
   directory: ReadonlyMap<string, ImplementationMapDirectoryEntry>,
+  routing?: DocumentRouting,
 ): ReadonlyArray<ImplementationMapRoute> {
-  return routeImplementationPath(file).map((id) => {
+  return routeImplementationPath(file, routing).map((id) => {
     const entry = directory.get(id);
     assert.ok(entry !== undefined, `${file} has unknown route ${id}`);
     return { id, file: entry.path };
   });
 }
 
-export function assertTrackedPathRoutes(paths: ReadonlyArray<string>): void {
+export function assertTrackedPathRoutes(paths: ReadonlyArray<string>, routing?: DocumentRouting): void {
   for (const file of paths) {
-    const routes = routeImplementationPath(file);
+    const routes = routeImplementationPath(file, routing);
     assert.ok(routes.length > 0, `${file} has no detail-map route`);
     assert.equal(new Set(routes).size, routes.length, `${file} has duplicate routes`);
     for (const route of routes) assert.ok(allAreaIds.includes(route), `${file} has unknown route ${route}`);
