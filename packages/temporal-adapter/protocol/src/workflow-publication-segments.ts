@@ -292,16 +292,13 @@ export function requireBpmnWorkflowContinuationPublicationV1(
     afterRevision: headRevision,
     limit: 1,
   });
-  const projectedOpen = projectOpenFlowNodeOccurrences(program, state);
-  if (projectedOpen === null || !retainedOpenMatchesRuntime(
+  requireOpenFlowNodeOccurrencesMatchRuntime(
+    program,
+    state,
     occurrences.retainedOpen,
     occurrences.currentOpen,
-    projectedOpen,
     Number(occurrences.lastCommittedAtEpochMs),
-    state,
-  )) {
-    throw new TypeError("Publication open occurrences do not match RuntimeState");
-  }
+  );
   requireWorkflowPublicationSegmentDirectoryV1(value.segmentDirectory, {
     ...context,
     headRevision,
@@ -336,13 +333,28 @@ export function requireWorkflowPublicationSegmentDescriptorV1(
 }
 
 /**
- * Whether the retained accumulator agrees with the runtime state it claims to describe.
+ * Rejects a retained accumulator that disagrees with its committed runtime state.
  *
  * `attachedHandlers` is recomputed from the state's Activity occurrence records rather than trusted,
  * because a continuation payload is untrusted input and this field is what the completeness relation
  * pairs a boundary Timer through. Admitting a forged pairing would let a restored Workflow attribute a
  * deadline to the wrong host, which is the failure the ordinal join it replaces could not produce.
  */
+export function requireOpenFlowNodeOccurrencesMatchRuntime(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  retained: ReadonlyArray<unknown>,
+  current: ReadonlyArray<unknown>,
+  lastCommittedAtEpochMs: number,
+): void {
+  const projected = projectOpenFlowNodeOccurrences(program, state);
+  if (projected === null || !retainedOpenMatchesRuntime(
+    retained, current, projected, lastCommittedAtEpochMs, state,
+  )) {
+    throw new TypeError("Publication open occurrences do not match RuntimeState");
+  }
+}
+
 function retainedOpenMatchesRuntime(
   retained: ReadonlyArray<unknown>,
   current: ReadonlyArray<unknown>,

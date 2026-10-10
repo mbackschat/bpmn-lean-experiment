@@ -27,6 +27,7 @@ import type {
 import {
   FlowNodeOccurrenceTerminalKind,
   requireFlowNodeOccurrencePublicationResult,
+  requireOpenFlowNodeOccurrencesMatchRuntime,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   ExecutionPublicationPage,
@@ -161,6 +162,9 @@ export function accumulateFlowNodeOccurrencePublication(
   const currentOpen = refreshed
     .map(({ occurrence }) => cloneOpen(occurrence))
     .sort((left, right) => comparePublicId(left.id, right.id));
+  requireOpenFlowNodeOccurrencesMatchRuntime(
+    program, step.state, refreshed, currentOpen, committedAtEpochMs,
+  );
   const candidate: FlowNodeOccurrencePublicationState = {
     definition: state.definition,
     processId: state.processId,

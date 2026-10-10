@@ -120,13 +120,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) before further implementation, as directed by the owner. Lean, affected TypeScript and causal guidelines/scripts remain in scope.
+Current task: implement the approved [assurance repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) rows below.
 
-Current result: the [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26, area dispositions and the rows an approved revision authorizes; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
+Current result: AA-07 endpoint validation rejects all three omissions before clock sampling; gates pass. AA-21/AA-12 Lean is active.
 
-Next action: AA-21 with AA-12's Lean part, then AA-25; commit AA-07's pending red test with its fix; one cold checkpoint review for all three. Then AA-05, AA-26 and the AA-18 ordering part. Done: AA-14 to AA-17, AA-24, Amendment 1, AA-12 script/TypeScript part. Owner-deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/AA-13/AA-20/AA-23. One MEDIUM agent at a time; batch reviews (tight budget).
+Next action: finish and commit AA-21/AA-12 Lean and AA-25; one cold checkpoint review includes AA-07. Then AA-05, AA-26 and the AA-18 ordering part. Done: AA-14 to AA-17, AA-24, Amendment 1, AA-12 script/TypeScript part. Owner-deferred: AA-03/04/08/09/19/22, AA-18 family extension. Residuals: endpoint fuel derivation, per-consumer batch walks, AA-24's 23-hypothesis search. Held: AA-11/AA-13/AA-20/AA-23. One MEDIUM agent at a time; batch reviews (tight budget).
 
-Last verification: full Lean library `/tmp/aa17-full-library-20261010` (854 jobs, exit 0, tree of `dd60ed91`); focused script guards green per commit.
+Last verification: AA-07 components, types, omission/identity controls and `/tmp/aa07-hosted-replay-20261010` pass. Prior Lean `/tmp/aa17-full-library-20261010` covers unchanged inputs only.
 
 Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
