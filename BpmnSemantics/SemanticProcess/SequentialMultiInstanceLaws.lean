@@ -31,9 +31,11 @@ The counters are not restated here. `generatedInstanceCount_eq_active_add_comple
 carries them, by preserving every controller's snapshot and therefore every planned count.
 
 Scope boundary: laws over the four relations. It defines no transition, no rewrite, and no evaluator,
-and it claims neither completeness nor determinism. The conditional closure theorem at the end needs
-an accepted target completion or the outer Timer at every open state. It claims no human-completion
-fairness, Timer-delivery fairness, or unconditional liveness.
+and it claims neither completeness nor determinism. The conditional closure theorem assumes an enabled
+accepted target event at every pair a trace from the given start can reach, and the readiness laws
+show that an armed outer Timer at the start discharges that assumption. Readiness is a premise about
+the start state; this module does not derive it from Start or from any scheduler, and it claims no
+human-completion fairness, Timer-delivery fairness, or unconditional liveness.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -336,6 +338,10 @@ make a host deliver a Timer. Once either accepted event arrives, the finite snap
 measure: an iteration strictly decreases its remaining-item count, while final completion or the outer
 Timer removes the controller. A schedule that supplied an unrelated completion without moving this
 controller cannot inhabit `closesOrDecreases` and therefore cannot discharge the hypothesis.
+
+The assumption is stated over the pairs a trace can reach rather than over every controller and state,
+because every event needs a live controller and an assumption over all states is refuted by any state
+without one.
 -/
 
 /-- The finite snapshot measure remaining in one exact controller state. -/
@@ -427,6 +433,17 @@ theorem targetAcceptedEvent_closesOrDecreases {arm : SequentialMultiInstanceArm}
   | completion => exact Or.inl rfl
   | interruption => exact Or.inl rfl
 
+/-- Every target-indexed event names a controller the pre-state carries. -/
+theorem targetAcceptedEvent_requires_a_live_controller {arm : SequentialMultiInstanceArm}
+    {target : SequentialMultiInstanceController} {before after : RuntimeState}
+    {nextTarget : Option SequentialMultiInstanceController}
+    (event : SequentialMultiInstanceTargetAcceptedEvent arm target before nextTarget after) :
+    target ∈ before.sequentialMultiInstanceControllers := by
+  cases event with
+  | iteration _ targetLive => exact targetLive
+  | completion _ targetLive => exact targetLive
+  | interruption _ targetLive => exact targetLive
+
 /-- A finite trace whose last accepted target event is natural completion or interruption. -/
 inductive SequentialMultiInstanceConditionalTrace (arm : SequentialMultiInstanceArm) :
     SequentialMultiInstanceController → RuntimeState → RuntimeState → Prop where
@@ -439,20 +456,31 @@ inductive SequentialMultiInstanceConditionalTrace (arm : SequentialMultiInstance
       (rest : SequentialMultiInstanceConditionalTrace arm updated next after) :
       SequentialMultiInstanceConditionalTrace arm target before after
 
-/-- The capsule's conditional liveness law.
+/-- The controller and state pairs a trace from `initialTarget` at `initial` can have reached.
 
-For a finite snapshot, if every current target controller receives one target-indexed accepted inner
-completion or its outer Timer, then a finite relation trace ends in natural completion or interruption.
-Strict decrease is derived above from the non-final iteration relation; it is not part of this
-hypothesis. The hypothesis remains conditional and carries no host or human fairness claim. -/
-theorem finite_snapshot_conditional_progress_eventually_closes
-    (arm : SequentialMultiInstanceArm)
+Only a non-final iteration event extends a pair, because completion and interruption remove the
+controller and end the trace. This is the domain of the progress hypothesis below: an event is
+required where a trace can stand, never at a state that no trace from the start visits. -/
+inductive SequentialMultiInstanceConditionalReach (arm : SequentialMultiInstanceArm)
+    (initialTarget : SequentialMultiInstanceController) (initial : RuntimeState) :
+    SequentialMultiInstanceController → RuntimeState → Prop where
+  | start : SequentialMultiInstanceConditionalReach arm initialTarget initial initialTarget initial
+  | step {target updated : SequentialMultiInstanceController} {current next : RuntimeState}
+      (reached : SequentialMultiInstanceConditionalReach arm initialTarget initial target current)
+      (event : SequentialMultiInstanceTargetAcceptedEvent arm target current (some updated) next) :
+      SequentialMultiInstanceConditionalReach arm initialTarget initial updated next
+
+/-- Closure from one reached pair, by the finite remaining-item measure. -/
+private theorem reached_pair_conditionally_closes (arm : SequentialMultiInstanceArm)
+    (initialTarget : SequentialMultiInstanceController) (initial : RuntimeState)
     (eventuallyProgresses : ∀ target current,
-      ∃ nextTarget next,
-        SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next)
-    (target : SequentialMultiInstanceController) (initial : RuntimeState) :
-    ∃ final, SequentialMultiInstanceConditionalTrace arm target initial final := by
-  obtain ⟨nextTarget, next, event⟩ := eventuallyProgresses target initial
+      SequentialMultiInstanceConditionalReach arm initialTarget initial target current →
+        ∃ nextTarget next,
+          SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next)
+    (target : SequentialMultiInstanceController) (current : RuntimeState)
+    (reached : SequentialMultiInstanceConditionalReach arm initialTarget initial target current) :
+    ∃ final, SequentialMultiInstanceConditionalTrace arm target current final := by
+  obtain ⟨nextTarget, next, event⟩ := eventuallyProgresses target current reached
   have progress := targetAcceptedEvent_closesOrDecreases event
   cases nextTarget with
   | none => exact ⟨next, .last event⟩
@@ -460,9 +488,178 @@ theorem finite_snapshot_conditional_progress_eventually_closes
       rcases progress with impossible | ⟨measured, equality, decreases⟩
       · simp at impossible
       · cases equality
-        obtain ⟨final, rest⟩ :=
-          finite_snapshot_conditional_progress_eventually_closes arm eventuallyProgresses updated next
+        obtain ⟨final, rest⟩ := reached_pair_conditionally_closes arm initialTarget initial
+          eventuallyProgresses updated next (.step reached event)
         exact ⟨final, .more event rest⟩
 termination_by sequentialMultiInstanceControllerRemainingCount target
+
+/-- The capsule's conditional liveness law.
+
+For a finite snapshot, if every pair a trace from `initialTarget` at `initial` can reach has one
+target-indexed accepted inner completion or its outer Timer enabled, then a finite relation trace
+ends in natural completion or interruption. Strict decrease is derived above from the non-final
+iteration relation; it is not part of this hypothesis.
+
+The hypothesis ranges over reached pairs only. Over every state it would be false at any state with
+no controller, so the law would hold vacuously; `unrelativized_progress_hypothesis_is_unsatisfiable`
+is that refusal, and `interruption_ready_start_discharges_the_progress_hypothesis` shows the
+relativized hypothesis is inhabited. It assumes no host or human fairness and says nothing about
+whether the enabled event is ever taken, so it is a conditional closure statement and not
+liveness. -/
+theorem finite_snapshot_conditional_progress_eventually_closes
+    (arm : SequentialMultiInstanceArm) (initialTarget : SequentialMultiInstanceController)
+    (initial : RuntimeState)
+    (eventuallyProgresses : ∀ target current,
+      SequentialMultiInstanceConditionalReach arm initialTarget initial target current →
+        ∃ nextTarget next,
+          SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next) :
+    ∃ final, SequentialMultiInstanceConditionalTrace arm initialTarget initial final :=
+  reached_pair_conditionally_closes arm initialTarget initial eventuallyProgresses
+    initialTarget initial .start
+
+/-- No arm satisfies an event-for-every-target-and-state assumption.
+
+The state with no controllers carries no live target, so no event can be enabled there. This is the
+nearest checked non-law of the progress hypothesis: relativizing to reached pairs is what makes it
+satisfiable. -/
+theorem unrelativized_progress_hypothesis_is_unsatisfiable (arm : SequentialMultiInstanceArm) :
+    ¬ ∀ (target : SequentialMultiInstanceController) (current : RuntimeState),
+      ∃ nextTarget next,
+        SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next := by
+  intro progress
+  obtain ⟨_, _, event⟩ := progress
+    { processInstanceId := ⟨""⟩, activityElementId := ⟨""⟩, activation := 0
+      snapshot := [], outputSlots := [] } initialState
+  simpa [initialState] using targetAcceptedEvent_requires_a_live_controller event
+
+/-! ## The outer deadline as the enabled event
+
+The progress hypothesis needs an enabled event at every reached pair, and the outer Timer is the one
+that needs no human. It stays enabled while its wait and the Activity occurrence arming it survive,
+and a non-final iteration is exactly the step that leaves both alone: it turns the body over and
+stores one result, and it names neither the Timer collection nor the occurrence's attached handlers.
+Readiness is therefore an invariant of the trace, established once and carried by every iteration.
+-/
+
+/-- The running instance carries this controller, and the outer deadline is armed against it.
+
+Each conjunct is a fact `SMI-CANCEL-01` reads from committed state: the live controller, the Activity
+occurrence record naming it with a task body, a Timer handler of that record the arm owns, and the
+live wait that handler names. None of them mentions an accepted event, so readiness is a premise about
+the state and not a restatement of enabledness. The instant the deadline fires is not a conjunct,
+because the relation fixes it to the wait's own deadline. -/
+def SequentialMultiInstanceInterruptionReady (arm : SequentialMultiInstanceArm)
+    (target : SequentialMultiInstanceController) (instanceId : SemanticId)
+    (state : RuntimeState) : Prop :=
+  state.control = .running instanceId ∧
+    target ∈ state.sequentialMultiInstanceControllers ∧
+    ∃ record ∈ state.activityOccurrences,
+      controllerNamesActivityOccurrence target record = true ∧
+      (activityBodyTask? record).isSome = true ∧
+      ∃ timer ∈ record.timerHandlerOccurrences,
+        timer.elementId.value = arm.boundaryTimer.elementId.value ∧
+        ∃ deadline ∈ state.timerWaits, timerIdNamesWait timer deadline = true
+
+instance (arm : SequentialMultiInstanceArm) (target : SequentialMultiInstanceController)
+    (instanceId : SemanticId) (state : RuntimeState) :
+    Decidable (SequentialMultiInstanceInterruptionReady arm target instanceId state) := by
+  unfold SequentialMultiInstanceInterruptionReady
+  infer_instance
+
+/-- A ready state enables the outer deadline as an accepted target event.
+
+The firing instant is the wait's own deadline, so no schedule has to supply one. -/
+theorem interruption_ready_enables_the_outer_deadline {arm : SequentialMultiInstanceArm}
+    {target : SequentialMultiInstanceController} {instanceId : SemanticId}
+    {state : RuntimeState}
+    (ready : SequentialMultiInstanceInterruptionReady arm target instanceId state) :
+    ∃ next, SequentialMultiInstanceTargetAcceptedEvent arm target state none next := by
+  obtain ⟨running, targetLive, record, recordLive, targetBinds, bodyKnown, timer, attached,
+    ownsTimer, deadline, deadlineLive, deadlineNamed⟩ := ready
+  obtain ⟨body, bodyIsTask⟩ := Option.isSome_iff_exists.mp bodyKnown
+  exact ⟨_, .interruption
+    (.interrupts arm timer deadline.deadlineMs state instanceId record target deadline body
+      running deadlineLive deadlineNamed recordLive (List.contains_iff_mem.mpr attached)
+      ownsTimer bodyIsTask targetLive targetBinds rfl)
+    targetLive targetBinds⟩
+
+/-- Turnover keeps every task-bodied record present, with its frame and a task body.
+
+The turnover rewrites only the body of the record it selects, and the replacement is a task body, so a
+record that was task-bodied stays so whether or not the selection reached it. -/
+private theorem iteratedState_keeps_each_task_bodied_record (state : RuntimeState)
+    (selected : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId)
+    (target : SequentialMultiInstanceController) (result : String)
+    (carried : ActivityOccurrence) (present : carried ∈ state.activityOccurrences)
+    (taskBodied : (activityBodyTask? carried).isSome = true) :
+    ∃ kept ∈ (iteratedState state selected wait body target result).activityOccurrences,
+      activityOccurrenceFrame kept = activityOccurrenceFrame carried ∧
+        (activityBodyTask? kept).isSome = true := by
+  refine ⟨if sameActivityOccurrence carried selected then
+      { carried with body := .userTask (turnoverBodyId state wait body) } else carried, ?_, ?_⟩
+  · simp only [iteratedState, replacedState, replaceBodyIn, List.mem_map]
+    exact ⟨carried, present, rfl⟩
+  · by_cases hit : sameActivityOccurrence carried selected = true
+    · simp [hit, activityOccurrenceFrame, activityBodyTask?]
+    · simp [hit, taskBodied]
+
+/-- A non-final iteration leaves the outer deadline armed against the updated controller.
+
+The one transition of a trace that continues it, so this is the step case of the invariant. The
+withdrawn and re-armed part is the inner task; the record keeps its identity and handlers, the Timer
+collection is the pre-state's, and the controller keeps the triple the record is named by. -/
+theorem interruption_ready_survives_a_nonfinal_iteration {arm : SequentialMultiInstanceArm}
+    {target updated : SequentialMultiInstanceController} {instanceId : SemanticId}
+    {current next : RuntimeState}
+    (ready : SequentialMultiInstanceInterruptionReady arm target instanceId current)
+    (event : SequentialMultiInstanceTargetAcceptedEvent arm target current (some updated) next) :
+    SequentialMultiInstanceInterruptionReady arm updated instanceId next := by
+  cases event with
+  | iteration accepted targetLive _ _ =>
+      obtain ⟨running, _, armed, armedLive, targetBinds, bodyKnown, timer, attached, ownsTimer,
+        deadline, deadlineLive, deadlineNamed⟩ := ready
+      obtain ⟨kept, keptLive, sameFrame, keptTask⟩ :=
+        iteratedState_keeps_each_task_bodied_record _ _ _ _ _ _ armed armedLive bodyKnown
+      simp only [activityOccurrenceFrame, Prod.mk.injEq] at sameFrame
+      obtain ⟨sameInstance, sameElement, sameActivation, _, sameHandlers⟩ := sameFrame
+      refine ⟨running, ?_, kept, keptLive, ?_, keptTask, timer, ?_, ownsTimer, deadline, ?_,
+        deadlineNamed⟩
+      · simp only [iteratedState, storeIterationResult, List.mem_map]
+        exact ⟨target, targetLive, by simp [sameSequentialMultiInstanceController]⟩
+      · simpa [controllerNamesActivityOccurrence, sameInstance, sameElement, sameActivation]
+          using targetBinds
+      · simpa [ActivityOccurrence.timerHandlerOccurrences, sameHandlers] using attached
+      · rw [(iteration_preserves_the_outer_deadline accepted).1]
+        exact deadlineLive
+
+/-- Readiness at the start holds at every pair a trace from it can reach. -/
+theorem reached_pairs_stay_interruption_ready {arm : SequentialMultiInstanceArm}
+    {initialTarget : SequentialMultiInstanceController} {instanceId : SemanticId}
+    {initial : RuntimeState}
+    (ready : SequentialMultiInstanceInterruptionReady arm initialTarget instanceId initial)
+    {target : SequentialMultiInstanceController} {current : RuntimeState}
+    (reached : SequentialMultiInstanceConditionalReach arm initialTarget initial target current) :
+    SequentialMultiInstanceInterruptionReady arm target instanceId current := by
+  induction reached with
+  | start => exact ready
+  | step _ event inherited => exact interruption_ready_survives_a_nonfinal_iteration inherited event
+
+/-- Readiness at the start discharges the relativized progress hypothesis exactly as the closure law
+states it.
+
+An enabled event at every reached pair needs no human completion and no Timer-delivery fairness,
+because the event it supplies is the outer Timer's, enabled by the state. -/
+theorem interruption_ready_start_discharges_the_progress_hypothesis
+    {arm : SequentialMultiInstanceArm} {initialTarget : SequentialMultiInstanceController}
+    {instanceId : SemanticId} {initial : RuntimeState}
+    (ready : SequentialMultiInstanceInterruptionReady arm initialTarget instanceId initial) :
+    ∀ target current,
+      SequentialMultiInstanceConditionalReach arm initialTarget initial target current →
+        ∃ nextTarget next,
+          SequentialMultiInstanceTargetAcceptedEvent arm target current nextTarget next := by
+  intro target current reached
+  obtain ⟨next, event⟩ := interruption_ready_enables_the_outer_deadline
+    (reached_pairs_stay_interruption_ready ready reached)
+  exact ⟨none, next, event⟩
 
 end BpmnSemantics.SemanticProcess

@@ -124,9 +124,9 @@ Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-
 
 Current result: the [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26, area dispositions and the rows an approved revision authorizes; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
 
-Next action: boundary AA-24 (vacuous SMI progress law). Residuals: endpoint fuel derivation and per-consumer batch walks ([AA-01/AA-02](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#findings-and-discriminators)). Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
+Next action: one cold reviewer covers the AA-24 semantic checkpoint and proposal Amendment 1 (AA-16/AA-17/AA-26; owner-deferred AA-03/04/08/09/19/22 and the AA-18 family extension). Then the review-free script rows AA-14, AA-12, AA-15. Residuals: endpoint fuel derivation, per-consumer batch walks ([AA-01/AA-02](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#findings-and-discriminators)), the AA-24 search of the other 23 hypotheses. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
 
-Last verification: narrow PMIS gates `/tmp/aa01-endpoint-root-gate-20261010` and full library `/tmp/aa01-full-library-clean-20261010` (bound to `98c8bef4`) receipts; decisive theorems depend only on `propext`, `Classical.choice` and `Quot.sound`.
+Last verification: AA-24 narrow Lean targets and the SMI aggregate pass; cost receipts `/tmp/aa24-cost-progress-20261010` and `/tmp/aa24-cost-aggregate-20261010` (3 GiB cgroup, no events); new theorems depend only on `propext`, `Classical.choice` and `Quot.sound`.
 
 Unresolved: remaining assessment amendments; PMIS resumption, stable-wait and complete publication; testkit batch 13; hosted qualification under TD-001/TD-002. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 

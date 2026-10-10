@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
 import BpmnSemantics.SequentialMultiInstanceRuntimeConformance
 import BpmnSemantics.SequentialMultiInstanceRefusalConformance
 import BpmnSemantics.SequentialMultiInstanceCanonicalJsonConformance
+import BpmnSemantics.SequentialMultiInstanceProgressConformance
 
 /-! # Sequential Multi-Instance conformance
 

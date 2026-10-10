@@ -237,12 +237,8 @@ export const leanModuleCostRecord = {
       elapsedSeconds: 25.93,
       measuredAtCommit: "5fa6dfe3",
     },
-    {
-      module: "BpmnSemantics.SequentialMultiInstanceConformance", sourceSha256: "497e668bdc35e9967bace7afd5d0bd9f97e87ed9a065244e89a7a38cc4161e17",
-      peakResidentKib: 619012,
-      elapsedSeconds: 0.65,
-      measuredAtCommit: "da6e6477",
-    },
+    { module: "BpmnSemantics.SequentialMultiInstanceConformance", sourceSha256: "01e7b77f3a9eacd6a6b9c8e5843bdc75beb3545487759a86116c974e60586f2f", peakResidentKib: 766080, elapsedSeconds: 0.84, measurementReceiptSha256: "c654e417b2a4e1af91bb857945eb43f5c6aeeb2f92346865b4eb221822737806", measuredAtCommit: "b39851632faa9db039ac02cbdbc6fed2d9e369e5" },
+    { module: "BpmnSemantics.SequentialMultiInstanceProgressConformance", sourceSha256: "abaaca00cab08b711cb793bef72e228cd8f851d878c48b473b967371b7768871", peakResidentKib: 934092, elapsedSeconds: 1.57, measurementReceiptSha256: "6e7fdabfb9c05395b87b1b87debb22731ec252362172014788b026323009395b", measuredAtCommit: "b39851632faa9db039ac02cbdbc6fed2d9e369e5" },
     {
       module: "BpmnSemantics.SequentialMultiInstanceRuntimeConformance", sourceSha256: "c7e659b6160725b11450d49c398d4ca8d2562a575e12f658dab40a43864677c2",
       peakResidentKib: 2509372,
