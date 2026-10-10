@@ -4,7 +4,7 @@ This map owns runtime, scope, Lean, TypeScript semantic-core and BPMN-conformanc
 
 ## Current boundary
 
-[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): approved (`fd9b8750`); [private proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish reservation readiness, stability, retirement certificates and Running position validity. Open: endpoint fuel, batch prefix induction, resumption admission/capacity, publication, review, hosting.
+[Parallel MI](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-batch-implementation): publication approved (`fd9b8750`); [private proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish reservation readiness, stability, retirement certificates and Running position validity. Open: endpoint fuel, resumption admission/capacity, publication, review, hosting.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 

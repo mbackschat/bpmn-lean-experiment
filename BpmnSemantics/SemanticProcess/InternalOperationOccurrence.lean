@@ -574,44 +574,43 @@ theorem applyInternalOccurrenceBatch_ordered_steps (program : Program) (state : 
   · contradiction
   · exact reservedPrefix_ordered_steps program batch.members state successors applied
 
-private theorem reservedPrefix_induction (program : Program) (all members : List InternalOccurrencePatch)
+private theorem ordered_patch_invariant (program : Program) (all members : List InternalOccurrencePatch)
     (predicate : RuntimeState → Prop)
-    (step : ∀ state patch, patch ∈ all →
-      (match patch with
-      | .arm arm => prepareReservedOccurrenceArm? program state ⟨arm.operation.id, arm.owner⟩
-          arm.write.occurrence.activation = some arm
-      | .token token => prepareOccurrenceTokenPatch? program state ⟨token.operation.id, token.tokens.owner⟩ = some token) →
-      predicate state → predicate (patch.apply state))
-    (contained : ∀ patch ∈ members, patch ∈ all) (state : RuntimeState) (successors : List RuntimeState)
-    (initial : predicate state)
-    (applied : applyReservedOccurrencePrefix? program state members = some successors) :
-    ∀ successor ∈ successors, predicate successor := by
-  induction members generalizing state successors with
-  | nil =>
-      simp only [applyReservedOccurrencePrefix?, Option.some.injEq] at applied
-      subst successors
-      simp
+    (step : ∀ before after patch, patch ∈ all → InternalOccurrencePatchStep program before after patch →
+      predicate before → predicate after)
+    (contained : ∀ patch ∈ members, patch ∈ all) (before : RuntimeState) (successors : List RuntimeState)
+    (length : successors.length = members.length)
+    (steps : ∀ pair ∈ members.zip ((before :: successors).zip successors),
+      InternalOccurrencePatchStep program pair.2.1 pair.2.2 pair.1)
+    (initial : predicate before) : ∀ after ∈ successors, predicate after := by
+  induction members generalizing before successors with
+  | nil => cases successors <;> simp_all
   | cons patch rest ih =>
-      simp only [applyReservedOccurrencePrefix?] at applied
-      split at applied
-      · contradiction
-      · rename_i valid
-        have revalidated : occurrenceMemberRevalidated program state patch = true := by
-          cases checked : occurrenceMemberRevalidated program state patch with
-          | false => simp [checked] at valid
-          | true => rfl
-        obtain ⟨tail, tailApplied, applied⟩ := Option.bind_eq_some_iff.mp applied
-        cases applied
-        have next := step state patch (contained patch (by simp))
-          (occurrenceMemberRevalidated_prepared program state patch revalidated) initial
-        have later := ih (fun member found => contained member (by simp [found])) _ _ next tailApplied
-        intro successor found
-        rcases List.mem_cons.mp found with same | tailMember
-        · subst successor
-          exact next
-        · exact later successor tailMember
+    cases successors with
+    | nil => simp at length
+    | cons next tail =>
+      have nextValid := step before next patch (contained patch (by simp)) (steps (patch, before, next) (by simp)) initial
+      have later := ih (fun member found => contained member (by simp [found])) next tail
+        (by simpa using length) (fun pair found =>
+          steps pair (by simp only [List.zip_cons_cons, List.mem_cons]; exact Or.inr found)) nextValid
+      intro after found
+      rcases List.mem_cons.mp found with rfl | found
+      · exact nextValid
+      · exact later after found
 
-/-- PMIS-SELECT-01 revalidates each prefix before applying it, so invariant proofs use actual preparation at that predecessor. -/
+/-- Ordered actual batch steps expose complete revalidation, rather than only preparation at each predecessor. -/
+theorem applyInternalOccurrenceBatch_patch_induction (program : Program) (before : RuntimeState)
+    (batch : InternalOccurrenceBatch) (successors : List RuntimeState) (predicate : RuntimeState → Prop)
+    (initial : predicate before)
+    (step : ∀ before after patch, patch ∈ batch.members →
+      InternalOccurrencePatchStep program before after patch → predicate before → predicate after)
+    (applied : applyInternalOccurrenceBatch? program before batch = some successors) :
+    ∀ after ∈ successors, predicate after := by
+  obtain ⟨length, steps⟩ := applyInternalOccurrenceBatch_ordered_steps program before batch successors applied
+  exact ordered_patch_invariant program batch.members batch.members predicate step
+    (fun _ found => found) before successors length steps initial
+
+/-- PMIS-SELECT-01 revalidates each prefix before applying it; this preparation-level form is a corollary of the actual-step induction above. -/
 theorem applyInternalOccurrenceBatch_prefix_induction (program : Program) (state : RuntimeState)
     (batch : InternalOccurrenceBatch) (successors : List RuntimeState) (predicate : RuntimeState → Prop)
     (initial : predicate state)
@@ -623,11 +622,12 @@ theorem applyInternalOccurrenceBatch_prefix_induction (program : Program) (state
       predicate before → predicate (patch.apply before))
     (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
     ∀ successor ∈ successors, predicate successor := by
-  unfold applyInternalOccurrenceBatch? at applied
-  split at applied
-  · contradiction
-  · exact reservedPrefix_induction program batch.members batch.members predicate step
-      (by intro patch found; exact found) state successors initial applied
+  apply applyInternalOccurrenceBatch_patch_induction program state batch successors predicate initial _ applied
+  intro before after patch member actual prior
+  rw [actual.1]
+  cases patch with
+  | arm arm => exact step before (.arm arm) member actual.2.2.2 prior
+  | token token => exact step before (.token token) member actual.2 prior
 
 private theorem refusingGuardSuccess {α : Type} (guard : Bool) (tail : Option α) (value : α)
     (successful : (if guard then none else tail) = some value) : tail = some value := by
