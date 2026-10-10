@@ -6,6 +6,7 @@ Current contracts live in active `-SPEC.md` documents. Current unimplemented int
 
 | Document | Reason retained |
 |---|---|
+| [ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) | Completed bounded assurance repair; preserves the original assessment and review receipts after current contracts remained in existing owners and unresolved findings moved to the assurance improvement register |
 | [ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md](ACTIVITY-BODY-CLAIM-UNIQUENESS-PROPOSAL.md) | Completed Activity body-claim uniqueness amendment; retains the root defect, pairwise task and child-scope criterion, guarded writer-preservation account, evidence boundary, and governed review chronology after `AOO-CLAIM-01` graduated into the Activity occurrence ownership specification |
 | [ACTIVITY-BODY-TURNOVER-PROPOSAL.md](ACTIVITY-BODY-TURNOVER-PROPOSAL.md) | Completed Activity body-turnover amendment; retains the original question, the argument that turnover was this account's first falsifier, the exempt-oracle selection, the falsified-passage criterion with its two searches, and the governed review chronology after the stable contract graduated into the Activity occurrence specification |
 | [A12-ADD-ON-BOUNDARY-PROPOSAL.md](A12-ADD-ON-BOUNDARY-PROPOSAL.md) | Completed A12 product-boundary proposal; retains the original question, owner decision, and governed review chronology after the stable implemented contract graduated to the active specification |

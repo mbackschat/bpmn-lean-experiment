@@ -35,10 +35,12 @@ test("binding corpus excludes tracked paths deleted by an unstaged rename", () =
 test("the report routes active assurance owners without enrolling unrelated siblings or resolved repairs", () => {
   const output = execFileSync(process.execPath, [
     "scripts/what-binds.ts", "packages/semantic-core/src/internal-choice-schedule.ts", "BpmnSemantics/SemanticProcess/WaitCompletion.lean",
+    "packages/semantic-core/src/runtime-state-collection-ordering.ts",
   ], { cwd: projectRoot, encoding: "utf8" });
   assert.match(output, /ASSURANCE AA-11 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-11/u);
   assert.match(output, /ASSURANCE AA-23 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-23/u);
-  assert.match(output, /ASSURANCE AA-26 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-26/u);
+  assert.match(output, /ASSURANCE AA-18 docs\/ASSURANCE-IMPROVEMENT-REGISTER\.md#aa-18/u);
+  assert.doesNotMatch(output, /ASSURANCE AA-26\b/u);
   assert.doesNotMatch(output, /ASSURANCE AA-06\b/u);
   assert.doesNotMatch(output, /ASSURANCE AA-03\b/u);
 });
