@@ -120,20 +120,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [assurance architecture repair](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md), covering Lean, TypeScript and causal guidelines/scripts; PMIS is its first application.
+Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) before further implementation, as directed by the owner. Lean, affected TypeScript and causal guidelines/scripts remain in scope.
 
-Current result: delivery checkpoint `2f38e92d` retained. All 878 Lean paths are inventoried; substantive assessment remains open. Cross-family defects and two TypeScript failures are recorded. Extraction guidance is corrected in the working tree. PMIS transport and composed endpoint are written, unverified.
+Current result: `b0be1117` plus an uncommitted draft adding verified AA-14 to AA-22 and extending earlier rows. Three areas have per-file dispositions; 428 open Lean files have only a signal census. AA-11/AA-20 outcomes and AA-13 admission need reviewed contracts first.
 
-Guarantee: the [PMIS command checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) must establish Running endpoints retain Program correspondence, valid positions and complete open-occurrence projection. Preserve existing theorem premises and proved-lane obligations.
+Next action: commit the draft apart from the PMIS pilot/red tests; obtain one fresh cold proposal review; finish execution, Multi-Instance, events and control-flow assessment. One sub-agent at a time; census work runs as scripts.
 
-Next action: verify both PMIS consumers and the actual endpoint; commit and independently review the whole-codebase repair design. Continue area-by-area Lean assessment and maintained TypeScript omission regressions. Representative migrations do not close whole-codebase scope. Preserve SDK-deferral edits.
+Last verification: `/tmp/assurance-proposal-docs-20261010e` document guards. `/tmp/assurance-pmis-full-library-20261010` stopped at exit 130, so no pilot claim. AA-13/AA-18 probes rerun against existing `dist/`.
 
-Last verification: doctor/documentation guards pass; later edits need rerun. Probes reproduce unsafe singleton issuance and accepted MI publication omissions; maintained-build regressions remain due. Lean builds have not reached the endpoint. Browser evidence remains valid; hosted qualification remains failed.
+Unresolved: remaining whole-tree inspection and proposal findings; PMIS resumption, stable-wait and complete publication; hosted qualification. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md): no SDK work, private rebuilds, performance or cold-library investigations.
 
-Unresolved: reachable resumption admission, stable-wait existence, complete E1/E2 publication, combined Lean/Temporal qualification, batch 13, zero-item publication and Query failures. Preserve [SDK defects](TEMPORAL-DEFECTS-LEDGER.md); no SDK fixing/private rebuilds, performance or cold-library investigations. Serialize bounded verification: one Lean tree, one CPU/3 GiB, no extra swap; no per-job approval.
+Oracle: document guards and independent proposal review; subsequent implementation requires actual composed guarantees under the proposal and [PMIS command checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint).
 
-Oracle: both real proof consumers and composed command theorem, unchanged runtime/admission, affected-package gate and independent review. Public delivery still requires occurrence-bound Work completion, full-state/E1/E2 agreement and replay.
+Stop if writing silently approves unresolved semantics or implementation resumes before this writing phase finishes.
 
-Stop if correction weakens guarantees or broadens semantic scope.
-
-Preserve release tags and stashes `f35bdd6b0424b2e3d5d06f101eb822bd285ab29e` and `76a2b017a630d23203ded482227382003f296f0b`.
+Resource limits remain one Lean tree, one CPU/3 GiB, no extra swap. Preserve release tags, all stashes and delivery checkpoint `2f38e92d`.
