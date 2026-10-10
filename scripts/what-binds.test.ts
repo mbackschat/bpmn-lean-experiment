@@ -6,12 +6,15 @@ import { fileURLToPath } from "node:url";
 import {
   BindingKind,
   bindingsFor,
+  classifyBindings,
   loadBindingCorpus,
   ownerMeasurement,
   presentBindingCorpusCandidates,
   reportLines,
   searchTerms,
 } from "./what-binds.ts";
+import { EnumerationKind } from "./what-binds-source-facts.ts";
+import { EvidenceKind, GuardTier } from "./what-binds-classification.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -26,6 +29,29 @@ test("binding corpus excludes tracked paths deleted by an unstaged rename", () =
       (candidate) => candidate !== "scripts/renamed-away.test.ts",
     ),
     ["scripts/kept.test.ts", "packages/semantic-core/README.md"],
+  );
+});
+
+// Import chains and imported enumeration helpers are followed through non-guard sources, so those
+// must reach the corpus even though they are never reported themselves.
+test("binding corpus keeps non-guard TypeScript sources for import chains and nothing else", () => {
+  assert.deepEqual(
+    presentBindingCorpusCandidates(
+      [
+        "scripts/helper.ts",
+        "platform/apps/web/src/main.tsx",
+        "packages/semantic-core/src/runtime.mts",
+        "docs/PLAN.md",
+        "scenarios/a/b.json",
+        "BpmnSemantics/SemanticProcess/Execution.lean",
+      ],
+      () => true,
+    ),
+    [
+      "scripts/helper.ts",
+      "platform/apps/web/src/main.tsx",
+      "packages/semantic-core/src/runtime.mts",
+    ],
   );
 });
 
@@ -63,14 +89,19 @@ test("pure binding resolution rejects traversal before matching", () => {
 
 // Historical miss: a second example configuration was planned for one profile while an oracle
 // asserted exact multiset equality between profiles and example files. The tree term is what
-// reaches it, because the planned file did not exist yet and no guard could name it.
-test("reports the guard that constrains a not-yet-existing artifact through its tree", () => {
-  const bindings = bindingsFor(
+// reaches it, because the planned file did not exist yet and no guard could name it. The oracle must
+// also enumerate that tree: a guard that only spells the directory constrains nothing about it.
+test("reports the guard that constrains a not-yet-existing artifact through the tree it enumerates", () => {
+  const { bindings, mentions } = classifyBindings(
     "examples/temporal-mvp/activity-boundary-timer-deadline-wins.json",
     [
       {
         path: "packages/temporal-adapter/testkit/test/product-example-configs.test.ts",
-        text: 'const exampleRoot = "examples/temporal-mvp";',
+        text: 'const exampleRoot = "examples/temporal-mvp";\nconst names = await readdir(exampleRoot);',
+      },
+      {
+        path: "packages/temporal-adapter/testkit/test/example-prose.test.ts",
+        text: 'const where = "examples/temporal-mvp"; assert.ok(where);',
       },
       {
         path: "packages/semantic-core/test/unrelated.test.ts",
@@ -82,8 +113,20 @@ test("reports the guard that constrains a not-yet-existing artifact through its 
   assert.deepEqual(bindings, [
     {
       kind: BindingKind.Guard,
+      tier: GuardTier.Scanning,
       path: "packages/temporal-adapter/testkit/test/product-example-configs.test.ts",
-      matchedTerm: "examples/temporal-mvp",
+      evidence: {
+        kind: EvidenceKind.Scan,
+        enumeration: EnumerationKind.DirectoryRead,
+        scope: 'root "examples/temporal-mvp"',
+        via: null,
+      },
+    },
+  ]);
+  assert.deepEqual(mentions, [
+    {
+      path: "packages/temporal-adapter/testkit/test/example-prose.test.ts",
+      evidence: { kind: EvidenceKind.Text, term: "examples/temporal-mvp" },
     },
   ]);
 });
@@ -94,40 +137,39 @@ test("reports the guard that constrains a not-yet-existing artifact through its 
 // ends in `-test.ts` rather than `.test.ts`, so a change to those commands was planned without it
 // and only failed later, in a lane the focused gates did not run.
 test("reports a guard whatever supported test suffix its name carries", () => {
-  const bindings = bindingsFor("package.json", [
-    {
-      path: "scripts/ordinary.test.ts",
+  const suffixes = [
+    "test",
+    "platform-test",
+    "temporal-test",
+    "temporal-serial-test",
+    "integration-test",
+    "type-test",
+  ];
+  const bindings = bindingsFor(
+    "package.json",
+    suffixes.map((suffix) => ({
+      path: `packages/x/test/subject.${suffix}.ts`,
       text: 'const root = read("package.json");',
-    },
-    {
-      path: "scripts/product-two.platform-test.ts",
-      text: 'const root = read("package.json");',
-    },
-    {
-      path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts",
-      text: 'const root = read("package.json");',
-    },
-    {
-      path: "packages/temporal-adapter/testkit/test/capacity.temporal-serial-test.ts",
-      text: 'const root = read("package.json");',
-    },
-  ]);
+    })),
+  );
 
-  assert.deepEqual(bindings.map(({ kind, path: file }) => ({ kind, path: file })), [
-    { kind: BindingKind.Guard, path: "packages/temporal-adapter/testkit/test/capacity.temporal-serial-test.ts" },
-    { kind: BindingKind.Guard, path: "packages/temporal-adapter/testkit/test/hosted.temporal-test.ts" },
-    { kind: BindingKind.Guard, path: "scripts/ordinary.test.ts" },
-    { kind: BindingKind.Guard, path: "scripts/product-two.platform-test.ts" },
-  ]);
+  assert.deepEqual(
+    bindings.map(({ kind, path: file }) => ({ kind, path: file })),
+    [...suffixes].sort().map((suffix) => ({
+      kind: BindingKind.Guard,
+      path: `packages/x/test/subject.${suffix}.ts`,
+    })),
+  );
 });
 
 test("reports both the tree guard and the registry a new artifact family must reach", () => {
-  const bindings = bindingsFor(
+  const { bindings, mentions } = classifyBindings(
     "scenarios/activity-boundary-timer/deadline-wins-scenario.json",
     [
       {
         path: "scripts/document-reviewability.test.ts",
-        text: 'const artifactRegistries = ["profiles", "scenarios"] as const;',
+        text: 'const artifactRegistries = ["profiles", "scenarios"] as const;\n' +
+          "for (const registry of artifactRegistries) await readdir(registry);",
       },
       {
         path: "scenarios/README.md",
@@ -143,8 +185,14 @@ test("reports both the tree guard and the registry a new artifact family must re
   assert.deepEqual(bindings, [
     {
       kind: BindingKind.Guard,
+      tier: GuardTier.Scanning,
       path: "scripts/document-reviewability.test.ts",
-      matchedTerm: "scenarios",
+      evidence: {
+        kind: EvidenceKind.Scan,
+        enumeration: EnumerationKind.DirectoryRead,
+        scope: 'root "scenarios"',
+        via: null,
+      },
     },
     {
       kind: BindingKind.Registry,
@@ -152,6 +200,7 @@ test("reports both the tree guard and the registry a new artifact family must re
       matchedTerm: "scenarios",
     },
   ]);
+  assert.deepEqual(mentions, []);
 });
 
 test("reports the source map that claims a package's source files", () => {
@@ -174,20 +223,50 @@ test("reports the source map that claims a package's source files", () => {
   ]);
 });
 
-test("prefers the most specific matching term for each binding", () => {
+test("a guard that names the target is a named binding even when it also enumerates its tree", () => {
   const bindings = bindingsFor("packages/semantic-core/src/runtime.ts", [
     {
       path: "packages/semantic-core/test/runtime.test.ts",
-      text: 'import { step } from "../src/runtime.ts";\nconst root = "packages/semantic-core";',
+      text: 'import { step } from "../src/runtime.ts";\nconst names = await readdir("packages/semantic-core");',
     },
   ]);
 
   assert.deepEqual(bindings, [
     {
       kind: BindingKind.Guard,
+      tier: GuardTier.Named,
       path: "packages/semantic-core/test/runtime.test.ts",
-      matchedTerm: "runtime.ts",
+      evidence: { kind: EvidenceKind.Text, term: "runtime.ts" },
     },
+  ]);
+});
+
+test("bindings list the most direct evidence first, then scanners, then registries", () => {
+  const bindings = bindingsFor("packages/core/src/runtime.ts", [
+    { path: "packages/core/README.md", text: "registry" },
+    {
+      path: "scripts/scan.test.ts",
+      text: 'git(["ls-files", "--", "packages/core"]);',
+    },
+    {
+      path: "packages/core/test/viaMiddle.test.ts",
+      text: 'import { a } from "../src/middle.ts";',
+    },
+    {
+      path: "packages/core/src/middle.ts",
+      text: 'import { run } from "./runtime.ts";',
+    },
+    {
+      path: "packages/core/test/direct.test.ts",
+      text: 'import { run } from "../src/runtime.ts";',
+    },
+  ]);
+
+  assert.deepEqual(bindings.map(({ kind, path: file }) => `${kind} ${file}`), [
+    "GUARD packages/core/test/direct.test.ts",
+    "GUARD packages/core/test/viaMiddle.test.ts",
+    "GUARD scripts/scan.test.ts",
+    "REGISTRY packages/core/README.md",
   ]);
 });
 
@@ -221,32 +300,61 @@ test("a non-source or absent target has no owner measurement", () => {
   assert.equal(ownerMeasurement("packages/semantic-core/src/gone.ts", null), null);
 });
 
-test("the report names the owner ceiling and every binding with its total", () => {
-  assert.deepEqual(
-    reportLines({
-      target: "packages/semantic-core/src/runtime.ts",
-      owner: { path: "packages/semantic-core/src/runtime.ts", lines: 795 },
-      bindings: [
-        {
-          kind: BindingKind.Guard,
-          path: "packages/semantic-core/test/runtime.test.ts",
-          matchedTerm: "runtime.ts",
+test("the report names the owner ceiling, every binding with its tier and the unbound mentions", () => {
+  const result = {
+    target: "packages/semantic-core/src/runtime.ts",
+    owner: { path: "packages/semantic-core/src/runtime.ts", lines: 795 },
+    bindings: [
+      {
+        kind: BindingKind.Guard,
+        tier: GuardTier.Named,
+        path: "packages/semantic-core/test/runtime.test.ts",
+        evidence: { kind: EvidenceKind.Text, term: "runtime.ts" },
+      },
+      {
+        kind: BindingKind.Guard,
+        tier: GuardTier.Named,
+        path: "packages/semantic-core/test/trace.test.ts",
+        evidence: { kind: EvidenceKind.Import, via: "packages/semantic-core/src/trace.ts" },
+      },
+      {
+        kind: BindingKind.Guard,
+        tier: GuardTier.Scanning,
+        path: "scripts/source-hygiene.test.ts",
+        evidence: {
+          kind: EvidenceKind.Scan,
+          enumeration: EnumerationKind.GitListing,
+          scope: 'whole repository filtered by ".ts"',
+          via: null,
         },
-        {
-          kind: BindingKind.Registry,
-          path: "packages/semantic-core/README.md",
-          matchedTerm: "packages/semantic-core",
-        },
-      ],
-    }),
-    [
-      "TARGET packages/semantic-core/src/runtime.ts",
-      "OWNER packages/semantic-core/src/runtime.ts 795/800 nonblank, 5 lines before the review target",
-      'GUARD packages/semantic-core/test/runtime.test.ts (matched "runtime.ts")',
-      'REGISTRY packages/semantic-core/README.md (matched "packages/semantic-core")',
-      "BINDINGS 1 guard, 1 registry",
+      },
+      {
+        kind: BindingKind.Registry,
+        path: "packages/semantic-core/README.md",
+        matchedTerm: "packages/semantic-core",
+      },
     ],
-  );
+    mentions: [
+      {
+        path: "scripts/pinned-toolchain.test.ts",
+        evidence: { kind: EvidenceKind.Text, term: "scripts" },
+      },
+    ],
+  } as const;
+
+  assert.deepEqual(reportLines(result), [
+    "TARGET packages/semantic-core/src/runtime.ts",
+    "OWNER packages/semantic-core/src/runtime.ts 795/800 nonblank, 5 lines before the review target",
+    'GUARD[named] packages/semantic-core/test/runtime.test.ts (matched "runtime.ts")',
+    'GUARD[named] packages/semantic-core/test/trace.test.ts (imports via "packages/semantic-core/src/trace.ts")',
+    'GUARD[scan] scripts/source-hygiene.test.ts (git ls-files, whole repository filtered by ".ts")',
+    'REGISTRY packages/semantic-core/README.md (matched "packages/semantic-core")',
+    "BINDINGS 3 guards (2 named, 1 scanning), 1 registry, 1 unbound mention (not bindings)",
+  ]);
+  assert.deepEqual(reportLines(result, { listMentions: true }).slice(-2), [
+    'MENTION scripts/pinned-toolchain.test.ts (matched "scripts")',
+    "BINDINGS 3 guards (2 named, 1 scanning), 1 registry, 1 unbound mention (not bindings)",
+  ]);
 });
 
 test("the report of an unconstrained target says so explicitly", () => {
@@ -255,10 +363,11 @@ test("the report of an unconstrained target says so explicitly", () => {
       target: "docs/NEW-PROPOSAL.md",
       owner: null,
       bindings: [],
+      mentions: [],
     }),
     [
       "TARGET docs/NEW-PROPOSAL.md",
-      "BINDINGS 0 guards, 0 registries",
+      "BINDINGS 0 guards (0 named, 0 scanning), 0 registries, 0 unbound mentions (not bindings)",
     ],
   );
 });
@@ -301,6 +410,153 @@ test("the live corpus routes scripts work through its task-oriented README", asy
     registries.includes("scripts/README.md"),
     true,
     "scripts work must surface its task-oriented entry-point guide",
+  );
+});
+
+type ReportedGuard = Readonly<{ tier: string; path: string; evidence: string }>;
+
+type TargetReport = Readonly<{
+  guards: ReadonlyArray<ReportedGuard>;
+  mentionPaths: ReadonlyArray<string>;
+  bindingsLine: string;
+}>;
+
+function runReport(args: ReadonlyArray<string>): ReadonlyMap<string, TargetReport> {
+  const output = execFileSync(process.execPath, ["scripts/what-binds.ts", ...args], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+  const reports = new Map<string, TargetReport>();
+  let current: { target: string; guards: ReportedGuard[]; mentions: string[] } | null = null;
+  for (const line of output.split("\n")) {
+    const target = /^TARGET (\S+)$/u.exec(line);
+    const guard = /^GUARD\[(named|scan)\] (\S+) \((.*)\)$/u.exec(line);
+    const mention = /^MENTION (\S+) \(/u.exec(line);
+    if (target?.[1] !== undefined) {
+      current = { target: target[1], guards: [], mentions: [] };
+    } else if (current !== null && guard?.[1] !== undefined) {
+      current.guards.push({ tier: guard[1], path: guard[2] ?? "", evidence: guard[3] ?? "" });
+    } else if (current !== null && mention?.[1] !== undefined) {
+      current.mentions.push(mention[1]);
+    } else if (current !== null && line.startsWith("BINDINGS ")) {
+      reports.set(current.target, {
+        guards: current.guards,
+        mentionPaths: current.mentions,
+        bindingsLine: line,
+      });
+    }
+  }
+  return reports;
+}
+
+function reportOf(
+  reports: ReadonlyMap<string, TargetReport>,
+  target: string,
+): TargetReport {
+  const report = reports.get(target);
+  assert.notEqual(report, undefined, `no report for ${target}`);
+  return report as TargetReport;
+}
+
+// AA-14: the report for `Execution.lean` listed 19 guards of which twelve assert nothing about it, a
+// guard appeared for `strict-json.ts` only because its text contained `scripts`, the decisive
+// contract-artifact oracle was missing because it reaches `strict-json.ts` by import, and
+// `.integration-test.ts` guards were not recognised at all. The expectations below are the guards
+// those targets are actually bound by, read from the guards rather than from the old output.
+test("the live report gives each AA-14 path its actual oracles and no word-only guard", () => {
+  const targets = [
+    "BpmnSemantics/SemanticProcess/Execution.lean",
+    "scripts/strict-json.ts",
+    "packages/semantic-core/src/internal-choice-schedule.ts",
+  ] as const;
+  const reports = runReport(targets);
+  const bound = (target: string): ReadonlyArray<string> =>
+    reportOf(reports, target).guards.map(({ path }) => path);
+  const tierOf = (target: string, guardPath: string): string | undefined =>
+    reportOf(reports, target).guards.find(({ path }) => path === guardPath)?.tier;
+
+  const lean = targets[0];
+  for (const scanner of [
+    "scripts/lean-source-contracts.test.ts",
+    "scripts/source-hygiene.test.ts",
+    "scripts/lean-module-cost.test.ts",
+  ]) assert.equal(tierOf(lean, scanner), "scan", scanner);
+  assert.equal(tierOf(lean, "scripts/lean-import-boundaries.test.ts") !== undefined, true);
+  for (const wordOnly of [
+    "scripts/activity-occurrence-join.test.ts",
+    "scripts/internal-commutation-census.test.ts",
+    "scripts/runtime-collection-removal-completeness.test.ts",
+    "scripts/execution-publication-contract-coverage.test.ts",
+    "scripts/semantic-review-packet.test.ts",
+    "scripts/evaluation-distribution.platform-test.ts",
+    "scripts/ui-quality-boundary.platform-test.ts",
+    "scripts/test-feedback-efficiency.platform-test.ts",
+    "packages/differential/test/parallel-scope-command-comparison.test.ts",
+  ]) assert.equal(bound(lean).includes(wordOnly), false, `${wordOnly} names other Lean files only`);
+
+  const json = targets[1];
+  assert.deepEqual(
+    reportOf(reports, json).guards.find(({ path }) => path === "scripts/contract-artifacts.test.ts"),
+    {
+      tier: "named",
+      path: "scripts/contract-artifacts.test.ts",
+      evidence: 'imports via "scripts/contract-artifacts.ts"',
+    },
+  );
+  assert.equal(tierOf(json, "packages/temporal-adapter/testkit/test/product-example-configs.test.ts"), "named");
+  assert.equal(tierOf(json, "scripts/source-hygiene.test.ts"), "scan");
+  for (const wordOnly of [
+    "scripts/pinned-toolchain.test.ts",
+    "scripts/live-demo.test.ts",
+    "scripts/project-tags.test.ts",
+    "scripts/run-command.test.ts",
+    "platform/apps/web/test/distribution.test.ts",
+  ]) assert.equal(bound(json).includes(wordOnly), false, `${wordOnly} only shares the word scripts`);
+
+  const schedule = targets[2];
+  for (const oracle of [
+    "packages/semantic-core/test/internal-choice-schedule.test.ts",
+    "packages/semantic-core/test/parallel-scope-effect.test.ts",
+    "packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts",
+  ]) assert.equal(tierOf(schedule, oracle), "named", oracle);
+  for (const wordOnly of [
+    "packages/temporal-adapter/testkit/test/runnable-mvp.test.ts",
+    "scripts/capsule-cost.test.ts",
+    "scripts/contributor-setup.test.ts",
+  ]) assert.equal(bound(schedule).includes(wordOnly), false, `${wordOnly} only shares the word packages`);
+
+  for (const target of targets) {
+    const leanModule = target.replace(/\.lean$/u, "").replaceAll("/", ".");
+    const basename = target.slice(target.lastIndexOf("/") + 1);
+    for (const { tier, path: guardPath, evidence } of reportOf(reports, target).guards) {
+      if (tier === "scan") {
+        assert.match(evidence, /^(?:git ls-files|directory read|glob), /u, `${guardPath}: ${evidence}`);
+      } else {
+        const matched = /^matched "(.*)"$/u.exec(evidence)?.[1];
+        assert.equal(
+          matched === undefined || [target, basename, leanModule].includes(matched),
+          true,
+          `${guardPath} is named only through an ancestor word: ${evidence}`,
+        );
+      }
+    }
+    assert.match(reportOf(reports, target).bindingsLine, /unbound mentions? \(not bindings\)$/u);
+  }
+});
+
+test("unbound mentions are counted by default and listed only on request", () => {
+  const target = "scripts/strict-json.ts";
+  const quiet = reportOf(runReport([target]), target);
+  const verbose = reportOf(runReport(["--mentions", target]), target);
+  const counted = Number(/ (\d+) unbound mentions?/u.exec(verbose.bindingsLine)?.[1]);
+
+  assert.deepEqual(quiet.mentionPaths, []);
+  assert.equal(counted > 0, true, "scripts is a word nearly every guard mentions");
+  assert.equal(verbose.mentionPaths.length, counted);
+  assert.equal(
+    verbose.mentionPaths.some((mentioned) => quiet.guards.some(({ path }) => path === mentioned)),
+    false,
+    "a guard is either a binding or a mention, never both",
   );
 });
 

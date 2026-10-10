@@ -6,11 +6,12 @@
  * oracle, a registry-reachability check, a module-size ceiling — so a plan written from memory can
  * name a change site whose bound it never read, and the bound then surfaces mid-edit.
  *
- * This is a planning report rather than a product gate. Its implementation-map route fails closed,
- * while guard and registry discovery is biased toward recall: a term such as `scenarios` also matches
- * that word in prose. Over-reporting costs a line of reading; under-reporting costs discarded work.
+ * This is a planning report rather than a product gate. Its implementation-map route fails closed.
+ * A guard is reported as a named binding (it names or imports the path), as a scanning guard (it
+ * enumerates a file set containing the path), or only counted as an unbound mention; the tier
+ * decisions live in {@link classifyGuard}. A registry is reported for the tree it indexes.
  *
- * Usage: `node scripts/what-binds.ts <path>...`
+ * Usage: `node scripts/what-binds.ts [--mentions] <path>...`
  */
 
 import { execFile } from "node:child_process";
@@ -21,6 +22,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
+import {
+  classifyGuard,
+  describeEvidence,
+  evidenceStrength,
+  type GuardEvidence,
+  GuardTier,
+  isGuardPath,
+  searchTerms,
+  targetProfile,
+} from "./what-binds-classification.ts";
+import {
+  type CorpusFile,
+  indexCorpus,
+  isImportGraphModule,
+} from "./what-binds-source-facts.ts";
 import {
   headroomDescription,
   isHandWrittenSourcePath,
@@ -45,53 +61,41 @@ export const BindingKind = {
 
 export type BindingKind = typeof BindingKind[keyof typeof BindingKind];
 
-export type CorpusFile = Readonly<{
-  path: string;
-  text: string;
-}>;
+export type { CorpusFile };
+export { searchTerms };
 
-export type Binding = Readonly<{
-  kind: BindingKind;
+/** A tier that makes a guard a binding; a mention never does. */
+export type BindingTier = typeof GuardTier.Named | typeof GuardTier.Scanning;
+
+export type Binding =
+  | Readonly<{
+    kind: typeof BindingKind.Guard;
+    tier: BindingTier;
+    path: string;
+    evidence: GuardEvidence;
+  }>
+  | Readonly<{
+    kind: typeof BindingKind.Registry;
+    path: string;
+    /** The tree term this registry indexes. */
+    matchedTerm: string;
+  }>;
+
+/** A guard whose text matches only a name or tree word: reported as a count, never as a binding. */
+export type UnboundMention = Readonly<{
   path: string;
-  /** The most specific search term that reached this file. */
-  matchedTerm: string;
+  evidence: GuardEvidence;
 }>;
 
 export type ChangeBindings = Readonly<{
   target: string;
   owner: SourceMeasurement | null;
   bindings: ReadonlyArray<Binding>;
+  mentions: ReadonlyArray<UnboundMention>;
 }>;
 
-/**
- * Terms from most to least specific: the exact path, its basename, then each ancestor tree.
- *
- * Ancestor trees are essential rather than a convenience. A file that does not exist yet cannot be
- * named by any guard, so the tree it will join is the only term that can reach its constraints.
- */
-export function searchTerms(target: string): ReadonlyArray<string> {
-  assertCanonicalRepositoryPath(target);
-  const segments = target.split("/");
-  const basename = segments[segments.length - 1] ?? target;
-  const ancestors = segments
-    .slice(0, -1)
-    .map((_, index) => segments.slice(0, index + 1).join("/"))
-    .reverse();
-  return [...new Set([target, basename, ...ancestors])];
-}
-
-/**
- * Every executable-guard filename suffix this repository uses.
- *
- * Every suffix is matched because a guard's suffix records which lane runs it, never whether it
- * constrains a change. Recognising only `.test.ts` hid seventeen guards, and one of them pins the
- * exact text of the root commands, so a change to those commands could be planned without ever
- * being told about it.
- */
-const guardSuffixPattern = /\.(?:test|platform-test|temporal-test|temporal-serial-test)\.ts$/u;
-
 function corpusKind(candidate: string): BindingKind | null {
-  if (guardSuffixPattern.test(candidate)) {
+  if (isGuardPath(candidate)) {
     return BindingKind.Guard;
   }
   // Only registries, never every document mentioning the tree: a README and a source map each carry
@@ -103,54 +107,86 @@ function corpusKind(candidate: string): BindingKind | null {
 }
 
 /**
- * The term reaching one corpus file, or `undefined` when it places no requirement on the target.
+ * The tree term a registry indexes, or `undefined` when it places no requirement on the target.
  *
- * The two kinds are matched differently on purpose. A guard constrains whatever its assertions name,
- * so only its text can say whether it reaches the target. A registry's obligation instead comes from
- * where it sits: `scenarios/README.md` indexes the `scenarios` tree whether or not its prose happens
- * to spell the directory. Matching a registry by text misses exactly the case that matters, an index
- * that describes its members in its own words.
+ * A registry's obligation comes from where it sits: `scenarios/README.md` indexes the `scenarios`
+ * tree whether or not its prose happens to spell the directory. Matching it by text would miss
+ * exactly the case that matters, an index that describes its members in its own words.
  */
-function matchedTerm(
-  kind: BindingKind,
-  file: CorpusFile,
-  terms: ReadonlyArray<string>,
-): string | undefined {
-  switch (kind) {
-    case BindingKind.Guard:
-      return terms.find((term) => file.text.includes(term));
-    case BindingKind.Registry: {
-      const registryTree = path.dirname(file.path);
-      // The repository-root README is a durable front door barred from live inventories, so it
-      // carries no same-change obligation for an artifact and would otherwise match every target.
-      return registryTree === "." || registryTree === ""
-        ? undefined
-        : terms.find((term) => term === registryTree);
+function registryTerm(file: CorpusFile, terms: ReadonlyArray<string>): string | undefined {
+  const registryTree = path.dirname(file.path);
+  // The repository-root README is a durable front door barred from live inventories, so it
+  // carries no same-change obligation for an artifact and would otherwise match every target.
+  return registryTree === "." || registryTree === ""
+    ? undefined
+    : terms.find((term) => term === registryTree);
+}
+
+function compareBindings(left: Binding, right: Binding): number {
+  if (left.kind !== right.kind) {
+    return compareCanonicalStrings(left.kind, right.kind);
+  }
+  const strength = left.kind === BindingKind.Guard && right.kind === BindingKind.Guard
+    ? evidenceStrength(left.evidence) - evidenceStrength(right.evidence)
+    : 0;
+  return strength !== 0 ? strength : compareCanonicalStrings(left.path, right.path);
+}
+
+/**
+ * Classifies every corpus file against the target in one pass: guards into named and scanning
+ * bindings or unbound mentions, registries into bindings by the tree they index.
+ */
+export function classifyBindings(
+  target: string,
+  corpus: ReadonlyArray<CorpusFile>,
+): Readonly<{ bindings: ReadonlyArray<Binding>; mentions: ReadonlyArray<UnboundMention> }> {
+  const profile = targetProfile(target);
+  const index = indexCorpus(corpus);
+  const bindings: Binding[] = [];
+  const mentions: UnboundMention[] = [];
+  for (const file of corpus) {
+    const kind = corpusKind(file.path);
+    if (kind === null || file.path === target) {
+      continue;
+    }
+    switch (kind) {
+      case BindingKind.Guard: {
+        const classification = classifyGuard(profile, file, index);
+        if (classification === null) {
+          break;
+        }
+        if (classification.tier === GuardTier.Mention) {
+          mentions.push({ path: file.path, evidence: classification.evidence });
+        } else {
+          bindings.push({
+            kind,
+            tier: classification.tier,
+            path: file.path,
+            evidence: classification.evidence,
+          });
+        }
+        break;
+      }
+      case BindingKind.Registry: {
+        const matchedTerm = registryTerm(file, profile.mentionTerms);
+        if (matchedTerm !== undefined) {
+          bindings.push({ kind, path: file.path, matchedTerm });
+        }
+        break;
+      }
     }
   }
+  return {
+    bindings: bindings.sort(compareBindings),
+    mentions: mentions.sort((left, right) => compareCanonicalStrings(left.path, right.path)),
+  };
 }
 
 export function bindingsFor(
   target: string,
   corpus: ReadonlyArray<CorpusFile>,
 ): ReadonlyArray<Binding> {
-  const terms = searchTerms(target);
-  return corpus
-    .flatMap((file) => {
-      const kind = corpusKind(file.path);
-      if (kind === null || file.path === target) {
-        return [];
-      }
-      const term = matchedTerm(kind, file, terms);
-      return term === undefined
-        ? []
-        : [{ kind, path: file.path, matchedTerm: term }];
-    })
-    .sort((left, right) =>
-      left.kind === right.kind
-        ? compareCanonicalStrings(left.path, right.path)
-        : compareCanonicalStrings(left.kind, right.kind)
-    );
+  return classifyBindings(target, corpus).bindings;
 }
 
 export function ownerMeasurement(
@@ -163,12 +199,16 @@ export function ownerMeasurement(
     : { path: target, lines: nonblankLines(source) };
 }
 
+/**
+ * Guards and registries are what is reported; every other TypeScript source is read only so import
+ * chains and imported enumeration helpers can be followed.
+ */
 export function presentBindingCorpusCandidates(
   candidates: ReadonlyArray<string>,
   isPresent: (candidate: string) => boolean,
 ): ReadonlyArray<string> {
   return candidates
-    .filter((candidate) => corpusKind(candidate) !== null)
+    .filter((candidate) => corpusKind(candidate) !== null || isImportGraphModule(candidate))
     .filter(isPresent);
 }
 
@@ -176,26 +216,47 @@ function counted(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+function describeBinding(binding: Binding): string {
+  switch (binding.kind) {
+    case BindingKind.Guard:
+      return `${binding.kind}[${binding.tier}] ${binding.path} (${describeEvidence(binding.evidence)})`;
+    case BindingKind.Registry:
+      return `${binding.kind} ${binding.path} (matched ${JSON.stringify(binding.matchedTerm)})`;
+  }
+}
+
+/**
+ * The report body for one target. Mentions are always counted but listed only on request, because
+ * a directory word such as `scripts` matches most guards and a list of them would bury the bindings.
+ */
 export function reportLines(
   result: ChangeBindings,
+  options: Readonly<{ listMentions: boolean }> = { listMentions: false },
 ): ReadonlyArray<string> {
-  const ofKind = (kind: BindingKind): number =>
-    result.bindings.filter((binding) => binding.kind === kind).length;
+  const guards = result.bindings.filter((binding) => binding.kind === BindingKind.Guard);
+  const ofTier = (tier: BindingTier): number =>
+    guards.filter((binding) => binding.kind === BindingKind.Guard && binding.tier === tier).length;
+  const registries = result.bindings.length - guards.length;
   return [
     `TARGET ${result.target}`,
     ...(result.owner === null
       ? []
       : [`OWNER ${result.owner.path} ${headroomDescription(result.owner.lines)}`]),
-    ...result.bindings.map(({ kind, path: bindingPath, matchedTerm }) =>
-      `${kind} ${bindingPath} (matched ${JSON.stringify(matchedTerm)})`
-    ),
-    `BINDINGS ${counted(ofKind(BindingKind.Guard), "guard", "guards")}, ${
-      counted(ofKind(BindingKind.Registry), "registry", "registries")
-    }`,
+    ...result.bindings.map(describeBinding),
+    ...(options.listMentions
+      ? result.mentions.map(({ path: mentionPath, evidence }) =>
+        `MENTION ${mentionPath} (${describeEvidence(evidence)})`
+      )
+      : []),
+    `BINDINGS ${counted(guards.length, "guard", "guards")} (${ofTier(GuardTier.Named)} named, ${
+      ofTier(GuardTier.Scanning)
+    } scanning), ${counted(registries, "registry", "registries")}, ${
+      counted(result.mentions.length, "unbound mention", "unbound mentions")
+    } (not bindings)`,
   ];
 }
 
-/** Tracked guard and registry files, read once so several targets share one scan. */
+/** Tracked guard, registry and TypeScript source files, read once so several targets share one scan. */
 export async function loadBindingCorpus(): Promise<ReadonlyArray<CorpusFile>> {
   const { stdout } = await runCommand(
     "git",
@@ -222,9 +283,11 @@ async function readIfPresent(target: string): Promise<string | null> {
   }
 }
 
-async function main(targets: ReadonlyArray<string>): Promise<void> {
+async function main(args: ReadonlyArray<string>): Promise<void> {
+  const listMentions = args.includes("--mentions");
+  const targets = args.filter((arg) => arg !== "--mentions");
   if (targets.length === 0) {
-    process.stderr.write("usage: node scripts/what-binds.ts <path>...\n");
+    process.stderr.write("usage: node scripts/what-binds.ts [--mentions] <path>...\n");
     process.exitCode = 2;
     return;
   }
@@ -239,8 +302,8 @@ async function main(targets: ReadonlyArray<string>): Promise<void> {
     const bindingLines = reportLines({
       target,
       owner: ownerMeasurement(target, await readIfPresent(target)),
-      bindings: bindingsFor(target, corpus),
-    });
+      ...classifyBindings(target, corpus),
+    }, { listMentions });
     const [targetLine, ...remainingLines] = bindingLines;
     const lines = [
       targetLine,
