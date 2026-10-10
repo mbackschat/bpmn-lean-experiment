@@ -122,9 +122,9 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: finish the evolving [whole-codebase assurance proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) before further implementation, as directed by the owner. Lean, affected TypeScript and causal guidelines/scripts remain in scope.
 
-Current result: [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26 and area dispositions; required review edits are applied; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
+Current result: the [proposal](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md) records verified findings AA-01 to AA-26, area dispositions and the rows an approved revision authorizes; its [receipt](ASSURANCE-ARCHITECTURE-REPAIR-PROPOSAL.md#independent-cold-review-receipt) owns review state.
 
-Next action: complete the correction audit. Approval ends the writing phase and authorizes only boundaries with stated acceptance; first the PMIS pilot placement under AA-01. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
+Next action: correction boundary 1 (AA-01/AA-02): decide transport ownership below the five further PMIS inductions within the recorded headroom, then build each decisive theorem's narrow target. Held: AA-11/AA-13/AA-20/AA-23. One sub-agent at a time; census work as scripts.
 
 Last verification: document guards 44/44 on this revision; core-Lean numeric probe for AA-13. `/tmp/assurance-pmis-full-library-20261010` stopped at exit 130, so no pilot claim.
 
