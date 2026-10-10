@@ -493,7 +493,7 @@ private theorem reached_pair_conditionally_closes (arm : SequentialMultiInstance
         exact ⟨final, .more event rest⟩
 termination_by sequentialMultiInstanceControllerRemainingCount target
 
-/-- The capsule's conditional liveness law.
+/-- The capsule's conditional closure law.
 
 For a finite snapshot, if every pair a trace from `initialTarget` at `initial` can reach has one
 target-indexed accepted inner completion or its outer Timer enabled, then a finite relation trace
@@ -545,9 +545,9 @@ Readiness is therefore an invariant of the trace, established once and carried b
 
 Each conjunct is a fact `SMI-CANCEL-01` reads from committed state: the live controller, the Activity
 occurrence record naming it with a task body, a Timer handler of that record the arm owns, and the
-live wait that handler names. None of them mentions an accepted event, so readiness is a premise about
-the state and not a restatement of enabledness. The instant the deadline fires is not a conjunct,
-because the relation fixes it to the wait's own deadline. -/
+live wait that handler names. It is the state-side premise set of `SMI-CANCEL-01`, so it is
+equivalent to that arm being enabled; it mentions no inner completion and no closure. The instant the
+deadline fires is not a conjunct, because the relation fixes it to the wait's own deadline. -/
 def SequentialMultiInstanceInterruptionReady (arm : SequentialMultiInstanceArm)
     (target : SequentialMultiInstanceController) (instanceId : SemanticId)
     (state : RuntimeState) : Prop :=
