@@ -166,7 +166,9 @@ Independent review must assess dependency direction, invariant strength, actual 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `aaf93da09f5991549785e68b3b96d489e3eff1f1` | `fork-turns-none` | `approve-with-required-edits` | `bec716eb` |
-| Semantic checkpoint | `dd0bf64b` | `fork-turns-none` | `approve-with-required-edits` | `4a7f4e45` |
+| Semantic checkpoint | `9063a867` | `fork-turns-none` | `approve-with-required-edits` | `9c414ffd` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 One cold reviewer covered two targets with separate verdicts: Amendment 1 `df89a2a0` against `dd0bf64b` (packet `1b0460f1f1367b36b96e7dbd5fa58e15f431bd63525a902c7d33b8f008335a2c`) and the AA-24 semantic checkpoint `dd0bf64b` against `b3985163` (packet `762aea970d05625b3faa9071e2f29a73ab7d5607402f7162116e5865aef874d5`). It required an exact AA-26 oracle and completion census, aligned AA-16 text, a deferral qualifier on correction item 4, and accurate SMI docstrings; the same reviewer approved correction `4a7f4e45` for both.
+
+The AA-21/AA-12 Lean, AA-25 and AA-07 checkpoint reviewed `9063a867` against `441e250c` (packet `de46a6762f43b02223a8dbdc0b9ad97bfacbd45933bd371574b53d77ff8f6fbe`). It required scanner resolution of multiple opened namespaces and nearer declaration shadowing; the same reviewer approved correction `9c414ffd` after the separating probe and 70 focused tests. The checkpoint retains the declared synthetic-controller, executable cyclic-equality and hosted-qualification limits; it does not close the repair programme.
