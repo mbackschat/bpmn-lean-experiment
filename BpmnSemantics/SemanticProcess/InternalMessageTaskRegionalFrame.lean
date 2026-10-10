@@ -189,7 +189,9 @@ theorem message_task_cancellation_commutes (program : Program) (state : RuntimeS
   dsimp only [cancelled, patch, makeInternalMessageTaskPatch] at populations taskFrame messageFrame recordFrame tokenFrame
   simp only [calledInstanceClosure] at populations taskFrame messageFrame recordFrame tokenFrame
   simp only [applyInternalMessageTaskPatch, makeInternalMessageTaskPatch, applyInternalArmingPatch]
-  dsimp only [cancelScopeSubtree, calledInstanceClosure]
+  dsimp only [cancelScopeSubtree, filterScopeOwnedWork]
+  unfold scopeCancellationOwner
+  dsimp only [calledInstanceClosure]
   rw [populations]
   simp only [insertUserTaskWait_eq_canonicalInsertBy, insertMessageWait,
     retainedByRegion, insertActivityOccurrence_eq_canonicalInsertBy]

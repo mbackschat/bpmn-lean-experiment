@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import BpmnSemantics.SemanticProcess.CallInstanceClosure
 import BpmnSemantics.SemanticProcess.SequentialMultiInstance
@@ -59,6 +60,11 @@ def calledInstanceClosure (state : RuntimeState)
   processInstanceClosureWithin state.calledProcessOccurrences direct
     (state.calledProcessOccurrences.length + 1)
 
+/-- Regional disposal includes the selected subtree and every transitively called Process instance. -/
+@[reducible] def scopeCancellationOwner (state : RuntimeState) (root owner : ScopeOccurrenceId) : Bool :=
+  occurrenceInSubtree state.scopeOccurrences root owner ||
+    (calledInstanceClosure state root).contains owner.processInstanceId
+
 private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩
@@ -76,10 +82,7 @@ def compensationParentContextRetentionSurvivesScopeCancellation
     (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition)
     (retention : CompensationParentContextRetention) : Bool :=
-  let calledInstances := calledInstanceClosure state root
-  let cancelled := fun owner =>
-    occurrenceInSubtree state.scopeOccurrences root owner ||
-      calledInstances.contains owner.processInstanceId
+  let cancelled := scopeCancellationOwner state root
   match retention with
   | .provisional parent _ => keepScopeOccurrence disposition root cancelled parent
   | .promoted parent _ _ =>
@@ -93,9 +96,7 @@ def compensationParentContextRetentionSurvivesScopeCancellation
 def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
     (disposition : SelectedScopeDisposition) : RuntimeState :=
   let calledInstances := calledInstanceClosure state root
-  let cancelled := fun owner =>
-    occurrenceInSubtree state.scopeOccurrences root owner ||
-      calledInstances.contains owner.processInstanceId
+  let cancelled := scopeCancellationOwner state root
   let cancelledEffects := state.effectWaits.filter fun wait =>
     cancelled wait.owner
   let cancelledIncidents := state.effectIncidents.filter fun incident =>
@@ -107,11 +108,9 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
   -- records name what each Activity owns, and the withdrawn ones carry their attached waits out.
   let withdrawnActivities := withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)
   let withdrawnTimers := attachedTimersOf withdrawnActivities
-  { state with
-    tokens := state.tokens.filter fun token => !cancelled token.owner
+  { filterScopeOwnedWork state (fun owner => !cancelled owner) with
     scopeOccurrences := state.scopeOccurrences.filter
       (keepScopeOccurrence disposition root cancelled)
-    waits := state.waits.filter fun wait => !cancelled wait.owner
     messageWaits := state.messageWaits.filter fun wait =>
       !cancelled wait.owner && !activityRecordsAttachMessageWait withdrawnActivities wait
     eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
@@ -141,14 +140,6 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
           !(withdrawnActivities.any fun activity =>
             parallelControllerNamesIdentity controller activity.processInstanceId
               ⟨activity.activityElementId.value⟩ activity.activation)
-    effectWaits := state.effectWaits.filter fun wait => !cancelled wait.owner
-    effectIncidents :=
-      state.effectIncidents.filter fun incident => !cancelled incident.wait.owner
-    selectedBranchSets :=
-      state.selectedBranchSets.filter fun record => !cancelled record.owner
-    eventRaces := state.eventRaces.filter fun race => !cancelled race.owner
-    compensationActivityRetentions :=
-      state.compensationActivityRetentions.filter fun retention => !cancelled retention.owner
     compensationParentContextRetentions :=
       state.compensationParentContextRetentions.filter
         (compensationParentContextRetentionSurvivesScopeCancellation
@@ -157,9 +148,6 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
       !cancelled trigger.owner
     compensationHandlerEffectWaits := state.compensationHandlerEffectWaits.filter fun wait =>
       !(cancelledTriggers.any fun trigger => trigger.id == wait.triggerId)
-    calledProcessOccurrences :=
-      state.calledProcessOccurrences.filter fun record =>
-        !cancelled record.caller && !cancelled record.calledRoot
     variables :=
       { state.variables with
         scopes := state.variables.scopes.filter fun scope =>
@@ -292,6 +280,14 @@ theorem calledInstanceClosure_no_calls (state : RuntimeState) (root : ScopeOccur
     (noCalls : state.calledProcessOccurrences = []) : calledInstanceClosure state root = [] := by
   simp [calledInstanceClosure, noCalls, processInstanceClosureWithin]
 
+/-- The full function equation also rewrites classifiers passed to Activity body-region rules. -/
+theorem scopeCancellationOwner_no_calls (state : RuntimeState) (root : ScopeOccurrenceId)
+    (noCalls : state.calledProcessOccurrences = []) :
+    scopeCancellationOwner state root = occurrenceInSubtree state.scopeOccurrences root := by
+  funext owner
+  simp only [scopeCancellationOwner, calledInstanceClosure_no_calls state root noCalls,
+    List.contains_nil, Bool.or_false]
+
 /-- Cancellation preserves the complete occurrence and local-frame selection censuses of every outside owner. -/
 theorem cancelScopeSubtree_outside_owner_census (state : RuntimeState) (root owner : ScopeOccurrenceId)
     (noCalls : state.calledProcessOccurrences = [])
@@ -302,14 +298,16 @@ theorem cancelScopeSubtree_outside_owner_census (state : RuntimeState) (root own
         state.variables.scopes.filter (fun value => decide (value.owner = owner)) := by
   have calls := calledInstanceClosure_no_calls state root noCalls
   constructor
-  · simp only [cancelScopeSubtree, keepScopeOccurrence, calls, List.contains_nil, Bool.or_false, List.filter_filter]
+  · simp only [cancelScopeSubtree, scopeCancellationOwner_no_calls state root noCalls,
+      keepScopeOccurrence, calls, List.contains_nil, List.filter_filter]
     apply List.filter_congr
     intro value _
     by_cases same : value.id = owner <;> simp [same, outside]
-  · simp only [cancelScopeSubtree, calls, List.contains_nil, Bool.or_false, List.filter_filter]
+  · simp only [cancelScopeSubtree, scopeCancellationOwner_no_calls state root noCalls,
+      calls, List.contains_nil, List.filter_filter]
     apply List.filter_congr
     intro value _
-    by_cases same : value.owner = owner <;> simp [same, outside]
+    by_cases same : value.owner = owner <;> simp [same, outside, calls]
 
 /-- After retired membership is detached, a sole outside outer Activity and its controller survive leaf cancellation. -/
 theorem cancelScopeSubtree_outside_parallel_outer (state : RuntimeState) (root : ScopeOccurrenceId)
@@ -325,7 +323,8 @@ theorem cancelScopeSubtree_outside_parallel_outer (state : RuntimeState) (root :
   have notWithdrawn : recordInRegion (fun owner => occurrenceInSubtree state.scopeOccurrences root owner) record none = false := by
     cases body : record.body <;> simp [recordInRegion, body, ownerOutside, activityBodyScopeClaims] at claimsOutside ⊢
     all_goals simp_all
-  simp [cancelScopeSubtree, calls, activities, controllers, retainedByRegion, withdrawnByRegion,
+  simp [cancelScopeSubtree, scopeCancellationOwner_no_calls state root noCalls,
+    calls, activities, controllers, retainedByRegion, withdrawnByRegion,
     retainedCancellationRoot, notWithdrawn]
 
 /-- Regional cancellation can only remove occurrences, so later cancellations cannot resurrect an owner. -/

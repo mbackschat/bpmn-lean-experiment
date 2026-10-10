@@ -289,7 +289,7 @@ theorem checked_terminate_end_exact_arity :
 
 /-- Lowering retains one operation with the exact End identity, origin, input, and containing scope. -/
 theorem lowered_terminate_operation_is_exact :
-    (program.operations.filter fun operation =>
+    ((lowerCheckedProcess checkedProcess).operations.filter fun operation =>
       operation.id = ⟨"operation:I_Terminate"⟩) =
       [.terminateScope ⟨"operation:I_Terminate"⟩
         { elementId := ⟨"I_Terminate"⟩ }
@@ -326,9 +326,22 @@ private def exactTerminateInput : ControlPlaceId :=
   ⟨"place:Flow_TriggerTerminate"⟩
 
 def nestedTerminatedState : RuntimeState :=
-  let cancelled := cancelScopeSubtree nestedCounterexampleState childOwner .retain
-  { cancelled with
-    endOccurrences := nestedCounterexampleState.endOccurrences + 1 }
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := childOwner, parent := some rootOwner }, { id := rootOwner, parent := none }]
+    tokens := [{ placeId := ⟨"place:RootWork"⟩, owner := rootOwner }]
+    waits := [{ processInstanceId := instanceId, owner := rootOwner, task := { id := ⟨"Outer"⟩, name := some "Outer" }, activation := 1, output := ⟨"place:OuterToEnd"⟩ }]
+    variables := { emptyScopedVariables with
+      process := { bindings := [{ name := "preserved", value := .string "yes" }] } }
+    activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
+    messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 6 }]
+    timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 5 }]
+    effectActivations := [{ elementId := ⟨"HistoryEffect"⟩, count := 4 }]
+    scopeActivations := [{ scopeId := ⟨"HistoryScope"⟩, count := 3 }]
+    eventRaceActivations := [{ elementId := ⟨"HistoryRace"⟩, count := 2 }]
+    callActivations := [{ elementId := ⟨"HistoryCall"⟩, count := 1 }]
+    endOccurrences := 5
+    logicalTimeMs := 27 }
 
 /-- The evaluator selects the child occurrence from the exact offered token and applies the declarative relation. -/
 theorem nested_termination_evaluator_and_relation :
@@ -344,7 +357,7 @@ theorem nested_termination_evaluator_and_relation :
       nestedTerminatedState exactTerminateId exactTerminateOrigin
       exactTerminateInput childScopeId (by decide +kernel)
 
-/-- Selected-subtree termination removes every represented owner family and called descendant, retains the selected occurrence, and preserves parent work. -/
+/-- Selected-subtree termination removes the populated work and called-descendant inventory listed below, retains the selected occurrence, and preserves parent work. -/
 theorem selected_subtree_inventory_is_exact :
     nestedTerminatedState.scopeOccurrences =
       [ { id := childOwner, parent := some rootOwner }

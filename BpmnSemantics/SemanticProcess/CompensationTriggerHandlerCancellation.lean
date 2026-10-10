@@ -1,10 +1,11 @@
+import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation handler failure cancellation
 
 This module owns the declarative handler-terminalization and root-cleanup relation required by
-`COMPH-CANCEL-01`. It is intentionally independent of the executable failure successor.
+`COMPH-CANCEL-01`. Handler terminalization is declarative; cleanup shares the runtime owner filter and is a constructor-selection boundary, not an independent cleanup oracle.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -78,30 +79,10 @@ inductive CompensationHandlerFailureCancellationStep (before : RuntimeState)
           code
           message })
       (afterShape : after =
-        { before with
+        { clearCompensationFailureWork before with
           control := .failed trigger.owner.processInstanceId failure
-          initiationPending := false
-          scopeOccurrences := []
-          tokens := []
-          waits := []
-          messageWaits := []
-          timerWaits := []
-          effectWaits := []
-          effectIncidents := []
-          selectedBranchSets := []
-          eventRaces := []
-          calledProcessOccurrences := []
-          activityOccurrences := []
-          sequentialScopeControllers := []
-          parallelScopeControllers := []
-          sequentialMultiInstanceControllers := []
-          parallelMultiInstanceControllers := []
-          compensationActivityRetentions := []
-          compensationParentContextRetentions := []
           compensationTriggers := before.compensationTriggers.map fun candidate =>
-            if candidate.id == trigger.id then failedTrigger else candidate
-          compensationHandlerEffectWaits := []
-          variables := { before.variables with activities := [], processInterfaces := [], scopes := [] } }) :
+            if candidate.id == trigger.id then failedTrigger else candidate }) :
       CompensationHandlerFailureCancellationStep before wait trigger handler code message after
 
 theorem CompensationHandlerFailureCancellationStep.activity_identity_discipline

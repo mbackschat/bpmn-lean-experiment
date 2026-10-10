@@ -10,6 +10,7 @@ export type LeanModuleDocument = Readonly<{
 export type LeanSourceAnalysis = Readonly<{
   code: string;
   moduleDocuments: ReadonlyArray<LeanModuleDocument>;
+  literalRanges: ReadonlyArray<{ start: number; end: number }>;
 }>;
 
 const simpleCharacterEscapes = new Set([
@@ -84,6 +85,7 @@ function masked(text: string): string {
  */
 export function analyzeLeanSource(source: string): LeanSourceAnalysis {
   const moduleDocuments: LeanModuleDocument[] = [];
+  const literalRanges: Array<{ start: number; end: number }> = [];
   const chunks: string[] = [];
   let codeStart = 0;
   let index = 0;
@@ -146,12 +148,14 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
       if (!closed) {
         throw new SyntaxError(`unterminated Lean string literal at line ${line}`);
       }
+      literalRanges.push({ start: index, end: cursor });
       maskThrough(cursor);
       continue;
     }
     if (source[index] === "'") {
       const end = characterLiteralEnd(source, index);
       if (end !== null) {
+        literalRanges.push({ start: index, end });
         maskThrough(end);
         continue;
       }
@@ -163,7 +167,7 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
   }
 
   chunks.push(source.slice(codeStart));
-  return { code: chunks.join(""), moduleDocuments };
+  return { code: chunks.join(""), moduleDocuments, literalRanges };
 }
 
 /** Tracked and non-ignored pending Lean sources that still exist in the worktree. */
@@ -176,4 +180,58 @@ export function worktreeLeanSourceFiles(worktree = "."): string[] {
     .split("\n")
     .filter((sourcePath) => sourcePath.endsWith(".lean"))
     .filter((sourcePath) => existsSync(join(worktree, sourcePath)));
+}
+
+/** AA-25's direct `E = expected` pattern, where a visible zero-argument alias defines `expected := E`.
+ * This masked text scan recognizes identifier applications, not arbitrary Lean propositions. */
+export function leanSelfComparisons(sources: ReadonlyArray<{ path: string; source: string }>):
+    Array<{ path: string; line: number; theorem: string; alias: string }> {
+  const declarations = sources.flatMap(({ path, source }) => {
+    const { code, literalRanges } = analyzeLeanSource(source);
+    const commands = [...code.matchAll(/^[\t ]*(?:@\[[^\]\n]*\]\s*)*(?:(?:private|protected|noncomputable|partial)\s+)*(namespace|section|end|open|def|abbrev|theorem|lemma|inductive|structure|instance|class)(?:[\t ]+([^\s:({\[]+))?(?=[\t \r\n:({\[]|$)/gmu)];
+    let namespaces: string[] = [];
+    let opened: string[] = [];
+    const scopes: Array<{ namespaces: string[]; opened: string[] }> = [];
+    return commands.flatMap((command, index) => {
+      const [, kind, name] = command;
+      if (kind === "namespace" || kind === "section") {
+        scopes.push({ namespaces: [...namespaces], opened: [...opened] });
+        if (kind === "namespace" && name !== undefined) namespaces.push(name);
+        return [];
+      }
+      if (kind === "end") {
+        const scope = scopes.pop();
+        if (scope !== undefined) ({ namespaces, opened } = scope);
+        return [];
+      }
+      if (kind === "open") { opened.push(name!); return []; }
+      if (name === undefined) return [];
+      const start = command.index! + command[0].length;
+      const end = commands[index + 1]?.index ?? code.length;
+      const body = code.slice(start, end);
+      const assignment = body.indexOf(":=");
+      if (assignment < 0) return [];
+      return [{ path, name: name!, kind, namespace: namespaces.join("."), opened: [...opened],
+        line: code.slice(0, command.index).split("\n").length,
+        header: body.slice(0, assignment), value: body.slice(assignment + 2).trim(),
+        headerContainsLiteral: literalRanges.some((literal) => literal.start >= start && literal.start < start + assignment),
+        valueContainsLiteral: literalRanges.some((literal) => literal.start >= start + assignment + 2 && literal.start < end) }];
+    });
+  });
+  const application = /^[A-Za-z_][A-Za-z0-9_'.?]*(?:\s+[A-Za-z_][A-Za-z0-9_'.?]*)+$/u;
+  const normalized = (value: string) => value.replace(/\s+/gu, " ").trim();
+  const aliases = declarations.filter((declaration) =>
+    ["def", "abbrev"].includes(declaration.kind!) && /^\s*:/u.test(declaration.header) &&
+    application.test(declaration.value) && !declaration.valueContainsLiteral);
+  return declarations.flatMap((declaration) => {
+    if (!["theorem", "lemma"].includes(declaration.kind!)) return [];
+    const equality = /^\s*:\s*([^=]+?)\s*=\s*([A-Za-z_][A-Za-z0-9_'.?]*)\s*$/u.exec(declaration.header);
+    if (equality === null || declaration.headerContainsLiteral || !application.test(normalized(equality[1]!))) return [];
+    const prefixes = declaration.namespace.split(".").map((_, index, parts) => parts.slice(0, index + 1).join("."));
+    const visible = new Set([equality[2]!, ...[...prefixes, ...declaration.opened].map((prefix) => `${prefix}.${equality[2]}`)]);
+    return aliases.some((alias) => visible.has([alias.namespace, alias.name].filter(Boolean).join(".")) &&
+      normalized(alias.value) === normalized(equality[1]!))
+      ? [{ path: declaration.path, line: declaration.line, theorem: declaration.name, alias: equality[2]! }]
+      : [];
+  });
 }

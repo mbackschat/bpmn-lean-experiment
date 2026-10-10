@@ -398,8 +398,8 @@ def initialState : RuntimeState :=
     endOccurrences := 0
     logicalTimeMs := 0 }
 
-/-- A terminal failed Process retains only Process variables, monotonic identity history, and trigger tombstones. -/
-private def failedCompensationLiveRegionEmpty (state : RuntimeState) : Bool :=
+/-- The failed-state validator checks this listed subset of live collections; inherited listeners and scope/interface data are outside this predicate. -/
+private def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :=
   !state.initiationPending && state.scopeOccurrences.isEmpty && state.tokens.isEmpty &&
     state.waits.isEmpty && state.messageWaits.isEmpty && state.timerWaits.isEmpty &&
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
@@ -463,7 +463,7 @@ def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bo
   match state.control with
   | .failed instanceId failure =>
       program.compensationExecution.isSome &&
-        failedCompensationLiveRegionEmpty state &&
+        failedCompensationListedLiveCollectionsEmpty state &&
         (state.compensationTriggers.filter fun trigger =>
           trigger.lifecycle == .failed).length = 1 &&
         (state.compensationTriggers.filter

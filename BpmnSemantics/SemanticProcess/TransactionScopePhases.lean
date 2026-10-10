@@ -328,7 +328,9 @@ theorem transaction_scope_handler_completion (p : Program) (roles : TransactionA
       cases cancelled with
       | cancel handlers failedTrigger failure after terminalized triggerShape failureShape afterShape =>
           subst after
-          exact ⟨none, .empty rfl, by intro token present; simp at present,
+          exact ⟨none, .empty (by
+            change before.scopeOccurrences.filter (fun _ => false) = []
+            simp), by intro token present; simp at present,
             by intro wait present; simp at present⟩
 
 private theorem transaction_scope_cancel_withdrawal (p : Program) (roles : TransactionAdmittedRoles p)

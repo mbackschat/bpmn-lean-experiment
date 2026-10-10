@@ -415,7 +415,7 @@ theorem transaction_continuation_handler_completion (p : Program) (roles : Trans
       cases cancelled with
       | cancel handlers failedTrigger failure after terminalized triggerShape failureShape afterShape =>
         subst after
-        exact ⟨rfl, by simp, by simp, by simp⟩
+        exact ⟨rfl, by simp [emptyTokens], by simp, by simp⟩
 
 /-- A quiescent leaf either retires the Process or contributes its one declared continuation token. -/
 theorem transaction_continuation_scope_completion (p : Program) (roles : TransactionAdmittedRoles p)

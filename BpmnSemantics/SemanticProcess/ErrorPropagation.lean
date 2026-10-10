@@ -140,7 +140,18 @@ private def syntheticState : RuntimeState :=
     endOccurrences := 1 }
 
 private def syntheticInterrupted : RuntimeState :=
-  interruptScope syntheticState childId rootId errorHandler.output
+  { initialState with
+    control := .running instanceId
+    scopeOccurrences := [{ id := rootId, parent := none }]
+    tokens := [{ placeId := ⟨"place:BoundaryToRecover"⟩, owner := rootId },
+      { placeId := ⟨"place:RootWork"⟩, owner := rootId }]
+    waits := [{ processInstanceId := instanceId, owner := rootId, task := { id := ⟨"RootTask"⟩, name := some "Root" }, activation := 1, output := ⟨"place:RootTaskOutput"⟩ }]
+    activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
+    messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 5 }]
+    timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 4 }]
+    effectActivations := [{ elementId := ⟨"HistoryEffect"⟩, count := 3 }]
+    scopeActivations := [{ scopeId := ⟨"HistoryScope"⟩, count := 2 }]
+    endOccurrences := 1 }
 
 /-- The executable throw performs the full regional interruption atomically. -/
 theorem synthetic_throw_catches_and_cancels_region :

@@ -387,17 +387,21 @@ private theorem cancellation_fields_commute (before afterLeft afterRight : Runti
   have leftParents : compensationParentContextRetentionSurvivesScopeCancellation afterRight left leftDisposition =
       compensationParentContextRetentionSurvivesScopeCancellation before left leftDisposition := by
     funext retention
-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, leftSubtree, leftCalled]
+    unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
+    cases retention <;> simp only [leftSubtree, leftCalled]
   have rightParents : compensationParentContextRetentionSurvivesScopeCancellation afterLeft right rightDisposition =
       compensationParentContextRetentionSurvivesScopeCancellation before right rightDisposition := by
     funext retention
-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, rightSubtree, rightCalled]
+    unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
+    cases retention <;> simp only [rightSubtree, rightCalled]
   simp only [cancelScopeSubtree]
+  unfold scopeCancellationOwner
   simp only [leftActivities, rightActivities, leftEffects, rightEffects,
     leftIncidents, rightIncidents, leftTriggers, rightTriggers, leftParents, rightParents]
   simp only [leftSubtree, rightSubtree, leftCalled, rightCalled]
   rw [leftUpdate, rightUpdate]
   simp only [cancelScopeSubtree, retainedByRegion]
+  unfold scopeCancellationOwner
   have filters {α : Type} (values : List α) (first second : α → Bool) :
       (values.filter first).filter second = (values.filter second).filter first := by
     simp only [List.filter_filter, Bool.and_comm]

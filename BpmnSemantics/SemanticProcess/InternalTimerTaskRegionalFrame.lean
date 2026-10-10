@@ -171,7 +171,9 @@ theorem timer_task_cancellation_commutes (program : Program) (state : RuntimeSta
   dsimp only [cancelled, patch, makeInternalTimerTaskPatch] at populations taskFrame timerFrame recordFrame tokenFrame
   simp only [calledInstanceClosure] at populations taskFrame timerFrame recordFrame tokenFrame
   simp only [applyInternalTimerTaskPatch, makeInternalTimerTaskPatch, applyInternalArmingPatch]
-  dsimp only [cancelScopeSubtree, calledInstanceClosure]
+  dsimp only [cancelScopeSubtree, filterScopeOwnedWork]
+  unfold scopeCancellationOwner
+  dsimp only [calledInstanceClosure]
   rw [populations]
   simp only [insertUserTaskWait_eq_canonicalInsertBy, insertTimerWait,
     retainedByRegion, insertActivityOccurrence_eq_canonicalInsertBy]

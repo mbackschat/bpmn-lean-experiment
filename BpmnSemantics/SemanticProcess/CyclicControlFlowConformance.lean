@@ -4,6 +4,13 @@ import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
 /-! # Resumption-bounded cyclic control-flow conformance
 
 This module owns proved locks for the reviewed three-input Exclusive Merge, the exact User Task resumption cut, and the representative repeat/exit process. It proves no general termination, fairness, arbitrary-cycle, concurrent-arrival, nested-scope, or host-runtime claim.
+
+The full lowering equality crosses the private partial JSON parser used by string conditions.
+The executable `user-task-cycle-repeat-rework-exit` case in
+`packages/differential/test/cyclic-control-flow-pipeline-cases.ts` instead passes the independently
+supplied Program through `SemanticProcessJson.DefinitionInput.validateDefinitionInput`, which
+compares it with actual Lean lowering before execution. The structural lowering facts below
+stay within kernel-reducible projections; the fixture Program remains an independent literal.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -90,20 +97,22 @@ theorem cyclic_program_cut_excludes_every_surviving_cycle :
     cyclic_program_cut_is_saturation_certified_acyclic
 
 theorem cyclic_merge_has_exact_canonical_checked_endpoints :
-    cyclicMergeOperation =
-      .mergeExclusive ⟨"operation:Merge"⟩ ⟨⟨"Merge"⟩⟩
+    (lowerCheckedProcess cyclicCheckedProcess).operations.find? (fun operation =>
+      decide (operation.id = ⟨"operation:Merge"⟩)) =
+      some (.mergeExclusive ⟨"operation:Merge"⟩ ⟨⟨"Merge"⟩⟩
         [⟨"place:Flow_Repeat"⟩, ⟨"place:Flow_Rework"⟩,
           ⟨"place:Flow_Start"⟩]
-        ⟨"place:Flow_Merge_Review"⟩ := by
-  rfl
+        ⟨"place:Flow_Merge_Review"⟩) := by
+  decide +kernel
 
 theorem cyclic_user_task_cut_classification_is_preserved_by_lowering :
     ∃ operation,
-      operation = cyclicReviewOperation ∧
+      (lowerCheckedProcess cyclicCheckedProcess).operations.find? (fun candidate =>
+        decide (candidate.id = ⟨"operation:Review"⟩)) = some operation ∧
         checkedNodeIsResumptionCut (.userTask ⟨"Review"⟩
           (some "Review request")) = true ∧
         semanticOperationIsResumptionCut operation = true := by
-  exact ⟨cyclicReviewOperation, rfl, rfl, rfl⟩
+  exact ⟨cyclicReviewOperation, by decide +kernel, rfl, rfl⟩
 
 theorem exclusive_merge_evaluator_is_sound
     (before after : RuntimeState) (inputs : List ControlPlaceId)
@@ -193,17 +202,15 @@ theorem unique_offer_evaluator_leaves_multi_offer_selection_open :
   decide +kernel
 
 theorem cyclic_choice_candidate_order_is_exact :
-    cyclicChoiceOperation =
-      .choose ⟨"operation:Choice"⟩ ⟨⟨"Choice"⟩⟩
-        ⟨"place:Flow_Review_Choice"⟩
-        [ { condition := .stringEquals "route" "repeat"
-            output := ⟨"place:Flow_Repeat"⟩
-            origin := ⟨⟨"Flow_Repeat"⟩⟩ }
-        , { condition := .stringEquals "route" "rework"
-            output := ⟨"place:Flow_Rework"⟩
-            origin := ⟨⟨"Flow_Rework"⟩⟩ } ]
-        ⟨"place:Flow_Exit"⟩ ⟨⟨"Flow_Exit"⟩⟩ := by
-  rfl
+    ((lowerCheckedProcess cyclicCheckedProcess).operations.find? (fun operation =>
+      decide (operation.id = ⟨"operation:Choice"⟩))).map (fun operation =>
+        match operation with
+        | .choose _ _ _ candidates _ _ => candidates.map (fun candidate =>
+            (candidate.origin.elementId, candidate.output))
+        | _ => []) =
+      some [(⟨"Flow_Repeat"⟩, ⟨"place:Flow_Repeat"⟩),
+        (⟨"Flow_Rework"⟩, ⟨"place:Flow_Rework"⟩)] := by
+  decide +kernel
 
 private theorem cyclic_choice_lookup :
     cyclicProgram.operations.find? (fun operation =>

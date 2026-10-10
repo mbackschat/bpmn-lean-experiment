@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 
 /-! Call-tree removal keeps issuance counters and immutable declaration bindings.
 Owner liveness uses the existing exact census theorem; controller liveness additionally
@@ -48,36 +49,23 @@ theorem removeCalledProcessTree_preserves_wait_owners (state : RuntimeState)
 theorem removeCalledProcessTree_preserves_identity_bound (state : RuntimeState)
     (call : CalledProcessOccurrence) (valid : runtimeStateIdentityBound state = true) :
     runtimeStateIdentityBound (removeCalledProcessTree state call) = true := by
-  simp only [runtimeStateIdentityBound, Bool.and_eq_true] at valid ⊢
-  exact ⟨⟨all_filter _ _ _ valid.1.1, all_filter _ _ _ valid.1.2⟩,
-    all_filter _ _ _ valid.2⟩
+  exact runtimeStateIdentityBound_of_removal state _
+    List.filter_sublist List.filter_sublist List.filter_sublist rfl rfl rfl valid
 
 theorem removeCalledProcessTree_preserves_wait_declarations (program : Program)
     (state : RuntimeState) (instanceId : SemanticId) (call : CalledProcessOccurrence)
     (valid : waitDeclarationsValid program instanceId state = true) :
     waitDeclarationsValid program instanceId (removeCalledProcessTree state call) = true := by
-  simp only [waitDeclarationsValid, Bool.and_eq_true, and_assoc] at valid ⊢
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  all_goals
-    apply List.all_eq_true.mpr
-    intro value member
-    obtain ⟨kept, inInstance⟩ := List.mem_filter.mp member
-    first
-    | exact List.all_eq_true.mp valid.1 value (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, inInstance⟩)
-    | exact List.all_eq_true.mp valid.2.1 value (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, inInstance⟩)
-    | exact List.all_eq_true.mp valid.2.2.1 value (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, inInstance⟩)
-    | exact List.all_eq_true.mp valid.2.2.2.1 value (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, inInstance⟩)
-    | exact List.all_eq_true.mp valid.2.2.2.2 value (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, inInstance⟩)
+  exact waitDeclarationsValid_of_removal program instanceId state _
+    List.filter_sublist List.filter_sublist List.filter_sublist List.filter_sublist
+    List.filter_sublist valid
 
 theorem removeCalledProcessTree_preserves_hidden_declarations (program : Program)
     (state : RuntimeState) (call : CalledProcessOccurrence)
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (removeCalledProcessTree state call) = true := by
-  simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  obtain ⟨⟨⟨parallel, selections⟩, races⟩, controllers⟩ := valid
-  have empty : state.parallelScopeControllers = [] := List.isEmpty_iff.mp parallel
-  exact ⟨⟨⟨by simp [removeCalledProcessTree, empty], all_filter _ _ _ selections⟩,
-    all_filter _ _ _ races⟩, all_filter _ _ _ controllers⟩
+  exact hiddenRecordDeclarationsValid_of_removal program state _
+    List.filter_sublist List.filter_sublist List.filter_sublist List.filter_sublist valid
 
 theorem removeCalledProcessTree_preserves_controller_owners (program : Program)
     (state : RuntimeState) (call : CalledProcessOccurrence)

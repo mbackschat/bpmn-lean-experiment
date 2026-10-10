@@ -64,7 +64,7 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
         simp only [ownerEq, show cancelled patch.owner = false from outside, Bool.not_false]
       have filtered := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose
         (fun wait => !cancelled wait.owner) wait state.waits canonical.2.2.1 kept
-      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, insertUserTaskWait_eq_canonicalInsertBy]
+      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, scopeCancellationOwner, insertUserTaskWait_eq_canonicalInsertBy]
       dsimp only [cancelled] at filtered tokenFrame
       simp only [calledInstanceClosure] at filtered tokenFrame ⊢
       rw [filtered, tokenFrame]
@@ -80,7 +80,8 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
         (fun wait => !cancelled wait.owner &&
           !activityRecordsAttachMessageWait (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition)) wait)
         wait state.messageWaits canonical.2.2.2.2.1 kept
-      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, insertMessageWait]
+      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, scopeCancellationOwner, insertMessageWait]
+      unfold scopeCancellationOwner
       dsimp only [cancelled] at filtered tokenFrame
       simp only [calledInstanceClosure] at filtered tokenFrame ⊢
       rw [filtered, tokenFrame]
@@ -96,7 +97,8 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
         (fun wait => !cancelled wait.owner &&
           !anyTimerIdNamesWait (attachedTimersOf (withdrawnByRegion cancelled state.activityOccurrences (retainedCancellationRoot root disposition))) wait)
         wait state.timerWaits canonical.2.2.2.2.2.1 kept
-      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, insertTimerWait]
+      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, scopeCancellationOwner, insertTimerWait]
+      unfold scopeCancellationOwner
       dsimp only [cancelled] at filtered tokenFrame
       simp only [calledInstanceClosure] at filtered tokenFrame ⊢
       rw [filtered, tokenFrame]
@@ -164,7 +166,7 @@ theorem arming_cancellation_commutes (program : Program) (state : RuntimeState)
         { owner := .effectOccurrence (effectWaitOccurrence wait), bindings } (by simp [scope])
       dsimp only [cancelled] at populations filtered tokenFrame
       simp only [PreparedInternalArming.apply, applyInternalArmingPatch, write, insertEffectWait] at populations
-      simp only [applyInternalArmingPatch, write, cancelScopeSubtree,
+      simp only [applyInternalArmingPatch, write, cancelScopeSubtree, scopeCancellationOwner,
         insertEffectWait]
       simp only [calledInstanceClosure] at filtered tokenFrame populations ⊢
       rw [filtered, tokenFrame]

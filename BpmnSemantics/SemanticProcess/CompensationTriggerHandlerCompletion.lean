@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
@@ -173,30 +174,10 @@ def compensationFailureSuccessor (state : RuntimeState)
       code
       message }
   let successor : RuntimeState :=
-    { state with
+    { clearCompensationFailureWork state with
       control := .failed selected.trigger.owner.processInstanceId failure
-      initiationPending := false
-      scopeOccurrences := []
-      tokens := []
-      waits := []
-      messageWaits := []
-      timerWaits := []
-      effectWaits := []
-      effectIncidents := []
-      selectedBranchSets := []
-      eventRaces := []
-      calledProcessOccurrences := []
-      activityOccurrences := []
-      sequentialScopeControllers := []
-      parallelScopeControllers := []
-      sequentialMultiInstanceControllers := []
-      parallelMultiInstanceControllers := []
-      compensationActivityRetentions := []
-      compensationParentContextRetentions := []
       compensationTriggers :=
-        replaceTrigger selected.trigger failedTrigger state.compensationTriggers
-      compensationHandlerEffectWaits := []
-      variables := { state.variables with activities := [], processInterfaces := [], scopes := [] } }
+        replaceTrigger selected.trigger failedTrigger state.compensationTriggers }
   successor
 
 private theorem failOtherHandler_sound (failed candidate : CompensationHandlerExecution) :
@@ -238,7 +219,7 @@ private theorem failOtherHandlers_sound (failed : CompensationHandlerExecution)
       exact .cons candidate (failOtherHandler failed candidate) tail
         (tail.map (failOtherHandler failed)) (failOtherHandler_sound failed candidate) ih
 
-/-- The executable failure successor realizes the independent `COMPH-CANCEL-01` relation. -/
+/-- The executable failure successor realizes `COMPH-CANCEL-01` handler terminalization with shared cleanup. -/
 theorem compensationFailureSuccessor_cancellation_sound (state : RuntimeState)
     (selected : SelectedCompensationHandler) (code : String) (message : Option String) :
     CompensationHandlerFailureCancellationStep state selected.wait selected.trigger

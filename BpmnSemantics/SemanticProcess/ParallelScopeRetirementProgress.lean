@@ -62,7 +62,9 @@ private theorem cancel_outside_quiescence (state : RuntimeState) (root owner : S
     simp [same, outside]
   unfold scopeQuiescent
   rw [scopes]
-  simp only [cancelScopeSubtree, calls, List.contains_nil, Bool.or_false, retainedCancellationRoot,
+  simp only [cancelScopeSubtree]
+  unfold scopeCancellationOwner
+  simp only [calls, List.contains_nil, Bool.or_false, retainedCancellationRoot,
     withdrawn, attachedTimersOf, List.flatMap_nil, anyTimerIdNamesWait, activityRecordsAttachMessageWait,
     List.any_nil, Bool.not_false, Bool.and_true, noCalls, List.filter_nil, reads, triggers]
 

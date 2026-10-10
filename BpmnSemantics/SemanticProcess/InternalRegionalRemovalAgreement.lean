@@ -418,4 +418,90 @@ theorem cancelScopeSubtree_preserves_issuance (state : RuntimeState) (root : Sco
       (cancelScopeSubtree state root disposition).endOccurrences = state.endOccurrences := by
   simp [cancelScopeSubtree]
 
+/-- Subscriptions need no unstated liveness premise: historical owners retain the additional
+called-instance test from the predecessor's complete cancellation mask. -/
+theorem cancelScopeSubtree_event_subprocess_subscriptions_eq_prepared_region
+    (program : Program) (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (disposition : SelectedScopeDisposition) :
+    (cancelScopeSubtree state root disposition).eventSubProcessMessageSubscriptions =
+      state.eventSubProcessMessageSubscriptions.filter (fun listener =>
+        !(region.contains listener.owner ||
+          (calledInstanceClosure state root).contains listener.owner.processInstanceId)) := by
+  apply List.filter_congr
+  intro listener _
+  exact congrArg Bool.not (regional_cancellation_full_owner_mask program state expectedInstanceId
+    instanceId valid running root region prepared listener.owner)
+
+private theorem regional_scoped_data_filter {α : Type}
+    (program : Program) (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (disposition : SelectedScopeDisposition) (values : List α) (owner : α → ScopeOccurrenceId) :
+    values.filter (fun value => match disposition with
+      | .retain => decide (owner value = root) || !scopeCancellationOwner state root (owner value)
+      | .remove => !scopeCancellationOwner state root (owner value)) =
+      values.filter (fun value => match disposition with
+        | .retain => decide (owner value = root) || !(region.contains (owner value) ||
+            (calledInstanceClosure state root).contains (owner value).processInstanceId)
+        | .remove => !(region.contains (owner value) ||
+            (calledInstanceClosure state root).contains (owner value).processInstanceId)) := by
+  apply List.filter_congr
+  intro value _
+  have mask := regional_cancellation_full_owner_mask program state expectedInstanceId instanceId
+    valid running root region prepared (owner value)
+  cases disposition with
+  | retain => exact congrArg (fun selected => decide (owner value = root) || !selected) mask
+  | remove => exact congrArg Bool.not mask
+
+/-- Scope-local data follows selected-root retention, including records without a live-owner
+invariant; called-instance identity remains an independent disposal reason. -/
+theorem cancelScopeSubtree_scope_variables_eq_prepared_region
+    (program : Program) (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (disposition : SelectedScopeDisposition) :
+    (cancelScopeSubtree state root disposition).variables.scopes =
+      state.variables.scopes.filter (fun scope => match disposition with
+        | .retain => decide (scope.owner = root) || !(region.contains scope.owner ||
+            (calledInstanceClosure state root).contains scope.owner.processInstanceId)
+        | .remove => !(region.contains scope.owner ||
+            (calledInstanceClosure state root).contains scope.owner.processInstanceId)) := by
+  cases disposition with
+  | retain =>
+    exact regional_scoped_data_filter program state expectedInstanceId instanceId valid
+      running root region prepared .retain state.variables.scopes (·.owner)
+  | remove =>
+    exact regional_scoped_data_filter program state expectedInstanceId instanceId valid
+      running root region prepared .remove state.variables.scopes (·.owner)
+
+/-- Callable-interface frames have the same scope-owner lifetime as scope-local data. -/
+theorem cancelScopeSubtree_process_interfaces_eq_prepared_region
+    (program : Program) (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (disposition : SelectedScopeDisposition) :
+    (cancelScopeSubtree state root disposition).variables.processInterfaces =
+      state.variables.processInterfaces.filter (fun scope => match disposition with
+        | .retain => decide (scope.owner = root) || !(region.contains scope.owner ||
+            (calledInstanceClosure state root).contains scope.owner.processInstanceId)
+        | .remove => !(region.contains scope.owner ||
+            (calledInstanceClosure state root).contains scope.owner.processInstanceId)) := by
+  cases disposition with
+  | retain =>
+    exact regional_scoped_data_filter program state expectedInstanceId instanceId valid
+      running root region prepared .retain state.variables.processInterfaces (·.owner)
+  | remove =>
+    exact regional_scoped_data_filter program state expectedInstanceId instanceId valid
+      running root region prepared .remove state.variables.processInterfaces (·.owner)
+
 end BpmnSemantics.SemanticProcess

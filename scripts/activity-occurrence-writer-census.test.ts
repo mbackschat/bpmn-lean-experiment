@@ -104,7 +104,7 @@ function withoutComments(source: string, language: SourceLanguage): string {
 }
 
 function leanDeclaration(line: string): Readonly<{ owner: string; production: boolean }> | null {
-  const match = /^(?:private\s+)?(def|inductive|structure|theorem|lemma|abbrev|class|instance|example)\b(?:\s+([^\s(:]+))?/u.exec(line);
+  const match = /^(?:@\[[^\]]*\]\s*)*(?:private\s+)?(def|inductive|structure|theorem|lemma|abbrev|class|instance|example)\b(?:\s+([^\s(:]+))?/u.exec(line);
   if (match === null) return null;
   const kind = match[1] ?? "";
   return { owner: match[2] ?? `<${kind}>`, production: kind === "def" || kind === "inductive" };
@@ -532,6 +532,17 @@ test("the census parser sees independent writer forms without treating declarati
   ].join("\n"));
   assert.deepEqual(typeScript.map(({ key }) => key), ["seeded.ts#seeded@1"]);
   assert.deepEqual(lean.map(({ key }) => key), ["Seeded.lean#seeded@1"]);
+});
+
+test("Lean attributes retain production writer discovery and do not turn proofs into writers", () => {
+  const source = [
+    "@[simp, reducible] def sharedFilter (state : State) : State :=",
+    "  { state with activityOccurrences := state.activityOccurrences.filter keep }",
+    "@[simp] theorem sharedFilter_proof (state : State) :",
+    "    { state with activityOccurrences := [] } = state := by rfl",
+  ].join("\n");
+  assert.deepEqual(writerSitesFromSource("Attributed.lean", SourceLanguage.Lean, source)
+    .map(({ key }) => key), ["Attributed.lean#sharedFilter@1"]);
 });
 
 test("boolean equality summaries are reads while conditional and filtered collections remain writers", () => {

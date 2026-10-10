@@ -415,7 +415,7 @@ private theorem cancel_parent_marking (before : RuntimeState) (parent target : S
   have census := (cancelScopeSubtree_outside_owner_census before target parent noCalls (outside _)).1
   refine ⟨?_, ?_, ?_⟩
   · unfold continuationMarking
-    simp only [cancelScopeSubtree, calls, List.contains_nil, Bool.or_false, List.filter_filter]
+    simp only [cancelScopeSubtree, scopeCancellationOwner, calls, List.contains_nil, Bool.or_false, List.filter_filter]
     have outsideOwner : occurrenceInSubtree before.scopeOccurrences target parent = false := outside _
     congr 2 <;> first | apply congrArg List.length | skip
     all_goals apply List.filter_congr <;> intro value _

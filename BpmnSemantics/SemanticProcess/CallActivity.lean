@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.CallActivityIdentity
+import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import BpmnSemantics.SemanticProcess.CallInstanceClosure
 import BpmnSemantics.SemanticProcess.ScopeCompletion
 
@@ -206,21 +207,10 @@ def removeCalledProcessTree (state : RuntimeState)
     (state.calledProcessOccurrences.length + 1)
   let removedOwner := fun owner : ScopeOccurrenceId =>
     removed.contains owner.processInstanceId
-  { state with
-    scopeOccurrences := state.scopeOccurrences.filter fun occurrence =>
-      !removedOwner occurrence.id
-    tokens := state.tokens.filter fun token => !removedOwner token.owner
-    waits := state.waits.filter fun wait => !removedOwner wait.owner
-    messageWaits := state.messageWaits.filter fun wait => !removedOwner wait.owner
+  let filtered := filterScopeOwnedWork state (fun owner => !removedOwner owner)
+  { filtered with
     eventSubProcessMessageSubscriptions := state.eventSubProcessMessageSubscriptions.filter fun listener =>
       !removedOwner listener.owner
-    timerWaits := state.timerWaits.filter fun wait => !removedOwner wait.owner
-    effectWaits := state.effectWaits.filter fun wait => !removedOwner wait.owner
-    effectIncidents := state.effectIncidents.filter fun incident => !removedOwner incident.wait.owner
-    activityOccurrences := state.activityOccurrences.filter fun activity => !removedOwner activity.owner
-    selectedBranchSets := state.selectedBranchSets.filter fun selected =>
-      !removedOwner selected.owner
-    eventRaces := state.eventRaces.filter fun race => !removedOwner race.owner
     calledProcessOccurrences := state.calledProcessOccurrences.filter fun candidate =>
       candidate.id ≠ record.id &&
         !removedOwner candidate.caller && !removedOwner candidate.calledRoot
@@ -234,8 +224,6 @@ def removeCalledProcessTree (state : RuntimeState)
     parallelMultiInstanceControllers :=
       state.parallelMultiInstanceControllers.filter fun controller =>
         !removed.contains controller.id.processInstanceId
-    compensationActivityRetentions :=
-      state.compensationActivityRetentions.filter fun retention => !removedOwner retention.owner
     compensationParentContextRetentions :=
       state.compensationParentContextRetentions.filter fun retention =>
         let parent := match retention with
@@ -248,10 +236,7 @@ def removeCalledProcessTree (state : RuntimeState)
         !removed.contains wait.triggerId.processInstanceId &&
         !removed.contains wait.handlerId.processInstanceId
     variables :=
-      { state.variables with
-        scopes := state.variables.scopes.filter fun scope => !removedOwner scope.owner
-        processInterfaces := state.variables.processInterfaces.filter fun scope =>
-          !removedOwner scope.owner
+      { filtered.variables with
         activities := state.variables.activities.filter fun activity =>
           !removed.contains activity.owner.processInstanceId } }
 

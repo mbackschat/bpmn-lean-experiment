@@ -92,6 +92,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
     applyInternalArmingPatch, cancelScopeSubtree, insertUserTaskWait_eq_canonicalInsertBy,
     insertActivityOccurrence_eq_canonicalInsertBy, addActivityOccurrenceVariableScope,
     insertActivityVariableScope_eq_canonicalInsertBy, retainedByRegion]
+  unfold scopeCancellationOwner
   simp only [calledInstanceClosure] at populations waitFrame recordFrame tokenFrame ⊢
   rw [waitFrame, recordFrame, tokenFrame, populations.1]
   congr 1 <;> try rfl

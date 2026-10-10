@@ -289,8 +289,8 @@ theorem transaction_cancellation_consumes_selected_records
       subst after
       exact ⟨owner, cleared_records_empty owner before.compensationActivityRetentions⟩
 
-/-- TXC-FAIL-01 removes every live runtime collection, including parent work outside the child. -/
-theorem transaction_handler_failure_clears_all_live_work
+/-- TXC-FAIL-01 clears these listed live collections, including parent work outside the child; inherited Event Sub-Process listeners are excluded. -/
+theorem transaction_handler_failure_clears_listed_live_work
     (before after : RuntimeState) (wait : CompensationHandlerEffectWait)
     (trigger : CompensationTriggerExecution) (handler : CompensationHandlerExecution)
     (code : String) (message : Option String)

@@ -45,10 +45,10 @@ theorem cancelScopeSubtree_compensation_eq_prepared_region (program : Program) (
             fun trigger => trigger.id == wait.triggerId)) := by
   have mask := regional_cancellation_full_owner_mask program state expectedInstanceId instanceId
     valid running root region prepared
-  simp only [cancelScopeSubtree, mask, and_self, true_and, and_true]
+  simp only [cancelScopeSubtree, scopeCancellationOwner, mask, and_self, true_and, and_true]
   apply List.filter_congr
   intro retention _
-  unfold compensationParentContextRetentionSurvivesScopeCancellation
+  unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
   dsimp only
   rw [funext mask]
   simp only [mask]

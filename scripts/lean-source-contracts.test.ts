@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   analyzeLeanSource,
+  leanSelfComparisons,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
 import {
@@ -570,6 +571,12 @@ test("maintained Lean sources satisfy structural comment contracts", () => {
     [],
     "Lean module contracts and maintained conformance facts must remain locally identifiable",
   );
+});
+
+test("maintained Lean equalities do not compare an expression with its own expected alias", () => {
+  const sources = readWorktreeSources(worktreeLeanSourceFiles()
+    .filter((file) => !file.startsWith("BpmnSemantics/Experiments/")));
+  assert.deepEqual(leanSelfComparisons(sources), []);
 });
 
 /**

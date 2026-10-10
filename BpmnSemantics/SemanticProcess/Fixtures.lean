@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Semantic Process retained topology fixtures
 
-This module owns the retained sequential and parallel checked graphs, lowered programs, discriminating runtime states, and generic parallel laws used by the current conformance capsules.
+This module owns the retained sequential and parallel checked graphs, independent expected programs, discriminating runtime states, and generic parallel laws used by the current conformance capsules. The expected programs are authored separately from lowering so the exact-lowering laws can detect a changed lowering result, as required by AA-25 in the assurance architecture repair proposal.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -35,7 +35,29 @@ def sequentialCheckedProcess : CheckedProcess :=
           targetId := ⟨"EndEvent_1"⟩ } ] }
 
 def sequentialProgram : Program :=
-  lowerCheckedProcess sequentialCheckedProcess
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩
+        sourceId := ⟨"sequential-user-task-process"⟩
+        sourceSha256 := "b5704a6d526ce5029e21b2de214653860bb23f7ed6169c4d912cd2412486378d" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId := ⟨"Process_SequentialUserTask"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_SequentialUserTask"⟩]
+    operationScopes := ["EndEvent_1", "StartEvent_1", "UserTask_Approve",
+      "complete-scope:scope:Process_SequentialUserTask"].map fun name =>
+      { operationId := ⟨"operation:" ++ name⟩, scopeId := ⟨"scope:Process_SequentialUserTask"⟩ }
+    controlPlaceScopes := ["Flow_StartToTask", "Flow_TaskToEnd"].map fun name =>
+      { controlPlaceId := ⟨"place:" ++ name⟩, scopeId := ⟨"scope:Process_SequentialUserTask"⟩ }
+    controlPlaces := ["Flow_StartToTask", "Flow_TaskToEnd"].map fun name =>
+      { id := ⟨"place:" ++ name⟩, origin := ⟨⟨name⟩⟩ }
+    operations :=
+      [ .reachNoneEnd ⟨"operation:EndEvent_1"⟩ ⟨⟨"EndEvent_1"⟩⟩ ⟨"place:Flow_TaskToEnd"⟩
+      , .initiate ⟨"operation:StartEvent_1"⟩ ⟨⟨"StartEvent_1"⟩⟩ ⟨"place:Flow_StartToTask"⟩
+      , .awaitUserTask ⟨"operation:UserTask_Approve"⟩ ⟨⟨"UserTask_Approve"⟩⟩
+          ⟨"place:Flow_StartToTask"⟩ ⟨"place:Flow_TaskToEnd"⟩
+          { id := ⟨"UserTask_Approve"⟩, name := some "Approve" }
+      , .completeScope ⟨"operation:complete-scope:scope:Process_SequentialUserTask"⟩
+          ⟨⟨"Process_SequentialUserTask"⟩⟩ ⟨"scope:Process_SequentialUserTask"⟩ none ] }
 
 def parallelCheckedProcess : CheckedProcess :=
   { identity :=
@@ -79,7 +101,36 @@ def parallelCheckedProcess : CheckedProcess :=
           targetId := ⟨"Gateway_Fork"⟩ } ] }
 
 def parallelProgram : Program :=
-  lowerCheckedProcess parallelCheckedProcess
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"parallel-fork-join-draft"⟩
+        sourceId := ⟨"parallel-two-user-tasks-process"⟩
+        sourceSha256 := "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId := ⟨"Process_ParallelForkJoin"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_ParallelForkJoin"⟩]
+    operationScopes := ["EndEvent_1", "Gateway_Fork", "Gateway_Join", "StartEvent_1",
+      "UserTask_A", "UserTask_B", "complete-scope:scope:Process_ParallelForkJoin"].map fun name =>
+      { operationId := ⟨"operation:" ++ name⟩, scopeId := ⟨"scope:Process_ParallelForkJoin"⟩ }
+    controlPlaceScopes := ["Flow_AToJoin", "Flow_BToJoin", "Flow_ForkToA", "Flow_ForkToB",
+      "Flow_JoinToEnd", "Flow_StartToFork"].map fun name =>
+      { controlPlaceId := ⟨"place:" ++ name⟩, scopeId := ⟨"scope:Process_ParallelForkJoin"⟩ }
+    controlPlaces := ["Flow_AToJoin", "Flow_BToJoin", "Flow_ForkToA", "Flow_ForkToB",
+      "Flow_JoinToEnd", "Flow_StartToFork"].map fun name =>
+      { id := ⟨"place:" ++ name⟩, origin := ⟨⟨name⟩⟩ }
+    operations :=
+      [ .reachNoneEnd ⟨"operation:EndEvent_1"⟩ ⟨⟨"EndEvent_1"⟩⟩ ⟨"place:Flow_JoinToEnd"⟩
+      , .duplicate ⟨"operation:Gateway_Fork"⟩ ⟨⟨"Gateway_Fork"⟩⟩ ⟨"place:Flow_StartToFork"⟩
+          [⟨"place:Flow_ForkToA"⟩, ⟨"place:Flow_ForkToB"⟩]
+      , .synchronize ⟨"operation:Gateway_Join"⟩ ⟨⟨"Gateway_Join"⟩⟩
+          [⟨"place:Flow_AToJoin"⟩, ⟨"place:Flow_BToJoin"⟩] ⟨"place:Flow_JoinToEnd"⟩
+      , .initiate ⟨"operation:StartEvent_1"⟩ ⟨⟨"StartEvent_1"⟩⟩ ⟨"place:Flow_StartToFork"⟩
+      , .awaitUserTask ⟨"operation:UserTask_A"⟩ ⟨⟨"UserTask_A"⟩⟩
+          ⟨"place:Flow_ForkToA"⟩ ⟨"place:Flow_AToJoin"⟩ { id := ⟨"UserTask_A"⟩, name := some "A" }
+      , .awaitUserTask ⟨"operation:UserTask_B"⟩ ⟨⟨"UserTask_B"⟩⟩
+          ⟨"place:Flow_ForkToB"⟩ ⟨"place:Flow_BToJoin"⟩ { id := ⟨"UserTask_B"⟩, name := some "B" }
+      , .completeScope ⟨"operation:complete-scope:scope:Process_ParallelForkJoin"⟩
+          ⟨⟨"Process_ParallelForkJoin"⟩⟩ ⟨"scope:Process_ParallelForkJoin"⟩ none ] }
 
 def parallelInstanceId : SemanticId := ⟨"Instance_Parallel"⟩
 def parallelStartOperation : OperationId := ⟨"operation:StartEvent_1"⟩
@@ -169,7 +220,32 @@ def timerUserTaskCompositionCheckedProcess : CheckedProcess :=
           targetId := ⟨"UserTask_Approve"⟩ } ] }
 
 def timerUserTaskCompositionProgram : Program :=
-  lowerCheckedProcess timerUserTaskCompositionCheckedProcess
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := ⟨"bpmn-2.0.2-timer-user-task-composition-draft"⟩
+        sourceId := ⟨"timer-user-task-composition-process"⟩
+        sourceSha256 := "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId := ⟨"Process_TimerUserTaskComposition"⟩
+    definitionScopes := [rootDefinitionScope ⟨"Process_TimerUserTaskComposition"⟩]
+    operationScopes := ["EndEvent_1", "StartEvent_1", "TimerCatch_PT1S", "UserTask_Approve",
+      "complete-scope:scope:Process_TimerUserTaskComposition"].map fun name =>
+      { operationId := ⟨"operation:" ++ name⟩, scopeId := ⟨"scope:Process_TimerUserTaskComposition"⟩ }
+    controlPlaceScopes := ["Flow_StartToTimer", "Flow_TaskToEnd", "Flow_TimerToTask"].map fun name =>
+      { controlPlaceId := ⟨"place:" ++ name⟩, scopeId := ⟨"scope:Process_TimerUserTaskComposition"⟩ }
+    controlPlaces := ["Flow_StartToTimer", "Flow_TaskToEnd", "Flow_TimerToTask"].map fun name =>
+      { id := ⟨"place:" ++ name⟩, origin := ⟨⟨name⟩⟩ }
+    operations :=
+      [ .reachNoneEnd ⟨"operation:EndEvent_1"⟩ ⟨⟨"EndEvent_1"⟩⟩ ⟨"place:Flow_TaskToEnd"⟩
+      , .initiate ⟨"operation:StartEvent_1"⟩ ⟨⟨"StartEvent_1"⟩⟩ ⟨"place:Flow_StartToTimer"⟩
+      , .awaitTimer ⟨"operation:TimerCatch_PT1S"⟩ ⟨⟨"TimerCatch_PT1S"⟩⟩
+          ⟨"place:Flow_StartToTimer"⟩ ⟨"place:Flow_TimerToTask"⟩
+          { elementId := ⟨"TimerCatch_PT1S"⟩, durationMs := 1000 }
+      , .awaitUserTask ⟨"operation:UserTask_Approve"⟩ ⟨⟨"UserTask_Approve"⟩⟩
+          ⟨"place:Flow_TimerToTask"⟩ ⟨"place:Flow_TaskToEnd"⟩
+          { id := ⟨"UserTask_Approve"⟩, name := some "Approve" }
+      , .completeScope ⟨"operation:complete-scope:scope:Process_TimerUserTaskComposition"⟩
+          ⟨⟨"Process_TimerUserTaskComposition"⟩⟩ ⟨"scope:Process_TimerUserTaskComposition"⟩ none ] }
 
 def reverseTimerUserTaskCompositionCheckedProcess : CheckedProcess :=
   { timerUserTaskCompositionCheckedProcess with

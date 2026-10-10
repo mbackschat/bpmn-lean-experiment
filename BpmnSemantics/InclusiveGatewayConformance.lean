@@ -62,7 +62,45 @@ def checkedProcess : CheckedProcess :=
       , { id := ⟨"Flow_Start"⟩, sourceId := ⟨"Start"⟩,
           targetId := ⟨"Split"⟩ } ] }
 
-def program : Program := lowerCheckedProcess checkedProcess
+def program : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := profileId
+        sourceId := ⟨"inclusive-gateway-test"⟩
+        sourceSha256 := "9a662129585d4bf89973c8f1eb2851023345a43bba31a9d51683d918ca4de9f1" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId
+    definitionScopes := [rootDefinitionScope ⟨"Process_Inclusive"⟩]
+    operationScopes := ["End", "Join", "Split", "Start", "Task_A", "Task_B", "Task_Default",
+      "complete-scope:scope:Process_Inclusive"].map fun name =>
+      { operationId := ⟨"operation:" ++ name⟩, scopeId := ⟨"scope:Process_Inclusive"⟩ }
+    controlPlaceScopes := ["Flow_A", "Flow_A_Join", "Flow_B", "Flow_B_Join", "Flow_Default",
+      "Flow_Default_Join", "Flow_End", "Flow_Start"].map fun name =>
+      { controlPlaceId := ⟨"place:" ++ name⟩, scopeId := ⟨"scope:Process_Inclusive"⟩ }
+    controlPlaces := ["Flow_A", "Flow_A_Join", "Flow_B", "Flow_B_Join", "Flow_Default",
+      "Flow_Default_Join", "Flow_End", "Flow_Start"].map fun name =>
+      { id := ⟨"place:" ++ name⟩, origin := ⟨⟨name⟩⟩ }
+    operations :=
+      [ .reachNoneEnd ⟨"operation:End"⟩ ⟨⟨"End"⟩⟩ ⟨"place:Flow_End"⟩
+      , .synchronizeSelected ⟨"operation:Join"⟩ ⟨⟨"Join"⟩⟩
+          [⟨"place:Flow_A_Join"⟩, ⟨"place:Flow_B_Join"⟩, ⟨"place:Flow_Default_Join"⟩]
+          ⟨"place:Flow_End"⟩ "Split"
+      , .selectMany ⟨"operation:Split"⟩ ⟨⟨"Split"⟩⟩ ⟨"place:Flow_Start"⟩
+          [{ condition := .isPresent "takeA", output := ⟨"place:Flow_A"⟩
+             expectedJoinInput := ⟨"place:Flow_A_Join"⟩, origin := ⟨⟨"Flow_A"⟩⟩ },
+           { condition := .isPresent "takeB", output := ⟨"place:Flow_B"⟩
+             expectedJoinInput := ⟨"place:Flow_B_Join"⟩, origin := ⟨⟨"Flow_B"⟩⟩ }]
+          { output := ⟨"place:Flow_Default"⟩, expectedJoinInput := ⟨"place:Flow_Default_Join"⟩
+            origin := ⟨⟨"Flow_Default"⟩⟩ } "Split"
+      , .initiate ⟨"operation:Start"⟩ ⟨⟨"Start"⟩⟩ ⟨"place:Flow_Start"⟩
+      , .awaitUserTask ⟨"operation:Task_A"⟩ ⟨⟨"Task_A"⟩⟩
+          ⟨"place:Flow_A"⟩ ⟨"place:Flow_A_Join"⟩ { id := ⟨"Task_A"⟩, name := some "A" }
+      , .awaitUserTask ⟨"operation:Task_B"⟩ ⟨⟨"Task_B"⟩⟩
+          ⟨"place:Flow_B"⟩ ⟨"place:Flow_B_Join"⟩ { id := ⟨"Task_B"⟩, name := some "B" }
+      , .awaitUserTask ⟨"operation:Task_Default"⟩ ⟨⟨"Task_Default"⟩⟩
+          ⟨"place:Flow_Default"⟩ ⟨"place:Flow_Default_Join"⟩ { id := ⟨"Task_Default"⟩, name := some "Default" }
+      , .completeScope ⟨"operation:complete-scope:scope:Process_Inclusive"⟩
+          ⟨⟨"Process_Inclusive"⟩⟩ ⟨"scope:Process_Inclusive"⟩ none ] }
 
 def instanceId : SemanticId := ⟨"inclusive-instance"⟩
 
@@ -119,8 +157,11 @@ theorem exact_checked_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
   decide +kernel
 
+theorem inclusive_lowering_is_exact :
+    lowerCheckedProcess checkedProcess = program := by decide +kernel
+
 theorem lowering_derives_branch_local_join_inputs :
-    program.operations.find? (fun operation =>
+    (lowerCheckedProcess checkedProcess).operations.find? (fun operation =>
         decide (operation.id.value = "operation:Split")) =
       some
         (.selectMany ⟨"operation:Split"⟩ { elementId := ⟨"Split"⟩ }

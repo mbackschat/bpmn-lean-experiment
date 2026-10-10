@@ -119,9 +119,11 @@ theorem scopeCreation_cancellation_fields_commute (state : RuntimeState)
   have contexts : compensationParentContextRetentionSurvivesScopeCancellation (creation.apply state) root disposition =
       compensationParentContextRetentionSurvivesScopeCancellation state root disposition := by
     funext retention
-    unfold compensationParentContextRetentionSurvivesScopeCancellation
+    unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
     simp only [subtree, called]
-  simp only [cancelScopeSubtree, contexts, subtree, called]
+  simp only [cancelScopeSubtree, contexts, scopeCancellationOwner, subtree, called]
+  unfold scopeCancellationOwner
+  simp only [subtree, called]
   cases kind : creation.kind <;> cases disposition
   all_goals simp only [InternalScopeCreationSelection.apply, kind, insertScopeOccurrence, setCallActivationCount]
   all_goals rw [scopes _ (by

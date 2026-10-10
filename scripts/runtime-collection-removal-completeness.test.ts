@@ -192,7 +192,13 @@ function leanStructureFields(source: string, name: string): ReadonlySet<string> 
 function leanRemovalLiteral(source: string, signature: string): string {
   const body = source.split(signature)[1];
   assert.ok(body !== undefined, `absent: ${signature}`);
-  return braceSpan(body, "{");
+  const literal = braceSpan(body, "{");
+  const sharedBase = body.includes("{ filterScopeOwnedWork state ") ||
+    (body.includes("let filtered := filterScopeOwnedWork state ") &&
+      body.includes("{ filtered with"));
+  return sharedBase
+    ? `${literal}\n${braceSpan(read("BpmnSemantics/SemanticProcess/RuntimeOwnerRemoval.lean").split("def filterScopeOwnedWork (")[1]!, "{")}`
+    : literal;
 }
 
 function leanAssignedFields(literal: string): ReadonlySet<string> {
@@ -237,8 +243,9 @@ for (const [owner, signature] of leanRemovalOwners) {
   test(`${owner} assigns every nested owner-keyed data collection`, () => {
     const declared = leanStructureFields(read(leanDataOwner), "ScopedVariables");
     const literal = leanRemovalLiteral(read(owner), signature);
-    const variables = literal.split("    variables :=")[1];
-    assert.ok(variables !== undefined, `${owner}: absent variables assignment`);
+    const variableAssignments = literal.split("    variables :=").slice(1);
+    assert.ok(variableAssignments.length > 0, `${owner}: absent variables assignment`);
+    const variables = variableAssignments.join("\n");
     const assigned = new Set([...variables.matchAll(/^        (\w+) :=/gm)].map((match) => match[1]!));
     assert.ok(declared.has("activities") && declared.has("processInterfaces"));
     assert.deepEqual(missingScopedCollections(declared, assigned), []);
@@ -275,7 +282,7 @@ test("Lean assignment census discovers new fields and missing assignments indepe
     );
     for (const field of assigned) {
       if (!fields.has(field)) continue;
-      const mutated = literal.replace(new RegExp(`^(    )${field} :=`, "m"), "$1omitted :=");
+      const mutated = literal.replace(new RegExp(`^(    )${field} :=`, "gm"), "$1omitted :=");
       assert.notEqual(mutated, literal, `${owner}: ${field}`);
       assert.deepEqual(
         leanUnassigned(fields, leanAssignedFields(mutated)),
@@ -397,7 +404,7 @@ test("a pass-through or inverted Lean assignment still passes the census", () =>
     const existingOmissions = leanUnassigned(fields, leanAssignedFields(literal));
     for (const [mutant, pattern, replacement] of [
       ["pass-through", /^(    eventRaces := state\.eventRaces)\.filter[^\n]*/m, "$1"],
-      ["inverted filter", /^(    eventRaces := state\.eventRaces\.filter fun race => )!/m, "$1"],
+      ["inverted filter", /^(    eventRaces := state\.eventRaces\.filter fun race => )keep/m, "$1!keep"],
     ] as const) {
       const mutated = literal.replace(pattern, replacement);
       assert.notEqual(mutated, literal, `seeded mutation matched nothing in ${owner}`);
@@ -408,4 +415,15 @@ test("a pass-through or inverted Lean assignment still passes the census", () =>
 
 test("the behavioral owner of the filtering claim exists", () => {
   assert.doesNotThrow(() => read("packages/semantic-core/test/removal-ownership-graph.test.ts"));
+});
+
+test("an unused shared Lean filter receives no assignment credit", () => {
+  for (const [owner, signature] of leanRemovalOwners) {
+    const source = read(owner);
+    const mutated = source.replace("{ filterScopeOwnedWork state (fun owner => !cancelled owner) with", "{ state with")
+      .replace("{ filtered with", "{ state with");
+    assert.notEqual(mutated, source, owner);
+    const fields = leanAssignedFields(leanRemovalLiteral(mutated, signature));
+    assert.equal(fields.has("tokens"), false, owner);
+  }
 });

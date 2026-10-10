@@ -43,6 +43,49 @@ theorem handler_error_fails_the_process_and_removes_every_live_compensation_regi
       failedState.variables.activities = [] := by
   decide +kernel
 
+private def inheritedListener : EventSubProcessMessageSubscription :=
+  { id := occurrence "InheritedListener", owner := rootOwner,
+    channel := .directMessage ⟨"InheritedMessage"⟩ }
+
+private def populatedFailureBefore : RuntimeState :=
+  { triggeredState with
+    eventSubProcessMessageSubscriptions := [inheritedListener]
+    activityOccurrences :=
+      [{ processInstanceId := instanceId, activityElementId := ⟨"A"⟩, activation := 1,
+         owner := rootOwner, body := .userTask (occurrence "A"), attachedHandlers := [] }]
+    sequentialScopeControllers :=
+      [{ id := activityOccurrence "A", total := 2, completed := 0, currentItem := "first" }]
+    parallelScopeControllers := [{ id := activityOccurrence "C", total := 2, completed := 0 }]
+    variables :=
+      { process := { bindings := [{ name := "retained", value := .integer 9 }] }
+        scopes := [{ owner := rootOwner, bindings := [] }]
+        processInterfaces := [{ owner := rootOwner, inputs := [], outputs := [] }]
+        activities := [{ owner := .activityOccurrence (activityOccurrence "A"), bindings := [] }] }
+    endOccurrences := 7
+    logicalTimeMs := 13 }
+
+private def selectedC : SelectedCompensationHandler :=
+  { wait := waitC, trigger := activeTrigger, handler := compensatingHandlerC }
+
+private def expectedPopulatedFailure : RuntimeState :=
+  { failedState with
+    eventSubProcessMessageSubscriptions := [inheritedListener]
+    variables :=
+      { process := { bindings := [{ name := "retained", value := .integer 9 }] }
+        scopes := [], processInterfaces := [], activities := [] }
+    endOccurrences := 7
+    logicalTimeMs := 13 }
+
+/-- AA-12 preserves the existing inherited listener behavior; it is outside fail-fast cleanup. -/
+theorem populated_completeFailure_preserves_listener_and_clears_its_listed_work :
+    compensationTriggerHandlerStateValid program populatedFailureBefore = true ∧
+      selectCompensationHandler? populatedFailureBefore waitC.id = some selectedC ∧
+      completeFailure program populatedFailureBefore selectedC "compensation-rejected"
+        (some "downstream rejected the reversal") = .applied expectedPopulatedFailure ∧
+      attemptCompensationHandlerEffectCompletion program populatedFailureBefore waitC.id failureResult =
+        .applied expectedPopulatedFailure := by
+  exact ⟨by decide +kernel, rfl, by decide +kernel, by decide +kernel⟩
+
 theorem terminal_stale_result_and_nonempty_patch_are_refused_without_a_successor :
     attemptCompensationHandlerEffectCompletion program failedState waitB.id (.success []) =
         .refused .invalidState ∧

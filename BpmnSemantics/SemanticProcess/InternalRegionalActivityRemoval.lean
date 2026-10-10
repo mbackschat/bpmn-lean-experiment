@@ -135,7 +135,7 @@ theorem cancelScopeSubtree_timers_eq_prepared_region (program : Program) (state 
   rw [withdrawn]
   apply List.filter_congr
   intro wait member
-  dsimp only
+  simp only [scopeCancellationOwner]
   have owners := (regional_validity_facts program state expectedInstanceId valid).2.1
   simp only [waitOwnersLive, Bool.and_eq_true, and_assoc] at owners
   rw [regional_live_mask program state expectedInstanceId instanceId valid running root region
@@ -159,7 +159,7 @@ theorem cancelScopeSubtree_messages_eq_prepared_region (program : Program) (stat
   rw [withdrawn]
   apply List.filter_congr
   intro wait member
-  dsimp only
+  simp only [scopeCancellationOwner]
   have owners := (regional_validity_facts program state expectedInstanceId valid).2.1
   simp only [waitOwnersLive, Bool.and_eq_true, and_assoc] at owners
   rw [regional_live_mask program state expectedInstanceId instanceId valid running root region
@@ -273,5 +273,38 @@ theorem cancelScopeSubtree_local_data_eq_prepared_region (program : Program) (st
   dsimp only [id] at effects incidents
   simp only [cancelScopeSubtree, withdrawn, effects, incidents]
   rfl
+
+/-- Both scope-controller families follow exact withdrawn Activity identities, rather than
+inventing a scope owner from their controller identity. -/
+theorem cancelScopeSubtree_scope_controllers_eq_prepared_region
+    (program : Program) (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
+    (prepared : deriveInternalOccurrenceRegion? state root = some region)
+    (disposition : SelectedScopeDisposition) :
+    let withdrawn := withdrawnByRegion (fun owner => region.contains owner ||
+      (calledInstanceClosure state root).contains owner.processInstanceId) state.activityOccurrences
+      (retainedCancellationRoot root disposition)
+    (cancelScopeSubtree state root disposition).sequentialScopeControllers =
+        state.sequentialScopeControllers.filter (fun controller =>
+          !(calledInstanceClosure state root).contains controller.id.processInstanceId &&
+            !(withdrawn.any fun activity =>
+              controller.id.processInstanceId == activity.processInstanceId &&
+              controller.id.activityElementId.value == activity.activityElementId.value &&
+              controller.id.activation == activity.activation)) ∧
+      (cancelScopeSubtree state root disposition).parallelScopeControllers =
+        state.parallelScopeControllers.filter (fun controller =>
+          !(calledInstanceClosure state root).contains controller.id.processInstanceId &&
+            !(withdrawn.any fun activity =>
+              controller.id.processInstanceId == activity.processInstanceId &&
+              controller.id.activityElementId.value == activity.activityElementId.value &&
+              controller.id.activation == activity.activation)) := by
+  have mask : scopeCancellationOwner state root = fun owner => region.contains owner ||
+      (calledInstanceClosure state root).contains owner.processInstanceId := by
+    funext owner
+    exact regional_cancellation_full_owner_mask program state expectedInstanceId instanceId
+      valid running root region prepared owner
+  simp only [cancelScopeSubtree, mask, and_self]
 
 end BpmnSemantics.SemanticProcess

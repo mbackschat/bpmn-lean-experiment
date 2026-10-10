@@ -3,10 +3,7 @@ import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Terminate End Event fixtures
 
-This module owns the exact checked graph, canonical lowered program, and synthetic root program used by
-the proved Terminate End checkpoint. The representative source is one nested parallel Trigger/Sibling
-region followed by one Outer User Task. The root program exercises the same generic operation without
-registering a second source profile.
+This module owns the exact checked graph, independent expected program, and synthetic root program used by the proved Terminate End checkpoint. The representative source is one nested parallel Trigger/Sibling region followed by one Outer User Task. The root program exercises the same generic operation without registering a second source profile. The expected program is separate from lowering so the exact-lowering law can detect a changed result, as required by AA-25 in the assurance architecture repair proposal.
 -/
 
 namespace BpmnSemantics.TerminateEndEventFixtures
@@ -81,7 +78,51 @@ def checkedProcess : CheckedProcess :=
       , { id := ⟨"Flow_TriggerTerminate"⟩
           sourceId := ⟨"J_Trigger"⟩, targetId := ⟨"I_Terminate"⟩ } ] }
 
-def program : Program := lowerCheckedProcess checkedProcess
+def program : Program :=
+  { identity :=
+      { compiler := .bpmnSourceSemanticProcess
+        semanticProfile := profileId
+        sourceId := ⟨"terminate-end-checkpoint"⟩
+        sourceSha256 := "1111111111111111111111111111111111111111111111111111111111111111" }
+    internalSchedulingMode := .rejectObservableChoice
+    processId
+    definitionScopes :=
+      [{ id := rootScopeId, parentScopeId := none, originElementId := ⟨"Process_Terminate"⟩ },
+       { id := childScopeId, parentScopeId := some rootScopeId, originElementId := ⟨"H_SubProcess"⟩ }]
+    operationScopes :=
+      [("A_ChildEnd", childScopeId), ("B_ChildFork", childScopeId),
+       ("D_OuterEnd", rootScopeId), ("E_OuterTask", rootScopeId), ("F_RootStart", rootScopeId),
+       ("G_Sibling", childScopeId), ("H_SubProcess", rootScopeId), ("I_Terminate", childScopeId),
+       ("J_Trigger", childScopeId), ("complete-scope:scope:Process_Terminate", rootScopeId),
+       ("complete-scope:scope:SubProcess_Terminate", childScopeId)].map fun (name, scopeId) =>
+        { operationId := ⟨"operation:" ++ name⟩, scopeId }
+    controlPlaceScopes :=
+      [("Flow_ChildForkSibling", childScopeId), ("Flow_ChildForkTrigger", childScopeId),
+       ("Flow_ChildStartFork", childScopeId), ("Flow_OuterEnd", rootScopeId),
+       ("Flow_RootStartSubProcess", rootScopeId), ("Flow_SiblingEnd", childScopeId),
+       ("Flow_SubProcessOuter", rootScopeId), ("Flow_TriggerTerminate", childScopeId)].map fun (name, scopeId) =>
+        { controlPlaceId := ⟨"place:" ++ name⟩, scopeId }
+    controlPlaces := ["Flow_ChildForkSibling", "Flow_ChildForkTrigger", "Flow_ChildStartFork",
+      "Flow_OuterEnd", "Flow_RootStartSubProcess", "Flow_SiblingEnd", "Flow_SubProcessOuter",
+      "Flow_TriggerTerminate"].map fun name => { id := ⟨"place:" ++ name⟩, origin := ⟨⟨name⟩⟩ }
+    operations :=
+      [ .reachNoneEnd ⟨"operation:A_ChildEnd"⟩ ⟨⟨"A_ChildEnd"⟩⟩ ⟨"place:Flow_SiblingEnd"⟩
+      , .duplicate ⟨"operation:B_ChildFork"⟩ ⟨⟨"B_ChildFork"⟩⟩ ⟨"place:Flow_ChildStartFork"⟩
+          [⟨"place:Flow_ChildForkSibling"⟩, ⟨"place:Flow_ChildForkTrigger"⟩]
+      , .reachNoneEnd ⟨"operation:D_OuterEnd"⟩ ⟨⟨"D_OuterEnd"⟩⟩ ⟨"place:Flow_OuterEnd"⟩
+      , .awaitUserTask ⟨"operation:E_OuterTask"⟩ ⟨⟨"E_OuterTask"⟩⟩
+          ⟨"place:Flow_SubProcessOuter"⟩ ⟨"place:Flow_OuterEnd"⟩ { id := ⟨"E_OuterTask"⟩, name := some "Outer" }
+      , .initiate ⟨"operation:F_RootStart"⟩ ⟨⟨"F_RootStart"⟩⟩ ⟨"place:Flow_RootStartSubProcess"⟩
+      , .awaitUserTask ⟨"operation:G_Sibling"⟩ ⟨⟨"G_Sibling"⟩⟩
+          ⟨"place:Flow_ChildForkSibling"⟩ ⟨"place:Flow_SiblingEnd"⟩ { id := ⟨"G_Sibling"⟩, name := some "Sibling" }
+      , .enterScope ⟨"operation:H_SubProcess"⟩ ⟨⟨"H_SubProcess"⟩⟩
+          ⟨"place:Flow_RootStartSubProcess"⟩ ⟨"place:Flow_ChildStartFork"⟩ childScopeId
+      , .terminateScope ⟨"operation:I_Terminate"⟩ ⟨⟨"I_Terminate"⟩⟩ ⟨"place:Flow_TriggerTerminate"⟩ childScopeId
+      , .awaitUserTask ⟨"operation:J_Trigger"⟩ ⟨⟨"J_Trigger"⟩⟩
+          ⟨"place:Flow_ChildForkTrigger"⟩ ⟨"place:Flow_TriggerTerminate"⟩ { id := ⟨"J_Trigger"⟩, name := some "Trigger" }
+      , .completeScope ⟨"operation:complete-scope:scope:Process_Terminate"⟩ ⟨⟨"Process_Terminate"⟩⟩ rootScopeId none
+      , .completeScope ⟨"operation:complete-scope:scope:SubProcess_Terminate"⟩ ⟨⟨"H_SubProcess"⟩⟩
+          childScopeId (some ⟨"place:Flow_SubProcessOuter"⟩) ] }
 
 def semanticInstanceId : SemanticId := ⟨"TerminateInstance"⟩
 

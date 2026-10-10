@@ -18,6 +18,14 @@ export type { Evidence, WriterRecord } from "./activity-occurrence-writer-contra
  */
 export const writerRecords = new Map<string, WriterRecord>([
   ...repeatedScopeWriterRecords,
+  ["BpmnSemantics/SemanticProcess/RuntimeOwnerRemoval.lean#filterScopeOwnedWork@1", {
+    classification: WriterClassification.IdentityRemoving,
+    claimPreservation: ClaimPreservation.Removal,
+    evidence: {
+      relativePath: "BpmnSemantics/SemanticProcess/RuntimeRemovalPreservation.lean",
+      markers: ["theorem filterScopeOwnedWork_activity_occurrences_subset"],
+    },
+  }],
   ["BpmnSemantics/SemanticProcess/InternalMessageTaskPreparation.lean#applyInternalMessageTaskPatch@1", {
     classification: WriterClassification.Issuer,
     claimPreservation: ClaimPreservation.DisjointInsertion,
@@ -236,30 +244,6 @@ export const writerRecords = new Map<string, WriterRecord>([
     evidence: {
       relativePath: "BpmnSemantics/SemanticProcess/ActivityDataOutput.lean",
       markers: ["theorem completeDataOutputUserTask_activity_identity_discipline"],
-    },
-  }],
-  ["BpmnSemantics/SemanticProcess/CallActivity.lean#removeCalledProcessTree@1", {
-    classification: WriterClassification.IdentityRemoving,
-    claimPreservation: ClaimPreservation.Removal,
-    evidence: {
-      relativePath: "BpmnSemantics/ScopeCancellationConformance.lean",
-      markers: ["theorem returnProcessStep_activity_identity_discipline", "theorem returnProcessState_activity_identity_discipline"],
-    },
-  }],
-  ["BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean#compensationFailureSuccessor@1", {
-    classification: WriterClassification.IdentityRemoving,
-    claimPreservation: ClaimPreservation.Removal,
-    evidence: {
-      relativePath: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCompletion.lean",
-      markers: ["theorem compensationFailureSuccessor_activity_identity_discipline"],
-    },
-  }],
-  ["BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCancellation.lean#CompensationHandlerFailureCancellationStep@1", {
-    classification: WriterClassification.IdentityRemoving,
-    claimPreservation: ClaimPreservation.Removal,
-    evidence: {
-      relativePath: "BpmnSemantics/SemanticProcess/CompensationTriggerHandlerCancellation.lean",
-      markers: ["theorem CompensationHandlerFailureCancellationStep.activity_identity_discipline"],
     },
   }],
   ["BpmnSemantics/SemanticProcess/BoundedScope.lean#BoundedScopeVictoryStep@1", {

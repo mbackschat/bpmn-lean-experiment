@@ -1,5 +1,5 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
-import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 
 /-! # Regional removal validity
 
@@ -96,19 +96,8 @@ theorem cancelScopeSubtree_preserves_identity_bound (state : RuntimeState)
     (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (valid : runtimeStateIdentityBound state = true) :
     runtimeStateIdentityBound (cancelScopeSubtree state root disposition) = true := by
-  simp only [runtimeStateIdentityBound, Bool.and_eq_true] at valid ⊢
-  exact ⟨⟨all_filter _ _ _ valid.1.1, all_filter _ _ _ valid.1.2⟩,
-    all_filter _ _ _ valid.2⟩
-
-private theorem declarations_filter {α : Type} (values : List α)
-    (inInstance keep declaration : α → Bool)
-    (valid : (values.filter inInstance).all declaration = true) :
-    ((values.filter keep).filter inInstance).all declaration = true := by
-  apply List.all_eq_true.mpr
-  intro value member
-  obtain ⟨kept, instanceMember⟩ := List.mem_filter.mp member
-  exact List.all_eq_true.mp valid value
-    (List.mem_filter.mpr ⟨(List.mem_filter.mp kept).1, instanceMember⟩)
+  exact runtimeStateIdentityBound_of_removal state _
+    List.filter_sublist List.filter_sublist List.filter_sublist rfl rfl rfl valid
 
 /-- RSI-BIND-04 reads immutable Program declarations and retained wait payloads, so removing
 other waits cannot change a surviving wait's unique declarer or definition owner. -/
@@ -116,12 +105,9 @@ theorem cancelScopeSubtree_preserves_wait_declarations (program : Program) (stat
     (instanceId : SemanticId) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (valid : waitDeclarationsValid program instanceId state = true) :
     waitDeclarationsValid program instanceId (cancelScopeSubtree state root disposition) = true := by
-  simp only [waitDeclarationsValid, Bool.and_eq_true, and_assoc] at valid ⊢
-  exact ⟨declarations_filter _ _ _ _ valid.1,
-    declarations_filter _ _ _ _ valid.2.1,
-    declarations_filter _ _ _ _ valid.2.2.1,
-    declarations_filter _ _ _ _ valid.2.2.2.1,
-    declarations_filter _ _ _ _ valid.2.2.2.2⟩
+  exact waitDeclarationsValid_of_removal program instanceId state _
+    List.filter_sublist List.filter_sublist List.filter_sublist List.filter_sublist
+    List.filter_sublist valid
 
 /-- The implemented RSI-BIND-05 clauses depend on each retained record and immutable Program
 operations, so arbitrary cancellation preserves the declaring censuses. -/
@@ -129,10 +115,7 @@ theorem cancelScopeSubtree_preserves_hidden_declarations (program : Program) (st
     (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (valid : hiddenRecordDeclarationsValid program state = true) :
     hiddenRecordDeclarationsValid program (cancelScopeSubtree state root disposition) = true := by
-  simp only [hiddenRecordDeclarationsValid, Bool.and_eq_true] at valid ⊢
-  obtain ⟨⟨⟨parallel, selections⟩, races⟩, controllers⟩ := valid
-  have empty : state.parallelScopeControllers = [] := List.isEmpty_iff.mp parallel
-  exact ⟨⟨⟨by simp [cancelScopeSubtree, empty], all_filter _ _ _ selections⟩,
-    all_filter _ _ _ races⟩, all_filter _ _ _ controllers⟩
+  exact hiddenRecordDeclarationsValid_of_removal program state _
+    List.filter_sublist List.filter_sublist List.filter_sublist List.filter_sublist valid
 
 end BpmnSemantics.SemanticProcess

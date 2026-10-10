@@ -45,12 +45,15 @@ theorem return_cancel_fields_commute (before returned cancelled : RuntimeState)
   have parents : compensationParentContextRetentionSurvivesScopeCancellation returned root disposition =
       compensationParentContextRetentionSurvivesScopeCancellation before root disposition := by
     funext retention
-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, subtree, called]
-  simp only [cancelScopeSubtree, removeCalledProcessTree]
+    unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
+    cases retention <;> simp only [subtree, called]
+  simp only [cancelScopeSubtree, removeCalledProcessTree, scopeCancellationOwner]
+  unfold scopeCancellationOwner
   simp only [activities, effects, incidents, triggers, parents]
   simp only [subtree, called, returnClosure]
   rw [returnUpdate, cancelUpdate]
-  simp only [cancelScopeSubtree, removeCalledProcessTree, retainedByRegion]
+  simp only [cancelScopeSubtree, removeCalledProcessTree, scopeCancellationOwner, retainedByRegion]
+  unfold scopeCancellationOwner
   have filters {α : Type} (values : List α) (first second : α → Bool) :
       (values.filter first).filter second = (values.filter second).filter first := by
     simp only [List.filter_filter, Bool.and_comm]
@@ -109,12 +112,15 @@ theorem completion_cancel_fields_commute (before completed cancelled : RuntimeSt
   have parents : compensationParentContextRetentionSurvivesScopeCancellation completed root disposition =
       compensationParentContextRetentionSurvivesScopeCancellation before root disposition := by
     funext retention
-    cases retention <;> simp only [compensationParentContextRetentionSurvivesScopeCancellation, subtree, called]
-  simp only [cancelScopeSubtree]
+    unfold compensationParentContextRetentionSurvivesScopeCancellation scopeCancellationOwner
+    cases retention <;> simp only [subtree, called]
+  simp only [cancelScopeSubtree, scopeCancellationOwner]
+  unfold scopeCancellationOwner
   simp only [activities, effects, incidents, triggers, parents]
   simp only [subtree, called]
   rw [completionUpdate, cancelUpdate]
-  simp only [cancelScopeSubtree, retainedByRegion]
+  simp only [cancelScopeSubtree, scopeCancellationOwner, retainedByRegion]
+  unfold scopeCancellationOwner
   have filters {α : Type} (values : List α) (first second : α → Bool) :
       (values.filter first).filter second = (values.filter second).filter first := by
     simp only [List.filter_filter, Bool.and_comm]
