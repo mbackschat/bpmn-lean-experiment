@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandFuelProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCollectionStorageProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableCapacityProofs
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
 import BpmnSemantics.SequentialMultiInstanceProgressConformance
 import BpmnSemantics.RegionalRemovalOwnerCoverageConformance
@@ -38,6 +39,14 @@ semantics and imports only the owners of the theorems it pins.
 /-- info: 'BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.collection_storage' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.collection_storage
+
+/-- info: 'BpmnSemantics.SemanticProcess.ParallelScopeInternalPrefixReachable.running_capacity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms BpmnSemantics.SemanticProcess.ParallelScopeInternalPrefixReachable.running_capacity
+
+/-- info: 'BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.running_capacity' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.running_capacity
 
 /-- info: 'BpmnSemantics.SemanticProcess.finite_snapshot_conditional_progress_eventually_closes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in

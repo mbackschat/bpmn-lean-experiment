@@ -128,7 +128,7 @@ theorem parallelScopeRemaining_body_censuses (entry : ParallelScopeEntry) (befor
     by_cases same : value.owner = iteration.scope <;> simp [same, different]
   exact ⟨census.1, census.2.trans erased⟩
 
-private theorem parallelScopeRemaining_structural_census (entry : ParallelScopeEntry) (before : RuntimeState)
+theorem parallelScopeRemaining_structural_census (entry : ParallelScopeEntry) (before : RuntimeState)
     (retired : ScopeOccurrenceId) (binding : ParallelScopeBinding) (variables : ScopedVariables)
     (next : ParallelScopeController) (selected first : ParallelScopeIteration) (rest : List ParallelScopeIteration)
     (condition : Bool) (bound : parallelScopeBinding? entry before retired = some binding)

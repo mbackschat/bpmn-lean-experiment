@@ -440,16 +440,16 @@ private theorem sequentialScope_pairwise_sorted (bindings : List VariableBinding
           simp only [List.map_cons, strictlySortedStrings, Bool.and_eq_true, decide_eq_true_eq]
           exact ⟨parts.1 second (by simp), ih parts.2⟩
 
-/-- SMIS-DATA-01's required Process domain survives typed merges: replacement preserves presence, and untouched names remain exact. -/
-theorem sequentialScope_start_data_merge (program : Program) (analysis : SequentialScopeData.Analysis)
-    (existing patch : List VariableBinding)
-    (analyzed : SequentialScopeData.analyze program = some analysis)
-    (valid : SequentialScopeData.startAdmitted program existing = true)
+/-- SMIS-DATA-01 and PMIS-DATA-01 retain the same admitted Process domain through typed native merges. -/
+theorem repeatedScope_start_data_merge (collectionName : String) (conditionName : Option String)
+    (handlers requiredNames : List String) (existing patch : List VariableBinding)
+    (valid : SequentialScopeData.startBindingsAdmitted collectionName conditionName handlers requiredNames existing = true)
     (unique : (patch.map (·.name)).Nodup)
-    (typed : patch.all (fun value => SerialBusinessTask.nameAllowed analysis.handlers value.name &&
-      SequentialScopeData.startValueValid analysis.entry value) = true) :
-    SequentialScopeData.startAdmitted program (mergeProcessVariableBindings existing patch) = true := by
-  simp only [SequentialScopeData.startAdmitted, SequentialScopeData.startBindingsAdmitted, analyzed, Bool.and_eq_true] at valid ⊢
+    (typed : patch.all (fun value => SerialBusinessTask.nameAllowed handlers value.name &&
+      SequentialScopeData.startBindingValueValid collectionName conditionName value) = true) :
+    SequentialScopeData.startBindingsAdmitted collectionName conditionName handlers requiredNames
+      (mergeProcessVariableBindings existing patch) = true := by
+  simp only [SequentialScopeData.startBindingsAdmitted, Bool.and_eq_true] at valid ⊢
   obtain ⟨⟨⟨⟨sorted, values⟩, collection⟩, condition⟩, required⟩ := valid
   refine ⟨⟨⟨⟨sequentialScope_pairwise_sorted _ (mergeProcessVariableBindings_strictOrder existing patch
     (strictlySortedStrings_nodup _ sorted) unique), ?_⟩,
@@ -459,13 +459,25 @@ theorem sequentialScope_start_data_merge (program : Program) (analysis : Sequent
     rcases List.mem_append.mp ((mergeProcessVariableBindings_perm existing patch).mem_iff.mp member) with written | retained
     · exact List.all_eq_true.mp typed value written
     · exact List.all_eq_true.mp values value (List.mem_filter.mp retained).1
-  · cases declared : analysis.entry.completionBooleanName with
+  · cases declared : conditionName with
     | none => rfl
     | some name =>
         simp only [declared] at condition ⊢
         exact sequentialScope_merge_presence existing patch name condition
   · exact List.all_eq_true.mpr (fun name member =>
       sequentialScope_merge_presence existing patch name (List.all_eq_true.mp required name member))
+
+/-- SMIS-DATA-01's required Process domain survives typed merges: replacement preserves presence, and untouched names remain exact. -/
+theorem sequentialScope_start_data_merge (program : Program) (analysis : SequentialScopeData.Analysis)
+    (existing patch : List VariableBinding)
+    (analyzed : SequentialScopeData.analyze program = some analysis)
+    (valid : SequentialScopeData.startAdmitted program existing = true)
+    (unique : (patch.map (·.name)).Nodup)
+    (typed : patch.all (fun value => SerialBusinessTask.nameAllowed analysis.handlers value.name &&
+      SequentialScopeData.startValueValid analysis.entry value) = true) :
+    SequentialScopeData.startAdmitted program (mergeProcessVariableBindings existing patch) = true := by
+  simp only [SequentialScopeData.startAdmitted, analyzed] at valid ⊢
+  exact repeatedScope_start_data_merge _ _ _ _ existing patch valid unique typed
 
 private theorem sequentialScope_human_start_types (analysis : SequentialScopeData.Analysis)
     (values : List VariableBinding) (admitted : SequentialScopeData.humanValuesAdmitted analysis values = true) :

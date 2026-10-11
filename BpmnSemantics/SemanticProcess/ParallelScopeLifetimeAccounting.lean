@@ -579,13 +579,15 @@ theorem enterParallelScope_reservation_valid (entry : ParallelScopeEntry) (befor
     exact retained
 
 
-/-- PMIS wait-command dispatch preserves any predicate retained by its actual completion routes and unchanged refusals. -/
-theorem admitStimulus_wait_preserves (program : Program) (before : RuntimeState)
+/-- Retaining the submitted command lets preservation consumers use its admission evidence. -/
+theorem admitStimulus_wait_preserves_input (program : Program) (before : RuntimeState)
     (stimulus : Stimulus) (selected : ParallelScopeStart.programSelected program = true)
     (completion : waitCompletionStimulus stimulus)
     (predicate : RuntimeState → Prop) (initial : predicate before)
-    (human : ∀ id values after, ParallelScopeCommand.completeTask? program before id values = some after → predicate after)
-    (effect : ∀ id values after, ParallelScopeCommand.completeEffect? program before id (.success values) = some after → predicate after) :
+    (human : ∀ commandId id values after, stimulus = .completeUserTaskInstance commandId id values →
+      ParallelScopeCommand.completeTask? program before id values = some after → predicate after)
+    (effect : ∀ commandId id values after, stimulus = .completeEffect commandId id (.success values) →
+      ParallelScopeCommand.completeEffect? program before id (.success values) = some after → predicate after) :
     predicate (admitStimulus program before stimulus).state := by
   cases stimulus <;> simp only [waitCompletionStimulus] at completion <;> try contradiction
   case completeUserTaskInstance commandId id values =>
@@ -593,7 +595,7 @@ theorem admitStimulus_wait_preserves (program : Program) (before : RuntimeState)
       cases control : before.control <;> simp [admitStimulus, snapshot, selected, control]
     all_goals repeat' first
       | exact initial
-      | (apply human <;> assumption)
+      | (apply human commandId id values _ rfl <;> assumption)
       | split
   case completeEffect commandId id result =>
     cases result <;> simp only at completion <;> try contradiction
@@ -602,8 +604,20 @@ theorem admitStimulus_wait_preserves (program : Program) (before : RuntimeState)
         cases control : before.control <;> simp [admitStimulus, snapshot, selected, control]
     all_goals repeat' first
       | exact initial
-      | (apply effect <;> assumption)
+      | (apply effect commandId id _ _ rfl <;> assumption)
       | split
+
+/-- PMIS wait-command dispatch preserves any predicate retained by its actual completion routes and unchanged refusals. -/
+theorem admitStimulus_wait_preserves (program : Program) (before : RuntimeState)
+    (stimulus : Stimulus) (selected : ParallelScopeStart.programSelected program = true)
+    (completion : waitCompletionStimulus stimulus)
+    (predicate : RuntimeState → Prop) (initial : predicate before)
+    (human : ∀ id values after, ParallelScopeCommand.completeTask? program before id values = some after → predicate after)
+    (effect : ∀ id values after, ParallelScopeCommand.completeEffect? program before id (.success values) = some after → predicate after) :
+    predicate (admitStimulus program before stimulus).state :=
+  admitStimulus_wait_preserves_input program before stimulus selected completion predicate initial
+    (fun _ id values after _ => human id values after)
+    (fun _ id values after _ => effect id values after)
 
 
 /-- PMIS wait-command admission preserves reservations even when an ingress guard rejects unchanged. -/

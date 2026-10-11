@@ -94,19 +94,19 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Assurance trigger assessment
 
-Assurance base: `b6a8b55d58e2a5f0ebd2d5df3b1c6f64b96d47f1`.
+Assurance base: `d589e5c265b919c9831073aec35e94e06fad1fd1`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | Reachable storage preservation needs a third transport consumer. | Reuse approved singleton/Start evidence for committed-storage transport. | Derive storage at every actual boundary and prefix without successor-validity premises; preserve [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01)’s broader residual. |
+| AA-01 | met | Reachable capacity needs another transport consumer. | Compose actual transition laws through approved invariant transport. | Derive Running boundary capacity without future-admission or successor-validity premises; preserve [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01)’s broader residual. |
 | AA-02 | not-met | Reuse actual patch induction unchanged; no batch-member interface extension. | — | — |
 | AA-03 | not-met | Reuse the existing PMIS traversal; no cross-family extension. | — | — |
-| AA-04 | not-met | No runtime validator view extraction is selected. | — | — |
+| AA-04 | not-met | Expose only the existing Effect declaration/mapping consequence; no equivalent validator view or preservation migration is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | not-met | Generic-law relocation is outside the selected repair. | — | — |
+| AA-09 | not-met | Generalize the existing repeated-scope data merge in place; no generic-law relocation. | — | — |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
@@ -145,14 +145,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [PMIS storage preservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), using AA-01’s approved shared singleton/Start evidence under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
+Current task: [PMIS reachable capacity](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), using approved storage/reservation and actual transition evidence under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: independent cold review approves storage checkpoint `aba0d71f` without required corrections. Both universal endpoints derive the existing storage subset without successor-validity or successful capacity premises. Independent duplicate-key and token-multiplicity probes pass; AA-01 stays partial, and AA-04/AA-18 deferrals remain intact.
+Current result: approved storage checkpoint `aba0d71f` remains the accepted base. Quantified Running-capacity endpoints pass complete qualification for actual command boundaries and internal prefixes; cold review remains pending. They compose Start, admitted completion, entry, retirement and batch laws through shared transport, with no future-admission or successor-validity premise. AA-01 stays partial, and AA-04/AA-18 deferrals remain intact.
 
-Next action: select the bounded reachable Running `programStateCapacity` proof, combining approved storage/reservation preservation with retained Start-data and exact surviving body/frame/controller correspondence. Assess assurance triggers before implementation; reassess the missing joint preservation bridge before adding separate history inductions. Preserve delivery qualification holds.
+Next action: commit the qualified Running-capacity checkpoint and obtain independent cold review. Shared admission retains submitted-command identity; existing phase contracts supply entry and retirement provenance without another history induction. Do not advance to another implementation lane before review.
 
 Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: doctor `verify` passes. `/tmp/pmis-storage-quantified-green-20261011` checks both previously absent contracts and their standard-axiom footprint; `/tmp/pmis-storage-root-focused-20261011` passes the narrow build. Complete Lean `/tmp/pmis-storage-library-final-20261011` and corrected infrastructure `/tmp/pmis-storage-infrastructure-corrected-20261011` pass. Dependency timeout, elaboration and initial infrastructure failures remain failures. Linux qualification retains one CPU, 3 GiB and no additional swap. No public closure follows.
+Oracle: `/tmp/pmis-capacity-quantified-red-20261011` retains the missing-endpoint red. `/tmp/pmis-capacity-quantified-green-20261011` passes the quantified capacity-to-command-fuel implication and forged Running-state discriminator. Complete Lean `/tmp/pmis-capacity-library-final-20261011` passes, including both standard-axiom pins; complete infrastructure `/tmp/pmis-capacity-infrastructure-corrected-20261011` passes. The recovered first library run, earlier elaboration failures and dependency-rebuild timeouts remain failures. Linux qualification retains one CPU, 3 GiB and no additional swap. No public closure follows.
 
 Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.
