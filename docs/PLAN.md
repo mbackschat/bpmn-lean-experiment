@@ -147,9 +147,9 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: bounded [PMIS command-fuel proof](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), selected on 2026-10-11 as independent work under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: the strongest composed command guarantee derives accepted fuel from analyzed Program, actual command-boundary reachability and committed admission. Its result commits at a stable internal frontier with Running position/open-projection validity. No executable semantics or reachability traversal changed.
+Current result: the strongest composed command guarantee derives accepted fuel from analyzed Program, actual command-boundary reachability and committed admission. Its result commits at a stable internal frontier with Running position/open-projection validity. Cold checkpoint review approved `a2989b8c`; AA-01 remains partial. No executable semantics or reachability traversal changed.
 
-Next action: obtain immutable cold checkpoint review before another implementation lane. Delivery cost/reflection and exact-source closure bindings remain qualification-blocked.
+Next action: prove existing committed-storage preservation toward reachable Running `programStateCapacity` existence, without assuming committed completion admission. Before a third transport consumer, discharge [AA-01’s classified-step/Start prerequisites](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01). Keep AA-18’s identity-family extension deferred. Delivery cost/reflection and exact-source closure bindings remain qualification-blocked.
 
 Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 

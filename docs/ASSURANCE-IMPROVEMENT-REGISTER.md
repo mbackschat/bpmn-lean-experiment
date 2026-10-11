@@ -47,7 +47,7 @@ PLAN retains one immutable pre-task `Assurance base` and the active `Assurance w
 
 ## AA-01
 
-**Actual execution invariant transport — partially corrected.** The actual-relation transport and two PMIS consumers are implemented. Committed-admission fuel derivation now composes the existing capacity laws without another transport consumer; checkpoint review remains required. Retain the classified singleton-step and committed-Start obligations before a third consumer, and the non-PMIS extent below.
+**Actual execution invariant transport — partially corrected.** The actual-relation transport and two PMIS consumers are implemented. Committed-admission fuel derivation composes the existing capacity laws without another transport consumer; its [cold checkpoint review](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt) is approved. Retain the classified singleton-step and committed-Start obligations before a third consumer, and the non-PMIS extent below.
 
 Original finding and assessed extent: [PMIS wait publication](../BpmnSemantics/SemanticProcess/ParallelScopeWaitArmingPublicationProofs.lean) repeats closure, command-boundary and internal-prefix induction for one state predicate; runtime-position preservation needs the same traversal. The existing actual reachability relations already distinguish committed ingress, singleton selection, reserved batches and rollback.
 
