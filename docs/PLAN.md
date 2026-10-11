@@ -147,9 +147,9 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: [PMIS storage preservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), using AA-01’s approved shared singleton/Start evidence under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: both universal committed-storage endpoints compile without successor-validity or successful capacity premises; the quantified probe uses only standard axioms. Native issuance/removal laws compose with shared actual ingress, singleton and patch evidence. Approved shared checkpoint `740a2fab` remains the prerequisite; AA-01 stays partial.
+Current result: independent cold review approves storage checkpoint `aba0d71f` without required corrections. Both universal endpoints derive the existing storage subset without successor-validity or successful capacity premises. Independent duplicate-key and token-multiplicity probes pass; AA-01 stays partial, and AA-04/AA-18 deferrals remain intact.
 
-Next action: cold-review the qualified storage-preservation checkpoint before another implementation lane. Then derive reachable Running `programStateCapacity` from retained Start-data and exact surviving body/frame/controller correspondence; preserve AA-18’s deferred family extension and delivery qualification holds.
+Next action: select the bounded reachable Running `programStateCapacity` proof, combining approved storage/reservation preservation with retained Start-data and exact surviving body/frame/controller correspondence. Assess assurance triggers before implementation; reassess the missing joint preservation bridge before adding separate history inductions. Preserve delivery qualification holds.
 
 Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
