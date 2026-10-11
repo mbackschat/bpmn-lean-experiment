@@ -30,7 +30,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | `PC-MI-04` requires actual-Start command resumption and its computed fuel bound. | Select the shared execution/transport bridge before implementation; retain the proof-owner bound. | [Quantified resumption contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-01 | met | `PC-MI-04` requires actual-Start command resumption and its computed fuel bound. | Review the lower validity ownership amendment before moving declarations; retain the complete command guarantee. | [Quantified resumption contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 | AA-02 | not-met | No batch-member interface extension is selected. | — | — |
 | AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
@@ -77,12 +77,12 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the approved `PC-MI-04` actual-Start eligible-completion/resumption batch in the [bounded amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). Derive committed ingress, actual closure within the computed burst bound and a live wait or completion; publication/hosting acceptance remains distinct.
+Current task: `PC-MI-04` actual-Start eligible-completion/resumption under the [bounded amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment): derive committed ingress, bounded closure and a live wait/completion; publication/hosting remain distinct.
 
-Current result: cold proposal review approves `383218e2` without required findings. The design combines per-flow conservation, a task-barrier cut and shared scheduler transport; AA-09 authorizes only the named PMIS/SMIS marking relocation. The previous mapper checkpoint remains approved. The resumption theorem is unimplemented.
+Current result: the joint actual-history transport now kernel-checks through Start, all command outcomes and unpublished selected prefixes. Start and entry/turnover validity laws pass; the actual delayed-Join journey passes full runtime validity. Per-port certificate preservation, analyzer correspondence and universal resumption remain open.
 
-Next action: the same MEDIUM worker implements the coherent shared-accounting and SMIS certificate/command batch under the amended owner bound. Root integrates affected consumers, full Lean/parity/guard qualification and the required cold checkpoint. AA-01/AA-09/AA-24 acceptance remains open; `PC-DELIVERY-01` remains held.
+Next action: obtain cold proposal review of the [lower validity ownership amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lower-validity-ownership-amendment), then separate lower preservation from certificate/readiness assembly. The amendment allocates conservation, history, fresh batch revalidation and command bounds explicitly; no move is authorized before approval. Finish the composed guarantee and witness, qualify the coherent batch and obtain cold checkpoint review. AA-01/AA-09/AA-24 remain open; `PC-DELIVERY-01` stays held.
 
-Oracle: `/tmp/smis-resumption-cold-review-20261011` independently passes 80 focused checks; `/tmp/smis-resumption-amendment-infrastructure-20261011` passes 758 guards plus types. These qualify the proposal, not the theorem. Preserve prior library/parity receipts and interrupted `/tmp/smis-output-library-20261011`, exit 130; scenario-value admission remains `PC-DATA-02`.
+Oracle: `/tmp/smis-joint-transport-integration-20261011` passes the integrated transport; `/tmp/smis-runtime-validity-integration-20261011` passes lower laws and the journey, both asserted. Final theorem application remains absent. Preserve failed qualification/receipts, interrupted `/tmp/smis-output-library-20261011`, exit 130, and scenario-value admission `PC-DATA-02`.
 
 Stop if implementation exceeds reviewed ownership, copies history traversal or changes admission/outcomes. Preserve PMIS gaps, testkit batch 13, [SDK failures](TEMPORAL-DEFECTS-LEDGER.md), one-CPU/3-GiB limits, release tags, failed receipts, checkpoint `2f38e92d` and every stash, including `f35bdd6b`, `76a2b017`, `9a443912`. No SDK investigation, repairs, private builds or weakened qualification.
