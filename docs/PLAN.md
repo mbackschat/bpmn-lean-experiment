@@ -94,23 +94,23 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Assurance trigger assessment
 
-Assurance base: `858792f1ce47c805c40994fbb1641be7d03ac780`.
+Assurance base: `b6a8b55d58e2a5f0ebd2d5df3b1c6f64b96d47f1`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | PMIS command composition needs its residual fuel guarantee. | Derive accepted fuel from committed admission/reachability, reusing capacity laws. | [Quantified endpoint and cold checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). |
+| AA-01 | met | Reachable storage preservation needs a third transport consumer. | First share classified singleton and committed-Start evidence across both existing consumers. | Preserve both quantified guarantees; [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01) requires removing repeated inversions before storage transport. |
 | AA-02 | not-met | Existing batch evidence is preserved; member-walk extension is unselected. | — | — |
-| AA-03 | not-met | Fuel composition reuses existing laws; no shared traversal change. | — | — |
-| AA-04 | not-met | Fuel derivation requires no named-view extraction. | — | — |
+| AA-03 | not-met | Reuse the existing PMIS traversal; no cross-family extension. | — | — |
+| AA-04 | not-met | No runtime validator view extraction is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
 | AA-09 | not-met | Generic-law relocation is outside the selected repair. | — | — |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
-| AA-18 | not-met | Fuel derivation preserves storage checks and the deferred family/resource boundary. | — | — |
+| AA-18 | not-met | Preserve existing storage checks; identity-family extension remains deferred. | — | — |
 | AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
 | AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
 | AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
@@ -145,14 +145,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: bounded [PMIS command-fuel proof](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), selected on 2026-10-11 as independent work under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
+Current task: [PMIS storage preservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), beginning with AA-01’s shared singleton/Start prerequisites under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: the strongest composed command guarantee derives accepted fuel from analyzed Program, actual command-boundary reachability and committed admission. Its result commits at a stable internal frontier with Running position/open-projection validity. Cold checkpoint review approved `a2989b8c`; AA-01 remains partial. No executable semantics or reachability traversal changed.
+Current result: publication and position share actual singleton classification and committed-Start evidence, preserving their quantified theorem signatures. Quantified consumers and complete Lean/infrastructure gates pass. Fuel/endpoint checkpoint `a2989b8c` remains approved; storage checks still lack universal reachable preservation and AA-01 remains partial.
 
-Next action: prove existing committed-storage preservation toward reachable Running `programStateCapacity` existence, without assuming committed completion admission. Before a third transport consumer, discharge [AA-01’s classified-step/Start prerequisites](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01). Keep AA-18’s identity-family extension deferred. Delivery cost/reflection and exact-source closure bindings remain qualification-blocked.
+Next action: cold-review the shared-evidence checkpoint before a third transport consumer. Storage preservation needs local arming, multiplied-entry and cancellation-uniqueness laws using reachable reservation validity. Derive reachable Running `programStateCapacity` afterward; retain AA-18’s deferred family extension and delivery qualification holds.
 
 Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: tool Node 26.10.0 and doctor `verify` pass. `/tmp/pmis-command-fuel-green-20261011` kernel-checks the previously failing quantified consumer without a supplied fuel premise; only standard axioms remain. Complete Lean library (`/tmp/pmis-command-fuel-library-final-20261011`) and infrastructure (`/tmp/pmis-command-fuel-infrastructure-20261011`) pass. Native dependency warming timed out; bounded Linux verification passes. No public closure follows.
+Oracle: doctor `verify` passes. `/tmp/pmis-shared-step-green-20261011` kernel-checks both previously absent shared contracts with only standard axioms. Complete Lean library (`/tmp/pmis-shared-step-library-20261011`) and corrected infrastructure (`/tmp/pmis-shared-step-infrastructure-corrected-20261011`) pass. Linux qualification retains one CPU, 3 GiB and no additional swap. Failed elaboration and abbreviated-baseline receipts remain failures. No public closure follows.
 
 Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.

@@ -585,106 +585,77 @@ private theorem singleton_position_invariant (program : Program) (analysis : Pro
     (before after : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program before)
     (candidate : InternalOperationOccurrence) (prior : PositionInvariant program before)
     (applied : applyInternalOperationOccurrence? program before candidate = some after) : PositionInvariant program after := by
-  obtain ⟨operation, resolved, -, replayed⟩ := applyInternalOperationOccurrence_replay_record program before after candidate profile applied
-  let record : InternalTransitionRecord := {
-    operationId := candidate.operationId, operationKind := operation.kind,
-    origin := operation.origin, owner := candidate.owner, mergeInput := none }
-  have replay : replayInternalOperationOccurrence? program before record = some after := replayed
-  have active : ∃ instanceId, before.control = .running instanceId := by
-    cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control] at applied <;> try contradiction
-    exact ⟨_, rfl⟩
-  obtain ⟨instanceId, running⟩ := active
+  obtain ⟨instanceId, operation, running, resolved, _, classified⟩ :=
+    parallelScope_singleton_execution_cases program analysis admitted profile before after candidate applied
   have position := prior instanceId running
-  have declared := (resolveInternalOperationOccurrence_declaration program before candidate operation resolved).1
-  have parsedEntry (entry : ParallelScopeEntry) (parsed : parallelScopeEntry? operation = some entry) :
-      entry = analysis.entry := parsed_entry_unique program analysis admitted operation entry declared parsed
-  by_cases body : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect, .duplicate, .synchronize, .reachNoneEnd]
-  · have control := (applyInternalOperationOccurrence_body_retirement_frame program before after candidate operation resolved body applied).1
+  cases classified with
+  | body body =>
+    have control := (applyInternalOperationOccurrence_body_retirement_frame program before after candidate operation resolved body applied).1
     intro hosting afterRunning
     have same := ProcessControl.running.inj ((control.trans running).symm.trans afterRunning)
     subst hosting
     exact body_position program analysis admitted instanceId before after candidate operation resolved body position running applied
-  · cases operation <;> simp [SemanticOperation.kind] at body
-    case initiate id origin output =>
-      obtain ⟨declaredOutput, _, replayDeclaration, _, _, rootFound, initiated⟩ := replayed_initiation_execution program before after record rfl replay
-      have outputEq : declaredOutput = output := by
-        have unique := resolved_operation_unique program before candidate (.initiate id origin output) resolved
-        have sole : SemanticOperation.initiate record.operationId record.origin declaredOutput =
-            SemanticOperation.initiate id origin output := by
-          have member : SemanticOperation.initiate record.operationId record.origin declaredOutput ∈
-              program.operations.filter (fun op => op.id == candidate.operationId) :=
-            List.mem_filter.mpr ⟨replayDeclaration, by simp [record, SemanticOperation.id]⟩
-          rw [unique] at member
-          exact List.mem_singleton.mp member
-        exact SemanticOperation.initiate.inj sole |>.2.2
-      subst declaredOutput
-      have binding := resolved_port_binding program analysis admitted before candidate (.initiate id origin output) resolved rfl output (by simp [operationControlPlaces, operationOutputs])
-      have live := resolved_exactLiveOccurrence program before candidate (.initiate id origin output) resolved
-      unfold initiateState? at initiated
-      rw [rootFound] at initiated
-      simp only [bind, Option.bind_some] at initiated
-      split at initiated <;> try contradiction
-      cases Option.some.inj initiated
-      intro hosting afterRunning
-      have same := ProcessControl.running.inj (running.symm.trans afterRunning)
-      subst hosting
-      exact runtimePositionValid_tokens_sublist_frame program instanceId _ _
-        (runtimePositionValid_addToken program instanceId before output candidate.owner position live binding.1 binding.2)
-        rfl rfl rfl (List.Sublist.refl _)
-    case enterParallelMultiInstanceScope =>
-      have entered := replayed_parallel_entry_execution program analysis admitted before after record rfl replay
-      have control := enterParallelScope_control_frame analysis.entry candidate.owner before after entered
-      intro hosting afterRunning
-      have same := ProcessControl.running.inj ((control.trans running).symm.trans afterRunning)
-      subst hosting
-      exact entry_position program analysis admitted instanceId before after reachable candidate _ analysis.entry resolved
-        (congrArg some (parsedEntry _ rfl)) position running entered
-    case completeParallelMultiInstanceScope =>
-      obtain ⟨entry, entryMember, completed⟩ := replayed_retirement_execution program before after record rfl replay
-      obtain ⟨_, _, _, _, _, _, _, entries, _⟩ := analyzeProgram_body_certificate program analysis admitted
-      have sameEntry : entry = analysis.entry := by simpa only [entries, List.mem_singleton] using entryMember
-      subst entry
-      obtain ⟨seed, _, _⟩ := reachable.start_certificate program analysis admitted before
-      obtain ⟨parent, _, frame, _⟩ := prefix_scope_projection_census program analysis admitted before reachable instanceId running
-      have rootMember : (⟨parent, none⟩ : RuntimeScopeOccurrence) ∈ before.scopeOccurrences :=
-        (List.mem_filter.mp (frame.root.symm ▸ List.mem_singleton_self _)).1
-      obtain ⟨_, definition, definitionMember, definitionId, parented⟩ :=
-        runtimePositionValid_scope_parent_binding program instanceId instanceId before position running ⟨parent, none⟩ rootMember
-      have parentless : definition.parentScopeId = none := by
-        rcases parented with root | ⟨_, impossible, _⟩
-        · exact root.1
-        · contradiction
-      obtain ⟨staticRoot, _, _, _, _, _, _, rootCensus, _⟩ := analyzeProgram_parent_spine program analysis admitted
-      have definitionRoot : definition = staticRoot := by
-        have member : definition ∈ program.definitionScopes.filter (·.parentScopeId.isNone) :=
-          List.mem_filter.mpr ⟨definitionMember, by simp [parentless]⟩
-        simpa only [rootCensus, List.mem_singleton] using member
-      obtain ⟨sourceCensus, sourceParent, _, _⟩ := root_census program seed.root (analyzeProgram_incidence_admission program analysis admitted).1 seed.rootSelected
-      have sourceMember := (List.mem_filter.mp (sourceCensus.symm ▸ List.mem_singleton_self seed.root)).1
-      have sourceRoot : seed.root = staticRoot := by
-        have member : seed.root ∈ program.definitionScopes.filter (·.parentScopeId.isNone) :=
-          List.mem_filter.mpr ⟨sourceMember, by simp [sourceParent]⟩
-        simpa only [rootCensus, List.mem_singleton] using member
-      have parentScope : seed.root.id = parent.definitionScopeId := by rw [sourceRoot, ← definitionRoot]; exact definitionId
-      obtain ⟨entryOperation, declared, parsed⟩ := List.mem_filterMap.mp (entries.symm ▸ List.mem_singleton_self analysis.entry)
-      have ports := (admitted_entry_position_bindings program analysis admitted seed.root seed.rootSelected entryOperation analysis.entry declared parsed).2.2
-      rw [parentScope] at ports
-      have bound : ∃ binding, parallelScopeBinding? analysis.entry before candidate.owner = some binding := by
-        unfold completeParallelScope? at completed
-        obtain ⟨binding, found, _⟩ := Option.bind_eq_some_iff.mp completed
-        exact ⟨binding, found⟩
-      obtain ⟨binding, bound⟩ := bound
-      intro hosting afterRunning
-      have control := completeParallelScope_control_frame analysis.entry candidate.owner before after completed
-      have same := ProcessControl.running.inj ((control.trans running).symm.trans afterRunning)
-      subst hosting
-      exact retirement_position program instanceId analysis.entry parent candidate.owner before after binding bound frame position running ports completed
-    case completeScope =>
-      obtain ⟨_, _, _, _, _, completed, _⟩ := replayed_final_root_completion program analysis admitted before after record rfl replay
-      intro _ active
-      rw [completed] at active; contradiction
-    all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+  | initiation id origin output rootFound initiated =>
+    have binding := resolved_port_binding program analysis admitted before candidate (.initiate id origin output) resolved rfl output (by simp [operationControlPlaces, operationOutputs])
+    have live := resolved_exactLiveOccurrence program before candidate (.initiate id origin output) resolved
+    unfold initiateState? at initiated
+    rw [rootFound] at initiated
+    simp only [bind, Option.bind_some] at initiated
+    split at initiated <;> try contradiction
+    cases Option.some.inj initiated
+    intro hosting afterRunning
+    have same := ProcessControl.running.inj (running.symm.trans afterRunning)
+    subst hosting
+    exact runtimePositionValid_tokens_sublist_frame program instanceId _ _
+      (runtimePositionValid_addToken program instanceId before output candidate.owner position live binding.1 binding.2)
+      rfl rfl rfl (List.Sublist.refl _)
+  | entry parsed entered =>
+    have control := enterParallelScope_control_frame analysis.entry candidate.owner before after entered
+    intro hosting afterRunning
+    have same := ProcessControl.running.inj ((control.trans running).symm.trans afterRunning)
+    subst hosting
+    exact entry_position program analysis admitted instanceId before after reachable candidate _ analysis.entry resolved
+      parsed position running entered
+  | retirement _ completed =>
+    obtain ⟨_, _, _, _, _, _, _, entries, _⟩ := analyzeProgram_body_certificate program analysis admitted
+    obtain ⟨seed, _, _⟩ := reachable.start_certificate program analysis admitted before
+    obtain ⟨parent, _, frame, _⟩ := prefix_scope_projection_census program analysis admitted before reachable instanceId running
+    have rootMember : (⟨parent, none⟩ : RuntimeScopeOccurrence) ∈ before.scopeOccurrences :=
+      (List.mem_filter.mp (frame.root.symm ▸ List.mem_singleton_self _)).1
+    obtain ⟨_, definition, definitionMember, definitionId, parented⟩ :=
+      runtimePositionValid_scope_parent_binding program instanceId instanceId before position running ⟨parent, none⟩ rootMember
+    have parentless : definition.parentScopeId = none := by
+      rcases parented with root | ⟨_, impossible, _⟩
+      · exact root.1
+      · contradiction
+    obtain ⟨staticRoot, _, _, _, _, _, _, rootCensus, _⟩ := analyzeProgram_parent_spine program analysis admitted
+    have definitionRoot : definition = staticRoot := by
+      have member : definition ∈ program.definitionScopes.filter (·.parentScopeId.isNone) :=
+        List.mem_filter.mpr ⟨definitionMember, by simp [parentless]⟩
+      simpa only [rootCensus, List.mem_singleton] using member
+    obtain ⟨sourceCensus, sourceParent, _, _⟩ := root_census program seed.root (analyzeProgram_incidence_admission program analysis admitted).1 seed.rootSelected
+    have sourceMember := (List.mem_filter.mp (sourceCensus.symm ▸ List.mem_singleton_self seed.root)).1
+    have sourceRoot : seed.root = staticRoot := by
+      have member : seed.root ∈ program.definitionScopes.filter (·.parentScopeId.isNone) :=
+        List.mem_filter.mpr ⟨sourceMember, by simp [sourceParent]⟩
+      simpa only [rootCensus, List.mem_singleton] using member
+    have parentScope : seed.root.id = parent.definitionScopeId := by rw [sourceRoot, ← definitionRoot]; exact definitionId
+    obtain ⟨entryOperation, declared, parsed⟩ := List.mem_filterMap.mp (entries.symm ▸ List.mem_singleton_self analysis.entry)
+    have ports := (admitted_entry_position_bindings program analysis admitted seed.root seed.rootSelected entryOperation analysis.entry declared parsed).2.2
+    rw [parentScope] at ports
+    have bound : ∃ binding, parallelScopeBinding? analysis.entry before candidate.owner = some binding := by
+      unfold completeParallelScope? at completed
+      obtain ⟨binding, found, _⟩ := Option.bind_eq_some_iff.mp completed
+      exact ⟨binding, found⟩
+    obtain ⟨binding, bound⟩ := bound
+    intro hosting afterRunning
+    have control := completeParallelScope_control_frame analysis.entry candidate.owner before after completed
+    have same := ProcessControl.running.inj ((control.trans running).symm.trans afterRunning)
+    subst hosting
+    exact retirement_position program instanceId analysis.entry parent candidate.owner before after binding bound frame position running ports completed
+  | rootCompletion _ _ _ _ _ completed =>
+    intro _ active
+    rw [completed] at active; contradiction
 
 private theorem admission_position_invariant (program : Program) (analysis : ProgramAnalysis)
     (admitted : analyzeProgram program = some analysis) (selected : programSelected program = true)
@@ -693,28 +664,17 @@ private theorem admission_position_invariant (program : Program) (analysis : Pro
     (committed : (admitStimulus program before stimulus).outcome = .committed) :
     PositionInvariant program (admitStimulus program before stimulus).state := by
   rcases parallelScope_committed_ingress_kind program selected before stimulus committed with
-    ⟨commandId, processId, instanceId, values, rfl, control⟩ | completion
-  · rcases boundary.start_certificate program analysis admitted before with rfl | ⟨seed, _, phases⟩
-    · obtain ⟨started, _, _⟩ := parallelScope_committed_start_exact program selected commandId processId instanceId values committed
-      have builder := started
-      unfold runningProgramStartState? at builder
-      obtain ⟨root, rootSelected, _⟩ := Option.bind_eq_some_iff.mp builder
-      have named : instanceId.value ≠ "" := by
-        have accepted : ParallelScopeCommand.stimulusAdmitted program initialState (.startProcess commandId processId instanceId values) = true := by
-          cases checked : ParallelScopeCommand.stimulusAdmitted program initialState (.startProcess commandId processId instanceId values) with
-          | false => cases snapshot : program.compensationEventSubProcessSnapshots <;> simp [admitStimulus, snapshot, checked] at committed
-          | true => rfl
-        have nonempty := ParallelScopeCommand.admitted_start_instance_nonempty program initialState commandId processId instanceId values selected accepted
-        intro empty; simp [empty] at nonempty
-      have stateRunning := runningProgramStartState_control program instanceId values _ started
-      intro hosting running
-      have same := ProcessControl.running.inj (stateRunning.symm.trans running)
-      subst hosting
-      exact start_position program analysis admitted root rootSelected instanceId named values _ started
-    · rcases phases ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩ rfl with ready | ⟨_, _, _, initial, records, _, _, phase⟩
-      · have running := runningProgramStartState_control program seed.instanceId seed.values seed.ready seed.started
-        rw [ready, running] at control; contradiction
-      · exact False.elim (phase.not_notStarted program analysis selected _ seed.parent initial before records control)
+    ⟨commandId, processId, instanceId, values, rfl, _⟩ | completion
+  · obtain ⟨rfl, started, named⟩ := boundary.committed_start_from_initial program analysis admitted selected
+      before commandId processId instanceId values committed
+    have builder := started
+    unfold runningProgramStartState? at builder
+    obtain ⟨root, rootSelected, _⟩ := Option.bind_eq_some_iff.mp builder
+    have stateRunning := runningProgramStartState_control program instanceId values _ started
+    intro hosting running
+    have same := ProcessControl.running.inj (stateRunning.symm.trans running)
+    subst hosting
+    exact start_position program analysis admitted root rootSelected instanceId named values _ started
   · apply admitStimulus_wait_preserves program before stimulus selected completion (PositionInvariant program) prior
     · intro id values after completed hosting running
       have control := ParallelScopeCommand.completeTask_control_frame program before after id values completed

@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.ParallelScopeStructuralPublicationProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeExcludedWaitProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
 
 /-! PMIS native and reserved arming use the ordinary publication insertion laws.
 Actual command and prefix history establish full Program correspondence at Running
@@ -386,19 +387,12 @@ private theorem singleton_publication_invariant (program : Program) (analysis : 
     WaitPublicationInvariant program after := by
   have excluded := applyInternalOperationOccurrence_parallelScope_excluded_waits program analysis admitted
     before after candidate prior.1 applied
-  obtain ⟨operation, resolved, _, replayed⟩ := applyInternalOperationOccurrence_replay_record
-    program before after candidate profile applied
-  let record : InternalTransitionRecord := {
-    operationId := candidate.operationId, operationKind := operation.kind,
-    origin := operation.origin, owner := candidate.owner, mergeInput := none }
-  have replay : replayInternalOperationOccurrence? program before record = some after := replayed
-  have active : ∃ instanceId, before.control = .running instanceId := by
-    cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control] at applied <;> try contradiction
-    exact ⟨_, rfl⟩
-  obtain ⟨instanceId, running⟩ := active
+  obtain ⟨instanceId, operation, running, resolved, _, classified⟩ :=
+    parallelScope_singleton_execution_cases program analysis admitted profile before after candidate applied
   have valid := prior.2.2 instanceId running
-  by_cases body : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect, .duplicate, .synchronize, .reachNoneEnd]
-  · have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+  cases classified with
+  | body body =>
+    have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
       rcases applyInternalOperationOccurrence_body_effect program before after candidate operation resolved body applied with
         ⟨patch, _, _, updated⟩ | ⟨patch, _, _, updated⟩
       · rw [updated]
@@ -406,42 +400,34 @@ private theorem singleton_publication_invariant (program : Program) (analysis : 
       · rw [updated]; exact prior.2.1
     exact ⟨excluded, choices, fun _ _ => reachable.body_wait_program_validity program analysis admitted
       before after candidate operation resolved body valid applied⟩
-  · cases operation <;> simp [SemanticOperation.kind] at body
-    case initiate =>
-      obtain ⟨output, _, _, _, _, _, initiated⟩ := replayed_initiation_execution program before after record rfl replay
-      unfold initiateState? at initiated
-      obtain ⟨_, _, initiated⟩ := Option.bind_eq_some_iff.mp initiated
-      split at initiated <;> try contradiction
-      cases Option.some.inj initiated
-      exact ⟨excluded, prior.2.1, fun _ _ => valid⟩
-    case enterParallelMultiInstanceScope =>
-      have entered := replayed_parallel_entry_execution program analysis admitted before after record rfl replay
-      have choices := entry_choice_frame analysis.entry candidate.owner before after entered
-      exact ⟨excluded, ⟨choices.1.trans prior.2.1.1, choices.2.trans prior.2.1.2⟩, fun _ _ =>
-        enterParallelScope_wait_program_validity program analysis.entry candidate.owner before after
-          (reachable.scope_identities_unique program analysis admitted before instanceId running) valid
-          prior.1.1 prior.1.2.1 prior.1.2.2 entered⟩
-    case completeParallelMultiInstanceScope =>
-      obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record rfl replay
-      exact ⟨excluded, retirement_choices_empty entry candidate.owner before after prior.2.1 completed, fun _ _ =>
-        ParallelScopeCommand.completeParallelScope_wait_program_validity program entry candidate.owner before after
-          valid prior.1.1 prior.1.2.1 prior.1.2.2 completed⟩
-    case completeScope =>
-      obtain ⟨_, _, _, _, _, completed, _⟩ := replayed_final_root_completion program analysis admitted before after record rfl replay
-      obtain ⟨scopeId, output, _, _, _, _, completion⟩ := replayed_scope_completion_execution program before after record rfl replay
-      obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
-      rw [completeSelectedScope?, unmonitored,
-        completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completion
-      have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
-        unfold completeScopeState? at completion
-        split at completion <;> try contradiction
-        split at completion <;> try contradiction
-        unfold completeQuiescentScope? at completion
-        all_goals repeat' split at completion
-        all_goals first | contradiction | (cases Option.some.inj completion; exact prior.2.1)
-      exact ⟨excluded, choices, by intro _ active; rw [completed] at active; contradiction⟩
-    all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+  | initiation _ _ _ _ initiated =>
+    unfold initiateState? at initiated
+    obtain ⟨_, _, initiated⟩ := Option.bind_eq_some_iff.mp initiated
+    split at initiated <;> try contradiction
+    cases Option.some.inj initiated
+    exact ⟨excluded, prior.2.1, fun _ _ => valid⟩
+  | entry _ entered =>
+    have choices := entry_choice_frame analysis.entry candidate.owner before after entered
+    exact ⟨excluded, ⟨choices.1.trans prior.2.1.1, choices.2.trans prior.2.1.2⟩, fun _ _ =>
+      enterParallelScope_wait_program_validity program analysis.entry candidate.owner before after
+        (reachable.scope_identities_unique program analysis admitted before instanceId running) valid
+        prior.1.1 prior.1.2.1 prior.1.2.2 entered⟩
+  | retirement _ completed =>
+    exact ⟨excluded, retirement_choices_empty analysis.entry candidate.owner before after prior.2.1 completed, fun _ _ =>
+      ParallelScopeCommand.completeParallelScope_wait_program_validity program analysis.entry candidate.owner before after
+        valid prior.1.1 prior.1.2.1 prior.1.2.2 completed⟩
+  | rootCompletion scopeId output _ _ completion completed =>
+    obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
+    rw [completeSelectedScope?, unmonitored,
+      completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completion
+    have choices : after.selectedBranchSets = [] ∧ after.eventRaces = [] := by
+      unfold completeScopeState? at completion
+      split at completion <;> try contradiction
+      split at completion <;> try contradiction
+      unfold completeQuiescentScope? at completion
+      all_goals repeat' split at completion
+      all_goals first | contradiction | (cases Option.some.inj completion; exact prior.2.1)
+    exact ⟨excluded, choices, by intro _ active; rw [completed] at active; contradiction⟩
 
 private theorem batch_publication_invariant (program : Program) (analysis : ProgramAnalysis)
     (admitted : analyzeProgram program = some analysis)
@@ -473,20 +459,15 @@ private theorem admission_publication_invariant (program : Program) (analysis : 
     (committed : (admitStimulus program before stimulus).outcome = .committed) :
     WaitPublicationInvariant program (admitStimulus program before stimulus).state := by
   rcases parallelScope_committed_ingress_kind program selected before stimulus committed with
-    ⟨commandId, processId, instanceId, values, rfl, control⟩ | completion
-  · rcases boundary.start_certificate program analysis admitted before with rfl | ⟨seed, _, phases⟩
-    · obtain ⟨started, _, _⟩ := parallelScope_committed_start_exact program selected commandId processId instanceId values committed
-      unfold runningProgramStartState? at started
-      obtain ⟨_, _, started⟩ := Option.bind_eq_some_iff.mp started
-      rw [← Option.some.inj started]
-      refine ⟨⟨rfl, rfl, rfl⟩, ⟨rfl, rfl⟩, ?_⟩
-      intro _ _
-      rfl
-    · rcases phases ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩ rfl with ready |
-        ⟨_, _, _, initial, records, _, _, phase⟩
-      · have running := runningProgramStartState_control program seed.instanceId seed.values seed.ready seed.started
-        rw [ready, running] at control; contradiction
-      · exact False.elim (phase.not_notStarted program analysis selected _ seed.parent initial before records control)
+    ⟨commandId, processId, instanceId, values, rfl, _⟩ | completion
+  · obtain ⟨rfl, started, _⟩ := boundary.committed_start_from_initial program analysis admitted selected
+      before commandId processId instanceId values committed
+    unfold runningProgramStartState? at started
+    obtain ⟨_, _, started⟩ := Option.bind_eq_some_iff.mp started
+    rw [← Option.some.inj started]
+    refine ⟨⟨rfl, rfl, rfl⟩, ⟨rfl, rfl⟩, ?_⟩
+    intro _ _
+    rfl
   · apply admitStimulus_wait_preserves program before stimulus selected completion
       (WaitPublicationInvariant program) prior
     · intro id values after completed
