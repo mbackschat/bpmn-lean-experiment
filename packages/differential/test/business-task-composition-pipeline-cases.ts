@@ -43,11 +43,30 @@ function businessCase(id: PipelineCase["id"], family: string,
     expectedInjectedDisagreement: { kind: DisagreementKind.ObservationValue, path, expected, actual } };
 }
 
-export const businessTaskCompositionPipelineCases = Object.freeze([
+const representativeBusinessCases = Object.freeze([
   businessCase("classification", "serial-business-task-composition", reusePrecedingTask,
     "trace[6].openEffects[0].id.elementId", "Classify", "Validate"),
   businessCase("invoice-rework", "mixed-task-control-flow", reusePreviousOccurrence,
     "trace[8].openEffects[0].id.activation", 2, 1),
   businessCase("invoice-business-error-recovery", "mixed-task-business-error", skipErrorRecovery,
     "trace[6].openUserTasks[0].id.elementId", "CorrectData", "Finalize"),
+]);
+
+function publicDeliveryCase(candidate: PipelineCase, id: PipelineCase["id"], fixture: string): PipelineCase {
+  return { ...candidate, id, workflowIdPrefix: id,
+    scenarioRelativePath: candidate.scenarioRelativePath.replace(/scenario\.json$/u, "public-delivery.scenario.json"),
+    bpmnRelativePath: `packages/bpmn-source/test/fixtures/business-public-delivery/${fixture}.bpmn` };
+}
+
+export const businessTaskCompositionPipelineCases = Object.freeze([
+  ...representativeBusinessCases,
+  ...representativeBusinessCases.map(candidate => {
+    switch (candidate.id) {
+      case "classification": return publicDeliveryCase(candidate, "public-delivery-classification", "serial-invoice");
+      case "invoice-rework": return publicDeliveryCase(candidate, "public-delivery-invoice-rework", "invoice-rework");
+      case "invoice-business-error-recovery": return publicDeliveryCase(candidate,
+        "public-delivery-invoice-business-error-recovery", "invoice-error-recovery");
+      default: throw new Error(`Unexpected representative business case ${candidate.id}`);
+    }
+  }),
 ]);

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { CanonicalObservationKind, CommandOutcome, ProcessStatus, StimulusKind, applyStimulus, initialState,
   projectEffectTransportMaterial, runScenario } from "@bpmn-lean/semantic-core";
-import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
+import { ComparisonKind, DifferentialTarget, DisagreementKind, compareTargetResults } from "@bpmn-lean/differential";
 import { completeEffectCommandId, effectTransportKey } from "@bpmn-lean/temporal-protocol";
 import { TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
@@ -28,7 +29,8 @@ test("registered business journeys bind normative profiles, exact overlays and e
     { scenario: "mixed-invoice-rework", bpmn: "mixed-task-invoice-rework" },
     { scenario: "business-error", bpmn: "mixed-task-invoice-business-error" },
   ];
-  for (const [index, candidate] of businessTaskCompositionPipelineCases.entries()) {
+  const representatives = businessTaskCompositionPipelineCases.filter(({ id }) => !id.startsWith("public-delivery-"));
+  for (const [index, candidate] of representatives.entries()) {
     const registered: PipelineCase | undefined = pipelineCases.find(({ id }) => id === candidate.id);
     assert.ok(registered !== undefined, `missing registered business journey ${candidate.id}`);
     assert.equal(registered.scenarioRelativePath, `scenarios/${families[index]}/scenario.json`);
@@ -70,10 +72,73 @@ test("registered business journeys bind normative profiles, exact overlays and e
   }
 });
 
+const publicDeliveryJourneys = [
+  { id: "public-delivery-classification", family: "serial-business-task-composition", fixture: "serial-invoice",
+    submissions: ["INV-42", "INV-42"] },
+  { id: "public-delivery-invoice-rework", family: "mixed-task-control-flow", fixture: "invoice-rework",
+    submissions: ["draft", "INV-42", "INV-42"] },
+  { id: "public-delivery-invoice-business-error-recovery", family: "mixed-task-business-error", fixture: "invoice-error-recovery",
+    submissions: ["missing-reference", "policy-review", "policy-review", "INV-42", "INV-42", "INV-42"] },
+] as const;
+
+test("registers exact metadata-bearing delivery sources with the public Work string submissions", async () => {
+  const root = fileURLToPath(new URL("../../../", import.meta.url));
+  const artifacts = await readAndVerifyNormativeArtifactSets(root);
+  const deliveryCases = businessTaskCompositionPipelineCases.filter(({ id }) => id.startsWith("public-delivery-"));
+  assert.deepEqual(deliveryCases.map(({ id }) => id), publicDeliveryJourneys.map(({ id }) => id));
+  for (const journey of publicDeliveryJourneys) {
+    const candidate = deliveryCases.find(({ id }) => id === journey.id);
+    assert.ok(candidate !== undefined);
+    const artifact = artifacts.find(({ scenario }) => scenario.id === journey.id);
+    assert.ok(artifact !== undefined);
+    assert.equal(candidate.scenarioRelativePath, `scenarios/${journey.family}/public-delivery.scenario.json`);
+    assert.equal(candidate.bpmnRelativePath, `packages/bpmn-source/test/fixtures/business-public-delivery/${journey.fixture}.bpmn`);
+    assert.equal(candidate.sourceOverlayRelativePath, `scenarios/${journey.family}/source-overlay.json`);
+    assert.equal(pipelineCases.includes(candidate), true);
+    assert.equal(candidate.cib, null);
+    assert.equal(artifact.scenario.bpmn.relativePath, candidate.bpmnRelativePath);
+    assert.equal(artifact.scenario.bpmn.sha256, createHash("sha256").update(artifact.bpmnBytes).digest("hex"));
+    const representative = JSON.parse(await readFile(new URL(`../../../scenarios/${journey.family}/scenario.json`, import.meta.url), "utf8"));
+    assert.equal(artifact.scenario.profile, representative.profile);
+    assert.deepEqual(artifact.scenario.bpmn.sourceOverlay, representative.bpmn.sourceOverlay);
+    assert.deepEqual(artifact.scenario.stimuli[0], representative.stimuli[0]);
+    assert.deepEqual(artifact.scenario.stimuli.filter(stimulus => stimulus.kind === StimulusKind.CompleteUserTaskInstance)
+      .map(stimulus => stimulus.submittedValues), journey.submissions.map(value => [{ name: "request", value: { kind: "string", value } }]));
+  }
+});
+
+test("public-delivery observations preserve every open task's metadata and detect its loss", async () => {
+  const deliveryCases = businessTaskCompositionPipelineCases.filter(({ id }) => id.startsWith("public-delivery-"));
+  assert.equal(deliveryCases.length, publicDeliveryJourneys.length);
+  for (const { scenario, semanticProcess } of await loadAndCompileCases(deliveryCases)) {
+    const result = runScenario(scenario, semanticProcess);
+    for (const observation of result.trace) {
+      if (observation.kind !== CanonicalObservationKind.State) continue;
+      for (const task of observation.openUserTasks) assert.deepEqual(task.metadata, {
+        assignment: { candidates: [{ kind: "group", id: "reviewers" }] },
+        form: { fields: [{ key: "request", type: "string" }] },
+      });
+    }
+    const mutated = mutableClone(result);
+    const start = mutated.trace[2];
+    assert.equal(start?.kind, CanonicalObservationKind.State);
+    if (start?.kind !== CanonicalObservationKind.State) throw new Error("Missing delivery start state");
+    const task = start.openUserTasks[0];
+    assert.ok(task !== undefined && task.metadata !== undefined);
+    delete task.metadata;
+    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
+      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    assert.equal(comparison.kind, ComparisonKind.Disagreement);
+    if (comparison.kind !== ComparisonKind.Disagreement) throw new Error("Metadata loss escaped comparison");
+    assert.equal(comparison.disagreement.kind, DisagreementKind.ObservationValue);
+    assert.equal(comparison.disagreement.path, "trace[2].openUserTasks[0].metadata");
+  }
+});
+
 test("retained business journeys agree with their caller-supplied invoice handlers", async context => {
   for (const { scenario, semanticProcess: program } of await loadAndCompileCases(businessTaskCompositionPipelineCases)) {
     await context.test(scenario.id, async () => {
-      const activities = scenario.id === "invoice-business-error-recovery"
+      const activities = scenario.id.endsWith("invoice-business-error-recovery")
         ? createInvoiceRecoveryEffectActivities() : createInvoiceEffectActivities();
       let state = initialState;
       const actual = [];
@@ -100,7 +165,8 @@ test("retained business journeys agree with their caller-supplied invoice handle
 
 test("registered business journeys preserve exact semantic comparisons without a CIB profile target", async context => {
   const loaded = await loadAndCompileCases(businessTaskCompositionPipelineCases);
-  assert.deepEqual(loaded.map(({ scenario }) => scenario.id), ["classification", "invoice-rework", "invoice-business-error-recovery"]);
+  assert.deepEqual(loaded.map(({ scenario }) => scenario.id), ["classification", "invoice-rework", "invoice-business-error-recovery",
+    ...publicDeliveryJourneys.map(({ id }) => id)]);
   for (const { pipelineCase, scenario, semanticProcess, retainedEvidence } of loaded) {
     await context.test(scenario.id, () => {
       assert.equal(pipelineCase.id, scenario.id);

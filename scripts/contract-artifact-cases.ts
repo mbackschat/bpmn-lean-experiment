@@ -357,6 +357,9 @@ export const normativeArtifactCases = Object.freeze([
   Object.freeze({ scenarioRelativePath: "scenarios/serial-business-task-composition/scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-control-flow/scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-business-error/scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/serial-business-task-composition/public-delivery.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-control-flow/public-delivery.scenario.json" }),
+  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-business-error/public-delivery.scenario.json" }),
 ]);
 
 export type ArtifactCase = Readonly<{

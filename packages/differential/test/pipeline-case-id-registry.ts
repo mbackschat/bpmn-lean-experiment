@@ -101,6 +101,9 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "classification",
   "invoice-rework",
   "invoice-business-error-recovery",
+  "public-delivery-classification",
+  "public-delivery-invoice-rework",
+  "public-delivery-invoice-business-error-recovery",
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];

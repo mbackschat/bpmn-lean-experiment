@@ -4,9 +4,9 @@ This directory contains implementation-neutral BPMN resources, semantic stimuli,
 
 ## Scenario families
 
-- [Validate and classify an invoice](serial-business-task-composition/README.md) retains the [neutral serial journey](serial-business-task-composition/scenario.json) with named validation and classification handlers.
-- [Review and rework an invoice](mixed-task-control-flow/README.md) retains the [neutral mixed journey](mixed-task-control-flow/scenario.json) with current-data validation, an Exclusive decision and repeated human work.
-- [Recover from invoice business Errors](mixed-task-business-error/README.md) retains the [neutral recovery journey](mixed-task-business-error/scenario.json) through data correction, policy review and fresh validation occurrences.
+- [Validate and classify an invoice](serial-business-task-composition/README.md) retains the [neutral serial journey](serial-business-task-composition/scenario.json) with named validation and classification handlers and its separate [metadata-bearing public-delivery schedule](serial-business-task-composition/public-delivery.scenario.json).
+- [Review and rework an invoice](mixed-task-control-flow/README.md) retains the [neutral mixed journey](mixed-task-control-flow/scenario.json) with current-data validation, an Exclusive decision and repeated human work and its separate [metadata-bearing public-delivery schedule](mixed-task-control-flow/public-delivery.scenario.json).
+- [Recover from invoice business Errors](mixed-task-business-error/README.md) retains the [neutral recovery journey](mixed-task-business-error/scenario.json) through data correction, policy review and fresh validation occurrences and its separate [metadata-bearing public-delivery schedule](mixed-task-business-error/public-delivery.scenario.json).
 - [Supplier onboarding with Call data](call-activity-data-boundaries/README.md) carries String and explicit null through isolated due diligence and caller approval.
 - The [Transaction cancellation scenarios](transaction-cancellation/README.md) withdraw a reservation with no eligible work, with completed work and active preparation, after the reservation branch ends, or with a typed release failure. They retain exact source binding and content-bound commands without a CIB target.
 
