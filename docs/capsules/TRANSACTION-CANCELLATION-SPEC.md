@@ -8,7 +8,7 @@ Implemented and independently closure-reviewed for the bounded cancellation prof
 
 One admitted Transaction Sub-Process cancels its live work, compensates its completed eligible work, and releases its Cancel Boundary Event only after compensation finishes.
 
-The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This specification extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [RC plan](../PLAN.md#mue-release-candidate-critical-path) remains the scope authority.
+The selected RC outcome is complete from exact BPMN XML through checked source, Semantic Process IL, Lean, TypeScript, production Temporal hosting, paired E1/E2 publication, and public engine commands. This specification extends scope ownership of the existing Compensation mechanism; it does not select another general scheduling-proof programme. The [historical RC boundary](../PROJECT-DESIGN.md#historical-rc-content-boundary) remains the scope authority.
 
 ## Current implementation boundary
 

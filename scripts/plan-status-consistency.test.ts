@@ -12,6 +12,7 @@ import { muePreviewBetaTestOracle } from "./mue-preview-beta-test-oracle.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const planPath = path.join(projectRoot, "docs/PLAN.md");
+const betaPath = path.join(projectRoot, "docs/MUE-PREVIEW-BETA-SPEC.md");
 
 const muePreviewBetaRiskBands = [
   ["Subscription population/concurrency", "satisfied"],
@@ -24,18 +25,18 @@ const muePreviewBetaRiskBands = [
   ["Beta integration", "satisfied"],
 ] as const;
 
-function muePreviewBetaSection(plan: string): string {
-  const marker = "### MUE Preview Beta critical path\n";
-  const start = plan.indexOf(marker);
+function muePreviewBetaSection(specification: string): string {
+  const marker = "### Historical Beta content boundary\n";
+  const start = specification.indexOf(marker);
   assert.notEqual(start, -1, `missing ${marker.trim()}`);
   const bodyStart = start + marker.length;
-  const remainder = plan.slice(bodyStart);
+  const remainder = specification.slice(bodyStart);
   const nextHeading = remainder.search(/\n##(?:#)? /u);
   return remainder.slice(0, nextHeading === -1 ? undefined : nextHeading).trim();
 }
 
-function assertMuePreviewBetaCriticalPath(plan: string): void {
-  const section = muePreviewBetaSection(plan);
+function assertMuePreviewBetaCriticalPath(specification: string): void {
+  const section = muePreviewBetaSection(specification);
   assert.match(
     section,
     /^\| Content ID \| State \| Exact Beta boundary \| Evidence or next-gate owner \|$/mu,
@@ -84,8 +85,32 @@ function assertMuePreviewBetaCriticalPath(plan: string): void {
     "the MUE Preview Beta risk bands must retain their current risk-first handoff",
   );
   assert.ok(riskRows.every(([, state]) => state === "satisfied"), "every Beta risk band must remain satisfied after closure");
-  assert.doesNotMatch(plan, /^Risk band: Beta integration\.$/mu, "the exact resume point must leave the closed Beta risk band");
 }
+
+function assertForwardPlan(plan: string): void {
+  assert.doesNotMatch(plan, /^#{2,6} (?:MUE Preview Beta critical path|MUE Release Candidate critical path|Risk-first execution bands)$/mu,
+    "closed milestone sections belong in their historical owners");
+  assert.doesNotMatch(plan, /^\|[^\n]*\| `satisfied` \|/mu,
+    "satisfied milestone rows belong in their historical owners");
+  assert.doesNotMatch(plan, /^Integration state: `satisfied`\.$/mu,
+    "closed integration state belongs in its historical owner");
+  assert.doesNotMatch(plan, /^Risk band: Beta integration\.$/mu,
+    "the exact resume point must leave the closed Beta risk band");
+}
+
+test("keeps completed milestone tables in their owners and out of forward PLAN work", async () => {
+  const plan = await readFile(planPath, "utf8");
+  assertForwardPlan(plan);
+  for (const history of [
+    "### MUE Preview Beta critical path\n",
+    "### MUE Release Candidate critical path\n",
+    "#### Risk-first execution bands\n",
+    "| `SEQUENTIAL-MULTI-INSTANCE` | `satisfied` | Closed boundary. | [Owner](MUE-PREVIEW-BETA-SPEC.md) |\n",
+    "| 8 | `satisfied` | Beta integration | Closed boundary. |\n",
+    "Integration state: `satisfied`.\n",
+  ]) assert.throws(() => assertForwardPlan(plan.replace("## Current checkpoint\n", `## Current checkpoint\n\n${history}`)),
+    /historical owner/u);
+});
 
 test("keeps the plan as one compact execution control document", async () => {
   const plan = await readFile(planPath, "utf8");
@@ -130,25 +155,25 @@ test("rejects multiple active items, malformed states, duplicate IDs, and a dang
 });
 
 test("makes the complete MUE Preview Beta critical path executable", async () => {
-  const plan = await readFile(planPath, "utf8");
-  assert.doesNotThrow(() => assertMuePreviewBetaCriticalPath(plan));
+  const specification = await readFile(betaPath, "utf8");
+  assert.doesNotThrow(() => assertMuePreviewBetaCriticalPath(specification));
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace(/^\| `MECHANISM-MATURITY-EVIDENCE` \|.*\n/mu, "")),
+    () => assertMuePreviewBetaCriticalPath(specification.replaceAll(/^\| `MECHANISM-MATURITY-EVIDENCE` \|.*\n/gmu, "")),
     /seven authoritative content IDs/u,
   );
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace(
+    () => assertMuePreviewBetaCriticalPath(specification.replaceAll(
       "| `EVENT-SUBSCRIPTIONS` |",
       "| `H3-WORKLOAD-ISOLATION` | `queued` | Engine v0.3 only. | [Maturity ladder](PROJECT-DESIGN.md#engine-maturity-roadmap-labels) |\n| `EVENT-SUBSCRIPTIONS` |",
     )),
     /Engine v0\.3 work/u,
   );
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace("Integration state: `satisfied`.", "Integration state: `blocked`.")),
+    () => assertMuePreviewBetaCriticalPath(specification.replace("Integration state: `satisfied`.", "Integration state: `blocked`.")),
     /must remain closed/u,
   );
   assert.throws(
-    () => assertMuePreviewBetaCriticalPath(plan.replace(
+    () => assertMuePreviewBetaCriticalPath(specification.replace(
       "| 8 | `satisfied` | Beta integration |",
       "| 8 | `queued` | Beta integration |",
     )),
@@ -156,15 +181,14 @@ test("makes the complete MUE Preview Beta critical path executable", async () =>
   );
 });
 
-test("closed Beta permits each approved successor semantic item", async () => {
-  const plan = await readFile(planPath, "utf8");
-  for (const activeIndex of [1, 2]) {
-    const advanced = parseOrderedWork(plan).slice(0, 3).reduce((text, entry, index) => text.replace(
-      `\`${entry.id}\` · **${entry.state}**`,
-      `\`${entry.id}\` · **${index < activeIndex ? "later" : index === activeIndex ? "active" : "queued"}**`,
-    ), plan);
-    assert.doesNotThrow(() => assertMuePreviewBetaCriticalPath(advanced));
-  }
+test("rejects an unfinished or duplicated historical Beta content boundary", async () => {
+  const specification = await readFile(betaPath, "utf8");
+  assert.throws(() => assertMuePreviewBetaCriticalPath(specification.replace(
+    "| `EVENT-SUBSCRIPTIONS` | `satisfied` |", "| `EVENT-SUBSCRIPTIONS` | `queued` |",
+  )), /seven authoritative content IDs/u);
+  assert.throws(() => assertMuePreviewBetaCriticalPath(specification.replace(
+    "| `EVENT-SUBSCRIPTIONS` | `satisfied` |", "| `PARALLEL-MULTI-INSTANCE` | `satisfied` |",
+  )), /duplicate MUE Preview Beta content ID/u);
 });
 
 test("keeps the MUE Preview Beta testing contract aligned with the closed integration handoff", async () => {

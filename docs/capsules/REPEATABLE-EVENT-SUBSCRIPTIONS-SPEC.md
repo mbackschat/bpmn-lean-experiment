@@ -8,7 +8,7 @@ Implemented, independently closure-reviewed bounded normative account.
 
 The selected RC Message and Timer subscriptions remain available for the lifetime of their catching locus, allow overlapping non-interrupting handler work, resolve completion/trigger races explicitly, and disappear with exactly the scope or Activity that owns them.
 
-This specification owns the subscription-lifetime account required by [the RC content boundary](../PLAN.md#mue-release-candidate-critical-path). The [independent review receipt](#independent-cold-review-receipt) approves the retained lifetime account, [scheduling proof domain](#scheduling-proof-domain-amendment), hosting and registered pipeline within their exact admission and evidence boundary. A root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
+This specification owns the subscription-lifetime account required by [the RC content boundary](../PROJECT-DESIGN.md#historical-rc-content-boundary). The [independent review receipt](#independent-cold-review-receipt) approves the retained lifetime account, [scheduling proof domain](#scheduling-proof-domain-amendment), hosting and registered pipeline within their exact admission and evidence boundary. A root-only repeated-handler example cannot substitute for the selected catch, Activity-boundary, and nested-cleanup boundary. Existing profiles and their same-activation refusals remain unchanged.
 
 ## Normative basis and compatibility
 

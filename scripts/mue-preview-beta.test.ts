@@ -12,16 +12,13 @@ import { muePreviewBetaTestOracle } from "./mue-preview-beta-test-oracle.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewed matrix", async () => {
-  const [plan, specification] = await Promise.all([
-    read("docs/PLAN.md"),
-    read("docs/MUE-PREVIEW-BETA-SPEC.md"),
-  ]);
+test("binds the Product 2 Beta catalog to its frozen specification denominator and reviewed matrix", async () => {
+  const specification = await read("docs/MUE-PREVIEW-BETA-SPEC.md");
 
   assert.deepEqual(
-    betaContentIds(plan),
+    betaContentIds(specification),
     muePreviewBetaTestOracle.map(({ id }) => id),
-    "PLAN owns the exhaustive Beta content IDs and order",
+    "the Beta specification owns the exhaustive historical content IDs and order",
   );
   assert.deepEqual(muePreviewBetaCheckpoints, muePreviewBetaTestOracle.map((checkpoint) => ({
     id: checkpoint.id,
@@ -50,7 +47,7 @@ test("binds the Product 2 Beta catalog to the exact PLAN denominator and reviewe
 });
 
 test("keeps Beta acceptance build-once, reuse-only, and aligned across its owners", async () => {
-  const [rootSource, webGuide, webSourceMap, showcaseRegistry, uiQualityGuide, testingSpec, contributorGuide, architecture, rootGuide, platformMap, assuranceMap, docsRegistry, plan] = await Promise.all([
+  const [rootSource, webGuide, webSourceMap, showcaseRegistry, uiQualityGuide, testingSpec, contributorGuide, architecture, rootGuide, platformMap, assuranceMap, docsRegistry] = await Promise.all([
     read("package.json"),
     read("platform/apps/web/README.md"),
     read("platform/apps/web/SOURCE-MAP.md"),
@@ -63,7 +60,6 @@ test("keeps Beta acceptance build-once, reuse-only, and aligned across its owner
     read("docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md"),
     read("docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md"),
     read("docs/README.md"),
-    read("docs/PLAN.md"),
   ]);
   const root = scripts(rootSource);
   const betaRelease = root["test:release:mue-preview-beta"];
@@ -101,12 +97,12 @@ test("does not accept Beta wording moved outside its owning section", () => {
   assert.doesNotMatch(headingSection(moved, "## What you can do"), /MUE Preview Beta/u);
 });
 
-function betaContentIds(plan: string): ReadonlyArray<string> {
-  const start = plan.indexOf("### MUE Preview Beta critical path\n");
-  const end = plan.indexOf("\n#### Risk-first execution bands", start);
-  assert.notEqual(start, -1, "PLAN must retain the Beta critical-path section");
-  assert.notEqual(end, -1, "PLAN must retain the Beta risk-band boundary");
-  return [...plan.slice(start, end).matchAll(/^\| `([A-Z][A-Z0-9-]*)` \|/gmu)]
+function betaContentIds(specification: string): ReadonlyArray<string> {
+  const start = specification.indexOf("### Historical Beta content boundary\n");
+  const end = specification.indexOf("\n#### Risk-first execution bands", start);
+  assert.notEqual(start, -1, "the Beta specification must retain its historical content boundary");
+  assert.notEqual(end, -1, "the Beta specification must retain its closed risk-band boundary");
+  return [...specification.slice(start, end).matchAll(/^\| `([A-Z][A-Z0-9-]*)` \|/gmu)]
     .map((match) => match[1])
     .filter((id): id is string => id !== undefined);
 }
@@ -117,7 +113,7 @@ function specificationMatrix(specification: string): ReadonlyArray<Readonly<{
   productSurface: string;
   boundary: string;
 }>> {
-  return [...specification.matchAll(
+  return [...headingSection(specification, "## Public checkpoint catalog").matchAll(
     /^\| `([A-Z][A-Z0-9-]*)` \| `([^`]+)` \| ([^|]+) \| (.+) \|$/gmu,
   )].map((match) => {
     const [, id, evidenceKind, productSurface, boundary] = match;

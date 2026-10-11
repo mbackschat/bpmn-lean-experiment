@@ -39,11 +39,11 @@ Before regenerating an asset, record its new committed source snapshot separatel
 
 ## Release-candidate refresh source
 
-The BPM platform progress and Temporal runtime refreshes use committed source `16c5b9f6`, reviewed on 2026-09-29. The `v0.2.0-rc.1` release tag identifies the published distribution at that source; [the historical RC boundary](PLAN.md#mue-release-candidate-critical-path) retains its qualification limits. [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage) now supersedes separate MUE acceptance work. The other two infographics retain their 2026-08-25 source and footer.
+The BPM platform progress and Temporal runtime refreshes use committed source `16c5b9f6`, reviewed on 2026-09-29. The `v0.2.0-rc.1` release tag identifies the published distribution at that source; [the historical RC boundary](PROJECT-DESIGN.md#historical-rc-content-boundary) retains its qualification limits. [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage) now supersedes separate MUE acceptance work. The other two infographics retain their 2026-08-25 source and footer.
 
 | Material claim | Source | Status at `16c5b9f6` | Scope |
 |---|---|---|---|
-| Alpha, Beta, and RC are reached; MUE remains open | [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints), [current checkpoint](PLAN.md#mue-release-candidate-critical-path) | Documented checkpoint/release | RC is not final MUE acceptance or BPMN conformance |
+| Alpha, Beta, and RC are reached; MUE remains open | [MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints), [current checkpoint](PROJECT-DESIGN.md#historical-rc-content-boundary) | Documented checkpoint/release | RC is not final MUE acceptance or BPMN conformance |
 | Shared PostgreSQL runtime is implemented but bounded | [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md#current-boundary) | Documented capability | Replicated API and recovery workers; no production HA or capacity claim |
 | Production operations and enterprise identity remain absent | [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md#explicitly-absent) | Planned/absent | No production backup/rollback/capacity or identity provider |
 

@@ -14,7 +14,7 @@ The checkpoint catalog is separate from the canonical executable-capability cata
 
 The implemented contract requires:
 
-- exactly the seven content IDs and order owned by [PLAN.md](PLAN.md#mue-preview-beta-critical-path);
+- exactly the seven content IDs and order retained by [the historical Beta content boundary](#historical-beta-content-boundary);
 - a closed evidence classification that distinguishes a production journey, a registered executable capability disclosed in About, generated evidence, and a reviewed checkpoint with no Product 2 executable surface;
 - one explicit Product 2 surface and one remaining-limit statement per row;
 - a visible statement that Beta is a delivery checkpoint, not full MUE closure or BPMN conformance;
@@ -73,7 +73,7 @@ The seven rows carry these exact classifications:
 | `EVENT-SUBSCRIPTIONS` | `productionJourney` | Definitions / Triggers | Closure-reviewed one-key definition-scoped Message correlation; composite keys, buffering, broadcast, and other Message loci remain open. |
 | `COMPENSATION-TRANSACTIONS` | `reviewedCheckpointOnly` | None | First reviewed end-to-end private Compensation checkpoint; profile registration, public commands, corpus, and Product 2 capability remain absent. |
 
-The implementation exports the immutable row array from a bounded Product 2 source owner. An executable integration guard derives the seven IDs from PLAN, compares them with that array, requires the exact evidence-kind and surface matrix above, and rejects duplicate or missing rows. This is deliberate cross-owner coupling: PLAN owns the Beta denominator, while Product 2 owns its presentation, so either side must fail when they drift.
+The implementation exports the immutable row array from a bounded Product 2 source owner. An executable integration guard derives the seven IDs from this specification’s historical content boundary, compares them with that array, requires the exact evidence-kind and surface matrix above, and rejects duplicate or missing rows. This specification owns the frozen Beta denominator and reviewed classifications; Product 2 owns its presentation, so either side must fail when they drift.
 
 ## Product surface
 
@@ -87,7 +87,7 @@ The existing [version and capability disclosure preflight](research/BPM-PLATFORM
 
 `test:release:mue-preview-beta` builds the Product 2 release graph once, then runs the prebuilt MUE Preview Alpha real-Temporal browser gate, the prebuilt M2 correlated-Message real-Temporal browser gate, and the prebuilt UI-quality gate. It does not rerun all seven content programmes: their immutable review receipts are Beta inputs, while this command verifies only the new integration and the two public production journeys Beta presents.
 
-The platform-web component test and UI-quality browser test require the exact seven-row order, text classifications, checkpoint-only absences, capability-catalog separation, and responsive containment. They and the cross-owner integration guard consume one shared test-only oracle that is independent of the production catalog. The oracle neither owns nor generates any artifact it checks: PLAN owns the denominator, this specification owns the reviewed evidence matrix, and Product 2 owns its presentation catalog. The integration guard also requires the build-once release command and the relevant documentation owners to agree.
+The platform-web component test and UI-quality browser test require the exact seven-row order, text classifications, checkpoint-only absences, capability-catalog separation, and responsive containment. They and the cross-owner integration guard consume one shared test-only oracle that is independent of the production catalog. The oracle neither owns nor generates any artifact it checks: this specification owns the denominator and reviewed evidence matrix, and Product 2 owns its presentation catalog. The integration guard also requires the build-once release command and the relevant documentation owners to agree.
 
 Release acceptance requires a clean committed target to pass the complete path-selected pre-push gate and `test:release:mue-preview-beta`. Independent closure review must approve that immutable target before `node scripts/project-tags.ts create phase mue-preview-beta --message "MUE Preview Beta"` creates or verifies the local annotated tag. Tag creation never implies a push.
 
@@ -108,6 +108,39 @@ The retained gate digests above bind closure target `361911b8`, while the origin
 The implementation adds no BPMN meaning, semantic profile, checked-source or IL shape, runtime transition, Temporal hosting mechanism, public engine operation, persistence record, interactive Product 2 workflow, package release, or tag push. The immutable phase tag is local by contract and never implies a push.
 
 The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonblank code lines and `+30/-15` nonblank documentation lines, with elapsed implementation time unknown. The nearest same-layer comparator is MUE Preview Alpha at `+4182/-168` code and `+181/-168` documentation because both integrate already-reviewed engine behavior into a Product 2 preview and a production release gate. Beta additions fell by 3,791 code lines and 151 documentation lines because it composes the existing Alpha and correlated-Message journeys and adds only a static disclosure surface rather than another transport, actor, host, or replay boundary. Both addition measures fell, so the reflection requires no manufactured process-weight removal. The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible row.
+
+### Historical Beta content boundary
+
+`MUE-PREVIEW-BETA` is a delivery checkpoint, not an eighth content ID. Its exhaustive content gate is the seven rows below; each row names the smallest independently evidenced boundary Beta consumes.
+
+| Content ID | State | Exact Beta boundary | Evidence or next-gate owner |
+|---|---|---|---|
+| `SEQUENTIAL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) |
+| `INTERNAL-COMMUTATION` | `satisfied` | Approved first green final-implementation semantic checkpoint. | [Internal Commutation review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) |
+| `PARALLEL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) |
+| `MECHANISM-MATURITY-EVIDENCE` | `satisfied` | Complete generated family evidence vector with no combined coverage claim. | [Mechanism-maturity classifications](SEMANTIC-VERIFICATION-POLICY.md#mechanism-maturity-classifications) |
+| `DATA-AND-TASK-MECHANISMS` | `satisfied` | Closure-reviewed direct Activity input and output vertical slices. | [Input specification](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) and [output specification](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md) |
+| `EVENT-SUBSCRIPTIONS` | `satisfied` | Closure-reviewed Message key-correlation vertical slice across source, both semantic accounts, and Temporal. | [Message key-correlation specification](capsules/MESSAGE-KEY-CORRELATION-SPEC.md) |
+| `COMPENSATION-TRANSACTIONS` | `satisfied` | First independently reviewed end-to-end compensation or Transaction vertical checkpoint. | [Compensation trigger and handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#stage-boundary) |
+
+`satisfied` means only that the exact Beta boundary in that row is green; it does not claim full MUE closure.
+
+#### Risk-first execution bands
+
+These closed bands retain the Beta evidence boundary; the closure evidence above owns their integration.
+
+| Order | State | Band | Exit condition; deferred work |
+|---|---|---|---|
+| 1 | `satisfied` | Subscription population/concurrency | Barrier-linearized complete discovery, pending-registration exclusion, all-or-infrastructure fanout, result reservation, and settle-before-next order. |
+| 2 | `satisfied` | Subscription delivery/recovery | Same-target response-loss recovery, contradiction quarantine without rematch, Worker replacement, and replay. |
+| 3 | `satisfied` | Boundary-handler eligibility/lifetime | Exact ordinary/current Multi-Instance User Task eligibility, zero-item identity, all-success priority and capacity; no Multi-Instance Sub-Process retention. |
+| 4 | `satisfied` | Event Sub-Process snapshots | Preserve complete Process/Sub-Process parent context, provisional per-instance snapshots, promotion, and exact failed/interrupted/cancelled purge before triggering. |
+| 5 | `satisfied` | Compensation order/cancellation | Execute deterministic dependency-aware handlers, nested cancellation, and failure outcomes through the first semantic vertical checkpoint. |
+| 6 | `satisfied` | Cross-Workflow durability | Compensation and correlation-ingress continuation, capacity, replacement, and replay have independently reviewed private checkpoints. |
+| 7 | `satisfied` | Capability and evidence closure | Registered evidence, corpus/disclosure, Product 2, cost and independent closure; broader Compensation deferred. |
+| 8 | `satisfied` | Beta integration | Compose the Product 2 preview, disclose limits, pass the clean complete gate and review, and tag Beta. |
+
+Integration state: `satisfied`.
 
 ## Independent cold-review receipt
 
