@@ -4,7 +4,7 @@ This map owns runtime, scope, Lean, TypeScript semantic-core and BPMN-conformanc
 
 ## Current boundary
 
-Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish reviewed committed-admission fuel and reachable collection storage. Reachable Running capacity now composes actual Start, completion and internal execution; complete qualification passes and cold review remains pending for that extension. The capsule owns projection/accounting guarantees and admission, external-wait, publication and hosting.
+Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish reviewed committed-admission fuel and reachable collection storage. Reachable Running capacity now composes actual Start, completion and internal execution; complete qualification and independent cold review pass for that extension. The capsule owns projection/accounting guarantees and admission, external-wait, publication and hosting.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
