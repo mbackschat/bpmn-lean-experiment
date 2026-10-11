@@ -34,6 +34,39 @@ test.describe.configure({
   timeout: headlineDemoTimeoutMs(headlineDemo),
 });
 
+test("Operations navigation restores exact instance focus and the retained History view", async ({ page }) => {
+  const token = `navigation_${Date.now()}_${process.pid}`;
+  const instance = await deployLowerPriorityControl(token);
+  try {
+    await page.goto("/", { timeout: 10_000 });
+    await navigate(page, "Operations");
+    await page.getByLabel("Process-instance ID").fill(instance.processInstanceId);
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("button", {
+      name: `View details ${instance.processInstanceId}`,
+      exact: true,
+    }).click();
+    const heading = page.getByRole("heading", {
+      name: `Process instance ${instance.processInstanceId}`,
+      exact: true,
+      level: 2,
+    });
+    await expect(heading).toBeFocused();
+    const history = page.locator('[data-ui="process-execution-detail"]')
+      .getByRole("tab", { name: "History", exact: true });
+    await history.click();
+
+    for (const workspace of ["Definitions", "Work"] as const) {
+      await navigate(page, workspace);
+      await navigate(page, "Operations");
+      await expect(heading).toBeFocused();
+      await expect(history).toHaveAttribute("aria-selected", "true");
+    }
+  } finally {
+    await completeLowerPriorityControl(instance.processInstanceId, token);
+  }
+});
+
 for (const viewport of [{ width: 1280, height: 800 }, { width: 1600, height: 900 }]) {
   test(`expense exception structured Human Work completes every action at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
@@ -356,14 +389,19 @@ async function navigate(
     await expect(heading).toBeVisible();
     return;
   }
+  const href = await button.getAttribute("href");
+  if (href === null) throw new Error("Primary navigation must publish its destination.");
+  const destinationSearch = new URLSearchParams(new URL(href, page.url()).hash.split("?")[1]);
+  // Retained URL selection outlives hidden Activity content: docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md#browser-location-and-state-ownership.
+  const instanceId = workspace === "Operations" ? destinationSearch.get("instance") : null;
+  const focusTarget = instanceId === null ? heading : page.getByRole("heading", {
+    name: `Process instance ${instanceId}`,
+    exact: true,
+    level: 2,
+  });
   await button.click();
   await expect(heading).toBeVisible();
-  const instanceHeading = page.locator("#process-execution-detail-heading");
-  if (workspace === "Operations" && await instanceHeading.isVisible()) {
-    await expect(instanceHeading).toBeFocused();
-  } else {
-    await expect(heading).toBeFocused();
-  }
+  await expect(focusTarget).toBeFocused();
 }
 
 function requireApiOrigin(): string {
