@@ -30,7 +30,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | `PC-MI-04` requires actual-Start command resumption and its computed fuel bound. | Review the lower validity ownership amendment before moving declarations; retain the complete command guarantee. | [Quantified resumption contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-01 | met | `PC-MI-04` requires actual-Start command resumption and its computed fuel bound. | Separate lower validity under the reviewed amendment, then compose the actual-history certificate and resumption guarantee. | [Quantified resumption contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 | AA-02 | not-met | No batch-member interface extension is selected. | — | — |
 | AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
@@ -81,7 +81,7 @@ Current task: `PC-MI-04` actual-Start eligible-completion/resumption under the [
 
 Current result: the joint actual-history transport now kernel-checks through Start, all command outcomes and unpublished selected prefixes. Start and entry/turnover validity laws pass; the actual delayed-Join journey passes full runtime validity. Per-port certificate preservation, analyzer correspondence and universal resumption remain open.
 
-Next action: obtain cold proposal review of the [lower validity ownership amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lower-validity-ownership-amendment), then separate lower preservation from certificate/readiness assembly. The amendment allocates conservation, history, fresh batch revalidation and command bounds explicitly; no move is authorized before approval. Finish the composed guarantee and witness, qualify the coherent batch and obtain cold checkpoint review. AA-01/AA-09/AA-24 remain open; `PC-DELIVERY-01` stays held.
+Next action: implement the [approved lower validity separation](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lower-validity-ownership-amendment), preserving declarations and keeping scheduler imports above it. Then establish the joint per-port/birth/reset certificate, fresh batch revalidation and analyzer bounds. Finish the composed guarantee and actual-Start witness, qualify the coherent batch and obtain cold checkpoint review. AA-01/AA-09/AA-24 remain open; `PC-DELIVERY-01` stays held.
 
 Oracle: `/tmp/smis-joint-transport-integration-20261011` passes the integrated transport; `/tmp/smis-runtime-validity-integration-20261011` passes lower laws and the journey, both asserted. Final theorem application remains absent. Preserve failed qualification/receipts, interrupted `/tmp/smis-output-library-20261011`, exit 130, and scenario-value admission `PC-DATA-02`.
 
