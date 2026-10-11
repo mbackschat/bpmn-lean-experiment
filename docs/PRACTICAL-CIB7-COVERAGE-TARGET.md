@@ -4,7 +4,11 @@
 
 Owner-selected delivery objective; this inventory specifies required practical depth, not implemented support. Each new semantic account still needs its governed capsule review. [PLAN](PLAN.md) owns sequencing and current blockers; exact implementation and evidence remain in the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
-The independent source/scope review approved correction `ba8d939e` against inventory target `d5cd2767` with no remaining required findings. Its order-preservation correction follows CIB XML-order/first-match behavior. This review approves the inventory boundary, not individual semantic accounts or hosting qualification. Independent completeness review of checklist target `024cfa5b` returned `approve-with-required-edits`: mode-specific MI condition order, CIB Message-name versus Operation addressing, and normal versus exceptional Call outputs. Correction audit remains pending; implementation is paused.
+The independent source/scope review approved correction `ba8d939e` against inventory target `d5cd2767` with no remaining required findings. Its order-preservation correction follows CIB XML-order/first-match behavior. This review approves the inventory boundary, not individual semantic accounts or hosting qualification.
+
+On 2026-10-11, independent `fork-turns-none` review of checklist target `024cfa5b` against `729725c1` returned `approve-with-required-edits`. The same reviewer approved correction audit `9712694d`, closing all three findings on MI condition order, Message-name/Operation addressing and exceptional Call outputs. The 115-task partition is approved; future semantic accounts retain their own review gates. Implementation remains paused. This is no claim that Practical CIB7 Coverage has been reached.
+
+Review packet: `74c2de70de9e51e53dcc29f36efe0753f194ca93c8a1bb5b57fe0c6917dde016`; correction packet: `009019a7c125c725173892d7f67da78ba514fdec505582bf6f4dc024f2974493`. Complete infrastructure and focused correction receipts are `/tmp/cib7-checklist-infrastructure-20261011` and `/tmp/cib7-checklist-corrections-20261011`; independent audit receipt is `/tmp/cib7-checklist-correction-audit.FoRAk6`. Independent packaged-CIB probes under `/tmp/cib7-checklist-cold-review.9Mljd5` distinguish final-body condition failures and Operation matching; they are review evidence, not registered compatibility qualification.
 
 ## Objective and boundary
 
