@@ -153,8 +153,8 @@ def writeSequentialScopeValues? (program : Program) (state : RuntimeState) (owne
 def completeSequentialScopeEffectData? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (effectId : EffectOccurrenceId) (outputs : List VariableMapping) (patch : List VariableBinding) :
     Option ScopedVariables := do
-  let [activity] := state.variables.activities.filter (activityScopeMatches effectId) | none
-  let projected ← applyEffectPatch activity.bindings outputs [] patch true
+  let [_activity] := state.variables.activities.filter (activityScopeMatches effectId) | none
+  let projected ← serialEffectPatch? (sequentialScopeHandlerNames program) outputs [] patch
   let variables ← writeSequentialScopeValues? program state owner
     (mergeProcessVariableBindings [] projected) .serviceTask
   some { variables with activities := variables.activities.filter fun scope => !activityScopeMatches effectId scope }

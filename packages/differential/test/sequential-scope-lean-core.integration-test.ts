@@ -10,10 +10,13 @@ import {
   StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState,
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario,
   requireCompleteFlowNodeOccurrenceLifecycles, observeStableState,
-  SemanticOperationKind, SemanticTransitionKind,
+  SemanticOperationKind, SemanticTransitionKind, CanonicalObservationKind, MultiInstanceBodyKind, supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
-import type { Scenario, ScenarioResult, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
+import type { Scenario, ScenarioResult, Stimulus, VariableBinding, OccurrenceId } from "@bpmn-lean/semantic-core";
+import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
+import type { MutableScenarioResult } from "./pipeline-types.ts";
 import { profile, source, prepareSource, sourceOverlay, parallelBodySource } from "../../bpmn-source/test/sequential-scope-source-fixture.ts";
+import { sequentialOutputMappingSources } from "../../bpmn-source/test/sequential-scope-output-mapping-fixture.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 
@@ -198,8 +201,7 @@ test("private MI covers every branch completion order around a captured Service 
   for (const input of inputs.filter(({ scenario }) => scenario.id.startsWith("order-"))) publications(input);
 });
 
-test("private MI source, observations, replay and publications agree with independent Lean lowering", async () => {
-  const inputs = await cases();
+async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases>>[number][], compareScenarioResult = true) {
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mi-scope-parity-"));
   try {
     const definitions = path.join(directory, "definitions.jsonl");
@@ -222,9 +224,167 @@ test("private MI source, observations, replay and publications agree with indepe
       assert.deepEqual(record.scenario, input.scenario);
       assert.deepEqual(record.definitionBinding, { kind: "leanDefinitionBinding", sourceSha256: input.program.identity.sourceSha256,
         semanticProfile: profile, programMatchesLeanLowering: true });
-      assert.deepEqual(record.result, runScenario(input.scenario, input.program), input.scenario.id);
+      if (compareScenarioResult) assert.deepEqual(record.result, runScenario(input.scenario, input.program), input.scenario.id);
     }
     for (const [index, input] of inputs.entries())
       assert.deepEqual(actual[index]!.commandPublications, publications(input), `${input.scenario.id}: publications`);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+}
+
+test("private MI source, observations, replay and publications agree with independent Lean lowering", async () => {
+  await verifyScopeCases(await cases());
+});
+
+async function outputMappingCases(includeUnsupportedValues = false) {
+  const inputs: Awaited<ReturnType<typeof cases>> = [];
+  for (const { shape, bytes, program, checkedProcess } of await sequentialOutputMappingSources()) {
+    for (const firstNull of [false, true]) {
+      const id = `outputs-${shape}-${firstNull ? "null" : "string"}-first`;
+      const stimuli: Stimulus[] = [];
+      let state = initialState;
+      const run = (stimulus: Stimulus, outcome = CommandOutcome.Committed, retain = true) => {
+        const before = state;
+        const traced = applyStimulusWithTrace(program, before, stimulus);
+        assert.equal(traced.result.outcome, outcome, `${id}: ${stimulus.commandId}`);
+        state = traced.result.state;
+        if (outcome === CommandOutcome.Rejected) assert.deepEqual(state, before);
+        if (retain) stimuli.push(stimulus);
+      };
+      run({ kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId, instanceId,
+        initialVariables: [{ name: "items", value: { kind: VariableValueKind.StringList, value: ["same-invoice", "same-invoice"] } }] });
+      const initialBindings = state.variables.scopes[0]!.bindings;
+      let previousEffect: OccurrenceId | undefined;
+      for (const iteration of [1, 2]) {
+        const review = state.userTaskWaits[0]!;
+        assert.equal(review.id.elementId, "Review");
+        assert.equal(review.id.activation, iteration);
+        assert.deepEqual(state.variables.scopes[0]!.bindings, initialBindings);
+        run({ kind: StimulusKind.CompleteUserTaskInstance, commandId: `review-${iteration}`, taskId: review.id,
+          submittedValues: [binding("reviewStatus", `reviewed-${iteration}`)] });
+        const wait = state.effectWaits[0]!;
+        assert.equal(wait.id.elementId, "Validate");
+        assert.equal(wait.id.activation, iteration);
+        assert.deepEqual(wait.owner, review.owner);
+        assert.deepEqual(wait.outputMappings.map(mapping => mapping.target), shape === "single" ? ["decision"] : ["decision", "summary"]);
+        assert.deepEqual(wait.arguments.find(value => value.name === "status"), binding("status", `reviewed-${iteration}`));
+        if (shape === "distinct") assert.deepEqual(wait.arguments.find(value => value.name === "summaryResult"),
+          binding("summaryResult", "argument-only"));
+        const nullable = iteration === 1 ? firstNull : !firstNull;
+        const result = binding("result", nullable ? null : `accepted-${iteration}`);
+        const summary = binding("summaryResult", nullable ? null : `audited-${iteration}`);
+        const patch: readonly VariableBinding[] = [result, ...(shape === "distinct" ? [summary] : [])];
+        const effect = (commandId: string, localPatch: readonly VariableBinding[], effectId = wait.id): Stimulus => ({
+          kind: StimulusKind.CompleteEffect, commandId, effectId, result: { kind: EffectExecutionResultKind.Success, localPatch },
+        });
+        for (const [label, invalid] of [
+          ["missing", patch.slice(0, -1)],
+          ["extra", [...patch, binding("zzExtra", "unexpected")]],
+        ] as const) run(effect(`refuse-${label}-${iteration}`, invalid), CommandOutcome.Rejected);
+        for (const [label, invalid] of [
+          ["type", patch.map<VariableBinding>((value, index) => index === 0
+            ? { ...value, value: { kind: VariableValueKind.Boolean, value: true } } : value)],
+          ["later-output-type", patch.map<VariableBinding>((value, index) => index === patch.length - 1
+            ? { ...value, value: { kind: VariableValueKind.Integer, value: 7 } } : value)],
+        ] as const) run(effect(`refuse-${label}-${iteration}`, invalid), CommandOutcome.Rejected, includeUnsupportedValues);
+        run(effect(`refuse-wrong-instance-${iteration}`, patch, { ...wait.id, processInstanceId: "other" }), CommandOutcome.Rejected);
+        run(effect(`refuse-wrong-activation-${iteration}`, patch, { ...wait.id, activation: wait.id.activation + 1 }), CommandOutcome.Rejected);
+        if (previousEffect !== undefined) run(effect("refuse-former-body-effect", patch, previousEffect), CommandOutcome.Rejected);
+        // JsonSupport.decodeCanonicalVariableBindings rejects these before Lean execution; direct core calls still need refusal.
+        for (const invalid of [[...patch, patch[0]!], ...(patch.length > 1 ? [[...patch].reverse()] : [])]) {
+          const refused = applyStimulusWithTrace(program, state, effect("wire-invalid", invalid));
+          assert.equal(refused.result.outcome, CommandOutcome.Rejected);
+          assert.deepEqual(refused.result.state, state);
+          assert.deepEqual(refused.committedTransitions, []);
+          assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+        }
+        run(effect(`effect-${iteration}`, patch));
+        assert.deepEqual(state.variables.scopes.find(frame => isDeepStrictEqual(frame.owner, review.owner))?.bindings
+          .find(value => value.name === "decision")?.value, result.value);
+        assert.deepEqual(state.variables.process.bindings.find(value => value.name === "summary")?.value,
+          shape === "single" ? undefined : shape === "distinct" ? summary.value : result.value);
+        assert.deepEqual(state.variables.activities, []);
+        assert.deepEqual(state.effectWaits, []);
+        const confirm = state.userTaskWaits[0]!;
+        assert.equal(confirm.id.elementId, "Confirm");
+        assert.deepEqual(confirm.owner, review.owner);
+        run(effect(`refuse-stale-effect-${iteration}`, patch), CommandOutcome.Rejected);
+        run({ kind: StimulusKind.CompleteUserTaskInstance, commandId: `confirm-${iteration}`, taskId: confirm.id, submittedValues: [] });
+        assert.equal(state.variables.scopes.some(frame => isDeepStrictEqual(frame.owner, review.owner)), false);
+        assert.equal(state.scopeOccurrences.some(scope => isDeepStrictEqual(scope.id, review.owner)), false);
+        if (iteration === 1) {
+          assert.notDeepEqual(state.userTaskWaits[0]!.owner, review.owner);
+          assert.deepEqual(state.variables.scopes[0]!.bindings, initialBindings);
+        }
+        previousEffect = wait.id;
+      }
+      const publish = state.userTaskWaits[0]!;
+      assert.equal(publish.id.elementId, "PublishBatch");
+      run({ kind: StimulusKind.CompleteUserTaskInstance, commandId: "publish", taskId: publish.id, submittedValues: [] });
+      const scenario: Scenario = { kind: ScenarioDocumentKind.Scenario, id, profile,
+        bpmn: { id: program.identity.sourceId, sha256: program.identity.sourceSha256,
+          sourceOverlay: program.identity.sourceOverlay, relativePath: `${id}.bpmn` }, stimuli, observations,
+        provenance: { normativeRefs: ["SMIS-ADMIT-01", "SMIS-DATA-01", "SMIS-END-01", "SMIS-IDENTITY-01"], cibRevision: "not-applicable", cibRefs: [] } };
+      inputs.push({ scenario, program, checkedProcess, bytes });
+    }
+  }
+  return inputs;
+}
+
+test("TypeScript sequential Service output witnesses preserve writes, turnover and refusal; comparison detects output loss", async () => {
+  const inputs = await outputMappingCases();
+  assert.equal(inputs.length, 6);
+  for (const input of inputs) {
+    assert.equal(supportsSemanticProcessScenario(input.scenario, input.program), true);
+    publications(input);
+    const expected = runScenario(input.scenario, input.program);
+    for (const field of ["local", ...(input.scenario.id.includes("single") ? [] : ["process"])]) {
+      const mutated = structuredClone(expected) as MutableScenarioResult;
+      const index = mutated.trace.findIndex(value => value.kind === CanonicalObservationKind.Command && value.commandId === "effect-1");
+      const after = mutated.trace[index + 1];
+      assert.ok(index >= 0 && after?.kind === CanonicalObservationKind.State);
+      if (field === "local") {
+        const progress = after.openMultiInstances?.[0];
+        assert.ok(progress?.bodyKind === MultiInstanceBodyKind.SubProcess);
+        const iteration = progress.activeIterations[0]!;
+        assert.ok(iteration.bindings.some(value => value.name === "decision"));
+        iteration.bindings = iteration.bindings.filter(value => value.name !== "decision");
+      } else {
+        assert.ok(after.variables.some(value => value.name === "summary"));
+        after.variables = after.variables.filter(value => value.name !== "summary");
+      }
+      const comparison = compareTargetResults({ target: DifferentialTarget.Lean, result: expected },
+        [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+      assert.equal(comparison.kind, ComparisonKind.Disagreement);
+    }
+  }
+  for (const input of await outputMappingCases(true)) {
+    assert.equal(supportsSemanticProcessScenario(input.scenario, input.program), false);
+    publications(input);
+  }
+});
+
+test("Lean and TypeScript agree on source-admitted sequential Service output mappings through body turnover", async () => {
+  const inputs = await outputMappingCases();
+  await verifyScopeCases(inputs);
+  // semantic-profile-value-domain.ts excludes these whole scenarios; ScenarioAdmission.lean admits their direct command replay.
+  const unsupportedValues = await outputMappingCases(true);
+  unsupportedValues.forEach(input => assert.equal(supportsSemanticProcessScenario(input.scenario, input.program), false));
+  await verifyScopeCases(unsupportedValues, false);
+  const input = inputs.find(value => value.scenario.id === "outputs-distinct-string-first")!;
+  const effect = input.scenario.stimuli.find(stimulus => stimulus.commandId === "effect-1");
+  assert.ok(effect?.kind === StimulusKind.CompleteEffect && effect.result.kind === EffectExecutionResultKind.Success);
+  const directory = await mkdtemp(path.join(tmpdir(), "sequential-output-wire-"));
+  try {
+    const definitions = path.join(directory, "definitions.jsonl");
+    await writeFile(definitions, JSON.stringify({ scenarioId: input.scenario.id,
+      checkedProcess: input.checkedProcess, semanticProcess: input.program }) + "\n");
+    for (const localPatch of [[...effect.result.localPatch, effect.result.localPatch[0]!], [...effect.result.localPatch].reverse()]) {
+      const scenario = { ...input.scenario, stimuli: [...input.scenario.stimuli.slice(0, 2),
+        { ...effect, result: { ...effect.result, localPatch } }] };
+      const file = path.join(directory, "invalid.json");
+      await writeFile(file, JSON.stringify(scenario));
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, file], 1),
+        /variable bindings must have unique names in canonical order/);
+    }
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
