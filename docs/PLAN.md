@@ -36,7 +36,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | met-review | Actual SMIS conservation needs generic marking/port laws currently owned by PMIS. | Review the bounded two-consumer relocation and ownership amendment before code. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
+| AA-09 | met | Actual SMIS conservation needs the two-consumer relocation approved at `383218e2`. | Move only the named generic marking/port laws; preserve PMIS and establish the SMIS consumer. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
@@ -77,12 +77,12 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select the remaining `PC-MI-04` actual-Start command-resumption implementation batch under the approved [checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Derive eligible ingress, actual closure within the computed burst bound and a live wait or completion; keep publication and hosting acceptance distinct.
+Current task: implement the approved `PC-MI-04` actual-Start eligible-completion/resumption batch in the [bounded amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). Derive committed ingress, actual closure within the computed burst bound and a live wait or completion; publication/hosting acceptance remains distinct.
 
-Current result: [mapper checkpoint `56442002`](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt) is cold-review approved. Read-only preflight identifies the missing structured-body flow-conservation/scheduler bridge. Existing preservation laws require successful body evaluators; they do not establish command totality. Proof-owner headroom is 34/49/28 lines; broad assembly needs amendment review.
+Current result: cold proposal review approves `383218e2` without required findings. The design combines per-flow conservation, a task-barrier cut and shared scheduler transport; AA-09 authorizes only the named PMIS/SMIS marking relocation. The previous mapper checkpoint remains approved. The resumption theorem is unimplemented.
 
-Next action: obtain cold proposal-stage review of the [bounded resumption ownership amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment), including the AA-09 two-consumer relocation. Then give the same MEDIUM worker the approved coherent batch. AA-01/AA-24 acceptance remains open; `PC-DELIVERY-01` remains held.
+Next action: the same MEDIUM worker implements the coherent shared-accounting and SMIS certificate/command batch under the amended owner bound. Root integrates affected consumers, full Lean/parity/guard qualification and the required cold checkpoint. AA-01/AA-09/AA-24 acceptance remains open; `PC-DELIVERY-01` remains held.
 
-Oracle: unchanged full-library `/tmp/smis-output-library-resumed-20261011` and parity `/tmp/smis-output-parity-resumed-20261011` pass. No resumption proof is claimed. Preserve interrupted `/tmp/smis-output-library-20261011`, exit 130, and separate scenario-value admission in `PC-DATA-02`.
+Oracle: `/tmp/smis-resumption-cold-review-20261011` independently passes 80 focused checks; `/tmp/smis-resumption-amendment-infrastructure-20261011` passes 758 guards plus types. These qualify the proposal, not the theorem. Preserve prior library/parity receipts and interrupted `/tmp/smis-output-library-20261011`, exit 130; scenario-value admission remains `PC-DATA-02`.
 
-Stop if implementation exceeds the reviewed ownership or changes admission/outcomes. Preserve PMIS checkpoints, admission/resumption/publication gaps, testkit batch 13 and [SDK failures](TEMPORAL-DEFECTS-LEDGER.md). No SDK investigation, repairs, private builds or weakened qualification. Preserve one-CPU/3-GiB limits, release tags, failed receipts, checkpoint `2f38e92d` and every stash, including `f35bdd6b`, `76a2b017`, `9a443912`.
+Stop if implementation exceeds reviewed ownership, copies history traversal or changes admission/outcomes. Preserve PMIS gaps, testkit batch 13, [SDK failures](TEMPORAL-DEFECTS-LEDGER.md), one-CPU/3-GiB limits, release tags, failed receipts, checkpoint `2f38e92d` and every stash, including `f35bdd6b`, `76a2b017`, `9a443912`. No SDK investigation, repairs, private builds or weakened qualification.
