@@ -3,9 +3,9 @@ import BpmnSemantics.SemanticProcess.ParallelScopeRuntimePositionProofs
 
 /-! # Parallel command fuel sufficiency
 
-The accepted command capacity pays for actual scheduler work, including Start
-initiation and terminal completion. This owner connects lifetime accounting to
-command admission; publication completeness remains a separate obligation.
+Actual committed admission at a reachable command boundary derives its accepted
+capacity, which pays for scheduler work including Start initiation and terminal
+completion. Publication completeness remains a separate obligation.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -252,21 +252,61 @@ theorem ParallelScopeCommandBoundaryReachable.command_result_committed_stable_an
   exact (ParallelScopeCommandBoundaryReachable.command stable fuel stimulus reachable).program_valid
     program analysis admitted _ instanceId running
 
-/-- Actual Running command results retain token positions and complete open-occurrence projection; trace and lifecycle-delta acceptance remain separate. -/
+/-- Actual committed admission supplies a command limit; it does not establish admission of every eligible completion. -/
+theorem ParallelScopeCommandBoundaryReachable.command_closure_limit_exists
+    (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
+    (stable : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program stable)
+    (stimulus : Stimulus) (committed : (admitStimulus program stable stimulus).outcome = .committed) :
+    ∃ fuel, commandClosureLimit? program stable stimulus = some fuel := by
+  have selected : programSelected program = true := by
+    cases selection : programSelected program with
+    | false => simp [analyzeProgram, selection] at admitted
+    | true => rfl
+  rcases parallelScope_committed_ingress_kind program selected stable stimulus committed with
+    ⟨commandId, processId, instanceId, values, rfl, control⟩ | completion
+  · rcases reachable.initialized_certificate program analysis admitted stable with rfl | ⟨seed, _, phases⟩
+    · obtain ⟨_, capacity, accepted⟩ := parallelScope_committed_start_exact program selected
+        commandId processId instanceId values committed
+      have collection : committedStateCollectionAdmitted initialState = true := rfl
+      have reservation : occurrenceReservationStateValid initialState = true := rfl
+      refine ⟨capacity.closureBound, ?_⟩
+      unfold commandClosureLimit?
+      simp only [selected, collection, reservation, Bool.not_true, Bool.false_or, Bool.false_eq_true, ↓reduceIte]
+      change (programStartCapacity program values).map (·.closureBound) = some capacity.closureBound
+      rw [accepted]
+      rfl
+    · obtain ⟨id, origin, output, initial, records, _, _, phase⟩ :=
+        phases ⟨seed.instanceId, analysis.entry.childScopeId, 1⟩ rfl
+      exact False.elim (phase.not_notStarted program analysis selected _ seed.parent initial stable records control)
+  · have present := parallelScope_committed_resumption_capacity program analysis stable stimulus
+      selected admitted completion committed
+    cases accepted : programStateCapacity program stable with
+    | none => simp [accepted] at present
+    | some capacity =>
+      have valid : (!committedStateCollectionAdmitted stable || !occurrenceReservationStateValid stable) = false := by
+        cases invalid : (!committedStateCollectionAdmitted stable || !occurrenceReservationStateValid stable) with
+        | false => rfl
+        | true => simp [programStateCapacity, invalid] at accepted
+      refine ⟨capacity.closureBound, ?_⟩
+      cases stimulus <;> simp only [waitCompletionStimulus] at completion <;> try contradiction
+      all_goals cases stable.control <;> simp [commandClosureLimit?, selected, valid, accepted]
+
+/-- Actual committed commands derive accepted fuel, commit stably and retain Running token positions and complete open-occurrence projection; trace and lifecycle-delta acceptance remain separate. -/
 theorem ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_projectable
     (program : Program) (analysis : ProgramAnalysis) (admitted : analyzeProgram program = some analysis)
     (stable : RuntimeState) (reachable : ParallelScopeCommandBoundaryReachable program stable)
-    (stimulus : Stimulus) (committed : (admitStimulus program stable stimulus).outcome = .committed)
-    (fuel : Nat) (limit : commandClosureLimit? program stable stimulus = some fuel) :
-    (applyStimulus fuel program stable stimulus).outcome = .committed ∧
+    (stimulus : Stimulus) (committed : (admitStimulus program stable stimulus).outcome = .committed) :
+    ∃ fuel, commandClosureLimit? program stable stimulus = some fuel ∧
+      (applyStimulus fuel program stable stimulus).outcome = .committed ∧
       ((deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).offers.isEmpty &&
         !(deriveInternalExecutionFrontier program (applyStimulus fuel program stable stimulus).state).preparationFailed) = true ∧
       ∀ instanceId, (applyStimulus fuel program stable stimulus).state.control = .running instanceId →
         runtimePositionValid program instanceId (applyStimulus fuel program stable stimulus).state = true ∧
           ∃ opened, projectOpenFlowNodeOccurrences? program (applyStimulus fuel program stable stimulus).state = some opened := by
+  obtain ⟨fuel, limit⟩ := reachable.command_closure_limit_exists program analysis admitted stable stimulus committed
   obtain ⟨result, frontier⟩ := reachable.command_result_committed_and_stable program analysis admitted
     stable stimulus committed fuel limit
-  refine ⟨result, frontier, ?_⟩
+  refine ⟨fuel, limit, result, frontier, ?_⟩
   intro instanceId running
   let endpoint := ParallelScopeCommandBoundaryReachable.command stable fuel stimulus reachable
   exact ⟨endpoint.runtime_position program analysis admitted _ instanceId running,

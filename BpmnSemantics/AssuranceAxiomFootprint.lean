@@ -26,6 +26,10 @@ semantics and imports only the owners of the theorems it pins.
 #guard_msgs (whitespace := lax) in
 #print axioms BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_program_valid
 
+/-- info: 'BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_projectable' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_projectable
+
 /-- info: 'BpmnSemantics.SemanticProcess.finite_snapshot_conditional_progress_eventually_closes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms BpmnSemantics.SemanticProcess.finite_snapshot_conditional_progress_eventually_closes

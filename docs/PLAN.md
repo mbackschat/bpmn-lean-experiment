@@ -94,23 +94,23 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Assurance trigger assessment
 
-Assurance base: `d639234d5277aebd073128a45e10d95bc9c51100`.
+Assurance base: `858792f1ce47c805c40994fbb1641be7d03ac780`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | not-met | No third transport consumer or new fuel guarantee is selected. | — | — |
+| AA-01 | met | PMIS command composition needs its residual fuel guarantee. | Derive accepted fuel from committed admission/reachability, reusing capacity laws. | [Quantified endpoint and cold checkpoint](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint). |
 | AA-02 | not-met | Existing batch evidence is preserved; member-walk extension is unselected. | — | — |
-| AA-03 | not-met | Public-delivery qualification reuses approved task semantics; no shared traversal change. | — | — |
-| AA-04 | not-met | This batch requires no named-view extraction. | — | — |
-| AA-05 | not-met | The selected runtime/proof repair is accepted; delivery opens no dependency investigation. | — | — |
+| AA-03 | not-met | Fuel composition reuses existing laws; no shared traversal change. | — | — |
+| AA-04 | not-met | Fuel derivation requires no named-view extraction. | — | — |
+| AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
 | AA-09 | not-met | Generic-law relocation is outside the selected repair. | — | — |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
-| AA-18 | not-met | Delivery preserves accepted storage checks and the deferred family/resource boundary. | — | — |
+| AA-18 | not-met | Fuel derivation preserves storage checks and the deferred family/resource boundary. | — | — |
 | AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
 | AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
 | AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
@@ -145,14 +145,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: close the first scheduled [business public-delivery batch](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md), resumed by owner direction on 2026-10-11. Preserve the approved account and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
+Current task: bounded [PMIS command-fuel proof](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), selected on 2026-10-11 as independent work under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: the three exact metadata-bearing browser sources now have registered neutral schedules, handler-parity and metadata-loss guards. Complete pipeline and production journeys pass. The M3 navigation oracle now uses retained URL identity, with two-path focus/History coverage. These evidence/test corrections change no semantic or public contract; checkpoint `9133ea7b` and public closure remain distinct.
+Current result: the strongest composed command guarantee derives accepted fuel from analyzed Program, actual command-boundary reachability and committed admission. Its result commits at a stable internal frontier with Running position/open-projection validity. No executable semantics or reachability traversal changed.
 
-Next action: complete delivery cost/reflection and exact-source closure bindings when installed-runtime qualification permits independent closure. Candidate tuples use the three registered `public-delivery.scenario.json` files and explicit invoice host factories; do not substitute the metadata-free corpus representatives or claim accepted delivery from registration. Continue independent project work under the retained SDK hold.
+Next action: obtain immutable cold checkpoint review before another implementation lane. Delivery cost/reflection and exact-source closure bindings remain qualification-blocked.
 
-Unresolved: PMIS resumption, stable-wait/publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
+Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: `nvm use` selects Node 26.10.0; pnpm 11.20.0 and doctor `verify` pass. `/tmp/business-delivery-resume-registered-pipeline-20261011` passes 104 cases, mutations and replay; timing is contended. `/tmp/business-delivery-focus-final-m3-20261011` passes seven checks. Differential/contracts/platform packages/infrastructure pass. Retain failed receipts; unchanged database/CIB evidence establishes no public closure.
+Oracle: tool Node 26.10.0 and doctor `verify` pass. `/tmp/pmis-command-fuel-green-20261011` kernel-checks the previously failing quantified consumer without a supplied fuel premise; only standard axioms remain. Complete Lean library (`/tmp/pmis-command-fuel-library-final-20261011`) and infrastructure (`/tmp/pmis-command-fuel-infrastructure-20261011`) pass. Native dependency warming timed out; bounded Linux verification passes. No public closure follows.
 
 Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.
