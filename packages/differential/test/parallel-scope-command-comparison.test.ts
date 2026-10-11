@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { applyStimulusWithTrace, initialState, StimulusKind, CommandOutcome } from "@bpmn-lean/semantic-core";
 import type { RuntimeState } from "@bpmn-lean/semantic-core";
 import { parallelCommandInputs } from "../../bpmn-source/test/parallel-scope-command-fixture.ts";
-import { compareCommandState, stateProjection, parallelDataCommandWitnesses } from "./parallel-scope-command-parity.ts";
+import { compareCommandState, stateProjection, parallelDataCommandWitnesses, parallelOutputMappingCommandWitnesses } from "./parallel-scope-command-parity.ts";
 
 const { program, start } = (await parallelCommandInputs()).find(input => input.count === 2)!;
 const opened = applyStimulusWithTrace(program, initialState, start);
@@ -26,6 +26,28 @@ test("parallel command data witnesses retain ordered writes, cancellation and ro
     assert.ok(witness.stimuli.some(stimulus => stimulus.commandId === "protected-items"));
     assert.ok(witness.stimuli.some(stimulus => stimulus.commandId === "effect-type"));
     assert.ok(witness.stimuli.some(stimulus => stimulus.commandId === "effect-error"));
+  }
+});
+
+test("parallel Service source witnesses retain multiple outputs and exact result-source refusals", async () => {
+  const witnesses = await parallelOutputMappingCommandWitnesses();
+  assert.equal(witnesses.length, 6, "single/distinct/shared mappings with String and null results");
+  for (const witness of witnesses) {
+    assert.equal(witness.state.control.kind, "running");
+    assert.deepEqual(witness.state.userTaskWaits.map(wait => wait.id.elementId), ["Confirm", "Review"]);
+    for (const label of ["missing", "extra", "type", "wrong-instance", "wrong-activation", "stale"])
+      assert.ok(witness.stimuli.some(stimulus => stimulus.commandId === `effect-${label}`));
+    assert.equal(witness.stimuli.some(stimulus => stimulus.commandId === "effect-duplicate"), false);
+    const projected = stateProjection(initialState, witness.state);
+    const scope = witness.state.variables.scopes[0]!;
+    const altered = { ...witness.state, variables: { ...witness.state.variables, scopes: witness.state.variables.scopes.map(frame =>
+      frame === scope ? { ...frame, bindings: frame.bindings.filter(binding => binding.name !== "decision") } : frame) } };
+    assert.throws(() => compareCommandState(stateProjection(initialState, altered), projected, "omitted mapped local output"));
+    if (witness.state.variables.process.bindings.some(binding => binding.name === "summary")) {
+      const omitted = { ...witness.state, variables: { ...witness.state.variables, process: {
+        bindings: witness.state.variables.process.bindings.filter(binding => binding.name !== "summary") } } };
+      assert.throws(() => compareCommandState(stateProjection(initialState, omitted), projected, "omitted mapped Process output"));
+    }
   }
 });
 

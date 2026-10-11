@@ -5,10 +5,11 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { applyStimulusWithTrace, replayCommittedTransitions, initialState, CommandOutcome, ControlStateKind,
   StimulusKind, EffectExecutionResultKind, VariableValueKind, LocalDataOwnerKind, supportsSemanticProcessExecution,
-  projectOpenFlowNodeOccurrences, requireCompleteFlowNodeOccurrenceLifecycles, SemanticOperationKind } from "@bpmn-lean/semantic-core";
+  projectOpenFlowNodeOccurrences, requireCompleteFlowNodeOccurrenceLifecycles, SemanticOperationKind, SemanticTransitionKind } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, Stimulus, VariableBinding, OccurrenceId, UnnumberedFlowNodeOccurrenceEnd } from "@bpmn-lean/semantic-core";
 import { parallelProgramCapacityCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
 import { parallelCommandInputs } from "../../bpmn-source/test/parallel-scope-command-fixture.ts";
+import { parallelOutputMappingCommandInputs } from "../../bpmn-source/test/parallel-scope-output-mapping-fixture.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 
 export const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
@@ -221,6 +222,83 @@ export async function parallelDataCommandWitnesses(): Promise<readonly CommandWi
 
 export async function verifyParallelDataCommandParity(): Promise<void> {
   await compareCommandWitnesses(await parallelDataCommandWitnesses());
+}
+
+export async function parallelOutputMappingCommandWitnesses(): Promise<readonly CommandWitness[]> {
+  const witnesses: CommandWitness[] = [];
+  for (const { shape, program, start } of await parallelOutputMappingCommandInputs()) {
+    for (const nullable of [false, true]) {
+      const witness = commandWitness(program, 2);
+      witness.run(start);
+      assert.equal(witness.state.userTaskWaits.length, 2);
+      const review = witness.state.userTaskWaits[0]!;
+      const sibling = witness.state.userTaskWaits[1]!;
+      const siblingFrame = witness.state.variables.scopes.find(frame => isDeepStrictEqual(frame.owner, sibling.owner));
+      assert.ok(siblingFrame);
+      witness.run(taskCommand(review.id, "review"));
+      const wait = witness.state.effectWaits[0]!;
+      assert.equal(wait.id.elementId, "Validate");
+      assert.deepEqual(wait.owner, review.owner);
+      assert.deepEqual(wait.outputMappings.map(mapping => mapping.target), shape === "single" ? ["decision"] : ["decision", "summary"]);
+      if (shape === "distinct") assert.deepEqual(wait.arguments.find(binding => binding.name === "summaryResult")?.value,
+        { kind: VariableValueKind.String, value: "argument-only" });
+      const resultValue: VariableBinding["value"] = nullable ? { kind: VariableValueKind.Null }
+        : { kind: VariableValueKind.String, value: "accepted" };
+      const summaryValue: VariableBinding["value"] = nullable ? { kind: VariableValueKind.Null }
+        : { kind: VariableValueKind.String, value: "audited" };
+      const patch: readonly VariableBinding[] = [
+        { name: "result", value: resultValue },
+        ...(shape === "distinct" ? [{ name: "summaryResult", value: summaryValue }] : []),
+      ];
+      const success = (commandId: string, localPatch: readonly VariableBinding[], effectId = wait.id): Stimulus => ({
+        kind: StimulusKind.CompleteEffect, commandId, effectId,
+        result: { kind: EffectExecutionResultKind.Success, localPatch },
+      });
+      for (const [label, invalid] of [
+        ["missing", patch.slice(0, -1)],
+        ["extra", [...patch, { name: "unexpected", value: resultValue }]],
+        ["type", patch.map<VariableBinding>((binding, index) => index === 0 ? { ...binding, value: { kind: VariableValueKind.Boolean, value: true } } : binding)],
+      ] as const) witness.run(success(`effect-${label}`, invalid), CommandOutcome.Rejected);
+      // JsonSupport.decodeCanonicalVariableBindings rejects duplicates before execution; direct core calls still need refusal.
+      const duplicate = applyStimulusWithTrace(program, witness.state, success("effect-duplicate", [...patch, patch[0]!]));
+      assert.equal(duplicate.result.outcome, CommandOutcome.Rejected);
+      assert.deepEqual(duplicate.result.state, witness.state);
+      assert.deepEqual(duplicate.committedTransitions, []);
+      assert.deepEqual(duplicate.flowNodeOccurrenceLifecycles, []);
+      witness.run(success("effect-wrong-instance", patch, { ...wait.id, processInstanceId: "other" }), CommandOutcome.Rejected);
+      witness.run(success("effect-wrong-activation", patch, { ...wait.id, activation: wait.id.activation + 1 }), CommandOutcome.Rejected);
+      const completedEffect = witness.run(success("effect", patch));
+      assert.deepEqual(witness.state.variables.scopes.find(frame => isDeepStrictEqual(frame.owner, review.owner))?.bindings
+        .find(binding => binding.name === "decision")?.value, resultValue);
+      assert.deepEqual(witness.state.variables.process.bindings.find(binding => binding.name === "summary")?.value,
+        shape === "single" ? undefined : shape === "distinct" ? summaryValue : resultValue);
+      assert.deepEqual(witness.state.variables.scopes.find(frame => isDeepStrictEqual(frame.owner, sibling.owner)), siblingFrame);
+      assert.ok(witness.state.userTaskWaits.some(current => isDeepStrictEqual(current, sibling)));
+      assert.deepEqual(witness.state.effectWaits, []);
+      assert.deepEqual(witness.state.variables.activities, []);
+      assert.deepEqual(witness.state.userTaskWaits.filter(current => isDeepStrictEqual(current.owner, review.owner))
+        .map(current => current.id.elementId), ["Confirm"]);
+      assert.deepEqual(completedEffect.committedTransitions[0]?.transition,
+        { kind: SemanticTransitionKind.ExternalStimulus, stimulus: success("effect", patch) });
+      assert.ok(completedEffect.flowNodeOccurrenceLifecycles.some(delta => delta.ended.some(end =>
+        end.anchor.kind === "wait" && isDeepStrictEqual(end.anchor.id, wait.id) && end.terminal === "completed")));
+      witness.run(success("effect-stale", patch), CommandOutcome.Rejected);
+      witnesses.push(witness);
+    }
+  }
+  return witnesses;
+}
+
+export async function verifyParallelOutputMappingParity(): Promise<void> {
+  const witnesses = await parallelOutputMappingCommandWitnesses();
+  await compareCommandWitnesses(witnesses);
+  const witness = witnesses[0]!;
+  const effect = witness.stimuli.find(stimulus => stimulus.commandId === "effect");
+  assert.ok(effect?.kind === StimulusKind.CompleteEffect && effect.result.kind === EffectExecutionResultKind.Success);
+  const duplicate: Stimulus = { ...effect, result: { ...effect.result,
+    localPatch: [...effect.result.localPatch, effect.result.localPatch[0]!] } };
+  await assert.rejects(compareCommandWitnesses([{ ...witness, stimuli: [...witness.stimuli.slice(0, 2), duplicate] }]),
+    /variable bindings must have unique names in canonical order/);
 }
 
 function completed(witness: CommandWitness): void {

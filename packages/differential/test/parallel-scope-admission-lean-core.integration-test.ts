@@ -16,7 +16,7 @@ import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 const { parallelScopeCheckedSourceAdmitted } = await import(new URL("../../bpmn-source/dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../../bpmn-source/src/multi-instance-scope-source-compiler.ts");
 const { parallelScopeStartClosureBound, parallelScopeStartFrontierCapacity } = await import(new URL("../../bpmn-source/dist/parallel-scope-start-bound.js", import.meta.url).href) as typeof import("../../bpmn-source/src/parallel-scope-start-bound.ts");
 
-import { owner, prefix, verifyParallelCommandParity, verifyParallelEarlyCompletionParity, verifyParallelRootEffectParity, verifyParallelInnerBodyCommandParity, verifyParallelProgramCapacityParity, verifyParallelDataCommandParity, verifyParallelParentPreludeParity } from "./parallel-scope-command-parity.ts";
+import { owner, prefix, verifyParallelCommandParity, verifyParallelEarlyCompletionParity, verifyParallelRootEffectParity, verifyParallelInnerBodyCommandParity, verifyParallelProgramCapacityParity, verifyParallelDataCommandParity, verifyParallelParentPreludeParity, verifyParallelOutputMappingParity } from "./parallel-scope-command-parity.ts";
 
 test("Lean and TypeScript agree on shared-input reservation slots and every applied prefix", async () => {
   const { admitProcessStart } = await import(new URL("../../semantic-core/dist/semantic-process-triggered-start.js", import.meta.url).href
@@ -710,3 +710,5 @@ test("Lean and TypeScript agree on interleaved parallel inner-body joined and se
 test("Lean and TypeScript agree on ordered Process writes, early cancellation retention and data refusals", verifyParallelDataCommandParity);
 
 test("Lean and TypeScript agree on parent approval and validation before parallel entry", verifyParallelParentPreludeParity);
+
+test("Lean and TypeScript agree on source-admitted parallel Service multi-output completion and refusals", verifyParallelOutputMappingParity);

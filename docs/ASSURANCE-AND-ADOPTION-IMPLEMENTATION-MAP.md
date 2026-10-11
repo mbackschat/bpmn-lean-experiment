@@ -4,7 +4,7 @@ This detail map owns exact current project foundation, CIB oracle, differential 
 
 ## Current boundary
 
-Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, and pinned CIB lanes with seeded mutations and content-bound evidence. CIB is selected compatibility evidence rather than semantic authority, A12 remains an optional external adoption input, and no coverage denominator or license boundary is combined.
+Registered answer-free scenarios run declared Lean, TypeScript, Temporal and pinned CIB lanes with mutations and content-bound evidence. CIB supplies compatibility evidence, not semantic authority; A12 remains optional external input. Coverage denominators and license boundaries stay separate.
 
 ## Implemented
 
@@ -94,6 +94,7 @@ Registered answer-free scenarios run their declared Lean, TypeScript, Temporal, 
 - complete artifact-catalog coverage with per-case targets
 - exact-release CIB groups, standards-only cases, and one raw-only Service Task retry execution
 - [Composition parity](../packages/differential/test/structured-composition-lean-core.integration-test.ts): invoice/null/mutations pass; hosting/registration unavailable.
+- [PMIS mapping parity](../packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts): source-derived outputs/refusals pass; hosting remains unqualified.
 - generic Lean result emitter
 - one core batch
 - one registry-driven runtime-state preservation lane over every compiled single-instance program, every committed transition prefix, and exact no-trace state preservation for rejected commands

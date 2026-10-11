@@ -94,19 +94,19 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Assurance trigger assessment
 
-Assurance base: `d589e5c265b919c9831073aec35e94e06fad1fd1`.
+Assurance base: `53c89d07f8f4a10fc62f32a2bf3d70c0aac05c18`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | Reachable capacity needs another transport consumer. | Compose actual transition laws through approved invariant transport. | Derive Running boundary capacity without future-admission or successor-validity premises; preserve [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01)’s broader residual. |
+| AA-01 | not-met | Requalify existing reachable guarantees after a scoped mapper correction; no new transport consumer or induction. | — | — |
 | AA-02 | not-met | Reuse actual patch induction unchanged; no batch-member interface extension. | — | — |
 | AA-03 | not-met | Reuse the existing PMIS traversal; no cross-family extension. | — | — |
-| AA-04 | not-met | Expose only the existing Effect declaration/mapping consequence; no equivalent validator view or preservation migration is selected. | — | — |
+| AA-04 | not-met | Reuse the existing general result mapper; no equivalent validator view or preservation migration. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | not-met | Generalize the existing repeated-scope data merge in place; no generic-law relocation. | — | — |
+| AA-09 | not-met | Reuse the existing result-mapping owner without generic-law relocation. | — | — |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
@@ -145,14 +145,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [PMIS reachable capacity](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), using approved storage/reservation and actual transition evidence under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
+Current task: qualify the [PMIS Service mapping correction](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), preserving approved capacity checkpoint `20297c93`, business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: independent cold review approves reachable-capacity checkpoint `20297c93` without required corrections. Quantified Running-capacity endpoints compose actual Start, admitted completion, entry, retirement and batch laws through shared transport, with no future-admission or successor-validity premise. Independent refusal and arbitrary-command probes pass. AA-01 stays partial; AA-04/AA-09/AA-18 deferrals remain intact.
+Current result: the existing general mapper handles admitted single/distinct/shared outputs with String/null values. Source-derived Lean/core comparisons, complete source/differential packages, full Lean library and affected commands pass without proof changes; malformed/stale results retain refusal.
 
-Next action: scope eligible Human/Service completion admission against the approved capacity guarantee. Before selecting that proof, reproduce the potential mismatch between admitted multiple Service output mappings and the scoped completion patch contract; verify source lowering and both interpreters. Treat the static mismatch as unconfirmed until the separating witness runs, and retain stable external-wait existence as a separate obligation.
+Next action: commit the qualified correction and obtain cold checkpoint review. Then assess the confirmed sequential sibling before returning to eligible-completion admission.
 
-Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
+Unresolved: [sequential Service completion](../BpmnSemantics/SemanticProcess/SequentialScopeRuntime.lean) rejects admitted two-target results accepted by TypeScript; one-output controls pass. Diagnostic receipts: `/tmp/smis-output-source-diagnostic-20261011`, `/tmp/smis-output-lean-diagnostic-20261011`. No sibling correction is selected here. Eligible PMIS completion admission, stable external waits, complete publication/assessment amendments, testkit batch 13 and [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md) remain open. No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: complete Lean `/tmp/pmis-capacity-library-final-20261011`, complete infrastructure `/tmp/pmis-capacity-infrastructure-corrected-20261011` and quantified probe `/tmp/pmis-capacity-quantified-green-20261011` pass. Independent probe, narrow Lean/axiom and 87-guard receipts are `/tmp/pmis-capacity-cold-independent-20261011`, `/tmp/pmis-capacity-cold-leaves-20261011` and `/tmp/pmis-capacity-cold-guards-20261011`. Earlier elaboration, infrastructure and dependency-rebuild failures remain failures. Linux qualification retains one CPU, 3 GiB and no additional swap. No public closure follows.
+Oracle: `/tmp/pmis-output-durable-red-corrected-20261011` fails before correction; `/tmp/pmis-output-durable-green-20261011` passes afterward. `/tmp/pmis-output-source-package-20261011`, `/tmp/pmis-output-differential-package-20261011`, `/tmp/pmis-output-library-20261011` and `/tmp/pmis-output-commands-20261011` pass. Final infrastructure passes `/tmp/pmis-output-final-infrastructure-corrected-20261011`; predecessor `/tmp/pmis-output-final-infrastructure-20261011` retains the caught PLAN-size failure. Earlier mapping, decoder and documentation failures remain retained. Linux keeps one CPU, 3 GiB and no additional swap; no public closure follows.
 
-Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.
+Stop if approved scope, resource limits or the single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.

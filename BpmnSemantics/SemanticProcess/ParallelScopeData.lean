@@ -83,8 +83,8 @@ def completeParallelScopeEffect? (program : Program) (state : RuntimeState)
   let .success patch := result | none
   if wait.processInstanceId != wait.owner.processInstanceId || wait.bpmnErrorRoute.isSome then none
   else
-    let [activity] := state.variables.activities.filter (activityScopeMatches effectId) | none
-    let projected ← applyEffectPatch activity.bindings wait.outputMappings [] patch true
+    let [_activity] := state.variables.activities.filter (activityScopeMatches effectId) | none
+    let projected ← serialEffectPatch? (SerialBusinessTask.programHandlers program) wait.outputMappings [] patch
     let variables ← writeParallelScopeValues? program state wait.owner (mergeProcessVariableBindings [] projected) .serviceTask
     some { state with
       variables := { variables with activities := variables.activities.filter fun scope => !activityScopeMatches effectId scope }

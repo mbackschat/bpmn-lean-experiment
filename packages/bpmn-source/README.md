@@ -41,6 +41,7 @@ Run the focused compiler gate:
 
 - [Business mapping reader](src/business-task-mapping-source.ts) owns the shared literal/reference mapping syntax and exact Service-profile spelling restrictions.
 - [MI Sub-Process declarations](src/multi-instance-subprocess-source.ts) share collection/item, completion-variable and body-input parsing across sequential and parallel modes. Private parallel source compilation checks the complete graph and data policy; public byte compilation and execution remain unavailable; the [parallel capsule](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#private-source-compilation) owns that boundary.
+- [Parallel Service mapping inputs](test/parallel-scope-output-mapping-fixture.ts) compile single-target, distinct-source and shared-source output mappings for the private Lean/core command comparison.
 
 - [Business-task source reader](src/serial-business-task-source.ts) shares exact-overlay, named-handler and mapping projection across [serial composition](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md), [mixed-task branching/rework](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) and [attached business Error recovery](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md). Each private profile retains its graph admission and qualification boundary.
 
