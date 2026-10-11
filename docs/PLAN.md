@@ -149,7 +149,7 @@ Current task: establish and independently review the finite [Practical CIB7 deli
 
 Current result: 115 source-grounded tasks cover all twelve families and integrated acceptance; private checkpoints are reusable evidence, not delivery closure.
 
-Next action: finish checklist completeness review and documentation gates. After the owner resumes implementation, select the next eligible checklist task in delivery order, starting with `PC-MI-04` and its pending SMIS correction while `PC-DELIVERY-01` remains held. Report task ID, acceptance condition closed, and next deciding action; do not open an unrelated proof lane.
+Next action: audit the three bounded checklist corrections against independent review of `024cfa5b`; documentation gates pass. After the owner resumes implementation, select the next eligible checklist task in delivery order, starting with `PC-MI-04` and its pending SMIS correction while `PC-DELIVERY-01` remains held. Report task ID, acceptance condition closed, and next deciding action; do not open an unrelated proof lane.
 
 Oracle: the checklist must cover every required inventory family and named composition, with independent completeness review and the complete infrastructure gate.
 
