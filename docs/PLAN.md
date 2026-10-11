@@ -94,15 +94,15 @@ The six external reviews/audits are complete; [evidence](capsule-costs/REVIEW-AN
 
 ### Assurance trigger assessment
 
-Assurance base: `53c89d07f8f4a10fc62f32a2bf3d70c0aac05c18`.
+Assurance base: `06b6885667d0d98b212227a4c153f44f8c38564e`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | not-met | Requalify existing reachable guarantees after a scoped mapper correction; no new transport consumer or induction. | — | — |
-| AA-02 | not-met | Reuse actual patch induction unchanged; no batch-member interface extension. | — | — |
-| AA-03 | not-met | Reuse the existing PMIS traversal; no cross-family extension. | — | — |
+| AA-01 | not-met | Correct the existing sequential scoped mapper; no new transport consumer or induction. | — | — |
+| AA-02 | not-met | No batch-member interface extension is selected. | — | — |
+| AA-03 | not-met | No shared traversal extension is selected. | — | — |
 | AA-04 | not-met | Reuse the existing general result mapper; no equivalent validator view or preservation migration. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
@@ -145,14 +145,14 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: qualify the [PMIS Service mapping correction](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), preserving approved capacity checkpoint `20297c93`, business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
+Current task: correct [sequential MI Service result mapping](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#definition-and-runtime-account) under the existing admitted scalar mapping contract. Preserve approved [PMIS correction](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#independent-cold-review-receipt) `06b68856`, capacity checkpoint `20297c93`, business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: the existing general mapper handles admitted single/distinct/shared outputs with String/null values. Source-derived Lean/core comparisons, complete source/differential packages, full Lean library and affected commands pass without proof changes; malformed/stale results retain refusal.
+Current result: source-derived String/null probes confirm sequential Lean rejection of distinct/shared two-target results accepted by TypeScript; one-output controls pass. The single-output helper in `completeSequentialScopeEffectData?` is the demonstrated boundary. No sequential correction is implemented yet.
 
-Next action: commit the qualified correction and obtain cold checkpoint review. Then assess the confirmed sequential sibling before returning to eligible-completion admission.
+Next action: retain a registered source-to-command red witness, reuse the existing general result mapper, then verify exact writes, repeated-body isolation, refusal and publications. Requalify affected proofs/packages and obtain cold checkpoint review before another lane. Reassess if a new mapper, representation, induction or semantic contract becomes necessary.
 
-Unresolved: [sequential Service completion](../BpmnSemantics/SemanticProcess/SequentialScopeRuntime.lean) rejects admitted two-target results accepted by TypeScript; one-output controls pass. Diagnostic receipts: `/tmp/smis-output-source-diagnostic-20261011`, `/tmp/smis-output-lean-diagnostic-20261011`. No sibling correction is selected here. Eligible PMIS completion admission, stable external waits, complete publication/assessment amendments, testkit batch 13 and [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md) remain open. No SDK work, private rebuilds, performance or cold-library investigation.
+Unresolved: eligible PMIS completion admission, stable external waits, complete publication/assessment amendments, sequential general bounded resumption, testkit batch 13 and [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: `/tmp/pmis-output-durable-red-corrected-20261011` fails before correction; `/tmp/pmis-output-durable-green-20261011` passes afterward. `/tmp/pmis-output-source-package-20261011`, `/tmp/pmis-output-differential-package-20261011`, `/tmp/pmis-output-library-20261011` and `/tmp/pmis-output-commands-20261011` pass. Final infrastructure passes `/tmp/pmis-output-final-infrastructure-corrected-20261011`; predecessor `/tmp/pmis-output-final-infrastructure-20261011` retains the caught PLAN-size failure. Earlier mapping, decoder and documentation failures remain retained. Linux keeps one CPU, 3 GiB and no additional swap; no public closure follows.
+Oracle: `/tmp/smis-output-source-diagnostic-20261011` supplies source/core evidence; `/tmp/smis-output-lean-diagnostic-20261011` executes successfully but demonstrates semantic disagreement. PMIS complete qualification and independent approval remain bound in its capsule; prior failed receipts remain failures. No public closure follows.
 
-Stop if approved scope, resource limits or the single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.
+Stop if approved scope, one-CPU/3-GiB/no-additional-swap limits or the single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.

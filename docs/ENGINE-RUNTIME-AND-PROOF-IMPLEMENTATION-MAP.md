@@ -4,7 +4,7 @@ This map owns runtime, scope, Lean, TypeScript semantic-core and BPMN-conformanc
 
 ## Current boundary
 
-Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish approved committed-admission fuel, reachable storage and Running capacity. Scoped Service completion now uses the general result mapper; source-derived Lean/core regressions and full proof requalification pass; cold review is pending. The capsule owns projection/accounting guarantees and remaining admission, external-wait, publication and hosting obligations.
+Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish approved committed-admission fuel, reachable storage and Running capacity. Scoped Service mapping passes source-derived Lean/core regression, full qualification and cold review. The sequential sibling mismatch remains open. The capsule owns projection/accounting guarantees and remaining admission, external-wait, publication and hosting obligations.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
