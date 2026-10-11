@@ -158,7 +158,7 @@ private theorem reachable_wait_declarations (program : Program)
       (phase.reservation_owner_bounds program analysis admitted _ seed.parent initial before records
         instanceId running candidate operation resolved).1.1⟩
 
-private theorem reachable_singleton_reservation_valid (program : Program)
+theorem reachable_singleton_reservation_valid (program : Program)
     (analysis : ParallelScopeStart.ProgramAnalysis) (admitted : ParallelScopeStart.analyzeProgram program = some analysis)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
     (before after : RuntimeState) (reachable : ParallelScopeInternalPrefixReachable program before)

@@ -100,8 +100,8 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | Reachable storage preservation needs a third transport consumer. | First share classified singleton and committed-Start evidence across both existing consumers. | Preserve both quantified guarantees; [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01) requires removing repeated inversions before storage transport. |
-| AA-02 | not-met | Existing batch evidence is preserved; member-walk extension is unselected. | — | — |
+| AA-01 | met | Reachable storage preservation needs a third transport consumer. | Reuse approved singleton/Start evidence for committed-storage transport. | Derive storage at every actual boundary and prefix without successor-validity premises; preserve [AA-01](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-01)’s broader residual. |
+| AA-02 | not-met | Reuse actual patch induction unchanged; no batch-member interface extension. | — | — |
 | AA-03 | not-met | Reuse the existing PMIS traversal; no cross-family extension. | — | — |
 | AA-04 | not-met | No runtime validator view extraction is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
@@ -147,12 +147,12 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: [PMIS storage preservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint), using AA-01’s approved shared singleton/Start evidence under the SDK hold. Preserve business-delivery qualification and [assurance holds](ASSURANCE-IMPROVEMENT-REGISTER.md).
 
-Current result: publication and position share actual singleton classification and committed-Start evidence, preserving their quantified theorem signatures. Quantified consumers and complete Lean/infrastructure gates pass; cold review approves `740a2fab` without corrections. Fuel/endpoint checkpoint `a2989b8c` remains approved; storage checks still lack universal reachable preservation and AA-01 remains partial.
+Current result: both universal committed-storage endpoints compile without successor-validity or successful capacity premises; the quantified probe uses only standard axioms. Native issuance/removal laws compose with shared actual ingress, singleton and patch evidence. Approved shared checkpoint `740a2fab` remains the prerequisite; AA-01 stays partial.
 
-Next action: compose committed-storage preservation through actual ingress, singleton steps and batch prefixes using shared evidence. Reuse reachable reservation validity for wait, local-frame and counter uniqueness; discharge remaining Activity/scope keys locally. Derive reachable Running `programStateCapacity` afterward; retain AA-18’s deferred family extension and delivery qualification holds.
+Next action: cold-review the qualified storage-preservation checkpoint before another implementation lane. Then derive reachable Running `programStateCapacity` from retained Start-data and exact surviving body/frame/controller correspondence; preserve AA-18’s deferred family extension and delivery qualification holds.
 
 Unresolved: admission of every eligible PMIS completion, stable external waits, complete publication and assessment amendments; testkit batch 13; [SDK qualification](TEMPORAL-DEFECTS-LEDGER.md). No SDK work, private rebuilds, performance or cold-library investigation.
 
-Oracle: doctor `verify` passes. Independent classification, Start exclusion and quantified compositions pass in `/tmp/pmis-shared-step-cold-probe-20261011`; the review receipt owns focused acceptance. `/tmp/pmis-shared-step-green-20261011` kernel-checks both previously absent shared contracts with only standard axioms. Complete Lean library (`/tmp/pmis-shared-step-library-20261011`) and corrected infrastructure (`/tmp/pmis-shared-step-infrastructure-corrected-20261011`) pass. Linux qualification retains one CPU, 3 GiB and no additional swap. Failed elaboration and abbreviated-baseline receipts remain failures. No public closure follows.
+Oracle: doctor `verify` passes. `/tmp/pmis-storage-quantified-green-20261011` checks both previously absent contracts and their standard-axiom footprint; `/tmp/pmis-storage-root-focused-20261011` passes the narrow build. Complete Lean `/tmp/pmis-storage-library-final-20261011` and corrected infrastructure `/tmp/pmis-storage-infrastructure-corrected-20261011` pass. Dependency timeout, elaboration and initial infrastructure failures remain failures. Linux qualification retains one CPU, 3 GiB and no additional swap. No public closure follows.
 
 Stop if the approved scope, one-CPU/3-GiB bound or single-Lean-tree restriction cannot be preserved. Preserve release tags, failed receipts, checkpoint `2f38e92d` and all stashes, including `f35bdd6b`, `76a2b017`, `9a443912`.
