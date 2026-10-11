@@ -35,7 +35,7 @@ Never claim BPMN conformance or CIB compatibility beyond the exact profile and e
 
 ## Start every session
 
-1. Read [PLAN.md](docs/PLAN.md) completely.
+1. For Practical CIB7 Coverage, use the [scoped lookup rule](#practical-cib7-coverage-lookup). For other work, read [PLAN.md](docs/PLAN.md) completely.
 2. Read root [IMPLEMENTATION-MAP.md](docs/IMPLEMENTATION-MAP.md) completely.
 3. Determine whether the user request retains or overrides the active work item.
 4. For retained work, read the detail maps `node scripts/what-binds.ts <path>...` resolves for the concrete target paths; read every detail map linked by the active item only while target paths are unknown. For overridden work, run `node scripts/what-binds.ts <path>...` for every named path and resolve every named area through the root routing table; read every reported detail map and every candidate map when scope is ambiguous.
@@ -49,6 +49,12 @@ Use [docs/README.md](docs/README.md) as the documentation registry. Do not rely 
 Maintain the active task in [PLAN.md](docs/PLAN.md#exact-resume-point) by replacing its current result, decisive verification, blockers and next action in place. Replace those details when the active task changes; carry forward only still-relevant constraints and unresolved failures. Never append session, command or helper-proof diaries to the plan, proposals, specs or maps. Follow [active-task continuity](docs/DOC-DISCIPLINE.md#active-task-continuity) for durable evidence and review receipts.
 
 For frontend architecture questions, comparisons, or recommendations, apply [Before frontend recommendations](#before-frontend-recommendations) before the first recommendation, even when no code change is requested.
+
+### Practical CIB7 Coverage lookup
+
+Treat the [coverage checklist](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) as an index. Start with [PLAN's active outcome](docs/PLAN.md#exact-resume-point) and [delivery batch](docs/PLAN.md#scheduled-delivery-batches), find the task by its stable ID, and follow only the dependency rows and owner sections needed for the current decision. Consult the [state definitions](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#how-a-task-closes) when interpreting or changing status.
+
+Retrieve bounded excerpts by ID or heading instead of loading the whole checklist at startup or on each continuation. This scoped reading rule overrides routine full-document reads for coverage planning and status lookup; required independent reviews still examine their complete capsule.
 
 ## Read before changing a boundary
 
