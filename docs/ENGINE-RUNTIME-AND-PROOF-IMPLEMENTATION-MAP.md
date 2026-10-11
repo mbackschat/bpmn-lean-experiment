@@ -4,7 +4,7 @@ This map owns runtime, scope, Lean, TypeScript semantic-core and BPMN-conformanc
 
 ## Current boundary
 
-Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish approved committed-admission fuel, reachable storage and Running capacity; Service mapping is qualified and approved. The [sequential mapping correction](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) passes full Lean qualification and parity; cold review remains pending. Capsules retain projection/accounting guarantees and open admission, external-wait, publication and hosting obligations.
+Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) establish approved committed-admission fuel, reachable storage and Running capacity; Service mapping is qualified and approved. The [sequential mapping correction](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) passes full Lean qualification, parity and independent cold review. Capsules retain projection/accounting guarantees and open admission, external-wait, publication and hosting obligations.
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
