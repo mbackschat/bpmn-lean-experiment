@@ -77,11 +77,11 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-MI-04` with shared `PC-DATA-02/06`: commit and independently review the qualified SMIS scenario-admission repair; retain the proved guarantee.
+Current task: `PC-MI-04` with shared `PC-DATA-02/06`: reassess the bounded path to SMIS resumption after the accepted admission repair; retain the proved guarantee.
 
-Current result: the isolated admission repair passes the complete Lean library gate, maintained SMIS interpreter/publication comparison, complete differential package and focused guards. Exact source/build inputs remain unchanged. This qualifies the repair candidate, not the mixed worktree or complete SMIS capability. Accepted delivery stages remain unchanged since October 9.
+Current result: admission repair `0423f670` passes independent cold checkpoint review without required findings. The complete Lean library, maintained comparison and differential package pass; independent adversarial probes confirm the boundary. This accepts the repair, not the mixed worktree or complete SMIS capability. Accepted capability delivery stages remain unchanged since October 9.
 
-Next action: commit the qualified admission fix, regression test and matching capsule/plan updates, then conduct the required independent checkpoint review. The owner authorized the commit and autonomous local commit decisions; the candidate excludes every pending proof hunk. Proof expansion stays stopped pending bounded raw-singleton/revalidated-batch preservation; frontier readiness and analyzer/scheduler correspondence remain open. Retain the [proved contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24 and held `PC-DELIVERY-01`.
+Next action: establish a bounded raw-singleton/revalidated-batch preservation path before resuming proof implementation. Proof expansion stays stopped; frontier readiness and analyzer/scheduler correspondence remain open. Local commits are autonomous under the updated repository rule. Retain the [proved contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24 and held `PC-DELIVERY-01`.
 
 Oracle: separately asserted `/tmp/smis-admission-isolated-library-20261012` passes the complete library in 3,416 seconds. `/tmp/smis-admission-isolated-20261012/source-inputs.json` binds HEAD plus only `ScenarioAdmission.lean`; all 1,166 inputs were rechecked. `/tmp/smis-admission-full-parity-20261012` passes maintained SMIS comparison. Preserve the wider change's exit 124 and the [capsule's failed hosting qualification](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress). Graph-fixture cost is stale. No mixed-worktree, public-closure or push qualification.
 
