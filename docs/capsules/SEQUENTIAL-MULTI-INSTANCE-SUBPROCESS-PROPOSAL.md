@@ -199,7 +199,7 @@ Acceptance first checks declaration preservation and the transitive import bound
 
 ### Remaining-resumption ownership amendment
 
-Proposal review pending; earlier approvals authorize only their recorded allocations. This amendment replaces the allocation for the complete remaining command-resumption batch, retaining `sequentialScope_eligible_completion_resumes`, its premise restrictions and every acceptance obligation above. It adds five proof owners named below; no reassignment or new owner is implemented before cold proposal approval. The original transition/runtime/dispatch owners and the three shared owners retain their existing responsibilities.
+Independent cold proposal review approves this allocation at `cea1f0d4`; the [receipt](#independent-cold-review-receipt) owns that decision. Earlier approvals authorize only their recorded allocations. This amendment replaces the allocation for the complete remaining command-resumption batch, retaining `sequentialScope_eligible_completion_resumes`, its premise restrictions and every acceptance obligation above. It adds five proof owners named below. The original transition/runtime/dispatch owners and the three shared owners retain their existing responsibilities.
 
 The 2026-10-12 pending implementation establishes the full empty/first-entry certificate but occupies 761/677/761 nonblank lines in lifecycle/aggregate-validity/certificate. The missing mechanism is not another history induction: existing `SequentialScopeActualHistory.invariant_transport` already supplies that. Entry proofs repeatedly recover evaluator changes and unaffected populations before assembling position, projectability and credit. Establish successful-transition field/frame contracts once in the lower lifecycle owner, with entry and completion validity/accounting as concrete consumers. Reuse existing issuance, completion-body-claim, data-frame and prepared-preservation laws. These contracts expose exact changed fields and preserved populations; they do not introduce another runtime validator, giant invariant record or success premise into the final guarantee.
 
@@ -336,9 +336,11 @@ The [transition proof owner](../../BpmnSemantics/SemanticProcess/SequentialScope
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `639e9429190a2d0f51b67ff8af09b9c9557ed8f0` | `fork-turns-none` | `approve` | `not-required` |
+| Proposal | `cea1f0d4f6850efcba93e4b9c5669fe2f7b43543` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `5644200218787ebf82c0352700ce49ec158b54b9` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Independent cold proposal review approves the [remaining resumption allocation](#remaining-resumption-ownership-amendment) at `cea1f0d4f6850efcba93e4b9c5669fe2f7b43543` against `978fce0c9cf8ccf5cdf4d43ea0d4854f8bd0d684`, without required corrections. Packet digest: `82b194af5f5d9d66174283d187d094302fc72da7e3f7fb938f9536d699b30053`. The reviewer inspected dependency direction, actual-history induction, per-port/reset obligations and prepared-publication versus revalidation totality. All 53 focused guards and doctor verification pass in `/tmp/smis-allocation-review-cea1f0d4-guards` and `/tmp/smis-allocation-review-cea1f0d4-doctor`, both separately asserted. Approval covers allocation only; relocation, resource fit, universal resumption and hosting remain unestablished.
 
 Independent cold proposal review approves the [body-lifecycle ownership amendment](#body-lifecycle-ownership-amendment) at `639e9429190a2d0f51b67ff8af09b9c9557ed8f0` against `a2d0ec82503378193824de302e4d962405fca9d9`, without required edits. Packet digest: `d5040d65e1df96ade954d8c7dc73a7ff7a529c65db7e8ebb7f728c6b30fd1c4f`. The reviewer checked the transitive import boundary, individual-transition premises and retained per-port birth/reset and complete-frontier obligations. All 53 focused guards pass in `/tmp/smis-lifecycle-cold-review-guards-20261012`, separately asserted; doctor verification passes. Approval covers bounded relocation, not aggregate validity, joint transport, universal resumption, resource feasibility or hosting qualification.
 
