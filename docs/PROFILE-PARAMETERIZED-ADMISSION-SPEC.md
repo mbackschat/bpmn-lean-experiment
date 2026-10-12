@@ -103,14 +103,6 @@ The [Lean scenario owner](../BpmnSemantics/SemanticProcess/ScenarioAdmission.lea
 
 Ordinary Start target identity remains a separate unresolved correspondence defect: [Lean's start-family matcher](../BpmnSemantics/SemanticProcess/MessageStartAdmission.lean) checks the ordinary initiation family without checking the supplied Process ID, while TypeScript scenario admission rejects a different Process ID. The retained `/tmp/scenario-domain-parity-20261012` failure separates this with the embedded Sub-Process baseline and `processId = "other"`. This is outside the value-domain correction and does not authorize widening either target's contract.
 
-## Independent cold-review receipt
-
-This receipt covers the whole-scenario value-domain correction only; it does not reconstruct historical reviews of this pre-policy specification or establish Practical CIB7 capability closure. The review checked the complete specification, selected profile declarations, exact source inputs and independent adversarial support/refusal/publication witnesses.
-
-| Stage | Review target | Isolation | Verdict | Correction audit |
-|---|---|---|---|---|
-| Semantic checkpoint | `e1929dcf2fef58506a4acc9a57fb6f2552787e3e` | `fork-turns-none` | `approve` | `not-required` |
-
 ## Structural validators
 
 The checked-source validator operates on project-owned BPMN nodes and Sequence Flows after XML parsing and source-shape projection. It requires distinct resolved identities, a canonical acyclic definition-scope forest, exact node and Sequence Flow ownership, profile-permitted node arities and conditions, one profile-selected Start Event and at least one admitted exit Event in every scope, scope-local reference closure, reachability of every node from that scope's Start Event, co-reachability of every node to one of that scope's exits, and the selected finite graph policy inside every scope. Registered profiles use None Start except for the exact Message Start and Timer Start profiles, each of which uses its matching top-level Start Event with no incoming and one conditionless outgoing Sequence Flow. Acyclic profiles require whole-graph acyclicity. The User Task cycle removes outgoing User Task edges; the mixed-task profiles remove all outgoing User and Service Task continuations, including selected Error routes. Their cut graphs must be acyclic, without weakening full-graph reachability or co-reachability. Every registered profile except the bounded Call profile has exactly one parentless entry root whose origin identifies `processId`; the Call profile has that same unique entry root plus one distinct parentless called root whose origin identifies the Call Activity's resolved `calledProcessId`. An admitted exit is a None End Event or Error End Event. For Sub-Process propagation, a boundary Error remains a parent-scope node and receives one checked-graph-only exceptional reachability edge from its attached Sub-Process; that edge is never a Sequence Flow and never crosses definition scopes. The mixed-task Error account instead derives the boundary continuation from its exact attached Service Task. Every ordinary non-root definition scope corresponds to one embedded Sub-Process in its parent. The Compensation profile additionally admits its exact dormant handler scope through declaration validation; other Event Sub-Processes are rejected.
@@ -197,3 +189,11 @@ Reopen this contract when:
 - a newly admitted graph can reach a stable running state without an explicit resumption surface;
 - a Temporal consumer needs concurrent Timer, effect, or subscription scheduling beyond the bounded Message/Timer Event-Based Gateway race, repeatable-subscription and exact Compensation accounts;
 - a second capsule needs the same source-to-result preservation proposition and the targeted proof would duplicate a general theorem.
+
+## Independent cold-review receipt
+
+This receipt covers the whole-scenario value-domain correction only; it does not reconstruct historical reviews of this pre-policy specification or establish Practical CIB7 capability closure. The review checked the complete specification, selected profile declarations, exact source inputs and independent adversarial support/refusal/publication witnesses.
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Semantic checkpoint | `e1929dcf2fef58506a4acc9a57fb6f2552787e3e` | `fork-turns-none` | `approve` | `not-required` |

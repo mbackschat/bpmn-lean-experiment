@@ -121,6 +121,10 @@ export function assertPlanControlPlane(plan: string): OrderedWorkEntry {
   assert.match(resume, /^Next action: \S.+$/mu, "resume needs a concrete next action");
   assert.match(resume, /^Oracle: \S.+$/mu, "resume needs a required oracle");
   assert.match(resume, /^Stop if \S.+$/mu, "resume needs a genuine stop condition");
+  assert.match(resume, /^Deliverable: \S.+$/mu, "resume needs a selected deliverable");
+  assert.match(resume, /^Acceptance blockers: \S.+$/mu, "resume needs explicit acceptance blockers");
+  assert.match(resume, /^Effort budget: [1-9][0-9]* (?:minutes|hours)\b.+$/mu,
+    "resume needs a positive finite effort budget and its disposition");
   // Placed last on purpose: a structural contract failure must be reported before a
   // content-placement finding, or this masks the message the hollow-contract fixtures assert.
   assert.deepEqual(planGateTokenFindings(plan), []);

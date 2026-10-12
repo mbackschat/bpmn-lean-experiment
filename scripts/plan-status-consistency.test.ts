@@ -117,6 +117,20 @@ test("keeps the plan as one compact execution control document", async () => {
   assert.doesNotThrow(() => assertPlanControlPlane(plan));
 });
 
+test("rejects supporting work without a deliverable, acceptance blockers or finite effort budget", async () => {
+  const current = await readFile(planPath, "utf8");
+  const plan = current.replace(/^Deliverable:.*\n|^Acceptance blockers:.*\n|^Effort budget:.*\n/gmu, "")
+    .replace("## Exact resume point\n", "## Exact resume point\n\nDeliverable: Accepted admission correspondence.\n\nAcceptance blockers: Start identity disagreement.\n\nEffort budget: 20 minutes; stop and reassess at the limit.\n");
+  assert.doesNotThrow(() => assertPlanControlPlane(plan));
+  for (const field of ["Deliverable", "Acceptance blockers", "Effort budget"]) {
+    assert.throws(() => assertPlanControlPlane(plan.replace(new RegExp(`^${field}:.*\\n`, "mu"), "")),
+      /deliverable|acceptance blockers|finite effort budget/u);
+  }
+  for (const budget of ["unlimited", "0 minutes", "-1 minutes", "Infinity hours"]) {
+    assert.throws(() => assertPlanControlPlane(plan.replace("20 minutes", budget)), /finite effort budget/u);
+  }
+});
+
 test("rejects multiple active items, malformed states, duplicate IDs, and a dangling resume", async () => {
   const plan = await readFile(planPath, "utf8");
   const entries = parseOrderedWork(plan);

@@ -77,12 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-02`: close existing-profile scenario-admission correspondence. Preserve direct command refusal and strict wire decoding as separate boundaries.
+Current task: `PC-DATA-02`, explicitly prioritized by the owner on October 12.
 
-Current result: the value-domain repair at `e1929dcf` has [independent checkpoint approval](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Full Lean, parity/publications, SMIS preservation, differential and candidate infrastructure pass; the held SMIS fixture was excluded and restored exactly. [SMIS assurance](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane) remains deferred. Accepted capability stages are unchanged since October 9.
+Deliverable: Independently accepted Lean/TypeScript admission correspondence for existing profiles, then resume business-process delivery.
 
-Next action: repair the ordinary Start Process-ID mismatch in the [admission owner](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission). Budget 20 minutes for reproduction, implementation and focused checks, followed by required qualification/review. Confirm a second profile, bind the shared scenario start matcher and reuse the existing parity harness. Stop if the explanation fails or selected meaning changes; no new proof owner, PMIS production admission or automatic effort extension.
+Acceptance blockers: Ordinary Start Process-ID mismatch; decisive boundary-specific regression, complete affected qualification and independent review. Strict wire decoding, pure scenario support and definition-bound emitter rejection remain distinct.
 
-Oracle: exact Process identity admits; a different Process makes the scenario unsupported without publications, while direct commands reject unchanged. Preserve value-domain and triggered-start behavior. Reuse unchanged input-bound evidence. Retain failed receipts, pending proof work, mapper hosting limits and held `PC-DELIVERY-01`; no public-closure or push qualification.
+Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start mismatch reproduced across 44 ordinary profiles; shared matcher repaired. Narrow Lean and seven boundary-specific parity tests pass, including 46 wrong-Process cases. Receipt placement is corrected. Full Lean qualification is running; independent Start review remains required. No new capability accepted since October 9.
 
-Stop if implementation changes selected domains/outcomes or needs another infrastructure mechanism. Preserve AA-01/AA-09/AA-24 obligations, testkit batch 13, [SDK failures](TEMPORAL-DEFECTS-LEDGER.md), one-CPU/3-GiB limits, tags, checkpoint `2f38e92d` and stashes `f35bdd6b`, `76a2b017`, `9a443912`. No SDK investigation, repairs, private builds or weakened qualification.
+Effort budget: 20 minutes for Start implementation/focused checks; completed in 14 minutes (21:37–21:51 UTC). Proceed to required qualification: full Lean 120 minutes; remaining gates follow [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Routine enforcement has a separate 15-minute implementation limit ending 22:07 UTC; no automatic renewal.
+
+Next action: Complete qualification of `/tmp/start-identity-isolated-20261012` and obtain independent review before acceptance. Record other findings without expanding this repair.
+
+Oracle: Wrong Process ID is unsupported at the pure scenario boundary, rejected unchanged as a direct command, and rejected by exact definition binding at the emitter.
+
+Stop if the path fails or the budget expires. Preserve [pending SMIS work](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane) and AA-01/AA-09/AA-24; `PC-DELIVERY-01`, PMIS admission and push qualification remain open. No SDK work, new proof owners, automatic budget extension or weakened gates; retain one-CPU/3-GiB limits and existing tags/stashes.
