@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
 
-/-! Pure scenario admission is independent of execution and projection, so SMIS-ADMIT-01 can be checked without compiling the executor's preservation proof tree. -/
+/-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -65,26 +65,51 @@ private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : Lis
           else SerialBusinessTask.startBindingsAdmitted program bindings
     | _ => false
 
-/-- SMIS-ADMIT-01 separates supported stimulus domains from name, occurrence and result-set refusal so negative commands remain executable scenarios. -/
-private def sequentialScopeScenarioStimulusSupported (program : Program) (stimulus : Stimulus) : Bool :=
-  if !sequentialScopeProgramSelected program then true
-  else match stimulus with
+/-- SMI/PMI completion kinds remain separate from declaration-bound task results; see SMI-ADMIT-01 and PMI-REFUSE-01. -/
+private def scenarioProcessDataBindingsSupported (profile : ProfileId) (surface : ProcessDataIngress)
+    (bindings : List VariableBinding) : Bool :=
+  if surface == .userTaskCompletion &&
+      (profile == sequentialMultiInstanceUserTaskProfileId || profile == parallelMultiInstanceUserTaskProfileId) then
+    bindings.all fun binding => match binding.value with | .string _ => true | _ => false
+  else if surface == .processStart && profile == parallelMultiInstanceUserTaskProfileId then
+    bindings.all fun binding => match binding.value with | .string _ | .stringList _ => true | _ => false
+  else processDataBindingsAdmitted profile surface bindings
+
+/-- The mapped profiles' frozen external-domain declarations and SBT-RESULT-01 select kinds, while mapping names/cardinality remain command refusals. -/
+private def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : List VariableBinding) : Bool :=
+  if profile.value == "cibseven-2.0.0-mapped-success-service-task-draft" then
+    bindings.all fun binding => match binding.value with | .string _ => true | _ => false
+  else if profile.value == "cibseven-2.0.0-mapped-boundary-error-service-task-draft" ||
+      profile == serialBusinessTaskProfileId || profile == mixedTaskControlFlowProfileId ||
+      profile == mixedTaskBusinessErrorProfileId ||
+      profile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
+      profile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" then
+    bindings.all (fun binding => SerialBusinessTask.scalar binding.value)
+  else bindings.isEmpty
+
+/-- Whole-scenario support scans every stimulus independently of execution; supported-domain wrong names, occurrences and result sets remain executable negative commands. -/
+private def scenarioStimulusDomainSupported (program : Program) (stimulus : Stimulus) : Bool :=
+  let profile := program.identity.semanticProfile
+  match stimulus with
     | .startProcess _ _ _ bindings =>
-        processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+        scenarioProcessDataBindingsSupported profile .processStart bindings
     | .completeUserTaskInstance _ _ bindings =>
-        processDataBindingsAdmitted program.identity.semanticProfile .userTaskCompletion bindings
+        scenarioProcessDataBindingsSupported profile .userTaskCompletion bindings
     | .completeEffect _ _ (.success bindings)
     | .completeEffect _ _ (.bpmnError _ _ bindings) =>
-        bindings.all (fun binding => SerialBusinessTask.scalar binding.value)
+        scenarioEffectBindingsSupported profile bindings
     | .triggerMessageStart .. | .triggerTimerStart .. | .deliverMessage .. | .fireTimer .. => true
-    | .deliverPayloadMessage .. | .deliverCorrelatedPayloadMessage ..
-    | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => false
+    | .deliverPayloadMessage _ _ _ payload => variableValueAdmitted profile .messagePayload payload
+    | .deliverCorrelatedPayloadMessage _ => profile == messageKeyCorrelationProfileId
+    | .reportEffectFailure .. | .retryIncident .. =>
+        profile == serviceTaskIncidentCheckpointProfileId || profile == serviceTaskIncidentCancellationCheckpointProfileId
+    | .cancelIncidentProcess .. => profile == serviceTaskIncidentCancellationCheckpointProfileId
 
 /-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
-    scenario.stimuli.all (sequentialScopeScenarioStimulusSupported program) &&
+    scenario.stimuli.all (scenarioStimulusDomainSupported program) &&
     (scenario.stimuli.head?.all (SequentialScopeData.stimulusAdmitted program)) &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     businessTaskScenarioStartAdmitted program scenario.stimuli &&

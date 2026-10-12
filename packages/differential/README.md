@@ -28,6 +28,8 @@ Message key correlation uses a separate engine-population catalog because one an
 
 ## Learn more
 
+- [Scenario value-domain parity](test/scenario-value-domain-lean-core.integration-test.ts) checks whole-scenario support independently of command acceptance against the existing profiles' selected value domains. It runs in `./scripts/verify.sh pipeline`, retaining later invalid values, supported-value refusal cases, complete results and absence of publications for unsupported scenarios.
+
 - [Case loading](test/pipeline-case-loading.ts) compiles neutral scenarios independently of Lean execution; runtime-only catalog tests use this owner. A scenario declaring a source overlay requires `sourceOverlayRelativePath` in its case; overlay-free scenarios omit it. The compiler checks exact overlay identity/content, and the compilation cache includes the selected path and identity. [Loading discriminators](test/pipeline-case-loading.test.ts) reject missing selections, unclaimed overlays, digest substitution and cache aliasing.
 
 - [Transaction source parity](test/transaction-pipeline-lean-core.integration-test.ts) runs in `./scripts/verify.sh pipeline`. It compares independently lowered source, complete observations and paired E1/E2 publication through empty cancellation, retained work with an active or ended branch, typed handler failure, stale commands and renamed two-Task branches. Four [registered cancellation schedules](test/transaction-cancellation-pipeline-cases.ts) separately bind the public bounded capability; neither lane claims generalized Transaction support.

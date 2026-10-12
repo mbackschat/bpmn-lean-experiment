@@ -8,6 +8,8 @@ Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#en
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
+[Value-domain scanning](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) implemented; Start Process-ID correspondence unresolved.
+
 Exact BPMN bytes lower through a checked project-owned graph to [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), independently evaluated by Lean and TypeScript and durably hosted by Temporal.
 
 The closed semantic families are Parallel fork/join, Exclusive Gateway over the project-owned Boolean expression language, Inclusive Gateway, Event-Based Gateway, cyclic control flow, Call Activity, embedded Sub-Process completion and Error propagation, Message Start, Timer Start, Intermediate Catch Timer and Message, Message-addressed Receive Task, Terminate End, Service Task effects, configured Task effects, scoped runtime data, User Task start and completion data, bounded sequential and parallel Multi-Instance User Tasks, the three boundary-Timer loci including one non-interrupting route, and one interrupting Activity boundary Message route.
