@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Continue the existing-profile `PC-DATA-02` admission repair; SMIS resumption is deferred pending a credible bounded path, and `PC-DELIVERY-01` remains held. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). The existing-profile `PC-DATA-02` admission repair is closed. Continue independent delivery work with the recorded Temporal defect deferred; SMIS resumption needs a credible bounded path, and `PC-DELIVERY-01` remains held. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -85,9 +85,9 @@ Acceptance blockers: Installed-runtime publication-read qualification, clean-tar
 
 Current result: `PC-DATA-02`'s selected admission repair is closed: reviewed `2ec376f8`, fixed-resource build and parity pass; full Lean passes all 898 jobs in `/tmp/start-data-library-resumed-20261013`. Three pending invoice tuples are committed at `1299fca9`; 49 focused binding checks pass. Historical dirty-run evidence lacks complete scenario snapshots. No new business capability accepted since October 9.
 
-Effort budget: 15 minutes for invoice evidence binding, completed. No automatic renewal. Owner authorized one 15-minute read-only official-runtime correction check from 23:24 UTC. No private build, SDK repair or dependency change is authorized.
+Effort budget: 15 minutes for invoice evidence binding, completed. No automatic renewal. The authorized 15-minute official-fix check completed: latest `v1.24.0` contains neither TD-001 nor TD-002 correction. SDK repair/private builds/dependency changes remain unauthorized.
 
-Next action: Retain the runtime hold while checking official release source for TD-001/TD-002 corrections once. Record exact revisions and recommend the smallest qualification path; stop at the bound without private builds or dependency changes.
+Next action: Retain invoice/Call qualification holds and stop runtime investigation. Select the next independent existing-capability obligation from the scheduled scope/Call batch within five minutes; reject paths requiring deferred SDK work or unbounded resumption proofs before implementation.
 
 Oracle: Exact bound journeys retain public publication reads and replay under the installed runtime, and receive independent Closure approval. A passing rerun alone cannot dispose the retained failure.
 
