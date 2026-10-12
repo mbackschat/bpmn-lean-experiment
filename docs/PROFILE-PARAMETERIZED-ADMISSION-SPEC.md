@@ -194,8 +194,10 @@ Reopen this contract when:
 
 ## Independent cold-review receipt
 
-This receipt covers the whole-scenario value-domain correction only; it does not reconstruct historical reviews of this pre-policy specification or establish Practical CIB7 capability closure. The review checked the complete specification, selected profile declarations, exact source inputs and independent adversarial support/refusal/publication witnesses.
+The current receipt covers Start identity and selected Call/Compensation initialization admission. The reviewer checked the complete specification, all 1,166 exported source/build inputs against the target and seven independent parity/refusal/publication tests. This bounded correction does not establish universal equivalence or Practical CIB7 capability closure.
+
+The earlier whole-scenario value-domain checkpoint remains approved: target `e1929dcf2fef58506a4acc9a57fb6f2552787e3e`, isolation `fork-turns-none`, verdict `approve`, correction audit `not-required`, recorded in commit `06c6f3f88a2cf28b7a3bd8b36a453ba84b56678c`. Neither receipt reconstructs historical reviews of this pre-policy specification.
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Semantic checkpoint | `e1929dcf2fef58506a4acc9a57fb6f2552787e3e` | `fork-turns-none` | `approve` | `not-required` |
+| Semantic checkpoint | `2ec376f8c2d602975396ecec7cf5ad2c153c6ab6` | `fork-turns-none` | `approve` | `not-required` |
