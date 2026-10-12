@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Files;
@@ -23,6 +24,76 @@ public final class CibSevenSequentialMultiInstanceDataProbeTest {
       "src/test/resources/org/bpmnlean/cibseven/sequential-mi-business-subprocess-probe.bpmn");
 
   private record Invocation(String process, Object item, Object status) {}
+
+  private enum OutputShape { DISTINCT, SHARED }
+  private enum SummaryTarget { ABSENT, PRESENT }
+
+  @Test
+  public void distinctResultsReachBodyAndProcessTargets() throws Exception {
+    assertRepeatedOutputs(OutputShape.DISTINCT);
+  }
+
+  @Test
+  public void oneResultFansOutToBodyAndProcessTargets() throws Exception {
+    assertRepeatedOutputs(OutputShape.SHARED);
+  }
+
+  private static void assertRepeatedOutputs(OutputShape shape) throws Exception {
+    for (var target : SummaryTarget.values()) {
+      for (boolean firstNull : List.of(false, true)) {
+        try (var session = new Session(outputXml(shape, false))) {
+          var process = session.start(List.of("a", "b"), target);
+          var unrelated = session.start(List.of("x"), target);
+          for (int iteration = 0; iteration < 2; iteration++) {
+            var item = iteration == 0 ? "a" : "b";
+            session.assertFresh(process, item);
+            if (iteration == 0) session.assertInitialSummary(process, target);
+            var status = (iteration == 0 ? firstNull : !firstNull) ? null : "approved-" + item;
+            session.review(process, status);
+            var decision = status == null ? null : item + ":" + status;
+            var summary = shape == OutputShape.DISTINCT && decision != null ? "audited:" + decision : decision;
+            session.assertOutputs(process, decision, summary);
+            session.assertFresh(unrelated, "x");
+            session.assertInitialSummary(unrelated, target);
+            session.complete(process, "Confirm");
+            session.assertSummary(process, summary);
+          }
+          session.finish(process);
+          assertEquals(2, session.calls.size());
+          session.assertFresh(unrelated, "x");
+          session.assertInitialSummary(unrelated, target);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void crossedSourcesChangePublicBodyAndProcessOutputs() throws Exception {
+    try (var session = new Session(outputXml(OutputShape.DISTINCT, true))) {
+      var process = session.start(List.of("a", "b"), SummaryTarget.ABSENT);
+      session.review(process, "approved-a");
+      assertThrows(AssertionError.class,
+          () -> session.assertOutputs(process, "a:approved-a", "audited:a:approved-a"));
+      session.assertOutputs(process, "audited:a:approved-a", "a:approved-a");
+      session.complete(process, "Confirm");
+      session.assertFresh(process, "b");
+      session.assertSummary(process, "a:approved-a");
+    }
+  }
+
+  private static String outputXml(OutputShape shape, boolean crossed) throws Exception {
+    var output = "<camunda:outputParameter name=\"decision\">${result}</camunda:outputParameter>";
+    var outputs = switch (shape) {
+      case DISTINCT -> "<camunda:inputParameter name=\"summaryResult\">argument-only</camunda:inputParameter>"
+          + "<camunda:outputParameter name=\"decision\">${" + (crossed ? "summaryResult" : "result") + "}</camunda:outputParameter>"
+          + "<camunda:outputParameter name=\"summary\">${" + (crossed ? "result" : "summaryResult") + "}</camunda:outputParameter>";
+      case SHARED -> output + "<camunda:outputParameter name=\"summary\">${result}</camunda:outputParameter>";
+    };
+    var xml = Files.readString(RESOURCE);
+    assertTrue(xml.contains(output));
+    assertEquals(xml.indexOf(output), xml.lastIndexOf(output));
+    return xml.replace(output, outputs);
+  }
 
   @Test
   public void repeatedBodiesAndInterleavedProcessesKeepTheirOwnHumanAndServiceData() throws Exception {
@@ -98,7 +169,12 @@ public final class CibSevenSequentialMultiInstanceDataProbeTest {
         var item = execution.getVariableLocal("payload");
         var status = execution.getVariableLocal("status");
         calls.add(new Invocation(execution.getProcessInstanceId(), item, status));
-        execution.setVariableLocal("result", status == null ? null : item + ":" + status);
+        var result = status == null ? null : item + ":" + status;
+        execution.setVariableLocal("result", result);
+        if (execution.hasVariableLocal("summaryResult")) {
+          assertEquals("argument-only", execution.getVariableLocal("summaryResult"));
+          execution.setVariableLocal("summaryResult", result == null ? null : "audited:" + result);
+        }
       };
       engine = CibSevenTestEngine.create("mi-subprocess-data",
           configuration -> configuration.setBeans(Map.of("invoiceValidator", validator)));
@@ -112,9 +188,15 @@ public final class CibSevenSequentialMultiInstanceDataProbeTest {
     }
 
     String start(List<String> items) {
-      return engine.getRuntimeService().startProcessInstanceByKey("InvoiceDataBatch",
-          Map.of("items", items, "item", "parent-item", "reviewStatus", "parent-status",
-              "decision", "parent-decision", "result", "parent-result")).getId();
+      return start(items, SummaryTarget.ABSENT);
+    }
+
+    String start(List<String> items, SummaryTarget target) {
+      var variables = new HashMap<String, Object>(Map.of("items", items, "item", "parent-item",
+          "reviewStatus", "parent-status", "decision", "parent-decision", "result", "parent-result",
+          "summaryResult", "parent-summary-result"));
+      if (target == SummaryTarget.PRESENT) variables.put("summary", "parent-summary");
+      return engine.getRuntimeService().startProcessInstanceByKey("InvoiceDataBatch", variables).getId();
     }
 
     Task task(String process, String key) {
@@ -147,12 +229,56 @@ public final class CibSevenSequentialMultiInstanceDataProbeTest {
       assertParent(process);
     }
 
+    void assertOutputs(String process, String decision, String summary) {
+      assertDecision(process, decision);
+      var bindings = engine.getRuntimeService().createVariableInstanceQuery()
+          .processInstanceIdIn(process).variableName("decision").list();
+      assertEquals(2, bindings.size());
+      var bodyBindings = bindings.stream().filter(value -> !process.equals(value.getExecutionId())).toList();
+      assertEquals(1, bodyBindings.size());
+      assertEquals(decision, bodyBindings.getFirst().getValue());
+      assertSummary(process, summary);
+      var visible = engine.getTaskService().getVariables(task(process, "Confirm").getId());
+      assertTrue(visible.containsKey("decision"));
+      assertTrue(visible.containsKey("summary"));
+      assertEquals(summary, visible.get("summary"));
+      for (var name : List.of("payload", "status")) {
+        assertEquals(0, engine.getRuntimeService().createVariableInstanceQuery()
+            .processInstanceIdIn(process).variableName(name).count());
+      }
+      assertEquals(1, engine.getRuntimeService().createVariableInstanceQuery()
+          .processInstanceIdIn(process).variableName("summaryResult").count());
+    }
+
+    void assertSummary(String process, String summary) {
+      var local = engine.getRuntimeService().getVariablesLocal(process);
+      assertTrue(local.containsKey("summary"));
+      assertEquals(summary, local.get("summary"));
+      var bindings = engine.getRuntimeService().createVariableInstanceQuery()
+          .processInstanceIdIn(process).variableName("summary").list();
+      assertEquals(1, bindings.size());
+      assertEquals(process, bindings.getFirst().getExecutionId());
+      assertEquals(summary, bindings.getFirst().getValue());
+    }
+
+    void assertInitialSummary(String process, SummaryTarget target) {
+      switch (target) {
+        case PRESENT -> assertSummary(process, "parent-summary");
+        case ABSENT -> {
+          assertFalse(engine.getRuntimeService().getVariablesLocal(process).containsKey("summary"));
+          assertEquals(0, engine.getRuntimeService().createVariableInstanceQuery()
+              .processInstanceIdIn(process).variableName("summary").count());
+        }
+      }
+    }
+
     void assertParent(String process) {
       var values = engine.getRuntimeService().getVariables(process);
       assertEquals("parent-item", values.get("item"));
       assertEquals("parent-status", values.get("reviewStatus"));
       assertEquals("parent-decision", values.get("decision"));
       assertEquals("parent-result", values.get("result"));
+      assertEquals("parent-summary-result", values.get("summaryResult"));
       assertFalse(values.containsKey("payload"));
       assertFalse(values.containsKey("status"));
     }
