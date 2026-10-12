@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and boundary
 
@@ -223,7 +223,7 @@ The coherent outcome and cold checkpoint remain the complete actual-Start guaran
 
 ### Ordinary-execution ownership amendment
 
-This amendment is pending independent proposal review. Earlier approvals retain their exact scope; no implementation of this allocation is authorized before approval. It changes proof ownership only and retains the complete actual-Start guarantee and acceptance boundary of the [remaining-resumption amendment](#remaining-resumption-ownership-amendment).
+Independent cold proposal review approves this allocation at `1640d0e5`; the [receipt](#independent-cold-review-receipt) owns that decision. Earlier approvals retain their exact scope. It changes proof ownership only and retains the complete actual-Start guarantee and acceptance boundary of the [remaining-resumption amendment](#remaining-resumption-ownership-amendment).
 
 On 2026-10-12, certificate preservation occupies 799/800 nonblank lines after whole body preparation was proved. The exact pending source has SHA-256 `514eb7249f7dbded839f5492a8a0fc80c9ed5c9070232b62c38064d5ca486416`. It already reuses prepared runtime validity, exact operation outcomes, per-port conservation and wait-declarer uniqueness. The remaining ordinary parent execution and parent ingress cannot be justified by the one-line margin. Further generic field transport would still leave distinct parent Start/completion and data-ingress obligations; no evidence supports a sufficient reduction within that owner. The proposed split follows those different transition contracts, rather than distributing an invariant assembly across arbitrary helpers.
 
@@ -351,9 +351,11 @@ The [transition proof owner](../../BpmnSemantics/SemanticProcess/SequentialScope
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `1640d0e54c9df45abb940c57a557370b3d638b18` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `5644200218787ebf82c0352700ce49ec158b54b9` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Independent cold proposal review approves the [ordinary-execution allocation](#ordinary-execution-ownership-amendment) at `1640d0e54c9df45abb940c57a557370b3d638b18` against `77037f07c859f5121f3a3e8072f749dea49aca00`, without required corrections. Packet digest: `099daf69fbcd860c3d8bf5c4b7810b5d3f96d4a88661ebe2c03fc0ebf0d26551`. The independent relocation probe confirms the exact 283/516 split, private-declaration separation and acyclic import direction. All 53 focused guards, the relocation probe and doctor verification pass in `/tmp/smis-ordinary-review-1640d0e5-{guards,relocation,doctor}`, separately asserted and reaped. Parent initiation and root completion retain distinct preservation obligations; control-read-only prepared preservation cannot establish completed control. The advisory identifies repeated selected-owner reasoning for separate consolidation before parent extension. Approval covers allocation only, not pending implementation, resource fit, universal resumption or qualification.
 
 Independent cold proposal review approves the [remaining resumption allocation](#remaining-resumption-ownership-amendment) at `cea1f0d4f6850efcba93e4b9c5669fe2f7b43543` against `978fce0c9cf8ccf5cdf4d43ea0d4854f8bd0d684`, without required corrections. Packet digest: `82b194af5f5d9d66174283d187d094302fc72da7e3f7fb938f9536d699b30053`. The reviewer inspected dependency direction, actual-history induction, per-port/reset obligations and prepared-publication versus revalidation totality. All 53 focused guards and doctor verification pass in `/tmp/smis-allocation-review-cea1f0d4-guards` and `/tmp/smis-allocation-review-cea1f0d4-doctor`, both separately asserted. Approval covers allocation only; relocation, resource fit, universal resumption and hosting remain unestablished.
 
