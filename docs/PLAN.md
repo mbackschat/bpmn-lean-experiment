@@ -81,13 +81,13 @@ Current task: `PC-DATA-02`, owner-prioritized October 12.
 
 Deliverable: Independently accepted existing-profile admission correspondence, then resume business-process delivery.
 
-Acceptance blockers: Start-ID qualification/review; possible omitted Call-data and Compensation Start checks, awaiting Lean reproduction and scenario-support versus command-refusal classification.
+Acceptance blockers: Combined Start identity/data regression qualification and independent checkpoint review.
 
-Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start mismatch reproduced across 44 ordinary profiles; shared matcher repaired. Narrow Lean and seven parity tests pass, including 46 wrong-Process cases. Full Lean is running. Infrastructure/differential pass. No new capability accepted since October 9.
+Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start-ID repaired across ordinary profiles; Call/Compensation scenario support now reuses existing initialization predicates. Six probes reproduced four data disagreements; ten regressions added. Focused TypeScript and fixed-resource Lean compile pass. No new capability accepted since October 9.
 
-Effort budget: 20 minutes for Start implementation/focused checks; completed in 14 minutes (21:37–21:51 UTC). Required full Lean allowance: 120 minutes; other gates follow [testing cadence](TESTING-SPEC.md#three-level-verification-policy). The 10-minute read-only support audit completed in three minutes, preparing four schema-valid Start mutations. Lean cadence correction completed within its 15-minute budget: focused commits/full batch acceptance; 760 infrastructure checks pass. No automatic renewal.
+Effort budget: 15 minutes from 22:48 UTC for Call/Compensation reuse and focused regressions; implementation completed within budget. No automatic renewal. Cadence correction committed at `d13860b8`; focused commits, full batch acceptance. Full qualification retains its documented allowance.
 
-Next action: Commit/review Start-ID using its focused `MessageStartAdmission`/consumer build and parity regression. Preserve the running full-library receipt/export; no restart. Afterwards execute the six `/tmp/scenario-start-data-audit-20261012/Admission.lean` inputs and classify before selecting either repair.
+Next action: Complete parity, commit the combined admission repair and obtain one independent review. Reuse `/tmp/start-identity-isolated-20261012`: Start-ID full Lean passed; the subsequent data-repair library run was interrupted to prioritize parity and overlap review with remaining qualification. Preserve cached artifacts; acceptance remains open until both pass.
 
 Oracle: Wrong Process ID is unsupported in pure scenario execution, rejected unchanged as a direct command, and rejected by the emitter's definition binding.
 

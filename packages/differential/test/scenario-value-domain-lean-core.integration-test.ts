@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { CommandOutcome, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState,
+import { CanonicalObservationKind, CommandOutcome, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState,
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
@@ -32,12 +32,27 @@ test("out-of-domain typed late commands retain direct refusal separately from sc
   }
 });
 
+test("invalid Start identity and required data retain direct rejection separately from unsupported scenarios", async () => {
+  for (const input of (await domainCases()).filter(input => input.scenario.id.endsWith("wrong-start-process") ||
+    input.scenario.id.includes("invalid-start-data-"))) {
+    assert.deepEqual(runScenario(input.scenario, input.context.semanticProcess), {
+      outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.Unsupported },
+      trace: [{ kind: CanonicalObservationKind.Deployment, outcome: CommandOutcome.Unsupported }],
+    }, input.scenario.id);
+    const refused = applyStimulusWithTrace(input.context.semanticProcess, initialState, input.scenario.stimuli[0]!);
+    assert.equal(refused.result.outcome, CommandOutcome.Rejected, input.scenario.id);
+    assert.deepEqual(refused.result.state, initialState, input.scenario.id);
+    assert.deepEqual(refused.committedTransitions, []);
+    assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+  }
+});
+
 test("Lean scenario support checks every selected profile and both late effect result arms", async () => {
   const inputs = await domainCases();
   const directory = await mkdtemp(path.join(tmpdir(), "scenario-value-domain-support-"));
   try {
     const driver = path.join(directory, "Admission.lean");
-    await writeFile(driver, `import BpmnSemantics.SemanticProcess.ScenarioAdmission
+    await writeFile(driver, `import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcessJson.Program
 import BpmnSemantics.SemanticProcessJson.Scenario
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
@@ -49,10 +64,15 @@ def main (paths : List String) : IO Unit := do
       requireObjectShape json ["program", "scenario"]
       let program ← decodeProgram (← field json "program")
       let scenario ← decodeScenario (← field json "scenario")
-      pure (scenario.id.value, supportsScenario program scenario)
+      let supported := supportsScenario program scenario
+      let unsupported : BpmnSemantics.ScenarioResult :=
+        { outcome := .semantic .unsupported, trace := [.deployment .unsupported] }
+      let unsupportedResultExact := supported || decide (BpmnSemantics.SemanticProcess.runScenario program scenario = unsupported)
+      pure (scenario.id.value, supported, unsupportedResultExact)
     match decoded with
     | .error message => throw (IO.userError message)
-    | .ok (id, supported) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported)]).compress
+    | .ok (id, supported, unsupportedResultExact) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported),
+        ("unsupportedResultExact", toJson unsupportedResultExact)]).compress
 `);
     const paths = await Promise.all(inputs.map(async ({ context, scenario }) => {
       const file = path.join(directory, `${scenario.id}.json`);
@@ -60,10 +80,12 @@ def main (paths : List String) : IO Unit := do
       return file;
     }));
     const execution = await runLeanInterpreter(driver, paths, inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ id: string; supported: boolean }>(line, "scenario support"));
+    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ id: string; supported: boolean;
+      unsupportedResultExact: boolean }>(line, "scenario support"));
     assert.equal(actual.length, inputs.length);
     const mismatches = inputs.flatMap((input, index) => {
       assert.equal(actual[index]?.id, input.scenario.id);
+      assert.equal(actual[index]?.unsupportedResultExact, true, `${input.scenario.id}: exact pure unsupported result`);
       return actual[index]?.supported === input.supported ? [] : [input.scenario.id];
     });
     assert.deepEqual(mismatches, []);
@@ -96,6 +118,8 @@ test("whole unsupported scenarios have complete Lean/core result agreement and n
   const all = await domainCases();
   const profiles = new Set<string>();
   const inputs = all.filter(input => {
+    if (input.scenario.id.endsWith("wrong-start-process")) return false;
+    if (input.scenario.id.includes("invalid-start-data-")) return true;
     if (input.scenario.id.endsWith("-missing") || input.scenario.id.endsWith("-extra") || input.scenario.id.endsWith("-wrong-name") ||
       /-(payload|correlated)-/u.test(input.scenario.id) || /-(reportEffectFailure|retryIncident|cancelIncidentProcess)$/u.test(input.scenario.id)) return true;
     if (!input.scenario.id.endsWith("human-integer") && !input.scenario.id.endsWith("success-null")) return false;
@@ -124,6 +148,25 @@ test("whole unsupported scenarios have complete Lean/core result agreement and n
       assert.deepEqual(record.scenario, input.scenario);
       assert.deepEqual(record.result, runScenario(input.scenario, input.context.semanticProcess), input.scenario.id);
       assert.deepEqual(record.commandPublications, publications(input), input.scenario.id);
+    }
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("the emitter rejects definition binding for wrong ordinary, Message and Timer Process starts", async () => {
+  const inputs = (await domainCases()).filter(input => input.scenario.id.endsWith("wrong-start-process"));
+  const directory = await mkdtemp(path.join(tmpdir(), "scenario-start-process-binding-"));
+  try {
+    for (const kind of [StimulusKind.StartProcess, StimulusKind.TriggerMessageStart, StimulusKind.TriggerTimerStart]) {
+      const input = inputs.find(input => input.scenario.stimuli[0]?.kind === kind);
+      assert.ok(input !== undefined, kind);
+      const definitions = path.join(directory, "definitions.jsonl");
+      await writeFile(definitions, JSON.stringify({ scenarioId: input.scenario.id, checkedProcess: input.context.checkedProcess,
+        semanticProcess: input.context.semanticProcess }) + "\n");
+      const file = path.join(directory, "wrong-process.json");
+      await writeFile(file, JSON.stringify(input.scenario));
+      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, file], 1),
+        error => error instanceof Error && error.message.split(/\r?\n/u).includes(
+          `uncaught exception: definition identity does not match scenario ${input.scenario.id}`));
     }
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

@@ -38,9 +38,10 @@ def messageStartTargetMatchesProgram (program : Program)
         originId.value = startEventId.value && expectedChannel = channel
     | _ => false
 
-/-- Pair the closed external start family with the start operation admitted by a program. -/
+/-- Pair the closed external start family and Process identity with the start operation admitted by a program. -/
 def startStimulusMatchesProgram (program : Program) : Stimulus → Bool
-  | .startProcess .. => ordinaryStartMatchesProgram program
+  | .startProcess _ processId _ _ =>
+      program.processId.value = processId.value && ordinaryStartMatchesProgram program
   | .triggerMessageStart _ processId _ startEventId channel =>
       messageStartTargetMatchesProgram program processId startEventId channel
   | .triggerTimerStart _ processId _ startEventId =>

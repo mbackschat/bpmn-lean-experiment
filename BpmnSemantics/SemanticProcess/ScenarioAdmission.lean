@@ -2,6 +2,8 @@ import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
@@ -65,6 +67,14 @@ private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : Lis
           else SerialBusinessTask.startBindingsAdmitted program bindings
     | _ => false
 
+/-- CDATA-RESUME-01 and COMPSTART-DATA-01 require the selected initializing data before a supported scenario can enter its first Process. -/
+private def scenarioStartDataAdmitted (program : Program) : Stimulus → Bool
+  | .startProcess _ _ instanceId bindings =>
+      (program.identity.semanticProfile != callDataCheckpointProfileId ||
+        callDataStartBindingsAdmitted program bindings) &&
+      compensationStartDataAdmitted program instanceId bindings
+  | _ => true
+
 /-- SMI/PMI completion kinds remain separate from declaration-bound task results; see SMI-ADMIT-01 and PMI-REFUSE-01. -/
 private def scenarioProcessDataBindingsSupported (profile : ProfileId) (surface : ProcessDataIngress)
     (bindings : List VariableBinding) : Bool :=
@@ -110,6 +120,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
     scenario.stimuli.all (scenarioStimulusDomainSupported program) &&
+    (scenario.stimuli.head?.all (scenarioStartDataAdmitted program)) &&
     (scenario.stimuli.head?.all (SequentialScopeData.stimulusAdmitted program)) &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     businessTaskScenarioStartAdmitted program scenario.stimuli &&

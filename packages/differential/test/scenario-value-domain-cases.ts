@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { EffectExecutionResultKind, MessageChannelKind, SemanticProfileId, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
+import { CallDataKind, EffectExecutionResultKind, MessageChannelKind, SemanticOperationKind, SemanticProfileId, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { Scenario, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
 import { pipelineCases } from "./pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
@@ -55,6 +55,9 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     const start = context.scenario.stimuli[0]!;
     assert.ok(start.kind === StimulusKind.StartProcess || start.kind === StimulusKind.TriggerMessageStart ||
       start.kind === StimulusKind.TriggerTimerStart);
+    const differentProcessId = `${start.processId}_Other`;
+    cases.push({ context, scenario: changedScenario(context, "wrong-start-process",
+      [{ ...start, processId: differentProcessId }, ...context.scenario.stimuli.slice(1)]), supported: false });
     const occurrence = { processInstanceId: start.instanceId, elementId: "Unavailable", activation: 1 };
     for (const surface of ["human", EffectExecutionResultKind.Success, EffectExecutionResultKind.BpmnError] as const) {
       const admitted = (surface === "human" ? userDomains : effectDomains).get(context.scenario.profile) ?? [];
@@ -73,6 +76,34 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   }
   const add = (context: DomainContext, suffix: string, stimuli: readonly Stimulus[], supported: boolean) =>
     cases.push({ context, scenario: changedScenario(context, suffix, stimuli), supported });
+  for (const profile of [SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.Compensation]) {
+    const context = selected.get(profile)!;
+    const start = context.scenario.stimuli[0]!;
+    assert.ok(start.kind === StimulusKind.StartProcess);
+    const startCase = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+      add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+    const undeclared: VariableBinding = { name: "zzUndeclared", value: values[0]! };
+    startCase("invalid-start-data-missing", [], false);
+    startCase("invalid-start-data-undeclared", [undeclared], false);
+    startCase("invalid-start-data-extra", [...start.initialVariables, undeclared], false);
+    if (profile === SemanticProfileId.CallActivityDataBoundaries) {
+      const invoke = context.semanticProcess.operations.find(operation => operation.kind === SemanticOperationKind.InvokeProcess);
+      assert.ok(invoke?.kind === SemanticOperationKind.InvokeProcess && invoke.data.kind === CallDataKind.Scalar &&
+        invoke.data.directInput.source.kind === "property");
+      const request = invoke.data.directInput.source.propertyId;
+      const optional = start.initialVariables.filter(binding => binding.name !== request);
+      assert.ok(optional.length > 0);
+      startCase("invalid-start-data-required-input-missing", optional, false);
+      startCase("valid-start-data-required-only", [{ name: request, value: values[0]! }], true);
+      startCase("valid-start-data-null-request", [{ name: request, value: { kind: VariableValueKind.Null } }], true);
+    } else {
+      const snapshots = context.semanticProcess.compensationEventSubProcessSnapshots;
+      assert.ok(snapshots !== undefined && start.initialVariables.length === 1);
+      const binding = start.initialVariables[0]!;
+      startCase("invalid-start-data-capacity-overflow", [{ ...binding,
+        value: { kind: VariableValueKind.String, value: "x".repeat(snapshots.limits.maxCanonicalBytes + 1) } }], false);
+    }
+  }
   const startDomains = new Map<string, readonly VariableValueKind[]>([
     [SemanticProfileId.UserTask, stringNull], [SemanticProfileId.UserTaskBooleanCompletionData, stringNull],
     [SemanticProfileId.EmbeddedSubProcessCompletion, []],

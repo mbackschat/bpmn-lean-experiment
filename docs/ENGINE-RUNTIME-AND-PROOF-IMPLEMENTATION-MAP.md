@@ -8,7 +8,7 @@ Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#en
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
-[Value-domain scanning](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) implemented; Start Process-ID correspondence unresolved.
+[Value-domain and Start Process-ID admission](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) implemented.
 
 Exact BPMN bytes lower through a checked project-owned graph to [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), independently evaluated by Lean and TypeScript and durably hosted by Temporal.
 
