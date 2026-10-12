@@ -4,6 +4,8 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
+[Private structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation): focused hosting passes; independent acceptance and public registration remain open. Production refusal is unchanged.
+
 [MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 
 Registered [business profiles](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary), [metadata-bearing replacement/replay](TEMPORAL-TEST-EVIDENCE-MAP.md#temporal-witness-and-mutation-inventory), configured handlers and three public journeys pass; complete runtime qualification and independent closure remain open.

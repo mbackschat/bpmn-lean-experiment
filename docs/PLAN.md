@@ -14,29 +14,29 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). The existing-profile `PC-DATA-02` admission repair is closed. Continue independent delivery work with the recorded Temporal defect deferred; SMIS resumption needs a credible bounded path, and `PC-DELIVERY-01` remains held. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Qualify the existing structured User Task composition hosting witness under the exact resume budget; preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
-2. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the private checkpoint; hosting, registration and closure remain deferred.
+2. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Hosting qualification is selected under the active coverage item; public registration and closure remain gated on its outcome.
 3. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve approved scalar semantics and private recovery; registration is implemented, but independent public qualification failed and closure remains open.
 4. `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS` · **later** · Owner: [Message handler proposal](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the independently approved private checkpoint at `c2132704`; hosting, registration and closure remain deferred.
 
 ### Assurance trigger assessment
 
-Assurance base: `1fa4ebb2468c4ea57bc0bcfe94a5d0d5b6f92075`.
+Assurance base: `dd5101fbb0b15f62569361931fa60e389a2220ef`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; scenario admission changes no history transport. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; the passive-task hosting witness changes no history transport. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 | AA-02 | not-met | No batch-member interface extension is selected. | — | — |
 | AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | not-met | No relocation is selected for scenario admission; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
+| AA-09 | not-met | No proof relocation is selected for hosting qualification; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DELIVERY-01`, existing invoice capability closure.
+Current task: `PC-HUM-01`, the existing structured-composition hosting obligation; related `PC-CF-02` remains separately open.
 
-Deliverable: Independently accepted serial, rework and business-Error invoice journeys; retain the pinned scope and public acceptance requirements.
+Deliverable: A reviewed restart/recovery journey for data-bearing User Tasks, selected Exclusive routing, merge and archive input handoff, using the approved [structured-composition profile](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md).
 
-Acceptance blockers: Installed-runtime publication-read qualification, clean-target scenario evidence and independent Closure. Existing Call delivery has the same unavailable-publication acceptance symptom; its SDK attribution remains unproved.
+Acceptance blockers: Missing live rollover/replacement/recovery/publication/replay evidence and its branch-bypass discriminator. Public profile/artifact registration and Closure follow only after hosting qualification; no entire checklist row is claimed closed.
 
-Current result: `PC-DATA-02`'s selected admission repair is closed: reviewed `2ec376f8`, fixed-resource build and parity pass; full Lean passes all 898 jobs in `/tmp/start-data-library-resumed-20261013`. Three pending invoice tuples are committed at `1299fca9`; 49 focused binding checks pass. Historical dirty-run evidence lacks complete scenario snapshots. No new business capability accepted since October 9.
+Current result: Invoice approval and serial String/null hosting pass on installed dependencies: `/tmp/spc-host-live-corrected-20261013`, 15.5 seconds. Wrong-branch mutation fails the public assertion; all Runs replay. Types and focused guards pass. Initial rollover-wait ordering was corrected; the failed receipt remains. No Lean/runtime changes.
 
-Effort budget: 15 minutes for invoice evidence binding, completed. No automatic renewal. The authorized 15-minute official-fix check completed: latest `v1.24.0` contains neither TD-001 nor TD-002 correction. SDK repair/private builds/dependency changes remain unauthorized.
+Effort budget: 60 minutes for the existing preflight witness and cleanup, then 15 minutes focused qualification and 15 minutes independent review. Stop and reassess at each limit; no automatic renewal.
 
-Next action: Retain invoice/Call qualification holds and stop runtime investigation. Select the next independent existing-capability obligation from the scheduled scope/Call batch within five minutes; reject paths requiring deferred SDK work or unbounded resumption proofs before implementation.
+Next action: Commit the bounded hosting witness and obtain independent checkpoint review before public registration. Preserve unrelated pending SMIS/PMIS work and failed complete-runtime qualification; this witness does not repair previously failed reads.
 
-Oracle: Exact bound journeys retain public publication reads and replay under the installed runtime, and receive independent Closure approval. A passing rerun alone cannot dispose the retained failure.
+Oracle: Exact public task inputs, selected branch only, archive data, command recovery, complete E1/E2 and every-Run replay; wrong output-name refusal and branch-bypass failure.
 
-Stop if a budget expires or the path fails; do not weaken gates. Preserve deferred [SMIS resumption](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24, held PMIS/push qualification, one-CPU/3-GiB limits and tags/stashes.
+Stop if publication reads fail or a new semantic prerequisite appears. Record the result; do not investigate SDKs or weaken gates. Retain invoice/Call/Message holds, deferred SMIS guarantees, PMIS/push failures and resource limits.
