@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-HUM-01`, the existing structured-composition hosting obligation; related `PC-CF-02` remains separately open.
+Current task: `PC-HUM-01`, public delivery of existing structured composition; related `PC-CF-02` remains separately open.
 
-Deliverable: A reviewed restart/recovery journey for data-bearing User Tasks, selected Exclusive routing, merge and archive input handoff, using the approved [structured-composition profile](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md).
+Deliverable: Register usable structured User Task invoice/serial handoffs through the existing public compile/start/observe/command contract under the [reviewed capsule](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md).
 
-Acceptance blockers: Missing live rollover/replacement/recovery/publication/replay evidence and its branch-bypass discriminator. Public profile/artifact registration and Closure follow only after hosting qualification; no entire checklist row is claimed closed.
+Acceptance blockers: Atomic profile/scenario/corpus/capability/About registration, exact public-path and differential evidence, cost reconciliation and independent Closure. Complete-runtime failures remain retained.
 
-Current result: Invoice approval and serial String/null hosting pass on installed dependencies: `/tmp/spc-host-live-corrected-20261013`, 15.5 seconds. Wrong-branch mutation fails the public assertion; all Runs replay. Types and focused guards pass. Initial rollover-wait ordering was corrected; the failed receipt remains. No Lean/runtime changes.
+Current result: Hosting checkpoint `485e4dbd` independently approved: invoice approval and serial String/null retain mapped inputs, rollover, replacement, recovery, full E1/E2 and every-Run replay. Real branch bypass is detected. Independent live gate passes in 15.18 seconds; 73 guards and types pass. No whole-capability closure yet.
 
-Effort budget: 60 minutes for the existing preflight witness and cleanup, then 15 minutes focused qualification and 15 minutes independent review. Stop and reassess at each limit; no automatic renewal.
+Effort budget: 60 minutes for atomic registration, followed by 30 minutes affected-package qualification and 15 minutes independent review. The preceding bounded hosting work is complete. Stop and reassess at each limit; no automatic renewal.
 
-Next action: Commit the bounded hosting witness and obtain independent checkpoint review before public registration. Preserve unrelated pending SMIS/PMIS work and failed complete-runtime qualification; this witness does not repair previously failed reads.
+Next action: Reuse the Call registration pattern for the approved existing profile, retaining its exact string identity and semantic account. Add answer-free retained invoice/serial schedules and public-path controls; replace the private host refusal only with governed registration evidence. No new proof programme or SDK work.
 
-Oracle: Exact public task inputs, selected branch only, archive data, command recovery, complete E1/E2 and every-Run replay; wrong output-name refusal and branch-bypass failure.
+Oracle: Registered exact-source Lean/core/Temporal agreement, negative admission controls, unchanged predecessor artifacts, truthful corpus/About restrictions and independent acceptance. Registration alone closes no checklist row.
 
-Stop if publication reads fail or a new semantic prerequisite appears. Record the result; do not investigate SDKs or weaken gates. Retain invoice/Call/Message holds, deferred SMIS guarantees, PMIS/push failures and resource limits.
+Stop if public reads fail, qualification needs deferred SDK work, or semantic scope changes. Preserve invoice/Call/Message holds, deferred MI guarantees, unrelated pending work and resource limits. Record the separate inherited startup-timeout cleanup concern without diverting delivery.
