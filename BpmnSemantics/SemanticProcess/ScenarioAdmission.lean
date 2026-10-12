@@ -2,6 +2,7 @@ import BpmnSemantics.SemanticProcess.MessageStartAdmission
 import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! Pure scenario admission is independent of execution and projection, so SMIS-ADMIT-01 can be checked without compiling the executor's preservation proof tree. -/
 
@@ -64,10 +65,26 @@ private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : Lis
           else SerialBusinessTask.startBindingsAdmitted program bindings
     | _ => false
 
+/-- SMIS-ADMIT-01 separates supported stimulus domains from name, occurrence and result-set refusal so negative commands remain executable scenarios. -/
+private def sequentialScopeScenarioStimulusSupported (program : Program) (stimulus : Stimulus) : Bool :=
+  if !sequentialScopeProgramSelected program then true
+  else match stimulus with
+    | .startProcess _ _ _ bindings =>
+        processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+    | .completeUserTaskInstance _ _ bindings =>
+        processDataBindingsAdmitted program.identity.semanticProfile .userTaskCompletion bindings
+    | .completeEffect _ _ (.success bindings)
+    | .completeEffect _ _ (.bpmnError _ _ bindings) =>
+        bindings.all (fun binding => SerialBusinessTask.scalar binding.value)
+    | .triggerMessageStart .. | .triggerTimerStart .. | .deliverMessage .. | .fireTimer .. => true
+    | .deliverPayloadMessage .. | .deliverCorrelatedPayloadMessage ..
+    | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => false
+
 /-- Admit only the `scenario` document kind for a structurally well-formed, profile-capability-valid program whose profile and source identity match the scenario and whose requested observations are exactly the required observation list. -/
 def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
   programWellFormed program &&
     programProfileCapabilitiesValid program &&
+    scenario.stimuli.all (sequentialScopeScenarioStimulusSupported program) &&
     (scenario.stimuli.head?.all (SequentialScopeData.stimulusAdmitted program)) &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     businessTaskScenarioStartAdmitted program scenario.stimuli &&

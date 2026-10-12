@@ -11,14 +11,17 @@ import {
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario,
   requireCompleteFlowNodeOccurrenceLifecycles, observeStableState,
   SemanticOperationKind, SemanticTransitionKind, CanonicalObservationKind, MultiInstanceBodyKind, supportsSemanticProcessScenario,
+  MessageChannelKind,
 } from "@bpmn-lean/semantic-core";
-import type { Scenario, ScenarioResult, Stimulus, VariableBinding, OccurrenceId } from "@bpmn-lean/semantic-core";
+import type { Scenario, ScenarioResult, Stimulus, VariableBinding, VariableValue, OccurrenceId, SemanticProcessProgram,
+  EffectExecutionResult } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import type { MutableScenarioResult } from "./pipeline-types.ts";
 import { profile, source, prepareSource, sourceOverlay, parallelBodySource } from "../../bpmn-source/test/sequential-scope-source-fixture.ts";
 import { sequentialOutputMappingSources } from "../../bpmn-source/test/sequential-scope-output-mapping-fixture.ts";
 import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { program as embeddedProgram, startStimulus as embeddedStart } from "../../semantic-core/test/embedded-subprocess-fixture.ts";
 
 const instanceId = "invoices";
 const binding = (name: string, value: string | null): VariableBinding => ({ name,
@@ -34,6 +37,111 @@ const observations = [ObservationRequestKind.Deployment, ObservationRequestKind.
   ObservationRequestKind.ActiveWaits, ObservationRequestKind.OpenUserTasks, ObservationRequestKind.OpenTimers,
   ObservationRequestKind.OpenEffects, ObservationRequestKind.OpenMultiInstances, ObservationRequestKind.Variables,
   ObservationRequestKind.EnabledInteractions, ObservationRequestKind.LogicalTime];
+
+type ScenarioAdmissionCase = { program: SemanticProcessProgram; scenario: Scenario; supported: boolean };
+
+async function scenarioAdmissionCases(): Promise<ScenarioAdmissionCase[]> {
+  const sourceInput = (await sequentialOutputMappingSources()).find(input => input.shape === "distinct");
+  assert.ok(sourceInput);
+  const inputs: ScenarioAdmissionCase[] = [];
+  const add = (program: SemanticProcessProgram, id: string, stimuli: readonly Stimulus[], supported: boolean,
+    requested = observations) => {
+    const scenario: Scenario = { kind: ScenarioDocumentKind.Scenario, id, profile: program.identity.semanticProfile,
+      bpmn: { id: program.identity.sourceId, sha256: program.identity.sourceSha256,
+        sourceOverlay: program.identity.sourceOverlay, relativePath: `${id}.bpmn` }, stimuli, observations: requested,
+      provenance: { normativeRefs: ["SMIS-ADMIT-01"], cibRevision: "not-applicable", cibRefs: [] } };
+    inputs.push({ program, scenario, supported });
+  };
+  const values = [
+    { kind: VariableValueKind.String, value: "accepted" }, { kind: VariableValueKind.Null },
+    { kind: VariableValueKind.Boolean, value: true }, { kind: VariableValueKind.Integer, value: 7 },
+    { kind: VariableValueKind.StringList, value: ["accepted"] },
+  ] as const satisfies readonly VariableValue[];
+  const label = "sequential";
+  const program = sourceInput.program;
+  const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId, instanceId,
+    initialVariables: [{ name: "items", value: { kind: VariableValueKind.StringList, value: ["invoice"] } }] };
+  const prefix = [start, human("Review", 1, [binding("item", "protected-name-negative")])];
+  add(program, `${label}-baseline`, [start], true);
+  for (const value of [values[0], values[1], values[3]]) add(program, `${label}-start-${value.kind}`,
+    [{ ...start, initialVariables: [...start.initialVariables, { name: "zzExtra", value }] }], value.kind !== VariableValueKind.Integer);
+  add(program, `${label}-missing-progress`, [start], false, observations.filter(kind => kind !== ObservationRequestKind.OpenMultiInstances));
+  for (const value of values) {
+    add(program, `${label}-human-${value.kind}`, [...prefix, human("Confirm", 1,
+      [binding("reviewStatus", "valid-first-member"), { name: "zzSubmitted", value }])],
+    value.kind === VariableValueKind.String || value.kind === VariableValueKind.Null || value.kind === VariableValueKind.Boolean);
+    for (const kind of [EffectExecutionResultKind.Success, EffectExecutionResultKind.BpmnError]) {
+      const localPatch = [binding("result", "valid-first-member"), { name: "summaryResult", value }];
+      const result: EffectExecutionResult = kind === EffectExecutionResultKind.Success ? { kind, localPatch }
+        : { kind, code: "BUSINESS", message: null, localPatch };
+      add(program, `${label}-${kind}-${value.kind}`, [...prefix,
+        { kind: StimulusKind.CompleteEffect, commandId: "late-effect", effectId: { processInstanceId: instanceId, elementId: "Validate", activation: 2 }, result }],
+      value.kind === VariableValueKind.String || value.kind === VariableValueKind.Null);
+    }
+  }
+  for (const localPatch of [[], [binding("extra", "supported-kind-negative")]]) {
+    add(program, `${label}-effect-${localPatch.length === 0 ? "missing" : "extra"}`, [...prefix,
+      { kind: StimulusKind.CompleteEffect, commandId: "negative-effect", effectId: { processInstanceId: instanceId, elementId: "Validate", activation: 1 },
+        result: { kind: EffectExecutionResultKind.Success, localPatch } }], true);
+  }
+  const occurrence = { processInstanceId: instanceId, elementId: "Unavailable", activation: 1 };
+  const channel = { kind: MessageChannelKind.OperationMessage, interfaceId: "Interface", interfaceOperationId: "Operation", messageId: "Message" } as const;
+  const families: readonly [Stimulus, boolean][] = [
+    [{ kind: StimulusKind.DeliverMessage, commandId: "message", subscriptionId: occurrence, channel }, true],
+    [{ kind: StimulusKind.FireTimer, commandId: "timer", timerId: occurrence, logicalTimeMs: 1000 }, true],
+    [{ kind: StimulusKind.ReportEffectFailure, commandId: "failure", effectId: occurrence, generation: 1 }, false],
+    [{ kind: StimulusKind.RetryIncident, commandId: "retry", incidentId: { effectId: occurrence, generation: 1 } }, false],
+    [{ kind: StimulusKind.CancelIncidentProcess, commandId: "cancel", processInstanceId: instanceId,
+      incidentId: { effectId: occurrence, generation: 1 } }, false],
+    [{ kind: StimulusKind.DeliverPayloadMessage, commandId: "payload", subscriptionId: occurrence, channel, payload: values[0] }, false],
+    [{ kind: StimulusKind.DeliverCorrelatedPayloadMessage, commandId: "correlated", subscriptionId: occurrence,
+      address: { definition: program.identity, processId: program.processId, channel, correlationKeyId: "Key" }, ingressOrdinal: 1,
+      correlationPropertyId: "Correlation", processPropertyId: "Property", payload: values[0] }, false],
+  ];
+  for (const [stimulus, supported] of families) add(program, `${label}-${stimulus.kind}`, [...prefix, stimulus], supported);
+  const baseline = observations.filter(kind => kind !== ObservationRequestKind.OpenMultiInstances);
+  add(embeddedProgram, "unrelated-baseline", [embeddedStart()], true, baseline);
+  return inputs;
+}
+
+test("sequential MI scenario support checks every write surface and preserves negative commands independently of execution", async t => {
+  const inputs = await scenarioAdmissionCases();
+  const directory = await mkdtemp(path.join(tmpdir(), "mi-scenario-admission-"));
+  try {
+    const driver = path.join(directory, "Admission.lean");
+    await writeFile(driver, `import BpmnSemantics.SemanticProcess.ScenarioAdmission
+import BpmnSemantics.SemanticProcessJson.Program
+import BpmnSemantics.SemanticProcessJson.Scenario
+open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
+def main (paths : List String) : IO Unit := do
+  for path in paths do
+    let contents ← IO.FS.readFile path
+    let decoded := do
+      let json ← parseWireJson contents
+      requireObjectShape json ["program", "scenario"]
+      let program ← decodeProgram (← field json "program")
+      let scenario ← decodeScenario (← field json "scenario")
+      pure (scenario.id.value, supportsScenario program scenario)
+    match decoded with
+    | .error message => throw (IO.userError message)
+    | .ok (id, supported) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported)]).compress
+`);
+    const paths = await Promise.all(inputs.map(async ({ program, scenario }) => {
+      const file = path.join(directory, `${scenario.id}.json`);
+      await writeFile(file, JSON.stringify({ program, scenario }));
+      return file;
+    }));
+    const execution = await runLeanInterpreter(driver, paths, inputs.length);
+    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ id: string; supported: boolean }>(line, "scenario admission"));
+    assert.equal(actual.length, inputs.length);
+    for (const [index, input] of inputs.entries()) await t.test(input.scenario.id, () => {
+      assert.equal(actual[index]?.id, input.scenario.id);
+      assert.equal(actual[index]?.supported, input.supported, "Lean support must match the independent expectation");
+      assert.equal(supportsSemanticProcessScenario(input.scenario, input.program), input.supported,
+        "TypeScript support must match the independent expectation");
+    });
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 
 function permutations<T>(values: readonly T[]): T[][] {
   if (values.length === 0) return [[]];
@@ -201,7 +309,7 @@ test("private MI covers every branch completion order around a captured Service 
   for (const input of inputs.filter(({ scenario }) => scenario.id.startsWith("order-"))) publications(input);
 });
 
-async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases>>[number][], compareScenarioResult = true) {
+async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases>>[number][]) {
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-mi-scope-parity-"));
   try {
     const definitions = path.join(directory, "definitions.jsonl");
@@ -224,10 +332,11 @@ async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases
       assert.deepEqual(record.scenario, input.scenario);
       assert.deepEqual(record.definitionBinding, { kind: "leanDefinitionBinding", sourceSha256: input.program.identity.sourceSha256,
         semanticProfile: profile, programMatchesLeanLowering: true });
-      if (compareScenarioResult) assert.deepEqual(record.result, runScenario(input.scenario, input.program), input.scenario.id);
+      assert.deepEqual(record.result, runScenario(input.scenario, input.program), input.scenario.id);
     }
     for (const [index, input] of inputs.entries())
-      assert.deepEqual(actual[index]!.commandPublications, publications(input), `${input.scenario.id}: publications`);
+      assert.deepEqual(actual[index]!.commandPublications,
+        supportsSemanticProcessScenario(input.scenario, input.program) ? publications(input) : [], `${input.scenario.id}: publications`);
   } finally { await rm(directory, { recursive: true, force: true }); }
 }
 
@@ -366,10 +475,10 @@ test("TypeScript sequential Service output witnesses preserve writes, turnover a
 test("Lean and TypeScript agree on source-admitted sequential Service output mappings through body turnover", async () => {
   const inputs = await outputMappingCases();
   await verifyScopeCases(inputs);
-  // semantic-profile-value-domain.ts excludes these whole scenarios; ScenarioAdmission.lean admits their direct command replay.
+  // Unsupported whole scenarios emit no publications; typed command refusal is checked separately above.
   const unsupportedValues = await outputMappingCases(true);
   unsupportedValues.forEach(input => assert.equal(supportsSemanticProcessScenario(input.scenario, input.program), false));
-  await verifyScopeCases(unsupportedValues, false);
+  await verifyScopeCases(unsupportedValues);
   const input = inputs.find(value => value.scenario.id === "outputs-distinct-string-first")!;
   const effect = input.scenario.stimuli.find(stimulus => stimulus.commandId === "effect-1");
   assert.ok(effect?.kind === StimulusKind.CompleteEffect && effect.result.kind === EffectExecutionResultKind.Success);
