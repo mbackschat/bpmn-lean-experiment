@@ -503,7 +503,7 @@ git diff --check
 ## Git and delivery
 
 - Preserve unrelated user changes and avoid destructive Git operations.
-- Commit only when explicitly requested in the current task.
+- Decide autonomously when to make local commits for coherent, qualified changes. Follow required verification and review gates, preserve unrelated work, and honor explicit user instructions about committing.
 - Use Conventional Commits: `type(scope): subject`, lowercase type and imperative subject. Add a concise body when non-obvious rationale, architectural consequences, or compatibility constraints would otherwise be lost.
 - Do not push without an explicit current request.
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
