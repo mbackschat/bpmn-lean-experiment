@@ -85,7 +85,7 @@ Acceptance blockers: Complete cached library qualification for the combined admi
 
 Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start-ID repaired across ordinary profiles; Call/Compensation scenario support now reuses existing initialization predicates. Six probes reproduced four data disagreements; ten regressions added. Focused TypeScript, fixed-resource Lean compile and cross-language parity pass. Independent checkpoint review approves `2ec376f8` without findings. No new capability accepted since October 9.
 
-Effort budget: 15 minutes for Call/Compensation implementation, completed within budget. Full qualification retains its documented allowance. Independent `PC-DELIVERY-01` preparation: 15 minutes to bind existing invoice evidence, preserving its runtime/Closure holds. No automatic renewal. Cadence `d13860b8` keeps local commits focused.
+Effort budget: 15 minutes for Call/Compensation implementation, completed within budget. Full qualification retains its documented allowance. Independent `PC-DELIVERY-01` preparation completed within 15 minutes: three exact pending tuples recorded, 49 focused checks pass; runtime/Closure holds remain. No automatic renewal. Cadence `d13860b8` keeps local commits focused.
 
 Next action: Resume the live `/tmp/start-data-library-resumed-20261013` gate against `/tmp/start-identity-isolated-20261012`; do not restart. On success, close admission-batch acceptance and return to the selected business-process delivery obligations. Start-ID full Lean passed; the first data-repair library run was interrupted to prioritize parity. Its cache is retained.
 
