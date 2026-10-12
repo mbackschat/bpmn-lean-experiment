@@ -62,6 +62,33 @@ const documentedInstructionSurfaces = [
 ] as const;
 const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
 
+function assertLeanGateCadence(testing: string, review: string, guide: string): void {
+  assert.match(testing, /Local Lean commits require focused module\/consumer builds and regression tests; the full library is not a commit prerequisite\./u,
+    "local Lean commits must use focused verification");
+  assert.match(testing, /Before semantic-batch acceptance[^\n]*`\.\/scripts\/lake\.sh test`/u,
+    "full Lean qualification must remain required at semantic-batch acceptance");
+  assert.match(testing, /Lean semantic definition or law[^\n]*`\.\/scripts\/lake\.sh build <module target>\.\.\.`/u,
+    "the Lean matrix must expose the focused entry point");
+  for (const owner of [review, guide]) {
+    assert.match(owner, /Local Lean commits use focused module\/consumer builds and regression tests/u,
+      "review and contributor instructions must preserve focused local Lean commits");
+    assert.doesNotMatch(owner, /Pass focused\/affected-package gates[^\n]*before committing/u,
+      "the blanket pre-commit gate must not override the Lean cadence");
+  }
+}
+
+test("keeps local Lean commits focused and full qualification at semantic-batch acceptance", async () => {
+  const [testing, review, guide] = await Promise.all([
+    readFile(testingSpecPath, "utf8"),
+    readFile(new URL("../docs/REVIEW-POLICY.md", import.meta.url), "utf8"),
+    readFile(contributorGuidePath, "utf8"),
+  ]);
+  assertLeanGateCadence(testing, review, guide);
+  assert.throws(() => assertLeanGateCadence(testing.replace("the full library is not a commit prerequisite", "the full library is a commit prerequisite"), review, guide), /focused verification/u);
+  assert.throws(() => assertLeanGateCadence(testing.replace(/^\| Before semantic-batch acceptance.*\n/mu, ""), review, guide), /full Lean qualification/u);
+  assert.throws(() => assertLeanGateCadence(testing, `${review}\nPass focused/affected-package gates before committing.`, guide), /blanket pre-commit gate/u);
+});
+
 test("publication schema gates run without workspace build output", () => {
   const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
     import { registerHooks } from "node:module";

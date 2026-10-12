@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-02`, explicitly prioritized by the owner on October 12.
+Current task: `PC-DATA-02`, owner-prioritized October 12.
 
-Deliverable: Independently accepted Lean/TypeScript admission correspondence for existing profiles, then resume business-process delivery.
+Deliverable: Independently accepted existing-profile admission correspondence, then resume business-process delivery.
 
-Acceptance blockers: Ordinary Start Process-ID mismatch; decisive boundary-specific regression, complete affected qualification and independent review. Strict wire decoding, pure scenario support and definition-bound emitter rejection remain distinct.
+Acceptance blockers: Start-ID qualification/review; possible omitted Call-data and Compensation Start checks, awaiting Lean reproduction and scenario-support versus command-refusal classification.
 
-Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start mismatch reproduced across 44 ordinary profiles; shared matcher repaired. Narrow Lean and seven boundary-specific parity tests pass, including 46 wrong-Process cases. Receipt placement is corrected. Full Lean qualification is running; independent Start review remains required. No new capability accepted since October 9.
+Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start mismatch reproduced across 44 ordinary profiles; shared matcher repaired. Narrow Lean and seven parity tests pass, including 46 wrong-Process cases. Full Lean is running. Infrastructure/differential pass. No new capability accepted since October 9.
 
-Effort budget: 20 minutes for Start implementation/focused checks; completed in 14 minutes (21:37–21:51 UTC). Proceed to required qualification: full Lean 120 minutes; remaining gates follow [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Routine enforcement has a separate 15-minute implementation limit ending 22:07 UTC; no automatic renewal.
+Effort budget: 20 minutes for Start implementation/focused checks; completed in 14 minutes (21:37–21:51 UTC). Required full Lean allowance: 120 minutes; other gates follow [testing cadence](TESTING-SPEC.md#three-level-verification-policy). The 10-minute read-only support audit completed in three minutes, preparing four schema-valid Start mutations. Lean cadence correction completed within its 15-minute budget: focused commits/full batch acceptance; 760 infrastructure checks pass. No automatic renewal.
 
-Next action: Complete qualification of `/tmp/start-identity-isolated-20261012` and obtain independent review before acceptance. Record other findings without expanding this repair.
+Next action: Commit/review Start-ID using its focused `MessageStartAdmission`/consumer build and parity regression. Preserve the running full-library receipt/export; no restart. Afterwards execute the six `/tmp/scenario-start-data-audit-20261012/Admission.lean` inputs and classify before selecting either repair.
 
-Oracle: Wrong Process ID is unsupported at the pure scenario boundary, rejected unchanged as a direct command, and rejected by exact definition binding at the emitter.
+Oracle: Wrong Process ID is unsupported in pure scenario execution, rejected unchanged as a direct command, and rejected by the emitter's definition binding.
 
-Stop if the path fails or the budget expires. Preserve [pending SMIS work](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane) and AA-01/AA-09/AA-24; `PC-DELIVERY-01`, PMIS admission and push qualification remain open. No SDK work, new proof owners, automatic budget extension or weakened gates; retain one-CPU/3-GiB limits and existing tags/stashes.
+Stop if the path fails or budget expires. Preserve [pending SMIS work](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24 and held delivery/PMIS/push qualification. No SDK work, new proof owners or weakened gates; retain one-CPU/3-GiB limits and tags/stashes.

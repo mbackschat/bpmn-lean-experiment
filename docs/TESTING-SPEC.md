@@ -41,9 +41,12 @@ During development, run the smallest executable oracle separating the changed me
 
 | Decision boundary | Required verification |
 |---|---|
-| Before a regular commit | Reproduce the intended red, pass the focused oracle and complete affected package gate. No unrelated package or repository-wide run is required merely by a commit. |
+| Before a regular commit | Reproduce the intended red and pass the focused oracle. Local Lean commits require focused module/consumer builds and regression tests; the full library is not a commit prerequisite. Other affected package gates retain their current requirements. |
+| Before semantic-batch acceptance | Complete the affected package gates, including `./scripts/lake.sh test` for a Lean-bearing batch, and required independent review against the exact candidate. Neither a local commit nor review alone establishes acceptance. |
 | Before push | Commit the intended changes, require a clean tree, then run `./scripts/pnpm.sh run test:pre-push` against that exact `HEAD`. A pre-commit run does not substitute: tests may inspect committed ancestry or tracked state. |
 | Before milestone or tag | Complete repository verification and every applicable release-acceptance gate, regardless of earlier focused passes. |
+
+For a Lean-bearing batch, name its coherent outcome and narrow changed modules, proof consumers and separating regressions in PLAN before work. Include relevant isolated Docker correctness/resource checks at the focused boundary. Local commits may preserve that checked work while complete qualification remains explicitly open. Stabilize related repairs before one full-library qualification; do not launch it merely because another local commit, helper or review handoff occurred. Independent review and full qualification may run concurrently on the same frozen target, within the single-Lean-process limit. Both must pass before acceptance or dependent implementation crosses the checkpoint. Reuse exact-input evidence; rerun a failed or affected gate when source changes invalidate it. Pre-push and release gates remain unchanged.
 
 Pre-push runs `test:dependency-security` unconditionally, because advisory data changes independently of source; high-severity runtime/development advisories and registry failures stop qualification. Product 1 uses the same diff classifier as CI. Product 2 derives every path-filtered workflow's exact command and requires equality with the independent `test:pre-push:*` inventory; missing/malformed filters, duplicate/absent bindings and inventory mismatches fail closed. Every selected boundary runs its complete clean-HEAD local equivalent, including the disposable PostgreSQL command when no database URL is supplied. No blocking hosted behavior may lack a local counterpart.
 
@@ -64,7 +67,7 @@ Commands below select the affected boundary; [cadence](#three-level-verification
 | Change | Required focused gate |
 |---|---|
 | Semantic profile, scenario, evidence, or JSON Schema | `./scripts/pnpm.sh run test:contracts` |
-| Lean semantic definition or law | `./scripts/lake.sh test` |
+| Lean semantic definition or law | Local: `./scripts/lake.sh build <module target>...` for changed owners and affected proof consumers, plus the separating regression. Batch acceptance: `./scripts/lake.sh test`. |
 | TypeScript semantic core | `./scripts/pnpm.sh run test:semantic-core` |
 | Lean plus TypeScript semantic loop | `./scripts/pnpm.sh run test:semantic` |
 | TypeScript semantic contract or type abstraction | `./scripts/pnpm.sh run check:semantic-types` plus its owning runtime/package gate. |
