@@ -201,3 +201,5 @@ The earlier whole-scenario value-domain checkpoint remains approved: target `e19
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Semantic checkpoint | `2ec376f8c2d602975396ecec7cf5ad2c153c6ab6` | `fork-turns-none` | `approve` | `not-required` |
+
+The combined correction at `2ec376f8c2d602975396ecec7cf5ad2c153c6ab6` completed full Lean library qualification on 2026-10-13: `/tmp/start-data-library-resumed-20261013` passed all 898 jobs and its terminal receipt was separately asserted. This closes the admission repair’s batch qualification alongside the independent checkpoint approval; broader capability acceptance remains governed by its owning capsule.

@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-02`, owner-prioritized October 12.
+Current task: `PC-DELIVERY-01`, existing invoice capability closure.
 
-Deliverable: Independently accepted existing-profile admission correspondence, then resume business-process delivery.
+Deliverable: Independently accepted serial, rework and business-Error invoice journeys; retain the pinned scope and public acceptance requirements.
 
-Acceptance blockers: Complete cached library qualification for the combined admission batch.
+Acceptance blockers: Installed-runtime publication-read qualification, clean-target scenario evidence and independent Closure. Existing Call delivery has the same unavailable-publication acceptance symptom; its SDK attribution remains unproved.
 
-Current result: [Value-domain correction approved](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). Start-ID repaired across ordinary profiles; Call/Compensation scenario support now reuses existing initialization predicates. Six probes reproduced four data disagreements; ten regressions added. Focused TypeScript, fixed-resource Lean compile and cross-language parity pass. Independent checkpoint review approves `2ec376f8` without findings. No new capability accepted since October 9.
+Current result: `PC-DATA-02`'s selected admission repair is closed: reviewed `2ec376f8`, fixed-resource build and parity pass; full Lean passes all 898 jobs in `/tmp/start-data-library-resumed-20261013`. Three pending invoice tuples are committed at `1299fca9`; 49 focused binding checks pass. Historical dirty-run evidence lacks complete scenario snapshots. No new business capability accepted since October 9.
 
-Effort budget: 15 minutes for Call/Compensation implementation, completed within budget. Full qualification retains its documented allowance. Independent `PC-DELIVERY-01` preparation completed within 15 minutes: three exact pending tuples recorded, 49 focused checks pass; runtime/Closure holds remain. No automatic renewal. Cadence `d13860b8` keeps local commits focused.
+Effort budget: 15 minutes for invoice evidence binding, completed. No automatic renewal. Owner authorized one 15-minute read-only official-runtime correction check from 23:24 UTC. No private build, SDK repair or dependency change is authorized.
 
-Next action: Resume the live `/tmp/start-data-library-resumed-20261013` gate against `/tmp/start-identity-isolated-20261012`; do not restart. On success, close admission-batch acceptance and return to the selected business-process delivery obligations. Start-ID full Lean passed; the first data-repair library run was interrupted to prioritize parity. Its cache is retained.
+Next action: Retain the runtime hold while checking official release source for TD-001/TD-002 corrections once. Record exact revisions and recommend the smallest qualification path; stop at the bound without private builds or dependency changes.
 
-Oracle: Wrong Process ID is unsupported in pure scenario execution, rejected unchanged as a direct command, and rejected by the emitter's definition binding.
+Oracle: Exact bound journeys retain public publication reads and replay under the installed runtime, and receive independent Closure approval. A passing rerun alone cannot dispose the retained failure.
 
-Stop if the path fails or budget expires. Preserve [pending SMIS work](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24 and held delivery/PMIS/push qualification. No SDK work, new proof owners or weakened gates; retain one-CPU/3-GiB limits and tags/stashes.
+Stop if a budget expires or the path fails; do not weaken gates. Preserve deferred [SMIS resumption](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24, held PMIS/push qualification, one-CPU/3-GiB limits and tags/stashes.
