@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Continue `PC-MI-04` with shared `PC-DATA-06`; `PC-DELIVERY-01` remains held. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Continue the existing-profile `PC-DATA-02` admission repair; SMIS resumption is deferred pending a credible bounded path, and `PC-DELIVERY-01` remains held. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -30,13 +30,13 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | met | `PC-MI-04` requires actual-Start command resumption and its computed fuel bound. | Compose the actual-history certificate and resumption guarantee using the reviewed lower validity separation. | [Quantified resumption contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; scenario admission changes no history transport. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 | AA-02 | not-met | No batch-member interface extension is selected. | — | — |
 | AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | met | Actual SMIS conservation needs the two-consumer relocation approved at `383218e2`. | Move only the named generic marking/port laws; preserve PMIS and establish the SMIS consumer. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
+| AA-09 | not-met | No relocation is selected for scenario admission; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
 | AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
@@ -45,7 +45,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
 | AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
 | AA-23 | not-met | Refusal/ambiguity contract changes remain held. | — | — |
-| AA-24 | met | The remaining eligible-completion guarantee needs a nonvacuous reachability domain. | Specify an admitted actual-Start witness discharging every premise, including body turnover. | [Exact progress claim and limits](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-24 | not-met | No progress-law change is selected; the deferred actual-Start guarantee and satisfiability witness remain open. | Preserve the delayed-Join/turnover discriminator. | [Exact progress claim and limits](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 
 ### Scheduled delivery batches
 
@@ -77,12 +77,12 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-MI-04` with shared `PC-DATA-02/06`: reassess the bounded path to SMIS resumption after the accepted admission repair; retain the proved guarantee.
+Current task: `PC-DATA-02`: align whole-scenario value-domain admission for existing profiles using the accepted SMIS mechanism. Preserve direct command refusal and strict wire decoding as separate boundaries.
 
-Current result: admission repair `0423f670` passes independent cold checkpoint review without required findings. The complete Lean library, maintained comparison and differential package pass; independent adversarial probes confirm the boundary. This accepts the repair, not the mixed worktree or complete SMIS capability. Accepted capability delivery stages remain unchanged since October 9.
+Current result: SMIS admission repair `0423f670` is independently accepted; CIB output-mapping calibration `c4295294` passes the complete runner gate. A 12-minute read-only resumption reassessment found no credible whole-guarantee completion estimate: raw/parent preservation, concrete history transport, frontier readiness and graph-to-analyzer correspondence remain missing. Required [SMIS assurance](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane) stays open. Accepted capability stages remain unchanged since October 9.
 
-Next action: establish a bounded raw-singleton/revalidated-batch preservation path before resuming proof implementation. Proof expansion stays stopped; frontier readiness and analyzer/scheduler correspondence remain open. Local commits are autonomous under the updated repository rule. Retain the [proved contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane), AA-01/AA-09/AA-24 and held `PC-DELIVERY-01`.
+Next action: one 45-minute MEDIUM implementation attempt for the already observed late-value scenario-admission discrepancy, including focused tests and cleanup; root reserves integration and independent checkpoint review. Reuse existing profile domains, retained scenarios and the answer-free interpreter. Stop and reassess at the limit or any interpretation change; no new proof owner or automatic extension. Leave PMIS production admission outside this repair.
 
-Oracle: separately asserted `/tmp/smis-admission-isolated-library-20261012` passes the complete library in 3,416 seconds. `/tmp/smis-admission-isolated-20261012/source-inputs.json` binds HEAD plus only `ScenarioAdmission.lean`; all 1,166 inputs were rechecked. `/tmp/smis-admission-full-parity-20261012` passes maintained SMIS comparison. Preserve the wider change's exit 124 and the [capsule's failed hosting qualification](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress). Graph-fixture cost is stale. No mixed-worktree, public-closure or push qualification.
+Oracle: independent expected support for valid and invalid values on every selected surface, including later patch members, supported-domain negative commands and complete unsupported results without publications. Reuse the qualified isolated Lean inputs for focused and complete affected gates. Retain all prior failed receipts, pending proof work, mapper hosting qualification limits and held `PC-DELIVERY-01`; no public-closure or push qualification.
 
-Stop if implementation exceeds ownership, copies history traversal or changes reviewed semantics/outcomes. Preserve PMIS gaps, `PC-DATA-02`, testkit batch 13, [SDK failures](TEMPORAL-DEFECTS-LEDGER.md), failed receipts including interrupted `/tmp/smis-output-library-20261011`, one-CPU/3-GiB limits, tags, checkpoint `2f38e92d` and stashes `f35bdd6b`, `76a2b017`, `9a443912`. No SDK investigation, repairs, private builds or weakened qualification.
+Stop if implementation changes selected domains/outcomes or needs another infrastructure mechanism. Preserve AA-01/AA-09/AA-24 obligations, testkit batch 13, [SDK failures](TEMPORAL-DEFECTS-LEDGER.md), one-CPU/3-GiB limits, tags, checkpoint `2f38e92d` and stashes `f35bdd6b`, `76a2b017`, `9a443912`. No SDK investigation, repairs, private builds or weakened qualification.
