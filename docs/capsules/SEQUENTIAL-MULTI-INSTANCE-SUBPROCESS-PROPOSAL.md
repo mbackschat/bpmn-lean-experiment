@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: draft
+Review: pending
 
 ## Question and boundary
 
@@ -221,6 +221,21 @@ Transferred sizes are measured grouping estimates, not completed-proof size fore
 
 The coherent outcome and cold checkpoint remain the complete actual-Start guarantee, satisfiable delayed-Join/turnover and terminal/zero/early/refusal witnesses, preserved PMIS consumers, standard-axiom checks, full Lean library and affected parity/infrastructure gates. Focused checks cover each related change; run broader gates once when that batch stabilizes. AA-01/AA-09/AA-24 remain open. No public admission, hosting qualification, SDK work or outcome redesign is selected.
 
+### Ordinary-execution ownership amendment
+
+This amendment is pending independent proposal review. Earlier approvals retain their exact scope; no implementation of this allocation is authorized before approval. It changes proof ownership only and retains the complete actual-Start guarantee and acceptance boundary of the [remaining-resumption amendment](#remaining-resumption-ownership-amendment).
+
+On 2026-10-12, certificate preservation occupies 799/800 nonblank lines after whole body preparation was proved. The exact pending source has SHA-256 `514eb7249f7dbded839f5492a8a0fc80c9ed5c9070232b62c38064d5ca486416`. It already reuses prepared runtime validity, exact operation outcomes, per-port conservation and wait-declarer uniqueness. The remaining ordinary parent execution and parent ingress cannot be justified by the one-line margin. Further generic field transport would still leave distinct parent Start/completion and data-ingress obligations; no evidence supports a sufficient reduction within that owner. The proposed split follows those different transition contracts, rather than distributing an invariant assembly across arbitrary helpers.
+
+| Owner | Complete responsibility |
+|---|---|
+| New `SequentialScopeOrdinaryExecutionProofs.lean` | Actual ordinary parent/body execution, including parent initiation and root completion, with whole-certificate preservation. Move `SequentialScopeBodyPortAccounting.fire`, `.prepared`, the preparation-control and Human/effect arming wait-count lemmas, and `sequentialScope_body_prepared_certificate` unchanged: 283 nonblank lines before module imports/documentation. Derive parent/body operation ownership, selected token ownership, firing-history updates and wait-count changes from admission and actual execution. Reuse the existing prepared validity/publication contracts; no ingress, repeated-body issuance/turnover, history traversal or readiness proof. |
+| `SequentialScopeCertificatePreservationProofs.lean` | Repeated-body entry/turnover/retirement and Human/effect command ingress, including parent-task ingress, preserve the whole certificate. The measured retained grouping is 516 nonblank lines. Import the ordinary-execution owner so existing consumers retain the same declaration names; do not duplicate proofs or add forwarding declarations. |
+
+Both owners depend on the existing execution certificate and lower static/lifecycle/accounting/validity contracts. Only the ordinary owner imports prepared-transition preservation directly; the ingress/lifecycle owner may expose it transitively. Actual-history transport consumes both through the latter owner and remains the single history induction. No lower owner imports either preservation owner. All other allocations and all 800-line ceilings remain unchanged; these measured transfer sizes do not establish the fit of unfinished parent proofs.
+
+First verify declaration-preserving relocation, the transitive import boundary and the affected history consumer. Then complete parent ordinary execution and ingress before history/readiness composition. Reassess after that complete preservation outcome, or immediately if either remaining contract requires another owner or exceeds its ceiling. No new validator, giant invariant record, caller-supplied certificate, successful publication/closure, input-availability or independence premise is added to the final guarantee. Cold checkpoint still requires the complete actual-Start resumption theorem and its satisfiable delayed-Join/turnover, zero, early and refusal witnesses; this proposal neither closes a proof stage nor changes admission, runtime, hosting or public coverage.
+
 ## Temporal hosting and refinement preflight
 
 One Temporal Workflow hosts the parent and every body; no Child Workflow is introduced. Durable ingress remains Start/User Task Update and Activity-result delivery. Passive User Task waits coexist with the admitted effect waits. Schedule each effect from its committed argument snapshot and occurrence key; process results through the same serialized semantic command boundary as human commands. Arrival order is explicit, never inferred from Promise enumeration. Multiple enabled internal steps require the existing proved preparation/choice mechanism, not array-order dispatch.
@@ -336,7 +351,7 @@ The [transition proof owner](../../BpmnSemantics/SemanticProcess/SequentialScope
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `cea1f0d4f6850efcba93e4b9c5669fe2f7b43543` | `fork-turns-none` | `approve` | `not-required` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `5644200218787ebf82c0352700ce49ec158b54b9` | `fork-turns-none` | `approve` | `not-required` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
