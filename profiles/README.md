@@ -4,6 +4,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 
 ## Artifact registry
 
+- [Structured Process composition](bpmn-2.0.2-structured-process-composition-draft/README.md) binds scalar Human Task handoff to acyclic serial and paired Exclusive flow.
 - [Serial business task composition](cibseven-2.2.0-serial-business-tasks-draft/README.md) binds the [normative profile](cibseven-2.2.0-serial-business-tasks-draft/profile.json) to human work, named automation and complete scalar mappings.
 - [Mixed-task control flow](cibseven-2.2.0-mixed-task-control-flow-draft/README.md) binds the [normative profile](cibseven-2.2.0-mixed-task-control-flow-draft/profile.json) to ordered choice, merging and task-separated rework.
 - [Mixed-task business Error](cibseven-2.2.0-mixed-task-business-error-draft/README.md) binds the [normative profile](cibseven-2.2.0-mixed-task-business-error-draft/profile.json) to attached exact-code recovery and caught-path mappings.

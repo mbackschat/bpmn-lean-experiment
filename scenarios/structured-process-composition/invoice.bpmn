@@ -1,0 +1,27 @@
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions" targetNamespace="urn:invoice"
+    expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+    <bpmn:process id="Invoice" isExecutable="true"><bpmn:property id="summary" /><bpmn:property id="decision" /><bpmn:property id="receipt" />
+    <bpmn:startEvent id="start" /><bpmn:endEvent id="end" />
+    <bpmn:userTask id="assess" name="assess">
+    <bpmn:ioSpecification id="assess_io">
+      <bpmn:dataInput id="assess_in" /><bpmn:dataOutput id="assess_out" />
+      <bpmn:inputSet id="assess_inputs"><bpmn:dataInputRefs>assess_in</bpmn:dataInputRefs></bpmn:inputSet>
+      <bpmn:outputSet id="assess_outputs"><bpmn:dataOutputRefs>assess_out</bpmn:dataOutputRefs></bpmn:outputSet>
+    </bpmn:ioSpecification>
+    <bpmn:dataInputAssociation id="assess_read"><bpmn:sourceRef>summary</bpmn:sourceRef><bpmn:targetRef>assess_in</bpmn:targetRef></bpmn:dataInputAssociation>
+    <bpmn:dataOutputAssociation id="assess_write"><bpmn:sourceRef>assess_out</bpmn:sourceRef><bpmn:targetRef>decision</bpmn:targetRef></bpmn:dataOutputAssociation>
+  </bpmn:userTask><bpmn:sequenceFlow id="assessed" sourceRef="assess" targetRef="route"></bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="route" default="route_default" /><bpmn:exclusiveGateway id="route_merge" /><bpmn:sequenceFlow id="route_approve" sourceRef="route" targetRef="approve"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(decision,"approved")</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="route_reject" sourceRef="route" targetRef="reject"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">stringEquals(decision,"rejected")</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id="route_default" sourceRef="route" targetRef="manual"></bpmn:sequenceFlow>
+    <bpmn:userTask id="approve" name="approve" /><bpmn:sequenceFlow id="approve_done" sourceRef="approve" targetRef="route_merge"></bpmn:sequenceFlow><bpmn:userTask id="reject" name="reject" /><bpmn:sequenceFlow id="reject_done" sourceRef="reject" targetRef="route_merge"></bpmn:sequenceFlow><bpmn:userTask id="manual" name="manual" /><bpmn:sequenceFlow id="manual_done" sourceRef="manual" targetRef="route_merge"></bpmn:sequenceFlow>
+    <bpmn:userTask id="archive" name="archive">
+    <bpmn:ioSpecification id="archive_io">
+      <bpmn:dataInput id="archive_in" /><bpmn:dataOutput id="archive_out" />
+      <bpmn:inputSet id="archive_inputs"><bpmn:dataInputRefs>archive_in</bpmn:dataInputRefs></bpmn:inputSet>
+      <bpmn:outputSet id="archive_outputs"><bpmn:dataOutputRefs>archive_out</bpmn:dataOutputRefs></bpmn:outputSet>
+    </bpmn:ioSpecification>
+    <bpmn:dataInputAssociation id="archive_read"><bpmn:sourceRef>decision</bpmn:sourceRef><bpmn:targetRef>archive_in</bpmn:targetRef></bpmn:dataInputAssociation>
+    <bpmn:dataOutputAssociation id="archive_write"><bpmn:sourceRef>archive_out</bpmn:sourceRef><bpmn:targetRef>receipt</bpmn:targetRef></bpmn:dataOutputAssociation>
+  </bpmn:userTask>
+    <bpmn:sequenceFlow id="begin" sourceRef="start" targetRef="assess"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="archive_route" sourceRef="route_merge" targetRef="archive"></bpmn:sequenceFlow><bpmn:sequenceFlow id="finish" sourceRef="archive" targetRef="end"></bpmn:sequenceFlow></bpmn:process></bpmn:definitions>

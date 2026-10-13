@@ -8,6 +8,8 @@ The [invoice Activity example](runner/examples/invoice-effect-activities.ts) imp
 
 [Call data evidence](../../docs/capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence) covers supplier input/output isolation, Worker replacement, rollover, termination and replay. Public scalar-Call start is registered; independent closure is rejected after a post-completion publication failure. Public qualification remains open.
 
+The [structured-composition hosting witness](testkit/test/structured-composition-recovery.temporal-test.ts) retains input-bearing rollover and Worker replacement, then exercises all five retained journeys through public exact-source compile/start with command recovery, full E1/E2 and every-Run replay. The [capsule](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) owns acceptance and remaining Closure; broader runtime qualification remains separate.
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

@@ -1,0 +1,95 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-structured-process-composition-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-bounded-structured-process-composition",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.4.1",
+      "Clause 10.4.2",
+      "Clause 10.6.2",
+      "Clause 13.2",
+      "Clause 13.3.2",
+      "Clause 13.4.2",
+      "Table 13.2"
+    ]
+  },
+  "bpmn": {
+    "process": "one-private-executable-root-process",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion",
+      "user-task-input-output",
+      "required-scalar-input",
+      "associated-scalar-output",
+      "acyclic-serial-composition",
+      "paired-exclusive-decisions-and-merges",
+      "ordered-first-true-default-routing",
+      "simple-boolean-v1",
+      "process-start-string-null-data",
+      "user-task-string-null-completion-data"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-OP-0001",
+      "CIB-AGR-0006",
+      "CIB-INT-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-data-association-or-branch-compatibility-claim",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility",
+    "unstructured-control-flow",
+    "cycles",
+    "implicit-activity-fan-in-or-fan-out",
+    "parallel-and-inclusive-gateways",
+    "unpaired-or-mixed-exclusive-gateways",
+    "other-exclusive-gateway-arities",
+    "missing-default",
+    "more-than-one-start-or-end",
+    "automatic-closure-over-eight-steps",
+    "nested-scopes",
+    "call-activities",
+    "boundary-events",
+    "subscriptions",
+    "timers",
+    "effects",
+    "multi-instance",
+    "compensation-and-transactions",
+    "assignment-or-form-metadata",
+    "input-only-or-output-only-mediation",
+    "multiple-or-optional-input-output-sets",
+    "transformations",
+    "while-executing-data",
+    "collections-or-structured-values",
+    "new-expression-languages",
+    "later-input-availability-or-reevaluation-ingress",
+    "source-preservation-only-notation"
+  ]
+}

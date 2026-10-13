@@ -1,0 +1,150 @@
+{
+  "kind": "scenario",
+  "id": "structured-composition-serial-string",
+  "profile": "bpmn-2.0.2-structured-process-composition-draft",
+  "bpmn": {
+    "id": "structured-composition-serial",
+    "sha256": "401a62e88bb93fe0d0f5bd32628800b269cc601bca9e6bcad601075aa9a80ec7",
+    "sourceOverlay": null,
+    "relativePath": "scenarios/structured-process-composition/serial.bpmn"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Invoice",
+      "instanceId": "Structured_serial_string",
+      "initialVariables": [
+        {
+          "name": "summary",
+          "value": {
+            "kind": "string",
+            "value": "Invoice 4711"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-property-name",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-omitted-output",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-activation",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "assess",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-stale-task",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-archive",
+      "taskId": {
+        "processInstanceId": "Structured_serial_string",
+        "elementId": "archive",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "archive_out",
+          "value": {
+            "kind": "string",
+            "value": "saved"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -21,6 +21,8 @@ Retained scenario admission preserves [source-overlay identity](../docs/A12-ADD-
 
 A model is not a browser-catalog model merely because the engine admits it. Browser eligibility additionally requires a named production-backed Playwright journey that deploys or selects the exact model, starts it through the public platform, observes every mutation precondition, claims each human-work User Task before completing it, completes its advertised work, and verifies the resulting instance, History, and applicable audit surfaces.
 
+The [structured-composition models](../scenarios/structured-process-composition/README.md) retain invoice routing/archive and serial scalar handoff under their exact profile and pipeline bindings. They remain `notCatalogReady` until a production browser journey is selected. The existing capability catalog supplies their About restrictions without a new UI surface.
+
 ## Admission and product-readiness gate
 
 The curated corpus is an engine and product acceptance input, not a fourth conformance denominator. Its manifest distinguishes exact source admission, semantic execution, durable Temporal execution, selected CIB comparison, and Product 2 usability. Clone-normalized family reach and semantic risk remain separate scheduling inputs under the [breadth-ordering rule](../docs/PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).

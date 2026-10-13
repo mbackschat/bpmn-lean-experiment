@@ -8,6 +8,8 @@ The [sequential MI Sub-Process proposal](../../docs/capsules/SEQUENTIAL-MULTI-IN
 
 The [Parallel MI Sub-Process ownership account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#ownership-retirement-implementation) owns internal population retirement. Its [reservation account](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#reservation-bound-occurrence-batches) governs private exact-owner wait and Fork/Join/None End batches; complete command agreement, public registration and hosting qualification remain open.
 
+The [structured-composition profile](../../profiles/bpmn-2.0.2-structured-process-composition-draft/README.md) registers the existing scalar Human Task, ordered Exclusive choice and nonsynchronizing merge account. The [capsule](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) owns its required-input and bounded-resumption guarantees; registration changes no evaluator semantics.
+
 ## What you can do
 
 Use the package to start an admitted Process, submit typed stimuli such as task completion or timer firing, inspect stable state, and run answer-free semantic scenarios. `applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results.

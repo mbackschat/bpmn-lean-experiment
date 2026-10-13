@@ -1,0 +1,178 @@
+{
+  "kind": "scenario",
+  "id": "structured-composition-invoice-reject",
+  "profile": "bpmn-2.0.2-structured-process-composition-draft",
+  "bpmn": {
+    "id": "structured-composition-invoice",
+    "sha256": "651892cef41f300febdfca5b6839fad7ebe2f55343775e483ed996f223606342",
+    "sourceOverlay": null,
+    "relativePath": "scenarios/structured-process-composition/invoice.bpmn"
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Invoice",
+      "instanceId": "Structured_invoice_reject",
+      "initialVariables": [
+        {
+          "name": "summary",
+          "value": {
+            "kind": "string",
+            "value": "Invoice 4711"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-property-name",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "rejected"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-omitted-output",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-activation",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "assess",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "rejected"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "rejected"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-stale-task",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "assess",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "assess_out",
+          "value": {
+            "kind": "string",
+            "value": "rejected"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-ordinary-write",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "reject",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "changed"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-reject",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "reject",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-archive",
+      "taskId": {
+        "processInstanceId": "Structured_invoice_reject",
+        "elementId": "archive",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "archive_out",
+          "value": {
+            "kind": "string",
+            "value": "saved"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 Clause 13.3.2",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

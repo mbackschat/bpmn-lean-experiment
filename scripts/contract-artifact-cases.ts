@@ -143,6 +143,9 @@ export const artifactCases = Object.freeze([
 ]);
 
 export const normativeArtifactCases = Object.freeze([
+  ...["invoice-approve", "invoice-reject", "invoice-manual", "serial-string", "serial-null"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/structured-process-composition/${name}.scenario.json`,
+  })),
   Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/string.scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/null.scenario.json" }),
   ...["success-b-c-a", "success-b-a-c", "success-c-b-a", "failure-a", "failure-b", "failure-c"].map((name) => Object.freeze({

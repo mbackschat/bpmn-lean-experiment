@@ -66,6 +66,11 @@ test("classifies every registered profile against the regional exclusion investi
     const excluded = retainsRegionalExclusionPremises(requiredProgramShape(profile),
       semanticGraphPolicyForProfile(profile));
     switch (profile) {
+      case SemanticProfileId.StructuredProcessComposition:
+        assert.equal(excluded, false, "structured composition owns its quantified reachable task and bounded resumption guarantees");
+        assert.equal(requiredProgramShape(profile), undefined);
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
+        break;
       case SemanticProfileId.SerialBusinessTaskComposition:
         assert.equal(excluded, false, "serial business-task admission owns its single-control graph guarantee outside the legacy fixed-shape premises");
         assert.equal(requiredProgramShape(profile), undefined);

@@ -20,6 +20,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-called-process-call-activity-draft",
   CallActivityDataBoundaries:
     "bpmn-2.0.2-call-activity-data-boundaries-draft",
+  StructuredProcessComposition:
+    "bpmn-2.0.2-structured-process-composition-draft",
   SerialBusinessTaskComposition:
     "cibseven-2.2.0-serial-business-tasks-draft",
   MixedTaskControlFlow:
@@ -87,9 +89,9 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
 } as const);
 
-/** SPC's private semantic checkpoint is withheld from hosted/public profile registration. */
+/** Preserves checkpoint consumers while the public catalog owns the registered identity. */
 export const STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID =
-  "bpmn-2.0.2-structured-process-composition-draft";
+  SemanticProfileId.StructuredProcessComposition;
 
 export const SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID =
   "cibseven-2.2.0-sequential-multi-instance-subprocess-draft";

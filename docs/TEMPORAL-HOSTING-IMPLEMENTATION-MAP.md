@@ -4,7 +4,7 @@ This detail map owns exact current Product 1 protocol, client, Workflow, Worker,
 
 ## Current boundary
 
-[Private structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#private-rule-to-evidence-reconciliation): private hosting independently approved; public registration remains open. Production refusal is unchanged.
+[Structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification): registered public journeys pass; rollover/recovery/replay and branch mutation retained. Complete qualification and Closure remain open.
 
 [MI restoration](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#implementation-progress) and [effect reservation](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#frontier-history-reservation) pass; hosting open.
 

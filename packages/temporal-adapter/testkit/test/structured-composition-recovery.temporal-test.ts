@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isDeepStrictEqual } from "node:util";
+import { readFile } from "node:fs/promises";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
+import { EngineDefinitionCompilationStatus, EngineDefinitionStartStatus,
+  compileBpmnDefinition, startBpmnDefinitionVersion } from "@bpmn-lean/engine-api";
+import type { WorkflowHandle } from "@temporalio/client";
+import { createLazyTemporalClientRuntime } from "@bpmn-lean/temporal-client/definition-start";
 import {
   CommandOutcome, ProcessStatus, ScenarioDocumentKind, ScenarioStepKind, StimulusKind,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
@@ -14,7 +19,7 @@ import type {
 import {
   BpmnWorkflowHostInputKind, ExecutionPublicationResultKind, FlowNodeOccurrencePublicationResultKind,
   WorkflowChainBudgetKind, bpmnProcessWorkflowType, bpmnSemanticTaskQueue, bpmnTraceQueryName,
-  bpmnWorkflowContinuationV1, createCachedLocalEnvironment, loadBpmnWorkflowBundle, mutateConditionalSelection,
+  bpmnWorkflowContinuationV1, createCachedLocalEnvironment, getTestProcessHandle, loadBpmnWorkflowBundle, mutateConditionalSelection,
   observeTemporalExecutionPublication, observeTemporalFlowNodeOccurrences, processWorkflowId,
   readTestProcessTerminalResult, requireBpmnWorkflowContinuationStateV1, runBranchBypassMutation,
   submitUserTaskCompletion, workflowChainProductionLimit,
@@ -25,7 +30,7 @@ import type {
 import { binding, invoiceSource, serialSource } from "../../../differential/test/structured-composition-fixtures.ts";
 import { createBusinessTaskHostOracle } from "./business-task-host-oracle.ts";
 import { assertNoNonUpdateBpmnHostEvents, decodeJsonPayload, historyEvents } from "./temporal-history-facts.ts";
-import { temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
+import { loadJson, temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
 import { replayBpmnHistory, startBpmnTestWorker, stopBpmnTestWorker } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
 import { waitForPublishedWorkflowChainState, waitForWorkflowChainRunCount, workflowChainRuns } from "./workflow-chain-test-support.ts";
@@ -90,29 +95,58 @@ test("structured composition public task assertion rejects branch bypass and los
   }, "archive", [binding("archive_in", "approved")]), assert.AssertionError);
 });
 
-test("private structured composition preserves input, routing and merge through rollover, replacement and replay", async () => {
+test("registered composition preserves public input, routing and merge through replacement, recovery and replay", async () => {
   const environment = await withDeadline(createCachedLocalEnvironment({ identity: "structured-composition-recovery",
     downloadDirectory: temporalCacheDirectory }), 40_000, "structured composition Temporal environment startup");
+  const definitionRuntime = createLazyTemporalClientRuntime({ address: environment.address,
+    namespace: environment.client.options.namespace, connectTimeoutMs: 5000 });
   let worker: WorkerLease | undefined;
   try {
     const bundle = await loadBpmnWorkflowBundle();
     worker = await startBpmnTestWorker(environment, bundle, "structured-composition-original");
     for (const fixture of [
-      { name: "invoice-approved", xml: invoiceSource(), decision: "approved", branch: "approve" },
-      { name: "serial-string", xml: serialSource, decision: "approved", branch: null },
-      { name: "serial-null", xml: serialSource, decision: null, branch: null },
+      { name: "invoice-approved", xml: invoiceSource(), decision: "approved", branch: "approve", scenario: null },
+      { name: "serial-string", xml: serialSource, decision: "approved", branch: null, scenario: null },
+      { name: "serial-null", xml: serialSource, decision: null, branch: null, scenario: null },
+      { name: "public-invoice-approve", xml: null, decision: "approved", branch: "approve", scenario: "invoice-approve" },
+      { name: "public-invoice-reject", xml: null, decision: "rejected", branch: "reject", scenario: "invoice-reject" },
+      { name: "public-invoice-manual", xml: null, decision: null, branch: "manual", scenario: "invoice-manual" },
+      { name: "public-serial-string", xml: null, decision: "approved", branch: null, scenario: "serial-string" },
+      { name: "public-serial-null", xml: null, decision: null, branch: null, scenario: "serial-null" },
     ] as const) {
-      const program = await compileComposition(fixture.name, fixture.xml);
-      const start = compositionStart(program, `structured-host-${fixture.name}`);
+      const scenario = fixture.scenario === null ? null : await loadJson<Scenario>(new URL(
+        `../../../../scenarios/structured-process-composition/${fixture.scenario}.scenario.json`, import.meta.url));
+      const xml = scenario === null ? fixture.xml! : await readFile(new URL(`../../../../${scenario.bpmn.relativePath}`, import.meta.url), "utf8");
+      const program = await compileComposition(scenario?.bpmn.id ?? fixture.name, xml);
+      const registeredStart = scenario?.stimuli[0];
+      assert.ok(scenario === null || registeredStart?.kind === StimulusKind.StartProcess);
+      const start = registeredStart?.kind === StimulusKind.StartProcess ?
+        { ...registeredStart, commandId: `start:${registeredStart.instanceId}` } :
+        compositionStart(program, `structured-host-${fixture.name}`);
       const workflowId = processWorkflowId(start.instanceId);
       const oracle = createBusinessTaskHostOracle(environment, program, start);
-      // The composition capsule's hosting preflight requires private qualification before public admission.
-      const handle = await withDeadline(environment.client.workflow.start(bpmnProcessWorkflowType, {
-        args: [start, program, { protocol: bpmnWorkflowContinuationV1, kind: BpmnWorkflowHostInputKind.Initial,
-          eventHistoryEventLimit: 4,
-          eventHistoryByteLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryBytes) }],
-        workflowId, taskQueue: bpmnSemanticTaskQueue, workflowIdReusePolicy: "REJECT_DUPLICATE",
-      }), operationDeadlineMs, "structured composition private start");
+      let handle: WorkflowHandle;
+      if (scenario === null) {
+        // The approved hosting preflight retains lower-only rollover witnesses separately from public starts.
+        handle = await withDeadline(environment.client.workflow.start(bpmnProcessWorkflowType, {
+          args: [start, program, { protocol: bpmnWorkflowContinuationV1, kind: BpmnWorkflowHostInputKind.Initial,
+            eventHistoryEventLimit: 4,
+            eventHistoryByteLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryBytes) }],
+          workflowId, taskQueue: bpmnSemanticTaskQueue, workflowIdReusePolicy: "REJECT_DUPLICATE",
+        }), operationDeadlineMs, "structured composition forced-rollover start");
+      } else {
+        const request = { bytes: new TextEncoder().encode(xml), sourceId: scenario.bpmn.id,
+          expectedSha256: scenario.bpmn.sha256, semanticProfile: scenario.profile, sourceOverlay: null,
+          limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1000 } };
+        const compiled = await compileBpmnDefinition(request);
+        assert.equal(compiled.status, EngineDefinitionCompilationStatus.Accepted);
+        assert.equal(program.identity.sourceSha256, scenario.bpmn.sha256);
+        const started = await startBpmnDefinitionVersion({ ...request, temporalClient: definitionRuntime.client,
+          expectedProcessId: start.processId, processInstanceId: start.instanceId,
+          initialVariables: start.initialVariables, taskQueue: bpmnSemanticTaskQueue });
+        assert.equal(started.status, EngineDefinitionStartStatus.Started);
+        handle = getTestProcessHandle(environment.client.workflow, start.instanceId);
+      }
       oracle.advance(start);
       const initialExpected = oracle.state;
 
@@ -151,7 +185,7 @@ test("private structured composition preserves input, routing and merge through 
       assert.deepEqual(refusal.state, oracle.state);
       oracle.trace.push(...refusal.observations);
       // As in the composed Activity-data preflight, a refused Update wakes the passive host checkpoint.
-      await waitForWorkflowChainRunCount(environment, workflowId, 2);
+      if (scenario === null) await waitForWorkflowChainRunCount(environment, workflowId, 2);
       assert.deepEqual(await currentAfter(), assess);
 
       await stopBpmnTestWorker(worker!);
@@ -168,7 +202,7 @@ test("private structured composition preserves input, routing and merge through 
       if (fixture.branch !== null) {
         assertCurrentTask(continuation, fixture.branch, undefined);
         const selected = continuation;
-        await completeTask(selected, "approve", []);
+        await completeTask(selected, fixture.branch, []);
         continuation = await currentAfter(selected);
       }
       assertCurrentTask(continuation, "archive", [binding("archive_in", fixture.decision)]);
@@ -198,7 +232,7 @@ test("private structured composition preserves input, routing and merge through 
       const trace: CanonicalObservation[] = [];
       let carriedInput = 0;
       const runs = await workflowChainRuns(environment, workflowId);
-      assert.ok(runs.length >= 2);
+      assert.ok(runs.length >= (scenario === null ? 2 : 1));
       for (const run of runs) {
         const runHandle = environment.client.workflow.getHandle(workflowId, run.runId);
         const history = await withDeadline(runHandle.fetchHistory(), operationDeadlineMs,
@@ -217,7 +251,7 @@ test("private structured composition preserves input, routing and merge through 
         }
         await replayBpmnHistory(bundle, history, workflowId);
       }
-      assert.ok(carriedInput > 0);
+      if (scenario === null) assert.ok(carriedInput > 0);
       assert.deepEqual(trace, oracle.trace);
     }
 
@@ -262,7 +296,11 @@ test("private structured composition preserves input, routing and merge through 
     try {
       if (worker !== undefined) await stopBpmnTestWorker(worker);
     } finally {
-      await withDeadline(environment.teardown(), operationDeadlineMs, "structured composition Temporal teardown");
+      try {
+        await withDeadline(definitionRuntime.close(), operationDeadlineMs, "structured composition definition client teardown");
+      } finally {
+        await withDeadline(environment.teardown(), operationDeadlineMs, "structured composition Temporal teardown");
+      }
     }
   }
 });

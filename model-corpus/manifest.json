@@ -288,6 +288,82 @@
       }
     },
     {
+      "id": "structured-invoice-handoff",
+      "title": "Assess, route and archive an invoice",
+      "businessPurpose": "Review an invoice, route its associated decision through the selected approval, rejection or manual branch, then archive that decision.",
+      "cloneFamily": "structured-invoice-handoff",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataInput",
+        "directActivityDataOutput",
+        "userTaskWait",
+        "userTaskCompletion",
+        "conditionalRouting"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/structured-process-composition/invoice.bpmn",
+        "sha256": "651892cef41f300febdfca5b6839fad7ebe2f55343775e483ed996f223606342",
+        "scenarioRelativePath": "scenarios/structured-process-composition/invoice-approve.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-structured-process-composition-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "structured-composition-invoice-approve",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "structured-serial-handoff",
+      "title": "Hand a review decision to archive work",
+      "businessPurpose": "Record a review decision through its declared output and copy the resulting Process value into a fresh archive task input.",
+      "cloneFamily": "structured-serial-handoff",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataInput",
+        "directActivityDataOutput",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/structured-process-composition/serial.bpmn",
+        "sha256": "401a62e88bb93fe0d0f5bd32628800b269cc601bca9e6bcad601075aa9a80ec7",
+        "scenarioRelativePath": "scenarios/structured-process-composition/serial-string.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-structured-process-composition-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "structured-composition-serial-string",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

@@ -4,6 +4,8 @@ The caller-selected [invoice Activity factories](runner/src/invoice-effect-activ
 
 This contributor map assigns package responsibilities and Temporal SDK ownership. Human orientation and commands start in the [README](README.md); lifecycle semantics and current evidence remain in the linked specifications and evidence map.
 
+Structured Human Task composition uses the existing passive Update scheduler after the approved [hosting checkpoint](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#independent-cold-review-receipt). [Admission controls](protocol/test/structured-composition-host-refusal.test.ts) retain malformed-definition and predecessor-profile refusal; the [retained-source hosting witness](testkit/test/structured-composition-recovery.temporal-test.ts) adds public exact-definition compile/start without changing the Workflow or its production budgets.
+
 ## Registered business-task boundaries
 
 [Host admission](protocol/src/host-admission.ts) admits the registered [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). Its [admission witness](protocol/test/serial-business-task-host-refusal.test.ts) checks hosted support while preserving semantic rejection of missing required start data.

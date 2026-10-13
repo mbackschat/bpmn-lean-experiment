@@ -70,7 +70,7 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 ## Implemented
 
-Private [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): checkpoint approved; retained [execution](../BpmnSemantics/SemanticProcess/StructuredCompositionCompletionAvailabilityProofs.lean)/parity; helper correction approved `da2b3ca3`. Hosting unavailable.
+Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): semantic/hosting checkpoints approved; [execution](../BpmnSemantics/SemanticProcess/StructuredCompositionCompletionAvailabilityProofs.lean)/parity retained; helper correction approved `da2b3ca3`. Closure open.
 
 [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; registered; closure pending.
 

@@ -1,4 +1,5 @@
 import { callDataPipelineCases } from "./call-data-pipeline-cases.ts";
+import { structuredCompositionPipelineCases } from "./structured-composition-pipeline-cases.ts";
 import { businessTaskCompositionPipelineCases } from "./business-task-composition-pipeline-cases.ts";
 import { transactionCancellationPipelineCases } from "./transaction-cancellation-pipeline-cases.ts";
 import { repeatableSubscriptionPipelineCases } from "./repeatable-subscriptions-pipeline-cases.ts";
@@ -580,6 +581,7 @@ export const pipelineCases = Object.freeze([
   ...nonInterruptingBoundaryTimerPipelineCases,
   ...callActivityPipelineCases,
   ...callDataPipelineCases,
+  ...structuredCompositionPipelineCases,
   ...cyclicControlFlowPipelineCases,
   ...messageStartPipelineCases,
   ...timerStartPipelineCases,

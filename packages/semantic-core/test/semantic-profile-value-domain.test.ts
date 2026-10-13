@@ -91,6 +91,10 @@ const stringNullBoolean = [
 ] as const;
 
 const expectedCapabilities = new Map<string, ProfileCapabilities>([
+  [SemanticProfileId.StructuredProcessComposition, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
+  }],
   [SemanticProfileId.SerialBusinessTaskComposition, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),

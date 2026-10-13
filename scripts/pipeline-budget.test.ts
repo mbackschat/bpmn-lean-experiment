@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { pipelineCaseIdRegistry } from "../packages/differential/test/pipeline-case-id-registry.ts";
 
 import {
   defaultWarmBudgetMs,
@@ -90,10 +91,9 @@ test("the pathology ceiling carries headroom over the slowest measured hardware"
     warmBudgetPerCaseMs >= 1_300,
     "the per-case ceiling must retain headroom above the slowest observed 1,038 ms per case",
   );
-  // This file stays build-free because `test:infrastructure` runs before any package is built, so
-  // the catalog-tied half of this contract lives with the catalog in the differential package.
-  assert.ok(defaultWarmBudgetMs >= 54 * warmBudgetPerCaseMs);
-  assert.ok(defaultWarmBudgetMs < 54 * warmBudgetPerCaseMs * 2);
+  // The identifier registry imports no runtime code, preserving test:infrastructure's pre-build boundary.
+  assert.ok(defaultWarmBudgetMs >= pipelineCaseIdRegistry.length * warmBudgetPerCaseMs);
+  assert.ok(defaultWarmBudgetMs < pipelineCaseIdRegistry.length * warmBudgetPerCaseMs * 2);
 });
 
 /**

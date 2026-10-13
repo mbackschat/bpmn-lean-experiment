@@ -1,7 +1,6 @@
 import {
   InternalSchedulingMode,
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
-  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID,
   MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID,
@@ -69,16 +68,6 @@ export function assessTemporalHostCapability(
       failure: {
         code: TemporalHostAdmissionFailureCode.InterruptingMessageEventSubProcessQualificationUnavailable,
         evidence: "Interrupting Message Event Sub-Processes remain a private semantic checkpoint pending hosting qualification.",
-      },
-    };
-  }
-  // SPC's approved preflight withholds hosting until rollover/replacement/replay qualification.
-  if (program.identity.semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
-    return {
-      kind: TemporalHostCapabilityResultKind.Rejected,
-      failure: {
-        code: TemporalHostAdmissionFailureCode.StructuredCompositionQualificationUnavailable,
-        evidence: "Structured Process composition remains a private semantic checkpoint pending hosting qualification.",
       },
     };
   }

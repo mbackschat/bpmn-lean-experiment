@@ -144,7 +144,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with direct Data Input and Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required String/null input and output on the same User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Accepted completion atomically writes the declared output and disposes the local input scope.",
+    restriction: "One required String/null input and output per User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Acyclic serial or paired Exclusive composition admits only supplied or definitely written later inputs. Accepted completion atomically writes the declared output and disposes the local input scope.",
     cibEvidence: notSelected,
   },
   {
@@ -272,7 +272,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Gateways",
     element: "Exclusive Gateway",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Simple Boolean v1 only: existing exact two-condition splits and bounded cycle merge, or single-control mixed task graphs with any nonempty ordered condition list plus required default, pass-through merges and task-separated cycles. Every mixed resumption closes within eight automatic steps; termination is not guaranteed.",
+    restriction: "Simple Boolean v1 only: exact two-condition splits and bounded cycle merge, acyclic paired two-condition/default regions with scalar Human Task handoff, or single-control mixed task graphs with ordered conditions, required default, pass-through merges and task-separated cycles. Admitted resumptions close within eight automatic steps; cyclic termination is not guaranteed.",
     cibEvidence: notSelected,
   },
   {
