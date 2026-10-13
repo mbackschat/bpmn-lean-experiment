@@ -12,8 +12,8 @@ import type {
 } from "@bpmn-lean/semantic-core";
 import {
   StimulusKind,
+  admitsHostedProcessStart,
   isWellFormedStimulus,
-  supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowClient,
@@ -174,7 +174,7 @@ export function assessBpmnProcessAdmission(
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): BpmnProcessAdmissionResult {
-  if (!supportsSemanticProcessExecution(start, semanticProcess)) {
+  if (!admitsHostedProcessStart(start, semanticProcess)) {
     return {
       kind: BpmnProcessAdmissionResultKind.Rejected,
       failure: {

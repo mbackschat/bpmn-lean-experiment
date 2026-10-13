@@ -232,10 +232,10 @@ The complete `what-binds` inventory requires [`implementation-status-owner:ENGIN
 | [TS Program](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | declaration reference only |
 | [TS Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) | 307 | declaration before graph |
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 46 | private exact exemption plus later checkpoint-topology delegation |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 260 | optional-field normalization |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | optional-field normalization |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | collection reference only |
 | [TS runtime-state defect](../../packages/semantic-core/src/runtime-state-defect.ts) | 751 | preserve the closed malformed-state classification or record a proved no-change mapping |
-| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 103 | delegate before 800 |
+| [TS well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 75 | delegate before 800 |
 | [TS preservation oracle](../../packages/differential/test/runtime-state-preservation.test.ts) | 658 | exact new-field preservation and malformed-state refusal |
 | [TS root start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 577 | pre-mutation reservation |
 | [TS scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | unbounded entry/promotion |

@@ -113,17 +113,13 @@ test("a profile without sequential Multi-Instance requires the controller proper
   );
 });
 
-test("the sequential Multi-Instance profile requires the controller property in every state", () => {
+test("the sequential Multi-Instance profile requires the controller property once started", () => {
   assert.deepEqual(
     runtimeStateDefects(reviewProgram, instanceId, initialState),
-    [RuntimeStateDefect.SequentialMultiInstanceControllerProfileMismatch],
-    "NotStarted cannot mask a missing profile-owned collection",
+    [],
+    "before Start the absent collection is the empty one Start installs, as in Lean's list state",
   );
-  assert.equal(
-    isGateAdmissibleRuntimeState(reviewProgram, instanceId, initialState),
-    false,
-    "the fail-closed command gate must reject the profile mismatch",
-  );
+  assert.equal(isGateAdmissibleRuntimeState(reviewProgram, instanceId, initialState), true);
   assert.deepEqual(
     runtimeStateDefects(
       reviewProgram,

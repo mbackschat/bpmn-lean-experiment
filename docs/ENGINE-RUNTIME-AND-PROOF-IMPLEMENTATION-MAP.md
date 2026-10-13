@@ -8,7 +8,7 @@ Private [PMIS proofs](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#en
 
 Both interpreters execute profile-bounded semantics; general BPMN execution and cross-target correspondence remain unproved.
 
-[Value-domain and Start Process-ID admission](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) implemented.
+[Value-domain and Start Process-ID admission](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) implemented and exhaustively compared.
 
 Exact BPMN bytes lower through a checked project-owned graph to [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), independently evaluated by Lean and TypeScript and durably hosted by Temporal.
 
@@ -222,6 +222,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ### TypeScript semantic core
 
+- **unclassified:** a recurring boundary Timer capacity refusal is semantic `rolledBack` in Lean but a core harness failure.
 - I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, values outside a registered profile's declared domain in [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md#semantic-profile), general mapping expressions or scope nesting, [general Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary) or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, public or hosted scheduled choice, arbitrary graph execution
 
 ### BPMN conformance

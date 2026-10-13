@@ -1,55 +1,43 @@
 import assert from "node:assert/strict";
 import { CallDataKind, EffectExecutionResultKind, MessageChannelKind, SemanticOperationKind, SemanticProfileId, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
-import type { Scenario, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
+import type { Scenario, StartProcessStimulus, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
 import { pipelineCases } from "./pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
 import type { PipelineContext } from "./pipeline-types.ts";
 import { loadMessageKeyCorrelationPopulationCases } from "./message-key-correlation-population-cases.ts";
+import { assertProfilesEnrolled, correlatedPayloadProfile, expectedDomainsOf, incidentCommandProfiles, singletonBusinessItem } from "./scenario-value-domain-expectations.ts";
+import type { ProfileValueDomains } from "./scenario-value-domain-expectations.ts";
 
 type DomainContext = Pick<PipelineContext, "scenario" | "checkedProcess" | "semanticProcess">;
 export type DomainCase = Readonly<{ context: DomainContext; scenario: Scenario; supported: boolean }>;
-const stringNull = [VariableValueKind.String, VariableValueKind.Null];
-const booleanCompletion = [...stringNull, VariableValueKind.Boolean];
-// SingletonBusinessItem at kind level; the 1,024-byte root String bound is exercised by explicit cases below.
-const singletonBusinessItem = [...booleanCompletion, VariableValueKind.Integer, VariableValueKind.Decimal, VariableValueKind.Map];
-const userDomains = new Map<string, readonly VariableValueKind[]>([
-  ...[SemanticProfileId.UserTask, SemanticProfileId.UserTaskProcessDataPreservedNotation, SemanticProfileId.UserTaskCycle,
-    SemanticProfileId.ActivityDataOutputUserTask, SemanticProfileId.ActivityDataInputOutputUserTask,
-    SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.SerialBusinessTaskComposition,
-    SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError,
-    SemanticProfileId.StructuredProcessComposition].map(profile => [profile, stringNull] as const),
-  ...[SemanticProfileId.UserTaskBooleanCompletionData, SemanticProfileId.UserTaskAssignmentFormMetadata,
-    SemanticProfileId.ParallelUserTaskAssignmentFormMetadata].map(profile => [profile, booleanCompletion] as const),
-  ...[SemanticProfileId.SequentialMultiInstanceUserTask, SemanticProfileId.ParallelMultiInstanceUserTask]
-    .map(profile => [profile, [VariableValueKind.String]] as const),
-  // Explicit rather than `Object.values`, so a newly recognized arm is never expected here until the profile selects it.
-  [SemanticProfileId.StructuredHumanWork, [...booleanCompletion, VariableValueKind.Integer, VariableValueKind.StringList]],
-  [SemanticProfileId.PortableBusinessValuesHandoff, singletonBusinessItem],
-]);
-const effectDomains = new Map<string, readonly VariableValueKind[]>([
-  [SemanticProfileId.MappedSuccessServiceTask, [VariableValueKind.String]],
-  ...[SemanticProfileId.MappedBoundaryErrorServiceTask, SemanticProfileId.SerialBusinessTaskComposition,
-    SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError].map(profile => [profile, stringNull] as const),
-]);
+type AddCase = (context: DomainContext, suffix: string, stimuli: readonly Stimulus[], supported: boolean) => void;
+
 export const values: readonly VariableValue[] = [
   { kind: VariableValueKind.String, value: "candidate" }, { kind: VariableValueKind.Null },
   { kind: VariableValueKind.Boolean, value: true }, { kind: VariableValueKind.Integer, value: 7 },
   { kind: VariableValueKind.StringList, value: ["candidate"] },
-  // Portable arms recognized by both readers; no current profile selects them (PBV-INGRESS-01).
+  // Portable arms recognized by both readers; only the portable handoff selects them (PBV-INGRESS-01).
   { kind: VariableValueKind.Decimal, coefficient: "-125", scale: 2 },
   { kind: VariableValueKind.List, value: [{ kind: VariableValueKind.Integer, value: 1 }, { kind: VariableValueKind.Integer, value: 1 }] },
   { kind: VariableValueKind.Map, value: [
     { name: "address", value: { kind: VariableValueKind.Map, value: [{ name: "line2", value: { kind: VariableValueKind.Null } }] } },
     { name: "total", value: { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 } }] },
 ];
-const payloadDomain = [...booleanCompletion, VariableValueKind.Integer];
+
+/**
+ * Scenario Starts that must carry their declared bindings (Call request, Compensation restored binding, business-task
+ * required inputs), so a kind probe replaces one declared value instead of appending an unrelated binding. Every other
+ * profile accepts an unrelated canonical Start binding, which keeps the probe on the value kind alone.
+ */
+const declaredStartData: ReadonlySet<string> = new Set([SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.Compensation,
+  SemanticProfileId.SerialBusinessTaskComposition, SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError]);
 
 export function changedScenario(context: DomainContext, suffix: string, stimuli: readonly Stimulus[]): Scenario {
   return { ...context.scenario, id: `${context.scenario.id}-${suffix}`, stimuli };
 }
 
-/** Retained answer-free schedules provide valid starts; expectations follow each profile's reviewed external domain. */
-export async function domainCases(): Promise<readonly DomainCase[]> {
+/** One retained answer-free schedule per registered profile, plus the correlated population schedule for Message key correlation. */
+export async function selectedProfileContexts(): Promise<ReadonlyMap<string, DomainContext>> {
   const contexts = await loadAndCompileCases(pipelineCases);
   const selected = new Map<string, DomainContext>();
   for (const context of contexts) if (!selected.has(context.scenario.profile)) selected.set(context.scenario.profile, context);
@@ -61,8 +49,25 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     profile: population.scenario.profile, bpmn: { id: source.id, sha256: source.sha256, sourceOverlay: source.sourceOverlay,
       relativePath: source.relativePath }, stimuli: population.scenario.instances[0]!.stimuli } };
   selected.set(population.scenario.profile, correlated);
+  return selected;
+}
+
+/** A well-formed occurrence of no live wait, so a late command can only differ from a valid one by its value. */
+function occurrenceOf(start: Stimulus) {
+  assert.ok("instanceId" in start);
+  return { processInstanceId: start.instanceId, elementId: "Unavailable", activation: 1 };
+}
+
+/** Retained answer-free schedules provide valid starts; expectations follow each profile's reviewed external domain. */
+export async function domainCases(): Promise<readonly DomainCase[]> {
+  const selected = await selectedProfileContexts();
+  assertProfilesEnrolled(selected.keys());
   const cases: DomainCase[] = [];
+  const add: AddCase = (context, suffix, stimuli, supported) =>
+    cases.push({ context, scenario: changedScenario(context, suffix, stimuli), supported });
   for (const context of selected.values()) {
+    const profile = context.scenario.profile;
+    const domains = expectedDomainsOf(profile);
     cases.push({ context, scenario: context.scenario, supported: true });
     const start = context.scenario.stimuli[0]!;
     assert.ok(start.kind === StimulusKind.StartProcess || start.kind === StimulusKind.TriggerMessageStart ||
@@ -70,24 +75,14 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     const differentProcessId = `${start.processId}_Other`;
     cases.push({ context, scenario: changedScenario(context, "wrong-start-process",
       [{ ...start, processId: differentProcessId }, ...context.scenario.stimuli.slice(1)]), supported: false });
-    const occurrence = { processInstanceId: start.instanceId, elementId: "Unavailable", activation: 1 };
-    for (const surface of ["human", EffectExecutionResultKind.Success, EffectExecutionResultKind.BpmnError] as const) {
-      const admitted = (surface === "human" ? userDomains : effectDomains).get(context.scenario.profile) ?? [];
-      for (const value of values) {
-        const bindings: VariableBinding[] = [...(admitted.length === 0 ? [] : [{ name: "candidate", value: values.find(v => v.kind === admitted[0])! }]),
-          { name: "zzLater", value }];
-        const stimulus: Stimulus = surface === "human"
-          ? { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-${surface}-${value.kind}`, taskId: occurrence, submittedValues: bindings }
-          : { kind: StimulusKind.CompleteEffect, commandId: `late-${surface}-${value.kind}`, effectId: occurrence,
-            result: surface === EffectExecutionResultKind.Success ? { kind: surface, localPatch: bindings }
-              : { kind: surface, code: "BUSINESS", message: null, localPatch: bindings } };
-        cases.push({ context, scenario: changedScenario(context, `${surface}-${value.kind}`, [...context.scenario.stimuli, stimulus]),
-          supported: admitted.includes(value.kind) });
-      }
+    addLateValueCases(context, start, domains, add);
+    // Message and Timer Starts carry no bindings, so they have no Start value surface.
+    if (start.kind === StimulusKind.StartProcess && profile !== SemanticProfileId.PortableBusinessValuesHandoff) {
+      addStartKindCases(context, start, domains.start, add);
     }
+    addPayloadCases(context, start, domains.payload, add);
+    addIncidentCommandCases(context, start, add);
   }
-  const add = (context: DomainContext, suffix: string, stimuli: readonly Stimulus[], supported: boolean) =>
-    cases.push({ context, scenario: changedScenario(context, suffix, stimuli), supported });
   for (const profile of [SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.Compensation]) {
     const context = selected.get(profile)!;
     const start = context.scenario.stimuli[0]!;
@@ -99,10 +94,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     startCase("invalid-start-data-undeclared", [undeclared], false);
     startCase("invalid-start-data-extra", [...start.initialVariables, undeclared], false);
     if (profile === SemanticProfileId.CallActivityDataBoundaries) {
-      const invoke = context.semanticProcess.operations.find(operation => operation.kind === SemanticOperationKind.InvokeProcess);
-      assert.ok(invoke?.kind === SemanticOperationKind.InvokeProcess && invoke.data.kind === CallDataKind.Scalar &&
-        invoke.data.directInput.source.kind === "property");
-      const request = invoke.data.directInput.source.propertyId;
+      const request = callRequestProperty(context);
       const optional = start.initialVariables.filter(binding => binding.name !== request);
       assert.ok(optional.length > 0);
       startCase("invalid-start-data-required-input-missing", optional, false);
@@ -117,47 +109,6 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     }
   }
   addPortableHandoffCases(selected.get(SemanticProfileId.PortableBusinessValuesHandoff)!, add);
-  const startDomains = new Map<string, readonly VariableValueKind[]>([
-    [SemanticProfileId.UserTask, stringNull], [SemanticProfileId.UserTaskBooleanCompletionData, stringNull],
-    [SemanticProfileId.EmbeddedSubProcessCompletion, []],
-    [SemanticProfileId.SequentialMultiInstanceUserTask, [VariableValueKind.StringList]],
-    [SemanticProfileId.ParallelMultiInstanceUserTask, [VariableValueKind.String, VariableValueKind.StringList]],
-  ]);
-  for (const [profile, admitted] of startDomains) {
-    const context = selected.get(profile)!;
-    const start = context.scenario.stimuli[0]!;
-    assert.ok(start.kind === StimulusKind.StartProcess);
-    for (const value of values) add(context, `start-${value.kind}`, [{ ...start,
-      initialVariables: [...start.initialVariables, { name: "zzLater", value }] }], admitted.includes(value.kind));
-  }
-  for (const profile of [SemanticProfileId.EmbeddedSubProcessCompletion, SemanticProfileId.MessagePayloadCatch,
-    SemanticProfileId.MessageKeyCorrelation, SemanticProfileId.ServiceTaskIncident, SemanticProfileId.ServiceTaskIncidentCancellation]) {
-    const context = selected.get(profile)!;
-    const start = context.scenario.stimuli[0]!;
-    assert.ok(start.kind === StimulusKind.StartProcess);
-    const occurrence = { processInstanceId: start.instanceId, elementId: "Unavailable", activation: 1 };
-    const channel = { kind: MessageChannelKind.OperationMessage, interfaceId: "Interface", interfaceOperationId: "Operation", messageId: "Message" } as const;
-    for (const value of values) {
-      const payload: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-${value.kind}`,
-        subscriptionId: occurrence, channel, payload: value };
-      add(context, `payload-${value.kind}`, [...context.scenario.stimuli, payload],
-        (profile === SemanticProfileId.MessagePayloadCatch || profile === SemanticProfileId.MessageKeyCorrelation) && payloadDomain.includes(value.kind));
-      if (value.kind !== VariableValueKind.String) continue;
-      const delivery: Stimulus = { kind: StimulusKind.DeliverCorrelatedPayloadMessage, commandId: `late-correlated-${value.kind}`,
-        subscriptionId: occurrence, address: { definition: context.semanticProcess.identity, processId: context.semanticProcess.processId,
-          channel, correlationKeyId: "Key" }, ingressOrdinal: 1, correlationPropertyId: "Correlation", processPropertyId: "Property", payload: value };
-      add(context, `correlated-${value.kind}`, [...context.scenario.stimuli, delivery],
-        profile === SemanticProfileId.MessageKeyCorrelation && value.kind === VariableValueKind.String);
-    }
-    for (const stimulus of [
-      { kind: StimulusKind.ReportEffectFailure, commandId: "late-failure", effectId: occurrence, generation: 1 },
-      { kind: StimulusKind.RetryIncident, commandId: "late-retry", incidentId: { effectId: occurrence, generation: 1 } },
-      { kind: StimulusKind.CancelIncidentProcess, commandId: "late-cancel", processInstanceId: start.instanceId,
-        incidentId: { effectId: occurrence, generation: 1 } },
-    ] as const satisfies readonly Stimulus[]) add(context, stimulus.kind, [...context.scenario.stimuli, stimulus],
-      stimulus.kind === StimulusKind.CancelIncidentProcess ? profile === SemanticProfileId.ServiceTaskIncidentCancellation
-        : profile === SemanticProfileId.ServiceTaskIncident || profile === SemanticProfileId.ServiceTaskIncidentCancellation);
-  }
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -184,7 +135,82 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   return cases;
 }
 
-type AddCase = (context: DomainContext, suffix: string, stimuli: readonly Stimulus[], supported: boolean) => void;
+function callRequestProperty(context: DomainContext): string {
+  const invoke = context.semanticProcess.operations.find(operation => operation.kind === SemanticOperationKind.InvokeProcess);
+  assert.ok(invoke?.kind === SemanticOperationKind.InvokeProcess && invoke.data.kind === CallDataKind.Scalar &&
+    invoke.data.directInput.source.kind === "property");
+  return invoke.data.directInput.source.propertyId;
+}
+
+/** Human completion and both effect result arms receive the same profile-selected kind check. */
+function addLateValueCases(context: DomainContext, start: Stimulus, domains: ProfileValueDomains, add: AddCase): void {
+  const occurrence = occurrenceOf(start);
+  for (const surface of ["human", EffectExecutionResultKind.Success, EffectExecutionResultKind.BpmnError] as const) {
+    const admitted = surface === "human" ? domains.human : domains.effect;
+    for (const value of values) {
+      const bindings: VariableBinding[] = [...(admitted.length === 0 ? [] : [{ name: "candidate", value: values.find(v => v.kind === admitted[0])! }]),
+        { name: "zzLater", value }];
+      const stimulus: Stimulus = surface === "human"
+        ? { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-${surface}-${value.kind}`, taskId: occurrence, submittedValues: bindings }
+        : { kind: StimulusKind.CompleteEffect, commandId: `late-${surface}-${value.kind}`, effectId: occurrence,
+          result: surface === EffectExecutionResultKind.Success ? { kind: surface, localPatch: bindings }
+            : { kind: surface, code: "BUSINESS", message: null, localPatch: bindings } };
+      add(context, `${surface}-${value.kind}`, [...context.scenario.stimuli, stimulus], admitted.includes(value.kind));
+    }
+  }
+}
+
+/**
+ * Probes each value kind at the Start surface. A declared-data profile gets one declared binding replaced; every other
+ * profile gets an unrelated binding appended, which keeps the probe on the value kind alone.
+ */
+function addStartKindCases(context: DomainContext, start: StartProcessStimulus, admitted: readonly VariableValueKind[], add: AddCase): void {
+  const declared = declaredStartBinding(context, start);
+  for (const value of values) {
+    const initialVariables = declared === undefined ? [...start.initialVariables, { name: "zzLater", value }]
+      : start.initialVariables.map(binding => binding.name === declared ? { ...binding, value } : binding);
+    add(context, `start-${value.kind}`, [{ ...start, initialVariables }], admitted.includes(value.kind));
+  }
+}
+
+function declaredStartBinding(context: DomainContext, start: StartProcessStimulus): string | undefined {
+  const profile = context.scenario.profile;
+  if (!declaredStartData.has(profile)) return undefined;
+  if (profile === SemanticProfileId.CallActivityDataBoundaries) return callRequestProperty(context);
+  const first = start.initialVariables[0];
+  assert.ok(first !== undefined, `${profile} retains a declared Start binding to replace`);
+  return first.name;
+}
+
+/** Direct payload delivery checks the profile's payload kinds; correlated delivery is wire-restricted to String. */
+function addPayloadCases(context: DomainContext, start: Stimulus, admitted: readonly VariableValueKind[], add: AddCase): void {
+  const occurrence = occurrenceOf(start);
+  const channel = { kind: MessageChannelKind.OperationMessage, interfaceId: "Interface", interfaceOperationId: "Operation", messageId: "Message" } as const;
+  for (const value of values) {
+    const payload: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-${value.kind}`,
+      subscriptionId: occurrence, channel, payload: value };
+    add(context, `payload-${value.kind}`, [...context.scenario.stimuli, payload], admitted.includes(value.kind));
+    // Strict wire decoding rejects a non-String correlated payload before support (see the strict-wire test), so no support case exists for it.
+    if (value.kind !== VariableValueKind.String) continue;
+    const delivery: Stimulus = { kind: StimulusKind.DeliverCorrelatedPayloadMessage, commandId: `late-correlated-${value.kind}`,
+      subscriptionId: occurrence, address: { definition: context.semanticProcess.identity, processId: context.semanticProcess.processId,
+        channel, correlationKeyId: "Key" }, ingressOrdinal: 1, correlationPropertyId: "Correlation", processPropertyId: "Property", payload: value };
+    add(context, `correlated-${value.kind}`, [...context.scenario.stimuli, delivery], context.scenario.profile === correlatedPayloadProfile);
+  }
+}
+
+/** Incident commands carry no value; their support is a profile fact per command family. */
+function addIncidentCommandCases(context: DomainContext, start: Stimulus, add: AddCase): void {
+  const occurrence = occurrenceOf(start);
+  const profile = context.scenario.profile;
+  for (const stimulus of [
+    { kind: StimulusKind.ReportEffectFailure, commandId: "late-failure", effectId: occurrence, generation: 1 },
+    { kind: StimulusKind.RetryIncident, commandId: "late-retry", incidentId: { effectId: occurrence, generation: 1 } },
+    { kind: StimulusKind.CancelIncidentProcess, commandId: "late-cancel", processInstanceId: occurrence.processInstanceId,
+      incidentId: { effectId: occurrence, generation: 1 } },
+  ] as const satisfies readonly Stimulus[]) add(context, stimulus.kind, [...context.scenario.stimuli, stimulus],
+    incidentCommandProfiles[stimulus.kind].includes(profile));
+}
 
 /**
  * The serial portable handoff selects Process Start and User Task completion only, with exactly one P_in binding and a

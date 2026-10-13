@@ -232,11 +232,11 @@ The 800-nonblank-line soft target is the extraction threshold and 1,200 lines th
 |---|---:|---|
 | [TypeScript Program contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | add only the optional declaration reference; extract before crossing 800 |
 | [TypeScript RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | add only the optional collection reference; new types live elsewhere |
-| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 103 | add one delegated validator hook; extract before crossing 800 |
+| [TypeScript well-formedness](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 75 | add one delegated validator hook; extract before crossing 800 |
 | [TypeScript scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | route normal root disposal only |
 | [TypeScript called-Process runtime](../../packages/semantic-core/src/semantic-process-call-runtime.ts) | 355 | remove owner-keyed records with a called-instance subtree even though declaring Programs exclude Call operations |
 | [TypeScript scope cancellation](../../packages/semantic-core/src/semantic-process-scope-cancellation.ts) | 545 | remove owner-keyed records with a cancelled region even though declaring Programs exclude cancellation |
-| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 260 | no producer integration at the first checkpoint |
+| [TypeScript command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | no producer integration at the first checkpoint |
 | [TypeScript triggered start](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 577 | initialize root-owned retention state before any start mutation |
 | [Lean Program contract](../../BpmnSemantics/SemanticProcessContract.lean) | 221 | direct Activity-data carriers extracted into a bounded owner |
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 23 | add only the collection reference and its root-owned invariant; new structures live elsewhere |

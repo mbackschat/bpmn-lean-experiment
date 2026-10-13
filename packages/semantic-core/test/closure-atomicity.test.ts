@@ -81,20 +81,16 @@ test("successful and admission-rejected commands expose both false closure flags
   assert.equal(rejected.ambiguousInternalChoice, false);
 });
 
-test("an unprojectable rejected Start retains its private projection cause", () => {
+// Lean's `terminalExecution` ends a scenario on a rejection with only the command observation when no
+// instance exists to observe; a rejection is a semantic outcome, never a harness failure.
+test("a rejected Start without an instance ends semantically with only its command observation", () => {
   const before = structuredClone(initialState);
-  assert.deepEqual(advanceScenario(parallelProgram, initialState, {
-    ...startStimulus(), processId: "Wrong_Process",
-  }), {
-    kind: ScenarioStepKind.HarnessFailure,
-    outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-    observations: [],
-    diagnostic: {
-      stage: "observationProjection",
-      outcome: CommandOutcome.Rejected,
-      internalStepBoundExceeded: false,
-      ambiguousInternalChoice: false,
-    },
+  const stimulus = { ...startStimulus(), processId: "Wrong_Process" };
+  assert.deepEqual(advanceScenario(parallelProgram, initialState, stimulus), {
+    kind: ScenarioStepKind.Terminal,
+    state: initialState,
+    outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.Rejected },
+    observations: [{ kind: CanonicalObservationKind.Command, commandId: stimulus.commandId, outcome: CommandOutcome.Rejected }],
   });
   assert.deepEqual(initialState, before);
 });

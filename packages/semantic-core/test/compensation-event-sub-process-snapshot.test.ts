@@ -142,10 +142,18 @@ test("binds optional retention collection presence to the Program declaration", 
     compensationParentContextRetentions: [],
   } satisfies RuntimeState;
 
+  // Before Start an absent collection reads as the empty one Start installs, as in Lean's list state.
   assert.equal(
     runtimeStateDefects(program, "", initialState).includes(
       RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch,
     ),
+    false,
+  );
+  assert.equal(
+    runtimeStateDefects(program, "Instance_Running", {
+      ...initialState,
+      control: { kind: ControlStateKind.Running, instanceId: "Instance_Running" },
+    }).includes(RuntimeStateDefect.CompensationEventSubProcessSnapshotProfileMismatch),
     true,
   );
   assert.equal(

@@ -132,7 +132,6 @@ import {
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
-import { initializeCompensationExecutionState } from "./compensation-trigger-handler-runtime-state-validation.js";
 import { completeCompensationHandlerEffect } from "./compensation-trigger-handler-completion.js";
 import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
 import { structuredCompositionStimulusDataAdmitted } from "./structured-process-composition-admission.js";
@@ -167,38 +166,11 @@ function admissibleCommittedState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): boolean {
-  const multiInstanceGateState =
-    program.identity.semanticProfile ===
-        SemanticProfileId.SequentialMultiInstanceUserTask &&
-      state.control.kind === ControlStateKind.NotStarted &&
-      state.sequentialMultiInstanceControllers === undefined
-      ? { ...state, sequentialMultiInstanceControllers: [] }
-      : program.identity.semanticProfile ===
-          SemanticProfileId.ParallelMultiInstanceUserTask &&
-          state.control.kind === ControlStateKind.NotStarted &&
-          state.parallelMultiInstanceControllers === undefined
-      ? { ...state, parallelMultiInstanceControllers: [] }
-      : state;
-  const compensationGateState =
-    program.compensationActivityRetention !== undefined &&
-      multiInstanceGateState.control.kind === ControlStateKind.NotStarted &&
-      multiInstanceGateState.compensationActivityRetentions === undefined
-      ? { ...multiInstanceGateState, compensationActivityRetentions: [] }
-      : multiInstanceGateState;
-  const snapshotGateState =
-    program.compensationEventSubProcessSnapshots !== undefined &&
-      compensationGateState.control.kind === ControlStateKind.NotStarted &&
-      compensationGateState.compensationParentContextRetentions === undefined
-      ? { ...compensationGateState, compensationParentContextRetentions: [] }
-      : compensationGateState;
-  const gateState = initializeCompensationExecutionState(program, snapshotGateState);
-  return gateState.control.kind === ControlStateKind.NotStarted
-    ? isGateAdmissibleRuntimeState(program, "", gateState)
-    : isGateAdmissibleRuntimeState(
-      program,
-      gateState.control.instanceId,
-      gateState,
-    );
+  return isGateAdmissibleRuntimeState(
+    program,
+    state.control.kind === ControlStateKind.NotStarted ? "" : state.control.instanceId,
+    state,
+  );
 }
 
 function activityDataInputOutputStartDataAdmitted(

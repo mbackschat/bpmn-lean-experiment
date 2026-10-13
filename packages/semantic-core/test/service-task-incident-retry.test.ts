@@ -460,8 +460,11 @@ test("wrong, duplicate, stale, and mismatched incident commands preserve exact s
     malformedPublishedState,
     retry,
   );
-  assert.equal(refusedPublication.kind, ScenarioStepKind.HarnessFailure);
-  assert.deepEqual(refusedPublication.observations, []);
+  // Lean's `terminalExecution` ends an unprojectable rejection with its command observation alone.
+  assert.equal(refusedPublication.kind, ScenarioStepKind.Terminal);
+  assert.deepEqual(refusedPublication.observations, [
+    { kind: CanonicalObservationKind.Command, commandId: retry.commandId, outcome: CommandOutcome.Rejected },
+  ]);
 
   const oldProgram = {
     ...program,
@@ -475,8 +478,8 @@ test("wrong, duplicate, stale, and mismatched incident commands preserve exact s
     incident,
     retry,
   );
-  assert.equal(refusedOldProfilePublication.kind, ScenarioStepKind.HarnessFailure);
-  assert.deepEqual(refusedOldProfilePublication.observations, []);
+  assert.equal(refusedOldProfilePublication.kind, ScenarioStepKind.Terminal);
+  assert.deepEqual(refusedOldProfilePublication.observations, refusedPublication.observations);
 });
 
 test("pre-dispatch admission rejects old, Terminate, and Call programs before closure", () => {

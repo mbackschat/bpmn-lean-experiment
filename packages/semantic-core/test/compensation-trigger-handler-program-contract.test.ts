@@ -623,11 +623,12 @@ test("refuses a trigger state missing its declaration-owned execution collection
 test("binds both compensation execution collections to the declaring Program", () => {
   assert.equal(Object.hasOwn(initialState, "compensationTriggers"), false);
   assert.equal(Object.hasOwn(initialState, "compensationHandlerEffectWaits"), false);
+  // Before Start the absent collections read as the empty ones Start installs, as in Lean's list state.
   assert.equal(
     runtimeStateDefects(validProgram, "", initialState).includes(
       RuntimeStateDefect.CompensationExecutionProfileMismatch,
     ),
-    true,
+    false,
   );
 
   const started = admitProcessStart(validProgram, initialState, start);
@@ -652,6 +653,12 @@ test("binds both compensation execution collections to the declaring Program", (
   assert.strictEqual(
     initializeCompensationExecutionState(validProgram, malformedRunning),
     malformedRunning,
+  );
+  assert.equal(
+    runtimeStateDefects(validProgram, start.instanceId, malformedRunning).includes(
+      RuntimeStateDefect.CompensationExecutionProfileMismatch,
+    ),
+    true,
   );
 });
 

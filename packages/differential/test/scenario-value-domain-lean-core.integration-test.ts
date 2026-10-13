@@ -4,13 +4,41 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { CanonicalObservationKind, CommandOutcome, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState,
-  projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
+import { CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState, observeStableState,
+  projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, runtimeStateDefects, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
+import { assessBpmnProcessAdmission, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
-import { domainCases, values } from "./scenario-value-domain-cases.ts";
+import { domainCases, selectedProfileContexts, values } from "./scenario-value-domain-cases.ts";
 import type { DomainCase } from "./scenario-value-domain-cases.ts";
+import { assertProfilesEnrolled } from "./scenario-value-domain-expectations.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+
+test("every registered profile states its expected value domain on every surface", async () => {
+  assertProfilesEnrolled((await selectedProfileContexts()).keys());
+});
+
+// A refused Start leaves the program-independent initial state, which Lean's `notStartedStateEmpty` admits for every program;
+// program-required core fields are installed only when a Start commits.
+test("the untouched initial state is well-formed for every registered profile", async () => {
+  const defective = [...await selectedProfileContexts()].flatMap(([profile, { semanticProcess }]) => {
+    const defects = runtimeStateDefects(semanticProcess, "Instance_NotStarted", initialState);
+    return defects.length === 0 ? [] : [`${profile}: ${defects.join(", ")}`];
+  });
+  assert.deepEqual(defective, []);
+});
+
+// A Workflow created for a Start that command admission refuses would host no instance; the client must refuse first.
+test("the hosting preflight admits only Starts that command admission commits", async () => {
+  const hostedRefusals = (await domainCases()).flatMap(({ scenario, context }) => {
+    const start = scenario.stimuli[0];
+    if (scenario.stimuli.length !== 1 || start === undefined || start.kind !== StimulusKind.StartProcess ||
+      assessBpmnProcessAdmission(start, context.semanticProcess).kind !== BpmnProcessAdmissionResultKind.Admitted) return [];
+    const outcome = applyStimulusWithTrace(context.semanticProcess, initialState, start).result.outcome;
+    return outcome === CommandOutcome.Committed ? [] : [`${scenario.id}: ${outcome}`];
+  });
+  assert.deepEqual(hostedRefusals, []);
+});
 
 test("existing profile scenario support checks later values against independent domains", async () => {
   for (const input of await domainCases()) assert.equal(supportsSemanticProcessScenario(input.scenario, input.context.semanticProcess),
@@ -35,6 +63,22 @@ test("out-of-domain typed late commands retain direct refusal separately from sc
 test("invalid Start identity and required data retain direct rejection separately from unsupported scenarios", async () => {
   for (const input of (await domainCases()).filter(input => input.scenario.id.endsWith("wrong-start-process") ||
     input.scenario.id.includes("invalid-start-data-"))) {
+    assert.deepEqual(runScenario(input.scenario, input.context.semanticProcess), {
+      outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.Unsupported },
+      trace: [{ kind: CanonicalObservationKind.Deployment, outcome: CommandOutcome.Unsupported }],
+    }, input.scenario.id);
+    const refused = applyStimulusWithTrace(input.context.semanticProcess, initialState, input.scenario.stimuli[0]!);
+    assert.equal(refused.result.outcome, CommandOutcome.Rejected, input.scenario.id);
+    assert.deepEqual(refused.result.state, initialState, input.scenario.id);
+    assert.deepEqual(refused.committedTransitions, []);
+    assert.deepEqual(refused.flowNodeOccurrenceLifecycles, []);
+  }
+});
+
+test("out-of-domain Start values retain direct rejection separately from unsupported scenarios", async () => {
+  const inputs = (await domainCases()).filter(input => !input.supported && /-start-[A-Za-z]+$/u.test(input.scenario.id));
+  assert.ok(inputs.length > 0);
+  for (const input of inputs) {
     assert.deepEqual(runScenario(input.scenario, input.context.semanticProcess), {
       outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.Unsupported },
       trace: [{ kind: CanonicalObservationKind.Deployment, outcome: CommandOutcome.Unsupported }],
@@ -92,42 +136,58 @@ def main (paths : List String) : IO Unit := do
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
+/** The emitter requires a Start naming the Program's Process and a scenario carrying the Program's profile and source identity. */
+function emitterBindsDefinition({ scenario, context }: DomainCase): boolean {
+  const first = scenario.stimuli[0];
+  const { processId, identity } = context.semanticProcess;
+  return first !== undefined && "processId" in first && first.processId === processId && scenario.profile === identity.semanticProfile &&
+    scenario.bpmn.id === identity.sourceId && scenario.bpmn.sha256 === identity.sourceSha256 &&
+    isDeepStrictEqual(scenario.bpmn.sourceOverlay, identity.sourceOverlay);
+}
+
 function publications(input: DomainCase) {
   if (!input.supported) return [];
   const start = input.scenario.stimuli[0]!;
   assert.ok("instanceId" in start);
+  const program = input.context.semanticProcess;
   let state = initialState;
-  return input.scenario.stimuli.map(stimulus => {
+  const records = [];
+  for (const stimulus of input.scenario.stimuli) {
     const before = state;
-    const traced = applyStimulusWithTrace(input.context.semanticProcess, before, stimulus);
+    const traced = applyStimulusWithTrace(program, before, stimulus);
     state = traced.result.state;
     if (stimulus.commandId.startsWith("refuse-") || stimulus.commandId.startsWith("late-")) {
       assert.equal(traced.result.outcome, CommandOutcome.Rejected);
       assert.deepEqual(state, before);
       assert.deepEqual(traced.committedTransitions, []);
     }
-    return { commandId: stimulus.commandId, outcome: traced.result.outcome, stateUnchanged: isDeepStrictEqual(state, before),
-      stateWellFormed: isWellFormedRuntimeState(input.context.semanticProcess, start.instanceId, state),
-      traceReplays: isDeepStrictEqual(replayCommittedTransitions(input.context.semanticProcess, before, traced.committedTransitions), state),
+    records.push({ commandId: stimulus.commandId, outcome: traced.result.outcome, stateUnchanged: isDeepStrictEqual(state, before),
+      stateWellFormed: isWellFormedRuntimeState(program, start.instanceId, state),
+      traceReplays: isDeepStrictEqual(replayCommittedTransitions(program, before, traced.committedTransitions), state),
       publication: traced.committedTransitions.length === 0 ? null : { transitions: traced.committedTransitions, current: traced.currentPositions },
-      lifecycles: traced.flowNodeOccurrenceLifecycles, openOccurrences: projectOpenFlowNodeOccurrences(input.context.semanticProcess, state) };
-  });
+      lifecycles: traced.flowNodeOccurrenceLifecycles, openOccurrences: projectOpenFlowNodeOccurrences(program, state) });
+    // Lean's `commandPublicationsJson` publishes no command after one the scenario cannot continue from.
+    const continues = (traced.result.outcome === CommandOutcome.Committed || traced.result.outcome === CommandOutcome.Rejected) &&
+      !traced.result.internalStepBoundExceeded && !traced.result.ambiguousInternalChoice && observeStableState(program, state) !== null;
+    if (!continues) break;
+  }
+  return records;
 }
 
-test("whole unsupported scenarios have complete Lean/core result agreement and no publications", async () => {
-  const all = await domainCases();
-  const profiles = new Set<string>();
-  const inputs = all.filter(input => {
-    if (input.scenario.id.endsWith("wrong-start-process")) return false;
-    if (input.scenario.id.includes("invalid-start-data-")) return true;
-    if (input.scenario.id.endsWith("-missing") || input.scenario.id.endsWith("-extra") || input.scenario.id.endsWith("-wrong-name") ||
-      /-(payload|correlated)-/u.test(input.scenario.id) || /-(reportEffectFailure|retryIncident|cancelIncidentProcess)$/u.test(input.scenario.id)) return true;
-    if (!input.scenario.id.endsWith("human-integer") && !input.scenario.id.endsWith("success-null")) return false;
-    const key = `${input.scenario.profile}:${input.supported}`;
-    if (profiles.has(key)) return false;
-    profiles.add(key);
-    return true;
-  });
+test("every refusal class has complete Lean/core result agreement and unsupported scenarios no publications", async () => {
+  // One scenario per (profile, surface, kind) class: the BpmnError effect arm repeats its Success arm's class, and the Lean
+  // support test already covers both arms. Excluded as well: the retained schedules (pipeline-owned) and the scenarios the
+  // definition-bound emitter refuses to bind, whose Lean exception is checked by the emitter test below.
+  const classes = (await domainCases()).filter(input => input.scenario !== input.context.scenario && emitterBindsDefinition(input) &&
+    !input.scenario.id.includes(`-${EffectExecutionResultKind.BpmnError}-`));
+  // A refused Start leaves no instance to observe; continuing its retained schedule separates ending the run semantically from
+  // grounding later commands in absent state, which Lean's `executeStimuli` refuses as a harness failure.
+  const continued = classes.filter(({ scenario, context }) => scenario.stimuli.length === 1 && context.scenario.stimuli.length > 1 &&
+    isDeepStrictEqual(runScenario(scenario, context.semanticProcess).outcome, { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.Rejected }))
+    .map(input => ({ ...input, scenario: { ...input.scenario, id: `${input.scenario.id}-continued`,
+      stimuli: [...input.scenario.stimuli, ...input.context.scenario.stimuli.slice(1)] } }));
+  assert.ok(continued.length > 0);
+  const inputs = [...classes, ...continued];
   const directory = await mkdtemp(path.join(tmpdir(), "scenario-value-domain-results-"));
   try {
     const definitions = path.join(directory, "definitions.jsonl");
@@ -142,13 +202,16 @@ test("whole unsupported scenarios have complete Lean/core result agreement and n
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ scenarioId: string; scenario: unknown;
       result: ScenarioResult; commandPublications: unknown }>(line, "scenario results"));
     assert.equal(actual.length, inputs.length);
+    // Collected rather than asserted one by one, so a single run names every disagreeing scenario.
+    const disagreements: string[] = [];
     for (const [index, input] of inputs.entries()) {
       const record = actual[index]!;
       assert.equal(record.scenarioId, input.scenario.id);
       assert.deepEqual(record.scenario, input.scenario);
-      assert.deepEqual(record.result, runScenario(input.scenario, input.context.semanticProcess), input.scenario.id);
-      assert.deepEqual(record.commandPublications, publications(input), input.scenario.id);
+      if (!isDeepStrictEqual(record.result, runScenario(input.scenario, input.context.semanticProcess))) disagreements.push(`${input.scenario.id}: result`);
+      if (!isDeepStrictEqual(record.commandPublications, publications(input))) disagreements.push(`${input.scenario.id}: publications`);
     }
+    assert.deepEqual(disagreements, []);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

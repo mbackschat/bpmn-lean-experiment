@@ -177,7 +177,7 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 | [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 | Extract reusable association projection while preserving predecessor admission. |
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 85 | Delegate the new profile analysis. |
 | [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 470 | Select the structural capability without fixture IDs. |
-| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 260 | Delegate start requirements and per-task completion payload checks. |
+| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | Delegate start requirements and per-task completion payload checks. |
 | [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 437 | Classify string/null start and completion surfaces. |
 | [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Independently select the checked analysis. |
 | [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not put the analysis in this nearly full owner. |

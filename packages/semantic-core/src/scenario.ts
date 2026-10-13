@@ -504,6 +504,21 @@ export function advanceScenario(
   }
 
   const snapshot = observeStableState(program, result.state);
+  const command = {
+    kind: CanonicalObservationKind.Command,
+    commandId: stimulusCommandId(stimulus),
+    outcome: result.outcome,
+  } as const;
+  // Lean's `terminalExecution` ends a rejection whose unchanged state has no stable observation, such as
+  // a refused first Start, with only the command observation: refusal is semantic, not a projection failure.
+  if (snapshot === null && result.outcome === CommandOutcome.Rejected) {
+    return {
+      kind: ScenarioStepKind.Terminal,
+      state: result.state,
+      outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: result.outcome },
+      observations: [command],
+    };
+  }
   if (snapshot === null) {
     return {
       kind: ScenarioStepKind.HarnessFailure,
@@ -517,14 +532,7 @@ export function advanceScenario(
       },
     };
   }
-  const observations = [
-    {
-      kind: CanonicalObservationKind.Command,
-      commandId: stimulusCommandId(stimulus),
-      outcome: result.outcome,
-    },
-    snapshot,
-  ] as const;
+  const observations = [command, snapshot] as const;
 
   switch (result.outcome) {
     case CommandOutcome.Committed:
@@ -594,11 +602,25 @@ export function deployScenario(
   };
 }
 
+/**
+ * Whether a host may create an execution for this Start: the execution is supported and command
+ * admission commits the Start itself. A scenario may still carry a supported Start that is then
+ * refused, as Lean's `runScenario` does; a host has no instance to keep for one, so it refuses
+ * before creating anything rather than consulting a parallel list of Start checks that can drift.
+ */
+export function admitsHostedProcessStart(
+  start: ProcessStartStimulus,
+  semanticProcess: SemanticProcessProgram,
+): boolean {
+  return supportsSemanticProcessExecution(start, semanticProcess) &&
+    applyStimulusWithTrace(semanticProcess, initialState, start).result.outcome === CommandOutcome.Committed;
+}
+
 export function deployProcess(
   start: ProcessStartStimulus,
   semanticProcess: SemanticProcessProgram,
 ): ScenarioDeployment {
-  const outcome = supportsSemanticProcessExecution(start, semanticProcess)
+  const outcome = admitsHostedProcessStart(start, semanticProcess)
     ? CommandOutcome.Committed
     : CommandOutcome.Unsupported;
   return {
@@ -628,12 +650,16 @@ function executeStimuli(
       case ScenarioStepKind.Terminal:
         // ABMSG-REFUSE-01 requires a stale loser to prove state preservation before the still-live
         // follow-on is completed; an intermediate rejection is therefore an observation, not the
-        // end of the answer-free schedule.
+        // end of the answer-free schedule. As in Lean's `executeStimuli`, continuing needs an observed
+        // state; a rejection that left no instance cannot ground the remaining stimuli.
         if (
           step.outcome.kind === ScenarioOutcomeKind.Semantic &&
           step.outcome.outcome === CommandOutcome.Rejected &&
           index + 1 < stimuli.length
         ) {
+          if (!step.observations.some(({ kind }) => kind === CanonicalObservationKind.State)) {
+            return { outcome: { kind: ScenarioOutcomeKind.HarnessFailure }, trace };
+          }
           trace.push(...step.observations);
           state = step.state;
           break;

@@ -276,7 +276,7 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 | [Lean typed values](../../BpmnSemantics/Scenario.lean) | 382 |
 | [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 610 |
 | [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 534 |
-| [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 602 |
+| [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 544 |
 | [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 686 |
 | [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 627 |
 | [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts) | 707 |

@@ -454,15 +454,15 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS graph admission](../../packages/semantic-core/src/semantic-process-graph-admission.ts) | 46 | declaration and checkpoint-topology delegation only |
 | [TS Compensation checkpoint topology](../../packages/semantic-core/src/compensation-source-checkpoint-topology.ts) | 672 | exact draft-profile source topology only |
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | collection/control references only |
-| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 103 | extract compensation validity first |
+| [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 75 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 751 | new defect arms only |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 260 | result dispatch only |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 388 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
 | [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 283 | failed union references only |
 | [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 41 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
-| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 122 | failed projection and exhaustive switch only |
+| [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 97 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
 | [TS internal attempt](../../packages/semantic-core/src/internal-transition-attempt.ts) | 668 | trigger-attempt delegation only |
 | [Lean Program](../../BpmnSemantics/SemanticProcessContract.lean) | 221 | direct Activity-data carriers extracted into a bounded owner |

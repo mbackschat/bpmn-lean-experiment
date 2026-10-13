@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-02` scalar admission agreement; current blocker is the exhaustive profile/surface/kind matrix. `PC-DATA-03` stays open for its other mapping surfaces.
+Current task: `PC-DATA-02` scalar admission agreement; its closure verdict belongs in the [admission receipt](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). `PC-DATA-03` stays open for its other mapping surfaces.
 
 Deliverable: Lean and the semantic core agree on typed scalar support or refusal for every registered profile, command surface and scalar kind, keeping whole-scenario unsupported, direct refusal and strict wire decoding distinct.
 
-Acceptance blockers: The scenario value-domain comparison samples one case per profile/support pair; Message payload and Call data lack value-kind negatives; PMIS capability/observation and unrelated-profile late-value discrepancies are unclassified; the runtime/proof map carries no `PC-DATA-02` status.
+Acceptance blockers: an independent closure verdict on the exhaustive matrix and its three corrections (refused-Start result, not-started well-formedness, hosted Start admission).
 
-Current result: The portable handoff [Closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#closure-acceptance) was accepted at `a1a5f765` after one audit at `19d0a98d`; the complete Temporal gate passed with three todos. A read-only inventory located the decision loci in the Lean value domain, scenario admission and the core profile value-domain table. `890b010f` alias removal waits for a complete rebuild.
+Current result: The [exhaustive matrix](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) is green across 48 profiles; a seeded core-table mutation fails it. The capacity-rollback divergence is recorded as unclassified in the runtime/proof map, outside this deliverable.
 
-Effort budget: 180 minutes wall from 2026-10-13 21:37 UTC through the exhaustive matrix, the two surface negatives and discrepancy classification; a correction that changes admission opens its own review. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-13 21:37 UTC through the exhaustive matrix, the two surface negatives and discrepancy classification; a correction that changes admission needs its own independent verdict. At the limit, stop and record before renewal.
 
-Next action: Run what-binds on the value-domain owners and tests, read the [SMIS discrepancy record](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md), then replace the sampled comparison with an exhaustive generated matrix and confirm it red on any disagreement.
+Next action: Commit, run the focused gates once at that commit, and obtain the cold closure verdict from the generated packet.
 
 Oracle: a seeded one-cell domain mutation in either implementation must fail the matrix.
 

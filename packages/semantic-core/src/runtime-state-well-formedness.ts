@@ -52,6 +52,7 @@ import {
 import {
   CompensationExecutionStateDefect,
   compensationExecutionStateDefects,
+  initializeCompensationExecutionState,
 } from "./compensation-trigger-handler-runtime-state-validation.js";
 
 /**
@@ -230,8 +231,9 @@ function assertNeverDeclarer(operation: never): never {
 export function runtimeStateDefects(
   program: SemanticProcessProgram,
   expectedInstanceId: string,
-  state: RuntimeState,
+  observed: RuntimeState,
 ): ReadonlyArray<RuntimeStateDefect> {
+  const state = withNotStartedProgramCollections(program, observed);
   const defects: RuntimeStateDefect[] = [];
   const collectionDefects = committedStateCollectionDefects(state);
 
@@ -603,6 +605,33 @@ export function isWellFormedRuntimeState(
   state: RuntimeState,
 ): boolean {
   return runtimeStateDefects(program, expectedInstanceId, state).length === 0;
+}
+
+/**
+ * Reads a not-started state as Start would install it: `initialState` is program-independent, so the
+ * collections a program requires are absent until a Start commits, and Lean's list representation has
+ * no absent case (`notStartedStateEmpty`). Without this, a refused Start's untouched state would be a
+ * presence defect for every Multi-Instance and compensation program. Started states are unchanged.
+ */
+function withNotStartedProgramCollections(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+): RuntimeState {
+  if (state.control.kind !== ControlStateKind.NotStarted) return state;
+  const requires = (kind: SemanticOperationKind) => program.operations.some((operation) => operation.kind === kind);
+  return initializeCompensationExecutionState(program, {
+    ...state,
+    ...(state.sequentialMultiInstanceControllers === undefined &&
+        requires(SemanticOperationKind.AwaitSequentialMultiInstanceUserTask)
+      ? { sequentialMultiInstanceControllers: [] } : {}),
+    ...(state.parallelMultiInstanceControllers === undefined &&
+        requires(SemanticOperationKind.AwaitParallelMultiInstanceUserTask)
+      ? { parallelMultiInstanceControllers: [] } : {}),
+    ...(state.compensationActivityRetentions === undefined && program.compensationActivityRetention !== undefined
+      ? { compensationActivityRetentions: [] } : {}),
+    ...(state.compensationParentContextRetentions === undefined && program.compensationEventSubProcessSnapshots !== undefined
+      ? { compensationParentContextRetentions: [] } : {}),
+  });
 }
 
 /**
