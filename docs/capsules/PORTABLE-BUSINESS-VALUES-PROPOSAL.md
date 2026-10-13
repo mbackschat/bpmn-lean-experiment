@@ -245,7 +245,7 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 | Owner | Remaining nonblank lines before the 800-line review target |
 |---|---|
 | [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts) | 283 |
-| [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 413 |
+| [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 409 |
 | [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 437 |
 | [Lean typed values](../../BpmnSemantics/Scenario.lean) | 382 |
 | [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 610 |
@@ -268,7 +268,7 @@ These measurements describe the unchanged owners at design time, not permanent h
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `46fb39933116782162de61ff1cd0e9ca3585e54c` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `4e15fa4bd280c568ea09a04b6aea93341a9839c2` | `fork-turns-none` | `approve-with-required-edits` | `ff2eac18c3b4c4bdd64d0d28eb2522ddc87d4036, 2ca9f7bfa5f73c953194ec842c31a59913a12e74, 0232a5cdbbe2b7afc74f770b4e0ce367e86831f9, owner-authorized` |
+| Semantic checkpoint | `eb69d834c0613e193679b527c3bdff8bd9827cb8` | `fork-turns-none` | `approve-with-required-edits` | `84060928c7a6cfb28fd82fa48c62232dddb7a81d` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Consuming amendment accepted on 2026-10-13 against baseline `99cfe6fc810d06c7538712680302765a75212686`; no required findings. Packet: `d95272b2724f1802171ab6ca9b84fe2d4535e7ed9f7a6125aa847e68e45397c3`. Independent normative/source and publication-shape probes, XML validation, doctor and 100 focused guards passed, with asserted receipts under `/tmp/pbv-handoff-review-{doctor,focused,source,shapes,xsd}-20261013`. The 16,384-byte Map produced a 50,044-byte substituted terminal state; this is feasibility evidence, not recursive-value runtime or aggregate hosted qualification.
@@ -310,3 +310,15 @@ Non-blocking advisories remain:
 - Lean `PropertyPathValuePolicy.admits` checks shape while TypeScript also validates the value, differing only on states no admitted command produces.
 
 This accepts the semantic runtime only. Capacity admission, hosting qualification, corpus disclosure and Closure remain open.
+
+### Capacity envelope acceptance
+
+The [capacity envelope checkpoint](#capacity-envelope-checkpoint) was accepted on 2026-10-13 against `eb69d834c0613e193679b527c3bdff8bd9827cb8`, baseline `7c2988dbfdc21812ccb6ff9e3e6abf11a6c3a709`, by one `fork-turns-none` reviewer after one correction audit at `84060928c7a6cfb28fd82fa48c62232dddb7a81d`. Packet: `2224864c5f264719dcfad772ef4930b63f3509ad6031cec9eda37ea333e54e95`. Required findings: the publication-batch allowance omitted the two lifecycle owner instance-ID copies, so its estimate fell below the encoder for long instance IDs without changing which Starts were admitted; and the unbounded completion command ID was not disclosed as outside the envelope. Applied advisories: a separating other-profile client test, the Event History and input-queue exclusion and the PLAN blocker line. The reviewer's 31-case identifier grid, including escaped and multi-byte instance IDs, found no unsound or overflowing admitted case.
+
+Non-blocking advisories remain:
+
+- the encoder test uses short synthetic Run IDs, an empty segment directory and no rollover, absorbed by the continuation headroom;
+- the client envelope tests run in the platform Work checkpoint gate rather than `test:temporal`;
+- element and process identifier slopes are probed but not retained as a test.
+
+This accepts pre-start capacity admission only. Live hosting qualification, corpus disclosure and Closure remain open.

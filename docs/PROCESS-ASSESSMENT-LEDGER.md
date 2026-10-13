@@ -64,7 +64,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 19
+: 20
 
 Disposition
 : `executable guard`
@@ -786,19 +786,21 @@ The first expanded M4 pipeline completed every semantic comparison and replay, t
 An aggregate boundary was described as exhaustive while its service-level tests exercised only interior and over-limit populations, so zero members, the exact ceiling, and a late unavailable member remained unproved behind green repository and package gates.
 
 Instances
-: 2
+: 3
 
 Disposition
 : `executable guard`
 
 Evidence
-: [flow-node metrics aggregate boundary tests](../platform/modules/operate/test/flow-node-metrics-aggregation-service.test.ts), [parallel result collection boundary tests](../packages/semantic-core/test/parallel-multi-instance-preservation.test.ts)
+: [flow-node metrics aggregate boundary tests](../platform/modules/operate/test/flow-node-metrics-aggregation-service.test.ts), [parallel result collection boundary tests](../packages/semantic-core/test/parallel-multi-instance-preservation.test.ts), [capacity-envelope copy-count tests](../packages/temporal-adapter/workflow/test/portable-handoff-capacity-envelope.test.ts)
 
 **First observed:** Flow-node occurrence metrics closure review
 
 Boundary inventories must execute both sides of every stated cut and an all-or-error failure after a valid prefix, rather than treating nearby unit tests as aggregate evidence
 
 The second instance was exposed during the 2026-09-20 proof/evidence review: TypeScript checked each parallel result's byte limit but omitted the assembled collection's canonical JSON limit, which Lean already enforced. Array overhead and JSON escaping independently reproduced the defect. Correction `61faeee7` applies the shared collection predicate before final retention or closure; retained tests distinguish 8,191/8,192/8,193 bytes, preserve the exact prestate and empty events on rejection, and exercise corrected retry and Timer interruption after unpublished partial results. Per-item admission is not evidence for aggregate admission.
+
+The third instance was exposed by the 2026-10-13 capacity-envelope checkpoint review: bookkeeping allowances were fitted at sampled identifier lengths, a fixed allowance hid two missing per-byte instance-ID copies, and the longest-admitted test compared actual bytes only with the limit, not with the estimate. Correction `84060928` compares adjacent identifier lengths so each estimate must count at least as many copies as its encoder.
 
 ### Finding 42
 

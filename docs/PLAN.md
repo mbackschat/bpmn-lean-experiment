@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is review of the capacity envelope, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is live hosting qualification, supporting `PC-DATA-02`.
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: independent review of the pre-start capacity envelope; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: live hosting qualification (Worker replacement, forced rollover, E1/E2, recovery, every-Run replay). Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [Property-path runtime](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-acceptance) was accepted at `4e15fa4b` after three correction audits; it used 190 of its 480 budgeted minutes. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
+Current result: The [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-acceptance) was accepted at `eb69d834` after one correction audit, using 198 of its 300 minutes; the Property-path runtime was accepted at `4e15fa4b`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
-Effort budget: 300 minutes wall for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses; 159 used before the owner pause (12:45–15:24 UTC), resumed 18:29 UTC, limit 20:50 UTC. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-13 19:10 UTC for the live hosting qualification through its review, reusing the [Activity data-input/output refinement harness](../packages/temporal-adapter/testkit/test/activity-data-input-output-refinement.temporal-test.ts). At the limit, stop and record before renewal.
 
-Next action: Obtain the semantic-checkpoint cold review of the [capacity envelope checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-checkpoint); after approval, select the live hosting qualification. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this envelope.
+Next action: Add one focused portable-handoff Temporal refinement test driving the maximal order through Worker replacement, forced rollover, E1/E2 publication, content-bound recovery and every-Run replay, then obtain closure-lane review. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this deliverable.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
