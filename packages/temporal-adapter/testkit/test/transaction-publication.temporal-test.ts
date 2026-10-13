@@ -86,7 +86,11 @@ test("Transaction public commands preserve paired publication through empty, com
       } }],
     });
     for (const selected of ["empty", "success", "failure"] as const) {
-      await t.test(selected, async () => {
+      // Compensated reads still run and report, but cannot fail the gate while TD-002 rejects their descriptor
+      // (docs/TEMPORAL-DEFECTS-LEDGER.md#td-002-transaction-publication-descriptor-rejected); the owner approved
+      // this on 2026-10-13 until an adopted SDK contains the correction.
+      const knownDefect = selected === "empty" ? {} : { todo: "TD-002: compensated publication descriptor rejected" };
+      await t.test(selected, knownDefect, async () => {
         outcome = selected; released = false; invocations = 0;
         firstStarted = deferred(); replacementStarted = deferred(); store = new EffectProbeStore();
         const instanceId = `Transaction_Public_${selected}`;
