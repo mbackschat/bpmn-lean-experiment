@@ -260,7 +260,7 @@ These measurements describe the unchanged owners at design time, not permanent h
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `46fb39933116782162de61ff1cd0e9ca3585e54c` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `7edf47bc2716c1347673d8f3b4ee56f38f4b47b7` | `fork-turns-none` | `approve-with-required-edits` | `fa8f74ef6d614b8fecbf58fdeb63e2e44205814d,b61627e28031a2a49c6e9c28eb2715e6d856386d` |
+| Semantic checkpoint | `4e15fa4bd280c568ea09a04b6aea93341a9839c2` | `fork-turns-none` | `approve-with-required-edits` | `ff2eac18c3b4c4bdd64d0d28eb2522ddc87d4036, 2ca9f7bfa5f73c953194ec842c31a59913a12e74, 0232a5cdbbe2b7afc74f770b4e0ce367e86831f9, owner-authorized` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Consuming amendment accepted on 2026-10-13 against baseline `99cfe6fc810d06c7538712680302765a75212686`; no required findings. Packet: `d95272b2724f1802171ab6ca9b84fe2d4535e7ed9f7a6125aa847e68e45397c3`. Independent normative/source and publication-shape probes, XML validation, doctor and 100 focused guards passed, with asserted receipts under `/tmp/pbv-handoff-review-{doctor,focused,source,shapes,xsd}-20261013`. The 16,384-byte Map produced a 50,044-byte substituted terminal state; this is feasibility evidence, not recursive-value runtime or aggregate hosted qualification.
@@ -290,3 +290,15 @@ Non-blocking advisories remain:
 - the carried-value enumerator's completeness has no executable guard.
 
 This accepts recognition and refusal only. Consuming profiles, the Property-path runtime, aggregate capacity and `PC-DATA-02/03` delivery remain open.
+
+### Property-path runtime acceptance
+
+The Property-path runtime checkpoint was accepted on 2026-10-13 against `4e15fa4bd280c568ea09a04b6aea93341a9839c2`, baseline `e92046c014dbfb88cfbb8c1aa0a7ae714a02a1e3`, by one `fork-turns-none` reviewer after three correction audits, the third owner-authorized. Packet: `1b4687b9cfc50c93571e2a002ec87c4ab4f0fb1042356dbdf597d51f492a1c03`. The one required finding was stale value-domain absences in the contracts, runtime and Temporal-hosting detail maps; they now route to the per-profile owner. Applied advisories: exact-head receipts `/tmp/pho-audit-{lean-core-matrix,handoff-build}-20261013`, the dispatched renamed Program, the String-start control and the evaluation-only hosting statement.
+
+Non-blocking advisories remain:
+
+- `mvp-capabilities` text and the model-corpus manifest omit the handoff until corpus and Product 2 disclosure land;
+- the deferred `SequentialScopeControl.inputs` alias leaves unused simp arguments;
+- Lean `PropertyPathValuePolicy.admits` checks shape while TypeScript also validates the value, differing only on states no admitted command produces.
+
+This accepts the semantic runtime only. Capacity admission, hosting qualification, corpus disclosure and Closure remain open.

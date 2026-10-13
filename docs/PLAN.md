@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is the selected Property-path runtime, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is aggregate capacity, supporting `PC-DATA-02`.
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: aggregate capacity (pre-start envelope); public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [Property-path runtime checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-checkpoint) is committed (`363852ee`) with the `890b010f` alias call-site repair (`4e15fa4b`; alias removal waits for a scheduled complete rebuild). Gates: `/tmp/pho-lean-full-4-20261013` red only on the deferred placeholder; `/tmp/pho-pipeline-20261013` green. Deferred `890b010f` keeps that module and the `SequentialScopeGraphConformance` cost row red. PMIS capacity timeouts remain held.
+Current result: The [Property-path runtime](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-acceptance) was accepted at `4e15fa4b` after three correction audits; it used 190 of its 480 budgeted minutes. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
-Effort budget: 480 minutes wall from 2026-10-13 09:35 UTC for the Property-path runtime through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
+Effort budget: 300 minutes wall from 2026-10-13 12:45 UTC for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses. At the limit, stop and record before renewal.
 
-Next action: Obtain the cold reviewer's warm audit of the map-correction commit, then record the receipt and approval status.
+Next action: Inventory the publication, segment, query and chain capacity owners with `what-binds`, then add the failing nearest-over-bound pre-start witness.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 

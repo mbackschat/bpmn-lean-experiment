@@ -303,7 +303,7 @@ Retained recurrence evidence: [Finding 13](process-assessment/VERIFICATION-LEDGE
 A live status fact was restated away from its owner and outlived the change that falsified it: an ordered-work item kept a blocked label for eleven commits after the same document recorded it unblocked, a capsule Status section copied an absence inventory that three landed lanes made wrong, and a capsule denied the existence of a semantic-core test that the implementation map linked in the same commit.
 
 Instances
-: 8
+: 9
 
 Disposition
 : `executable guard`
@@ -322,7 +322,7 @@ Retained recurrence evidence: [Finding 14](process-assessment/PLANNING-AND-OWNER
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 31
+: 32
 
 Disposition
 : `unguardable`
