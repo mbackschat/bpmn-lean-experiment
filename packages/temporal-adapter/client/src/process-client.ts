@@ -20,7 +20,9 @@ import type {
 } from "@temporalio/client";
 
 import {
+  StartCapacityEnvelopeResultKind,
   TemporalHostCapabilityResultKind,
+  assessStartCapacityEnvelope,
   bpmnTraceQueryName,
   bpmnCompleteUserTaskUpdateName,
   bpmnDeliverMessageSignalName,
@@ -30,6 +32,7 @@ import {
   bpmnProcessWorkflowType,
   productionBpmnWorkflowInitialHostInput,
   requireWorkflowChainInitialArgumentBudgets,
+  startCapacityEnvelopeEvidence,
 } from "@bpmn-lean/temporal-protocol";
 import type {
   BpmnProcessWorkflow,
@@ -122,12 +125,18 @@ export enum BpmnProcessAdmissionResultKind {
 
 export enum BpmnProcessAdmissionFailureCode {
   SemanticProcessUnsupported = "semanticProcessUnsupported",
+  /**
+   * The successful journey of an admitted Program cannot fit a hosted budget, so no Workflow is created. Distinct
+   * from the host-capability codes: the Program is hostable, but this Start's values and identifiers are not.
+   */
+  StartCapacityEnvelopeExceeded = "startCapacityEnvelopeExceeded",
 }
 
 export type BpmnProcessAdmissionFailure =
   | Readonly<{
       code:
-        BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported;
+        | BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported
+        | BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded;
       evidence: string;
     }>
   | TemporalHostAdmissionFailure;
@@ -179,11 +188,32 @@ export function assessBpmnProcessAdmission(
   const hostCapability = assessTemporalHostCapability(semanticProcess);
   switch (hostCapability.kind) {
     case TemporalHostCapabilityResultKind.Admitted:
-      return { kind: BpmnProcessAdmissionResultKind.Admitted };
+      return assessStartCapacity(start, semanticProcess);
     case TemporalHostCapabilityResultKind.Rejected:
       return {
         kind: BpmnProcessAdmissionResultKind.Rejected,
         failure: hostCapability.failure,
+      };
+  }
+}
+
+/** Runs after host capability so a Program the host cannot run is never reported as a capacity refusal. */
+function assessStartCapacity(
+  start: ProcessStartStimulus,
+  semanticProcess: SemanticProcessProgram,
+): BpmnProcessAdmissionResult {
+  const envelope = assessStartCapacityEnvelope(start, semanticProcess);
+  switch (envelope.kind) {
+    case StartCapacityEnvelopeResultKind.NotApplicable:
+    case StartCapacityEnvelopeResultKind.WithinCapacity:
+      return { kind: BpmnProcessAdmissionResultKind.Admitted };
+    case StartCapacityEnvelopeResultKind.Exceeded:
+      return {
+        kind: BpmnProcessAdmissionResultKind.Rejected,
+        failure: {
+          code: BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded,
+          evidence: startCapacityEnvelopeEvidence(envelope.failure),
+        },
       };
   }
 }

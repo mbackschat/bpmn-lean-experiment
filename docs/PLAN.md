@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: aggregate capacity (pre-start envelope); public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: independent review of the pre-start capacity envelope; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
 Current result: The [Property-path runtime](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-acceptance) was accepted at `4e15fa4b` after three correction audits; it used 190 of its 480 budgeted minutes. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
 Effort budget: 300 minutes wall for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses; 159 used before the owner pause (12:45–15:24 UTC), resumed 18:29 UTC, limit 20:50 UTC. At the limit, stop and record before renewal.
 
-Next action: Implement the owner-approved design: a pure `protocol` envelope from semantic-core journey artifacts with sentinel outputs and named bookkeeping allowances, refusing typed on both client start paths before Workflow creation, with a `workflow` test driving the real encoders over maximum-value and nearest-over-bound journeys; package ownership stays unchanged.
+Next action: Obtain the semantic-checkpoint cold review of the [capacity envelope checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-checkpoint); after approval, select the live hosting qualification. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this envelope.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 

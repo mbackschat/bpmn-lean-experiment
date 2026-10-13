@@ -15,7 +15,8 @@ const maximumContainerDepth = 4;
 const maximumContainerMembers = 32;
 const maximumValueNodes = 256;
 const maximumPortableTextBytes = 1024;
-const maximumCanonicalValueBytes = 16_384;
+/** Canonical-byte ceiling of one Decimal, List or Map root; the allowance a hosted capacity envelope reserves per value. */
+export const maximumCanonicalValueBytes = 16_384;
 const maximumDecimalCoefficientLength = "-9223372036854775808".length;
 const minimumDecimalCoefficient = -(2n ** 63n);
 const maximumDecimalCoefficient = 2n ** 63n - 1n;
@@ -301,8 +302,12 @@ function isPortableText(value: unknown): value is string {
 /** Validates a Decimal, List or Map root against all depth, member, node and canonical-byte limits at once. */
 function isPortableRootValue(value: Record<string, unknown>): boolean {
   return isPortableNode(value, 0, { remaining: maximumValueNodes }) &&
-    utf8ByteLength(JSON.stringify(canonicalValueShape(value as BusinessValue))) <=
-      maximumCanonicalValueBytes;
+    canonicalValueUtf8ByteLength(value as BusinessValue) <= maximumCanonicalValueBytes;
+}
+
+/** UTF-8 length of one value's canonical JSON, the single measure every portable canonical-byte bound uses. */
+export function canonicalValueUtf8ByteLength(value: BusinessValue): number {
+  return utf8ByteLength(JSON.stringify(canonicalValueShape(value)));
 }
 
 /** `containerDepth` counts the List/Map nodes strictly above this node, which bounds recursion on cyclic storage. */
