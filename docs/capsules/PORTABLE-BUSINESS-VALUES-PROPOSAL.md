@@ -7,7 +7,7 @@ Review: approved
 
 ## Decision and delivery boundary
 
-The portable-value design is accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is independently accepted at `46fb3993`. Implementation follows the bounded checkpoint and qualification below.
+The portable-value design is accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is independently accepted at `46fb3993`. The [structured effect-data amendment](#structured-effect-data-consuming-amendment) is proposed and needs its own proposal review before implementation. Implementation follows the bounded checkpoint and qualification below.
 
 Freeze the finite value contract required by `PC-DATA-01` so an order can retain repeated line items, a nested address and an exact signed amount through the `PC-DATA-03` delivery path. This is design acceptance, not runtime coverage. No profile, decoder, evaluator, source admission, host or platform capability changes on approval alone. Implementation still requires its selected profile identity, governed checkpoint and applicable qualification.
 
@@ -258,6 +258,52 @@ Reopen if a later surface needs a value root other than `SingletonBusinessItem`,
 
 The [capsule cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the implementation span from the raw-wire admission baseline to the Closure review target `a1a5f765` as a mixed upper bound: it includes unrelated scope-proof checkpointing and process-guidance commits and the Closure-budgeted hosted-read repair, whose churn is stated there. Wall time is unknown for the earlier checkpoints; the capacity envelope used 198 and hosting with disclosure about 70 budgeted minutes.
 
+## Structured effect-data consuming amendment
+
+This amendment selects `cibseven-2.2.0-portable-business-effect-data-draft` as the second executable consumer, toward `PC-DATA-03`'s effect-result surface. Its useful outcome is a credit assessment: Start with a String applicant reference → Service Task *Assess credit* returns one structured assessment → User Task *Review assessment* sees it in public Process data → Service Task *Notify applicant* receives the assessment as its input → End. It does not close `PC-DATA-03`; Message, Call, Multi-Instance, expression and form surfaces stay open.
+
+### Source, profile and port contract
+
+Reuse the [serial business-task source shape](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md) unchanged except for the value domain: one executable root Process, None Start/End, a finite acyclic serial chain of User Tasks and `camunda:asyncBefore` Service Tasks bound by exact `camunda:delegateExpression` tokens, and `camunda:inputOutput` parameters whose literal inputs are Strings and whose references are `${name}`. User Task candidate and generated-form metadata are excluded from this profile, so no form field can be bound to a structured Property. Existing identifier, reserved-name, initialization and handler-binding restrictions apply unchanged.
+
+`PBV-EFF-01`: the effect-completion and effect-argument port domain is `SingletonBusinessItem`, as defined by the [serial-handoff amendment](#source-type-and-port-contract); a root List is a well-formed but unsupported port value. Process Start and Human completion keep the serial profile's String/Null domains. A literal input remains a String. Existing profiles keep their meanings: a structured effect result, argument or restored local fails their admission, including direct commands and restoration.
+
+`PBV-EFF-02`: a successful result patch binds exactly the local names referenced by the task's output parameters, each with a `SingletonBusinessItem`. A missing, extra or root-List binding, a wrong occurrence or an over-bound value rejects without partial writes. Present Null and an empty Map are values, distinct from absence. The serial profile admits no Error route, and this amendment adds no structured Error payload.
+
+### Runtime, ownership and acceptance
+
+`PBV-EFF-03`: arming a Service Task copies each referenced enclosing value by value into the effect's argument snapshot. Later Process writes cannot change an open snapshot, and nothing the handler does to its arguments reaches Process data; only the returned result does.
+
+`PBV-EFF-04`: exact completion installs the result patch as Activity-local values, evaluates each output parameter against that scope, writes its target Property with the exact value, and retires every local before the next arming. List multiplicity and order, canonical Map keys, Decimal coefficient and scale, type tags and present Null are preserved through the Property, the next task's snapshot, every observation and restoration.
+
+Reuse the existing composed effect operation, occurrence identity, mapper and retirement. No new opcode, runtime owner or wire policy flag is added; the exact Program profile selects the value policy for admission, arming, completion, observation and restoration, as the serial handoff does.
+
+The serial profile's proved scalar-premised laws remain regression evidence and are not claimed for recursive values. This profile's Lean lane is **checked**: finite source/admission, independent evaluator, command and restoration witnesses. Proof growth beyond the finite implementation allowance triggers replanning.
+
+### CIB relationship
+
+The [pinned CIB source](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0019--structured-business-task-inputs-and-local-results) evaluates `${name}` to the raw Java object and stores that reference; it copies nothing. A CIB delegate that mutates a structured input in place therefore changes the Process variable through aliasing. The project's handler receives an immutable snapshot and changes data only through its result, so in-place aliasing is outside the selected account, classified as `CIB-EXT-0019`'s boundary rather than imitated. Output mapping happens after the delegate returns, so no committed CIB observation distinguishes reference from copy on the result side.
+
+Under [the default serialization configuration](../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0009--default-java-serialization-of-structured-business-values) CIB stores a `java.util.Map`/`List` result as a Java-serialized object value, which retains List order, duplicates and `BigDecimal` scale. A Spin JSON default serialization format converts `BigDecimal` to binary floating point and is excluded. The observation projection treats Map keys as a set in canonical order and projects nonnegative in-bound `Integer`/`Long` to the portable Integer; every other Java type is outside the domain.
+
+### Capacity admission
+
+`PBV-EFF-05`: before Workflow creation, derive a conservative envelope from the admitted Program, identities, names and Start arguments, reserving the full 16,384-byte allowance for every output parameter and every structured argument reference. Count each structured root where a host artifact carries it: the target Property, the retired local, each open argument snapshot, the Activity request and result in Event History, the completing stimulus in its E1/E2 batch, continuation state and the selected-Run publication query. Refuse the hosted Start if the full successful path cannot fit the existing 64 KiB state/batch, 192 KiB query/result and 448 KiB continuation limits. Unexpected host capacity failure keeps the existing latched typed host failure.
+
+### Temporal hosting and refinement preflight
+
+Durable ingress is the existing Activity completion converted into a content-bound `CompleteEffect` stimulus. Its identity extends the existing typed tuple recursively through the shared [command-identity encoder](../../packages/temporal-adapter/protocol/src/command-identity.ts); the effect transport's private scalar-only copy is replaced, which leaves existing String/Boolean/Null identities byte-identical. The wait is the existing effect wait; no timer, Message or cancellation mechanism changes. Activity retries remain transport retries and never become CIB-visible retries; a redelivered completion keeps its content-bound identity, so the existing command deduplication and stale-occurrence rejection apply unchanged. Continuation carries the open argument snapshot; replay is deterministic because every value enters through recorded Activity input and result. The state relation preserved is equality of committed Process data, open snapshots and publications with the core's uninterrupted run.
+
+Smallest refinement witness: the hosted credit journey with Worker replacement during *Notify applicant*, a forced continuation while its structured snapshot is open, complete E1/E2 comparison against the core and replay of every Run.
+
+### Decisive witnesses
+
+The positive journey returns an assessment Map with a repeated equal List entry, a negative Decimal with trailing-zero scale, a nested Map, a Boolean and a present Null, and asserts exact Process values at the review wait and termination plus the exact *Notify* argument snapshot. Repeat with renamed BPMN IDs and reordered declarations.
+
+Negative cases: root List result, missing versus Null binding, extra binding, wrong occurrence, over-bound value at exact and one-over limits, old-profile refusal of the same result and argument, a later Process write that must not reach an open snapshot, and a Start refused by the capacity envelope. Mutations that deduplicate, reorder, round scale, flatten a Map, drop a nested leaf from command identity or leak a retired local must be observed. A CIB public-service probe returns the same assessment under the pinned default configuration and records the deserialized value; a second probe records the in-place aliasing it excludes.
+
+The first green shared admission/runtime batch is a material semantic checkpoint; stop before hosting and registration cross it. Public enrollment then follows the serial handoff: value-domain matrix rows, answer-free scenarios, pipeline cases, retained credit-assessment model and Product 2 disclosure.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): update every producer/consumer of the shared union atomically, preserve current profile meanings, and assign new semantic identities when selecting wider behavior. No parallel legacy parser, embedded format switch, dependency installation or durable-history migration is selected. Published artifacts are not rewritten; an actual retained-history boundary would require a separately evidenced migration/replay decision.
@@ -284,6 +330,11 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 - [Source association lowering](../../packages/bpmn-source/src/activity-data-input-output-source.ts)
 - [Host semantic candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts)
 - [Lean strict JSON boundary](../../BpmnSemantics/StrictJson.lean)
+- [Effect transport identity](../../packages/temporal-adapter/protocol/src/effect-transport.ts)
+- [Serial business admission](../../packages/semantic-core/src/serial-business-task-admission.ts)
+- [Business mapping source](../../packages/bpmn-source/src/business-task-mapping-source.ts)
+- [Lean serial business admission](../../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean)
+- [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean)
 
 `what-binds` reports each owner's current headroom; extract a cohesive value owner only if its responsibility or measured growth requires it. No unlimited parser/proof/infrastructure programme follows from this proposal. Full capsule implementation cost remains unmeasured and open under the [cost ledger](../CAPSULE-COST-LEDGER.md).
 

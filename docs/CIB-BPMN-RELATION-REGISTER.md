@@ -539,6 +539,14 @@ CIB input parameters capture enclosing values into each concurrently created bod
 
 **Boundary:** One ordinary body level, string/null data, Boolean condition controls, immutable input collection and synchronous mapped delegate success. No automatic rollback of committed sibling writes, arbitrary expressions, general local-variable accessibility after scope completion, MI output aggregation or durable-effect equivalence is claimed. `CIB-EXT-0017` retains its separate sequential evidence boundary.
 
+### CIB-EXT-0019 — structured business-task inputs and local results
+
+**Status:** Proposed bounded extension under the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); no profile references it yet.
+
+CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw variable object and stores that reference without copying (`OutputParameter.java:47,52`, `AbstractVariableScope.java:149-153,317-319`, JUEL `TypeConverterImpl.java:343-345`). Output mapping runs when the Activity scope is destroyed, after the delegate returns, and then removes every Activity-local variable (`ExecutionEntity.java:523-527,554`). The selected account carries one `SingletonBusinessItem` per mapped name and copies it by value.
+
+**Boundary:** A delegate mutating a structured input in place changes the Process variable through aliasing, and implicit update detection persists it (`TypedValueField.java:155-168`). The project's handler receives an immutable snapshot, so this aliasing is outside the selected account. No general JUEL, nested expression, Java object or listener mutation is claimed.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -712,6 +720,12 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 **Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) runs the same exact BPMN and failure schedule under both values. The enabled engine exposes and resolves the failed-job incident while retaining the job and Process; the disabled engine reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0-service-task-incident-draft/profile.json), [engine-bundle factory](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineBundleFactory.java), and [schedule-alignment test](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIncidentScheduleAlignmentTest.java) bind the enabled configuration to the successor schedule and exclude it from predecessor schedules.
 
 **Boundary:** This setting selects only creation of the one failed-job incident used by `CIB-EXT-0013`. It does not authorize other incident handlers, automatic execution, retry scheduling, arbitrary configuration, or semantic use of CIB retry counts and identities.
+
+### CIB-CFG-0009 — default Java serialization of structured business values
+
+**Status:** Proposed configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment).
+
+Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. A Spin JSON default serialization format maps `BigDecimal` through binary floating point and is excluded. The observation projection reads the deserialized value, orders Map keys canonically and projects nonnegative in-bound `Integer`/`Long` to the portable Integer.
 
 ## Audit of previously visited findings
 
