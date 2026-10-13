@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; first mandatory blocker is AA-13 raw-wire admission, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; first blocker is AA-13 raw-wire admission, supporting `PC-DATA-02`.
 
-Deliverable: Carry a nested order through both tasks and terminal publication. The current checkpoint preserves existing value arms while aligning exact numeric, UTF-8 and own-property admission across raw readers.
+Deliverable: Carry a nested order through both tasks and terminal publication. AA-13 first aligns exact numeric, UTF-8 and own-property admission across raw readers for the existing value arms.
 
-Acceptance blockers: AA-13 implementation; recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: AA-13 qualification and independent acceptance; recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The owner-directed local checkpoints preserve AA-13 admission repair at `fedb8850` and the older unfinished scope work at `890b010f`. Complete CIB, source/differential and affected platform package gates pass for AA-13; final Lean JSON conformance and both changed admission entry readers pass `/tmp/aa13-commit-focused-lean-20261013` using the retained isolated cache. The full Lean run `/tmp/aa13-full-lean-20261013` retains its pause-interrupted exit 130 after about 55 minutes. Source-bound resource measurements, actual reader-parity integrations, complete qualification and independent checkpoint acceptance remain open. These commits preserve work and make no new acceptance claim.
+Current result: The AA-13 repair is committed at `fedb8850`; CIB, source/differential, affected platform and focused Lean gates pass. The pause-interrupted full Lean receipt `/tmp/aa13-full-lean-20261013` (exit 130) is retained. `890b010f` preserves deferred, unqualified scope/SMIS proof work; its command-resumption proof is a `#check` placeholder.
 
-Effort budget: The paused admission plan allocated 180 minutes for implementation/corrections and 60 separately for qualification. The owner-directed clean-worktree checkpoint has a 15-minute bound from 2026-10-13 02:53 UTC, reusing existing evidence and focused cached Lean checks. It authorizes preserving unfinished work, not extending full qualification or starting another delivery slice.
+Effort budget: 240 minutes wall from 2026-10-13 03:06 UTC, for AA-13 acceptance only, covering the documented 120-minute full-Lean and 10-minute Lean-checks allowances, integration, resource measurements and independent review. At the limit, stop and record before renewal.
 
-Next action: Remain paused with the work preserved in local commits. On delivery resumption, select only the AA-13 acceptance checkpoint and reassess its remaining qualification budget before restarting. The shared continuation-marking/SMIS execution-certificate work remains unqualified; the command-resumption proof owner is a `#check` placeholder, and conformance source measurements are stale. Retained focused mapper-hosting evidence does not establish public SMIS admission or capsule closure. Keep those obligations recorded without reopening a parallel implementation stream. Obtain independent AA-13 acceptance before recursive-value implementation.
+Next action: Qualify exactly `fedb8850`. Full Lean runs in the source-verified isolated tree under `/tmp/aa13-full-lean-resume-20261013`. Lean checks and Lean-dependent integration then run with `fedb8850` checked out, because `HEAD` carries `890b010f` evaluator changes. Then measure resources and obtain independent acceptance before recursive values.
 
 Oracle: Fractional rounding, underflow, noncanonical integer tokens, malformed UTF-8 and prototype keys reject independently; canonical controls and generic JSON numbers retain their selected behavior.
 
