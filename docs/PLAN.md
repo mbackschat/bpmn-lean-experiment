@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; select `PC-DATA-01` for the mandatory portable-value contract supporting the typed-order delivery path. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is independently accepted; select its bounded typed-order implementation slice. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-01`, the mandatory portable business-value design supporting the `PC-DATA-03` typed-order journey.
+Current task: `PC-DATA-01` design accepted; select the bounded `PC-DATA-02/03` implementation slice supporting the typed-order journey.
 
-Deliverable: An independently approved finite contract for scalar values, precise amounts and nested lists/maps, with exact bounds, encoding and Start/Human/Message/effect/Call eligibility. Design acceptance supplies no runtime coverage.
+Deliverable: Preserve the [accepted portable-value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#independent-cold-review-receipt) and identify the smallest implementable typed-order slice with exact blockers and acceptance budget.
 
-Acceptance blockers: The proposed domain, bounds and AA-13 numeric decision require independent approval. Nearby invoice/Call/Message delivery retains runtime holds, and MI guarantees remain deferred.
+Acceptance blockers: AA-13 exact-byte admission, recursive codecs, selected profile/source contracts and aggregate state/publication capacity remain unimplemented. Existing invoice/Call/Message runtime holds and deferred MI guarantees remain unchanged.
 
-Current result: The [portable-value proposal](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md) selects recursive tagged collections, exact signed Decimal and lexical numeric admission. Source preflight verifies pinned CIB precedent. The proposal is unapproved; no production value contract has changed.
+Current result: Independent proposal review approves `377b46e0` with no required findings. The recursive type compiles; the representative order and exact node/byte limits are independently checked. All 100 focused review checks pass. `PC-DATA-01` closes as design only; no runtime task or AA-13 repair is claimed.
 
-Effort budget: 45 minutes from 2026-10-13 00:40 UTC for source preflight and the bounded design; reserve 15 minutes for independent proposal review and focused document qualification. Stop and reassess at either limit; no automatic extension or implementation before approval.
+Effort budget: 10 minutes from 2026-10-13 01:05 UTC for implementation-slice selection, including mandatory obligations, exact consumer inventory and finite code/qualification budgets. Stop and reassess at the limit. The completed design and review stayed within their 45-minute and 15-minute allowances.
 
-Next action: Freeze one source-grounded proposal, qualify its document contracts, commit and request cold review. Own only the proposal, registries, selected coverage row and PLAN; preserve unrelated edits.
+Next action: Commit design acceptance, then select the smallest source/profile-bound carrier and admission slice. Reuse existing handoff/hosting mechanisms; own only selected paths and preserve unrelated pending changes.
 
-Oracle: Independent review accepts the closed domain/ingress table and separating order examples, exact/over-bound negatives and cross-target obligations. Record the immutable design receipt before any checklist closure.
+Oracle: The selected implementation names its useful public outcome, remaining blockers, separating end-to-end witness, mandatory checkpoint and finite effort bound before code.
 
-Stop if review invalidates the bounded path or implementation requires SDK work or deferred guarantees.
+Stop if the path requires SDK work, deferred guarantees or an unreviewed change to the accepted value contract.

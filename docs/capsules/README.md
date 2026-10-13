@@ -43,7 +43,7 @@ Start with a Markdown evidence matrix inside the owning capsule. Do not introduc
 
 | Capsule | Status and scope |
 |---|---|
-| [Portable business values proposal](PORTABLE-BUSINESS-VALUES-PROPOSAL.md) | Proposed finite recursive value and exact-amount contract for PC-DATA-01; design only, with no runtime or profile widening |
+| [Portable business values proposal](PORTABLE-BUSINESS-VALUES-PROPOSAL.md) | Independently approved finite recursive value and exact-amount contract closing PC-DATA-01; no runtime or profile widening |
 | [Parallel MI Sub-Process proposal](PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) | Concurrent mixed-work body, ownership and capacity account; governing review receipt and open implementation obligations |
 | [Sequential MI Sub-Process proposal](SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) | Reviewed repeated mixed-work body account, scoped data and early completion; no implementation or hosting claim |
 | [User Task interaction](USER-TASK-INTERACTION-SPEC.md) | Evidence-closed draft for one structured User Task occurrence, exact discovery projection, and exact completion admission; not an immutable compatibility profile |

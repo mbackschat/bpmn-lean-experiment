@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Decision and delivery boundary
 
@@ -172,6 +172,8 @@ These measurements describe the unchanged owners at design time, not permanent h
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `377b46e0` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Design accepted on 2026-10-13 against `377b46e028c2c92d2ce32a044d992cc7c60e1dcc`, baseline `36058b60b2949d45350a69f42833f1579a1ff923`; no required findings. Packet: `a544a375045ff57924324750f39d7229340e8b09671a76e555a117f25ceef965`. Independent source, recursive-type and exact-boundary probes plus the asserted `/tmp/pbv-review-focused-20261013` and `/tmp/pbv-review-doctor-research-20261013` receipts support design approval only. `PC-DATA-01` is accepted; AA-13 implementation, consuming profiles, aggregate capacity and `PC-DATA-02/03` runtime delivery remain open.
