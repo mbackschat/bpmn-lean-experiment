@@ -743,7 +743,7 @@ theorem parent_input_declared (program : Program) (analysis : ParallelScopeStart
     | operation => SequentialScopeProgram.operationAllowed operation) operation = true at permitted
   have declared : program.controlPlaces.any (fun place => place.id == port) = true := by
     cases operation <;> simp only [SequentialScopeProgram.operationAllowed] at permitted <;> try contradiction
-    all_goals simp only [SequentialScopeControl.inputs, List.mem_singleton] at input <;> try contradiction
+    all_goals simp only [SequentialScopeControl.inputs, bodyConsumedPorts, List.mem_singleton] at input <;> try contradiction
     all_goals simp only [operationWellFormed, parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
     all_goals first
       | (subst port; first | exact valid.2 | exact valid.1.2 | exact valid.1.1.2 | exact valid.1.1.1.2)
@@ -794,7 +794,7 @@ theorem ContinuationCommandHistory.parent_path_firing_le_one
       intro consumer member rankEq
       obtain ⟨port, input, source⟩ := predecessors consumer member
       obtain ⟨place, placeMember, placeEq⟩ := parent_input_declared program analysis admitted consumer (declared consumer member) port input
-      have consumed : place.id ∈ bodyConsumedPorts consumer := by simpa only [placeEq, bodyConsumedPorts] using input
+      have consumed : place.id ∈ bodyConsumedPorts consumer := by simpa only [placeEq, SequentialScopeControl.inputs, bodyConsumedPorts] using input
       have base := preceding.parent_base_port_firing_le_one program analysis admitted owner parent selected instanceId values root ready initial before issued final
         startId origin output startDeclared rootSelected parentIdentity started initiated priorRecords suffix entered following clean consumer (declared consumer member) place placeMember consumed
       rcases source with seed | ⟨producer, earlier, middle, later, order, produced⟩

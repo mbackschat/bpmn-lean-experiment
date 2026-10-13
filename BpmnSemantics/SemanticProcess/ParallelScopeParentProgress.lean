@@ -66,7 +66,7 @@ theorem parent_spine_body_credit_outcome (program : Program) (entryId : Operatio
   | finish _ _ id origin endInput selected empty =>
     have same : input = endInput := by
       have member := List.mem_filter.mp (selected.symm ▸ List.mem_singleton_self (SemanticOperation.reachNoneEnd id origin endInput))
-      simpa [SequentialScopeControl.inputs] using member.2
+      simpa [SequentialScopeControl.inputs, bodyConsumedPorts] using member.2
     subst endInput
     left
     refine ⟨rfl, rfl, ?_⟩
@@ -703,7 +703,7 @@ theorem ParallelScopeReplay.ContinuationCommandHistory.pre_entry_parent_path_fir
       intro consumer member rankEq
       obtain ⟨port, input, source⟩ := predecessors consumer member
       obtain ⟨place, placeMember, placeEq⟩ := parent_input_declared program analysis admitted consumer (declared consumer member) port input
-      have consumed : place.id ∈ bodyConsumedPorts consumer := by simpa only [placeEq, bodyConsumedPorts] using input
+      have consumed : place.id ∈ bodyConsumedPorts consumer := by simpa only [placeEq, SequentialScopeControl.inputs, bodyConsumedPorts] using input
       have base := history.pre_entry_parent_base_port_firing program analysis admitted owner parent selected instanceId values root ready initial final
         startId origin output startDeclared rootSelected parentIdentity started initiated records consumer (declared consumer member) place placeMember consumed
       rcases source with seed | ⟨producer, earlier, middle, later, order, produced⟩

@@ -207,7 +207,7 @@ private theorem trace_entry_input_source (entryId : OperationId) (operations : L
       have present : SemanticOperation.enterParallelMultiInstanceScope id origin input childEntry childScope normal collection item mappings condition ∈
           operations.filter (fun operation => (SequentialScopeControl.inputs operation).contains next) := by rw [selected]; simp
       have inputEq : input = next := by
-        have chosen : next = input := by simpa [SequentialScopeControl.inputs] using (List.mem_filter.mp present).2
+        have chosen : next = input := by simpa [SequentialScopeControl.inputs, bodyConsumedPorts] using (List.mem_filter.mp present).2
         exact chosen.symm
       exact ⟨.enterParallelMultiInstanceScope id origin input childEntry childScope normal collection item mappings condition,
         by simp, ⟨id, origin.elementId, input, childEntry, childScope, normal, collection, item, mappings, condition⟩, rfl, Or.inl inputEq⟩

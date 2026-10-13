@@ -70,7 +70,7 @@ private theorem admitted_entry_input (program : Program) (analysis : ProgramAnal
   rw [same] at decoded
   cases operation <;> simp only [parallelScopeEntry?] at decoded <;> try contradiction
   have fields := Option.some.inj decoded
-  simpa only [SequentialScopeControl.inputs, List.mem_singleton] using
+  simpa only [SequentialScopeControl.inputs, bodyConsumedPorts, List.mem_singleton] using
     (congrArg ParallelScopeEntry.input fields).symm
 
 private theorem parent_enabled_requirement (program : Program) (analysis : ProgramAnalysis)

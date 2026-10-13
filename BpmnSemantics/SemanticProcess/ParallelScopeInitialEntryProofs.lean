@@ -480,7 +480,7 @@ theorem initial_entry_body_replay_nonquiescent (program : Program)
       obtain ⟨place, declared, portEq⟩ := admitted_body_input_declared program analysis admitted bodyOperations consumer
         (population consumer consumerMember) vertex vertexEq port input
       obtain ⟨producerId, producerCensus, consumed, produced⟩ := exact_port_charges program analysis admitted occurrence.id
-        issued current records history body consumer (population consumer consumerMember) place declared (by simpa only [bodyConsumedPorts, portEq] using input)
+        issued current records history body consumer (population consumer consumerMember) place declared (by simpa only [SequentialScopeControl.inputs, bodyConsumedPorts, portEq] using input)
       have balance := internalTransitions_body_balance program selected issued current records replayed body occurrence.id place.id
       rw [markingZero, consumed, produced, Nat.zero_add] at balance
       rcases predecessor with same | ⟨producer, producerMember, output, earlier, middle, suffix, shape⟩

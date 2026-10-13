@@ -743,7 +743,7 @@ theorem ContinuationCommandHistory.admitted_predecessor_budget
   obtain ⟨place, declared, placeEq⟩ := admitted_body_input_declared program analysis admitted body consumer
     (population consumer consumerMember) vertex vertexEq port input
   obtain ⟨producerId, unique, _, _, budget⟩ := history.port_firing_budget program analysis admitted owner selected
-    initial final records consumer (population consumer consumerMember) place declared (by simpa only [bodyConsumedPorts, placeEq] using input)
+    initial final records consumer (population consumer consumerMember) place declared (by simpa only [SequentialScopeControl.inputs, bodyConsumedPorts, placeEq] using input)
   rw [placeEq] at unique budget
   rcases source with entryPort | ⟨producer, producerMember, output, orderedBefore⟩
   · obtain ⟨entryOperation, entryMember, entryId, _, entryOutput⟩ := entryPopulation
