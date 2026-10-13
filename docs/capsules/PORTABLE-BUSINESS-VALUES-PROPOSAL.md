@@ -250,11 +250,13 @@ Common mode: the Worker and every hosted oracle run the same TypeScript semantic
 
 Observations depend only on the admitted Program, committed state and explicit stimuli; no host identifier, scenario expectation or future command enters them. Separating witnesses differ at the public boundary: deduplicated, flattened, reordered or retagged values change published state, and mutated publications fail the retained core comparison.
 
+The Lean checked-source refusal of a broken Property chain also stays open; Lean checked-source and Program admission share `serialHandoffInput?`, which bounds that gap. The document stays a proposal after this Closure because Message, effect, Call, Multi-Instance and expression surfaces remain unimplemented.
+
 Reopen if a later surface needs a value root other than `SingletonBusinessItem`, if a host artifact must copy a value more often than the capacity envelope counts, if restoration cannot recheck carried portable values against the profile, or if an unbounded completion command ID must fit the envelope rather than reach the latched typed host failure.
 
 ### Closure cost
 
-The [capsule cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the implementation span from the raw-wire admission baseline to Closure as a mixed upper bound: it includes unrelated scope-proof checkpointing and process-guidance commits, whose churn is stated there. Wall time is unknown for the earlier checkpoints; the capacity envelope used 198 and hosting with disclosure about 70 budgeted minutes.
+The [capsule cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the implementation span from the raw-wire admission baseline to the Closure review target `a1a5f765` as a mixed upper bound: it includes unrelated scope-proof checkpointing and process-guidance commits and the Closure-budgeted hosted-read repair, whose churn is stated there. Wall time is unknown for the earlier checkpoints; the capacity envelope used 198 and hosting with disclosure about 70 budgeted minutes.
 
 ## Versioning consequences
 

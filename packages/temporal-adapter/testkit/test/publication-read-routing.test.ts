@@ -3,11 +3,12 @@ import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 /**
- * Locks that no hosted test or test harness reads a publication with a single shot.
+ * Locks that no testkit call of the named client publication observers reads with a single shot.
  *
  * The production publication clients return the transient `unavailable` arm when a Query misses its
- * 5 s deadline, so a one-shot read asserts Worker latency under host load instead of the property
- * the test is about. The shared reader (`readPublicationUntilAnswered`) is the only sanctioned call
+ * 5 s deadline (TD-001 Query loss, widened by host load), so a one-shot read asserts that no Query was
+ * lost instead of the property the test is about. Raw `handle.query` reads and other observers never
+ * yield that arm and are outside this scan. The shared reader (`readPublicationUntilAnswered`) is the only sanctioned call
  * path; this scan is lexical because the property is "this call sits inside that call's arguments".
  * It covers both testkit directories because the harness in `src` makes the same reads for hosted
  * tests; the reader module itself is the one file that may not be scanned against itself.

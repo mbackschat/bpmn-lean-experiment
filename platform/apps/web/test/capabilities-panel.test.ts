@@ -85,7 +85,8 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   const dataRow = html.slice(dataRowStart, html.indexOf("</tr>", dataRowStart));
   for (const disclosed of [
     "The portable handoff profile instead carries one structured item",
-    "exactly Start, Review and Archive through three Process Properties",
+    "through exactly two serial User Tasks",
+    "an exact Decimal with a signed 64-bit coefficient and scale 0..6",
     "never a root List",
     "A hosted Start whose successful journey cannot fit the capacity envelope is refused",
     "the browser offers no form editor for these values",

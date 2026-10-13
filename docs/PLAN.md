@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: Hosted tests assert one publication read answers within the client's 5-second deadline, so host load fails them; owner direction (2026-10-13): non-performance tests must not. Then the Closure review with its cost row and complete affected gates. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: Correction audit of the Closure review. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: Envelope and [live hosting](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-acceptance) are accepted. `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red. PMIS capacity timeouts remain held. Closure reflection is at `2c5f4c3e`; core, contracts and corpus gates pass; the Temporal gate fails the PMIS hold and varying `unavailable` reads.
+Current result: The [Closure review](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#independent-cold-review-receipt) at `a1a5f765` returned four required status, disclosure and cost edits. Hosted reads now reread TD-001 `unavailable` with logging; TD-002 compensated Transaction cases and the held PMIS witness are `todo`. The complete Temporal gate passed there with three todos (`/tmp/pbv-closure-temporal-final-a`). `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red.
 
-Effort budget: 240 minutes wall from 2026-10-13 20:15 UTC for Closure through its review, including the hosted-test load-independence repair and one complete Temporal gate run within its allowance. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-13 20:15 UTC for Closure through its review and correction audit; about 200 are used. At the limit, stop and record before renewal.
 
-Next action: Confirm failing reads are starved Queries; route hosted reads through one reader retrying `unavailable` as Product 2 does; guard single-shot assertions; then the Temporal gate, cost row and closure review. The direct start path's missing pre-creation Start/Program budgets stay outside this deliverable.
+Next action: Commit the corrections, obtain the same reviewer's audit, record the Closure receipt, keep `PC-DATA-03` open, then select the next deliverable. The direct start path's missing pre-creation Start/Program budgets stay outside this deliverable.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
