@@ -68,7 +68,7 @@ function invalidJson(): HttpRequestFailure {
   return new HttpRequestFailure(
     400,
     PublicApiErrorCode.InvalidRequest,
-    "The definition schedule request must be valid UTF-8 JSON.",
+    "The definition schedule request must be valid UTF-8 JSON whose numbers are canonical unsigned safe integers.",
   );
 }
 

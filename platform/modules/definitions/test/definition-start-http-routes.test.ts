@@ -176,6 +176,16 @@ test("refuses raw noncanonical start integers before typed command decoding", as
     assert.equal(fixture.repositoryGets, 0, token);
     assert.equal(fixture.startCalls, 0, token);
   }
+  // Every numeral in the closed command is a wire integer, so a noncanonical number refuses as transport
+  // even at a position whose typed decoder would reject any number (contracts README, exact scalar boundary).
+  const positioned = createFixture();
+  const refused = await positioned.routes.handle(new Request(startUrl(), {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: '{"initialVariables":[{"name":"input","value":{"kind":"string","value":1.5}}]}',
+  }));
+  assert.equal(refused?.status, 400);
+  assert.match(JSON.stringify(await refused?.json()), /canonical unsigned safe integers/u);
+  assert.equal(positioned.startCalls, 0);
   const control = createFixture();
   const response = await control.routes.handle(startRequest({
     initialVariables: [{ name: "input", value: { kind: "integer", value: 1 } }],

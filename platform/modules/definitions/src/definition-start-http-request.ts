@@ -31,7 +31,7 @@ export async function readDefinitionVersionStartCommand(
     throw new HttpRequestFailure(
       400,
       PublicApiErrorCode.InvalidRequest,
-      "The definition start command must be valid UTF-8 JSON.",
+      "The definition start command must be valid UTF-8 JSON whose numbers are canonical unsigned safe integers.",
     );
   }
   try {

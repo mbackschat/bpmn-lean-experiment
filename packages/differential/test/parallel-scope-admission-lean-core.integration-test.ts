@@ -12,6 +12,7 @@ import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, StartProc
 import { reservationInputs, controlClosureInputs, wholeModelReservationInputs, wholeModelStartClosureInputs } from "./parallel-scope-reservation-fixture.ts";
 import { parallelAdmissionCases } from "../../bpmn-source/test/parallel-scope-admission-fixture.ts";
 import { parallelStartBoundCases, parallelStartFrontierCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
+import { parseLeanOutputLines } from "./pipeline-target-support.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 const { parallelScopeCheckedSourceAdmitted } = await import(new URL("../../bpmn-source/dist/multi-instance-scope-source-compiler.js", import.meta.url).href) as typeof import("../../bpmn-source/src/multi-instance-scope-source-compiler.ts");
 const { parallelScopeStartClosureBound, parallelScopeStartFrontierCapacity } = await import(new URL("../../bpmn-source/dist/parallel-scope-start-bound.js", import.meta.url).href) as typeof import("../../bpmn-source/src/parallel-scope-start-bound.ts");
@@ -141,7 +142,7 @@ test("Lean and TypeScript agree on shared-input reservation slots and every appl
       results.push(result);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", files, results.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -181,7 +182,7 @@ test("Lean and TypeScript agree on shared-input arming refusal and successful co
       results.push(result);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--refusal", ...files], results.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -276,7 +277,7 @@ test("Lean and TypeScript agree on shared-input wait issuance integrity and atom
       files.push(programPath, startPath);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--integrity", ...files], inputs.length * 7);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), inputs.map(input => input.results));
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), inputs.map(input => input.results));
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -429,7 +430,7 @@ for (const afterEntry of [false, true]) test(afterEntry
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean",
       [afterEntry ? "--entered-frontier" : "--start-frontier", ...files], results.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -496,7 +497,7 @@ test("Lean and TypeScript agree on mixed fork/join/End closure and fuel refusal"
       files.push(programPath, startPath, String(fuel));
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--start-frontier", ...files], results.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -635,7 +636,7 @@ test("Lean and TypeScript agree on source-derived natural retirement and private
       files.push(programPath, startPath);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--retirement-frontier", ...files], 6);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), results);
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), results);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -651,7 +652,7 @@ test("Lean independently admits or refuses the same private parallel checked-sou
       files.push(file);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeAdmissionMain.lean", files, cases.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), cases.map(({ expected }) => expected));
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), cases.map(({ expected }) => expected));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -672,7 +673,7 @@ test("Lean and TypeScript derive the same model-bound closure fuel from validate
       files.push(sourcePath, stimulusPath);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeStartAdmissionMain.lean", files, cases.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), cases.map(({ expected }) => expected));
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), cases.map(({ expected }) => expected));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -693,7 +694,7 @@ test("Lean and TypeScript derive the same concurrent wait/effect capacity from v
       files.push(sourcePath, stimulusPath);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeStartAdmissionMain.lean", ["--frontier", ...files], cases.length);
-    assert.deepEqual(execution.stdout.trim().split("\n").map(line => JSON.parse(line)), cases.map(({ expected }) => expected));
+    assert.deepEqual(parseLeanOutputLines(execution.stdout), cases.map(({ expected }) => expected));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

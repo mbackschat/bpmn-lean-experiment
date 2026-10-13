@@ -63,10 +63,10 @@ test("selected wire numbers retain canonical safe integers and reject aliases be
   assert.deepEqual(parseWireJson(encode('[0,1,10,9007199254740991]')), [0, 1, 10, Number.MAX_SAFE_INTEGER]);
 });
 
-test("wire selection follows decoded member paths while generic payloads retain their numbers", () => {
-  const value = parseWireJson(encode('{"activation":1,"fields":{"activation":1.25e+2,"nested":[-0,1e-400]}}'), (path) => path[0] !== "fields");
-  assert.deepEqual(value, { activation: 1, fields: { activation: 125, nested: [-0, 0] } });
-  assert.throws(() => parseWireJson(encode('{"\\u0061ctivation":1.0,"fields":{"activation":1.5}}'), (path) => path[0] !== "fields"), SyntaxError);
+test("wire admission applies to every numeral of a closed document while generic payloads retain their numbers", () => {
+  assert.throws(() => parseWireJson(encode('{"activation":1,"fields":{"activation":1.25e+2}}')), SyntaxError);
+  assert.throws(() => parseWireJson(encode('{"activation":1,"fields":{"nested":[-0]}}')), SyntaxError);
+  assert.deepEqual(parseStrictJson(encode('{"fields":{"activation":1.25e+2,"nested":[-0,1e-400]}}')), { fields: { activation: 125, nested: [-0, 0] } });
   assert.throws(() => parseWireJson(new Uint8Array([0xff])), SyntaxError);
   assert.throws(() => parseWireJson(encode('{"value":1,"\\u0076alue":2}')), SyntaxError);
   assert.throws(() => parseWireJson(encode('{"value":"\\uD800"}')), SyntaxError);

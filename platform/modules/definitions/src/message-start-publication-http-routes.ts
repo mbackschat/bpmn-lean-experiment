@@ -126,7 +126,7 @@ async function readPublicationRequest(
     value = parseWireJson(bytes);
   } catch {
     throw invalidRequest(
-      "The Message Start publication request must be valid UTF-8 JSON.",
+      "The Message Start publication request must be valid UTF-8 JSON whose numbers are canonical unsigned safe integers.",
     );
   }
   try {

@@ -10,6 +10,7 @@ import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, Stimulus,
 import { parallelProgramCapacityCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
 import { parallelCommandInputs } from "../../bpmn-source/test/parallel-scope-command-fixture.ts";
 import { parallelOutputMappingCommandInputs } from "../../bpmn-source/test/parallel-scope-output-mapping-fixture.ts";
+import { parseLeanOutputLines } from "./pipeline-target-support.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 
 export const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
@@ -357,7 +358,7 @@ async function compareCommandWitnesses(witnesses: readonly CommandWitness[]): Pr
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--commands", ...files],
       witnesses.reduce((count, witness) => count + witness.stimuli.length, 0));
-    const actual: unknown[] = execution.stdout.trim().split("\n").map(line => JSON.parse(line));
+    const actual = parseLeanOutputLines(execution.stdout);
     assert.equal(actual.length, witnesses.length, "exact witness count");
     witnesses.forEach((witness, index) => compareCommandResult(actual[index], witness, index));
   } finally { await rm(directory, { recursive: true, force: true }); }
@@ -607,14 +608,14 @@ export async function verifyParallelProgramCapacityParity(group: ProgramCapacity
       expected.push(syntaxError ?? capacity);
     }
     const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--program-capacity", ...files], expected.length);
-    const actual = execution.stdout.trim().split("\n").map(line => JSON.parse(line));
+    const actual = parseLeanOutputLines<Readonly<{ syntaxError?: unknown }>>(execution.stdout);
     assert.equal(actual.length, expected.length);
     for (const [offset, result] of actual.entries()) {
       const index = selectedCases[offset]!.index;
       const wanted = expected[offset];
       if (wanted instanceof RegExp) {
         assert.deepEqual(Object.keys(result), ["syntaxError"], `Program syntax case ${index}`);
-        assert.match(result.syntaxError, wanted, `Program syntax case ${index}`);
+        assert.match(String(result.syntaxError), wanted, `Program syntax case ${index}`);
       } else assert.deepEqual(result, wanted, `Program capacity case ${index}`);
     }
   } finally { await rm(directory, { recursive: true, force: true }); }

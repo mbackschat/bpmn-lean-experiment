@@ -20,9 +20,13 @@ export function elapsedMs(started: number): number {
   return performance.now() - started;
 }
 
-export function parseLeanResultRecords(stdout: string): ReadonlyArray<LeanResultRecord> {
+export function parseLeanOutputLines<Value = unknown>(stdout: string): ReadonlyArray<Value> {
   return stdout.split("\n").filter((line) => line.length > 0).map((line, index) =>
-    parseWireJson<LeanResultRecord>(line, `Lean result line ${index + 1}`));
+    parseWireJson<Value>(line, `Lean result line ${index + 1}`));
+}
+
+export function parseLeanResultRecords(stdout: string): ReadonlyArray<LeanResultRecord> {
+  return parseLeanOutputLines<LeanResultRecord>(stdout);
 }
 
 export async function readJson<Value>(filePath: string): Promise<Value> {

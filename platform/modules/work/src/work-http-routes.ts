@@ -252,8 +252,8 @@ async function readCompletionJson(request: Request): Promise<WorkCompletionReque
   if (bytes.byteLength === 0) throw invalidTransport();
   let decoded: WorkCompletionRequest;
   try {
-    // AA-13 selects the typed envelope; catalog validation still owns raw structured form fields.
-    decoded = decodeWorkCompletionRequest(parseWireJson(bytes, (path) => path[0] !== "fields"));
+    // Structured fields are wire values too: SHW-DATA-01 admits only canonical unsigned safe integers.
+    decoded = decodeWorkCompletionRequest(parseWireJson(bytes));
   } catch {
     throw invalidTransport();
   }

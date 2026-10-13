@@ -141,7 +141,7 @@ test("rejects noncanonical raw claim integers before service entry", async () =>
   assert.equal(calls, 0);
 });
 
-test("rejects noncanonical completion envelope integers while retaining generic structured fields", async () => {
+test("rejects noncanonical integers in the completion envelope and in structured fields before service entry", async () => {
   let calls = 0;
   let submitted: unknown;
   const routes = createRoutes({ completeTask: async (_actionId: string, value: unknown) => {
@@ -149,18 +149,17 @@ test("rejects noncanonical completion envelope integers while retaining generic 
     submitted = value;
     return { kind: "notFound" };
   } });
-  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
-    const request = structuredCompletionRequest('{"note":1.25e+2,"negativeZero":-0}');
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "1.25e+2", "-0", "9007199254740992", "9007199254740993"]) {
+    const request = structuredCompletionRequest('{"count":125}');
     const body = (await request.text()).replace('"expectedClaimGeneration":1', `"expectedClaimGeneration":${token}`);
-    const response = await routes.handle(new Request(request.url, { method: "PUT", headers: request.headers, body }));
-    assert.equal(response?.status, 400, token);
+    const envelope = await routes.handle(new Request(request.url, { method: "PUT", headers: request.headers, body }));
+    assert.equal(envelope?.status, 400, token);
+    assert.equal((await routes.handle(structuredCompletionRequest(`{"count":${token}}`)))?.status, 400, token);
   }
   assert.equal(calls, 0);
-  assert.equal((await routes.handle(structuredCompletionRequest('{"note":1.25e+2,"negativeZero":-0}')))?.status, 404);
+  assert.equal((await routes.handle(structuredCompletionRequest('{"count":125,"zero":0,"maximum":9007199254740991}')))?.status, 404);
   assert.equal(calls, 1);
-  const fields = (submitted as { fields: Record<string, unknown> }).fields;
-  assert.equal(fields.note, 125);
-  assert.equal(Object.is(fields.negativeZero, -0), true);
+  assert.deepEqual((submitted as { fields: Record<string, unknown> }).fields, { count: 125, zero: 0, maximum: 9007199254740991 });
 });
 
 test("raw Work integer admission preserves canonical controls and strict encoding refusal", async () => {
