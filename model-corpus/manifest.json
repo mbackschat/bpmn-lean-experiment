@@ -364,6 +364,43 @@
       }
     },
     {
+      "id": "portable-order-handoff",
+      "title": "Hand a reviewed order to archive work",
+      "businessPurpose": "Review a received order with repeated line items, a nested address and an exact signed amount, then archive the reviewed order through the review task's declared output.",
+      "cloneFamily": "portable-order-handoff",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "directActivityDataInput",
+        "directActivityDataOutput",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/portable-business-values-handoff/order-handoff.bpmn",
+        "sha256": "88fc959b7dbef9365b02330dae3ac7b802b7162c73b351acc293c8a5e1d37923",
+        "scenarioRelativePath": "scenarios/portable-business-values-handoff/order-nested.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-portable-business-values-handoff-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "portable-handoff-order-nested",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected and the browser has no form editor for portable values; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

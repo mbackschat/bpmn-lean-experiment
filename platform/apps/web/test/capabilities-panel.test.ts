@@ -80,6 +80,17 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     /payload-free withdrawal Message withdraws the active User Task/iu,
   );
   assert.match(html, /publishes no partial output/iu);
+  const dataRowStart = html.indexOf('data-capability-id="directDataInputOutputUserTask"');
+  assert.notEqual(dataRowStart, -1);
+  const dataRow = html.slice(dataRowStart, html.indexOf("</tr>", dataRowStart));
+  for (const disclosed of [
+    "The portable handoff profile instead carries one structured item",
+    "exactly Start, Review and Archive through three Process Properties",
+    "never a root List",
+    "A hosted Start whose successful journey cannot fit the capacity envelope is refused",
+    "the browser offers no form editor for these values",
+    "Message, effect, Call, Multi-Instance and expression use of them is excluded",
+  ]) assert.ok(dataRow.includes(disclosed), `Data Input and Output row must disclose: ${disclosed}`);
   assert.match(html, /No CIB target selected/u);
   assert.deepEqual(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]).sort(),

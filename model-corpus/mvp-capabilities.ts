@@ -144,7 +144,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task with direct Data Input and Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One required String/null input and output per User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Acyclic serial or paired Exclusive composition admits only supplied or definitely written later inputs. Accepted completion atomically writes the declared output and disposes the local input scope.",
+    restriction: "One required String/null input and output per User Task occurrence, using distinct Process Properties or, only within the bounded scalar Call profile, its owning called Process interface. Acyclic serial or paired Exclusive composition admits only supplied or definitely written later inputs. The portable handoff profile instead carries one structured item along exactly Start, Review and Archive through three Process Properties: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within four container levels, 32 members per container, 256 value nodes and 16,384 canonical bytes. A hosted Start whose successful journey cannot fit the capacity envelope is refused; the browser offers no form editor for these values; Message, effect, Call, Multi-Instance and expression use of them is excluded. Accepted completion atomically writes the declared output and disposes the local input scope.",
     cibEvidence: notSelected,
   },
   {

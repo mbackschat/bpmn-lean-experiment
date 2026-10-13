@@ -23,6 +23,8 @@ A model is not a browser-catalog model merely because the engine admits it. Brow
 
 The [structured-composition models](../scenarios/structured-process-composition/README.md) retain invoice routing/archive and serial scalar handoff under their exact profile and pipeline bindings. They remain `notCatalogReady` until a production browser journey is selected. The existing capability catalog supplies their About restrictions without a new UI surface.
 
+The [portable-handoff order model](../scenarios/portable-business-values-handoff/README.md) retains the nested order handoff under the portable business values profile, bound to its registered nested-order pipeline case. It remains `notCatalogReady` because no production browser journey is selected and the browser has no form editor for portable values. The existing capability catalog supplies its About restriction on the direct Data Input and Output User Task row without a new UI surface.
+
 ## Admission and product-readiness gate
 
 The curated corpus is an engine and product acceptance input, not a fourth conformance denominator. Its manifest distinguishes exact source admission, semantic execution, durable Temporal execution, selected CIB comparison, and Product 2 usability. Clone-normalized family reach and semantic risk remain separate scheduling inputs under the [breadth-ordering rule](../docs/PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).
