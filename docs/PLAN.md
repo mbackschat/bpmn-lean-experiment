@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: Closure review with its reflection, cost row and complete affected gates. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: Hosted tests assert one publication read answers within the client's 5-second deadline, so host load fails them; owner direction (2026-10-13): non-performance tests must not. Then the Closure review with its cost row and complete affected gates. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [live hosting checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-acceptance) was accepted at `17fb8a09` after one correction audit, using about 60 of its 180 minutes; the capacity envelope was accepted at `eb69d834`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
+Current result: Envelope and [live hosting](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-acceptance) are accepted. `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red. PMIS capacity timeouts remain held. Closure reflection is at `2c5f4c3e`; core, contracts and corpus gates pass; the Temporal gate fails the PMIS hold and varying `unavailable` reads.
 
-Effort budget: 150 minutes wall from 2026-10-13 20:15 UTC for Closure through its review, including one run each of the model-corpus pipeline (its Lean executables are already up to date) and the complete Temporal package gate within their documented allowances. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-13 20:15 UTC for Closure through its review, including the hosted-test load-independence repair and one complete Temporal gate run within its allowance. At the limit, stop and record before renewal.
 
-Next action: Prepare Closure: epistemic-closure reflection, cost-ledger row, self-assessment, exact map status, and the complete affected gates including the differential model-corpus test, then the closure review. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this deliverable.
+Next action: Confirm failing reads are starved Queries; route hosted reads through one reader retrying `unavailable` as Product 2 does; guard single-shot assertions; then the Temporal gate, cost row and closure review. The direct start path's missing pre-creation Start/Program budgets stay outside this deliverable.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
