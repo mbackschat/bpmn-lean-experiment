@@ -240,6 +240,22 @@ Each journey compares, against the separately stepped TypeScript semantic core o
 
 A retained subtest shows the publication comparison rejecting dropped produced tokens, a lost scope, a phantom token, a wrong owner, a wrong terminal and a lost open task in an observed snapshot. A consistent deduplication of state and publication would fail the comparison with the pre-rollover snapshot and the direct terminal check, but that mutation was not executed. The maximal journey uses Map-of-String values, so nested List and Decimal fidelity rests on the scenario journeys.
 
+### Epistemic closure and reopen conditions
+
+Established: under `bpmn-2.0.2-portable-business-values-handoff-draft`, one admitted `SingletonBusinessItem` is carried Start → Review → Archive through three distinct Process Properties, with List multiplicity and order, canonical Map keys, exact signed Decimal and present Null preserved at both waits, termination, every public publication and Continue-As-New restoration. Lean and TypeScript independently admit the source and Program shape and run the dispatcher over the same finite witnesses; the hosted test qualifies replacement, rollover, recovery and replay; a Start whose successful journey cannot fit the hosted budgets is refused before Workflow creation. The Lean lane is checked by finite witnesses, not proved.
+
+Nearest unsupported claim: `PC-DATA-03` itself. Its row requires structured values to survive every mapping surface; this amendment selects Property paths on two User Tasks only, so Message payloads, effect results, Call and Multi-Instance mappings, expressions and browser forms remain open and the row stays `open`. Lean has no restoration, so `PBV-COPY-01` over restored snapshots rests on TypeScript and the hosted lane.
+
+Common mode: the Worker and every hosted oracle run the same TypeScript semantic core and projection, so hosted agreement is a refinement check; values are additionally checked directly against the submitted inputs, and Lean witnesses are independent of that core. The capacity envelope and its soundness test share one semantic-core journey and the retained model; per-byte copy-count checks and adversarial value shapes bound that risk for caller-chosen identifiers and values, not for unenumerated host metadata.
+
+Observations depend only on the admitted Program, committed state and explicit stimuli; no host identifier, scenario expectation or future command enters them. Separating witnesses differ at the public boundary: deduplicated, flattened, reordered or retagged values change published state, and mutated publications fail the retained core comparison.
+
+Reopen if a later surface needs a value root other than `SingletonBusinessItem`, if a host artifact must copy a value more often than the capacity envelope counts, if restoration cannot recheck carried portable values against the profile, or if an unbounded completion command ID must fit the envelope rather than reach the latched typed host failure.
+
+### Closure cost
+
+The [capsule cost ledger](../CAPSULE-COST-LEDGER.md#measurements) records the implementation span from the raw-wire admission baseline to Closure as a mixed upper bound: it includes unrelated scope-proof checkpointing and process-guidance commits, whose churn is stated there. Wall time is unknown for the earlier checkpoints; the capacity envelope used 198 and hosting with disclosure about 70 budgeted minutes.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): update every producer/consumer of the shared union atomically, preserve current profile meanings, and assign new semantic identities when selecting wider behavior. No parallel legacy parser, embedded format switch, dependency installation or durable-history migration is selected. Published artifacts are not rewritten; an actual retained-history boundary would require a separately evidenced migration/replay decision.

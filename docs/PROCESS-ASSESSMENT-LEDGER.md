@@ -1366,7 +1366,7 @@ The guard evaluates actual step predicates across branch, phase-tag and version-
 An ad hoc command relied on unquoted parameter expansion to split a list into words, under a shell whose splitting rules differed from the author's assumption.
 
 Instances
-: 3
+: 4
 
 Disposition
 : `unguardable`
@@ -1377,6 +1377,8 @@ Evidence
 **First observed:** V8 corrected-build validation on 2026-10-01.
 
 The failing commands were typed interactively and never entered a tracked script, so no repository fact can observe this class. zsh does not word-split an unquoted `$files` or `$pids`. One copy loop therefore failed before a patch was applied, and one `kill` of bounded CPU spinners matched nothing. A third command, inside `bash -c`, split a `PATH` containing a space so that `env` failed before its gate started. The bounded `gtimeout` lifetimes contained the stray spinners, and no measurement was taken while they ran. The reusable question: before relying on a multi-word expansion, does the command run under the shell whose splitting it assumes, with every list held in an array and every value quoted?
+
+The fourth instance, 2026-10-13, passed an unquoted `$FILES` test list to the receipt wrapper under zsh, so `node --test` received one newline-joined argument and the closure diagnosis lost a run. The array-in-`bash -c` repair then failed the host's command-safety check because it nested an `rm`; piping the list into `xargs` needs neither a nested shell nor word splitting.
 
 ### Finding 74
 
