@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is Closure, supporting `PC-DATA-02`.
+Current task: Select the next batch-3 business-data deliverable after the `PC-DATA-03` portable handoff; `PC-DATA-03` stays open for its other mapping surfaces.
 
-Deliverable: Carry a nested order through both tasks and terminal publication.
+Deliverable: One selected bounded business-data outcome with named acceptance blockers and budget.
 
-Acceptance blockers: Correction audit of the Closure review. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: Choose it from the batch-3 checklist rows and dependencies by shared mechanism, reach and risk.
 
-Current result: The [Closure review](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#independent-cold-review-receipt) at `a1a5f765` returned four required status, disclosure and cost edits. Hosted reads now reread TD-001 `unavailable` with logging; TD-002 compensated Transaction cases and the held PMIS witness are `todo`. The complete Temporal gate passed there with three todos (`/tmp/pbv-closure-temporal-final-a`). `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red.
+Current result: The portable handoff [Closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#closure-acceptance) was accepted at `a1a5f765` after one correction audit at `19d0a98d`, using about 80 of its 240 minutes; the complete Temporal gate passed with three todos. `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red.
 
-Effort budget: 240 minutes wall from 2026-10-13 20:15 UTC for Closure through its review and correction audit; about 200 are used. At the limit, stop and record before renewal.
+Effort budget: 45 minutes wall from 2026-10-13 21:35 UTC for selection. At the limit, stop and record before renewal.
 
-Next action: Commit the corrections, obtain the same reviewer's audit, record the Closure receipt, keep `PC-DATA-03` open, then select the next deliverable. The direct start path's missing pre-creation Start/Program budgets stay outside this deliverable.
+Next action: Read the `PC-DATA` and dependent batch-3 rows, select one deliverable and replace this resume point with its blockers and budget. The direct start path's missing pre-creation Start/Program budgets remain a recorded gap.
 
-Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
+Oracle: the selected outcome names its decisive separating witness before implementation.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

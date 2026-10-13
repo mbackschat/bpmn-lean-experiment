@@ -295,7 +295,7 @@ These measurements describe the unchanged owners at design time, not permanent h
 |---|---|---|---|---|
 | Proposal | `46fb39933116782162de61ff1cd0e9ca3585e54c` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `17fb8a09e9731999a1335f72b5bce1b1a3c7bc35` | `fork-turns-none` | `approve-with-required-edits` | `ece64e2b24ecda6d641c86e40886b387992e2ccd` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `a1a5f7655ba02ea4fc2bd38e75a95595e65baa8a` | `fork-turns-none` | `approve-with-required-edits` | `19d0a98ded8845a4651d37b51d794fafcefd6a52` |
 
 Consuming amendment accepted on 2026-10-13 against baseline `99cfe6fc810d06c7538712680302765a75212686`; no required findings. Packet: `d95272b2724f1802171ab6ca9b84fe2d4535e7ed9f7a6125aa847e68e45397c3`. Independent normative/source and publication-shape probes, XML validation, doctor and 100 focused guards passed, with asserted receipts under `/tmp/pbv-handoff-review-{doctor,focused,source,shapes,xsd}-20261013`. The 16,384-byte Map produced a 50,044-byte substituted terminal state; this is feasibility evidence, not recursive-value runtime or aggregate hosted qualification.
 
@@ -360,3 +360,10 @@ Non-blocking advisories remain:
 - the publication oracle restates the publication numbering contract and changes with it.
 
 This accepts hosted qualification only. The retained corpus model, Product 2 disclosure and Closure remain open.
+
+
+### Closure acceptance
+
+The serial Review→Archive handoff amendment was closed on 2026-10-13 against `a1a5f7655ba02ea4fc2bd38e75a95595e65baa8a`, baseline `ece64e2b24ecda6d641c86e40886b387992e2ccd`, by one `fork-turns-none` reviewer after one correction audit at `19d0a98ded8845a4651d37b51d794fafcefd6a52`. Packet: `294912f0ddffc13f6d59b761fab1fb2a15d2353bfe06f9fd948f6a18d8a6098e`. The complete Temporal gate passed at the target with three `todo` cases (`/tmp/pbv-closure-temporal-final-a`). The required findings were stale plan status, map claims still counting the TD-002 `todo` cases as binding, an About-page restriction naming the retained model's tasks instead of the admitted shape, and a cost row ending before the Closure work.
+
+This closes the amendment only; `PC-DATA-03` stays open for its other mapping surfaces. The reread's 120-second hang guard still lengthens a persistent TD-002 failure, and the `CanonicalBusinessValue.lean` docstring's Decimal field order remains uncorrected.

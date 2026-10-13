@@ -87,6 +87,7 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "The portable handoff profile instead carries one structured item",
     "through exactly two serial User Tasks",
     "an exact Decimal with a signed 64-bit coefficient and scale 0..6",
+    "an Integer in 0..2^53−1",
     "never a root List",
     "A hosted Start whose successful journey cannot fit the capacity envelope is refused",
     "the browser offers no form editor for these values",
