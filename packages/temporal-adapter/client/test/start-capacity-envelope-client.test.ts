@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { SemanticProfileId } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import {
   BpmnProcessAdmissionFailureCode,
@@ -95,10 +95,13 @@ test("leaves every other profile to the unchanged admission", async () => {
   const program = await portableHandoffProgram();
   const older: SemanticProcessProgram = { ...program, identity: { ...program.identity,
     semanticProfile: SemanticProfileId.StructuredProcessComposition } };
-  const refusal = assessBpmnProcessAdmission(
-    portableHandoffStart("I".repeat(4_000), fullAllowanceValue()), older);
-  assert.ok(refusal.kind === BpmnProcessAdmissionResultKind.Rejected);
-  assert.equal(refusal.failure.code, BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported);
+  // An instance ID far beyond the 835 bytes the portable envelope admits separates "envelope skipped" from "fits".
+  const longInstance = "I".repeat(4_000);
+  const stringStart = portableHandoffStart(longInstance, { kind: VariableValueKind.String, value: "order-1" });
+  assert.equal(assessBpmnProcessAdmission(stringStart, older).kind, BpmnProcessAdmissionResultKind.Admitted);
+  const portable = assessBpmnProcessAdmission(portableHandoffStart(longInstance, fullAllowanceValue()), program);
+  assert.ok(portable.kind === BpmnProcessAdmissionResultKind.Rejected);
+  assert.equal(portable.failure.code, BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded);
 });
 
 function fakeClient(calls: unknown[]): never {

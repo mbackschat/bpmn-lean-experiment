@@ -77,7 +77,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is aggregate capacity, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is review of the capacity envelope, supporting `PC-DATA-02`.
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 

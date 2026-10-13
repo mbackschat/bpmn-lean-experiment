@@ -235,8 +235,13 @@ test("at production limits the longest instance ID the envelope admits fits ever
     if (fits(middle)) low = middle;
     else high = middle;
   }
-  const admittedActual = measureWithWorkflowEncoders(program, portableHandoffStart("I".repeat(low), value, "start-order"));
+  const longest = portableHandoffStart("I".repeat(low), value, "start-order");
+  const admittedEnvelope = assessStartCapacityEnvelope(longest, program);
+  assert.ok(admittedEnvelope.kind === StartCapacityEnvelopeResultKind.WithinCapacity);
+  const admittedActual = measureWithWorkflowEncoders(program, longest);
   for (const budget of startCapacityEnvelopeBudgets) {
+    assert.ok(admittedActual[budget] <= admittedEnvelope.estimates[budget],
+      `${budget}: actual ${admittedActual[budget]} exceeds estimate ${admittedEnvelope.estimates[budget]} at the longest admitted instance ID`);
     assert.ok(admittedActual[budget] <= production[budget], `${budget} holds at the longest admitted instance ID`);
   }
   const refused = assessStartCapacityEnvelope(portableHandoffStart("I".repeat(high), value), program);
@@ -300,6 +305,37 @@ test("outputs of other shapes within the allowance stay inside the envelope rese
     for (const budget of startCapacityEnvelopeBudgets) {
       assert.ok(actual[budget] <= envelope.estimates[budget],
         `${budget}: actual ${actual[budget]} exceeds the sentinel estimate ${envelope.estimates[budget]}`);
+    }
+  }
+});
+
+/**
+ * Allowances fitted at sampled lengths can hide a missing identifier copy behind `fixedBytes`, so at a short and a
+ * long length one more identifier byte must add at least as many bytes to every estimate as to its encoder. Adjacent
+ * lengths compare copy counts; wider spans would also compare which batch is largest.
+ */
+test("every estimate counts at least as many copies of each caller-chosen identifier as its encoder", async () => {
+  const program = await portableHandoffProgram();
+  const value = fullAllowanceValue();
+  const dimensions = [
+    { label: "instance ID", start: (length: number) => portableHandoffStart("I".repeat(length), value) },
+    { label: "Start command ID", start: (length: number) => portableHandoffStart("Order_1", value, "S".repeat(length)) },
+  ] as const;
+  const measure = (start: StartProcessStimulus) => {
+    const envelope = assessStartCapacityEnvelope(start, program);
+    assert.ok(envelope.kind === StartCapacityEnvelopeResultKind.WithinCapacity);
+    return { estimates: envelope.estimates, actual: measureWithWorkflowEncoders(program, start) };
+  };
+  for (const { label, start } of dimensions) {
+    for (const length of [16, 700]) {
+      const shorter = measure(start(length));
+      const longer = measure(start(length + 1));
+      for (const budget of startCapacityEnvelopeBudgets) {
+        const actualGrowth = longer.actual[budget] - shorter.actual[budget];
+        const estimateGrowth = longer.estimates[budget] - shorter.estimates[budget];
+        assert.ok(actualGrowth <= estimateGrowth,
+          `${label} at ${length}, ${budget}: encoder grows ${actualGrowth} bytes per byte, estimate ${estimateGrowth}`);
+      }
     }
   }
 });

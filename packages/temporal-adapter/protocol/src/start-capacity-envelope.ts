@@ -35,7 +35,11 @@ import {
 } from "./workflow-chain.js";
 import type { WorkflowChainRecoveryEntry } from "./workflow-chain.js";
 
-/** The hosted budgets whose measured artifact carries a copy of the journey's values or identifiers. */
+/**
+ * The hosted budgets whose measured artifact carries a copy of the journey's values or identifiers. Event History
+ * bytes (8 MiB per Run) and the semantic input queue (256 KiB) also carry copies, but the journey's Run history
+ * and its at most two queued completions of about 17 KB each stay far below them, so they need no estimate here.
+ */
 export const startCapacityEnvelopeBudgets = [
   WorkflowChainBudgetKind.SemanticProcessProgramBytes,
   WorkflowChainBudgetKind.InitialStartStimulusBytes,
@@ -79,8 +83,11 @@ export const startCapacityBookkeepingAllowance = {
   [WorkflowChainBudgetKind.InitialStartStimulusBytes]: exactArtifact,
   [WorkflowChainBudgetKind.SemanticStimulusBytes]: exactArtifact,
   [WorkflowChainBudgetKind.CommittedRuntimeStateBytes]: exactArtifact,
-  /** Revision numbering, epoch and the pair's wrapper keys, and the command ID of each of the two batches. */
-  [WorkflowChainBudgetKind.PublicationBatchBytes]: { fixedBytes: 1_024, instanceIdCopies: 0, commandIdCopies: 2 },
+  /**
+   * Revision numbering, epoch and the pair's wrapper keys, the owner instance ID the host adds to each of the Start
+   * batch's two occurrence lifecycles, and the command ID of each of the two batches.
+   */
+  [WorkflowChainBudgetKind.PublicationBatchBytes]: { fixedBytes: 1_024, instanceIdCopies: 2, commandIdCopies: 2 },
   /** Publication fold wrappers and one segment-directory descriptor; the host input's own copies are explicit. */
   [WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes]:
     { fixedBytes: 2_048, instanceIdCopies: 6, commandIdCopies: 0 },
