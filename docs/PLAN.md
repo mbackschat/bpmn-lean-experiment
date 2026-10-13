@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Select the next batch-3 business-data deliverable after the `PC-DATA-03` portable handoff; `PC-DATA-03` stays open for its other mapping surfaces.
+Current task: `PC-DATA-02` scalar admission agreement; current blocker is the exhaustive profile/surface/kind matrix. `PC-DATA-03` stays open for its other mapping surfaces.
 
-Deliverable: One selected bounded business-data outcome with named acceptance blockers and budget.
+Deliverable: Lean and the semantic core agree on typed scalar support or refusal for every registered profile, command surface and scalar kind, keeping whole-scenario unsupported, direct refusal and strict wire decoding distinct.
 
-Acceptance blockers: Choose it from the batch-3 checklist rows and dependencies by shared mechanism, reach and risk.
+Acceptance blockers: The scenario value-domain comparison samples one case per profile/support pair; Message payload and Call data lack value-kind negatives; PMIS capability/observation and unrelated-profile late-value discrepancies are unclassified; the runtime/proof map carries no `PC-DATA-02` status.
 
-Current result: The portable handoff [Closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#closure-acceptance) was accepted at `a1a5f765` after one correction audit at `19d0a98d`, using about 80 of its 240 minutes; the complete Temporal gate passed with three todos. `890b010f` alias removal waits for a complete rebuild; its placeholder and cost row stay red.
+Current result: The portable handoff [Closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#closure-acceptance) was accepted at `a1a5f765` after one audit at `19d0a98d`; the complete Temporal gate passed with three todos. A read-only inventory located the decision loci in the Lean value domain, scenario admission and the core profile value-domain table. `890b010f` alias removal waits for a complete rebuild.
 
-Effort budget: 45 minutes wall from 2026-10-13 21:35 UTC for selection. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-13 21:37 UTC through the exhaustive matrix, the two surface negatives and discrepancy classification; a correction that changes admission opens its own review. At the limit, stop and record before renewal.
 
-Next action: Read the `PC-DATA` and dependent batch-3 rows, select one deliverable and replace this resume point with its blockers and budget. The direct start path's missing pre-creation Start/Program budgets remain a recorded gap.
+Next action: Run what-binds on the value-domain owners and tests, read the [SMIS discrepancy record](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md), then replace the sampled comparison with an exhaustive generated matrix and confirm it red on any disagreement.
 
-Oracle: the selected outcome names its decisive separating witness before implementation.
+Oracle: a seeded one-cell domain mutation in either implementation must fail the matrix.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
