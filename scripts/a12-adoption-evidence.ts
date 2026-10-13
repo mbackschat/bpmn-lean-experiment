@@ -15,7 +15,7 @@ import type {
   Scenario,
 } from "../packages/semantic-core/src/index.ts";
 
-import { parseStrictJson } from "./strict-json.ts";
+import { parseWireJsonBytes } from "./strict-json.ts";
 import { verifyA12LegacyManifest } from "./a12-preservation.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -356,7 +356,7 @@ async function readJson<Value>(relativePath: string): Promise<JsonDocument<Value
   const bytes = await readRelative(relativePath);
   return {
     bytes,
-    value: parseStrictJson<Value>(bytes.toString("utf8"), relativePath),
+    value: parseWireJsonBytes<Value>(bytes, relativePath),
   };
 }
 

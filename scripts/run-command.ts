@@ -5,6 +5,7 @@ export type RunCommandOptions = Readonly<{
   env: NodeJS.ProcessEnv;
   timeoutMs: number;
   terminationGraceMs?: number;
+  stdoutEncoding?: "utf8Fatal";
 }>;
 
 export type RunCommandResult = Readonly<{
@@ -59,11 +60,24 @@ export async function runCommand(
   });
   let stdout = "";
   let stderr = "";
-  child.stdout.setEncoding("utf8");
+  let stdoutDecodingError: unknown;
+  const stdoutDecoder = options.stdoutEncoding === "utf8Fatal"
+    ? new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })
+    : undefined;
+  if (stdoutDecoder === undefined) {
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => { stdout += chunk; });
+  } else {
+    child.stdout.on("data", (chunk: Uint8Array) => {
+      if (stdoutDecodingError !== undefined) return;
+      try {
+        stdout += stdoutDecoder.decode(chunk, { stream: true });
+      } catch (error: unknown) {
+        stdoutDecodingError = error;
+      }
+    });
+  }
   child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => {
-    stdout += chunk;
-  });
   child.stderr.on("data", (chunk) => {
     stderr += chunk;
   });
@@ -129,6 +143,13 @@ export async function runCommand(
         return;
       }
       if (code === 0) {
+        try {
+          if (stdoutDecodingError !== undefined) throw stdoutDecodingError;
+          stdout += stdoutDecoder?.decode() ?? "";
+        } catch (error: unknown) {
+          reject(new TypeError(`${command} stdout is not valid UTF-8`, { cause: error }));
+          return;
+        }
         resolve({ stdout, stderr });
         return;
       }

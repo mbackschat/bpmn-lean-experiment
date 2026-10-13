@@ -7,7 +7,7 @@ import { isDeepStrictEqual } from "node:util";
 import { CanonicalObservationKind, CommandOutcome, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState,
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { domainCases, values } from "./scenario-value-domain-cases.ts";
 import type { DomainCase } from "./scenario-value-domain-cases.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
@@ -80,7 +80,7 @@ def main (paths : List String) : IO Unit := do
       return file;
     }));
     const execution = await runLeanInterpreter(driver, paths, inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ id: string; supported: boolean;
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ id: string; supported: boolean;
       unsupportedResultExact: boolean }>(line, "scenario support"));
     assert.equal(actual.length, inputs.length);
     const mismatches = inputs.flatMap((input, index) => {
@@ -139,7 +139,7 @@ test("whole unsupported scenarios have complete Lean/core result agreement and n
       return file;
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ scenarioId: string; scenario: unknown;
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ scenarioId: string; scenario: unknown;
       result: ScenarioResult; commandPublications: unknown }>(line, "scenario results"));
     assert.equal(actual.length, inputs.length);
     for (const [index, input] of inputs.entries()) {

@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 
 import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
 import { runCommand } from "../../../scripts/run-command.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 
-import type { DeepMutable } from "./pipeline-types.ts";
+import type { DeepMutable, LeanResultRecord } from "./pipeline-types.ts";
 
 export const projectRoot = fileURLToPath(
   new URL("../../../", import.meta.url),
@@ -20,9 +20,14 @@ export function elapsedMs(started: number): number {
   return performance.now() - started;
 }
 
+export function parseLeanResultRecords(stdout: string): ReadonlyArray<LeanResultRecord> {
+  return stdout.split("\n").filter((line) => line.length > 0).map((line, index) =>
+    parseWireJson<LeanResultRecord>(line, `Lean result line ${index + 1}`));
+}
+
 export async function readJson<Value>(filePath: string): Promise<Value> {
-  return parseStrictJson<Value>(
-    await readFile(filePath, "utf8"),
+  return parseWireJsonBytes<Value>(
+    await readFile(filePath),
     filePath,
   );
 }
@@ -31,11 +36,13 @@ export function runProcess(
   command: string,
   args: ReadonlyArray<string>,
   timeoutMs: number,
+  stdoutEncoding?: "utf8Fatal",
 ) {
   return runCommand(command, args, {
     cwd: projectRoot,
     env: process.env,
     timeoutMs,
+    ...(stdoutEncoding === undefined ? {} : { stdoutEncoding }),
   });
 }
 

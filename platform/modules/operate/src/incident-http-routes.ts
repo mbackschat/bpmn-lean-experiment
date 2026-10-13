@@ -11,7 +11,7 @@ import {
   matchIncidentAuditPath,
   matchIncidentDetailPath,
   matchIncidentsPath,
-  parseStrictJson,
+  parseWireJson,
   projectionFreshnessResponseHeaders,
   requireIncidentRequestBodyLength,
 } from "@bpmn-lean/platform-contracts";
@@ -221,7 +221,7 @@ async function readActionRequest(request: Request): Promise<IncidentActionReques
   try {
     requireIncidentRequestBodyLength("PUT", bytes.byteLength);
     return decodeIncidentActionRequest(
-      parseStrictJson(bytes),
+      parseWireJson(bytes),
     );
   } catch (error: unknown) {
     if (error instanceof RangeError) throw payloadTooLarge();

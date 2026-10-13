@@ -3,7 +3,7 @@ import {
   decodePublicApiErrorResponse,
   flowNodeMetricsPath,
   FlowNodeMetricsApiErrorCodes,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -109,7 +109,7 @@ async function readStrictJson(response: Response): Promise<unknown> {
   requireJsonMediaType(response);
   const bytes = await readBoundedBytes(response);
   try {
-    return parseStrictJson(bytes);
+    return parseWireJson(bytes);
   } catch (cause: unknown) {
     throw new FlowNodeMetricsProtocolError(
       "flow-node metrics API returned malformed JSON",

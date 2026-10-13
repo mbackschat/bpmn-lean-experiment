@@ -3,7 +3,6 @@ package org.bpmnlean.cibseven;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.StreamReadFeature;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 
 public final class ScenarioJson {
 
@@ -30,13 +28,13 @@ public final class ScenarioJson {
 
   public static ScenarioProtocol.ScenarioDefinition read(String json)
       throws JsonProcessingException {
-    rejectIntegerNegativeZero(json);
+    rejectInvalidWireTokens(json);
     return MAPPER.readValue(json, ScenarioProtocol.ScenarioDefinition.class);
   }
 
   public static ScenarioProtocol.ScenarioResult readResult(String json)
       throws JsonProcessingException {
-    rejectIntegerNegativeZero(json);
+    rejectInvalidWireTokens(json);
     return MAPPER.readValue(json, ScenarioProtocol.ScenarioResult.class);
   }
 
@@ -50,7 +48,9 @@ public final class ScenarioJson {
 
   public static ScenarioProtocol.CanonicalResult readEvidenceResult(Path path)
       throws IOException {
-    var evidence = MAPPER.readTree(path.toFile());
+    var json = Files.readString(path, StandardCharsets.UTF_8);
+    rejectInvalidWireTokens(json);
+    var evidence = MAPPER.readTree(json);
     return MAPPER.treeToValue(
         evidence.required("result"),
         ScenarioProtocol.CanonicalResult.class);
@@ -66,32 +66,22 @@ public final class ScenarioJson {
     return MAPPER.writeValueAsString(result);
   }
 
-  private static void rejectIntegerNegativeZero(String json)
+  // AA-13 requires lexical admission before Jackson's tree or long coercion can erase spelling.
+  private static void rejectInvalidWireTokens(String json)
       throws JsonProcessingException {
-    var objects = new ArrayDeque<ValueObject>();
     try (var parser = MAPPER.createParser(json)) {
       while (parser.nextToken() != null) {
         switch (parser.currentToken()) {
-          case START_OBJECT -> objects.push(new ValueObject());
-          case FIELD_NAME -> objects.getFirst().field = parser.currentName();
-          case VALUE_STRING -> {
-            var object = objects.peekFirst();
-            if (object != null && "kind".equals(object.field)) {
-              object.kind = parser.getText();
-            }
-          }
+          case FIELD_NAME, VALUE_STRING -> requireUnicodeScalars(parser.getText(), parser);
+          case VALUE_NUMBER_FLOAT -> throw new JsonParseException(
+              parser, "wire integers require canonical unsigned decimal digits");
           case VALUE_NUMBER_INT -> {
-            var object = objects.peekFirst();
-            if (object != null
-                && "value".equals(object.field)
-                && "-0".equals(parser.getText())) {
-              object.negativeZero = true;
-            }
-          }
-          case END_OBJECT -> {
-            var object = objects.pop();
-            if ("integer".equals(object.kind) && object.negativeZero) {
-              throw new JsonParseException(parser, "integer rejects lexical negative zero");
+            var token = parser.getText();
+            var maximum = Long.toString(ScenarioProtocol.MAX_SAFE_WIRE_INTEGER);
+            if (!token.matches("0|[1-9][0-9]*")
+                || token.length() > maximum.length()
+                || (token.length() == maximum.length() && token.compareTo(maximum) > 0)) {
+              throw new JsonParseException(parser, "wire integer is noncanonical or outside the safe domain");
             }
           }
           default -> {}
@@ -105,9 +95,18 @@ public final class ScenarioJson {
     }
   }
 
-  private static final class ValueObject {
-    private String field;
-    private String kind;
-    private boolean negativeZero;
+  private static void requireUnicodeScalars(String value, com.fasterxml.jackson.core.JsonParser parser)
+      throws JsonParseException {
+    for (var index = 0; index < value.length(); index++) {
+      var unit = value.charAt(index);
+      if (Character.isHighSurrogate(unit)) {
+        if (index + 1 >= value.length() || !Character.isLowSurrogate(value.charAt(index + 1))) {
+          throw new JsonParseException(parser, "wire strings reject unpaired surrogates");
+        }
+        index++;
+      } else if (Character.isLowSurrogate(unit)) {
+        throw new JsonParseException(parser, "wire strings reject unpaired surrogates");
+      }
+    }
   }
 }

@@ -26,7 +26,7 @@ import type {
   HostInteractionResponse,
 } from "@bpmn-lean/temporal-runner";
 
-import { parseStrictJson } from "../../../../scripts/strict-json.ts";
+import { parseWireJsonBytes } from "../../../../scripts/strict-json.ts";
 
 export type RunnableMvpManualProcessConfig = DeepReadonly<{
   instanceId: string;
@@ -81,8 +81,8 @@ export async function loadRunnableMvpConfig(
     throw new TypeError("MVP config path must be nonempty");
   }
   const absoluteConfigPath = path.resolve(configPath);
-  const value = parseStrictJson<unknown>(
-    await readFile(absoluteConfigPath, "utf8"),
+  const value = parseWireJsonBytes<unknown>(
+    await readFile(absoluteConfigPath),
     absoluteConfigPath,
   );
   validateRunnableMvpConfig(value);

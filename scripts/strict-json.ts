@@ -1,5 +1,5 @@
 /**
- * Parses one current wire document while retaining byte-level facts that
+ * Parses one JSON document while retaining facts that
  * ordinary JSON.parse discards.
  *
  * JSON object member names are compared after escape decoding, so `"id"` and
@@ -10,8 +10,28 @@ export function parseStrictJson<T = unknown>(
   text: string,
   label = "JSON document",
 ): T {
+  return parseJson(text, label, false);
+}
+
+/** Admits a wire document's canonical unsigned integers before JavaScript can round them (AA-13). */
+export function parseWireJson<T = unknown>(
+  text: string,
+  label = "wire document",
+): T {
+  return parseJson(text, label, true);
+}
+
+/** Preserves malformed-encoding refusal at the actual artifact byte boundary (AA-13). */
+export function parseWireJsonBytes<T = unknown>(
+  bytes: Uint8Array,
+  label = "wire document",
+): T {
+  return parseWireJson(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes), label);
+}
+
+function parseJson<T>(text: string, label: string, wireIntegers: boolean): T {
+  scanJsonTokens(text, label, wireIntegers);
   const value: unknown = JSON.parse(text);
-  scanForDuplicateObjectKeys(text, label);
   requireWellFormedUnicode(value, label);
   return value as T;
 }
@@ -63,8 +83,17 @@ function visitStrings(
   }
 }
 
-function scanForDuplicateObjectKeys(text: string, label: string): void {
+function scanJsonTokens(text: string, label: string, wireIntegers: boolean): void {
   let index = 0;
+
+  function fail(): never {
+    throw new SyntaxError(`${label} contains malformed JSON`);
+  }
+
+  function expect(character: string): void {
+    if (text[index] !== character) fail();
+    index += 1;
+  }
 
   function skipWhitespace(): void {
     while (
@@ -79,12 +108,12 @@ function scanForDuplicateObjectKeys(text: string, label: string): void {
 
   function scanString(): string {
     const start = index;
-    index += 1;
+    expect('"');
     while (index < text.length) {
       const character = text[index];
       index += 1;
       if (character === '"') {
-        return text.slice(start, index);
+        return JSON.parse(text.slice(start, index)) as string;
       }
       if (character === "\\") {
         index += text[index] === "u" ? 5 : 1;
@@ -107,7 +136,7 @@ function scanForDuplicateObjectKeys(text: string, label: string): void {
         index += 1;
         return;
       }
-      index += 1;
+      expect(",");
       skipWhitespace();
     }
   }
@@ -121,14 +150,13 @@ function scanForDuplicateObjectKeys(text: string, label: string): void {
     }
     const keys = new Set<string>();
     while (true) {
-      const encodedKey = scanString();
-      const key = JSON.parse(encodedKey) as string;
+      const key = scanString();
       if (keys.has(key)) {
         throw new SyntaxError(`duplicate JSON object key: ${key}`);
       }
       keys.add(key);
       skipWhitespace();
-      index += 1;
+      expect(":");
       skipWhitespace();
       scanValue();
       skipWhitespace();
@@ -136,7 +164,7 @@ function scanForDuplicateObjectKeys(text: string, label: string): void {
         index += 1;
         return;
       }
-      index += 1;
+      expect(",");
       skipWhitespace();
     }
   }
@@ -153,21 +181,23 @@ function scanForDuplicateObjectKeys(text: string, label: string): void {
       case '"':
         scanString();
         return;
-      default:
-        while (
-          index < text.length
-        ) {
-          const character = text[index];
-          if (
-            character === undefined ||
-            /[,\]}\s]/u.test(character)
-          ) {
-            break;
+      default: {
+        const token = /^(?:true|false|null|-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)/u.exec(text.slice(index))?.[0];
+        if (token === undefined) fail();
+        if (wireIntegers && /^[-0-9]/u.test(token)) {
+          const maximum = "9007199254740991";
+          if (!/^(?:0|[1-9][0-9]*)$/u.test(token) ||
+            token.length > maximum.length ||
+            (token.length === maximum.length && token > maximum)) {
+            throw new SyntaxError(`${label} requires canonical nonnegative safe wire integers`);
           }
-          index += 1;
         }
+        index += token.length;
+      }
     }
   }
 
   scanValue();
+  skipWhitespace();
+  if (index !== text.length) fail();
 }

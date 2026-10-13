@@ -5,7 +5,7 @@ import {
   operatorAuditExportPath,
   OperatorAuditApiErrorCodes,
   OperatorAuditUnavailableMessage,
-  parseStrictJson,
+  parseWireJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   OperatorAuditExport,
@@ -110,7 +110,7 @@ export class OperatorAuditApiClient implements OperatorAuditApi {
     try {
       requireJsonMediaType(response);
       decoded = decodePublicApiErrorResponse(
-        parseStrictJson(new Uint8Array(await response.arrayBuffer())),
+        parseWireJson(new Uint8Array(await response.arrayBuffer())),
         OperatorAuditApiErrorCodes,
       );
     } catch (cause: unknown) {

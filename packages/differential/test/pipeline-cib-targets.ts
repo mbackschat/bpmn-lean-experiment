@@ -11,7 +11,7 @@ import {
   reportCibSevenMavenElapsed,
   resolveCibSevenMavenTimeoutMs,
 } from "../../../scripts/cibseven-maven-budget.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 import {
   elapsedMs,
@@ -68,11 +68,11 @@ export async function runCibTargets(
     resolveCibSevenMavenTimeoutMs(process.env),
   );
   reportCibSevenMavenElapsed(engineVersion, Date.now() - mavenStartedMs);
-  const records = (await readFile(outputPath, "utf8"))
+  const records = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await readFile(outputPath))
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line, index) =>
-      parseStrictJson<CibPipelineResult>(
+      parseWireJson<CibPipelineResult>(
         line,
         `CIB result line ${index + 1}`,
       ));

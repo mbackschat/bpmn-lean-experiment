@@ -57,7 +57,7 @@ export type {
 } from "./contract-cib-evidence.ts";
 
 import {
-  parseStrictJson,
+  parseWireJsonBytes,
 } from "./strict-json.ts";
 import {
   verifyScenarioVariableValueContract,
@@ -162,7 +162,7 @@ async function readJsonDocument<Value>(
   const bytes = await readFile(filePath);
   return {
     bytes,
-    value: parseStrictJson<Value>(bytes.toString("utf8"), filePath),
+    value: parseWireJsonBytes<Value>(bytes, filePath),
   };
 }
 
@@ -358,8 +358,8 @@ function verifyScenarioSourceBinding(
   verifyScenarioVariableValueContract(scenario);
   if (
     !isDeepStrictEqual(
-      parseStrictJson<Scenario>(
-        scenarioBytes.toString("utf8"),
+      parseWireJsonBytes<Scenario>(
+        scenarioBytes,
         "scenario source bytes",
       ),
       scenario,

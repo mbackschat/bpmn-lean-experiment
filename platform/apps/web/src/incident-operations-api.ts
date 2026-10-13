@@ -9,7 +9,7 @@ import {
   incidentAuditPath,
   incidentDetailPath,
   incidentsPath,
-  parseStrictJson,
+  parseWireJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   IncidentActionApiErrorCode,
@@ -221,7 +221,7 @@ async function decodeJson<Result>(
   }
   try {
     const bytes = new Uint8Array(await response.arrayBuffer());
-    return decoder(parseStrictJson(bytes));
+    return decoder(parseWireJson(bytes));
   } catch (cause: unknown) {
     if (cause instanceof IncidentOperationsProtocolError) throw cause;
     throw new IncidentOperationsProtocolError(`${label} violates the public contract`, { cause });

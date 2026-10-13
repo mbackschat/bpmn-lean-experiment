@@ -16,6 +16,7 @@ import {
   type LeanProjectionRejections,
   type LeanWellFormednessRejections,
 } from "./publication-parity-negative-class-test-support.ts";
+import { parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 
 const execFileAsync = promisify(execFile);
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -87,7 +88,7 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
     loadSemanticCoreApi(),
   ]);
   const scenario = decodeScenarioStart(
-    await readFile(scenarioUrl, "utf8"),
+    await readFile(scenarioUrl),
     semanticCore,
   );
   assert.equal(
@@ -285,17 +286,41 @@ async function runLeanPublicationEmitter(): Promise<PublicationParityEvidence> {
     ],
     {
       cwd: projectRoot,
-      encoding: "utf8",
+      encoding: "buffer",
       timeout: 60_000,
       maxBuffer: 1024 * 1024,
     },
   );
-  const output = result.stdout.trim();
-  assert.ok(output.length > 0, "Lean publication output must be nonempty");
-  const decoded: unknown = JSON.parse(output);
-  return decodePublicationParityEvidence(decoded);
+  return decodePublicationParityBytes(result.stdout);
 }
 
+function decodePublicationParityBytes(bytes: Uint8Array): PublicationParityEvidence {
+  assert.ok(bytes.byteLength > 0, "Lean publication output must be nonempty");
+  return decodePublicationParityEvidence(parseWireJsonBytes(bytes, "Lean publication evidence"));
+}
+
+test("publication parity byte reader refuses lossy UTF-8 and numeric aliases before decoding", () => {
+  const value = {
+    publication: { transitions: [], current: { controlTokens: [], scopes: [{
+      id: { processInstanceId: "Instance_1", definitionScopeId: "scope:Process_1", activation: 1 },
+      parent: null,
+      bpmnElementId: "Process_1",
+    }] } },
+    projectionRejections: { unassociatedParentlessRoot: true, completedWithLivePositions: true, calledRootProcessDrift: true },
+    wellFormednessRejections: { strandedWaitOwner: true, duplicateWaitIdentity: true, undeclaredWaitIdentity: true, unorderedCollection: true, notStartedWithWork: true, undeclaredHiddenRecord: true },
+  };
+  const source = JSON.stringify(value);
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    assert.throws(() => decodePublicationParityBytes(new TextEncoder().encode(source.replace('"activation":1', `"activation":${token}`))), SyntaxError, token);
+  }
+  const malformed = new TextEncoder().encode(source);
+  const memberOffset = Buffer.from(malformed).indexOf("Instance_1");
+  assert.ok(memberOffset >= 0);
+  malformed[memberOffset] = 0xff;
+  assert.throws(() => decodePublicationParityBytes(malformed));
+  assert.throws(() => decodePublicationParityBytes(new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode(source)])), SyntaxError);
+  assert.deepEqual(decodePublicationParityBytes(new TextEncoder().encode(source)).publication, value.publication);
+});
 
 function decodePublicationParityEvidence(
   value: unknown,
@@ -335,10 +360,10 @@ function decodePublicationParityEvidence(
 }
 
 function decodeScenarioStart(
-  contents: string,
+  bytes: Uint8Array,
   semanticCore: SemanticCoreApi,
 ): ScenarioStart {
-  const decoded: unknown = JSON.parse(contents);
+  const decoded: unknown = parseWireJsonBytes(bytes, "parallel publication scenario");
   if (!isRecord(decoded) || !isRecord(decoded.bpmn)) {
     throw new Error("parallel scenario must contain a BPMN resource");
   }

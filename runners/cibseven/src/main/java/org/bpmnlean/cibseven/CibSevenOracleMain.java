@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Path;
 
 /**
@@ -23,7 +24,9 @@ public final class CibSevenOracleMain {
   public static void main(String[] args) throws Exception {
     var projectRoot = parseProjectRoot(args);
     serve(
-        new InputStreamReader(System.in, StandardCharsets.UTF_8),
+        new InputStreamReader(System.in, StandardCharsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)),
         new OutputStreamWriter(System.out, StandardCharsets.UTF_8),
         projectRoot);
   }

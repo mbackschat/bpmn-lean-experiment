@@ -2,7 +2,7 @@ import {
   decodePutDefinitionCorrelatedMessagePublicationRequest,
   matchDefinitionCorrelatedMessagePublicationPath,
   matchDefinitionCorrelatedMessagesPath,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -120,7 +120,7 @@ async function readPublicationRequest(
   });
   let value: unknown;
   try {
-    value = parseStrictJson(bytes);
+    value = parseWireJson(bytes);
   } catch {
     throw invalidRequest(
       "The correlated Message publication must be valid UTF-8 JSON.",

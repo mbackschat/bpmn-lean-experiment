@@ -19,7 +19,7 @@ import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-
 import type { MutableScenarioResult } from "./pipeline-types.ts";
 import { profile, source, prepareSource, sourceOverlay, parallelBodySource } from "../../bpmn-source/test/sequential-scope-source-fixture.ts";
 import { sequentialOutputMappingSources } from "../../bpmn-source/test/sequential-scope-output-mapping-fixture.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 import { program as embeddedProgram, startStimulus as embeddedStart } from "../../semantic-core/test/embedded-subprocess-fixture.ts";
 
@@ -132,7 +132,7 @@ def main (paths : List String) : IO Unit := do
       return file;
     }));
     const execution = await runLeanInterpreter(driver, paths, inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{ id: string; supported: boolean }>(line, "scenario admission"));
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ id: string; supported: boolean }>(line, "scenario admission"));
     assert.equal(actual.length, inputs.length);
     for (const [index, input] of inputs.entries()) await t.test(input.scenario.id, () => {
       assert.equal(actual[index]?.id, input.scenario.id);
@@ -322,7 +322,7 @@ async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases
       return file;
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; definitionBinding: unknown; result: ScenarioResult; commandPublications: unknown;
     }>(line, "MI scope Lean result"));
     assert.equal(actual.length, inputs.length);

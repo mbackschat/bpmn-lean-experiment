@@ -7,7 +7,7 @@ import {
   definitionCorrelatedMessagePublicationPath,
   definitionCorrelatedMessagesPath,
   LegacyPublicApiErrorCodes,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -217,7 +217,7 @@ async function readStrictJson(response: Response): Promise<unknown> {
   }
   const bytes = await readBoundedBytes(response);
   try {
-    return parseStrictJson(bytes);
+    return parseWireJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError(
       "correlated Message API returned malformed JSON",

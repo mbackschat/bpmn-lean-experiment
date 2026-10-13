@@ -241,6 +241,14 @@ test("rejects malformed or capability-bearing overlays before structural project
   const duplicateBinding = binding(null, "${alternate}", mappedSuccess);
   const mutations: ReadonlyArray<Readonly<{ name: string; json: string }>> = [
     {
+      name: "UTF-8 BOM is not JSON whitespace",
+      json: "\uFEFF" + valid,
+    },
+    {
+      name: "prototype member is an unknown own field",
+      json: valid.replace('"inertAttributes":[]', '"inertAttributes":[],"__proto__":{"polluted":true}'),
+    },
+    {
       name: "unknown callback property",
       json: valid.replace('"inertAttributes":[]', '"inertAttributes":[],"reader":"./reader.js"'),
     },

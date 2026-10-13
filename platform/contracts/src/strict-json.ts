@@ -21,7 +21,7 @@ const simpleEscapes: Readonly<Record<string, string>> = {
 
 type TextDecoderConstructor = new (
   label?: string,
-  options?: Readonly<{ fatal?: boolean }>,
+  options?: Readonly<{ fatal?: boolean; ignoreBOM?: boolean }>,
 ) => Readonly<{ decode(input?: Uint8Array): string }>;
 
 const RuntimeTextDecoder = (
@@ -33,34 +33,57 @@ const RuntimeTextDecoder = (
  * @throws SyntaxError for malformed UTF-8 or JSON, duplicate decoded object keys, or unpaired surrogates.
  */
 export function parseStrictJson(bytes: Uint8Array): unknown {
+  return parseJson(bytes);
+}
+
+type JsonMemberPath = readonly (string | number)[];
+
+/** Checks selected wire integer tokens before Number conversion, preserving generic payloads (AA-13). */
+export function parseWireJson(
+  bytes: Uint8Array,
+  isWireInteger: (path: JsonMemberPath) => boolean = () => true,
+): unknown {
+  return parseJson(bytes, isWireInteger);
+}
+
+function parseJson(
+  bytes: Uint8Array,
+  isWireInteger?: (path: JsonMemberPath) => boolean,
+): unknown {
   let source: string;
   try {
-    source = new RuntimeTextDecoder("utf-8", { fatal: true }).decode(bytes);
+    source = new RuntimeTextDecoder("utf-8", {
+      fatal: true,
+      ...(isWireInteger === undefined ? {} : { ignoreBOM: true }),
+    }).decode(bytes);
   } catch {
     throw invalidJson();
   }
-  return new StrictJsonParser(source).parse();
+  return new StrictJsonParser(source, isWireInteger).parse();
 }
 
 class StrictJsonParser {
   #index = 0;
 
-  constructor(private readonly source: string) {}
+  constructor(
+    private readonly source: string,
+    private readonly isWireInteger?: (path: JsonMemberPath) => boolean,
+  ) {}
 
   parse(): unknown {
     this.#skipWhitespace();
-    const value = this.#parseValue();
+    const value = this.#parseValue([]);
     this.#skipWhitespace();
     if (this.#index !== this.source.length) throw invalidJson();
     return value;
   }
 
-  #parseValue(): unknown {
+  #parseValue(path: JsonMemberPath): unknown {
     switch (this.source[this.#index]) {
       case JsonToken.Object:
-        return this.#parseObject();
+        return this.#parseObject(path);
       case JsonToken.Array:
-        return this.#parseArray();
+        return this.#parseArray(path);
       case JsonToken.String:
         return this.#parseString();
       case JsonToken.True:
@@ -70,14 +93,14 @@ class StrictJsonParser {
       case JsonToken.Null:
         return this.#parseLiteral("null", null);
       case JsonToken.NumberNegative:
-        return this.#parseNumber();
+        return this.#parseNumber(path);
       default:
-        if (isDigit(this.source[this.#index])) return this.#parseNumber();
+        if (isDigit(this.source[this.#index])) return this.#parseNumber(path);
         throw invalidJson();
     }
   }
 
-  #parseObject(): Record<string, unknown> {
+  #parseObject(path: JsonMemberPath): Record<string, unknown> {
     this.#index += 1;
     this.#skipWhitespace();
     const value: Record<string, unknown> = {};
@@ -91,7 +114,7 @@ class StrictJsonParser {
       this.#skipWhitespace();
       if (!this.#consume(":")) throw invalidJson();
       this.#skipWhitespace();
-      const member = this.#parseValue();
+      const member = this.#parseValue([...path, key]);
       Object.defineProperty(value, key, {
         configurable: true,
         enumerable: true,
@@ -105,13 +128,13 @@ class StrictJsonParser {
     }
   }
 
-  #parseArray(): unknown[] {
+  #parseArray(path: JsonMemberPath): unknown[] {
     this.#index += 1;
     this.#skipWhitespace();
     const value: unknown[] = [];
     if (this.#consume("]")) return value;
     while (true) {
-      value.push(this.#parseValue());
+      value.push(this.#parseValue([...path, value.length]));
       this.#skipWhitespace();
       if (this.#consume("]")) return value;
       if (!this.#consume(",")) throw invalidJson();
@@ -185,7 +208,7 @@ class StrictJsonParser {
     return value;
   }
 
-  #parseNumber(): number {
+  #parseNumber(path: JsonMemberPath): number {
     const start = this.#index;
     this.#consume("-");
     if (this.#consume("0")) {
@@ -206,7 +229,16 @@ class StrictJsonParser {
       if (!isDigit(this.source[this.#index])) throw invalidJson();
       while (isDigit(this.source[this.#index])) this.#index += 1;
     }
-    return Number(this.source.slice(start, this.#index));
+    const token = this.source.slice(start, this.#index);
+    if (this.isWireInteger?.(path)) {
+      const maximum = "9007199254740991";
+      if (!/^(?:0|[1-9][0-9]*)$/u.test(token) ||
+        token.length > maximum.length ||
+        (token.length === maximum.length && token > maximum)) {
+        throw new SyntaxError("Wire integers require canonical nonnegative safe integer tokens");
+      }
+    }
+    return Number(token);
   }
 
   #skipWhitespace(): void {

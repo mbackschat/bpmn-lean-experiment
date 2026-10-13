@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { artifactCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
-import { parseStrictJson } from "./strict-json.ts";
+import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
 import type {
   Scenario,
   ScenarioResult,
@@ -80,8 +80,8 @@ async function readJsonWithBytes<Value>(
   const bytes = await readFile(path.join(projectRoot, relativePath));
   return {
     bytes,
-    value: parseStrictJson<Value>(
-      bytes.toString("utf8"),
+    value: parseWireJsonBytes<Value>(
+      bytes,
       relativePath,
     ),
   };
@@ -193,11 +193,11 @@ async function runCibBatch(
       timeoutMs: 30_000,
     },
   );
-  return (await readFile(outputPath, "utf8"))
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await readFile(outputPath))
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line, index) =>
-      parseStrictJson<CibRunnerResult>(
+      parseWireJson<CibRunnerResult>(
         line,
         `CIB result line ${index + 1}`,
       ));

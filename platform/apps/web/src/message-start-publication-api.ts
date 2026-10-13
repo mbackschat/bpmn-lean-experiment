@@ -5,7 +5,7 @@ import {
   messageStartPublicationPath,
   MessageStartPublicationStatus,
   LegacyPublicApiErrorCodes,
-  parseStrictJson,
+  parseWireJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DeployedDefinitionVersion,
@@ -169,7 +169,7 @@ async function readJson(response: Response): Promise<unknown> {
   }
   try {
     const bytes = new Uint8Array(await response.arrayBuffer());
-    return parseStrictJson(bytes);
+    return parseWireJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError(
       "Message Start publication API returned malformed JSON",

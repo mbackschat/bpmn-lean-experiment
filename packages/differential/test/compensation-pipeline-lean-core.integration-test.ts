@@ -11,7 +11,7 @@ import { CommandOutcome, EffectExecutionResultKind, ObservationRequestKind, Scen
   type Scenario, type Stimulus } from "@bpmn-lean/semantic-core";
 import { isDeepStrictEqual } from "node:util";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 const instanceId = "CompensationPipeline_1";
 const occurrence = (elementId: string) => ({ processInstanceId: instanceId, elementId, activation: 1 });
@@ -85,8 +85,8 @@ test("the checked-source Compensation scenarios agree through success and handle
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...scenarioPaths], scenarios.length);
-    const actual = execution.stdout.trim().split("\n").map((line) =>
-      parseStrictJson<{ scenarioId: string; scenario: Scenario; result: unknown; commandPublications: unknown }>(line, "Compensation Lean result"));
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map((line) =>
+      parseWireJson<{ scenarioId: string; scenario: Scenario; result: unknown; commandPublications: unknown }>(line, "Compensation Lean result"));
     assert.equal(actual.length, scenarios.length);
     for (const [index, scenario] of scenarios.entries()) {
       const expected = runScenario(scenario, program);
@@ -125,7 +125,7 @@ test("the checked-source Compensation scenarios agree through success and handle
       checkedProcess: compilation.checkedProcess, semanticProcess: program }));
     const ordinary = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
       [oneDefinition, firstScenarioPath], 1);
-    const ordinaryRecord = parseStrictJson<Record<string, unknown>>(ordinary.stdout.trim(), "ordinary scenario result");
+    const ordinaryRecord = parseWireJson<Record<string, unknown>>(ordinary.stdout, "ordinary scenario result");
     assert.equal("commandPublications" in ordinaryRecord, false);
     assert.deepEqual(ordinaryRecord.result, first.result);
   } finally {

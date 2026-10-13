@@ -1,7 +1,6 @@
 import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
 import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import BpmnSemantics.SemanticProcessJson.Scenario
-import BpmnSemantics.StrictJson
 
 /-! Diagnostic closure bounds over existing checked-source and Start-data wire inputs; this is not command admission. -/
 
@@ -11,8 +10,8 @@ private def runInputs (frontier : Bool) : List String → IO UInt32
       let sourceText ← IO.FS.readFile sourcePath
       let stimulusText ← IO.FS.readFile stimulusPath
       let bound := do
-        let source ← (BpmnSemantics.StrictJson.parse sourceText >>= BpmnSemantics.SemanticProcessJson.decodeCheckedProcess).toOption
-        let stimulus ← (BpmnSemantics.StrictJson.parse stimulusText >>= BpmnSemantics.SemanticProcessJson.decodeStimulus).toOption
+        let source ← (BpmnSemantics.SemanticProcessJson.parseWireJson sourceText >>= BpmnSemantics.SemanticProcessJson.decodeCheckedProcess).toOption
+        let stimulus ← (BpmnSemantics.SemanticProcessJson.parseWireJson stimulusText >>= BpmnSemantics.SemanticProcessJson.decodeStimulus).toOption
         let .startProcess _ _ _ bindings := stimulus | none
         if frontier then do
           let capacity ← BpmnSemantics.SemanticProcess.ParallelScopeStart.checkedSourceFrontier source bindings

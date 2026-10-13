@@ -7,7 +7,7 @@ import {
   sameCanonicalJsonBytes,
   serializeCanonicalJsonValue,
 } from "./canonical-json.js";
-import { parseStrictJson } from "./strict-json.js";
+import { parseWireJson } from "./strict-json.js";
 
 /** Canonicalizes one already decoded publication value for stable overlap comparison. */
 export function serializeCanonicalExecutionPublicationValue(
@@ -31,7 +31,7 @@ export function decodeCanonicalExecutionPublicationExport(
   identity: ExecutionPublicationIdentity,
 ): ExecutionPublicationExport {
   try {
-    const parsed = parseStrictJson(bytes);
+    const parsed = parseWireJson(bytes);
     const publication = decodeExecutionPublicationExport(parsed, identity);
     const canonical = serializeCanonicalExecutionPublicationValue(publication);
     if (!sameCanonicalJsonBytes(bytes, canonical)) throw new TypeError("noncanonical bytes");

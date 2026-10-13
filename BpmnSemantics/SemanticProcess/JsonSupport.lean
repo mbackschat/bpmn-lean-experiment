@@ -14,7 +14,49 @@ namespace BpmnSemantics.SemanticProcessJson
 open BpmnSemantics
 open Lean
 
-def parseWireJson (contents : String) : Except String Json :=
+private inductive WireLexicalMode where
+  | value
+  | string
+  | escaped
+
+private def wireDigit (c : Char) : Bool := '0' ≤ c && c ≤ '9'
+
+private def wireNumberDelimiter (c : Char) : Bool :=
+  c = ',' || c = ']' || c = '}' || c = ' ' || c = '\t' || c = '\r' || c = '\n'
+
+private def canonicalWireDigits (digits : List Char) : Bool :=
+  match digits with
+  | [] => false
+  | '0' :: rest => rest.isEmpty
+  | _ => (digits.foldlM (fun value c =>
+      let next := 10 * value + (c.toNat - '0'.toNat)
+      if isSafeWireNat next then some next else none) 0).isSome
+
+private def wireNumeralsValid : WireLexicalMode → List Char → Bool
+  | _, [] => true
+  | .escaped, _ :: rest => wireNumeralsValid .string rest
+  | .string, '\\' :: rest => wireNumeralsValid .escaped rest
+  | .string, '"' :: rest => wireNumeralsValid .value rest
+  | .string, _ :: rest => wireNumeralsValid .string rest
+  | .value, '"' :: rest => wireNumeralsValid .string rest
+  | .value, '-' :: _ => false
+  | .value, c :: rest =>
+      if wireDigit c then
+        let digits := rest.takeWhile wireDigit
+        let remaining := rest.dropWhile wireDigit
+        canonicalWireDigits (c :: digits) &&
+          (remaining.head?.all wireNumberDelimiter) &&
+          wireNumeralsValid .value remaining
+      else wireNumeralsValid .value rest
+termination_by _ chars => chars.length
+decreasing_by
+  all_goals simp_wf
+  exact Nat.lt_succ_of_le (List.dropWhile_suffix wireDigit).length_le
+
+/-- The portable-value wire contract selects canonical safe natural tokens. Validate their original spelling before JSON normalization; string contents and narrower typed field bounds keep their existing owners. -/
+def parseWireJson (contents : String) : Except String Json := do
+  if !wireNumeralsValid .value contents.toList then
+    throw "wire integers require canonical unsigned safe integer tokens"
   BpmnSemantics.StrictJson.parse contents
 
 def decodeSafeNat (json : Json) : Except String Nat := do

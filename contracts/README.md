@@ -40,11 +40,11 @@ Runtime `eventSubProcessMessageSubscriptions` stores passive parent-owned listen
 
 ## Exact scalar and JSON boundary
 
-Every wire integer represented as a JavaScript `number` is an integer in the inclusive range `0..9007199254740991`, with stricter positive minima where the field requires one. Schemas state both bounds, and TypeScript, Lean, and the CIB adapter reject values outside them rather than rounding or narrowing them.
+Every wire integer represented as a JavaScript `number` is an integer in the inclusive range `0..9007199254740991`, with stricter bounds where the field requires them. Its raw JSON token must match `0|[1-9][0-9]*`; negative zero, fractions and exponent spellings reject even when conversion would produce an in-range integer. Validate the original token and safe range before lossy conversion, then enforce the typed field bounds. The [approved portable-value admission decision](../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#canonical-bytes-and-identity) owns this lexical selection. Generic JSON and untyped form inputs retain their separate contracts; they are not implicitly wire integers.
 
 Canonical identifiers are exact, non-normalized strings of Unicode scalar values. Their order is lexicographic by scalar value, not JavaScript UTF-16 code units, Java `String.compareTo`, locale, UTF-8 bytes, or normalized text. Canonically ordered arrays use this comparison. Canonically equivalent Unicode spellings remain distinct unless a future contract explicitly changes the identity domain.
 
-Wire readers reject duplicate object keys after escape decoding and reject unpaired surrogate encodings. Unknown or missing fields, values outside closed enums, `null` where absence is required, absence where an explicit nullable field is required, non-integral numbers, and non-canonical array order are all boundary errors. This strictness applies before typed semantic decoding; ordinary parser behavior that overwrites a duplicate key or replaces an invalid surrogate is not authoritative.
+Wire readers decode UTF-8 fatally, reject duplicate object keys after escape decoding and reject unpaired surrogate encodings. Decoded member names remain own properties, including `__proto__`, so an unknown member cannot disappear into a host object's prototype. Unknown or missing fields, values outside closed enums, `null` where absence is required, absence where an explicit nullable field is required, invalid numeric tokens, and non-canonical array order are all boundary errors. This strictness applies before typed semantic decoding; ordinary parser behavior that overwrites a duplicate key or replaces invalid bytes or a surrogate is not authoritative.
 
 ## Portable semantic assertions
 

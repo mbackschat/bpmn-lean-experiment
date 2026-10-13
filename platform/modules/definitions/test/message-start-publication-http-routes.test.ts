@@ -323,6 +323,18 @@ const putBody = {
   messageStart,
 } as const satisfies PutMessageStartPublicationRequest;
 
+test("refuses noncanonical Message Start version tokens before publication service entry", async () => {
+  for (const token of ["-1", "1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "2.0", "2e0", "-0", "9007199254740992", "9007199254740993"]) {
+    const fixture = createFixture();
+    const response = await fixture.routes.handle(putRequest(JSON.stringify(putBody).replace('"version":2', `"version":${token}`)));
+    assert.equal(response?.status, 400, token);
+    assert.equal(fixture.puts.length, 0, token);
+  }
+  const control = createFixture();
+  assert.equal((await control.routes.handle(validPutRequest()))?.status, 201);
+  assert.equal(control.puts.length, 1);
+});
+
 function validPutRequest(): Request {
   return putRequest(JSON.stringify(putBody));
 }

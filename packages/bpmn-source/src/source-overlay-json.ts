@@ -57,7 +57,12 @@ class StrictJsonParser {
       keys.add(key);
       this.skipWhitespace();
       this.expect(":");
-      result[key] = this.readValue();
+      Object.defineProperty(result, key, {
+        configurable: true,
+        enumerable: true,
+        value: this.readValue(),
+        writable: true,
+      });
       this.skipWhitespace();
       if (this.take("}")) {
         return result;

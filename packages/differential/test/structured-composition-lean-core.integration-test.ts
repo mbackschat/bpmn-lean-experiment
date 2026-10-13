@@ -13,7 +13,7 @@ import {
 import type { Scenario, ScenarioResult, Stimulus } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import type { MutableScenarioResult } from "./pipeline-types.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 import { binding, complete, eightStepSource, instanceId, invoiceSource, nineStepSource, serialSource, start }
   from "./structured-composition-fixtures.ts";
@@ -90,7 +90,7 @@ test("private composition binds independent Lean lowering, invoice execution, pu
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], inputs.length);
-    const actual = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; commandPublications: unknown;
       definitionBinding: unknown;
     }>(line, "composition Lean result"));

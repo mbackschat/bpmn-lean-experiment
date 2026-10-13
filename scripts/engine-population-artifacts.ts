@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { Ajv2020, type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
-import { parseStrictJson } from "./strict-json.ts";
+import { parseWireJsonBytes } from "./strict-json.ts";
 
 const profileId = "bpmn-2.0.2-message-key-correlation-draft" as const;
 const processId = "Process_SettlementCorrelation" as const;
@@ -173,7 +173,7 @@ function assertNoAnswerKeys(value: unknown, location = "engine population scenar
 }
 
 async function readJson(absolutePath: string): Promise<unknown> {
-  return parseStrictJson(await readFile(absolutePath, "utf8"), absolutePath);
+  return parseWireJsonBytes(await readFile(absolutePath), absolutePath);
 }
 
 async function readSchema(absolutePath: string): Promise<Record<string, unknown>> {

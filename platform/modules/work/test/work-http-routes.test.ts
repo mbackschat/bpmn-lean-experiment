@@ -125,6 +125,74 @@ test("rejects escaped-equivalent duplicate claim keys before service entry", asy
   assert.equal(calls, 0);
 });
 
+test("rejects noncanonical raw claim integers before service entry", async () => {
+  let calls = 0;
+  const routes = createRoutes({ claimTask: async () => {
+    calls += 1;
+    return { kind: "claimed", result: { taskId, claim: { actorId: "demo-user", generation: 1 } } };
+  } });
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    const response = await routes.handle(new Request(`${taskUrl()}/claim`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: `{"actionId":"claim-1","expectedGeneration":${token}}`,
+    }));
+    assert.equal(response?.status, 400, token);
+  }
+  assert.equal(calls, 0);
+});
+
+test("rejects noncanonical completion envelope integers while retaining generic structured fields", async () => {
+  let calls = 0;
+  let submitted: unknown;
+  const routes = createRoutes({ completeTask: async (_actionId: string, value: unknown) => {
+    calls += 1;
+    submitted = value;
+    return { kind: "notFound" };
+  } });
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    const request = structuredCompletionRequest('{"note":1.25e+2,"negativeZero":-0}');
+    const body = (await request.text()).replace('"expectedClaimGeneration":1', `"expectedClaimGeneration":${token}`);
+    const response = await routes.handle(new Request(request.url, { method: "PUT", headers: request.headers, body }));
+    assert.equal(response?.status, 400, token);
+  }
+  assert.equal(calls, 0);
+  assert.equal((await routes.handle(structuredCompletionRequest('{"note":1.25e+2,"negativeZero":-0}')))?.status, 404);
+  assert.equal(calls, 1);
+  const fields = (submitted as { fields: Record<string, unknown> }).fields;
+  assert.equal(fields.note, 125);
+  assert.equal(Object.is(fields.negativeZero, -0), true);
+});
+
+test("raw Work integer admission preserves canonical controls and strict encoding refusal", async () => {
+  let calls = 0;
+  const routes = createRoutes({ claimTask: async () => {
+    calls += 1;
+    return { kind: "claimed", result: { taskId, claim: { actorId: "demo-user", generation: 1 } } };
+  } });
+  for (const token of ["0", "1", "9007199254740991"]) {
+    const response = await routes.handle(new Request(`${taskUrl()}/claim`, {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: `{"actionId":"claim-${token}","expectedGeneration":${token}}`,
+    }));
+    assert.equal(response?.status, 201, token);
+  }
+  assert.equal(calls, 3);
+  for (const body of [
+    new Uint8Array([0xff]),
+    new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode('{"actionId":"one","expectedGeneration":0}')]),
+    '{"actionId":"\\uD800","expectedGeneration":0}',
+    '{"actionId":"one","\\u0061ctionId":"two","expectedGeneration":0}',
+    '{"actionId":"one","expectedGeneration":0,"__proto__":{"polluted":true}}',
+  ]) {
+    const response = await routes.handle(new Request(`${taskUrl()}/claim`, {
+      method: "PUT", headers: { "content-type": "application/json" }, body,
+    }));
+    assert.equal(response?.status, 400);
+  }
+  assert.equal(calls, 3);
+  assert.equal(({} as { polluted?: boolean }).polluted, undefined);
+});
+
 test("distinguishes unsupported media type and oversized mutation payload", async () => {
   const routes = createRoutes({});
   const unsupported = await routes.handle(new Request(`${taskUrl()}/claim`, {

@@ -11,7 +11,7 @@ import {
   replayCommittedTransitions, runScenario,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario, ScenarioResult, Stimulus } from "@bpmn-lean/semantic-core";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 
 const profile = "bpmn-2.0.2-interrupting-message-event-subprocess-draft";
@@ -74,7 +74,7 @@ test("private Message handler agrees across independent lowering, races and comp
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], inputs.length);
-    const records = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; commandPublications: unknown;
       definitionBinding: unknown;
     }>(line, "Message handler Lean result"));

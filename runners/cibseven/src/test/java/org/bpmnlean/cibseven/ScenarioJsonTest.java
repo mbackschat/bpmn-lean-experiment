@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
 import java.util.List;
 import org.junit.Test;
 
@@ -28,6 +30,52 @@ public class ScenarioJsonTest {
           "provenance": {"normativeRefs": [], "cibRevision": "r", "cibRefs": []}
         }
         """.formatted(value);
+  }
+
+  @Test
+  public void rejectsNoncanonicalNumbersAtResultAndEvidenceIngress() throws Exception {
+    var state = new ScenarioProtocol.StateObservation(
+        "Instance_1", ScenarioProtocol.ProcessStatus.RUNNING,
+        List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+        List.of(), List.of(), 0);
+    var outcome = new ScenarioProtocol.SemanticOutcome(ScenarioProtocol.CommandOutcome.COMMITTED);
+    var result = new ScenarioProtocol.ScenarioResult(
+        ScenarioProtocol.SCENARIO_RESULT_KIND, "raw-wire", outcome, List.of(state), null);
+    var resultJson = ScenarioJson.write(result);
+    var evidenceJson = "{\"result\":" + new ObjectMapper().writeValueAsString(
+        new ScenarioProtocol.CanonicalResult(outcome, List.of(state))) + "}";
+    var path = Files.createTempFile("bpmn-raw-wire-", ".json");
+    try {
+      for (var token : List.of("1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993")) {
+        assertThrows(token, JsonProcessingException.class, () -> ScenarioJson.readResult(
+            resultJson.replace("\"logicalTimeMs\":0", "\"logicalTimeMs\":" + token)));
+        Files.writeString(path, evidenceJson.replace("\"logicalTimeMs\":0", "\"logicalTimeMs\":" + token));
+        assertThrows(token, JsonProcessingException.class, () -> ScenarioJson.readEvidenceResult(path));
+        assertThrows(token, JsonProcessingException.class, () -> ScenarioJson.read(
+            scenarioWithInitialValue("{\"kind\":\"integer\",\"value\":" + token + "}")));
+      }
+      for (var token : List.of("0", "1", "10", "9007199254740991")) {
+        assertEquals(Long.parseLong(token), ((ScenarioProtocol.StateObservation)
+            ScenarioJson.readResult(resultJson.replace("\"logicalTimeMs\":0", "\"logicalTimeMs\":" + token)).trace().getFirst()).logicalTimeMs());
+        Files.writeString(path, evidenceJson.replace("\"logicalTimeMs\":0", "\"logicalTimeMs\":" + token));
+        assertEquals(Long.parseLong(token), ((ScenarioProtocol.StateObservation)
+            ScenarioJson.readEvidenceResult(path).trace().getFirst()).logicalTimeMs());
+      }
+    } finally {
+      Files.deleteIfExists(path);
+    }
+  }
+
+  @Test
+  public void retainsDecodedKeyAndUnicodeRefusalAtRawScenarioIngress() throws Exception {
+    for (var value : List.of(
+        "{\"kind\":\"string\",\"value\":\"\\uD800\"}",
+        "{\"kind\":\"string\",\"value\":\"one\",\"\\u0076alue\":\"two\"}",
+        "{\"kind\":\"string\",\"value\":\"valid\",\"__proto__\":{\"polluted\":true}}")) {
+      assertThrows(JsonProcessingException.class, () -> ScenarioJson.read(scenarioWithInitialValue(value)));
+    }
+    var unicode = ScenarioJson.read(scenarioWithInitialValue("{\"kind\":\"string\",\"value\":\"𝄞\"}"));
+    assertEquals(unicode, ScenarioJson.read(ScenarioJson.writeScenario(unicode)));
   }
 
   @Test

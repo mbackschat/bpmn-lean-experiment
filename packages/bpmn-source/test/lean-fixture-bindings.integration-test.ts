@@ -23,6 +23,7 @@ import {
   runScenario,
   type Scenario,
 } from "@bpmn-lean/semantic-core";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const execFileAsync = promisify(execFile);
@@ -76,8 +77,7 @@ async function compile(
 
 async function loadInputs(): Promise<Inputs> {
   const scenarios = await Promise.all(scenarioPaths.map(async (path) => {
-    const contents = await readFile(join(projectRoot, path), "utf8");
-    return { contents, scenario: JSON.parse(contents) as Scenario };
+    return readFixtureScenarioBytes(await readFile(join(projectRoot, path)));
   }));
   const definitions = await Promise.all(scenarios.map(({ scenario }) => compile(
     scenario.id,
@@ -95,6 +95,15 @@ async function loadInputs(): Promise<Inputs> {
   return { definitions, scenarios };
 }
 
+function decodeFixtureUtf8(bytes: Uint8Array): string {
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+}
+
+function readFixtureScenarioBytes(bytes: Uint8Array): ScenarioDocument {
+  const contents = decodeFixtureUtf8(bytes);
+  return { contents, scenario: parseWireJson<Scenario>(contents, "fixture scenario") };
+}
+
 async function runBindings(
   inputs: Inputs,
   main = "BpmnSemantics/FixtureBindingJsonMain.lean",
@@ -110,15 +119,26 @@ async function runBindings(
     }));
     const result = await execFileAsync("./scripts/lake.sh", [
       "run", main, definitionPath, ...paths,
-    ], { cwd: projectRoot, timeout: 60_000, encoding: "utf8", maxBuffer: 1024 * 1024 });
-    return result.stdout.trim();
+    ], { cwd: projectRoot, timeout: 60_000, encoding: "buffer", maxBuffer: 1024 * 1024 });
+    return decodeFixtureUtf8(result.stdout);
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }
 }
 
 test("compiled sources and complete JSON scenarios equal their concrete Lean fixtures", async () => {
-  assert.equal(await runBindings(await loadInputs()), "fixture bindings verified");
+  assert.equal((await runBindings(await loadInputs())).trim(), "fixture bindings verified");
+});
+
+test("fixture wire byte readers refuse malformed UTF-8 and noncanonical numbers before comparison", () => {
+  const malformed = new Uint8Array([0x22, 0xff, 0x22]);
+  assert.throws(() => decodeFixtureUtf8(malformed));
+  assert.throws(() => readFixtureScenarioBytes(malformed));
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    assert.throws(() => readFixtureScenarioBytes(new TextEncoder().encode(`{"stimuli":[{"logicalTimeMs":${token}}]}`)), SyntaxError, token);
+  }
+  assert.deepEqual(readFixtureScenarioBytes(new TextEncoder().encode('{"id":"raw-control","stimuli":[]}')).scenario.id, "raw-control");
+  assert.throws(() => parseWireJson(decodeFixtureUtf8(new Uint8Array([0xef, 0xbb, 0xbf, 0x30]))), SyntaxError);
 });
 
 function definitionFor(inputs: Inputs, id: string): DefinitionInput {
@@ -194,7 +214,7 @@ test("fixture equality separates drift from ordinary admission and result agreem
     const scenarioDocument = scenarioDocumentFor(inputs, scenario.id);
     const originalResult = await runBindings({ definitions: [parallel], scenarios: [scenarioDocument] }, genericMain);
     const changedResult = await runBindings({ definitions: [changedGraph], scenarios: [scenarioDocument] }, genericMain);
-    assert.deepEqual(JSON.parse(changedResult), JSON.parse(originalResult));
+    assert.deepEqual(parseWireJson(changedResult), parseWireJson(originalResult));
     await assert.rejects(runBindings(replaceDefinition(inputs, changedGraph)), /checked graph fixture mismatch: parallel-fork-join-a-then-b/u);
   });
 

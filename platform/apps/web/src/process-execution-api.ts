@@ -8,7 +8,7 @@ import {
   executionPublicationPath,
   ExecutionPublicationApiErrorCodes,
   ExecutionPublicationUnavailableMessage,
-  parseStrictJson,
+  parseWireJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   CommittedTransitionBatch,
@@ -227,7 +227,7 @@ export function downloadExecutionPublication(
 async function readStrictJson(response: Response): Promise<unknown> {
   requireJsonMediaType(response, "execution publication");
   try {
-    return parseStrictJson(new Uint8Array(await response.arrayBuffer()));
+    return parseWireJson(new Uint8Array(await response.arrayBuffer()));
   } catch (cause: unknown) {
     throw new ProcessExecutionProtocolError(
       "execution publication API returned malformed JSON",

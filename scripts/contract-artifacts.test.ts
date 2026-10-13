@@ -238,6 +238,31 @@ test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async
   );
 });
 
+test("rejects noncanonical integer tokens before exact artifact bytes lose precision", async () => {
+  const artifactSet = requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets");
+  for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    const mutated = cloneArtifactSet(artifactSet);
+    const completion = requireUserTaskCompletion(mutated.scenario.stimuli[1]);
+    completion.taskId.activation = Number(token);
+    bindScenarioBytes(mutated, JSON.stringify(mutated.scenario).replace(
+      `"activation":${JSON.stringify(completion.taskId.activation)}`,
+      `"activation":${token}`,
+    ));
+    assert.throws(() => verifyArtifactSet(mutated), /integer|number|scenario schema/u, token);
+  }
+});
+
+test("rejects malformed UTF-8 instead of accepting replacement characters in artifact bytes", async () => {
+  const mutated = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  mutated.scenario.id = "invalid-\uFFFD";
+  mutated.evidence.scenario.id = mutated.scenario.id;
+  const bytes = Buffer.from(JSON.stringify(mutated.scenario));
+  const replacement = bytes.indexOf(Buffer.from("\uFFFD"));
+  assert.ok(replacement >= 0);
+  bindScenarioBytes(mutated, Buffer.concat([bytes.subarray(0, replacement), Buffer.from([0xff]), bytes.subarray(replacement + 3)]));
+  assert.throws(() => verifyArtifactSet(mutated), /UTF-8|encoded data/u);
+});
+
 test("distinguishes unknown, missing, closed-enum, null, and absent fields", async () => {
   const artifactSet = requiredAt(
     await readAndVerifyArtifactSets(projectRoot),

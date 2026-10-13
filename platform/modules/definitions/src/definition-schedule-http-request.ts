@@ -1,6 +1,6 @@
 import {
   decodePutDefinitionScheduleRequest,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -31,7 +31,7 @@ export async function readDefinitionScheduleRequest(
   });
   let value: unknown;
   try {
-    value = parseStrictJson(bytes);
+    value = parseWireJson(bytes);
   } catch {
     throw invalidJson();
   }

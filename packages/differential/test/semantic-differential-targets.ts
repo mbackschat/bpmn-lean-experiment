@@ -19,17 +19,16 @@ import {
 } from "@bpmn-lean/differential";
 
 import { leanInterpreterBatchTimeoutMsFor } from "../../../scripts/pipeline-budget.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
 import {
   elapsedMs,
   indexExactRecords,
   mutableClone,
+  parseLeanResultRecords,
   projectRoot,
   runProcess,
 } from "./pipeline-target-support.ts";
 import type {
   LeanDefinitionRecord,
-  LeanResultRecord,
   PipelineContext,
   PipelineTargets,
   SemanticDifferentialCase,
@@ -48,6 +47,7 @@ export function runLeanInterpreter(
     leanCommand,
     ["run", program, ...args],
     leanInterpreterBatchTimeoutMsFor(caseCount),
+    "utf8Fatal",
   );
 }
 
@@ -105,14 +105,7 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
     ],
     contexts.length,
   );
-  const records = execution.stdout
-    .split("\n")
-    .filter((line) => line.length > 0)
-    .map((line, index) =>
-      parseStrictJson<LeanResultRecord>(
-        line,
-        `Lean result line ${index + 1}`,
-      ));
+  const records = parseLeanResultRecords(execution.stdout);
   const indexedRecords = indexExactRecords(
     records,
     contexts.map(({ scenario }) => scenario.id),

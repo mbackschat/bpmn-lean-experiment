@@ -15,7 +15,7 @@ import {
 import type { Scenario, ScenarioResult, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
 import { compile, profile, source } from "../../bpmn-source/test/serial-business-task-fixture.ts";
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
@@ -32,7 +32,7 @@ const observations = [ObservationRequestKind.Deployment, ObservationRequestKind.
 test("serial business lowering, local data, refusals and complete publications agree with Lean", async () => {
   const original = await readFile(source, "utf8");
   const retainedPath = new URL("./fixtures/serial-classification.scenario.json", import.meta.url);
-  const retained = parseStrictJson<Scenario>(await readFile(retainedPath, "utf8"), "retained classification scenario");
+  const retained = parseWireJsonBytes<Scenario>(await readFile(retainedPath), "retained classification scenario");
   assert.equal(retained.id, "classification");
   assert.equal(retained.profile, profile);
   assert.ok(retained.bpmn.sourceOverlay !== null);
@@ -114,7 +114,7 @@ test("serial business lowering, local data, refusals and complete publications a
       return file;
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
-    const records = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "serial business Lean result"));
     assert.equal(records.length, inputs.length);

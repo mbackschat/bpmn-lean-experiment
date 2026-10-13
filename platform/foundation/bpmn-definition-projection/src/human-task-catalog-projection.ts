@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import {
   decodeCanonicalHumanTaskCatalogV1,
   decodeStructuredFormDefinitionV1,
-  parseStrictJson,
+  parseWireJson,
   serializeHumanTaskCatalogV1,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -249,7 +249,7 @@ function decodeStructuredFormSource(
 }> | undefined {
   if (body === undefined || !body.isWellFormed()) return undefined;
   try {
-    const value = parseStrictJson(new TextEncoder().encode(body));
+    const value = parseWireJson(new TextEncoder().encode(body));
     if (!plainObject(value)) return undefined;
     const keys = Object.keys(value).toSorted();
     if (

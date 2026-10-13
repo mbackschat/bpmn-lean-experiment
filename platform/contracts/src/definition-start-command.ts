@@ -12,7 +12,7 @@ import {
 } from "./decoder-primitives.js";
 import { requirePublicationVariableValue } from "./execution-publication-variable-value-decoder.js";
 import type { VariableBinding } from "./execution-publications.js";
-import { parseStrictJson } from "./strict-json.js";
+import { parseWireJson } from "./strict-json.js";
 
 /** The exact Product 2 command for starting one immutable deployed definition version. */
 export type DefinitionVersionStartCommand = DeepReadonly<{
@@ -54,7 +54,7 @@ export function decodeCanonicalDefinitionVersionStartCommand(
   bytes: Uint8Array,
 ): DefinitionVersionStartCommand {
   try {
-    const command = decodeDefinitionVersionStartCommand(parseStrictJson(bytes));
+    const command = decodeDefinitionVersionStartCommand(parseWireJson(bytes));
     const canonical = serializeCanonicalJsonValue(command);
     if (!sameCanonicalJsonBytes(bytes, canonical)) throw new TypeError("noncanonical bytes");
     return command;

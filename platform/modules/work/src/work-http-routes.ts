@@ -16,7 +16,7 @@ import {
   matchWorkTaskPath,
   matchWorkTaskReleasePath,
   matchWorkTasksPath,
-  parseStrictJson,
+  parseWireJson,
   projectionFreshnessResponseHeaders,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -239,7 +239,7 @@ async function readJson<Result>(
   const bytes = await readBody(request, WorkMutationBodyByteLimit);
   if (bytes.byteLength === 0) throw invalidTransport();
   try {
-    return decoder(parseStrictJson(bytes));
+    return decoder(parseWireJson(bytes));
   } catch {
     throw invalidTransport();
   }
@@ -252,7 +252,8 @@ async function readCompletionJson(request: Request): Promise<WorkCompletionReque
   if (bytes.byteLength === 0) throw invalidTransport();
   let decoded: WorkCompletionRequest;
   try {
-    decoded = decodeWorkCompletionRequest(parseStrictJson(bytes));
+    // AA-13 selects the typed envelope; catalog validation still owns raw structured form fields.
+    decoded = decodeWorkCompletionRequest(parseWireJson(bytes, (path) => path[0] !== "fields"));
   } catch {
     throw invalidTransport();
   }

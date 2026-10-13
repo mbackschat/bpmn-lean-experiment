@@ -13,7 +13,7 @@ import {
   definitionVersionsPath,
   definitionVersionSourcePath,
   LegacyPublicApiErrorCodes,
-  parseStrictJson,
+  parseWireJson,
   serializeDefinitionVersionStartCommand,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -302,7 +302,7 @@ async function readJson(response: Response): Promise<unknown> {
   }
   try {
     const bytes = new Uint8Array(await response.arrayBuffer());
-    return parseStrictJson(bytes);
+    return parseWireJson(bytes);
   } catch (cause: unknown) {
     throw new DefinitionProtocolError("definition API returned malformed JSON", { cause });
   }

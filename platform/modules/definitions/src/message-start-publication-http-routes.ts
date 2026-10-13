@@ -2,7 +2,7 @@ import {
   decodePutMessageStartPublicationRequest,
   matchMessageStartPublicationPath,
   MessageStartPublicationStatus,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -123,7 +123,7 @@ async function readPublicationRequest(
   });
   let value: unknown;
   try {
-    value = parseStrictJson(bytes);
+    value = parseWireJson(bytes);
   } catch {
     throw invalidRequest(
       "The Message Start publication request must be valid UTF-8 JSON.",

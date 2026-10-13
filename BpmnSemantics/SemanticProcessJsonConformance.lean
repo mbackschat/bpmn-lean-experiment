@@ -114,6 +114,26 @@ theorem negative_zero_spellings_are_rejected :
       parseRejected "-0e1" = true := by
   native_decide
 
+private def exactWireIntegerAdmissionWitness : IO Unit := do
+  unless ["1.0", "1e1", "1E+2", "1.0000000000000001",
+      "9007199254740991.1", "1e-400", "1e400", "-1",
+      "9007199254740992", "9007199254740993"].all parseRejected do
+    throw (IO.userError "wire integer tokens: noncanonical or inexact spelling admitted")
+  unless ["0", "1", "9007199254740991"].all (fun text =>
+      match parseWireJson text >>= decodeSafeNat with
+      | .ok value => toString value == text
+      | .error _ => false) do
+    throw (IO.userError "wire integer tokens: canonical value changed or refused")
+  unless parseRejected "{\"value\":[0,{\"activation\":1e1}]}" &&
+      parseRejected "{\"value\":[0,{\"activation\":9007199254740991.1}]}" &&
+      !parseRejected "{\"value\":[0,{\"activation\":9007199254740991}]}" do
+    throw (IO.userError "wire integer tokens: nested admission mismatch")
+  unless !parseRejected "{\"value\":\"-0 1e1 1.0 9007199254740993\"}" &&
+      !parseRejected "{\"value\":\"quoted \\\"1e1\\\" and \\\\ slash\",\"activation\":1}" do
+    throw (IO.userError "wire integer tokens: string content treated as a number")
+
+#eval exactWireIntegerAdmissionWitness
+
 theorem new_variable_value_arms_round_trip_without_normalization :
     variableValueDecodedAs (.integer 4250)
         (decodeVariableValue (encodeVariableValue (.integer 4250))) = true ∧

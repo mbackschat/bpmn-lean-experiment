@@ -158,11 +158,30 @@ test("rejects malformed chunked JSON and recursively invalid commands before ser
   assert.equal(fixture.startCalls, 0);
 
   const invalid = await fixture.routes.handle(startRequest({
-    initialVariables: [{ name: "input", value: { kind: "integer", value: -1 } }],
+    initialVariables: [{ name: "input", value: { kind: "integer", value: "1" } }],
   }));
   assert.equal(invalid?.status, 422);
   assert.equal(fixture.repositoryGets, 0);
   assert.equal(fixture.startCalls, 0);
+});
+
+test("refuses raw noncanonical start integers before typed command decoding", async () => {
+  for (const token of ["-1", "1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
+    const fixture = createFixture();
+    const response = await fixture.routes.handle(new Request(startUrl(), {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: `{"initialVariables":[{"name":"input","value":{"kind":"integer","value":${token}}}]}`,
+    }));
+    assert.equal(response?.status, 400, token);
+    assert.equal(fixture.repositoryGets, 0, token);
+    assert.equal(fixture.startCalls, 0, token);
+  }
+  const control = createFixture();
+  const response = await control.routes.handle(startRequest({
+    initialVariables: [{ name: "input", value: { kind: "integer", value: 1 } }],
+  }));
+  assert.equal(response?.status, 201);
+  assert.equal(control.startCalls, 1);
 });
 
 test("requires a nonempty start-command body", async () => {

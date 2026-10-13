@@ -9,7 +9,7 @@ import type {
   EnginePopulationScenarioResult,
 } from "@bpmn-lean/semantic-core";
 
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson } from "../../../scripts/strict-json.ts";
 import {
   loadMessageKeyCorrelationPopulationCases,
   runMessageKeyCorrelationPopulationCore,
@@ -58,7 +58,7 @@ test("compares all Message-correlation population schedules between Lean and the
     const records = execution.stdout
       .split("\n")
       .filter((line) => line.length > 0)
-      .map((line, index) => parseStrictJson<LeanPopulationResultRecord>(
+      .map((line, index) => parseWireJson<LeanPopulationResultRecord>(
         line,
         `Lean population result line ${index + 1}`,
       ));

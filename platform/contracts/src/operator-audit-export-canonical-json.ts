@@ -8,7 +8,7 @@ import {
 } from "./operator-audit-export.js";
 import type { OperatorAuditExport } from "./operator-audit-export.js";
 import type { PublicProcessInstanceIdentity } from "./process-instances.js";
-import { parseStrictJson } from "./strict-json.js";
+import { parseWireJson } from "./strict-json.js";
 
 /** Validates and emits the exact bounded UTF-8 operator-audit representation. */
 export function serializeOperatorAuditExport(
@@ -32,7 +32,7 @@ export function decodeCanonicalOperatorAuditExport(
     if (bytes.byteLength > OperatorAuditMaximumCanonicalResponseBytes) {
       throw new TypeError("response byte ceiling exceeded");
     }
-    const parsed = parseStrictJson(bytes);
+    const parsed = parseWireJson(bytes);
     const decoded = decodeOperatorAuditExport(parsed, confirmedInstance);
     const canonical = serializeOperatorAuditExport(decoded, confirmedInstance);
     if (!sameCanonicalJsonBytes(bytes, canonical)) throw new TypeError("noncanonical bytes");

@@ -1,6 +1,6 @@
 import {
   decodeDefinitionVersionStartCommand,
-  parseStrictJson,
+  parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type { DefinitionVersionStartCommand } from "@bpmn-lean/platform-contracts";
@@ -26,7 +26,7 @@ export async function readDefinitionVersionStartCommand(
   });
   let value: unknown;
   try {
-    value = parseStrictJson(bytes);
+    value = parseWireJson(bytes);
   } catch {
     throw new HttpRequestFailure(
       400,

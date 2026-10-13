@@ -14,7 +14,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type { CheckedProcess, SemanticProcessProgram, Scenario, ScenarioResult, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
 import { compile, invoiceWithBurst, profile, source } from "../../bpmn-source/test/mixed-task-control-flow-fixture.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
@@ -31,7 +31,7 @@ test("mixed-task branching, rework, local data and complete publications agree w
   const original = await readFile(source, "utf8");
   const root = fileURLToPath(new URL("../../../", import.meta.url));
   const retainedPath = new URL("./fixtures/mixed-invoice-rework.scenario.json", import.meta.url);
-  const retained = parseStrictJson<Scenario>(await readFile(retainedPath, "utf8"), "retained rework scenario");
+  const retained = parseWireJsonBytes<Scenario>(await readFile(retainedPath), "retained rework scenario");
   assert.equal(retained.id, "invoice-rework");
   assert.equal(retained.profile, profile);
   assert.ok(retained.bpmn.sourceOverlay !== null);
@@ -183,7 +183,7 @@ test("mixed-task branching, rework, local data and complete publications agree w
       return file;
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
-    const records = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "mixed-task Lean result"));
     assert.equal(records.length, inputs.length);

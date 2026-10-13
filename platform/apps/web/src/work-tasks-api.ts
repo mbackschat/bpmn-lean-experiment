@@ -9,7 +9,7 @@ import {
   workTaskPath,
   workTaskReleasePath,
   workTasksPath,
-  parseStrictJson,
+  parseWireJson,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PublicTaskDetail,
@@ -178,7 +178,7 @@ async function decodeJson<Result>(
   }
   try {
     const bytes = new Uint8Array(await response.arrayBuffer());
-    return decoder(parseStrictJson(bytes));
+    return decoder(parseWireJson(bytes));
   } catch (cause: unknown) {
     if (cause instanceof WorkProtocolError) throw cause;
     throw new WorkProtocolError(`${label} violates the public contract`, { cause });

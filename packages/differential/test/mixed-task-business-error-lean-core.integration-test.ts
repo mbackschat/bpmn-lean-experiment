@@ -15,7 +15,7 @@ import {
 import type { Scenario, ScenarioResult, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
 import { compile, profile, source } from "../../bpmn-source/test/mixed-task-business-error-fixture.ts";
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
-import { parseStrictJson } from "../../../scripts/strict-json.ts";
+import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 import { runLeanInterpreter } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
@@ -96,7 +96,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
     assert.deepEqual(normalized, baseline.program);
   }
   const retainedPath = new URL("./fixtures/business-error.scenario.json", import.meta.url);
-  const retained = parseStrictJson<Scenario>(await readFile(retainedPath, "utf8"), "retained business Error scenario");
+  const retained = parseWireJsonBytes<Scenario>(await readFile(retainedPath), "retained business Error scenario");
   assert.equal(retained.id, "invoice-business-error-recovery");
   assert.equal(retained.profile, profile);
   assert.ok(retained.bpmn.sourceOverlay !== null);
@@ -127,7 +127,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
       return file;
     }));
     const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
-    const records = execution.stdout.trim().split("\n").map(line => parseStrictJson<{
+    const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "business Error Lean result"));
     assert.equal(records.length, inputs.length);
