@@ -72,6 +72,8 @@ Transaction semantics: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](EN
 
 Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lean-assurance-lane): semantic/hosting checkpoints approved; [execution](../BpmnSemantics/SemanticProcess/StructuredCompositionCompletionAvailabilityProofs.lean)/parity retained; helper correction approved `da2b3ca3`. Closure open.
 
+[Portable handoff](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#lean-assurance-lane): checked lane with [finite witnesses](../BpmnSemantics/PortableHandoffConformance.lean); no restoration.
+
 [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; registered; closure pending.
 
 ### Runtime scoped data
@@ -181,7 +183,7 @@ Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lea
 
 [RC dependency assessment](INTERNAL-COMMUTATION-PROPOSAL.md#rc-admission-dependency-assessment) scopes exclusions and reopening conditions.
 
-Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Cycles require bounded User Task or mixed-task profiles. Only M6 User Task completion admits integers. String-list values are confined to M6 completion and exact profile-gated sequential Multi-Instance start/output; Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
+Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Cycles require bounded User Task or mixed-task profiles. Value domains: [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md#semantic-profile); Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
 
 The identity bound excludes Message, Effect, Event race, Call, ordinary Scope, and called roots. Only Activity issuing is checkpoint-approved; other issuing disciplines and general preservation remain absent.
 
@@ -214,7 +216,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 - generalized enabled-transition, supported-closure, admission, observation, and stimulus-list correspondence remain unresolved
 - complete multiple-enabled closure beyond prepared arming/local-control/scope-creation/regional/End/Merge families, and public or hosted scheduled choice
 - replay/host-attempt stability as a Lean proposition
-- general or repeated scopes, nested/heterogeneous/decimal values, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
+- general or repeated scopes, nested/heterogeneous/decimal values beyond handoff witnesses, effect faults, catch-all/multi-handler/ancestor Error search, expression languages, or exceptional propagation beyond one direct parent
 - TypeScript or Temporal correspondence proof
 - arbitrary BPMN XML parsing
 

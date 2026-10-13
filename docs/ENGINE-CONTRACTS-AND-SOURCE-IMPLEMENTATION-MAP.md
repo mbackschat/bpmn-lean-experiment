@@ -59,7 +59,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
-- one strict five-arm String/null/Boolean/non-negative-safe-integer/ordered-String-list value union with profile-specific surface admission and bounded canonical transport
+- one strict String/null/Boolean/non-negative-safe-integer/ordered-String-list value union, plus Decimal/List/Map on the handoff path, with profile-specific surface admission and bounded canonical transport
 - Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches
 - required canonical `submittedValues` on exact User Task completion, with empty-patch preservation and no legacy reader
 - raw CIB state-query, task-query, timer-job, effect-job, effect-execution, and mapping-execution observations with verifier-reconstructed canonical projections that reuse the adapter's ordering and constant-field rules
@@ -94,6 +94,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 - one registered interchange successor selects the CIB Seven User Task Process-data value domain and the standard-notation preservation capability while retaining predecessor checked-graph and IL content modulo exact source and profile identity; both predecessor profiles remain narrower
 - one registered standards-only parallel Multi-Instance profile selects explicit parallel `All`, exact `stringEquals(completionPolicy,"first")`, the direct String collection graph, one outer `PT5S` Timer, and the fixed 16-item/512-byte/8,192-canonical-byte bounds without selecting CIB execution
 - one registered standards-only Activity data-input profile selects one required scalar `DataInput`, one direct `DataInputAssociation` from one Process `Property`, an empty `OutputSet`, and a String-or-null Process-start value domain, with an empty User Task completion domain and no CIB execution target
+- one registered standards-only [portable handoff profile](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-checkpoint) selects two chained User Tasks with SingletonBusinessItem start/completion domains
 - one registered composed Activity-data profile selects one scalar input/output, distinct direct associations and Properties, unpaired sets, and String/null start/completion domains without CIB data behavior
 - one registered standards-only Activity data-output profile selects one required scalar `DataOutput`, one direct `DataOutputAssociation` into one Process `Property`, an empty `InputSet`, and a String-or-null User Task completion value domain, with an empty Process-start domain and no CIB execution target
 - one registered standards-only Activity boundary Message profile selects the exact empty Process-start and User Task-completion value domains without a CIB Message Boundary target
@@ -169,8 +170,7 @@ This section owns a cross-cutting admission rule that no single capsule owns, be
 ### Wire contracts
 
 - Parallel legacy schemas, migration readers, compatibility switches, general assertion language
-- negative, fractional, unsafe, nested, heterogeneous, or other values; integer use outside M6 completion; String-list use outside M6 completion and the exact profile-gated sequential and parallel Multi-Instance Process-start bindings
-- wider or decimal numeric domain
+- any value outside a registered profile's declared domain above
 - identifier normalization or locale-sensitive ordering
 
 ### Semantic profile

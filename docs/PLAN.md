@@ -83,11 +83,11 @@ Deliverable: Carry a nested order through both tasks and terminal publication.
 
 Acceptance blockers: selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [Property-path runtime checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-checkpoint) is implemented in the working tree: profile-derived policy, independent Lean/TypeScript admission and Start rule, Start copy fix and witnesses. TypeScript gates are green under `/tmp/pho-ts-final2-*-20261013`; the three changed conformance modules pass the Docker memory bound under `/tmp/pho-resource-20261013/measure-*`; `/tmp/pho-lean-full-4-20261013` fails only the deferred `SequentialScopeCommandResumptionProofs` placeholder. The `890b010f` alias regression is repaired at its seven call sites in a separate commit; deleting the `SequentialScopeControl.inputs` alias itself rebuilds 785 modules and is folded into the next already-scheduled complete rebuild. Deferred `890b010f` keeps the placeholder module and the `SequentialScopeGraphConformance` cost row red. PMIS capacity timeouts remain held.
+Current result: The [Property-path runtime checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-checkpoint) is committed (`363852ee`) with the `890b010f` alias call-site repair (`4e15fa4b`; alias removal waits for a scheduled complete rebuild). Gates: `/tmp/pho-lean-full-4-20261013` red only on the deferred placeholder; `/tmp/pho-pipeline-20261013` green. Deferred `890b010f` keeps that module and the `SequentialScopeGraphConformance` cost row red. PMIS capacity timeouts remain held.
 
 Effort budget: 480 minutes wall from 2026-10-13 09:35 UTC for the Property-path runtime through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
 
-Next action: Confirm the pipeline receipt `/tmp/pho-pipeline-20261013`, commit the batch and the alias call-site repair separately, then request the semantic-checkpoint cold review.
+Next action: Obtain the cold reviewer's warm audit of the map-correction commit, then record the receipt and approval status.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 

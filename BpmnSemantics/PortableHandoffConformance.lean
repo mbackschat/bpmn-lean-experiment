@@ -92,7 +92,9 @@ theorem handoff_shapes_admitted_independent_of_names_and_order :
     programProfileCapabilitiesValid handoff = true ∧
       programProfileCapabilitiesValid renamed = true ∧
       portableHandoffProgramInput? handoff = some "OrderDraft" ∧
-      portableHandoffProgramInput? renamed = some "Draft" := by
+      portableHandoffProgramInput? renamed = some "Draft" ∧
+      locals (start renamed [{ name := "Draft", value := order }]).state =
+        [[{ name := "CheckInput", value := order }]] := by
   decide +kernel
 
 /-- A second task that rereads the Start Property instead of the first task's output, or a shared
@@ -120,11 +122,16 @@ theorem start_admits_only_one_singleton_item_for_the_start_property :
         .rejected := by
   decide +kernel
 
-/-- PBV-INGRESS-01: the same Program under the structured-composition profile refuses the order. -/
+private def structuredHandoff : Program :=
+  { handoff with identity := { handoff.identity with
+      semanticProfile := structuredCompositionCheckpointProfileId } }
+
+/-- PBV-INGRESS-01: the same Program under the structured-composition profile still starts with a
+String but refuses the order. -/
 theorem old_profile_refuses_the_order :
-    (start { handoff with identity := { handoff.identity with
-        semanticProfile := structuredCompositionCheckpointProfileId } }
-      [{ name := "OrderDraft", value := order }]).outcome = .rejected := by
+    (start structuredHandoff [{ name := "OrderDraft", value := .string "order-1" }]).outcome =
+        .committed ∧
+      (start structuredHandoff [{ name := "OrderDraft", value := order }]).outcome = .rejected := by
   decide +kernel
 
 /-- PBV-TREE-01 and PBV-AMOUNT-01 through both tasks: each task receives the exact value the
