@@ -6,6 +6,7 @@ import { activityAssociationsConflict } from "./internal-transition-activity-ass
 import { internalOperationAlternative } from "./internal-transition-alternative.js";
 import type { InternalOperationAlternative } from "./internal-transition-alternative.js";
 import { deriveInternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
+import { propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
 import type { InternalDataArmingOperation, InternalDataArmingPatch } from "./internal-transition-data-arming-patch.js";
 import { canonicalUniquePublicationAtoms, canonicalUniqueStateAtoms } from "./internal-transition-footprint-ordering.js";
 import type { InternalTransitionCandidate, InternalTransitionFootprint, InternalTransitionStateAtom } from "./internal-transition-footprint.js";
@@ -63,7 +64,8 @@ export function deriveInternalDataArmingPreparation(
     !affectedTokenBucketsAreExact(state, owner, [operation.input], []) ||
     !operationIsUniqueWaitDeclarer(program, operation, InternalOccurrenceKind.UserTask, operation.task.elementId)
   ) return null;
-  const patch = deriveInternalDataArmingPatch(operation, state, owner);
+  const patch = deriveInternalDataArmingPatch(
+    operation, state, owner, propertyPathValuePolicyForProfile(program.identity.semanticProfile));
   if (
     patch === null ||
     !safeActivation(patch.wait.id.activation) || !safeActivation(patch.record.id.activation) ||

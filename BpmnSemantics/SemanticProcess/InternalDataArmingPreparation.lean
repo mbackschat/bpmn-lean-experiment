@@ -39,13 +39,13 @@ def InternalDataArmingContract.operation (contract : InternalDataArmingContract)
       directOutput
 
 def InternalDataArmingContract.activate? (contract : InternalDataArmingContract)
-    (state : RuntimeState) : Option RuntimeState :=
+    (policy : PropertyPathValuePolicy) (state : RuntimeState) : Option RuntimeState :=
   match contract.data with
   | .input directInput => activateDataInputUserTask? state contract.input contract.output
       contract.taskId contract.taskName directInput
   | .output _ => activateDataOutputUserTask? state contract.input contract.output
       contract.taskId contract.taskName
-  | .inputOutput directInput _ => activateDataInputOutputUserTask? state contract.input
+  | .inputOutput directInput _ => activateDataInputOutputUserTask? policy state contract.input
       contract.output contract.taskId contract.taskName directInput
 
 def InternalDataArmingData.inputAssociation? : InternalDataArmingData → Option DirectActivityDataInput
@@ -75,23 +75,23 @@ def dataArmingHostValid (state : RuntimeState) (owner : ScopeOccurrenceId)
 
 /-- ADOUTPUT entry owns an empty local scope without reading the Property written at completion.
 Copied values use the full selected owner; null is available while absence or ambiguity refuses. -/
-def dataArmingBindings? (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (data : InternalDataArmingData) : Option (List VariableBinding) :=
+def dataArmingBindings? (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (data : InternalDataArmingData) : Option (List VariableBinding) :=
   if dataArmingEndpointKindsValid data then
     match data.inputAssociation? with
     | none => some []
     | some directInput => do
-        let source ← dataInputOutputSourceBinding? state owner directInput
+        let source ← dataInputOutputSourceBinding? policy state owner directInput
         pure [{ name := directInput.targetDataInputId, value := source.value }]
   else none
 
-theorem dataArmingBindings_process_frame (before after : RuntimeState)
-    (owner : ScopeOccurrenceId) (data : InternalDataArmingData)
+theorem dataArmingBindings_process_frame (policy : PropertyPathValuePolicy)
+    (before after : RuntimeState) (owner : ScopeOccurrenceId) (data : InternalDataArmingData)
     (control : after.control = before.control)
     (same : after.variables.process = before.variables.process)
     (interfaces : after.variables.processInterfaces.filter (fun scope => decide (scope.owner = owner)) =
       before.variables.processInterfaces.filter (fun scope => decide (scope.owner = owner))) :
-    dataArmingBindings? after owner data = dataArmingBindings? before owner data := by
+    dataArmingBindings? policy after owner data = dataArmingBindings? policy before owner data := by
   simp only [dataArmingBindings?, dataInputOutputSourceBinding?, readActivityDataInput?,
     activityDataPropertyOwner, readProcessInterfaceInput?, selectProcessInterface?, control, same,
     interfaces]
@@ -175,7 +175,7 @@ def prepareInternalDataArmingContract? (program : Program) (state : RuntimeState
       !exactProgramSelection program contract.operation owner ||
       !exactLiveOccurrence state owner then none else pure ()
   let inputOrigin ← selectedInputOrigin? program contract.input owner
-  let source ← dataArmingBindings? state owner contract.data
+  let source ← dataArmingBindings? (programPropertyPathValuePolicy program) state owner contract.data
   let patch := makeInternalDataArmingPatch program state contract owner inputOrigin source
   if !uniqueFamilyDeclarer? program contract.operation .userTask ⟨contract.taskId.value⟩ ||
       !openWaitAnchorAbsent state patch.arm.write.occurrence ||
@@ -209,7 +209,7 @@ theorem prepareInternalDataArmingContract_facts
       exactProgramSelection program contract.operation owner = true ∧
       exactLiveOccurrence state owner = true ∧
       selectedInputOrigin? program contract.input owner = some inputOrigin ∧
-      dataArmingBindings? state owner contract.data = some source ∧
+      dataArmingBindings? (programPropertyPathValuePolicy program) state owner contract.data = some source ∧
       uniqueFamilyDeclarer? program contract.operation .userTask ⟨contract.taskId.value⟩ = true ∧
       openWaitAnchorAbsent state patch.arm.write.occurrence = true ∧
       state.variables.activities.any
@@ -239,13 +239,13 @@ theorem prepareInternalDataArmingContract_issuesFreshActivity
     (dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId)
     (by simp [dataInputOutputActivityRecord])
 
-theorem dataArmingBindings_property_frame (before after : RuntimeState)
-    (owner : ScopeOccurrenceId) (data : InternalDataArmingData)
+theorem dataArmingBindings_property_frame (policy : PropertyPathValuePolicy)
+    (before after : RuntimeState) (owner : ScopeOccurrenceId) (data : InternalDataArmingData)
     (control : after.control = before.control)
     (same : after.variables.process = before.variables.process)
     (properties : ∀ input, data.inputAssociation? = some input →
       ∃ propertyId, input.source = .property propertyId) :
-    dataArmingBindings? after owner data = dataArmingBindings? before owner data := by
+    dataArmingBindings? policy after owner data = dataArmingBindings? policy before owner data := by
   cases association : data.inputAssociation? with
   | none => simp [dataArmingBindings?, association]
   | some input =>
@@ -262,7 +262,7 @@ theorem prepareInternalDataArmingContract_of_premises
     (selected : exactProgramSelection program contract.operation owner = true)
     (live : exactLiveOccurrence state owner = true)
     (origin : selectedInputOrigin? program contract.input owner = some inputOrigin)
-    (available : dataArmingBindings? state owner contract.data = some bindings)
+    (available : dataArmingBindings? (programPropertyPathValuePolicy program) state owner contract.data = some bindings)
     (unique : uniqueFamilyDeclarer? program contract.operation .userTask ⟨contract.taskId.value⟩ = true) :
     let patch := makeInternalDataArmingPatch program state contract owner inputOrigin bindings
     openWaitAnchorAbsent state patch.arm.write.occurrence = true →
@@ -279,7 +279,7 @@ theorem prepareInternalDataArmingContract_unavailable_source
     {program : Program} {state : RuntimeState} {contract : InternalDataArmingContract}
     {owner : ScopeOccurrenceId}
     (owned : onlyTokenOwner? state contract.input = some owner)
-    (unavailable : dataArmingBindings? state owner contract.data = none) :
+    (unavailable : dataArmingBindings? (programPropertyPathValuePolicy program) state owner contract.data = none) :
     prepareInternalDataArmingContract? program state contract = none := by
   simp [prepareInternalDataArmingContract?, owned, unavailable]
 

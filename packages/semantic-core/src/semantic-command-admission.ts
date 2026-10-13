@@ -136,6 +136,7 @@ import { initializeCompensationExecutionState } from "./compensation-trigger-han
 import { completeCompensationHandlerEffect } from "./compensation-trigger-handler-completion.js";
 import { compensationStartDataAdmitted } from "./compensation-start-data-admission.js";
 import { structuredCompositionStimulusDataAdmitted } from "./structured-process-composition-admission.js";
+import { portableHandoffStimulusDataAdmitted } from "./portable-handoff-admission.js";
 
 export type SemanticCommandOutcome =
   | CommandOutcome.Committed
@@ -238,6 +239,7 @@ function admitValidated(
     !serialBusinessStimulusDataAdmitted(program, stimulus) ||
     !sequentialScopeStimulusDataAdmitted(program, stimulus) ||
     !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
+    !portableHandoffStimulusDataAdmitted(program, stimulus) ||
     !incidentStateAllowsDispatch(program, state) ||
     !admissibleCommittedState(program, state) ||
     !callDataStateIsValid(program, state) ||

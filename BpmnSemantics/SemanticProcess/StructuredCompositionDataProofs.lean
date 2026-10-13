@@ -65,7 +65,7 @@ theorem present_unique_typed_input_is_available
     (present : BindingPresent state.variables.process.bindings input.source.id)
     (typed : ∀ binding ∈ state.variables.process.bindings,
       variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart binding.value = true) :
-    ∃ binding, dataInputOutputSourceBinding? state owner input = some binding := by
+    ∃ binding, dataInputOutputSourceBinding? .scalar state owner input = some binding := by
   obtain ⟨binding, filtered⟩ := present_unique_name_has_exact_lookup _ input.source.id unique present
   have member : binding ∈ state.variables.process.bindings := (List.mem_filter.mp
     (show binding ∈ state.variables.process.bindings.filter
@@ -388,7 +388,7 @@ theorem ordinary_composition_completion_has_empty_patch
 theorem composed_completion_preserves_valid_bindings
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
     (taskId : TaskDefinitionId) (activation : Nat) (bindings : List VariableBinding)
-    (_profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
+    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId)
     (valid : ProcessBindingsValid before.variables.process.bindings)
     (_accepted : processDataBindingsAdmitted program.identity.semanticProfile
       .userTaskCompletion bindings = true)
@@ -396,7 +396,9 @@ theorem composed_completion_preserves_valid_bindings
       bindings = some after) : ProcessBindingsValid after.variables.process.bindings := by
   rcases dataInputOutputCompletionProcessEffect completed with unchanged | ⟨written, scalar, changed⟩
   · simpa only [unchanged] using valid
-  · rw [changed]
+  · rw [programPropertyPathValuePolicy_eq_scalar (by simp [profile]),
+      PropertyPathValuePolicy.scalar_admits] at scalar
+    rw [changed]
     refine ⟨merge_single_write_preserves_unique_names _ written valid.1, ?_⟩
     intro binding included
     rcases List.mem_append.mp ((mergeProcessVariableBindings_perm before.variables.process.bindings
@@ -525,7 +527,7 @@ theorem input_position_supplies_data_task_lookup
     (positions : RuntimeInputPositions program vertices analysis state)
     (valid : ProcessBindingsValid state.variables.process.bindings)
     (required : ∀ name ∈ analysis.required, BindingPresent state.variables.process.bindings name) :
-    ∃ binding, dataInputOutputSourceBinding? state token.owner directInput = some binding := by
+    ∃ binding, dataInputOutputSourceBinding? .scalar state token.owner directInput = some binding := by
   obtain ⟨target, consumer, present⟩ := positions.1 token live
   rw [position] at consumer
   have named := consumer_names_the_input_operation program input target _ consumer member (by

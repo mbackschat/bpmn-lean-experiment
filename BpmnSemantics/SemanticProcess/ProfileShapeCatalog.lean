@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.ProfileCardinalities
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
@@ -521,6 +522,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
       profile = structuredCompositionCheckpointProfileId.value ||
+      profile = portableHandoffProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
       profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
@@ -566,6 +568,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
     (SerialBusinessTask.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
+  else if source.identity.semanticProfile == portableHandoffProfileId then
+    portableHandoffCheckedGraph source
   else if source.identity.semanticProfile == transactionCancellationCheckpointProfileId then
     transactionCancellationCheckedGraph source
   else transactionSourceAbsent source &&
@@ -682,6 +686,8 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
         (MixedTaskControlFlow.programAnalysis program).isSome
       else if program.identity.semanticProfile == serialBusinessTaskProfileId then
         (SerialBusinessTask.programAnalysis program).isSome
+      else if program.identity.semanticProfile == portableHandoffProfileId then
+        portableHandoffProgramGraph program
       else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
         structuredCompositionProgramGraph program
 

@@ -10,6 +10,8 @@ type DomainContext = Pick<PipelineContext, "scenario" | "checkedProcess" | "sema
 export type DomainCase = Readonly<{ context: DomainContext; scenario: Scenario; supported: boolean }>;
 const stringNull = [VariableValueKind.String, VariableValueKind.Null];
 const booleanCompletion = [...stringNull, VariableValueKind.Boolean];
+// SingletonBusinessItem at kind level; the 1,024-byte root String bound is exercised by explicit cases below.
+const singletonBusinessItem = [...booleanCompletion, VariableValueKind.Integer, VariableValueKind.Decimal, VariableValueKind.Map];
 const userDomains = new Map<string, readonly VariableValueKind[]>([
   ...[SemanticProfileId.UserTask, SemanticProfileId.UserTaskProcessDataPreservedNotation, SemanticProfileId.UserTaskCycle,
     SemanticProfileId.ActivityDataOutputUserTask, SemanticProfileId.ActivityDataInputOutputUserTask,
@@ -22,6 +24,7 @@ const userDomains = new Map<string, readonly VariableValueKind[]>([
     .map(profile => [profile, [VariableValueKind.String]] as const),
   // Explicit rather than `Object.values`, so a newly recognized arm is never expected here until the profile selects it.
   [SemanticProfileId.StructuredHumanWork, [...booleanCompletion, VariableValueKind.Integer, VariableValueKind.StringList]],
+  [SemanticProfileId.PortableBusinessValuesHandoff, singletonBusinessItem],
 ]);
 const effectDomains = new Map<string, readonly VariableValueKind[]>([
   [SemanticProfileId.MappedSuccessServiceTask, [VariableValueKind.String]],
@@ -113,6 +116,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
         value: { kind: VariableValueKind.String, value: "x".repeat(snapshots.limits.maxCanonicalBytes + 1) } }], false);
     }
   }
+  addPortableHandoffCases(selected.get(SemanticProfileId.PortableBusinessValuesHandoff)!, add);
   const startDomains = new Map<string, readonly VariableValueKind[]>([
     [SemanticProfileId.UserTask, stringNull], [SemanticProfileId.UserTaskBooleanCompletionData, stringNull],
     [SemanticProfileId.EmbeddedSubProcessCompletion, []],
@@ -178,4 +182,33 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     ["observations", { observations: embedded.scenario.observations.slice(1) }],
   ] as const) cases.push({ context: embedded, scenario: { ...changedScenario(embedded, label, embedded.scenario.stimuli), ...patch }, supported: false });
   return cases;
+}
+
+type AddCase = (context: DomainContext, suffix: string, stimuli: readonly Stimulus[], supported: boolean) => void;
+
+/**
+ * The serial portable handoff selects Process Start and User Task completion only, with exactly one P_in binding and a
+ * 1,024-byte root String bound. Each case changes one fact of the retained answer-free Start, so only that fact can move
+ * the expectation.
+ */
+function addPortableHandoffCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess && start.initialVariables.length === 1);
+  const pin = start.initialVariables[0]!.name;
+  const rest = context.scenario.stimuli.slice(1);
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...rest], supported);
+  const string = (bytes: number): VariableValue => ({ kind: VariableValueKind.String, value: "a".repeat(bytes) });
+  for (const value of values) startWith(`start-${value.kind}`, [{ name: pin, value }], singletonBusinessItem.includes(value.kind));
+  startWith("start-string-exact-bound", [{ name: pin, value: string(1024) }], true);
+  startWith("start-string-over-bound", [{ name: pin, value: string(1025) }], false);
+  startWith("invalid-start-data-missing", [], false);
+  startWith("invalid-start-data-undeclared", [{ name: "zzUndeclared", value: values[0]! }], false);
+  startWith("invalid-start-data-extra", [...start.initialVariables, { name: "zzUndeclared", value: values[0]! }], false);
+  const occurrence = { processInstanceId: start.instanceId, elementId: "Unavailable", activation: 1 };
+  for (const [label, value, supported] of [["exact-bound", string(1024), true], ["over-bound", string(1025), false]] as const) {
+    const stimulus: Stimulus = { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-human-${label}`,
+      taskId: occurrence, submittedValues: [{ name: "candidate", value: values[0]! }, { name: "zzLater", value }] };
+    add(context, `human-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+  }
 }

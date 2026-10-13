@@ -1,0 +1,230 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/portable-business-values-handoff/order-handoff.bpmn",
+    "sourceId": "portable-handoff-order",
+    "semanticProfile": "bpmn-2.0.2-portable-business-values-handoff-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_portable_business_values_handoff_1",
+    "initialVariables": [
+      {
+        "name": "receivedOrder",
+        "value": {
+          "kind": "map",
+          "value": [
+            {
+              "name": "address",
+              "value": {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "city",
+                    "value": {
+                      "kind": "string",
+                      "value": "Berlin"
+                    }
+                  },
+                  {
+                    "name": "line2",
+                    "value": {
+                      "kind": "null"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "items",
+              "value": {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "quantity",
+                        "value": {
+                          "kind": "integer",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "name": "sku",
+                        "value": {
+                          "kind": "string",
+                          "value": "A"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "quantity",
+                        "value": {
+                          "kind": "integer",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "name": "sku",
+                        "value": {
+                          "kind": "string",
+                          "value": "A"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "total",
+              "value": {
+                "kind": "decimal",
+                "coefficient": "12345",
+                "scale": 2
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "ReviewOrder",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "ReviewOrder_out",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "address",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "city",
+                      "value": {
+                        "kind": "string",
+                        "value": "Berlin"
+                      }
+                    },
+                    {
+                      "name": "line2",
+                      "value": {
+                        "kind": "null"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "items",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 2
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "B"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 1
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "A"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "total",
+                "value": {
+                  "kind": "decimal",
+                  "coefficient": "-125",
+                  "scale": 2
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "ArchiveOrder",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "ArchiveOrder_out",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "archivedItems",
+                "value": {
+                  "kind": "integer",
+                  "value": 2
+                }
+              },
+              {
+                "name": "status",
+                "value": {
+                  "kind": "string",
+                  "value": "archived"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

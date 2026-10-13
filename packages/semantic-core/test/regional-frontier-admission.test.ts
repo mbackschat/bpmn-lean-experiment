@@ -71,6 +71,11 @@ test("classifies every registered profile against the regional exclusion investi
         assert.equal(requiredProgramShape(profile), undefined);
         assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
         break;
+      case SemanticProfileId.PortableBusinessValuesHandoff:
+        assert.equal(excluded, false, "the serial portable handoff admits one fixed four-vertex path outside the legacy fixed-shape premises");
+        assert.equal(requiredProgramShape(profile), undefined);
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
+        break;
       case SemanticProfileId.SerialBusinessTaskComposition:
         assert.equal(excluded, false, "serial business-task admission owns its single-control graph guarantee outside the legacy fixed-shape premises");
         assert.equal(requiredProgramShape(profile), undefined);

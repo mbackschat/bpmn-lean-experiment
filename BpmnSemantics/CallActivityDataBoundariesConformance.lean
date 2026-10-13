@@ -494,7 +494,7 @@ def supplierCalledWait? : Option RuntimeState := do
     (← supplierProgram.operations.find? fun
       | .awaitDataInputOutputUserTask _ _ _ _ taskId .. => taskId.value == "CalledTask"
       | _ => false) | none
-  activateDataInputOutputUserTask? called taskInput taskOutput taskId name directInput
+  activateDataInputOutputUserTask? (programPropertyPathValuePolicy supplierProgram) called taskInput taskOutput taskId name directInput
 
 def supplierComplete (state : RuntimeState) (task : UserTaskInstanceId) (values : List VariableBinding) : ExternalAdmission :=
   admitStimulus supplierProgram state (.completeUserTaskInstance ⟨"complete"⟩ task values)

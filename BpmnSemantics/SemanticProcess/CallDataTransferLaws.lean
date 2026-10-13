@@ -13,7 +13,7 @@ theorem invokeScalarProcessStep_snapshot {before after : RuntimeState}
       calledEntry returnOperationId data after) :
     ∃ caller binding,
       onlyTokenOwner? before input = some caller ∧
-      readActivityDataInput? before caller data.directInput = some binding ∧
+      readActivityDataInput? .scalar before caller data.directInput = some binding ∧
       selectProcessInterface? after.variables (scalarInvocationRoot before caller origin calledRootScopeId) =
         some { owner := scalarInvocationRoot before caller origin calledRootScopeId
                inputs := [{ name := data.called.input.id, value := binding.value }], outputs := [] } ∧

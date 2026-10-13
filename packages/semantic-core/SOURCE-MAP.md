@@ -60,6 +60,9 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-profile.ts](src/semantic-process-profile.ts) | Profile-selected operation capabilities |
 | [repeatable-subscription-admission.ts](src/repeatable-subscription-admission.ts) | Complete checked-graph and Program admission for the bounded subscription profile |
 | [structured-process-composition-admission.ts](src/structured-process-composition-admission.ts) | Registered acyclic structured composition analysis, required initial inputs and task-local completion admission |
+| [portable-handoff-admission.ts](src/portable-handoff-admission.ts) | Independent checked/IL admission of the serial portable handoff's exact four-vertex path and Property wiring, and its command binding names |
+| [singleton-business-item.ts](src/singleton-business-item.ts) | The SingletonBusinessItem port domain and its 1,024-byte root String bound, consulted at every Property-path point |
+| [property-path-value-policy.ts](src/property-path-value-policy.ts) | The Property-path value domain derived from the exact Program profile: scalar for every profile but the serial portable handoff |
 | [semantic-process-limits.ts](src/semantic-process-limits.ts) | Shared automatic-closure limit for admission and execution |
 | [checked-process-profile-shape.ts](src/checked-process-profile-shape.ts) | Profile-selected checked-node shapes |
 | [semantic-program-profile-shape.ts](src/semantic-program-profile-shape.ts) | Profile-selected operation shapes |

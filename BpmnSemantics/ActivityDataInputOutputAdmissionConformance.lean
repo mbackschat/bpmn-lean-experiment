@@ -37,7 +37,7 @@ theorem unsupportedReadyInputStatesRemainRuntimeWellFormed :
 
 theorem unsupportedReadyInputsRefuseComposedActivation :
     [.boolean true, .integer 1, .stringList ["item"]].any (fun value =>
-      (activateDataInputOutputUserTask? (readyWithInput value)
+      (activateDataInputOutputUserTask? (programPropertyPathValuePolicy claimProgram) (readyWithInput value)
         ⟨"place:Flow_ClaimReceived_Assess"⟩ ⟨"place:Flow_AssessClaim_Recorded"⟩
         ⟨"UserTask_AssessClaim"⟩ (some "Assess claim") claimDirectInput).isSome) = false := by
   decide +kernel

@@ -6,6 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
+import { PropertyPathValuePolicy, propertyPathAcceptsValue, propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
 import { carriedVariablePatches } from "./runtime-state-carried-values.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import {
@@ -71,6 +72,13 @@ const portableValueKinds: ReadonlyArray<VariableValueKind> = Object.freeze([
   VariableValueKind.List,
   VariableValueKind.Map,
 ]);
+// Kind level of SingletonBusinessItem: a root List is outside the port, and the root String bound is a value rule.
+const singletonBusinessItemValueDomain = Object.freeze([
+  ...stringNullBooleanValueDomain,
+  VariableValueKind.Integer,
+  VariableValueKind.Decimal,
+  VariableValueKind.Map,
+]);
 const scalarValueDomain = Object.freeze([
   VariableValueKind.Boolean,
   VariableValueKind.Integer,
@@ -108,8 +116,11 @@ export function profileAllowsVariableBindings(
     return false;
   }
   const allowedKinds = profileValueDomain(semanticProfile, surface);
+  // The kind table cannot state the SingletonBusinessItem String bound, so the Property-path policy is consulted too.
+  const policy = propertyPathValuePolicyForProfile(semanticProfile);
   return allowedKinds !== null &&
-    bindings.every(({ value }) => allowedKinds.includes(value.kind));
+    bindings.every(({ value }) => allowedKinds.includes(value.kind) &&
+      (policy === PropertyPathValuePolicy.Scalar || propertyPathAcceptsValue(policy, value)));
 }
 
 function isAdmissionProfile(
@@ -236,6 +247,13 @@ function profileValueDomain(
         stringNullValueDomain,
         structuredHumanWorkValueDomain,
       );
+    case SemanticProfileId.PortableBusinessValuesHandoff:
+      // Effect completion stays empty: the amendment selects only Process Start and User Task completion.
+      return surfaceValueDomain(
+        surface,
+        singletonBusinessItemValueDomain,
+        singletonBusinessItemValueDomain,
+      );
     case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
@@ -269,21 +287,30 @@ function profileValueDomain(
 }
 
 /**
- * Whether a carried state holds a portable recursive value only under a profile that admits one.
+ * Whether a carried state holds only values its profile may have committed.
  *
- * A portable value reaches state solely through an external write surface, so under a profile that
- * selects one at no surface, a carried or restored Decimal, List or Map was never committed
- * (PBV-INGRESS-01). Legacy scalar kinds are not profile-checked here.
+ * A portable value reaches state solely through an external write surface, so under a profile that selects one at no
+ * surface, a carried or restored Decimal, List or Map was never committed (PBV-INGRESS-01); legacy scalar kinds are
+ * not profile-checked there. Under the serial portable handoff every value at every carried path must instead be a
+ * SingletonBusinessItem, because the Property path copies only that domain: a root List or an over-long root String
+ * cannot be the result of any admitted command.
  */
 export function runtimeStateCarriesOnlyProfilePortableValues(
   semanticProfile: string,
   state: RuntimeState,
 ): boolean {
-  if (profileSelectsPortableValue(semanticProfile)) {
-    return true;
+  const policy = propertyPathValuePolicyForProfile(semanticProfile);
+  switch (policy) {
+    case PropertyPathValuePolicy.SingletonBusinessItem:
+      return carriedVariablePatches(state)
+        .every((bindings) => bindings.every(({ value }) => propertyPathAcceptsValue(policy, value)));
+    case PropertyPathValuePolicy.Scalar:
+      if (profileSelectsPortableValue(semanticProfile)) {
+        return true;
+      }
+      return carriedVariablePatches(state)
+        .every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
   }
-  return carriedVariablePatches(state)
-    .every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
 }
 
 function profileSelectsPortableValue(semanticProfile: string): boolean {

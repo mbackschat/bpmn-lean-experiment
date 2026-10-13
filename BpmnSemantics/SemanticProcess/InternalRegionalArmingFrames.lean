@@ -401,8 +401,8 @@ theorem prepareInternalDataArm_retirement_frame (program : Program) (before afte
       dataInputOutputActivityRecord, retirement.tasks, retirement.activities, time,
       dataInputOutputRunningInstance?, control]
   have selectedOwnerEq : patch.arm.owner = selectedOwner := by rw [patchEq]; rfl
-  have sourceFrame : dataArmingBindings? after selectedOwner contract.data = some source := by
-    rw [dataArmingBindings_process_frame before after selectedOwner contract.data control process
+  have sourceFrame : dataArmingBindings? (programPropertyPathValuePolicy program) after selectedOwner contract.data = some source := by
+    rw [dataArmingBindings_process_frame (programPropertyPathValuePolicy program) before after selectedOwner contract.data control process
       (by simpa only [selectedOwnerEq] using interfaces)]
     exact sourceFound
   have scopeFrame : after.variables.activities.any

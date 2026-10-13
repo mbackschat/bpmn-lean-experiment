@@ -132,9 +132,10 @@ theorem exact_task_lifetime_has_admitted_completion
       change directOutput.target = .property directOutput.target.id at endpoint
       obtain ⟨propertyId, propertyEndpoint⟩ : ∃ propertyId, directOutput.target = .property propertyId := ⟨_, endpoint⟩
       change operationOwningScope? program id = some wait.owner.definitionScopeId at staticOwner
+      have scalarPath := programPropertyPathValuePolicy_eq_scalar (program := program) (by simp [profile])
       have ready : ∃ after, completeDataInputOutputUserTask? program state wait.processInstanceId taskId wait.activation
           [{ name := directOutput.sourceDataOutputId, value := .null }] = some after := by
-        simp [completeDataInputOutputUserTask?, dataInputOutputRunningInstance_of_running running, declared,
+        simp [completeDataInputOutputUserTask?, scalarPath, activityDataOutputValueAdmitted, dataInputOutputRunningInstance_of_running running, declared,
           filledDeclaredOutput?, dataInputOutputTaskWait?, waits, taskEq, activityOccurrenceForTaskWait?,
           records, recordBodyNamesWait, activityBodyTask?, taskIdNamesWait, dataInputOutputRuntimeJoinValid,
           outputEq, staticOwner, processOwner, dataInputOutputLocalScope?, scopes, activityOccurrenceScopeMatches,

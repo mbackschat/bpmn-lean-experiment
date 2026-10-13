@@ -73,6 +73,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
     callDataStartBindingsAdmitted program bindings
   else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
     structuredCompositionStartBindingsAdmitted program bindings
+  else if program.identity.semanticProfile = portableHandoffProfileId then
+    portableHandoffStartBindingsAdmitted program bindings
   else if program.identity.semanticProfile = compensationSourceCheckpointProfileId then
     compensationStartDataAdmitted program instanceId bindings
   else if parallelMultiInstanceProgramAdmitted program then

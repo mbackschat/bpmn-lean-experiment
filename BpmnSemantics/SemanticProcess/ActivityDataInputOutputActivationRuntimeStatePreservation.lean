@@ -587,7 +587,8 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
   cases transition with
   | activate instanceId id origin input output taskId taskName directInput directOutput
       declared running owner owned source _ success =>
-      cases available : dataInputOutputSourceBinding? before owner directInput with
+      cases available : dataInputOutputSourceBinding? (programPropertyPathValuePolicy program) before
+          owner directInput with
       | none => simp [available] at source
       | some binding =>
           unfold activateDataInputOutputUserTask? at success

@@ -1,5 +1,6 @@
+import { propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { SemanticOperation } from "./semantic-process-contract.js";
+import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   armDataInputUserTask,
 } from "./semantic-process-activity-data-input-runtime.js";
@@ -26,6 +27,7 @@ type ActivityDataOperation = Extract<
 >;
 
 export function applyActivityDataOperation(
+  program: SemanticProcessProgram,
   operation: ActivityDataOperation,
   state: RuntimeState,
   captureOwner: (owner: ScopeOccurrenceId) => void,
@@ -34,7 +36,7 @@ export function applyActivityDataOperation(
   if (owner === undefined) {
     return null;
   }
-  const successor = applySelectedActivityDataOperation(operation, state, owner);
+  const successor = applySelectedActivityDataOperation(program, operation, state, owner);
   if (successor === null) {
     return null;
   }
@@ -43,6 +45,7 @@ export function applyActivityDataOperation(
 }
 
 function applySelectedActivityDataOperation(
+  program: SemanticProcessProgram,
   operation: ActivityDataOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
@@ -51,7 +54,8 @@ function applySelectedActivityDataOperation(
     case SemanticOperationKind.AwaitDataInputUserTask:
       return armDataInputUserTask(operation, state, owner);
     case SemanticOperationKind.AwaitDataInputOutputUserTask:
-      return armDataInputOutputUserTask(operation, state, owner);
+      return armDataInputOutputUserTask(
+        operation, state, owner, propertyPathValuePolicyForProfile(program.identity.semanticProfile));
     case SemanticOperationKind.AwaitDataOutputUserTask:
       return armDataOutputUserTask(operation, state, owner);
   }

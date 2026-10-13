@@ -24,22 +24,22 @@ def dataInputOutputRunningInstance? (state : RuntimeState) : Option SemanticId :
   | .running instanceId => some instanceId
   | _ => none
 
-/-- Scalar selection is keyed by the selected token owner, not hosting control (CDATA-OWNER-01). -/
-def dataInputOutputSourceBinding? (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (directInput : DirectActivityDataInput) : Option VariableBinding :=
-  readActivityDataInput? state owner directInput
+/-- Source selection is keyed by the selected token owner, not hosting control (CDATA-OWNER-01). -/
+def dataInputOutputSourceBinding? (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (directInput : DirectActivityDataInput) : Option VariableBinding :=
+  readActivityDataInput? policy state owner directInput
 
 /-- `ADIO-READY-01` and `ADIO-SCOPE-01`. Activate one composed Activity only after selecting one
 exact Process input binding, and create its wait, record, and sole input-bearing local scope
 atomically. -/
-def activateDataInputOutputUserTask? (state : RuntimeState)
+def activateDataInputOutputUserTask? (policy : PropertyPathValuePolicy) (state : RuntimeState)
     (input output : ControlPlaceId) (taskId : TaskDefinitionId)
     (taskName : Option String) (directInput : DirectActivityDataInput) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
   let _ ← dataInputOutputRunningInstance? state
   let instanceId := owner.processInstanceId
-  let source ← dataInputOutputSourceBinding? state owner directInput
+  let source ← dataInputOutputSourceBinding? policy state owner directInput
   let taskActivation := activationCount state taskId + 1
   let activityActivation := activityActivationCount state taskId + 1
   let activityOwner : ActivityOccurrenceId :=
@@ -137,15 +137,15 @@ def dataInputOutputRuntimeJoinValid (program : Program)
 /-- The one Activity-local scope a composed task may carry. The value is intentionally not compared
 with current Process data: the scope is the activation-time copy, while later independent Process
 transitions may change the source Property. -/
-def dataInputOutputLocalScope? (state : RuntimeState) (record : ActivityOccurrence)
-    (directInput : DirectActivityDataInput) : Option ActivityVariableScope :=
+def dataInputOutputLocalScope? (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (record : ActivityOccurrence) (directInput : DirectActivityDataInput) :
+    Option ActivityVariableScope :=
   match state.variables.activities.filter
       (activityOccurrenceScopeMatches (activityOwnerForRecord record)) with
   | [scope] =>
       match scope.bindings with
       | [binding] =>
-          if binding.name = directInput.targetDataInputId &&
-              processInterfaceScalar binding.value then
+          if binding.name = directInput.targetDataInputId && policy.admits binding.value then
             some scope
           else
             none
@@ -164,11 +164,13 @@ def completeDataInputOutputUserTask? (program : Program) (state : RuntimeState)
   let task ← dataInputOutputTaskWait? state processInstanceId taskId activation
   let record ← activityOccurrenceForTaskWait? state.activityOccurrences task
   if dataInputOutputRuntimeJoinValid program contract task record then
-    let _ ← dataInputOutputLocalScope? state record contract.directInput
+    let policy := programPropertyPathValuePolicy program
+    let _ ← dataInputOutputLocalScope? policy state record contract.directInput
     let variables ← removeActivityOccurrenceVariableScope state.variables
       (activityOwnerForRecord record)
     if record.attachedHandlers.isEmpty then
-      let routed ← writeActivityDataOutput? state task.owner variables contract.directOutput filled
+      let routed ← writeActivityDataOutput? policy state task.owner variables contract.directOutput
+        filled
       pure
         { state with
           waits := state.waits.erase task

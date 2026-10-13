@@ -8,6 +8,10 @@ const parallelMultiInstanceProfile =
   "bpmn-2.0.2-parallel-multi-instance-user-task-draft";
 const messagePayloadCatchProfile =
   "bpmn-2.0.2-message-payload-catch-draft";
+const portableHandoffProfile =
+  "bpmn-2.0.2-portable-business-values-handoff-draft";
+// SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion.
+const portableHandoffRootStringBytes = 1_024;
 
 export type ScenarioVariableValueContractInput = Readonly<{
   profile: string;
@@ -213,17 +217,25 @@ function verifyProfileValue(
     verifyMessagePayloadValue(profile, tagged);
     return;
   }
+  const portableHandoffSurface = profile === portableHandoffProfile && (surface === "start" || surface === "completion");
   switch (tagged.kind) {
     case "integer":
+      if (portableHandoffSurface) return;
       if (
         profile !== structuredHumanWorkProfile ||
         surface !== "completion"
       ) {
         throw new TypeError(
-          "integer is only admitted for structured Human Work completion",
+          "integer is only admitted for structured Human Work completion or the portable handoff",
         );
       }
       verifyStructuredValue(tagged);
+      return;
+    case "string":
+      if (portableHandoffSurface && typeof tagged.value === "string" &&
+          Buffer.byteLength(tagged.value, "utf8") > portableHandoffRootStringBytes) {
+        throw new TypeError(`portable handoff String exceeds ${portableHandoffRootStringBytes} UTF-8 bytes`);
+      }
       return;
     case "stringList":
       if (
@@ -245,9 +257,14 @@ function verifyProfileValue(
         "stringList is only admitted for structured Human Work completion or Multi-Instance Process start",
       );
     case "decimal":
-    case "list":
     case "map":
-      // The recursive portable arms are well-formed wire values, but no registered profile selects them.
+      // The recursive portable arms are well-formed wire values; only the serial handoff selects them, at two surfaces.
+      if (portableHandoffSurface) return;
+      throw new TypeError(
+        `${tagged.kind} values are admitted by no registered scenario profile`,
+      );
+    case "list":
+      // A root List is never a SingletonBusinessItem, so no registered profile admits it as a scenario value.
       throw new TypeError(
         `${tagged.kind} values are admitted by no registered scenario profile`,
       );

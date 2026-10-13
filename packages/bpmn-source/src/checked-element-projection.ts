@@ -13,7 +13,6 @@ import { isInterruptingMessageHandlerStart } from "./interrupting-message-event-
  * because the compiler requires every scoped element to be a projectable node or a Sequence Flow.
  */
 import {
-  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
   EffectOperation,
   EffectProtocol,
@@ -39,6 +38,7 @@ import type {
   ElementRecord,
 } from "./moddle-graph.js";
 import { declaredGatewayDirectionMatches } from "./gateway-direction-source.js";
+import { selectsStructuredCompositionSource } from "./structured-source-profile.js";
 import {
   projectExclusiveGateway,
   projectSimpleBooleanCondition,
@@ -159,8 +159,7 @@ export function projectCheckedNodes(
         if (name === undefined) {
           return undefined;
         }
-        if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID &&
-            element.ioSpecification !== undefined) {
+        if (selectsStructuredCompositionSource(semanticProfile) && element.ioSpecification !== undefined) {
           return projectOwnedDataInputOutputUserTask(element, rootSelection.process);
         }
         return isUserTaskMetadataProfile(semanticProfile)

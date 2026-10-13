@@ -1,9 +1,10 @@
 import { ActivityDataEndpointKind, readActivityDataInputSource } from "./activity-data-endpoint.js";
 import { ActivityBodyKind, compareActivityOccurrences } from "./activity-occurrence.js";
 import type { ActivityOccurrence } from "./activity-occurrence.js";
-import { VariableValueKind } from "./contract.js";
 import type { VariableBinding } from "./contract.js";
 import { matchesActivityLocalDataOwner } from "./local-data-owner.js";
+import { propertyPathAcceptsValue } from "./property-path-value-policy.js";
+import type { PropertyPathValuePolicy } from "./property-path-value-policy.js";
 import { addActivityOccurrenceVariableScope } from "./semantic-process-data.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -34,14 +35,20 @@ export type InternalDataArmingPatch = Readonly<{
   bindings: ArmingBindings;
 }>;
 
-/** Selects one joined task/Activity lifetime and its operation-specific local data before mutation. */
+/**
+ * Selects one joined task/Activity lifetime and its operation-specific local data before mutation.
+ *
+ * `policy` is the exact Program profile's Property-path value domain, so the copy that opens the local scope can
+ * never admit a value the profile's completion would later refuse.
+ */
 export function deriveInternalDataArmingPatch(
   operation: InternalDataArmingOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
+  policy: PropertyPathValuePolicy,
 ): InternalDataArmingPatch | null {
   if (state.control.kind !== ControlStateKind.Running) return null;
-  const bindings = deriveArmingBindings(operation, state, owner);
+  const bindings = deriveArmingBindings(operation, state, owner, policy);
   if (bindings === null) return null;
   const taskId = {
     processInstanceId: owner.processInstanceId,
@@ -91,7 +98,12 @@ export function applyInternalDataArmingPatch(
   };
 }
 
-function deriveArmingBindings(operation: InternalDataArmingOperation, state: RuntimeState, owner: ScopeOccurrenceId): ArmingBindings | null {
+function deriveArmingBindings(
+  operation: InternalDataArmingOperation,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+  policy: PropertyPathValuePolicy,
+): ArmingBindings | null {
   if (operation.kind === SemanticOperationKind.AwaitDataInputUserTask &&
       operation.directInput.source.kind !== ActivityDataEndpointKind.Property) return null;
   switch (operation.kind) {
@@ -100,19 +112,9 @@ function deriveArmingBindings(operation: InternalDataArmingOperation, state: Run
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataInputOutputUserTask: {
       const source = readActivityDataInputSource(state, owner, operation.directInput.source);
-      if (source === undefined) return null;
-      switch (source.value.kind) {
-        case VariableValueKind.String:
-        case VariableValueKind.Null:
-          return [{ name: operation.directInput.targetDataInputId, value: cloneVariableBinding(source).value }];
-        case VariableValueKind.Boolean:
-        case VariableValueKind.Integer:
-        case VariableValueKind.StringList:
-        case VariableValueKind.Decimal:
-        case VariableValueKind.List:
-        case VariableValueKind.Map:
-          return null;
-      }
+      return source === undefined || !propertyPathAcceptsValue(policy, source.value)
+        ? null
+        : [{ name: operation.directInput.targetDataInputId, value: cloneVariableBinding(source).value }];
     }
   }
 }

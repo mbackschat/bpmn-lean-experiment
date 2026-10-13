@@ -4,6 +4,7 @@ This directory contains implementation-neutral BPMN resources, semantic stimuli,
 
 ## Scenario families
 
+- The [portable handoff schedules](portable-business-values-handoff/README.md) retain a 12-node nested order, a revision with ordered unequal items and a negative Decimal, and a present-Null control across two Human Tasks, with refused wrong, extra and stale completions.
 - The [structured composition schedules](structured-process-composition/README.md) retain three invoice routes and serial String/null handoff, with stale and wrong-output refusals.
 - [Validate and classify an invoice](serial-business-task-composition/README.md) retains the [neutral serial journey](serial-business-task-composition/scenario.json) with named validation and classification handlers and its separate [metadata-bearing public-delivery schedule](serial-business-task-composition/public-delivery.scenario.json).
 - [Review and rework an invoice](mixed-task-control-flow/README.md) retains the [neutral mixed journey](mixed-task-control-flow/scenario.json) with current-data validation, an Exclusive decision and repeated human work and its separate [metadata-bearing public-delivery schedule](mixed-task-control-flow/public-delivery.scenario.json).

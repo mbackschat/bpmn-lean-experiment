@@ -325,6 +325,7 @@ theorem data_arming_preserves_task_lifetime_shape
     (taskId : TaskDefinitionId) (taskName : Option String)
     (directInput : DirectActivityDataInput) (directOutput : DirectActivityDataOutput)
     (member : SemanticOperation.awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput ∈ program.operations)
+    (scalarPath : programPropertyPathValuePolicy program = .scalar)
     (frame : LifecycleFrame before) (owned : RootOwnedControl owner before)
     (bounded : ControlUnitBound before) (shape : TaskLifetimeShape program before)
     (fired : fire? program (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput) before = some after) :
@@ -340,7 +341,7 @@ theorem data_arming_preserves_task_lifetime_shape
     have rootEq := selected_token_has_root_owner before owner root input owned bounded selected
     have instanceEq := root_owner_matches_running_instance before owner instanceId frame owned runningEq
     have typed : variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart source.value = true := by
-      have scalar := readActivityDataInput_scalar available
+      have scalar := readActivityDataInput_scalar (scalarPath ▸ available)
       cases value : source.value <;> simp [processInterfaceScalar, variableValueAdmitted,
         activityDataInputOutputUserTaskProfileId, value] at scalar ⊢
     obtain ⟨_, _, noWait, _⟩ := enabled_token_under_bound_is_single before input root bounded selected
@@ -372,9 +373,9 @@ theorem admitted_fire_preserves_task_lifetime_shape
     (program : Program) (analysis : Analysis) (before after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
     (analyzed : programAnalysis program = some analysis) (member : operation ∈ program.operations)
-    (frame : LifecycleFrame before) (owned : RootOwnedControl owner before)
-    (bounded : ControlUnitBound before) (shape : TaskLifetimeShape program before)
-    (fired : fire? program operation before = some after) : TaskLifetimeShape program after := by
+    (scalarPath : programPropertyPathValuePolicy program = .scalar) (frame : LifecycleFrame before)
+    (owned : RootOwnedControl owner before) (bounded : ControlUnitBound before)
+    (shape : TaskLifetimeShape program before) (fired : fire? program operation before = some after) : TaskLifetimeShape program after := by
   have allowed := program_analysis_operations_allowed program analysis analyzed
   have selected := allowed operation member
   have step := fire_sound program operation before after fired
@@ -385,7 +386,7 @@ theorem admitted_fire_preserves_task_lifetime_shape
       member frame owned bounded shape fired
   case awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput =>
     exact data_arming_preserves_task_lifetime_shape program before after owner id origin input output taskId
-      taskName directInput directOutput member frame owned bounded shape fired
+      taskName directInput directOutput member scalarPath frame owned bounded shape fired
   case initiate id origin output =>
     cases step with
     | initiate _ _ _ _ _ active =>
@@ -577,8 +578,8 @@ theorem task_execution_preserves_task_lifetime_shape
     split at executed
     · contradiction
     · rename_i operation selected
-      exact admitted_fire_preserves_task_lifetime_shape program analysis _ _ operation owner analyzed
-        (List.mem_of_find?_eq_some selected) currentFrame currentOwner currentBound ih executed
+      exact admitted_fire_preserves_task_lifetime_shape program analysis _ _ operation owner analyzed (List.mem_of_find?_eq_some selected)
+        (programPropertyPathValuePolicy_eq_scalar (by simp [profile])) currentFrame currentOwner currentBound ih executed
   | completion commandId taskId bindings reachable ih =>
     have currentBound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed bounded reachable
     exact completion_admission_preserves_task_lifetime_shape program analysis _ commandId taskId bindings

@@ -92,7 +92,7 @@ theorem prepareInternalDataArmingContract_ordinary_preserved
     origin source ordinary taskDistinct
   have ownerFrame := armingOwnerRead_frame state ordinary contract.input inputDistinct.symm
   have anchorFrame := armingOpenAnchorRead_frame state ordinary _ occurrenceDistinct.symm
-  have sourceFrame := dataArmingBindings_process_frame state
+  have sourceFrame := dataArmingBindings_process_frame (programPropertyPathValuePolicy program) state
     (applyInternalArmingPatch state ordinary) owner contract.data
     (armingControlRead_frame state ordinary) (armingProcessVariablesRead_frame state ordinary)
     (by cases written : ordinary.write <;> simp [applyInternalArmingPatch, written])

@@ -166,8 +166,8 @@ theorem prepareInternalDataArmingContract_after_bounded_scope
   have runningFrame : dataArmingHostValid after dataOwner dataContract.data = true := by
     simpa only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
       InternalScopeCreationSelection.apply, fields.2.2, dataArmingHostValid] using running
-  have sourceFrame : dataArmingBindings? after dataOwner dataContract.data = some source := by
-    rw [dataArmingBindings_process_frame state after dataOwner dataContract.data
+  have sourceFrame : dataArmingBindings? (programPropertyPathValuePolicy program) after dataOwner dataContract.data = some source := by
+    rw [dataArmingBindings_process_frame (programPropertyPathValuePolicy program) state after dataOwner dataContract.data
       (by simp only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
         InternalScopeCreationSelection.apply, fields.2.2])
       (by simp only [after, bounded, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,

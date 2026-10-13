@@ -124,7 +124,7 @@ theorem prepareInternalDataArmingContract_preserved
     exact owned
   have runningFrame : dataArmingHostValid after rightOwner right.data = true := running
   have liveFrame : exactLiveOccurrence after rightOwner = true := live
-  have sourceFrame : dataArmingBindings? after rightOwner right.data = some rightSource :=
+  have sourceFrame : dataArmingBindings? (programPropertyPathValuePolicy program) after rightOwner right.data = some rightSource :=
     sourceFound
   have patchFrame : makeInternalDataArmingPatch program after right rightOwner
       rightOrigin rightSource = rightPatch :=

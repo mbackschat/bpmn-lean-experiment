@@ -123,6 +123,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
     (scenario.stimuli.head?.all (scenarioStartDataAdmitted program)) &&
     (scenario.stimuli.head?.all (SequentialScopeData.stimulusAdmitted program)) &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
+    portableHandoffScenarioStartAdmitted program scenario.stimuli &&
     businessTaskScenarioStartAdmitted program scenario.stimuli &&
     stimulusSequenceSupported scenario.stimuli &&
     firstStimulusMatchesProgram program scenario.stimuli &&

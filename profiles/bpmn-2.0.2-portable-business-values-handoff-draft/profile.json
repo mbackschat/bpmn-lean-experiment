@@ -1,0 +1,94 @@
+{
+  "kind": "semanticProfile",
+  "id": "bpmn-2.0.2-portable-business-values-handoff-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-serial-portable-business-value-handoff",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 8.4.10",
+      "Clause 10.4.1",
+      "Clause 10.4.2",
+      "Clause 13.2",
+      "Clause 13.3.2",
+      "Clause 13.4.2",
+      "Table 10.51",
+      "Table 10.59",
+      "Table 10.60"
+    ]
+  },
+  "bpmn": {
+    "process": "one-private-executable-root-process",
+    "features": [
+      "none-start-event",
+      "user-task",
+      "user-task-discovery",
+      "user-task-instance-completion",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion",
+      "user-task-input-output",
+      "required-untyped-input",
+      "associated-untyped-output",
+      "three-distinct-process-owned-properties",
+      "exactly-two-serial-user-tasks",
+      "acyclic-serial-composition",
+      "process-start-singleton-business-item-data",
+      "user-task-singleton-business-item-completion-data"
+    ],
+    "extensions": [],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "cib-portable-value-or-data-association-compatibility-claim",
+    "bpmn-process-execution-conformance",
+    "production-history-compatibility",
+    "root-list-or-collection-ports",
+    "legacy-string-list-values",
+    "arithmetic-or-implicit-conversion",
+    "typed-item-definitions-or-data-states",
+    "more-or-fewer-than-two-user-tasks",
+    "gateways",
+    "conditions-or-expression-languages",
+    "cycles",
+    "ordinary-user-tasks",
+    "nested-scopes",
+    "call-activities",
+    "boundary-events",
+    "subscriptions",
+    "timers",
+    "effects",
+    "messages",
+    "multi-instance",
+    "compensation-and-transactions",
+    "assignment-or-form-metadata",
+    "input-only-or-output-only-mediation",
+    "multiple-or-optional-input-output-sets",
+    "transformations",
+    "while-executing-data",
+    "platform-forms",
+    "business-name-dependent-admission",
+    "source-preservation-only-notation"
+  ]
+}

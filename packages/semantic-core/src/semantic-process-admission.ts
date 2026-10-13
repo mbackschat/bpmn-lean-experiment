@@ -9,8 +9,9 @@ import { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./s
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
 import { transactionCancellationProgramGraph } from "./transaction-cancellation-admission.js";
 import { callDataProgramGraph } from "./call-data-program-admission.js";
-import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, SemanticProfileId, STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { structuredCompositionProgramGraph, structuredCompositionStimulusDataAdmitted } from "./structured-process-composition-admission.js";
+import { portableHandoffProgramGraph, portableHandoffStimulusDataAdmitted } from "./portable-handoff-admission.js";
 import { TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID, REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionProgramGraph } from "./repeatable-subscription-admission.js";
 import {
@@ -119,6 +120,7 @@ export function supportsSemanticProcessScenario(
     serialBusinessStimulusDataAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
+    portableHandoffStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
   );
@@ -143,6 +145,7 @@ export function supportsSemanticProcessExecution(
     serialBusinessStimulusDataAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
+    portableHandoffStimulusDataAdmitted(program, start) &&
     sequentialMultiInstanceStimulusDataAdmitted(program, start) &&
     compensationStartDataAdmitted(program, start) &&
     processStartMatchesProgram(start, program)
@@ -303,6 +306,8 @@ export function isWellFormedSemanticProcessProgram(
       !callDataProgramGraph(program)) return false;
   if (identity.semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID &&
       !structuredCompositionProgramGraph(program)) return false;
+  if (identity.semanticProfile === SemanticProfileId.PortableBusinessValuesHandoff &&
+      !portableHandoffProgramGraph(program)) return false;
   if (identity.semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID &&
       !transactionCancellationProgramGraph(program)) return false;
   if (identity.semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {

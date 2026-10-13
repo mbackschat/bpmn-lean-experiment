@@ -15,7 +15,7 @@ import {
 import type {
   ActivityOccurrence,
 } from "./activity-occurrence.js";
-import { StimulusKind, VariableValueKind } from "./contract.js";
+import { StimulusKind } from "./contract.js";
 import type {
   CompleteUserTaskInstanceStimulus,
   UserTaskInstanceId,
@@ -25,6 +25,8 @@ import {
   applyInternalDataArmingPatch,
   deriveInternalDataArmingPatch,
 } from "./internal-transition-data-arming-patch.js";
+import { propertyPathAcceptsValue, propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
+import type { PropertyPathValuePolicy } from "./property-path-value-policy.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   AwaitDataInputOutputUserTaskOperation,
@@ -53,13 +55,14 @@ type DataInputOutputTask = Readonly<{
   wait: SemanticUserTaskWait;
 }>;
 
-/** Arms the one Activity occurrence only when its required Process source is available. */
+/** Arms the one Activity occurrence only when its required Process source is available and in the path's domain. */
 export function armDataInputOutputUserTask(
   operation: AwaitDataInputOutputUserTaskOperation,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
+  policy: PropertyPathValuePolicy,
 ): RuntimeState | null {
-  const patch = deriveInternalDataArmingPatch(operation, state, owner);
+  const patch = deriveInternalDataArmingPatch(operation, state, owner, policy);
   return patch === null ? null : applyInternalDataArmingPatch(state, patch);
 }
 
@@ -91,7 +94,8 @@ export function completeDataInputOutputUserTask(
   if (selected === undefined) {
     return null;
   }
-  const filled = filledDeclaredOutput(selected.definition, stimulus);
+  const policy = propertyPathValuePolicyForProfile(program.identity.semanticProfile);
+  const filled = filledDeclaredOutput(selected.definition, stimulus, policy);
   if (filled === undefined) {
     return null;
   }
@@ -103,7 +107,7 @@ export function completeDataInputOutputUserTask(
   if (
     localBindings?.length !== 1 || localInput === undefined ||
     localInput.name !== selected.definition.directInput.targetDataInputId ||
-    !supported(localInput)
+    !propertyPathAcceptsValue(policy, localInput.value)
   ) {
     return null;
   }
@@ -133,27 +137,13 @@ export function completeDataInputOutputUserTask(
 function filledDeclaredOutput(
   definition: AwaitDataInputOutputUserTaskOperation,
   stimulus: CompleteUserTaskInstanceStimulus,
+  policy: PropertyPathValuePolicy,
 ): VariableBinding | undefined {
   const binding = stimulus.submittedValues[0];
   return stimulus.submittedValues.length === 1 && binding !== undefined &&
-      binding.name === definition.directOutput.sourceDataOutputId && supported(binding)
+      binding.name === definition.directOutput.sourceDataOutputId && propertyPathAcceptsValue(policy, binding.value)
     ? cloneVariableBinding(binding)
     : undefined;
-}
-
-function supported(binding: VariableBinding): boolean {
-  switch (binding.value.kind) {
-    case VariableValueKind.String:
-    case VariableValueKind.Null:
-      return true;
-    case VariableValueKind.Boolean:
-    case VariableValueKind.Integer:
-    case VariableValueKind.StringList:
-    case VariableValueKind.Decimal:
-    case VariableValueKind.List:
-    case VariableValueKind.Map:
-      return false;
-  }
 }
 
 function dataInputOutputTaskFor(

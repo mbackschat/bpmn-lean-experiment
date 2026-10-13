@@ -195,7 +195,7 @@ def active : RuntimeState :=
     activityActivations := [{ taskId := ⟨"UserTask_AssessClaim"⟩, count := 1 }] }
 
 theorem active_is_the_admitted_activation :
-    activateDataInputOutputUserTask? seededReady
+    activateDataInputOutputUserTask? (programPropertyPathValuePolicy claimProgram) seededReady
       ⟨"place:Flow_ClaimReceived_Assess"⟩ ⟨"place:Flow_AssessClaim_Recorded"⟩
       ⟨"UserTask_AssessClaim"⟩ (some "Assess claim") claimDirectInput = some active := by
   decide +kernel

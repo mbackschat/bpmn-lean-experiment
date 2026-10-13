@@ -5,6 +5,7 @@ import { sequentialScopeProgramShape } from "./sequential-scope-program-admissio
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import { structuredCompositionCheckedShape, structuredCompositionProgramShape } from "./structured-process-composition-admission.js";
+import { portableHandoffCheckedShape, portableHandoffProgramShape } from "./portable-handoff-admission.js";
 import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
@@ -60,6 +61,9 @@ export function profileAllowsProgramShape(
   if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return serialBusinessProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionProgramShape(actualOperations, definitionScopeCount);
+  }
+  if (semanticProfile === SemanticProfileId.PortableBusinessValuesHandoff) {
+    return portableHandoffProgramShape(actualOperations, definitionScopeCount);
   }
   if (semanticProfile === TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID) {
     return transactionCancellationProgramShape(actualOperations, definitionScopeCount);
@@ -183,6 +187,9 @@ export function profileAllowsCheckedProcessShape(
   if (semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return serialBusinessCheckedShape(nodes, definitionScopeCount);
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionCheckedShape(nodes, definitionScopeCount);
+  }
+  if (semanticProfile === SemanticProfileId.PortableBusinessValuesHandoff) {
+    return portableHandoffCheckedShape(nodes, definitionScopeCount);
   }
   if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     return repeatableSubscriptionCheckedShape(nodes, definitionScopeCount);

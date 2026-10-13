@@ -305,7 +305,7 @@ theorem reached_data_task_input_is_available
       directInput directOutput ∈ program.operations)
     (running : reached.control = .running token.owner.processInstanceId)
     (live : token ∈ reached.tokens) (position : token.placeId = input) :
-    ∃ binding, dataInputOutputSourceBinding? reached token.owner directInput = some binding := by
+    ∃ binding, dataInputOutputSourceBinding? .scalar reached token.owner directInput = some binding := by
   obtain ⟨_, _, _, vertices, _, _, graph⟩ := program_analysis_projection program analysis analyzed
   have startPositions := committed_start_has_input_positions program vertices analysis commandId processId instanceId
     bindings profile committed

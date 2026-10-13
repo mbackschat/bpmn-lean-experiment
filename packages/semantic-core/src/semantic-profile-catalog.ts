@@ -22,6 +22,8 @@ export const SemanticProfileId = Object.freeze({
     "bpmn-2.0.2-call-activity-data-boundaries-draft",
   StructuredProcessComposition:
     "bpmn-2.0.2-structured-process-composition-draft",
+  PortableBusinessValuesHandoff:
+    "bpmn-2.0.2-portable-business-values-handoff-draft",
   SerialBusinessTaskComposition:
     "cibseven-2.2.0-serial-business-tasks-draft",
   MixedTaskControlFlow:

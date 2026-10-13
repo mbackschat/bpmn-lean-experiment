@@ -149,7 +149,7 @@ theorem prepareInternalDataArmingContract_timer_task_preserved
     · exact List.any_eq_false.mp recordAbsent record member
   have runningFrame : dataArmingHostValid after dataOwner dataContract.data = true := running
   have liveFrame : exactLiveOccurrence after dataOwner = true := live
-  have sourceFrame : dataArmingBindings? after dataOwner dataContract.data = some source := sourceFound
+  have sourceFrame : dataArmingBindings? (programPropertyPathValuePolicy program) after dataOwner dataContract.data = some source := sourceFound
   have scopeFrame : after.variables.activities.any
       (activityOccurrenceScopeMatches (activityOwnerForRecord data.record)) = false := scopeAbsent
   change prepareInternalDataArmingContract? program after dataContract = some data

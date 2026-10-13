@@ -13,6 +13,8 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+variable {policy : PropertyPathValuePolicy}
+
 /-- The exact composed-task lookup also fixes every queried occurrence-key component. -/
 theorem dataInputOutputTaskWait_facts {state : RuntimeState} {processInstanceId : SemanticId}
     {taskId : TaskDefinitionId} {activation : Nat} {wait : UserTaskWait}
@@ -71,10 +73,10 @@ inductive DataInputOutputActivationStep (program : Program) :
       (running : before.control = .running instanceId)
       (owner : ScopeOccurrenceId)
       (owned : onlyTokenOwner? before input = some owner)
-      (source : (dataInputOutputSourceBinding? before owner directInput).isSome = true)
+      (source : (dataInputOutputSourceBinding? (programPropertyPathValuePolicy program) before owner directInput).isSome = true)
       (after : RuntimeState)
-      (step : activateDataInputOutputUserTask? before input output taskId taskName
-        directInput = some after) :
+      (step : activateDataInputOutputUserTask? (programPropertyPathValuePolicy program) before input output taskId
+        taskName directInput = some after) :
       DataInputOutputActivationStep program before after
 
 /-- `ADIO-ATOMIC-01` as a relation. Its premises expose both program-owned associations and every
@@ -95,8 +97,8 @@ inductive DataInputOutputCompletionStep (program : Program) :
       (after : RuntimeState)
       (step : completeDataInputOutputUserTask? program before processInstanceId taskId
         activation submittedValues = some after)
-      (routed : ActivityDataOutputRouting before task.owner localsRemoved contract.directOutput filled
-        after.variables) :
+      (routed : ActivityDataOutputRouting (programPropertyPathValuePolicy program) before task.owner localsRemoved
+        contract.directOutput filled after.variables) :
       DataInputOutputCompletionStep program before after
 
 private theorem dataInputOutputRunningInstance_sound {state : RuntimeState}
@@ -117,8 +119,8 @@ theorem dataInputOutputRunningInstance_of_running {state : RuntimeState}
 theorem dataInputOutputUnavailableSourceRefusesActivation (state : RuntimeState)
     (input output : ControlPlaceId) (taskId : TaskDefinitionId)
     (taskName : Option String) (directInput : DirectActivityDataInput)
-    (unavailable : ∀ owner, dataInputOutputSourceBinding? state owner directInput = none) :
-    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
+    (unavailable : ∀ owner, dataInputOutputSourceBinding? policy state owner directInput = none) :
+    activateDataInputOutputUserTask? policy state input output taskId taskName directInput = none := by
   unfold activateDataInputOutputUserTask?
   simp [unavailable]
 
@@ -130,8 +132,8 @@ theorem activateDataInputOutputUserTask_sound (program : Program)
     (directOutput : DirectActivityDataOutput)
     (declared : SemanticOperation.awaitDataInputOutputUserTask id origin input output
       taskId taskName directInput directOutput ∈ program.operations)
-    (success : activateDataInputOutputUserTask? before input output taskId taskName
-      directInput = some after) :
+    (success : activateDataInputOutputUserTask? (programPropertyPathValuePolicy program) before input output taskId
+      taskName directInput = some after) :
     DataInputOutputActivationStep program before after := by
   have ownership : ∃ owner, onlyTokenOwner? before input = some owner := by
     cases owned : onlyTokenOwner? before input with
@@ -143,8 +145,9 @@ theorem activateDataInputOutputUserTask_sound (program : Program)
     | none => simp [activateDataInputOutputUserTask?, owned, running] at success
     | some instanceId => exact ⟨instanceId, rfl⟩
   obtain ⟨instanceId, running⟩ := hosted
-  have available : (dataInputOutputSourceBinding? before owner directInput).isSome = true := by
-    cases source : dataInputOutputSourceBinding? before owner directInput with
+  have available :
+      (dataInputOutputSourceBinding? (programPropertyPathValuePolicy program) before owner directInput).isSome = true := by
+    cases source : dataInputOutputSourceBinding? (programPropertyPathValuePolicy program) before owner directInput with
     | none => simp [activateDataInputOutputUserTask?, owned, running, source] at success
     | some binding => rfl
   exact .activate before instanceId id origin input output taskId taskName directInput directOutput
@@ -154,7 +157,7 @@ theorem activateDataInputOutputUserTask_sound (program : Program)
 theorem dataInputOutputActivationPreservesProcessScope {state after : RuntimeState}
     {input output : ControlPlaceId} {taskId : TaskDefinitionId}
     {taskName : Option String} {directInput : DirectActivityDataInput}
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     after.variables.process = state.variables.process := by
   unfold activateDataInputOutputUserTask? at step
@@ -164,7 +167,7 @@ theorem dataInputOutputActivationPreservesProcessScope {state after : RuntimeSta
       cases running : dataInputOutputRunningInstance? state with
       | none => simp [owned, running] at step
       | some instanceId =>
-          cases source : dataInputOutputSourceBinding? state owner directInput with
+          cases source : dataInputOutputSourceBinding? policy state owner directInput with
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
@@ -180,10 +183,10 @@ theorem dataInputOutputExistingLocalOwnerRefusesActivation (state : RuntimeState
     (owned : onlyTokenOwner? state input = some owner)
     (present : state.variables.activities.any
       (activityOccurrenceScopeMatches (dataInputOutputActivityOwner state owner.processInstanceId taskId)) = true) :
-    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
+    activateDataInputOutputUserTask? policy state input output taskId taskName directInput = none := by
   unfold activateDataInputOutputUserTask?
   have hosted := dataInputOutputRunningInstance_of_running running
-  cases source : dataInputOutputSourceBinding? state owner directInput <;>
+  cases source : dataInputOutputSourceBinding? policy state owner directInput <;>
     simp [owned, hosted, source, dataInputOutputActivityOwner] at present ⊢
   exact present
 
@@ -194,13 +197,13 @@ theorem activateDataInputOutputUserTask_localOwnerFresh {state after : RuntimeSt
     {taskName : Option String} {directInput : DirectActivityDataInput}
     (running : state.control = .running instanceId)
     (owned : onlyTokenOwner? state input = some owner)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput = some after) :
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput = some after) :
     ∀ scope ∈ state.variables.activities,
       activityOccurrenceScopeMatches
         (dataInputOutputActivityOwner state owner.processInstanceId taskId) scope = false := by
   unfold activateDataInputOutputUserTask? at step
   have hosted := dataInputOutputRunningInstance_of_running running
-  cases source : dataInputOutputSourceBinding? state owner directInput with
+  cases source : dataInputOutputSourceBinding? policy state owner directInput with
   | none => simp [owned, hosted, source] at step
   | some binding =>
       simp [owned, hosted, source] at step
@@ -214,11 +217,11 @@ theorem dataInputOutputActivationCopiesSelectedSourceExactly {state after : Runt
     {directInput : DirectActivityDataInput} {source : VariableBinding}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : dataInputOutputSourceBinding? state owner directInput = some source)
+    (available : dataInputOutputSourceBinding? policy state owner directInput = some source)
     (fresh : ∀ scope ∈ state.variables.activities,
       activityOccurrenceScopeMatches (dataInputOutputActivityOwner state owner.processInstanceId taskId)
         scope = false)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     activityOccurrenceVariableBindings after.variables
         (dataInputOutputActivityOwner state owner.processInstanceId taskId) =
@@ -251,11 +254,11 @@ theorem dataInputOutputActivationEstablishesExactOneScope {state after : Runtime
     {directInput : DirectActivityDataInput} {source : VariableBinding}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : dataInputOutputSourceBinding? state owner directInput = some source)
+    (available : dataInputOutputSourceBinding? policy state owner directInput = some source)
     (fresh : ∀ scope ∈ state.variables.activities,
       activityOccurrenceScopeMatches (dataInputOutputActivityOwner state owner.processInstanceId taskId)
         scope = false)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     dataInputOutputExactOneScope after
       (dataInputOutputActivityOwner state owner.processInstanceId taskId) directInput := by
@@ -281,14 +284,14 @@ theorem dataInputOutputCompletionJoin {program : Program} {state after : Runtime
       filledDeclaredOutput? contract.directOutput submittedValues = some filled ∧
       dataInputOutputTaskWait? state processInstanceId taskId activation = some task ∧
       activityOccurrenceForTaskWait? state.activityOccurrences task = some record ∧
-      dataInputOutputLocalScope? state record contract.directInput = some scope ∧
+      dataInputOutputLocalScope? (programPropertyPathValuePolicy program) state record contract.directInput = some scope ∧
       removeActivityOccurrenceVariableScope state.variables (activityOwnerForRecord record) =
         some variables ∧
       record.attachedHandlers.isEmpty = true ∧
       after.waits = state.waits.erase task ∧
       after.activityOccurrences = state.activityOccurrences.filter (fun candidate =>
         !sameActivityOccurrence candidate record) ∧
-      writeActivityDataOutput? state task.owner variables contract.directOutput filled =
+      writeActivityDataOutput? (programPropertyPathValuePolicy program) state task.owner variables contract.directOutput filled =
         some after.variables := by
   unfold completeDataInputOutputUserTask? at step
   cases running : dataInputOutputRunningInstance? state with
@@ -308,15 +311,15 @@ theorem dataInputOutputCompletionJoin {program : Program} {state after : Runtime
                   | some record =>
                       cases joinValid : dataInputOutputRuntimeJoinValid program contract task record
                       · simp [running, declared, live, joined, joinValid] at step
-                      · cases scopeFound : dataInputOutputLocalScope? state record contract.directInput with
+                      · cases scopeFound : dataInputOutputLocalScope? (programPropertyPathValuePolicy program) state record contract.directInput with
                         | none => simp [running, declared, live, joined, joinValid, scopeFound] at step
                         | some scope =>
                             cases removed : removeActivityOccurrenceVariableScope state.variables
                                 (activityOwnerForRecord record) with
                             | none => simp [running, declared, live, joined, removed] at step
                             | some variables =>
-                                cases routed : writeActivityDataOutput? state task.owner variables
-                                    contract.directOutput filled with
+                                cases routed : writeActivityDataOutput? (programPropertyPathValuePolicy program) state task.owner
+                                    variables contract.directOutput filled with
                                 | none => simp [running, declared, available, live, joined, joinValid,
                                     scopeFound, removed, routed] at step
                                 | some result =>
@@ -370,7 +373,7 @@ theorem dataInputOutputInvalidLocalScopeRefusesCompletion (program : Program)
     (declared : dataInputOutputTaskContract? program taskId = some contract)
     (live : dataInputOutputTaskWait? state processInstanceId taskId activation = some task)
     (joined : activityOccurrenceForTaskWait? state.activityOccurrences task = some record)
-    (invalid : dataInputOutputLocalScope? state record contract.directInput = none) :
+    (invalid : dataInputOutputLocalScope? (programPropertyPathValuePolicy program) state record contract.directInput = none) :
     completeDataInputOutputUserTask? program state processInstanceId taskId activation
       submittedValues = none := by
   unfold completeDataInputOutputUserTask?
@@ -386,7 +389,7 @@ theorem dataInputOutputAttachedHandlerRefusesCompletion (program : Program)
     (declared : dataInputOutputTaskContract? program taskId = some contract)
     (live : dataInputOutputTaskWait? state processInstanceId taskId activation = some task)
     (joined : activityOccurrenceForTaskWait? state.activityOccurrences task = some record)
-    (_scopeFound : dataInputOutputLocalScope? state record contract.directInput = some scope)
+    (_scopeFound : dataInputOutputLocalScope? (programPropertyPathValuePolicy program) state record contract.directInput = some scope)
     (attached : record.attachedHandlers.isEmpty = false) :
     completeDataInputOutputUserTask? program state processInstanceId taskId activation
       submittedValues = none := by
@@ -473,8 +476,8 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
     {taskName : Option String} {directInput : DirectActivityDataInput}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : (dataInputOutputSourceBinding? state owner directInput).isSome = true)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (available : (dataInputOutputSourceBinding? policy state owner directInput).isSome = true)
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     after.activityOccurrences =
       insertActivityOccurrence (dataInputOutputActivityRecord state owner.processInstanceId owner taskId)
@@ -482,7 +485,7 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
   have hosted : dataInputOutputRunningInstance? state = some instanceId := by
     simp [dataInputOutputRunningInstance?, running]
   unfold activateDataInputOutputUserTask? at step
-  cases source : dataInputOutputSourceBinding? state owner directInput with
+  cases source : dataInputOutputSourceBinding? policy state owner directInput with
   | none => rw [source] at available; simp at available
   | some binding =>
       simp [owned, hosted, source] at step
@@ -493,7 +496,7 @@ theorem activateDataInputOutputUserTask_activityOccurrences {state after : Runti
 theorem activateDataInputOutputUserTask_issuesFreshActivity {state after : RuntimeState}
     {input output : ControlPlaceId} {taskId : TaskDefinitionId}
     {taskName : Option String} {directInput : DirectActivityDataInput}
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     activityIdentityIssuingDiscipline state after = true := by
   unfold activateDataInputOutputUserTask? at step
@@ -503,7 +506,7 @@ theorem activateDataInputOutputUserTask_issuesFreshActivity {state after : Runti
       cases running : dataInputOutputRunningInstance? state with
       | none => simp [owned, running] at step
       | some instanceId =>
-          cases source : dataInputOutputSourceBinding? state owner directInput with
+          cases source : dataInputOutputSourceBinding? policy state owner directInput with
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
@@ -535,11 +538,11 @@ theorem activateDataInputOutputUserTask_preserves_activityBodyClaimsUnique
     {taskName : Option String} {directInput : DirectActivityDataInput}
     (owned : onlyTokenOwner? state input = some owner)
     (running : state.control = .running instanceId)
-    (available : (dataInputOutputSourceBinding? state owner directInput).isSome = true)
+    (available : (dataInputOutputSourceBinding? policy state owner directInput).isSome = true)
     (recordsOwn : activityRecordsOwnLiveWork state = true)
     (bounds : runtimeStateIdentityBound state = true)
     (claimsUnique : activityBodyClaimsUnique state.activityOccurrences = true)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput =
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput =
       some after) :
     activityBodyClaimsUnique after.activityOccurrences = true := by
   have inserted := activateDataInputOutputUserTask_activityOccurrences owned running available step
@@ -600,12 +603,12 @@ theorem dataInputOutputActivationCopiesProcessInput
       (fun candidate => decide (candidate.owner = owner)) = [scope])
     (uniquePort : scope.inputs.filter (fun candidate => decide (candidate.name = port)) = [source])
     (scalar : processInterfaceScalar source.value = true)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput = some after) :
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput = some after) :
     activityOccurrenceVariableBindings after.variables
       (dataInputOutputActivityOwner state owner.processInstanceId taskId) =
         some [{ name := directInput.targetDataInputId, value := source.value }] := by
   have selected := selectProcessInterface_iff.mpr uniqueOwner
-  have available : dataInputOutputSourceBinding? state owner directInput = some source := by
+  have available : dataInputOutputSourceBinding? policy state owner directInput = some source := by
     rw [dataInputOutputSourceBinding?, readActivityDataInput_interface_exact endpoint]
     exact readProcessInterfaceInput_iff.mpr ⟨scope, selected, uniquePort, scalar⟩
   exact dataInputOutputActivationCopiesSelectedSourceExactly owned running available
@@ -619,8 +622,8 @@ theorem dataInputOutputDuplicateInterfaceOwnerRefusesActivation
     (endpoint : directInput.source = .processDataInput port)
     (duplicates : state.variables.processInterfaces.filter (fun scope => decide (scope.owner = owner)) =
       first :: second :: rest) :
-    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
-  have refused : dataInputOutputSourceBinding? state owner directInput = none :=
+    activateDataInputOutputUserTask? policy state input output taskId taskName directInput = none := by
+  have refused : dataInputOutputSourceBinding? policy state owner directInput = none :=
     readActivityDataInput_duplicate_interfaces_refused endpoint duplicates
   simp [activateDataInputOutputUserTask?, owned, refused]
 
@@ -631,8 +634,8 @@ theorem dataInputOutputCalledPropertyRefusesActivation
     (running : state.control = .running host) (called : owner.processInstanceId ≠ host)
     (owned : onlyTokenOwner? state input = some owner)
     (endpoint : directInput.source = .property propertyId) :
-    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
-  have refused : dataInputOutputSourceBinding? state owner directInput = none :=
+    activateDataInputOutputUserTask? policy state input output taskId taskName directInput = none := by
+  have refused : dataInputOutputSourceBinding? policy state owner directInput = none :=
     readActivityDataInput_called_property_refused running called endpoint
   simp [activateDataInputOutputUserTask?, owned, refused]
 
@@ -646,13 +649,13 @@ theorem dataInputOutputActivationCopiesRootProperty
     (endpoint : directInput.source = .property propertyId)
     (unique : state.variables.process.bindings.filter
       (fun candidate => decide (candidate.name = propertyId)) = [source])
-    (scalar : processInterfaceScalar source.value = true)
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput = some after) :
+    (admitted : policy.admits source.value = true)
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput = some after) :
     activityOccurrenceVariableBindings after.variables
       (dataInputOutputActivityOwner state owner.processInstanceId taskId) =
         some [{ name := directInput.targetDataInputId, value := source.value }] := by
   exact dataInputOutputActivationCopiesSelectedSourceExactly owned running
-    (readActivityDataInput_root_property running endpoint unique scalar)
+    (readActivityDataInput_root_property running endpoint unique admitted)
     (activateDataInputOutputUserTask_localOwnerFresh running owned step) step
 
 /-- CDATA-OUTPUT-01: completion writes the selected Process output and preserves caller Properties,
@@ -701,7 +704,7 @@ theorem dataInputOutputRoutingRefusalPreventsCompletion
     (joined : activityOccurrenceForTaskWait? state.activityOccurrences task = some record)
     (removed : removeActivityOccurrenceVariableScope state.variables (activityOwnerForRecord record) =
       some variables)
-    (refused : writeActivityDataOutput? state task.owner variables contract.directOutput filled = none) :
+    (refused : writeActivityDataOutput? (programPropertyPathValuePolicy program) state task.owner variables contract.directOutput filled = none) :
     completeDataInputOutputUserTask? program state processInstanceId taskId activation submittedValues = none := by
   simp [completeDataInputOutputUserTask?, declared, available, live, joined, removed, refused]
 
@@ -709,7 +712,7 @@ theorem dataInputOutputRoutingRefusalPreventsCompletion
 theorem dataInputOutputActivationPreservesProcessInterfaces {state after : RuntimeState}
     {input output : ControlPlaceId} {taskId : TaskDefinitionId}
     {taskName : Option String} {directInput : DirectActivityDataInput}
-    (step : activateDataInputOutputUserTask? state input output taskId taskName directInput = some after) :
+    (step : activateDataInputOutputUserTask? policy state input output taskId taskName directInput = some after) :
     after.variables.processInterfaces = state.variables.processInterfaces := by
   unfold activateDataInputOutputUserTask? at step
   cases owned : onlyTokenOwner? state input with
@@ -718,7 +721,7 @@ theorem dataInputOutputActivationPreservesProcessInterfaces {state after : Runti
       cases running : dataInputOutputRunningInstance? state with
       | none => simp [owned, running] at step
       | some instanceId =>
-          cases source : dataInputOutputSourceBinding? state owner directInput with
+          cases source : dataInputOutputSourceBinding? policy state owner directInput with
           | none => simp [owned, running, source] at step
           | some binding =>
               simp [owned, running, source] at step
@@ -732,7 +735,7 @@ theorem dataInputOutputUnavailablePropertyRefusesActivation (state : RuntimeStat
     (taskName : Option String) (directInput : DirectActivityDataInput) (propertyId : String)
     (endpoint : directInput.source = .property propertyId)
     (unavailable : dataInputSourceBinding? state directInput = none) :
-    activateDataInputOutputUserTask? state input output taskId taskName directInput = none := by
+    activateDataInputOutputUserTask? policy state input output taskId taskName directInput = none := by
   apply dataInputOutputUnavailableSourceRefusesActivation
   intro owner
   unfold dataInputSourceBinding? at unavailable
@@ -744,22 +747,23 @@ theorem dataInputOutputUnavailablePropertyRefusesActivation (state : RuntimeStat
   · rfl
 
 /-- CDATA-OUTPUT-01 preserves caller Properties for Process outputs; a Property endpoint has one
-scalar replacement. This sum keeps predecessor Property invariants valid for either direction. -/
+replacement admitted by the Program's Property-path policy. This sum keeps predecessor Property invariants valid for either direction. -/
 theorem dataInputOutputCompletionProcessEffect {program : Program} {before after : RuntimeState}
     {instanceId : SemanticId} {taskId : TaskDefinitionId} {activation : Nat}
     {bindings : List VariableBinding}
     (completed : completeDataInputOutputUserTask? program before instanceId taskId activation
       bindings = some after) :
     after.variables.process = before.variables.process ∨ ∃ written : VariableBinding,
-      processInterfaceScalar written.value = true ∧
+      (programPropertyPathValuePolicy program).admits written.value = true ∧
       after.variables.process.bindings = mergeProcessVariableBindings
         before.variables.process.bindings [written] := by
   obtain ⟨_, contract, filled, _, _, _, variables, _, declared, supplied, _, _, _, removed,
     _, _, _, written⟩ := dataInputOutputCompletionJoin completed
   cases endpoint : contract.directOutput.target with
   | property propertyId =>
-      exact Or.inr ⟨associatedProcessBinding propertyId filled,
-        (writeActivityDataOutput_sound written).1,
+      have admitted := (writeActivityDataOutput_sound written).1
+      simp only [activityDataOutputValueAdmitted, endpoint] at admitted
+      exact Or.inr ⟨associatedProcessBinding propertyId filled, admitted,
         dataInputOutputCompletionWritesAssociatedProperty endpoint declared supplied completed⟩
   | processDataOutput port =>
       exact Or.inl ((writeActivityDataOutput_interface_preserves_caller endpoint written).trans

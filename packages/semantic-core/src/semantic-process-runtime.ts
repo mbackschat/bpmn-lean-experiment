@@ -457,7 +457,7 @@ function applyInternalOperationState(
     case SemanticOperationKind.AwaitDataInputUserTask:
     case SemanticOperationKind.AwaitDataInputOutputUserTask:
     case SemanticOperationKind.AwaitDataOutputUserTask:
-      return applyActivityDataOperation(operation, state, captureOwner);
+      return applyActivityDataOperation(program, operation, state, captureOwner);
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask: {
       const multiInstanceOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

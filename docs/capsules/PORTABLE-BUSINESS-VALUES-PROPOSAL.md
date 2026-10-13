@@ -210,6 +210,20 @@ Decisive witnesses: the [Lean wire witness](../../BpmnSemantics/SemanticProcessJ
 
 The `SemanticProcessJsonConformance` cost row was remeasured under the 3 GiB, one-CPU Docker bound on `fedb8850` sources plus this batch, because `890b010f` leaves main's complete Lean gate red; the receipt digest is the row's measurement identity.
 
+### Property-path runtime checkpoint
+
+This checkpoint activates `bpmn-2.0.2-portable-business-values-handoff-draft` for the semantic engine. The Property-path policy is a function of the exact Program profile in [Lean](../../BpmnSemantics/SemanticProcess/PropertyPathValuePolicy.lean) and [TypeScript](../../packages/semantic-core/src/property-path-value-policy.ts): `singletonBusinessItem` for this profile and the existing String/Null `scalar` domain for every other profile, including unknown ones. Arming, Activity-local scope validation and the completion write consult it; Process-interface and Call ports keep `processInterfaceScalar`. Under this profile, TypeScript restoration requires every [carried value](../../packages/semantic-core/src/runtime-state-carried-values.ts) to be a `SingletonBusinessItem`; Lean has no restoration.
+
+[Lean admission](../../BpmnSemantics/SemanticProcess/PortableHandoffAdmission.lean) restricts the structured-composition vertex analysis to Start → first → second → End with three distinct chained Properties, for both the checked source and the Program. [TypeScript admission](../../packages/semantic-core/src/portable-handoff-admission.ts) walks the same path independently. Start requires exactly the first task's source Property; completion reuses the existing declaration-bound output check. Both value domains admit `SingletonBusinessItem` at Start and User Task completion only.
+
+The scalar-premised structured-composition proofs now take the scalar policy as an explicit premise derived from their profile, and [`portable_arms_not_admitted_by_current_profiles`](../../BpmnSemantics/SemanticProcess/ValueDomain.lean#portable_arms_not_admitted_by_current_profiles) excludes this profile, with [`portableHandoff_value_domain`](../../BpmnSemantics/SemanticProcess/ValueDomain.lean#portableHandoff_value_domain) stating its domain. No structured-composition guarantee is claimed for this profile; its lane remains checked.
+
+TypeScript Start stored the caller's initial bindings by reference, so mutating a nested Map after admission rewrote committed state. Start now copies them for every profile (`PBV-COPY-01`).
+
+Decisive witnesses: the [Lean conformance](../../BpmnSemantics/PortableHandoffConformance.lean) runs the actual dispatcher and its internal closure over the 12-node order, the negative-total revision, a present Null, renamed and reordered declarations, broken Property chains, root List, 1,024/1,025-byte root Strings, wrong and extra bindings and old-profile refusal; the TypeScript [runtime](../../packages/semantic-core/test/portable-handoff-runtime.test.ts), [command](../../packages/semantic-core/test/portable-handoff-commands.test.ts), [admission](../../packages/semantic-core/test/portable-handoff-admission.test.ts), [source](../../packages/bpmn-source/test/portable-handoff-source.test.ts) and [continuation](../../packages/temporal-adapter/protocol/test/portable-handoff-continuation.test.ts) tests and the [answer-free scenarios](../../scenarios/portable-business-values-handoff/README.md) with their [pipeline cases](../../packages/differential/test/portable-handoff-pipeline-cases.ts) cover the same rules. Seeded deduplication, rounding, flattening, sorting, retired-local leakage, aliasing, root-List admission and ignored-policy mutations each fail a focused test.
+
+Open: the pre-start capacity envelope, Worker replacement, rollover, recovery and replay, the retained corpus model, Product 2 disclosure and browser use. The [byte-measure docstring](../../BpmnSemantics/SemanticProcess/CanonicalBusinessValue.lean) still states the pre-sorting Decimal field order; its measure is order-independent, and the wording is corrected with the next change to that owner because a comment edit there rebuilds most of the Lean library.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): update every producer/consumer of the shared union atomically, preserve current profile meanings, and assign new semantic identities when selecting wider behavior. No parallel legacy parser, embedded format switch, dependency installation or durable-history migration is selected. Published artifacts are not rewritten; an actual retained-history boundary would require a separately evidenced migration/replay decision.
@@ -224,17 +238,17 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 |---|---|
 | [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts) | 283 |
 | [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 413 |
-| [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 464 |
+| [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 437 |
 | [Lean typed values](../../BpmnSemantics/Scenario.lean) | 382 |
-| [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 637 |
+| [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 610 |
 | [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 534 |
 | [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 602 |
-| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 688 |
-| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 618 |
+| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 686 |
+| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 627 |
 | [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts) | 707 |
 | [Serial structural admission](../../packages/semantic-core/src/structured-process-composition-admission.ts) | 521 |
-| [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean) | 721 |
-| [Lean composed-task runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 616 |
+| [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean) | 713 |
+| [Lean composed-task runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 614 |
 | [Source association lowering](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 |
 | [Host semantic candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) | 654 |
 | [Lean strict JSON boundary](../../BpmnSemantics/StrictJson.lean) | 664 |

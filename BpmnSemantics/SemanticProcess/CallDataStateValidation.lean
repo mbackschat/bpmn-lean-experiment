@@ -19,7 +19,7 @@ def callDataTaskValid (program : Program) (state : RuntimeState)
       activityOccurrenceForTaskWait? state.activityOccurrences task with
   | some contract, some record =>
       dataInputOutputRuntimeJoinValid program contract task record &&
-        (dataInputOutputLocalScope? state record contract.directInput).isSome &&
+        (dataInputOutputLocalScope? .scalar state record contract.directInput).isSome &&
         (match contract.directInput.source with
          | .property _ => state.calledProcessOccurrences.isEmpty
          | .processDataInput _ => state.calledProcessOccurrences.any (·.calledRoot == task.owner)) &&

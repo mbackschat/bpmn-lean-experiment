@@ -61,7 +61,7 @@ export function structuredCompositionCheckedShape(nodes: readonly CheckedNode[],
 }
 
 /** SPC-SOURCE-01 permits shared root Properties, but local data elements have one declaration owner. */
-function dataIdentitiesValid(declarations: readonly string[], tasks: readonly Readonly<{
+export function dataIdentitiesValid(declarations: readonly string[], tasks: readonly Readonly<{
   directInput: DirectActivityDataInput;
   directOutput: DirectActivityDataOutput;
 }>[]): boolean {

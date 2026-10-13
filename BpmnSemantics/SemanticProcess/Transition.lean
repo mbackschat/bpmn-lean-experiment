@@ -238,8 +238,8 @@ inductive OperationStep (program : Program) :
   | awaitDataInputOutputUserTask
       (id origin input output taskId taskName directInput directOutput)
       (before after : RuntimeState)
-      (transition : activateDataInputOutputUserTask? before input output taskId taskName
-        directInput = some after) :
+      (transition : activateDataInputOutputUserTask? (programPropertyPathValuePolicy program)
+        before input output taskId taskName directInput = some after) :
       OperationStep program
         (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput
           directOutput) before after
@@ -411,7 +411,8 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
       activateDataInputUserTask? state input output taskId taskName directInput
   | .awaitDataInputOutputUserTask _ _ input output taskId taskName directInput _ =>
-      activateDataInputOutputUserTask? state input output taskId taskName directInput
+      activateDataInputOutputUserTask? (programPropertyPathValuePolicy program) state input output
+        taskId taskName directInput
   | .awaitDataOutputUserTask _ _ input output taskId taskName _ =>
       activateDataOutputUserTask? state input output taskId taskName
   | operation@(.awaitSequentialMultiInstanceUserTask ..) => do

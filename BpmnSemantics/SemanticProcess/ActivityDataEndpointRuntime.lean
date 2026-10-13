@@ -1,4 +1,4 @@
-import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 
 /-! # Owned Activity data endpoints
 
@@ -16,24 +16,32 @@ def activityDataPropertyOwner (state : RuntimeState) (owner : ScopeOccurrenceId)
   | .running instanceId => decide (owner.processInstanceId = instanceId)
   | _ => false
 
-def readActivityDataInput? (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (input : DirectActivityDataInput) : Option VariableBinding :=
+def readActivityDataInput? (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (input : DirectActivityDataInput) : Option VariableBinding :=
   match input.source with
   | .property propertyId =>
       if activityDataPropertyOwner state owner then
         match state.variables.process.bindings.filter fun binding => decide (binding.name = propertyId) with
-        | [binding] => if processInterfaceScalar binding.value then some binding else none
+        | [binding] => if policy.admits binding.value then some binding else none
         | _ => none
       else none
   | .processDataInput dataInputId =>
       readProcessInterfaceInput? state.variables owner dataInputId
 
+/-- A Property target follows the Program's Property-path policy; a Process DataOutput keeps the
+scalar interface domain whatever the policy. -/
+def activityDataOutputValueAdmitted (policy : PropertyPathValuePolicy)
+    (output : DirectActivityDataOutput) (value : VariableValue) : Bool :=
+  match output.target with
+  | .property _ => policy.admits value
+  | .processDataOutput _ => processInterfaceScalar value
+
 /-- The destination variables may already have their selected Activity local removed. The original
 state supplies only hosting ownership; returning `none` commits neither routing nor disposal. -/
-def writeActivityDataOutput? (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (variables : ScopedVariables) (output : DirectActivityDataOutput)
+def writeActivityDataOutput? (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (variables : ScopedVariables) (output : DirectActivityDataOutput)
     (filled : VariableBinding) : Option ScopedVariables :=
-  if processInterfaceScalar filled.value then
+  if activityDataOutputValueAdmitted policy output filled.value then
     match output.target with
     | .property propertyId =>
         if activityDataPropertyOwner state owner then
@@ -46,10 +54,10 @@ def writeActivityDataOutput? (state : RuntimeState) (owner : ScopeOccurrenceId)
   else none
 
 /-- Direct output routing describes the declared destination, without consulting the evaluator. -/
-def ActivityDataOutputRouting (state : RuntimeState) (owner : ScopeOccurrenceId)
-    (before : ScopedVariables) (output : DirectActivityDataOutput) (filled : VariableBinding)
-    (after : ScopedVariables) : Prop :=
-  processInterfaceScalar filled.value = true ∧
+def ActivityDataOutputRouting (policy : PropertyPathValuePolicy) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (before : ScopedVariables) (output : DirectActivityDataOutput)
+    (filled : VariableBinding) (after : ScopedVariables) : Prop :=
+  activityDataOutputValueAdmitted policy output filled.value = true ∧
   match output.target with
   | .property propertyId =>
       activityDataPropertyOwner state owner = true ∧
@@ -66,10 +74,11 @@ def ActivityDataOutputRouting (state : RuntimeState) (owner : ScopeOccurrenceId)
             { candidate with outputs := [{ name := dataOutputId, value := filled.value }] }
           else candidate }
 
-theorem writeActivityDataOutput_sound {state : RuntimeState} {owner : ScopeOccurrenceId}
-    {before after : ScopedVariables} {output : DirectActivityDataOutput} {filled : VariableBinding}
-    (written : writeActivityDataOutput? state owner before output filled = some after) :
-    ActivityDataOutputRouting state owner before output filled after := by
+theorem writeActivityDataOutput_sound {policy : PropertyPathValuePolicy} {state : RuntimeState}
+    {owner : ScopeOccurrenceId} {before after : ScopedVariables} {output : DirectActivityDataOutput}
+    {filled : VariableBinding}
+    (written : writeActivityDataOutput? policy state owner before output filled = some after) :
+    ActivityDataOutputRouting policy state owner before output filled after := by
   unfold writeActivityDataOutput? at written
   split at written
   · next scalar =>

@@ -5,6 +5,7 @@ import type {
   StartProcessStimulus,
 } from "./contract.js";
 import { sameMessageChannel } from "./message-channel.js";
+import { cloneVariableBinding } from "./variable-value.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { armEventSubProcessMessageSubscriptions } from "./interrupting-message-event-subprocess-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -117,7 +118,8 @@ export function admitProcessStart(
     ),
     variables: {
       ...state.variables,
-      process: { bindings: stimulus.initialVariables },
+      // PBV-COPY-01: a nested value must not keep the caller's storage, or a later caller edit rewrites committed state.
+      process: { bindings: stimulus.initialVariables.map(cloneVariableBinding) },
     },
   }, rootOccurrence);
   return armEventSubProcessMessageSubscriptions(program, initialized, rootOccurrence);

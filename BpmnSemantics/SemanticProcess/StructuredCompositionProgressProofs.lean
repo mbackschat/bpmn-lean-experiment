@@ -59,7 +59,9 @@ theorem reached_token_has_enabled_consumer
     have noScopes := (no_wait_has_no_activity_lifetime program reached shape
       (live_token_under_bound_is_single reached token bounded live).2.1).2
     simp only [fire?, noSnapshots]
-    change ∃ after, activateDataInputOutputUserTask? reached input output taskId taskName directInput = some after
+    change ∃ after, activateDataInputOutputUserTask? (programPropertyPathValuePolicy program) reached input
+      output taskId taskName directInput = some after
+    rw [programPropertyPathValuePolicy_eq_scalar (by simp [profile])]
     simp [activateDataInputOutputUserTask?, onlyTokenOwner?, tokenOwners, single, consumes,
       dataInputOutputRunningInstance_of_running running, available, noScopes]
   case choose id origin input candidates output defaultOrigin =>

@@ -175,8 +175,8 @@ theorem prepareInternalDataArm_after_scope_creation (program : Program) (state :
   have hostFrame : dataArmingHostValid (selected.apply state) owner contract.data = true := by
     cases kind : selected.kind <;>
       simpa only [InternalScopeCreationSelection.apply, kind, dataArmingHostValid] using running
-  have sourceFrame : dataArmingBindings? (selected.apply state) owner contract.data = some source := by
-    rw [dataArmingBindings_process_frame state (selected.apply state) owner contract.data
+  have sourceFrame : dataArmingBindings? (programPropertyPathValuePolicy program) (selected.apply state) owner contract.data = some source := by
+    rw [dataArmingBindings_process_frame (programPropertyPathValuePolicy program) state (selected.apply state) owner contract.data
       (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind]) (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind])
       (by cases kind : selected.kind <;> simp only [InternalScopeCreationSelection.apply, kind])]
     exact available

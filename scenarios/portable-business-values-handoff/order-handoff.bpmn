@@ -1,0 +1,32 @@
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions" targetNamespace="urn:bpmn-lean:order-handoff">
+  <bpmn:process id="OrderHandoff" name="Order review and archive" isExecutable="true">
+    <bpmn:property id="receivedOrder" name="Order as received" />
+    <bpmn:property id="reviewedOrder" name="Order as reviewed" />
+    <bpmn:property id="archivedOrder" name="Order as archived" />
+    <bpmn:startEvent id="OrderReceived" name="Order received" />
+    <bpmn:userTask id="ReviewOrder" name="Review order">
+      <bpmn:ioSpecification id="ReviewOrder_io">
+        <bpmn:dataInput id="ReviewOrder_in" name="Order to review" />
+        <bpmn:dataOutput id="ReviewOrder_out" name="Reviewed order" />
+        <bpmn:inputSet id="ReviewOrder_inputs"><bpmn:dataInputRefs>ReviewOrder_in</bpmn:dataInputRefs></bpmn:inputSet>
+        <bpmn:outputSet id="ReviewOrder_outputs"><bpmn:dataOutputRefs>ReviewOrder_out</bpmn:dataOutputRefs></bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="ReviewOrder_read"><bpmn:sourceRef>receivedOrder</bpmn:sourceRef><bpmn:targetRef>ReviewOrder_in</bpmn:targetRef></bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="ReviewOrder_write"><bpmn:sourceRef>ReviewOrder_out</bpmn:sourceRef><bpmn:targetRef>reviewedOrder</bpmn:targetRef></bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:userTask id="ArchiveOrder" name="Archive order">
+      <bpmn:ioSpecification id="ArchiveOrder_io">
+        <bpmn:dataInput id="ArchiveOrder_in" name="Order to archive" />
+        <bpmn:dataOutput id="ArchiveOrder_out" name="Archived order" />
+        <bpmn:inputSet id="ArchiveOrder_inputs"><bpmn:dataInputRefs>ArchiveOrder_in</bpmn:dataInputRefs></bpmn:inputSet>
+        <bpmn:outputSet id="ArchiveOrder_outputs"><bpmn:dataOutputRefs>ArchiveOrder_out</bpmn:dataOutputRefs></bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="ArchiveOrder_read"><bpmn:sourceRef>reviewedOrder</bpmn:sourceRef><bpmn:targetRef>ArchiveOrder_in</bpmn:targetRef></bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="ArchiveOrder_write"><bpmn:sourceRef>ArchiveOrder_out</bpmn:sourceRef><bpmn:targetRef>archivedOrder</bpmn:targetRef></bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:endEvent id="OrderArchived" name="Order archived" />
+    <bpmn:sequenceFlow id="ToReview" sourceRef="OrderReceived" targetRef="ReviewOrder" />
+    <bpmn:sequenceFlow id="ToArchive" sourceRef="ReviewOrder" targetRef="ArchiveOrder" />
+    <bpmn:sequenceFlow id="ToEnd" sourceRef="ArchiveOrder" targetRef="OrderArchived" />
+  </bpmn:process>
+</bpmn:definitions>

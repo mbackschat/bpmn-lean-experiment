@@ -456,7 +456,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS RuntimeState](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | collection/control references only |
 | [TS runtime validity](../../packages/semantic-core/src/runtime-state-well-formedness.ts) | 103 | extract compensation validity first |
 | [TS runtime defects](../../packages/semantic-core/src/runtime-state-defect.ts) | 751 | new defect arms only |
-| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 262 | result dispatch only |
+| [TS command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 260 | result dispatch only |
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 388 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
@@ -469,7 +469,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean RuntimeState](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 23 | trigger collection reference only |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 632 | compensation relation only |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | result dispatch only |
-| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
+| [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 22 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
 | [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 382 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 280 | handler-effect/failed projection and selected scenario dispatch |

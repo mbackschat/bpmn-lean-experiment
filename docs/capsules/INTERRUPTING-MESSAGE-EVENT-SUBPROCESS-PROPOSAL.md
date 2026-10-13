@@ -160,7 +160,7 @@ The proposed additions bind source admission, checked/IL declarations, both deco
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep declaration details in one family owner. |
 | [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | Add the distinct parent-listener collection without duplicating it. |
 | [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | Preserve ordinary completion while withdrawing passive owned listeners. |
-| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 579 | Delegate atomic parent registration to the family owner. |
+| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 577 | Delegate atomic parent registration to the family owner. |
 | [Checked graph](../../packages/semantic-core/src/checked-process-contract.ts) | 375 | Retain exact source ownership and entry flow. |
 | [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 9 | Add only a narrow hook to a cohesive family projection owner. |
 | [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | Delegate cancellation and handler facts without generic state differencing. |

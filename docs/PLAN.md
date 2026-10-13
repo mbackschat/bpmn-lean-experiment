@@ -83,11 +83,11 @@ Deliverable: Carry a nested order through both tasks and terminal publication.
 
 Acceptance blockers: selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [shared value and reader checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#shared-value-and-reader-acceptance) is independently accepted at `7edf47bc` after audits `fa8f74ef` and `b61627e2`; its batch used 280 of 480 minutes by 09:35 UTC. Deferred `890b010f` keeps main red: `/tmp/pbv-lean-full-main-20261013` fails only its two scope modules and `/tmp/pbv-corr2-test-infrastructure-runtime-20261013` only its unremeasured cost row. PMIS capacity timeouts remain held.
+Current result: The [Property-path runtime checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-checkpoint) is implemented in the working tree: profile-derived policy, independent Lean/TypeScript admission and Start rule, Start copy fix and witnesses. TypeScript gates are green under `/tmp/pho-ts-final2-*-20261013`; the three changed conformance modules pass the Docker memory bound under `/tmp/pho-resource-20261013/measure-*`; `/tmp/pho-lean-full-4-20261013` fails only the deferred `SequentialScopeCommandResumptionProofs` placeholder. The `890b010f` alias regression is repaired at its seven call sites in a separate commit; deleting the `SequentialScopeControl.inputs` alias itself rebuilds 785 modules and is folded into the next already-scheduled complete rebuild. Deferred `890b010f` keeps the placeholder module and the `SequentialScopeGraphConformance` cost row red. PMIS capacity timeouts remain held.
 
 Effort budget: 480 minutes wall from 2026-10-13 09:35 UTC for the Property-path runtime through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
 
-Next action: From the [consuming amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#serial-handoff-consuming-amendment), select the consuming profile, Program/runtime representation and red witnesses for the nested order through both tasks, then implement red/green.
+Next action: Confirm the pipeline receipt `/tmp/pho-pipeline-20261013`, commit the batch and the alias call-site repair separately, then request the semantic-checkpoint cold review.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 

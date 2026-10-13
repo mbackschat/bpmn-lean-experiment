@@ -108,6 +108,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.UserTaskBooleanCompletionData:
     case SemanticProfileId.UserTaskAssignmentFormMetadata:
     case SemanticProfileId.StructuredHumanWork:
+    case SemanticProfileId.PortableBusinessValuesHandoff:
     case SemanticProfileId.TerminateEnd:
     case SemanticProfileId.ConfiguredTask:
     case SEQUENTIAL_MULTI_INSTANCE_USER_TASK_PROFILE_ID:

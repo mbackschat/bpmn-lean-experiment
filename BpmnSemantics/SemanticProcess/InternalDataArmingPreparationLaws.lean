@@ -14,10 +14,10 @@ theorem makeInternalDataArmingPatch_refines_activation
     (bindings : List VariableBinding)
     (owned : onlyTokenOwner? state contract.input = some owner)
     (running : dataArmingHostValid state owner contract.data = true)
-    (available : dataArmingBindings? state owner contract.data = some bindings)
+    (available : dataArmingBindings? (programPropertyPathValuePolicy program) state owner contract.data = some bindings)
     (fresh : state.variables.activities.any (activityOccurrenceScopeMatches
       (dataInputOutputActivityOwner state owner.processInstanceId contract.taskId)) = false) :
-    contract.activate? state = some (applyInternalDataArmingPatch state
+    contract.activate? (programPropertyPathValuePolicy program) state = some (applyInternalDataArmingPatch state
       (makeInternalDataArmingPatch program state contract owner inputOrigin bindings)) := by
   obtain ⟨host, hosted⟩ := dataArmingHostValid_running running
   cases dataEq : contract.data with
@@ -78,7 +78,7 @@ theorem prepareInternalDataArmingContract_refines_activation
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
     (patch : InternalDataArmingPatch)
     (prepared : prepareInternalDataArmingContract? program state contract = some patch) :
-    contract.activate? state = some (applyInternalDataArmingPatch state patch) := by
+    contract.activate? (programPropertyPathValuePolicy program) state = some (applyInternalDataArmingPatch state patch) := by
   obtain ⟨owner, inputOrigin, source, owned, running, _, _, _, available, _, _, fresh, _, rfl⟩ :=
     prepareInternalDataArmingContract_facts program state contract patch prepared
   apply makeInternalDataArmingPatch_refines_activation program state contract owner inputOrigin
@@ -146,7 +146,7 @@ theorem prepareInternalDataArm_sound
   exact ⟨contract, decoded, prepareInternalDataArmingContract_sound program state contract patch prepared⟩
 
 theorem dataArmingBindings_composed_process_input
-    {state : RuntimeState} {owner : ScopeOccurrenceId}
+    {policy : PropertyPathValuePolicy} {state : RuntimeState} {owner : ScopeOccurrenceId}
     {input : DirectActivityDataInput} (output : DirectActivityDataOutput) {port : String}
     {scope : ProcessInterfaceScope} {source : VariableBinding}
     (endpoint : input.source = .processDataInput port)
@@ -154,9 +154,9 @@ theorem dataArmingBindings_composed_process_input
       (fun candidate => decide (candidate.owner = owner)) = [scope])
     (uniquePort : scope.inputs.filter (fun candidate => decide (candidate.name = port)) = [source])
     (scalar : processInterfaceScalar source.value = true) :
-    dataArmingBindings? state owner (.inputOutput input output) =
+    dataArmingBindings? policy state owner (.inputOutput input output) =
       some [{ name := input.targetDataInputId, value := source.value }] := by
-  have available : dataInputOutputSourceBinding? state owner input = some source := by
+  have available : dataInputOutputSourceBinding? policy state owner input = some source := by
     rw [dataInputOutputSourceBinding?, readActivityDataInput_interface_exact endpoint]
     exact readProcessInterfaceInput_iff.mpr
       ⟨scope, selectProcessInterface_iff.mpr uniqueOwner, uniquePort, scalar⟩
@@ -212,7 +212,7 @@ theorem prepareComposedProcessInput_duplicate_owner_refused
     (duplicates : state.variables.processInterfaces.filter (fun scope => decide (scope.owner = owner)) =
       first :: second :: rest) : prepareInternalDataArmingContract? program state contract = none := by
   apply prepareInternalDataArmingContract_unavailable_source owned
-  have refused : dataInputOutputSourceBinding? state owner input = none :=
+  have refused : dataInputOutputSourceBinding? (programPropertyPathValuePolicy program) state owner input = none :=
     readActivityDataInput_duplicate_interfaces_refused endpoint duplicates
   simp [dataArmingBindings?, family, dataArmingEndpointKindsValid,
     InternalDataArmingData.inputAssociation?, refused]

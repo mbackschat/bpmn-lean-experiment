@@ -6,6 +6,7 @@ import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   structuredCompositionCheckedGraph,
+  portableHandoffCheckedGraph,
   BoundaryInterruption,
   CheckedNodeKind,
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
@@ -77,6 +78,7 @@ export function isAdmittedCheckedProcess(
     hasSelectedConditions(semanticProfile, graph.flows) &&
     (semanticProfile !== STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID ||
       structuredCompositionCheckedGraph(graph)) &&
+    (semanticProfile !== SemanticProfileId.PortableBusinessValuesHandoff || portableHandoffCheckedGraph(graph)) &&
     (semanticProfile !== SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || serialBusinessCheckedGraph(graph)) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&

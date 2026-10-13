@@ -8,6 +8,8 @@ Structured Human Task composition uses the existing passive Update scheduler aft
 
 The [structured serial runner configuration](../../examples/temporal-mvp/structured-process-composition.json) reuses the retained source and ordinary User Task driver. [Product example controls](testkit/test/product-example-configs.test.ts) check complete profile enrollment, both pre-start gates and the exact copied inputs, routed writes and terminal cleanup.
 
+The [portable-handoff runner configuration](../../examples/temporal-mvp/portable-business-values-handoff.json) reuses the ordinary User Task driver; its [driver test](testkit/test/portable-handoff-example.test.ts) checks the copied inputs and the three terminal Process values. The [continuation reader](protocol/src/workflow-continuation.ts) applies the profile-derived value domain through the [semantic-core restoration check](../semantic-core/src/semantic-profile-value-domain.ts).
+
 ## Registered business-task boundaries
 
 [Host admission](protocol/src/host-admission.ts) admits the registered [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). Its [admission witness](protocol/test/serial-business-task-host-refusal.test.ts) checks hosted support while preserving semantic rejection of missing required start data.

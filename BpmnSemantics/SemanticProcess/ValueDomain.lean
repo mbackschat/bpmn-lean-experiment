@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 
 /-! # Semantic Process value-domain admission
 
@@ -69,6 +70,7 @@ private inductive ProcessDataValueDomain where
   | stringNullBooleanList
   | scalar
   | structuredHumanWork
+  | singletonBusinessItem
 
 @[simp] private abbrev profileIsOneOf (profile : ProfileId) (ids : List String) : Bool :=
   ids.any fun id => profile.value == id
@@ -106,6 +108,8 @@ private inductive ProcessDataValueDomain where
           , structuredCompositionCheckpointProfileId.value
           , structuredHumanWorkProfileId.value ] then
         .stringNull
+      else if profile = portableHandoffProfileId then
+        .singletonBusinessItem
       else
         .empty
   | .userTaskCompletion =>
@@ -132,6 +136,8 @@ private inductive ProcessDataValueDomain where
         .stringNullBoolean
       else if profile = structuredHumanWorkProfileId then
         .structuredHumanWork
+      else if profile = portableHandoffProfileId then
+        .singletonBusinessItem
       else
         .empty
   | .messagePayload =>
@@ -164,6 +170,9 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
   | .structuredHumanWork, value@(.integer _)
   | .structuredHumanWork, value@(.stringList _) =>
       BpmnSemantics.SemanticProcessJson.variableValueWellFormed value
+  | .singletonBusinessItem, value =>
+      PropertyPathValuePolicy.singletonBusinessItem.admits value &&
+        BpmnSemantics.SemanticProcessJson.variableValueWellFormed value
   | _, _ => false
 
 /-- A submitted patch is admitted only when every value belongs to the exact surface/profile domain. -/
@@ -171,15 +180,34 @@ def processDataBindingsAdmitted (profile : ProfileId)
     (surface : ProcessDataIngress) (bindings : List VariableBinding) : Bool :=
   bindings.all fun binding => variableValueAdmitted profile surface binding.value
 
-/-- PBV-INGRESS-01: no current profile domain admits a portable Decimal, List or Map at any
-surface, so schema recognition alone cannot widen an existing profile. -/
+/-- PBV-INGRESS-01: no profile domain other than the portable handoff's admits a portable Decimal,
+List or Map at any surface, so schema recognition alone cannot widen an existing profile. -/
 theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
+    (other : profile ≠ portableHandoffProfileId)
     (surface : ProcessDataIngress) (coefficient : Int) (scale : Nat)
     (members : List BusinessValue) (entries : List (String × BusinessValue)) :
     variableValueAdmitted profile surface (.decimal coefficient scale) = false ∧
       variableValueAdmitted profile surface (.list members) = false ∧
       variableValueAdmitted profile surface (.map entries) = false := by
+  have selected : profileValueDomain profile surface ≠ .singletonBusinessItem := by
+    cases surface <;> simp only [profileValueDomain] <;> repeat' split
+    all_goals first | simp_all | exact fun same => by cases same
   unfold variableValueAdmitted
-  cases profileValueDomain profile surface <;> simp
+  cases domain : profileValueDomain profile surface <;> simp_all
+
+/-- The handoff profile selects `SingletonBusinessItem` at Start and User Task completion only: a
+well-formed value whose root the Property-path policy admits. A root List is refused there and every
+value is refused at Message ingress. -/
+theorem portableHandoff_value_domain (value : VariableValue) :
+    variableValueAdmitted portableHandoffProfileId .processStart value =
+        (PropertyPathValuePolicy.singletonBusinessItem.admits value &&
+          BpmnSemantics.SemanticProcessJson.variableValueWellFormed value) ∧
+      variableValueAdmitted portableHandoffProfileId .userTaskCompletion value =
+        (PropertyPathValuePolicy.singletonBusinessItem.admits value &&
+          BpmnSemantics.SemanticProcessJson.variableValueWellFormed value) ∧
+      variableValueAdmitted portableHandoffProfileId .messagePayload value = false := by
+  unfold variableValueAdmitted
+  refine ⟨?_, ?_, ?_⟩ <;> simp [profileValueDomain, portableHandoffProfileId,
+    messagePayloadCatchProfileId, messageKeyCorrelationProfileId]
 
 end BpmnSemantics.SemanticProcess

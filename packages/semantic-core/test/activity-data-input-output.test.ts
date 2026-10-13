@@ -44,7 +44,13 @@ const runtimeModule = await import(
     import.meta.url,
   ).href
 ) as ActivityDataInputOutputRuntimeModule;
-const { armDataInputOutputUserTask } = runtimeModule;
+const { PropertyPathValuePolicy } = await import(
+  new URL("../dist/property-path-value-policy.js", import.meta.url).href
+) as typeof import("../src/property-path-value-policy.ts");
+// This profile family keeps the scalar Property-path contract; the policy is a required argument of the arming owner.
+type ArmingArguments = Parameters<ActivityDataInputOutputRuntimeModule["armDataInputOutputUserTask"]>;
+const armDataInputOutputUserTask = (operation: ArmingArguments[0], state: ArmingArguments[1], owner: ArmingArguments[2]) =>
+  runtimeModule.armDataInputOutputUserTask(operation, state, owner, PropertyPathValuePolicy.Scalar);
 
 const instanceId = "ActivityDataInputOutputInstance_1";
 const processId = "Process_ActivityDataInputOutputApproval";

@@ -12,6 +12,8 @@ The [structured-composition hosting witness](testkit/test/structured-composition
 
 Run the retained serial data handoff with `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/structured-process-composition.json` against your configured Temporal service. The [example](../../examples/temporal-mvp/structured-process-composition.json) uses the shared User Task driver and submits the declared DataOutput names for assessment and archive.
 
+Run the nested-order handoff with `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/portable-business-values-handoff.json` against your configured Temporal service. The [example](../../examples/temporal-mvp/portable-business-values-handoff.json) submits a 12-node order at Start, a revision at Review and a receipt at Archive through the shared User Task driver; [restoration controls](protocol/test/portable-handoff-continuation.test.ts) require every carried value to be a singleton item. Pre-start capacity admission and hosted rollover qualification for this profile are not part of this registration.
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

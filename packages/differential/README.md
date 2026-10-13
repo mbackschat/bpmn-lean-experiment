@@ -8,6 +8,8 @@ Declare one reference result and one or more candidates, then receive either equ
 
 The [registered structured-composition cases](test/structured-composition-pipeline-cases.ts) bind three retained invoice routes and serial String/null handoff to Lean/core/Temporal. [Registration controls](test/structured-composition-pipeline-cases.test.ts) check public admission, exact associated writes, branch exclusivity, copied input and an input-loss discriminator; no CIB data/branch target is selected.
 
+The [registered portable-handoff cases](test/portable-handoff-pipeline-cases.ts) bind a 12-node nested order, a revision with ordered unequal items and a negative Decimal, and a present-Null control to Lean/core/Temporal. [Registration controls](test/portable-handoff-pipeline-cases.test.ts) check public admission, the amendment's seeded mutation classes and the handoff rows of the scenario-domain matrix.
+
 The independent [scenario-domain matrix](test/scenario-value-domain-cases.ts) assigns structured composition's existing String/null Human completion domain; [Lean/core controls](test/scenario-value-domain-lean-core.integration-test.ts) distinguish unsupported late values from supported-domain command refusal.
 
 The [scalar Call cases](test/call-data-pipeline-cases.ts) bind supplier String/null schedules to Lean, core and Temporal targets, with an exact called-owner mutation. [Registration controls](test/call-data-pipeline-cases.test.ts) check public admission, normal return and malformed-Program refusal.

@@ -10,6 +10,8 @@ The [Parallel MI Sub-Process ownership account](../../docs/capsules/PARALLEL-MUL
 
 The [structured-composition profile](../../profiles/bpmn-2.0.2-structured-process-composition-draft/README.md) registers the existing scalar Human Task, ordered Exclusive choice and nonsynchronizing merge account. The [capsule](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) owns its required-input and bounded-resumption guarantees; registration changes no evaluator semantics.
 
+The [portable-handoff profile](../../profiles/bpmn-2.0.2-portable-business-values-handoff-draft/README.md) carries one nested order, Decimal or other singleton item from Start through exactly two Human Tasks. Its Property-path value domain is derived from the Program profile; every other profile keeps String and Null.
+
 ## What you can do
 
 Use the package to start an admitted Process, submit typed stimuli such as task completion or timer firing, inspect stable state, and run answer-free semantic scenarios. `applyStimulus` is pure: equal admitted programs, states, stimuli, and closure limits produce equal results.

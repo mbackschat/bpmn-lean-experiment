@@ -95,7 +95,19 @@ const stringNullBoolean = [
   VariableValueKind.Boolean,
 ] as const;
 
+// SingletonBusinessItem at kind level; the 1,024-byte root String bound is a value rule the kind table cannot express.
+const singletonBusinessItem = [
+  ...stringNullBoolean,
+  VariableValueKind.Integer,
+  VariableValueKind.Decimal,
+  VariableValueKind.Map,
+] as const;
+
 const expectedCapabilities = new Map<string, ProfileCapabilities>([
+  [SemanticProfileId.PortableBusinessValuesHandoff, {
+    processStart: capability(singletonBusinessItem, "process-start-singleton-business-item-data"),
+    userTaskCompletion: capability(singletonBusinessItem, "user-task-singleton-business-item-completion-data"),
+  }],
   [SemanticProfileId.StructuredProcessComposition, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
@@ -620,7 +632,7 @@ test("does not inherit String or Null writes into preservation and composition p
   }
 });
 
-test("refuses a well-formed recursive portable value at every surface of every admitted profile", async () => {
+test("refuses a well-formed recursive portable value at every surface of every profile that does not select it", async () => {
   const compiled = await importCompiledValueDomain();
   const profiles = await admittedProfiles();
   for (const kind of portableKinds) {
@@ -630,9 +642,12 @@ test("refuses a well-formed recursive portable value at every surface of every a
     assert.equal(isVariablePatch([binding]), true, kind);
     for (const profile of profiles) {
       for (const surface of surfaces) {
+        // Only the serial handoff selects Decimal and Map, at its two Property-path surfaces; a root List nowhere.
+        const selected = profile === SemanticProfileId.PortableBusinessValuesHandoff && kind !== VariableValueKind.List &&
+          surface !== "effectCompletion";
         assert.equal(
           compiled.profileAllowsVariableBindings(profile, surface, [binding]),
-          false,
+          selected,
           `${profile} ${surface} ${kind}`,
         );
       }
@@ -641,13 +656,11 @@ test("refuses a well-formed recursive portable value at every surface of every a
 });
 
 // Restoration reads carried state structurally, so profile eligibility must be rechecked there (PBV-INGRESS-01).
-test("refuses a carried portable value under every admitted profile while keeping legacy kinds", async () => {
+test("refuses a carried portable value under every admitted profile that selects none while keeping legacy kinds", async () => {
   const string = bindings.get(VariableValueKind.String);
   assert.ok(string !== undefined);
-  const carrying = (binding: VariableBinding): RuntimeState => ({
-    ...initialState, variables: { ...initialState.variables, process: { bindings: [binding] } },
-  });
   for (const profile of await admittedProfiles()) {
+    if (profile === SemanticProfileId.PortableBusinessValuesHandoff) continue;
     assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
     for (const kind of portableKinds) {
       const binding = bindings.get(kind);
@@ -656,6 +669,10 @@ test("refuses a carried portable value under every admitted profile while keepin
     }
   }
 });
+
+function carrying(binding: VariableBinding): RuntimeState {
+  return { ...initialState, variables: { ...initialState.variables, process: { bindings: [binding] } } };
+}
 
 async function admittedProfiles(): Promise<readonly string[]> {
   // The interrupting Message Event Sub-Process identity is package-internal, so it is read from the built catalog.
@@ -672,29 +689,53 @@ async function admittedProfiles(): Promise<readonly string[]> {
   return profiles;
 }
 
-// Each forged state holds one portable value at a different carried path; only the path differs, so a path the
+// Each forged state holds one value at a different carried path; only the path differs, so a path the
 // enumerator skips is the only way a case can pass. The states are deliberately partial: the profile check reads
 // carried values only, and structural validity is restoration's separate obligation.
-test("refuses a portable value at every carried RuntimeState path", () => {
-  const map = bindings.get(VariableValueKind.Map);
-  assert.ok(map !== undefined);
+function statesCarryingAtEveryPath(carried: VariableBinding): ReadonlyArray<readonly [string, RuntimeState]> {
   const owner = initialState.scopeOccurrences[0]?.id ?? { processInstanceId: "Instance", elementId: "scope", activation: 1 };
-  const snapshot = { frames: [{ owner, bindings: [map] }] };
+  const snapshot = { frames: [{ owner, bindings: [carried] }] };
   const handler = (lifecycle: "pending" | "compensating") => ({ lifecycle, restoredContext: snapshot });
   const forged = (fields: Record<string, unknown>): RuntimeState => ({ ...initialState, ...fields }) as RuntimeState;
   const variables = (fields: Record<string, unknown>) => forged({ variables: { ...initialState.variables, ...fields } });
-  for (const [path, state] of [
-    ["process", variables({ process: { bindings: [map] } })],
-    ["scopes", variables({ scopes: [{ owner, bindings: [map] }] })],
-    ["processInterfaces.inputs", variables({ processInterfaces: [{ owner, inputs: [map], outputs: [] }] })],
-    ["processInterfaces.outputs", variables({ processInterfaces: [{ owner, inputs: [], outputs: [map] }] })],
-    ["activities", variables({ activities: [{ owner, bindings: [map] }] })],
-    ["effectWaits", forged({ effectWaits: [{ arguments: [map] }] })],
-    ["compensationHandlerEffectWaits", forged({ compensationHandlerEffectWaits: [{ arguments: [map] }] })],
+  return [
+    ["process", variables({ process: { bindings: [carried] } })],
+    ["scopes", variables({ scopes: [{ owner, bindings: [carried] }] })],
+    ["processInterfaces.inputs", variables({ processInterfaces: [{ owner, inputs: [carried], outputs: [] }] })],
+    ["processInterfaces.outputs", variables({ processInterfaces: [{ owner, inputs: [], outputs: [carried] }] })],
+    ["activities", variables({ activities: [{ owner, bindings: [carried] }] })],
+    ["effectWaits", forged({ effectWaits: [{ arguments: [carried] }] })],
+    ["compensationHandlerEffectWaits", forged({ compensationHandlerEffectWaits: [{ arguments: [carried] }] })],
     ["pending restoredContext", forged({ compensationTriggers: [{ handlers: [handler("pending")] }] })],
     ["compensating restoredContext", forged({ compensationTriggers: [{ handlers: [handler("compensating")] }] })],
     ["promoted snapshot", forged({ compensationParentContextRetentions: [{ kind: "promoted", snapshot }] })],
-  ] as const) {
+  ];
+}
+
+test("refuses a portable value at every carried RuntimeState path", () => {
+  const map = bindings.get(VariableValueKind.Map);
+  assert.ok(map !== undefined);
+  for (const [path, state] of statesCarryingAtEveryPath(map)) {
     assert.equal(runtimeStateCarriesOnlyProfilePortableValues(SemanticProfileId.UserTaskPreservedNotation, state), false, path);
+  }
+});
+
+// Under the serial handoff every carried value must be a SingletonBusinessItem, not merely a selected kind.
+test("the serial handoff accepts a SingletonBusinessItem and refuses any other value at every carried path", () => {
+  const handoff = SemanticProfileId.PortableBusinessValuesHandoff;
+  const named = (value: VariableBinding["value"]): VariableBinding => ({ name: "candidate", value });
+  const accepted = [named({ kind: VariableValueKind.String, value: "a".repeat(1024) }), named({ kind: VariableValueKind.Null }),
+    named({ kind: VariableValueKind.Map, value: [] }), bindings.get(VariableValueKind.Decimal)!, bindings.get(VariableValueKind.Map)!];
+  const refused = [bindings.get(VariableValueKind.List)!, bindings.get(VariableValueKind.StringList)!,
+    named({ kind: VariableValueKind.String, value: "a".repeat(1025) })];
+  for (const candidate of accepted) {
+    for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(handoff, state), true, `${path} ${candidate.value.kind}`);
+    }
+  }
+  for (const candidate of refused) {
+    for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(handoff, state), false, `${path} ${candidate.value.kind}`);
+    }
   }
 });

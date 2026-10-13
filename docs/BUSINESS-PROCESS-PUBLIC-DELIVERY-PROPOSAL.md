@@ -106,10 +106,10 @@ Measured 2026-10-09 against the 800-nonblank review target. Each row's headroom 
 | [Metadata reader](../packages/bpmn-source/src/user-task-metadata-source.ts) | 311 |
 | [Serial admission](../packages/semantic-core/src/serial-business-task-admission.ts) | 662 |
 | [Mixed admission](../packages/semantic-core/src/mixed-task-control-flow-admission.ts) | 595 |
-| [Profile selection](../packages/semantic-core/src/semantic-process-profile.ts) | 477 |
+| [Profile selection](../packages/semantic-core/src/semantic-process-profile.ts) | 470 |
 | [Lean serial admission](../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean) | 622 |
 | [Lean mixed admission](../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean) | 451 |
-| [Lean profile shape](../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 147 |
+| [Lean profile shape](../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 141 |
 | [Public definitions](../platform/contracts/src/definitions.ts) | 670 |
 | [E1 identity](../platform/contracts/src/execution-publications.ts) | 324 |
 | [E2 identity](../platform/contracts/src/flow-node-occurrence-publications.ts) | 684 |

@@ -33,7 +33,7 @@ def invokeProcessWithDataState? (state : RuntimeState) (origin : BpmnElementOrig
   | .scalar data => do
       if callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value then
         let caller ← onlyTokenOwner? state input
-        let binding ← readActivityDataInput? state caller data.directInput
+        let binding ← readActivityDataInput? .scalar state caller data.directInput
         let variables ← addProcessInterface? state.variables
           (scalarInvocationRoot state caller origin calledRootScopeId)
           { name := data.called.input.id, value := binding.value }
@@ -52,7 +52,7 @@ def returnProcessWithDataState? (state : RuntimeState) (id : OperationId)
         let record ← scalarReturnRecord? state id origin
         let binding ← readProcessInterfaceOutput? state.variables record.calledRoot data.called.output.id
         let returned ← returnProcessState? state id origin calledProcessId calledRootScopeId callerOutput
-        let variables ← writeActivityDataOutput? returned record.caller returned.variables data.directOutput binding
+        let variables ← writeActivityDataOutput? .scalar returned record.caller returned.variables data.directOutput binding
         some { returned with variables }
       else none
 
@@ -63,7 +63,7 @@ inductive InvokeScalarProcessStep : RuntimeState → BpmnElementOrigin → Contr
       caller binding controlAfter
       (valid : callDataInterfaceValid (.scalar data) origin.elementId.value calledProcessId.value = true)
       (owned : onlyTokenOwner? before input = some caller)
-      (available : readActivityDataInput? before caller data.directInput = some binding)
+      (available : readActivityDataInput? .scalar before caller data.directInput = some binding)
       (fresh : before.variables.processInterfaces.any (fun scope => decide
         (scope.owner = scalarInvocationRoot before caller origin calledRootScopeId)) = false)
       (scalar : processInterfaceScalar binding.value = true)
@@ -88,7 +88,7 @@ inductive ReturnScalarProcessStep : RuntimeState → OperationId → BpmnElement
       (available : scope.outputs.filter (fun candidate => decide (candidate.name = data.called.output.id)) = [binding])
       (scalar : processInterfaceScalar binding.value = true)
       (control : ReturnProcessStep before id origin calledProcessId calledRootScopeId callerOutput controlAfter)
-      (routed : ActivityDataOutputRouting controlAfter record.caller controlAfter.variables data.directOutput binding variables) :
+      (routed : ActivityDataOutputRouting .scalar controlAfter record.caller controlAfter.variables data.directOutput binding variables) :
       ReturnScalarProcessStep before id origin calledProcessId calledRootScopeId callerOutput data
         { controlAfter with variables }
 
@@ -166,7 +166,7 @@ theorem returnScalarProcessStep_disposes_exact_owner {before after : RuntimeStat
 theorem invokeProcessWithDataState_missing_input_refused
     (state : RuntimeState) (origin input calledProcessId calledRootScopeId calledEntry returnOperationId data caller)
     (selected : onlyTokenOwner? state input = some caller)
-    (missing : readActivityDataInput? state caller data.directInput = none) :
+    (missing : readActivityDataInput? .scalar state caller data.directInput = none) :
     invokeProcessWithDataState? state origin input calledProcessId calledRootScopeId
       calledEntry returnOperationId (.scalar data) = none := by
   simp [invokeProcessWithDataState?, selected, missing]

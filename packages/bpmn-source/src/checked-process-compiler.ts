@@ -1,8 +1,8 @@
 import { projectInterruptingMessageEventSubProcesses } from "./interrupting-message-event-subprocess-source.js";
 import { scalarProcessProperties } from "./activity-data-input-output-projection.js";
+import { declaresExactPropertyCount, selectsStructuredCompositionSource } from "./structured-source-profile.js";
 import {
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
-  STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
   CheckedProcessKind,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
@@ -116,7 +116,7 @@ export function compileCheckedProcess(
   classifyForeignAttributes: ForeignAttributeClassification,
   sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
-  const structuredComposition = semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID;
+  const structuredComposition = selectsStructuredCompositionSource(semanticProfile);
   const capability = preservationCapability(semanticProfile);
   const configuredTaskPolicy =
     configuredTaskProjectionPolicyForProfile(semanticProfile);
@@ -178,8 +178,10 @@ export function compileCheckedProcess(
       capability,
     ),
   );
+  const declaredProperties = structuredComposition ? scalarProcessProperties(process) : undefined;
   if (process.isExecutable !== true ||
-      (structuredComposition && scalarProcessProperties(process) === undefined)) {
+      (structuredComposition && (declaredProperties === undefined ||
+        !declaresExactPropertyCount(semanticProfile, declaredProperties)))) {
     return unsupported(
       classification,
       "The bounded compiler requires an explicitly executable Process and the selected Process-property shape.",
