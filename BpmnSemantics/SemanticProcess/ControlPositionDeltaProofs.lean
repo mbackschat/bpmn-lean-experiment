@@ -358,6 +358,9 @@ private theorem prepared_input_origin (program : Program) (state : RuntimeState)
           | integer _ => simp_all
           | stringList _ => simp_all
           | null => simp_all
+          | decimal _ _ => simp_all
+          | list _ => simp_all
+          | map _ => simp_all
   all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared

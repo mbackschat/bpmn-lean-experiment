@@ -1,5 +1,6 @@
 import {
   EngineOpenWorkStatus,
+  EngineVariableValueKind,
   EngineWorkDetailStatus,
   completeWork as completeEngineWork,
   engineProcessWorkLocatorForCanonicalProcess,
@@ -12,6 +13,7 @@ import type {
   EngineCompleteWorkRequest,
   EngineOpenWorkResult,
   EngineProcessWorkLocator,
+  EngineWorkCompletionStimulus,
   EngineWorkDetailRequest,
   EngineWorkDetailResult,
 } from "@bpmn-lean/engine-api";
@@ -39,10 +41,37 @@ export type ProcessWorkDetailRequest = Omit<
   "temporalClient" | "locator"
 > & Readonly<{ locator: SerializedProcessWorkLocator }>;
 
+type EngineWorkValue =
+  EngineWorkCompletionStimulus["submittedValues"][number]["value"];
+
+/**
+ * Closed allow-list of the value arms Product 2 Work forms can carry. The engine's recursive Decimal, List and Map arms
+ * stay out of this type until a Product 2 form journey selects them, so they cannot reach the engine through Work.
+ */
+export type ProcessWorkCompletionValue = Extract<
+  EngineWorkValue,
+  Readonly<{
+    kind:
+      | typeof EngineVariableValueKind.Boolean
+      | typeof EngineVariableValueKind.Integer
+      | typeof EngineVariableValueKind.String
+      | typeof EngineVariableValueKind.StringList
+      | typeof EngineVariableValueKind.Null;
+  }>
+>;
+
 export type ProcessWorkCompletionRequest = Omit<
   EngineCompleteWorkRequest,
-  "temporalClient" | "locator"
-> & Readonly<{ locator: SerializedProcessWorkLocator }>;
+  "temporalClient" | "locator" | "stimulus"
+> & Readonly<{
+  locator: SerializedProcessWorkLocator;
+  stimulus: Omit<EngineWorkCompletionStimulus, "submittedValues"> & Readonly<{
+    submittedValues: ReadonlyArray<Readonly<{
+      name: string;
+      value: ProcessWorkCompletionValue;
+    }>>;
+  }>;
+}>;
 
 /** Product 2's representation-free gateway for current Work observation and command. */
 export class BpmnProcessWorkGateway {

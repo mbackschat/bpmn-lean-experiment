@@ -174,27 +174,36 @@ export enum VariableValueKind {
   String = "string",
   StringList = "stringList",
   Null = "null",
+  Decimal = "decimal",
+  List = "list",
+  Map = "map",
 }
 
+/**
+ * Mutable spelling of the recursive portable domain; `BusinessValue` is its only exported, deeply immutable form.
+ * A Map entry list stands for unique names in strictly increasing Unicode-scalar order, which the type cannot express
+ * and `isVariableValue` enforces.
+ */
+type PortableValueShape =
+  | { kind: VariableValueKind.Boolean; value: boolean }
+  | { kind: VariableValueKind.Integer; value: number }
+  | { kind: VariableValueKind.String; value: string }
+  | { kind: VariableValueKind.Null }
+  | { kind: VariableValueKind.Decimal; coefficient: string; scale: number }
+  | { kind: VariableValueKind.List; value: PortableValueShape[] }
+  | { kind: VariableValueKind.Map; value: { name: string; value: PortableValueShape }[] };
+
+/**
+ * The closed recursive value type shared by every portable surface. It excludes the legacy `StringList` arm at every
+ * depth, so a generic List of Strings has exactly one encoding.
+ */
+export type BusinessValue = DeepReadonly<PortableValueShape>;
+
 export type VariableValue =
-  | DeepReadonly<{
-      kind: VariableValueKind.Boolean;
-      value: boolean;
-    }>
-  | DeepReadonly<{
-      kind: VariableValueKind.Integer;
-      value: number;
-    }>
-  | DeepReadonly<{
-      kind: VariableValueKind.String;
-      value: string;
-    }>
+  | BusinessValue
   | DeepReadonly<{
       kind: VariableValueKind.StringList;
       value: string[];
-    }>
-  | DeepReadonly<{
-      kind: VariableValueKind.Null;
     }>;
 
 export type VariableBinding = DeepReadonly<{

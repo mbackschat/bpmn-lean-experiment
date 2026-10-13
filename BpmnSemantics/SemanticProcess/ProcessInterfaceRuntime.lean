@@ -22,7 +22,7 @@ def selectProcessInterface? (variables : ScopedVariables) (owner : ScopeOccurren
 /-- The scalar domain treats a present null as available; wire admission separately bounds strings. -/
 def processInterfaceScalar : VariableValue → Bool
   | .string _ | .null => true
-  | .boolean _ | .integer _ | .stringList _ => false
+  | .boolean _ | .integer _ | .stringList _ | .decimal _ _ | .list _ | .map _ => false
 
 def readInterfaceBinding? (bindings : List VariableBinding) (name : String) :
     Option VariableBinding :=

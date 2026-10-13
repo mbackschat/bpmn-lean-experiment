@@ -6,7 +6,7 @@ Implemented procedure. This policy owns canonical CIB observation fidelity and i
 
 ## Canonical CIB observation fidelity
 
-This table classifies every current top-level and recursively reachable field of `scenario.schema.json#/$defs/stateObservation`, whether required or optional. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident projection consumes the retained public job plus its exact public `failedJob` incident partner; semantic occurrence, descriptor, arguments, and literal generation remain profile decisions rather than CIB semantic identity. The standards-only sequential Multi-Instance profile owns `openMultiInstances`, and the standards-only Activity data-input profile owns `openUserTasks[].inputs`, so every path below either optional field is deliberately `not-claimed` by CIB fidelity. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table.
+This table classifies every current top-level and recursively reachable field of `scenario.schema.json#/$defs/stateObservation`, whether required or optional. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident projection consumes the retained public job plus its exact public `failedJob` incident partner; semantic occurrence, descriptor, arguments, and literal generation remain profile decisions rather than CIB semantic identity. The standards-only sequential Multi-Instance profile owns `openMultiInstances`, and the standards-only Activity data-input profile owns `openUserTasks[].inputs`, so every path below either optional field is deliberately `not-claimed` by CIB fidelity. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table. The recursive portable value members (`businessValue`) are not expanded: the `value[].value` row of each value carrier classifies every nested List or Map member, and the guard stops descending at that definition.
 
 | Canonical field path | Fidelity | Exact basis |
 |---|---|---|
@@ -53,6 +53,10 @@ This table classifies every current top-level and recursively reachable field of
 | `openUserTasks[].inputs[].value` | `not-claimed` | Exact value copied from the selected Process Property at activation |
 | `openUserTasks[].inputs[].value.kind` | `not-claimed` | Standards profile admits the `string` and `null` kinds |
 | `openUserTasks[].inputs[].value.value` | `not-claimed` | Project-owned copied String, absent for explicit null |
+| `openUserTasks[].inputs[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openUserTasks[].inputs[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openUserTasks[].inputs[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openUserTasks[].inputs[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
 | `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`; other retained CIB cases are empty |
 | `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |
@@ -83,6 +87,10 @@ This table classifies every current top-level and recursively reachable field of
 | `openEffects[].arguments[].value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
 | `openEffects[].arguments[].value.kind` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
 | `openEffects[].arguments[].value.value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
+| `openEffects[].arguments[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openEffects[].arguments[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openEffects[].arguments[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openEffects[].arguments[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openIncidents` | `adapter-derived` | Exact one configured retries-zero public job plus one exact public `failedJob` incident partner becomes one canonical incident |
 | `openIncidents[].kind` | `adapter-decided` | Successor profile selects the sole `effectExecutionFailed` incident kind |
 | `openIncidents[].id` | `adapter-derived` | Composite of the projected effect occurrence and profile-owned literal generation 1 |
@@ -104,6 +112,10 @@ This table classifies every current top-level and recursively reachable field of
 | `openIncidents[].effect.arguments[].value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
 | `openIncidents[].effect.arguments[].value.kind` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
 | `openIncidents[].effect.arguments[].value.value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
+| `openIncidents[].effect.arguments[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openIncidents[].effect.arguments[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openIncidents[].effect.arguments[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openIncidents[].effect.arguments[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openMultiInstances` | `not-claimed` | Standards-only sequential Multi-Instance progress is absent from every selected CIB profile |
 | `openMultiInstances[].id` | `not-claimed` | Project-owned outer Activity occurrence identity |
 | `openMultiInstances[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
@@ -119,11 +131,19 @@ This table classifies every current top-level and recursively reachable field of
 | `openMultiInstances[].activeIterations[].item.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].item.value.kind` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].item.value.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].item.value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].item.value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].item.value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].item.value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openMultiInstances[].activeIterations[].bindings` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].bindings[].name` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].bindings[].value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].bindings[].value.kind` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].bindings[].value.value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
+| `openMultiInstances[].activeIterations[].bindings[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].bindings[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].bindings[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].bindings[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openMultiInstances[].activeIterations[].userTaskIds` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].userTaskIds[].processInstanceId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
 | `openMultiInstances[].activeIterations[].userTaskIds[].elementId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
@@ -150,12 +170,20 @@ This table classifies every current top-level and recursively reachable field of
 | `openMultiInstances[].activeIterations[].taskInput.value` | `not-claimed` | Exact standards-profile scalar task input value |
 | `openMultiInstances[].activeIterations[].taskInput.value.kind` | `not-claimed` | Standards profile selects the literal `string` kind |
 | `openMultiInstances[].activeIterations[].taskInput.value.value` | `not-claimed` | Project-owned snapshot item value |
+| `openMultiInstances[].activeIterations[].taskInput.value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].taskInput.value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].taskInput.value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `openMultiInstances[].activeIterations[].taskInput.value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openMultiInstances[].activeIterations[].completionBindingName` | `not-claimed` | Exact standards-profile task DataOutput identity |
 | `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained Process-variable runtime/history rows selected only by names from already committed start or completion commands |
 | `variables[].name` | `engine-observed` | Historic Process-variable name within the adapter-selected committed-name boundary |
 | `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |
 | `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, or `null` selected from the raw host value without text coercion |
 | `variables[].value.value` | `engine-observed` | Exact host String or Boolean when the value is non-null |
+| `variables[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
+| `variables[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
+| `variables[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
+| `variables[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task, Receive Task Message subscription, or exact configured effect incident; the cancellation successor publishes Retry before Cancel from the same validated job/incident partner |
 | `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion, Message delivery, incident retry, or the approved successor cancellation from the retained host collection |
 | `enabledInteractions[].address` | `not-claimed` | Correlated publication is outside the selected CIB compatibility surface; the standards-only semantic account owns this complete address |

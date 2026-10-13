@@ -324,6 +324,20 @@ test("commits every scalar payload including explicit null and refuses a collect
   });
   assert.equal(collection.outcome, CommandOutcome.Rejected);
   assert.deepEqual(collection.state, waiting);
+
+  const portablePayloads: ReadonlyArray<VariableValue> = [
+    { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 },
+    { kind: VariableValueKind.List, value: [{ kind: VariableValueKind.Null }] },
+    { kind: VariableValueKind.Map, value: [{ name: "k", value: { kind: VariableValueKind.Null } }] },
+  ];
+  for (const [index, payload] of portablePayloads.entries()) {
+    const refused = { ...delivery, commandId: `deliver-portable-${index}`, payload };
+    // Well-formed on the wire, so only the profile's scalar payload domain can refuse it.
+    assert.equal(isWellFormedStimulus(refused), true, payload.kind);
+    const result = applyStimulus(program, waiting, refused);
+    assert.equal(result.outcome, CommandOutcome.Rejected, payload.kind);
+    assert.deepEqual(result.state, waiting, payload.kind);
+  }
 });
 
 test("refuses every subscription or channel mismatch with exact state preservation", () => {

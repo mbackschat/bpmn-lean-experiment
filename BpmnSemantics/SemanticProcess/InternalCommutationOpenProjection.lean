@@ -554,7 +554,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
               operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
             simp [candidate]
             rfl
-        | boolean _ | integer _ | stringList _ | null => simp_all
+        | boolean _ | integer _ | stringList _ | null | decimal _ _ | list _ | map _ => simp_all
   all_goals simp_all [prepareInternalArm?, internalArmInput?, internalArmOrigin?]
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared

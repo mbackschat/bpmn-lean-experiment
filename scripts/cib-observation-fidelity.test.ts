@@ -16,6 +16,11 @@ type ScenarioSchema = JsonSchema & Readonly<{
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const fidelityHeading = "## Canonical CIB observation fidelity";
+/**
+ * The recursive portable member type. Expanding it never terminates, so its members take the fidelity of the field that
+ * carries them and only that carrying field is classified.
+ */
+const recursiveMemberDefinition = "businessValue";
 
 test("classifies every canonical CIB state field at schema depth", async () => {
   const [schemaSource, testingSpec] = await Promise.all([
@@ -79,9 +84,13 @@ function collectFieldPaths(
     if (!node.$ref.startsWith(prefix)) {
       throw new Error(`unsupported schema reference ${node.$ref}`);
     }
+    const definition = node.$ref.slice(prefix.length);
+    if (definition === recursiveMemberDefinition) {
+      return paths;
+    }
     return collectFieldPaths(
       schema,
-      requiredDefinition(schema, node.$ref.slice(prefix.length)),
+      requiredDefinition(schema, definition),
       path,
       paths,
     );

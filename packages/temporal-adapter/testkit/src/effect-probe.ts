@@ -270,6 +270,9 @@ function hasCompensationSingleEffectArguments(
       return true;
     case VariableValueKind.Integer:
     case VariableValueKind.StringList:
+    case VariableValueKind.Decimal:
+    case VariableValueKind.List:
+    case VariableValueKind.Map:
       return false;
     default:
       return assertNever(binding.value);

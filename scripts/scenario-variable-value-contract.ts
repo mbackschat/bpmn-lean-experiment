@@ -244,6 +244,13 @@ function verifyProfileValue(
       throw new TypeError(
         "stringList is only admitted for structured Human Work completion or Multi-Instance Process start",
       );
+    case "decimal":
+    case "list":
+    case "map":
+      // The recursive portable arms are well-formed wire values, but no registered profile selects them.
+      throw new TypeError(
+        `${tagged.kind} values are admitted by no registered scenario profile`,
+      );
     default:
       return;
   }

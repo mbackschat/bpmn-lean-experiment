@@ -42,7 +42,7 @@ The root retains shared integration points, lifecycle/status docs, commits and c
 6. The coherent outcome/[review boundary](#commit-boundaries), shared by supporting lanes, never inferred from handbacks.
 7. Session constraints and owned-path `what-binds.ts` guard, registry, and headroom results.
 
-Edit assigned paths only; route owner-authorized commands through the root. During active lanes, stage reviewed paths explicitly, never `git add -A` or `git add .`. Handoffs are not commit boundaries.
+Edit assigned paths only; route owner-authorized commands through the root. During active lanes, stage reviewed paths explicitly, never `git add -A` or `git add .`, and never run a whole-tree working-tree command such as `git stash`, `git restore .` or `git reset --hard`: another lane's uncommitted files share the tree. Handoffs are not commit boundaries.
 
 Delegate only `./scripts/lake.sh build <module target>` for owned Lean modules after root dependency warming. Use one process tree within wrapper limits; exit `75` (`LEAN_BUILD_REFUSED`) stops without retry. The root first-builds changed kernel-decided fixtures. Retain/reap yielded builds, never interrupt/replace them for yielding. Report commands/outcomes at **Ready for root Lean gate**; the root runs that narrow gate before integration.
 

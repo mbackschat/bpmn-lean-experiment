@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import BpmnSemantics.StrictJson
 import BpmnSemantics.WireNatural
@@ -265,12 +266,15 @@ def decodeOperationMessageChannel (json : Json) :
   | .operationMessage .. => pure channel
   | .directMessage .. => throw "operation-addressed Message channel expected"
 
-/-- Encode one typed variable value without collapsing any generic value identity. -/
-def encodeVariableValue : VariableValue → Json
+mutual
+/-- Encode one portable value; this owns the wire spelling of every portable arm. -/
+def encodeBusinessValue : BusinessValue → Json
   | .string value =>
       Json.mkObj
         [ ("kind", toJson "string")
         , ("value", toJson value) ]
+  | .null =>
+      Json.mkObj [("kind", toJson "null")]
   | .boolean value =>
       Json.mkObj
         [ ("kind", toJson "boolean")
@@ -279,14 +283,83 @@ def encodeVariableValue : VariableValue → Json
       Json.mkObj
         [ ("kind", toJson "integer")
         , ("value", toJson value) ]
+  | .decimal coefficient scale =>
+      Json.mkObj
+        [ ("kind", toJson "decimal")
+        , ("coefficient", toJson (toString coefficient))
+        , ("scale", toJson scale) ]
+  | .list members =>
+      Json.mkObj
+        [ ("kind", toJson "list")
+        , ("value", Json.arr (encodeBusinessMembers members).toArray) ]
+  | .map entries =>
+      Json.mkObj
+        [ ("kind", toJson "map")
+        , ("value", Json.arr (encodeBusinessEntries entries).toArray) ]
+
+def encodeBusinessMembers : List BusinessValue → List Json
+  | [] => []
+  | member :: members => encodeBusinessValue member :: encodeBusinessMembers members
+
+def encodeBusinessEntries : List (String × BusinessValue) → List Json
+  | [] => []
+  | (name, value) :: entries =>
+      Json.mkObj [("name", toJson name), ("value", encodeBusinessValue value)] ::
+        encodeBusinessEntries entries
+end
+
+/-- Encode one typed variable value without collapsing any generic value identity. -/
+def encodeVariableValue : VariableValue → Json
   | .stringList value =>
       Json.mkObj
         [ ("kind", toJson "stringList")
         , ("value", toJson value) ]
-  | .null =>
-      Json.mkObj [("kind", toJson "null")]
+  | .string value => encodeBusinessValue (.string value)
+  | .null => encodeBusinessValue .null
+  | .boolean value => encodeBusinessValue (.boolean value)
+  | .integer value => encodeBusinessValue (.integer value)
+  | .decimal coefficient scale => encodeBusinessValue (.decimal coefficient scale)
+  | .list members => encodeBusinessValue (.list members)
+  | .map entries => encodeBusinessValue (.map entries)
 
-/-- Exact structural and canonical-byte bounds for the two M6 generic value arms. -/
+def minDecimalCoefficient : Int := -9223372036854775808
+def maxDecimalCoefficient : Int := 9223372036854775807
+
+/-- One exact spelling per Decimal: in range, scale at most six, zero only at scale zero, and no
+trailing coefficient zero at a positive scale (`123450/3` is rejected, not normalized). -/
+def decimalCanonical (coefficient : Int) (scale : Nat) : Bool :=
+  minDecimalCoefficient ≤ coefficient && coefficient ≤ maxDecimalCoefficient && scale ≤ 6 &&
+    if coefficient = 0 then scale = 0 else scale = 0 || coefficient % 10 != 0
+
+mutual
+/-- Local rules of every node: member strings and keys at most 1,024 UTF-8 bytes, safe integers,
+canonical Decimals, at most 32 children, and Map keys strictly increasing in Unicode scalar order. -/
+def businessNodesValid : BusinessValue → Bool
+  | .string value => value.utf8ByteSize ≤ 1024
+  | .null | .boolean _ => true
+  | .integer value => isSafeWireNat value
+  | .decimal coefficient scale => decimalCanonical coefficient scale
+  | .list members => members.length ≤ 32 && businessMembersValid members
+  | .map entries => entries.length ≤ 32 && businessEntriesValid none entries
+
+def businessMembersValid : List BusinessValue → Bool
+  | [] => true
+  | member :: members => businessNodesValid member && businessMembersValid members
+
+def businessEntriesValid (previous : Option String) : List (String × BusinessValue) → Bool
+  | [] => true
+  | (name, value) :: entries =>
+      name.utf8ByteSize ≤ 1024 && previous.all (fun earlier => decide (earlier < name)) &&
+        businessNodesValid value && businessEntriesValid (some name) entries
+end
+
+/-- The complete finite domain of one portable root: local rules, at most four containers on any
+path, at most 256 nodes, and at most 16,384 canonical UTF-8 bytes. -/
+def businessValueWellFormed (value : BusinessValue) : Bool :=
+  businessNodesValid value && value.containerDepth ≤ 4 && value.nodeCount ≤ 256 &&
+    SemanticProcess.canonicalBusinessValueUtf8Bytes value ≤ 16384
+
+/-- Exact structural and canonical-byte bounds for the bounded generic value arms. -/
 def variableValueWellFormed : VariableValue → Bool
   | .integer value => isSafeWireNat value
   | .stringList values =>
@@ -296,6 +369,64 @@ def variableValueWellFormed : VariableValue → Bool
   | .string _
   | .boolean _
   | .null => true
+  | .decimal coefficient scale => businessValueWellFormed (.decimal coefficient scale)
+  | .list members => businessValueWellFormed (.list members)
+  | .map entries => businessValueWellFormed (.map entries)
+
+/-- Decimal coefficient text `0|-?[1-9][0-9]*` with at most 19 digits; range is a value rule. -/
+def decodeDecimalCoefficient (text : String) : Except String Int :=
+  let (negative, digits) := match text.toList with
+    | '-' :: rest => (true, rest)
+    | rest => (false, rest)
+  match digits with
+  | [] => throw "Decimal coefficient requires digits"
+  | first :: _ =>
+      if digits.length ≤ 19 && digits.all Char.isDigit &&
+          ((digits == ['0'] && !negative) || first != '0') then
+        let magnitude := digits.foldl (fun total c => total * 10 + (c.toNat - '0'.toNat)) 0
+        pure (if negative then -(magnitude : Int) else magnitude)
+      else
+        throw "Decimal coefficient is not canonical"
+
+/-- Decode one portable value. `containerBudget` counts the List/Map levels still admitted, so
+recursion is bounded by the depth limit before any count or byte check runs. -/
+def decodeBusinessValue : Nat → Json → Except String BusinessValue
+  | containerBudget, json => do
+    match ← stringField json "kind" with
+    | "string" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.string (← stringField json "value"))
+    | "null" =>
+        requireObjectShape json ["kind"]
+        pure .null
+    | "boolean" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.boolean (← (← field json "value").getBool?))
+    | "integer" =>
+        requireObjectShape json ["kind", "value"]
+        pure (.integer (← decodeSafeNat (← field json "value")))
+    | "decimal" =>
+        requireObjectShape json ["kind", "coefficient", "scale"]
+        pure (.decimal (← decodeDecimalCoefficient (← stringField json "coefficient"))
+          (← decodeSafeNat (← field json "scale")))
+    | "list" =>
+        match containerBudget with
+        | 0 => throw "portable value exceeds its container depth"
+        | remaining + 1 =>
+            requireObjectShape json ["kind", "value"]
+            let members ← (← field json "value").getArr?
+            pure (.list (← members.toList.mapM (decodeBusinessValue remaining)))
+    | "map" =>
+        match containerBudget with
+        | 0 => throw "portable value exceeds its container depth"
+        | remaining + 1 =>
+            requireObjectShape json ["kind", "value"]
+            let entries ← (← field json "value").getArr?
+            pure (.map (← entries.toList.mapM fun entry => do
+              requireObjectShape entry ["name", "value"]
+              pure (← stringField entry "name",
+                ← decodeBusinessValue remaining (← field entry "value"))))
+    | kind => throw s!"unsupported portable value {kind}"
 
 def decodeVariableValue (json : Json) :
     Except String VariableValue := do
@@ -315,6 +446,7 @@ def decodeVariableValue (json : Json) :
     | "null" =>
         requireObjectShape json ["kind"]
         pure .null
+    | "decimal" | "list" | "map" => pure (.ofBusiness (← decodeBusinessValue 4 json))
     | kind => throw s!"unsupported variable value {kind}"
   if variableValueWellFormed value then pure value
   else throw "variable value exceeds its structural or canonical-byte limit"

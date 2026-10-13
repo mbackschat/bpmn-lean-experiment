@@ -92,6 +92,9 @@ private theorem correlated_prepared_state_frame_facts (program : Program)
         | integer _ => simp_all
         | stringList _ => simp_all
         | null => simp_all
+        | decimal _ _ => simp_all
+        | list _ => simp_all
+        | map _ => simp_all
 
 theorem prepareInternalArm_applies (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)

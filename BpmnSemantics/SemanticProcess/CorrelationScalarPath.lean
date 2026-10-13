@@ -101,6 +101,9 @@ theorem evaluateCorrelationProcessPropertyPath?_exact
         | integer _ => simp [valueEq]
         | stringList _ => simp [valueEq]
         | null => simp [valueEq]
+        | decimal _ _ => simp [valueEq]
+        | list _ => simp [valueEq]
+        | map _ => simp [valueEq]
   · have invalid : correlationProcessPropertyPathValid path = false :=
       by cases value : correlationProcessPropertyPathValid path <;> simp_all
     simp [invalid]

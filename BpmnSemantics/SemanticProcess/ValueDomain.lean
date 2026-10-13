@@ -171,4 +171,15 @@ def processDataBindingsAdmitted (profile : ProfileId)
     (surface : ProcessDataIngress) (bindings : List VariableBinding) : Bool :=
   bindings.all fun binding => variableValueAdmitted profile surface binding.value
 
+/-- PBV-INGRESS-01: no current profile domain admits a portable Decimal, List or Map at any
+surface, so schema recognition alone cannot widen an existing profile. -/
+theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
+    (surface : ProcessDataIngress) (coefficient : Int) (scale : Nat)
+    (members : List BusinessValue) (entries : List (String × BusinessValue)) :
+    variableValueAdmitted profile surface (.decimal coefficient scale) = false ∧
+      variableValueAdmitted profile surface (.list members) = false ∧
+      variableValueAdmitted profile surface (.map entries) = false := by
+  unfold variableValueAdmitted
+  cases profileValueDomain profile surface <;> simp
+
 end BpmnSemantics.SemanticProcess

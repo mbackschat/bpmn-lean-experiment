@@ -5,8 +5,11 @@ import { test } from "node:test";
 
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   VariableValueKind,
+  isVariablePatch,
 } from "@bpmn-lean/semantic-core";
 import type { VariableBinding } from "@bpmn-lean/semantic-core";
 
@@ -216,7 +219,14 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
   [SemanticProfileId.StructuredHumanWork, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(
-      Object.values(VariableValueKind),
+      // Explicit, because the recursive portable arms must not enter this profile by enumerating the enum.
+      [
+        VariableValueKind.Boolean,
+        VariableValueKind.Integer,
+        VariableValueKind.String,
+        VariableValueKind.StringList,
+        VariableValueKind.Null,
+      ],
       "user-task-string-null-boolean-completion-data",
       "user-task-integer-completion-data",
       "user-task-ordered-string-list-completion-data",
@@ -282,7 +292,31 @@ const bindings = new Map<VariableValueKind, VariableBinding>([
     name: "candidate",
     value: { kind: VariableValueKind.Null },
   }],
+  [VariableValueKind.Decimal, {
+    name: "candidate",
+    value: { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 },
+  }],
+  [VariableValueKind.List, {
+    name: "candidate",
+    value: {
+      kind: VariableValueKind.List,
+      value: [{ kind: VariableValueKind.String, value: "value" }],
+    },
+  }],
+  [VariableValueKind.Map, {
+    name: "candidate",
+    value: {
+      kind: VariableValueKind.Map,
+      value: [{ name: "field", value: { kind: VariableValueKind.Null } }],
+    },
+  }],
 ]);
+
+const portableKinds = [
+  VariableValueKind.Decimal,
+  VariableValueKind.List,
+  VariableValueKind.Map,
+] as const;
 
 async function profileArtifactSource(profile: string): Promise<Buffer> {
   return readFile(
@@ -574,6 +608,36 @@ test("does not inherit String or Null writes into preservation and composition p
       for (const kind of [VariableValueKind.String, VariableValueKind.Null]) {
         const binding = bindings.get(kind);
         assert.ok(binding !== undefined);
+        assert.equal(
+          compiled.profileAllowsVariableBindings(profile, surface, [binding]),
+          false,
+          `${profile} ${surface} ${kind}`,
+        );
+      }
+    }
+  }
+});
+
+test("refuses a well-formed recursive portable value at every surface of every admitted profile", async () => {
+  const compiled = await importCompiledValueDomain();
+  // The interrupting Message Event Sub-Process identity is package-internal, so it is read from the built catalog.
+  const catalog = await import(
+    new URL("../dist/semantic-profile-catalog.js", import.meta.url).href
+  ) as { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID: string };
+  const profiles = [
+    ...Object.values(SemanticProfileId),
+    SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+    PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+    catalog.INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  ];
+  assert.ok(profiles.length > 30, "profile enumeration must not be vacuous");
+  for (const kind of portableKinds) {
+    const binding = bindings.get(kind);
+    assert.ok(binding !== undefined);
+    // Recognition and eligibility are separate: the value is well-formed, so only the profile domain can refuse it.
+    assert.equal(isVariablePatch([binding]), true, kind);
+    for (const profile of profiles) {
+      for (const surface of surfaces) {
         assert.equal(
           compiled.profileAllowsVariableBindings(profile, surface, [binding]),
           false,

@@ -929,17 +929,19 @@ Sequential Multi-Instance admitted an open Activity record after its controller 
 A whole-tree staging command captured a delegated lane's in-progress files, so a commit shipped work the root had neither reviewed nor gated.
 
 Instances
-: 1
+: 2
 
 Disposition
-: `review question`
+: `unguardable`
 
 Evidence
-: [question 10](#self-assessment-questions)
+: [question 10](#self-assessment-questions) and the [delegation protocol](REVIEW-POLICY.md#delegated-implementation-protocol); a transient whole-tree Git command leaves no repository fact a gate can observe.
 
 **First observed:** Sequential Multi-Instance capsule, at the outer-entry increment
 
 The root integrator owns commits, and one Lean lane was mid-edit on three modules in the same worktree when the root committed an unrelated TypeScript increment with `git add -A`; the lane's new conjuncts landed at `HEAD` while the preservation proof they invalidate was still unwritten, so that commit's Lean build fails. Nothing about the lane was wrong and no file ownership was violated: the concurrency rule assigns disjoint files, and this defeated it from outside by staging the union rather than the assignment. The mechanism is that `git add -A` is not lane-aware, so while any lane is active the root must stage its own paths explicitly. Reverting is the wrong correction because the lane still holds those files; the honest one is to say so and let the lane's own commit close the build.
+
+Instance 2, 2026-10-13: a delegated TypeScript lane ran `git stash` and `git stash pop` for about a second while the root's Lean lane had uncommitted edits building in the same tree. All files were restored, but the concurrent census build could have read reverted sources, so its result was not used as acceptance evidence. The protocol now names whole-tree working-tree commands alongside `git add -A`.
 
 ### Finding 50
 

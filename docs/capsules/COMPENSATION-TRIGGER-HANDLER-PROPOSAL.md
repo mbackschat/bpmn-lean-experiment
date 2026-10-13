@@ -460,7 +460,7 @@ The operation census must classify trigger creation and frontier activation as o
 | [TS transition trace](../../packages/semantic-core/src/semantic-transition-trace.ts) | 388 | failed arm only |
 | [TS lifecycle](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | delegate compensation projection |
 | [TS lifecycle completeness](../../packages/semantic-core/src/flow-node-occurrence-publication-external-completeness.ts) | 42 | delegate compensation oracle |
-| [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 290 | failed union references only |
+| [TS canonical contract](../../packages/semantic-core/src/contract.ts) | 283 | failed union references only |
 | [TS evaluator](../../packages/semantic-core/src/semantic-process-runtime.ts) | 41 | dispatch only; trigger, handler, and Activity-data logic stay extracted before growth |
 | [TS observation producer](../../packages/semantic-core/src/scenario.ts) | 122 | failed projection and exhaustive switch only |
 | [TS control-position projection](../../packages/semantic-core/src/control-position-projection.ts) | 382 | failed terminal-empty arm only |
@@ -471,14 +471,14 @@ The operation census must classify trigger creation and frontier activation as o
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | result dispatch only |
 | [Lean transition](../../BpmnSemantics/SemanticProcess/Transition.lean) | 23 | extract before adding the new dispatcher arm |
 | [Lean internal attempt](../../BpmnSemantics/SemanticProcess/InternalOperationAttempt.lean) | 752 | trigger-attempt delegation only |
-| [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 408 | failed union only |
+| [Lean scenario contract](../../BpmnSemantics/Scenario.lean) | 382 | failed union only |
 | [Lean observation consumer](../../BpmnSemantics/SemanticProcess/Scenario.lean) | 280 | handler-effect/failed projection and selected scenario dispatch |
 | [Lean JSON](../../BpmnSemantics/SemanticProcessJsonMain.lean) | 407 | canonical encoding and selected publication dispatch |
 | [Temporal protocol](../../packages/temporal-adapter/protocol/src/contracts.ts) | 538 | failed receipt arm only |
-| [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 618 | compensation key material and canonical tuple only |
+| [effect transport](../../packages/temporal-adapter/protocol/src/effect-transport.ts) | 615 | compensation key material and canonical tuple only |
 | [receipt validators](../../packages/temporal-adapter/protocol/src/lifecycle-results.ts) | 444 | failed receipt decoder only |
 | [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts) | 75 | failed discriminator only; extract state validation before other growth |
-| [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 511 | one exact operation and result registration only |
+| [testkit Worker registry](../../packages/temporal-adapter/testkit/src/effect-probe.ts) | 508 | one exact operation and result registration only |
 | [process operations client](../../packages/temporal-adapter/client/src/process-operations-client.ts) | 592 | failed terminal case only |
 | [product interaction driver](../../packages/temporal-adapter/runner/src/host-interaction-driver.ts) | 350 | failed terminal predicate only |
 | [runnable Product 1 result](../../packages/temporal-adapter/runner/cli/runnable-mvp.ts) | 386 | failed receipt event/result arms only |

@@ -1,3 +1,4 @@
+import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
 import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 import BpmnSemantics.SemanticProcess.RuntimeState
@@ -66,6 +67,9 @@ def canonicalVariableValueUtf8Bytes : VariableValue → Nat
       "{\"kind\":\"stringList\",\"value\":".utf8ByteSize +
         canonicalJsonStringCollectionUtf8Bytes values + "}".utf8ByteSize
   | .null => "{\"kind\":\"null\"}".utf8ByteSize
+  | .decimal coefficient scale => canonicalBusinessValueUtf8Bytes (.decimal coefficient scale)
+  | .list members => canonicalBusinessValueUtf8Bytes (.list members)
+  | .map entries => canonicalBusinessValueUtf8Bytes (.map entries)
 
 def canonicalVariableBindingUtf8Bytes (binding : VariableBinding) : Nat :=
   "{\"name\":".utf8ByteSize + canonicalJsonStringUtf8Bytes binding.name +

@@ -20,7 +20,7 @@ def selectScopeVariables? (variables : ScopedVariables) (owner : ScopeOccurrence
 /-- String/null is the selected body-local domain; Boolean condition writes belong to command policy. -/
 def scopeVariableScalar : VariableValue → Bool
   | .string _ | .null => true
-  | .boolean _ | .integer _ | .stringList _ => false
+  | .boolean _ | .integer _ | .stringList _ | .decimal _ _ | .list _ | .map _ => false
 
 def scopeVariableNamesUnique (bindings : List VariableBinding) : Bool :=
   decide (bindings.map (·.name)).Nodup

@@ -226,6 +226,15 @@ function variableValueTuple(
       return [value.kind, [...value.value]];
     case VariableValueKind.Null:
       return [value.kind];
+    case VariableValueKind.Decimal:
+      return [value.kind, value.coefficient, value.scale];
+    case VariableValueKind.List:
+      return [value.kind, value.value.map(variableValueTuple)];
+    case VariableValueKind.Map:
+      return [
+        value.kind,
+        value.value.map((entry) => [entry.name, variableValueTuple(entry.value)]),
+      ];
     default:
       return assertNever(value);
   }

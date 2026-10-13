@@ -107,7 +107,7 @@ Use two project-owned whole models: invoice Review→Validate→Finalize and a c
 | [Source dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 405 | Add one private capability route. |
 | [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 87 | Delegate the serial capability analysis. |
 | [Lean checked contract](../../BpmnSemantics/CheckedProcessContract.lean) | 446 | Preserve all existing alternatives. |
-| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 299 | Reuse mapping semantics and preserve existing output restrictions. |
+| [Lean data](../../BpmnSemantics/SemanticProcess/Data.lean) | 298 | Reuse mapping semantics and preserve existing output restrictions. |
 | [Lean effect completion](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) | 632 | Keep independently stated transition premises and soundness separate. |
 | [Lean Program admission](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not place serial analysis here. |
 | [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Delegate; preserve closed profile decisions. |

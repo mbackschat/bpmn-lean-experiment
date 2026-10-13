@@ -1,3 +1,4 @@
+import BpmnSemantics.BusinessValue
 import BpmnSemantics.Contract
 import BpmnSemantics.SemanticProcess.UserTaskMetadata
 
@@ -97,7 +98,36 @@ inductive VariableValue where
   | integer (value : Nat)
   | stringList (value : List String)
   | null
+  /-- Portable arms; their members are `BusinessValue`, so `stringList` never nests. -/
+  | decimal (coefficient : Int) (scale : Nat)
+  | list (members : List BusinessValue)
+  | map (entries : List (String × BusinessValue))
   deriving Repr, DecidableEq
+
+namespace VariableValue
+
+/-- Place a portable value at the root; every portable arm has exactly one root counterpart. -/
+def ofBusiness : BusinessValue → VariableValue
+  | .string value => .string value
+  | .null => .null
+  | .boolean value => .boolean value
+  | .integer value => .integer value
+  | .decimal coefficient scale => .decimal coefficient scale
+  | .list members => .list members
+  | .map entries => .map entries
+
+/-- The portable view of a root value; only legacy `stringList` has none. -/
+def toBusiness? : VariableValue → Option BusinessValue
+  | .string value => some (.string value)
+  | .null => some .null
+  | .boolean value => some (.boolean value)
+  | .integer value => some (.integer value)
+  | .decimal coefficient scale => some (.decimal coefficient scale)
+  | .list members => some (.list members)
+  | .map entries => some (.map entries)
+  | .stringList _ => none
+
+end VariableValue
 
 structure VariableBinding where
   name : String

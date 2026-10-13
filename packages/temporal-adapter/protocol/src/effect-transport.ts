@@ -179,6 +179,9 @@ function variableValueTuple(
       return [binding.value.kind, binding.value.value];
     case VariableValueKind.Integer:
     case VariableValueKind.StringList:
+    case VariableValueKind.Decimal:
+    case VariableValueKind.List:
+    case VariableValueKind.Map:
       throw new TypeError(
         `Unsupported effect transport variant: ${JSON.stringify(binding.value)}`,
       );

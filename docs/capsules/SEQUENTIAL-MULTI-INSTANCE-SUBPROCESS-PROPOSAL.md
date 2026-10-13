@@ -263,7 +263,7 @@ Mechanically inspected owners and their measured headroom are below. A structura
 | [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 |
 | [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 |
 | [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 |
-| [Public contract](../../packages/semantic-core/src/contract.ts) | 290 |
+| [Public contract](../../packages/semantic-core/src/contract.ts) | 283 |
 
 The `what-binds` inventory requires [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [runtime cleanup completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [Activity ownership](../../scripts/activity-occurrence-writer-census.test.ts), [shared schema coverage](../../scripts/contract-schema-coverage.test.ts), [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [Lean/source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [artifact relationship references](../../scripts/contract-artifact-projections.test.ts) and [reviewability](../../scripts/document-reviewability.test.ts). These are constraints on implementation, not proposed exemptions. Run binding discovery again for concrete new source/Lean/host paths before editing them.
 

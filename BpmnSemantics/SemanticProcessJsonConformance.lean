@@ -134,6 +134,117 @@ private def exactWireIntegerAdmissionWitness : IO Unit := do
 
 #eval exactWireIntegerAdmissionWitness
 
+private def valueDecoded (contents : String) : Except String VariableValue :=
+  parseWireJson contents >>= decodeVariableValue
+
+private def valueRejected (contents : String) : Bool :=
+  (valueDecoded contents).toOption.isNone
+
+private def stringJson (text : String) : String := "{\"kind\":\"string\",\"value\":\"" ++ text ++ "\"}"
+private def nullJson : String := "{\"kind\":\"null\"}"
+private def listJson (members : List String) : String :=
+  "{\"kind\":\"list\",\"value\":[" ++ ",".intercalate members ++ "]}"
+private def mapJson (entries : List (String × String)) : String :=
+  "{\"kind\":\"map\",\"value\":[" ++
+    ",".intercalate (entries.map fun (name, value) => "{\"name\":\"" ++ name ++ "\",\"value\":" ++ value ++ "}") ++ "]}"
+private def decimalJson (coefficient : String) (scale : String) : String :=
+  "{\"kind\":\"decimal\",\"coefficient\":\"" ++ coefficient ++ "\",\"scale\":" ++ scale ++ "}"
+
+private def orderItem : BusinessValue := .map [("quantity", .integer 1), ("sku", .string "A")]
+
+/-- The capsule's 12-node order: present-null `line2`, two equal items and an exact signed total. -/
+private def businessOrder : BusinessValue :=
+  .map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
+        ("items", .list [orderItem, orderItem]),
+        ("total", .decimal 12345 2)]
+
+private def orderItemJson : String :=
+  mapJson [("quantity", "{\"kind\":\"integer\",\"value\":1}"), ("sku", stringJson "A")]
+
+private def businessOrderJson : String :=
+  mapJson [("address", mapJson [("city", stringJson "Berlin"), ("line2", nullJson)]),
+           ("items", listJson [orderItemJson, orderItemJson]),
+           ("total", decimalJson "12345" "2")]
+
+/-- Nest `depth` containers around a null leaf; the root container counts as one. -/
+private def nestedListJson : Nat → String
+  | 0 => nullJson
+  | depth + 1 => listJson [nestedListJson depth]
+
+/-- A root List of `groups` Lists of `members` Nulls has `1 + groups × (1 + members)` nodes. -/
+private def groupedNullsJson (groups members : Nat) : String :=
+  listJson (List.replicate groups (listJson (List.replicate members nullJson)))
+
+/-- A root List of sixteen Strings whose canonical encoding is `489 + payload` UTF-8 bytes. -/
+private def sixteenStringsJson (payload : Nat) : String :=
+  listJson ((List.replicate 15 (stringJson (String.ofList (List.replicate 1000 'a')))) ++
+    [stringJson (String.ofList (List.replicate (payload - 15000) 'a'))])
+
+private def portableBusinessValueWireWitness : IO Unit := do
+  unless (valueDecoded businessOrderJson).toOption ==
+      some (.map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
+        ("items", .list [orderItem, orderItem]), ("total", .decimal 12345 2)]) do
+    throw (IO.userError "PBV-TREE-01: the order did not decode to its exact tree")
+  unless ((valueDecoded businessOrderJson >>= fun value =>
+      decodeVariableValue (encodeVariableValue value)).toOption ==
+        (valueDecoded businessOrderJson).toOption) do
+    throw (IO.userError "PBV-IDENTITY-01: the order did not survive encoding and decoding")
+  unless [decimalJson "12345" "2", decimalJson "-125" "2", decimalJson "0" "0",
+      decimalJson "9223372036854775807" "0", decimalJson "-9223372036854775808" "0",
+      decimalJson "1" "6"].all (!valueRejected ·) do
+    throw (IO.userError "PBV-AMOUNT-01: a canonical in-range Decimal was refused")
+  unless [decimalJson "9223372036854775808" "0", decimalJson "-9223372036854775809" "0",
+      decimalJson "-0" "0", decimalJson "01" "0", decimalJson "+1" "0", decimalJson "1e2" "0",
+      decimalJson "123450" "3", decimalJson "0" "1", decimalJson "1" "7", decimalJson "" "0",
+      "{\"kind\":\"decimal\",\"coefficient\":12345,\"scale\":2}",
+      "{\"kind\":\"decimal\",\"coefficient\":\"1\",\"scale\":\"2\"}",
+      "{\"kind\":\"decimal\",\"coefficient\":\"1\",\"scale\":0,\"value\":1}"].all valueRejected do
+    throw (IO.userError "PBV-AMOUNT-01: a noncanonical or out-of-range Decimal was admitted")
+  unless !valueRejected (listJson []) && !valueRejected (mapJson []) &&
+      !valueRejected (listJson [nullJson, stringJson "x", decimalJson "1" "0", listJson []]) &&
+      !valueRejected (mapJson [("", nullJson)]) &&
+      !valueRejected (mapJson [("￿", nullJson), ("𐀀", nullJson)]) do
+    throw (IO.userError "PBV-TREE-01: an admissible List or Map was refused")
+  unless valueRejected (listJson ["{\"kind\":\"stringList\",\"value\":[]}"]) &&
+      valueRejected (mapJson [("b", nullJson), ("a", nullJson)]) &&
+      valueRejected (mapJson [("a", nullJson), ("a", nullJson)]) &&
+      valueRejected (mapJson [("𐀀", nullJson), ("￿", nullJson)]) &&
+      valueRejected "{\"kind\":\"map\",\"value\":[{\"name\":\"a\",\"value\":{\"kind\":\"null\"},\"extra\":1}]}" &&
+      valueRejected "{\"kind\":\"list\",\"value\":[],\"extra\":1}" &&
+      valueRejected (listJson [nullJson, nullJson, decimalJson "01" "0"]) do
+    throw (IO.userError "PBV-IDENTITY-01: a nested legacy, noncanonical or malformed tree was admitted")
+  unless !valueRejected (nestedListJson 4) && valueRejected (nestedListJson 5) &&
+      !valueRejected (listJson (List.replicate 32 nullJson)) &&
+      valueRejected (listJson (List.replicate 33 nullJson)) &&
+      !valueRejected (groupedNullsJson 15 16) && valueRejected (groupedNullsJson 16 15) &&
+      !valueRejected (sixteenStringsJson 15895) && valueRejected (sixteenStringsJson 15896) &&
+      !valueRejected (listJson [stringJson (String.ofList (List.replicate 1024 'a'))]) &&
+      valueRejected (listJson [stringJson (String.ofList (List.replicate 1025 'a'))]) &&
+      valueRejected (mapJson [(String.ofList (List.replicate 1025 'a'), nullJson)]) do
+    throw (IO.userError "PBV-BOUND-01: an exact limit was refused or a one-over value admitted")
+  unless !valueRejected (stringJson (String.ofList (List.replicate 2000 'a'))) do
+    throw (IO.userError "root String arm gained the portable member byte limit")
+
+#eval portableBusinessValueWireWitness
+
+theorem business_order_has_twelve_nodes_and_container_depth_three :
+    businessOrder.nodeCount = 12 ∧ businessOrder.containerDepth = 3 := by
+  decide +kernel
+
+theorem business_value_types_remain_pairwise_distinct :
+    VariableValue.integer 1 ≠ .decimal 1 0 ∧
+      VariableValue.boolean true ≠ .string "true" ∧
+      VariableValue.null ≠ .map [] ∧
+      VariableValue.list [.string "a"] ≠ .stringList ["a"] ∧
+      BusinessValue.integer 1 ≠ .decimal 1 0 := by
+  decide +kernel
+
+theorem business_trees_keep_multiplicity_order_and_present_null :
+    VariableValue.list [orderItem, orderItem] ≠ .list [orderItem] ∧
+      VariableValue.list [.integer 1, .integer 2] ≠ .list [.integer 2, .integer 1] ∧
+      VariableValue.map [("line2", .null)] ≠ .map [] := by
+  decide +kernel
+
 theorem new_variable_value_arms_round_trip_without_normalization :
     variableValueDecodedAs (.integer 4250)
         (decodeVariableValue (encodeVariableValue (.integer 4250))) = true ∧

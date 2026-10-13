@@ -71,7 +71,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [simple-boolean-choice-admission.ts](src/simple-boolean-choice-admission.ts) | Exact program admission for the Simple Boolean conditional-choice surface |
 | [exact-balanced-two-branch-topology.ts](src/exact-balanced-two-branch-topology.ts) | The exact entry, balanced two-branch split/join, and end control shape |
 | [user-task-metadata.ts](src/user-task-metadata.ts) | Assignment-only User Task metadata, wire-distinct from the legacy form-bearing arm |
-| [variable-value.ts](src/variable-value.ts) | Representation-neutral variable-value validation, cloning, ordering, and equality |
+| [variable-value.ts](src/variable-value.ts) | Representation-neutral variable-value validation, cloning, ordering, and equality, including the recursive portable Decimal, List and Map arms and their finite limits |
 | [semantic-process-data.ts](src/semantic-process-data.ts) | Effect-occurrence input mappings and Activity variable-scope lifecycle |
 | [serial-business-task-policy.ts](src/serial-business-task-policy.ts) | Private named-handler, exact mapping-token, canonical scalar and handler-shadowing policy |
 | [serial-business-task-admission.ts](src/serial-business-task-admission.ts) | Independent checked/IL serial-chain analysis, required initial bindings and command data admission |

@@ -356,6 +356,76 @@ test("keeps new values closed to Process Start, effects, old profiles, and condi
   );
 });
 
+test("keeps the recursive portable values closed to every Structured Human Work surface", () => {
+  const order: VariableValue = {
+    kind: VariableValueKind.Map,
+    value: [
+      { name: "address", value: { kind: VariableValueKind.Map, value: [
+        { name: "city", value: { kind: VariableValueKind.String, value: "Berlin" } },
+        { name: "line2", value: { kind: VariableValueKind.Null } },
+      ] } },
+      { name: "total", value: { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 } },
+    ],
+  };
+  const portable: ReadonlyArray<VariableValue> = [
+    order,
+    { kind: VariableValueKind.Decimal, coefficient: "-125", scale: 2 },
+    { kind: VariableValueKind.List, value: [{ kind: VariableValueKind.String, value: "a" }] },
+    { kind: VariableValueKind.Map, value: [] },
+  ];
+  const waiting = applyStimulus(program, initialState, start).state;
+  const scenario = (stimuli: Scenario["stimuli"]): Scenario => ({
+    kind: ScenarioDocumentKind.Scenario,
+    id: "portable-value-refusal",
+    profile,
+    bpmn: {
+      id: program.identity.sourceId,
+      relativePath: "test-only/structured-human-work.bpmn",
+      sha256: program.identity.sourceSha256,
+      sourceOverlay: null,
+    },
+    stimuli,
+    observations: BASELINE_SCENARIO_OBSERVATIONS,
+    provenance: { normativeRefs: [], cibRevision: "", cibRefs: [] },
+  });
+  const valid = complete("valid-completion", [binding("resolution", {
+    kind: VariableValueKind.String,
+    value: "approved",
+  })]);
+  assert.equal(supportsSemanticProcessScenario(scenario([start, valid]), program), true);
+
+  for (const [index, value] of portable.entries()) {
+    const completion = complete(`portable-${index}`, [binding("order", value)]);
+    assert.equal(isWellFormedStimulus(completion), true, value.kind);
+
+    // Scenario support reports unsupported; direct admission rejects and leaves the committed state untouched.
+    assert.equal(supportsSemanticProcessScenario(scenario([start, completion]), program), false, value.kind);
+    const rejected = applyStimulus(program, waiting, completion);
+    assert.equal(rejected.outcome, CommandOutcome.Rejected, value.kind);
+    assert.deepEqual(rejected.state, waiting, value.kind);
+    assert.equal(applyStimulus(program, rejected.state, valid).outcome, CommandOutcome.Committed, value.kind);
+
+    const portableStart = {
+      ...start,
+      commandId: `portable-start-${index}`,
+      initialVariables: [binding("order", value)],
+    };
+    assert.equal(isWellFormedStimulus(portableStart), true, value.kind);
+    assert.equal(supportsSemanticProcessExecution(portableStart, program), false, value.kind);
+    assert.deepEqual(applyStimulus(program, initialState, portableStart).state, initialState, value.kind);
+    assert.equal(supportsSemanticProcessScenario(scenario([portableStart]), program), false, value.kind);
+  }
+
+  // A nested value inside an otherwise admitted patch is refused as a whole, with no partial write.
+  const mixed = complete("mixed-patch", [
+    binding("approvedAmount", { kind: VariableValueKind.Integer, value: 42 }),
+    binding("order", order),
+  ]);
+  const mixedResult = applyStimulus(program, waiting, mixed);
+  assert.equal(mixedResult.outcome, CommandOutcome.Rejected);
+  assert.deepEqual(mixedResult.state, waiting);
+});
+
 test("preserves list order, multiplicity, and stimulus identity", () => {
   const left = complete("same-command", [binding("riskFlags", {
     kind: VariableValueKind.StringList,

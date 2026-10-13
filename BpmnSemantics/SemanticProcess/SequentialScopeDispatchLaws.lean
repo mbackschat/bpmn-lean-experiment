@@ -576,7 +576,8 @@ private theorem sequentialScope_written_values_admitted (program : Program) (ana
     simp only [condition, Bool.false_eq_true, ↓reduceIte] at checked
     cases valueEq : value.value with
     | string _ | null => rfl
-    | boolean _ | integer _ | stringList _ => simp [valueEq, scopeVariableScalar] at checked
+    | boolean _ | integer _ | stringList _ | decimal _ _ | list _ | map _ =>
+      simp [valueEq, scopeVariableScalar] at checked
 
 /-- SMIS-DATA-01 preserves next-iteration input availability through either scoped writer, including human Boolean routing. -/
 theorem sequentialScope_write_preserves_start_data (program : Program) (analysis : SequentialScopeData.Analysis)

@@ -65,6 +65,9 @@ function scalar(binding: VariableBinding): boolean {
     case VariableValueKind.Null: return true;
     case VariableValueKind.Boolean:
     case VariableValueKind.Integer:
-    case VariableValueKind.StringList: return false;
+    case VariableValueKind.StringList:
+    case VariableValueKind.Decimal:
+    case VariableValueKind.List:
+    case VariableValueKind.Map: return false;
   }
 }

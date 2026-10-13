@@ -20,7 +20,8 @@ const userDomains = new Map<string, readonly VariableValueKind[]>([
     SemanticProfileId.ParallelUserTaskAssignmentFormMetadata].map(profile => [profile, booleanCompletion] as const),
   ...[SemanticProfileId.SequentialMultiInstanceUserTask, SemanticProfileId.ParallelMultiInstanceUserTask]
     .map(profile => [profile, [VariableValueKind.String]] as const),
-  [SemanticProfileId.StructuredHumanWork, Object.values(VariableValueKind)],
+  // Explicit rather than `Object.values`, so a newly recognized arm is never expected here until the profile selects it.
+  [SemanticProfileId.StructuredHumanWork, [...booleanCompletion, VariableValueKind.Integer, VariableValueKind.StringList]],
 ]);
 const effectDomains = new Map<string, readonly VariableValueKind[]>([
   [SemanticProfileId.MappedSuccessServiceTask, [VariableValueKind.String]],
@@ -31,7 +32,14 @@ export const values: readonly VariableValue[] = [
   { kind: VariableValueKind.String, value: "candidate" }, { kind: VariableValueKind.Null },
   { kind: VariableValueKind.Boolean, value: true }, { kind: VariableValueKind.Integer, value: 7 },
   { kind: VariableValueKind.StringList, value: ["candidate"] },
+  // Portable arms recognized by both readers; no current profile selects them (PBV-INGRESS-01).
+  { kind: VariableValueKind.Decimal, coefficient: "-125", scale: 2 },
+  { kind: VariableValueKind.List, value: [{ kind: VariableValueKind.Integer, value: 1 }, { kind: VariableValueKind.Integer, value: 1 }] },
+  { kind: VariableValueKind.Map, value: [
+    { name: "address", value: { kind: VariableValueKind.Map, value: [{ name: "line2", value: { kind: VariableValueKind.Null } }] } },
+    { name: "total", value: { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 } }] },
 ];
+const payloadDomain = [...booleanCompletion, VariableValueKind.Integer];
 
 export function changedScenario(context: DomainContext, suffix: string, stimuli: readonly Stimulus[]): Scenario {
   return { ...context.scenario, id: `${context.scenario.id}-${suffix}`, stimuli };
@@ -129,7 +137,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
       const payload: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-${value.kind}`,
         subscriptionId: occurrence, channel, payload: value };
       add(context, `payload-${value.kind}`, [...context.scenario.stimuli, payload],
-        (profile === SemanticProfileId.MessagePayloadCatch || profile === SemanticProfileId.MessageKeyCorrelation) && value.kind !== VariableValueKind.StringList);
+        (profile === SemanticProfileId.MessagePayloadCatch || profile === SemanticProfileId.MessageKeyCorrelation) && payloadDomain.includes(value.kind));
       if (value.kind !== VariableValueKind.String) continue;
       const delivery: Stimulus = { kind: StimulusKind.DeliverCorrelatedPayloadMessage, commandId: `late-correlated-${value.kind}`,
         subscriptionId: occurrence, address: { definition: context.semanticProcess.identity, processId: context.semanticProcess.processId,

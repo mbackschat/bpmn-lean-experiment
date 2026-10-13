@@ -149,6 +149,9 @@ function supported(binding: VariableBinding): boolean {
     case VariableValueKind.Boolean:
     case VariableValueKind.Integer:
     case VariableValueKind.StringList:
+    case VariableValueKind.Decimal:
+    case VariableValueKind.List:
+    case VariableValueKind.Map:
       return false;
   }
 }

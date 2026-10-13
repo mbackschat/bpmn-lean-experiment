@@ -119,7 +119,7 @@ A concrete smallest order value is a Map with scalar-sorted entries `address`, `
 
 Lane shape: checked
 
-Evidence: The implementation must extend the existing [typed values](../../BpmnSemantics/Scenario.lean) and [profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) independently of TypeScript. No new Lean evidence exists at design acceptance. Checked admission/roundtrip, cross-ingress refusal, signed-boundary and restoration witnesses must cover the rules above; finite cases are not a universal codec-equivalence theorem.
+Evidence: The implementation extends the existing [typed values](../../BpmnSemantics/Scenario.lean) and [profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean#portable_arms_not_admitted_by_current_profiles) independently of TypeScript; the [shared value checkpoint](#shared-value-and-reader-checkpoint) adds the [checked finite witnesses](../../BpmnSemantics/SemanticProcessJsonConformance.lean#business_order_has_twelve_nodes_and_container_depth_three). Checked admission/roundtrip, cross-ingress refusal, signed-boundary and restoration witnesses must cover the rules above; finite cases are not a universal codec-equivalence theorem.
 
 Required laws state their premises explicitly: encoding then decoding an admitted canonical tree preserves its tagged value; cloning preserves value equality without storage aliasing; rejected commands preserve the complete committed state; bound checks reject before partial writes. Their quantified proofs are not claimed by this checked lane. The nearest non-laws are numeric equality across Integer/Decimal, Map insertion-order preservation, Decimal display-scale preservation, and universal acceptance of all generic values by all profiles.
 
@@ -196,6 +196,18 @@ This checkpoint implements AA-13 for the existing five value arms; it adds no re
 
 The [Lean executable witness](../../BpmnSemantics/SemanticProcessJsonConformance.lean#exactWireIntegerAdmissionWitness), [raw artifact tests](../../scripts/strict-json.test.ts), [actual differential reader](../../packages/differential/test/raw-wire-admission.test.ts), [Work HTTP tests](../../platform/modules/work/test/work-http-routes.test.ts), [definition start HTTP tests](../../platform/modules/definitions/test/definition-start-http-routes.test.ts) and [Java reader tests](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/ScenarioJsonTest.java) separate fractional rounding, underflow, exponent/decimal aliases, safe bounds, malformed encoding and canonical controls. Existing Lean theorems remain; the new finite cases introduce no compiler-trusted proof axioms. Independent acceptance is recorded under [raw-wire admission acceptance](#raw-wire-admission-acceptance).
 
+### Shared value and reader checkpoint
+
+This checkpoint adds Decimal, List and Map recognition to the shared value contract and selects them in no profile. TypeScript exports a `BusinessValue` union; Lean adds a separate nested [`BusinessValue`](../../BpmnSemantics/BusinessValue.lean) inductive referenced by three new `VariableValue` arms, so legacy `stringList` cannot occur below a List or Map by construction. The pinned Lean toolchain cannot derive `DecidableEq` for that nested type, so equality is structural mutual recursion and remains kernel-reducible for existing `decide +kernel` fixtures.
+
+The Lean [wire reader](../../BpmnSemantics/SemanticProcess/JsonSupport.lean) bounds recursion by the remaining container budget before checking counts. Lean measures canonical bytes through the shared [`JSON.stringify` string measure](../../BpmnSemantics/SemanticProcess/CanonicalBusinessValue.lean), not `Json.compress`. The [TypeScript validator](../../packages/semantic-core/src/variable-value.ts) checks the whole tree before use, and the [scenario schema](../../contracts/schemas/scenario.schema.json) recognizes the arms but cannot enforce order, range, depth, node count or bytes. [Command identity](../../packages/temporal-adapter/protocol/src/command-identity.ts) uses the tuples above.
+
+Every current profile refuses the new arms: [the Lean law](../../BpmnSemantics/SemanticProcess/ValueDomain.lean#portable_arms_not_admitted_by_current_profiles) quantifies over profile and surface, [the TypeScript profile tests](../../packages/semantic-core/test/semantic-profile-value-domain.test.ts) cover every admitted profile, and the [cross-target matrix](../../packages/differential/test/scenario-value-domain-cases.ts) adds a Decimal, a List and a nested Map at every existing surface. Simple Boolean conditions treat a present portable value like any present non-String value: `isNull` and `stringEquals` are false. Product 2 decoders and gateways, the CIB projection and the Java reader keep refusing the new arms. No Program, runtime, Temporal or profile behavior changes.
+
+Decisive witnesses: the [Lean wire witness](../../BpmnSemantics/SemanticProcessJsonConformance.lean#business_trees_keep_multiplicity_order_and_present_null), the [TypeScript value tests](../../packages/semantic-core/test/portable-business-value.test.ts), [schema tests](../../packages/semantic-core/test/portable-business-value-schema.test.ts), [identity tests](../../packages/temporal-adapter/protocol/test/portable-business-value-identity.test.ts), the [artifact contract test](../../scripts/portable-business-value-contract.test.ts) and the [Product 2 refusal test](../../platform/contracts/test/portable-business-value-refusal.test.ts). They cover the PBV type, tree, amount, bound, identity and copy rules, exact and one-over limits, UTF-16 versus scalar key order, and a valid prefix followed by an invalid last entry. The finite cases are not a universal codec theorem.
+
+The `SemanticProcessJsonConformance` cost row was remeasured under the 3 GiB, one-CPU Docker bound on `fedb8850` sources plus this batch, because `890b010f` leaves main's complete Lean gate red; the receipt digest is the row's measurement identity.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): update every producer/consumer of the shared union atomically, preserve current profile meanings, and assign new semantic identities when selecting wider behavior. No parallel legacy parser, embedded format switch, dependency installation or durable-history migration is selected. Published artifacts are not rewritten; an actual retained-history boundary would require a separately evidenced migration/replay decision.
@@ -208,15 +220,15 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 
 | Owner | Remaining nonblank lines before the 800-line review target |
 |---|---|
-| [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts) | 290 |
-| [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 618 |
+| [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts) | 283 |
+| [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 413 |
 | [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 493 |
-| [Lean typed values](../../BpmnSemantics/Scenario.lean) | 408 |
-| [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 647 |
-| [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 543 |
-| [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 603 |
-| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 691 |
-| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 621 |
+| [Lean typed values](../../BpmnSemantics/Scenario.lean) | 382 |
+| [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 637 |
+| [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 534 |
+| [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 602 |
+| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 688 |
+| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 618 |
 | [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts) | 707 |
 | [Serial structural admission](../../packages/semantic-core/src/structured-process-composition-admission.ts) | 521 |
 | [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean) | 721 |

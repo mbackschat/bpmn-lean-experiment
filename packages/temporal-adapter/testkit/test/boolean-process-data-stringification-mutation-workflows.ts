@@ -136,6 +136,9 @@ function stringifyBooleanValues(
         case VariableValueKind.Integer:
         case VariableValueKind.StringList:
         case VariableValueKind.Null:
+        case VariableValueKind.Decimal:
+        case VariableValueKind.List:
+        case VariableValueKind.Map:
           return binding;
         default:
           return assertNever(binding.value);

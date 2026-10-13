@@ -401,6 +401,7 @@ def applyEffectPatch
             | .boolean _ => false
             | .integer _ => false
             | .stringList _ => false
+            | .decimal _ _ | .list _ | .map _ => false
             | .null => allowNull) then
         some
           ({ name := target, value } ::

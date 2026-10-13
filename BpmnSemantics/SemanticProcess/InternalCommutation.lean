@@ -316,6 +316,9 @@ theorem prepared_arm_read_frame (program : Program) (state after : RuntimeState)
             | integer _ => simp [filteredEq, valueEq] at prepared
             | stringList _ => simp [filteredEq, valueEq] at prepared
             | null => simp [filteredEq, valueEq] at prepared
+            | decimal _ _ => simp [filteredEq, valueEq] at prepared
+            | list _ => simp [filteredEq, valueEq] at prepared
+            | map _ => simp [filteredEq, valueEq] at prepared
   all_goals simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at rightPrepared
   all_goals
     obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp rightPrepared

@@ -186,7 +186,8 @@ test("strict wire decoding rejects non-String correlation and noncanonical patch
       const last = input.scenario.stimuli.at(-1)!;
       const invalid = last.kind === StimulusKind.DeliverCorrelatedPayloadMessage
         ? values.filter(value => value.kind !== VariableValueKind.String).map(payload => ({ stimulus: { ...last, payload },
-          diagnostic: payload.kind === VariableValueKind.Null ? /object fields do not match \[kind, value\]/u
+          // The reader checks the `{kind, value}` shape before the kind, so Null and Decimal fail on shape first.
+          diagnostic: !("value" in payload) ? /object fields do not match \[kind, value\]/u
             : new RegExp(`expected string, got ${payload.kind}`, "u") }))
         : last.kind === StimulusKind.CompleteEffect
           ? [[...last.result.localPatch, last.result.localPatch[0]!], [...last.result.localPatch].reverse()]

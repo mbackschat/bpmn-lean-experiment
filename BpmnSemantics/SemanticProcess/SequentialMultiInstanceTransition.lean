@@ -336,6 +336,9 @@ private theorem admittedSnapshot_sound {arm : SequentialMultiInstanceArm} {state
           | boolean _ => simp [filtered, value] at found
           | integer _ => simp [filtered, value] at found
           | null => simp [filtered, value] at found
+          | decimal _ _ => simp [filtered, value] at found
+          | list _ => simp [filtered, value] at found
+          | map _ => simp [filtered, value] at found
 
 /-- The accepted result is one binding of the declared name carrying that exact String, and the
 candidate collection it would produce fits every profile bound. -/
@@ -366,6 +369,9 @@ private theorem acceptedIterationResult_sound {arm : SequentialMultiInstanceArm}
           | boolean _ => simp [value] at found
           | integer _ => simp [value] at found
           | null => simp [value] at found
+          | decimal _ _ => simp [value] at found
+          | list _ => simp [value] at found
+          | map _ => simp [value] at found
 
 /-! ## The bridges
 

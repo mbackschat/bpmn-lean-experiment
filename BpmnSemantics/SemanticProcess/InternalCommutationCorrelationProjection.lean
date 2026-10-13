@@ -52,6 +52,9 @@ theorem prepared_correlated_arm_anchor_shape (program : Program) (state : Runtim
         | integer _ => simp_all
         | stringList _ => simp_all
         | null => simp_all
+        | decimal _ _ => simp_all
+        | list _ => simp_all
+        | map _ => simp_all
 
 theorem prepared_correlated_arm_projectWaits_insert (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
@@ -153,6 +156,9 @@ theorem prepared_correlated_arm_projectWaits_insert (program : Program) (state :
       | integer _ => simp_all
       | stringList _ => simp_all
       | null => simp_all
+      | decimal _ _ => simp_all
+      | list _ => simp_all
+      | map _ => simp_all
 
 theorem prepared_correlated_arm_preserves_flowNodeOccurrenceProgramValidity
     (program : Program) (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
@@ -234,6 +240,9 @@ theorem prepared_correlated_arm_preserves_flowNodeOccurrenceProgramValidity
       | integer _ => simp_all
       | stringList _ => simp_all
       | null => simp_all
+      | decimal _ _ => simp_all
+      | list _ => simp_all
+      | map _ => simp_all
 
 end InternalCommutation
 
