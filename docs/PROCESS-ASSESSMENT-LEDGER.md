@@ -1088,17 +1088,17 @@ A boundary deadline is armed as `deadlineMs - logicalTimeMs`, so a conformance h
 A per-family exact value was raised in one family and the shared type it flows through was widened to accept both, so the four sibling families silently lost their own exactness.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
 
 Evidence
-: [cross-family deadline refusal](../packages/semantic-core/test/admission-composition.test.ts), [sibling deadline in the Multi-Instance arm](../packages/semantic-core/test/sequential-multi-instance-admission.test.ts)
+: [cross-family deadline refusal](../packages/semantic-core/test/admission-composition.test.ts), [sibling deadline in the Multi-Instance arm](../packages/semantic-core/test/sequential-multi-instance-admission.test.ts), [carried portable value at every RuntimeState path](../packages/semantic-core/test/semantic-profile-value-domain.test.ts), [restoration refusal](../packages/temporal-adapter/protocol/test/workflow-continuation.test.ts)
 
 **First observed:** Multi-Instance `PT5S` semantic-checkpoint review
 
-Parameterize shared arm type, validator and each schema reference by its family's deadline, never enlarge a shared shape's domain for one family's constant.
+Parameterize shared arm type, validator and each schema reference by its family's deadline, never enlarge a shared shape's domain for one family's constant. Before widening a shared reader, list every consumer that trusts it, including restoration, and recheck each against the domain it actually owns.
 
 Retained recurrence evidence: [Finding 58](process-assessment/VERIFICATION-LEDGER.md#finding-58).
 

@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is recursive values, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is the selected Property-path runtime, supporting `PC-DATA-02`.
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: recursive values/identity; selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: AA-13 is [accepted](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-acceptance). The [shared value and reader checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#shared-value-and-reader-checkpoint) adds Decimal, List and Map everywhere while every profile refuses them, using about 235 of 480 minutes by 08:50 UTC. `/tmp/pbv-lean-full-on-fedb8850-20261013` is green. Deferred `890b010f` keeps main red: `/tmp/pbv-lean-full-main-20261013` fails only its two scope modules and `/tmp/pbv-infra-runtime2-20261013` only its unremeasured cost row. PMIS capacity timeouts remain held.
+Current result: The [shared value and reader checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#shared-value-and-reader-acceptance) is independently accepted at `7edf47bc` after audits `fa8f74ef` and `b61627e2`; its batch used 280 of 480 minutes by 09:35 UTC. Deferred `890b010f` keeps main red: `/tmp/pbv-lean-full-main-20261013` fails only its two scope modules and `/tmp/pbv-corr2-test-infrastructure-runtime-20261013` only its unremeasured cost row. PMIS capacity timeouts remain held.
 
-Effort budget: 480 minutes wall from 2026-10-13 04:55 UTC for the shared recursive value/reader/admission batch through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
+Effort budget: 480 minutes wall from 2026-10-13 09:35 UTC for the Property-path runtime through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
 
-Next action: Obtain the independent semantic-checkpoint cold review of the shared value and reader commit, then select the Property-path runtime blocker.
+Next action: From the [consuming amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#serial-handoff-consuming-amendment), select the consuming profile, Program/runtime representation and red witnesses for the nested order through both tasks, then implement red/green.
 
-Oracle: `PBV-TYPE-01`, `PBV-TREE-01`, `PBV-AMOUNT-01`, `PBV-BOUND-01` and `PBV-IDENTITY-01` witnesses separate Lean and TypeScript independently; old profiles refuse the nested order.
+Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

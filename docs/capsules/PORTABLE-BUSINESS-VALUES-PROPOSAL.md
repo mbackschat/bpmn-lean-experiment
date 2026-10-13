@@ -246,7 +246,7 @@ These measurements describe the unchanged owners at design time, not permanent h
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `46fb39933116782162de61ff1cd0e9ca3585e54c` | `fork-turns-none` | `approve` | `not-required` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `7edf47bc2716c1347673d8f3b4ee56f38f4b47b7` | `fork-turns-none` | `approve-with-required-edits` | `fa8f74ef6d614b8fecbf58fdeb63e2e44205814d,b61627e28031a2a49c6e9c28eb2715e6d856386d` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 Consuming amendment accepted on 2026-10-13 against baseline `99cfe6fc810d06c7538712680302765a75212686`; no required findings. Packet: `d95272b2724f1802171ab6ca9b84fe2d4535e7ed9f7a6125aa847e68e45397c3`. Independent normative/source and publication-shape probes, XML validation, doctor and 100 focused guards passed, with asserted receipts under `/tmp/pbv-handoff-review-{doctor,focused,source,shapes,xsd}-20261013`. The 16,384-byte Map produced a 50,044-byte substituted terminal state; this is feasibility evidence, not recursive-value runtime or aggregate hosted qualification.
@@ -258,3 +258,21 @@ Design accepted on 2026-10-13 against `377b46e028c2c92d2ce32a044d992cc7c60e1dcc`
 ### Raw-wire admission acceptance
 
 AA-13 accepted on 2026-10-13 against `fedb885082e2e0eeadc7c6e56b2bf92bb5d0328a`, baseline `2c9496720f35002af17de311d7eb8596e4321fab`, by the same `fork-turns-none` reviewer after a correction audit of `800c7009cc3d6034645b60b04d65405a3d23a9bf` and `1b857a7d266e2ca9616e7842ff40997f06a5d804`. Packet: `9edd7e8172fd379b2085d32001a3b9db0a11115c24f71332b3811c982fed91e7`. The four required findings were corrected: the module cost row, Lean-output decoding in the parallel-scope differential, the structured Work `fields` carve-out, and the closed-wire 400 rule. The 1024-operation raw-Program capacity timeouts are attributed to the unchanged [PMIS capacity hold](PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#private-raw-il-capacity), not to this checkpoint. This accepts raw-wire admission for the existing five value arms only; recursive values, consuming profiles, aggregate capacity and `PC-DATA-02/03` runtime delivery remain open, and the [AA-13 record](../ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13) owns the residuals.
+
+### Shared value and reader acceptance
+
+The shared value and reader checkpoint was accepted on 2026-10-13 against `7edf47bc2716c1347673d8f3b4ee56f38f4b47b7`, baseline `f0b72d4a257620a0c015118c5f8b882b4a8f6a89`, by one `fork-turns-none` reviewer after two correction audits. Packet: `117bbd308c9de9f4fdd166acb4a9cd1aaef95199fe1a56c64fde19f854be68d7`. Four required findings were corrected:
+
+- restored portable values under profiles that select none, closed at every [carried value path](../../packages/semantic-core/src/runtime-state-carried-values.ts) in the second round;
+- the code-point-sorted Decimal spelling;
+- the root-scalar bound asymmetry;
+- the narrowed copy-evidence claim.
+
+Non-blocking advisories remain:
+
+- Lean proofs enumerate every value constructor instead of using shared inversion lemmas;
+- `VariableValue.toBusiness?` has no consumer yet;
+- the cost row names the base commit of a patched measurement tree;
+- the carried-value enumerator's completeness has no executable guard.
+
+This accepts recognition and refusal only. Consuming profiles, the Property-path runtime, aggregate capacity and `PC-DATA-02/03` delivery remain open.

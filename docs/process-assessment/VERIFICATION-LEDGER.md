@@ -110,6 +110,8 @@ A budget guard imported a case list that transitively resolved bare `@bpmn-lean/
 
 Widening the shared Timer arm/type/schema to 1,000 or 5,000 let TypeScript exchange bounded-Task and MI deadlines across five families; Lean retained family-local exactness. Green fixtures hid the mismatch because the stale MI admission control still used accepted 1,000. The corrected parameterization immediately made the stale control fail.
 
+Recognizing Decimal, List and Map in the shared value reader also widened Temporal restoration, which validated carried state only structurally: an old-profile continuation accepted a forged Map, first in live variables and then in compensation context snapshots, until one enumerator of carried value paths drove a profile check (semantic-checkpoint review of `7edf47bc`, corrected by `fa8f74ef` and `b61627e2`).
+
 ## Finding 68
 
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-68).
