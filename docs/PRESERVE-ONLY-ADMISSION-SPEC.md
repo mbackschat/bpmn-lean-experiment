@@ -224,16 +224,14 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 
 ### Source owners this will grow
 
-Measured, not estimated:
+`node scripts/what-binds.ts <path>...` reports each owner's current headroom:
 
-| Owner | Nonblank | Headroom |
-|---|---:|---:|
-| [the checked-process compiler](../packages/bpmn-source/src/checked-process-compiler.ts) | 518 | 82 |
-| [compile.ts](../packages/bpmn-source/src/compile.ts) | 316 | 284 |
-| [root-definition selection](../packages/bpmn-source/src/root-definition-selection.ts) | 190 | 410 |
-| [contracts.ts](../packages/bpmn-source/src/contracts.ts) | 70 | 530 |
-| [the frozen A12 CreateDocument reader at the implementation baseline](../adoption/a12/legacy/source-tree/packages/bpmn-source/src/a12-create-document-source.ts) | 321 | 279 |
-| [the Call Activity reader](../packages/bpmn-source/src/call-activity-source.ts) | 327 | 273 |
+- [the checked-process compiler](../packages/bpmn-source/src/checked-process-compiler.ts)
+- [compile.ts](../packages/bpmn-source/src/compile.ts)
+- [root-definition selection](../packages/bpmn-source/src/root-definition-selection.ts)
+- [contracts.ts](../packages/bpmn-source/src/contracts.ts)
+- [the frozen A12 CreateDocument reader at the implementation baseline](../adoption/a12/legacy/source-tree/packages/bpmn-source/src/a12-create-document-source.ts)
+- [the Call Activity reader](../packages/bpmn-source/src/call-activity-source.ts)
 
 The compiler's 82 lines will not hold the classification calls, the partition assembly, and the diagnostic list. **A behavior-preserving extraction precedes any semantics**, under [the code-hygiene rule](../CLAUDE.md#code-hygiene-and-module-boundaries); [commit boundaries](REVIEW-POLICY.md#commit-boundaries) decide whether it is a separate commit.
 

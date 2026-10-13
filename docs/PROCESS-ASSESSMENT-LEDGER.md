@@ -156,17 +156,17 @@ Evidence
 A recorded conclusion outlived the measurement that made it true, because the premise was not stored beside it.
 
 Instances
-: 8
+: 9
 
 Disposition
 : `executable guard`
 
 Evidence
-: [recomputed owner headroom](../scripts/document-reviewability.test.ts), [receipt-owned review state and evidence-owned gate tokens](../scripts/document-control-plane.test.ts)
+: [no copied owner headroom](../scripts/document-reviewability.test.ts), [receipt-owned review state and evidence-owned gate tokens](../scripts/document-control-plane.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
-Recompute measurements at their owner; link that owner instead of copying figures or review/gate state into planning prose. The inventory guard recomputes only parsed capsule rows, not arbitrary prose; control-plane checks now bind review state to receipts and gate tokens to evidence.
+Recompute measurements at their owner; link that owner instead of copying figures or review/gate state into planning prose. Owner headroom has one owner, `what-binds`: the reviewability guard rejects a headroom column in any living proposal or specification, which replaced recomputing copied rows because recomputation kept them true but still made every size change edit unrelated capsules. It reads table headers, not arbitrary prose; control-plane checks bind review state to receipts and gate tokens to evidence.
 
 Retained recurrence evidence: [Finding 06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06).
 
@@ -490,7 +490,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [cost-ledger row reproduction](../scripts/capsule-cost-reproduction.test.ts), [cost-ledger rank claims](../scripts/capsule-cost-comparison.test.ts), [graduated-specification headroom figures](../scripts/document-reviewability.test.ts)
+: [cost-ledger row reproduction](../scripts/capsule-cost-reproduction.test.ts), [cost-ledger rank claims](../scripts/capsule-cost-comparison.test.ts), [no copied owner headroom](../scripts/document-reviewability.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 

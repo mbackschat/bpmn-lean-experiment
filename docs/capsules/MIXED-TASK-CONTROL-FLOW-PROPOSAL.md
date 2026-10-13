@@ -107,24 +107,24 @@ Admission extends the existing [compiler](../../packages/bpmn-source/src/checked
 
 ### Owners this implementation grows
 
-| Owner | Headroom | Constraint |
-|---|---:|---|
-| [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 375 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | 85 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | 662 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | 375 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | 100 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | 333 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
-| [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | 665 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | 687 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | 8 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
-| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | 12 | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| Owner | Constraint |
+| --- | --- |
+| [Compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Checked validator](../../packages/bpmn-source/src/checked-process-admission.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Serial source projection](../../packages/bpmn-source/src/serial-business-task-source.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Checked contract](../../packages/semantic-core/src/checked-process-contract.ts) | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Checked-to-IL lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked decoding](../../BpmnSemantics/SemanticProcessJson/CheckedProcess.lean) | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [Lean checked validation](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | Widen Exclusive candidates; retain Inclusive and old-profile cardinalities. |
+| [TypeScript IL](../../packages/semantic-core/src/semantic-process-contract.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Choice admission](../../packages/semantic-core/src/simple-boolean-choice-admission.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean graph validation](../../BpmnSemantics/SemanticProcess/GraphValidation.lean) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
+| [Lean Program JSON](../../BpmnSemantics/SemanticProcessJson/Program.lean) | Keep analysis outside shared dispatch and preserve existing profile restrictions. |
 
-These are nonblank margins before the 800-line review target, not growth budgets. If planned growth exceeds a margin, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.
+`what-binds` reports each owner's nonblank margin before the 800-line review target; a margin is not a growth budget. If planned growth would exceed it, extract an existing cohesive responsibility without changing behavior before adding the capability; do not compress proofs or erase absence claims.
 
 Binding guards include [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [internal census](../../scripts/internal-commutation-census.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), [module memory](../../scripts/lean-module-cost.test.ts), [test selection](../../scripts/test-selection-coverage.test.ts), [requirement consistency](../../scripts/requirement-ledger-consistency.test.ts), [corpus](../../scripts/bpmn-corpus-policy.test.ts), [reviewability](../../scripts/document-reviewability.test.ts), [links](../../scripts/markdown-links.test.ts), [review policy](../../scripts/independent-review-policy.test.ts), [old cyclic source preservation](../../packages/bpmn-source/test/cyclic-control-flow-preservation.test.ts) and [raw cyclic core](../../packages/semantic-core/test/cyclic-control-flow.test.ts). Exact-two generic assertions must move to explicit old-profile checks, not disappear. Existing profile and wait-cut inventories must reject missing or extra classifications. Complete affected-package and required Lean gates follow focused Red/Green; no live or performance gate is implied.
 

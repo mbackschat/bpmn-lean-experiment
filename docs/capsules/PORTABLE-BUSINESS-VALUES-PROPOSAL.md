@@ -268,26 +268,24 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 
 ### Owners this implementation grows
 
-| Owner | Remaining nonblank lines before the 800-line review target |
-|---|---|
-| [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts) | 283 |
-| [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts) | 409 |
-| [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 437 |
-| [Lean typed values](../../BpmnSemantics/Scenario.lean) | 382 |
-| [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 610 |
-| [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 534 |
-| [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 544 |
-| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 686 |
-| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 627 |
-| [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts) | 707 |
-| [Serial structural admission](../../packages/semantic-core/src/structured-process-composition-admission.ts) | 521 |
-| [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean) | 713 |
-| [Lean composed-task runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 614 |
-| [Source association lowering](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 |
-| [Host semantic candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) | 654 |
-| [Lean strict JSON boundary](../../BpmnSemantics/StrictJson.lean) | 664 |
+- [TypeScript shared value contract](../../packages/semantic-core/src/contract.ts)
+- [TypeScript value validation/equality/copy](../../packages/semantic-core/src/variable-value.ts)
+- [TypeScript profile domain](../../packages/semantic-core/src/semantic-profile-value-domain.ts)
+- [Lean typed values](../../BpmnSemantics/Scenario.lean)
+- [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean)
+- [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts)
+- [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts)
+- [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts)
+- [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts)
+- [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts)
+- [Serial structural admission](../../packages/semantic-core/src/structured-process-composition-admission.ts)
+- [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean)
+- [Lean composed-task runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean)
+- [Source association lowering](../../packages/bpmn-source/src/activity-data-input-output-source.ts)
+- [Host semantic candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts)
+- [Lean strict JSON boundary](../../BpmnSemantics/StrictJson.lean)
 
-These measurements describe the unchanged owners at design time, not permanent headroom. A changed owner invalidates its figure; remeasure and extract a cohesive value owner only if its responsibility or measured growth requires it. No unlimited parser/proof/infrastructure programme follows from this proposal. Full capsule implementation cost remains unmeasured and open under the [cost ledger](../CAPSULE-COST-LEDGER.md).
+`what-binds` reports each owner's current headroom; extract a cohesive value owner only if its responsibility or measured growth requires it. No unlimited parser/proof/infrastructure programme follows from this proposal. Full capsule implementation cost remains unmeasured and open under the [cost ledger](../CAPSULE-COST-LEDGER.md).
 
 ## Independent cold-review receipt
 

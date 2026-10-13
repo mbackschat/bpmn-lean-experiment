@@ -155,19 +155,19 @@ The proposed additions bind source admission, checked/IL declarations, both deco
 
 ### Owners this implementation grows
 
-| Owner | Remaining headroom to the 800-line review target | Constraint |
-|---|---|---|
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 | Keep declaration details in one family owner. |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 | Add the distinct parent-listener collection without duplicating it. |
-| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 | Preserve ordinary completion while withdrawing passive owned listeners. |
-| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | 577 | Delegate atomic parent registration to the family owner. |
-| [Checked graph](../../packages/semantic-core/src/checked-process-contract.ts) | 375 | Retain exact source ownership and entry flow. |
-| [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | 9 | Add only a narrow hook to a cohesive family projection owner. |
-| [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | 19 | Delegate cancellation and handler facts without generic state differencing. |
-| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | 419 | Keep hosted capability closed until its own qualification passes. |
-| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | 23 | Keep subscription types/runtime helpers in a cohesive family owner. |
-| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | 572 | Preserve ordinary-child continuation and add exact passive expiry. |
-| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | 456 | Classify the new collection in every removal path. |
+| Owner | Constraint |
+| --- | --- |
+| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | Keep declaration details in one family owner. |
+| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | Add the distinct parent-listener collection without duplicating it. |
+| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | Preserve ordinary completion while withdrawing passive owned listeners. |
+| [Root initialization](../../packages/semantic-core/src/semantic-process-triggered-start.ts) | Delegate atomic parent registration to the family owner. |
+| [Checked graph](../../packages/semantic-core/src/checked-process-contract.ts) | Retain exact source ownership and entry flow. |
+| [Open-set projection](../../packages/semantic-core/src/flow-node-occurrence-open-set.ts) | Add only a narrow hook to a cohesive family projection owner. |
+| [Lifecycle projection](../../packages/semantic-core/src/flow-node-occurrence-lifecycle.ts) | Delegate cancellation and handler facts without generic state differencing. |
+| [Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) | Keep hosted capability closed until its own qualification passes. |
+| [Lean state](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) | Keep subscription types/runtime helpers in a cohesive family owner. |
+| [Lean completion](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) | Preserve ordinary-child continuation and add exact passive expiry. |
+| [Lean cancellation](../../BpmnSemantics/SemanticProcess/ScopeCancellation.lean) | Classify the new collection in every removal path. |
 
 ### Atomic consumers and guards
 

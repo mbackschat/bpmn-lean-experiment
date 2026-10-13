@@ -98,35 +98,33 @@ Mechanical routing uses [what-binds](../scripts/what-binds.ts). Required structu
 
 ### Owners this implementation grows
 
-Measured 2026-10-09 against the 800-nonblank review target. Each row's headroom is recomputed by reviewability; if planned growth reaches that target, reassess/extract before growth. These figures justify no extraction at this draft boundary and expire when their source changes.
+`node scripts/what-binds.ts <path>...` reports each owner's current headroom against the 800-nonblank review target; if planned growth would reach that target, reassess or extract before growth.
 
-| Owner | Headroom |
-|---|---|
-| [Business source](../packages/bpmn-source/src/serial-business-task-source.ts) | 662 |
-| [Metadata reader](../packages/bpmn-source/src/user-task-metadata-source.ts) | 311 |
-| [Serial admission](../packages/semantic-core/src/serial-business-task-admission.ts) | 662 |
-| [Mixed admission](../packages/semantic-core/src/mixed-task-control-flow-admission.ts) | 595 |
-| [Profile selection](../packages/semantic-core/src/semantic-process-profile.ts) | 470 |
-| [Lean serial admission](../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean) | 622 |
-| [Lean mixed admission](../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean) | 451 |
-| [Lean profile shape](../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) | 141 |
-| [Public definitions](../platform/contracts/src/definitions.ts) | 670 |
-| [E1 identity](../platform/contracts/src/execution-publications.ts) | 324 |
-| [E2 identity](../platform/contracts/src/flow-node-occurrence-publications.ts) | 684 |
-| [Engine gateway](../platform/foundation/engine-gateway/src/index.ts) | 425 |
-| [Definitions contracts](../platform/modules/definitions/src/contracts.ts) | 613 |
-| [HTTP request](../platform/modules/definitions/src/http-request.ts) | 605 |
-| [HTTP routes](../platform/modules/definitions/src/http-routes.ts) | 385 |
-| [Deployment](../platform/modules/definitions/src/definition-deployment-service.ts) | 560 |
-| [Start/recovery](../platform/modules/definitions/src/definition-start-service.ts) | 432 |
-| [Definition values](../platform/modules/definitions/src/definition-values.ts) | 733 |
-| [Public values](../platform/modules/definitions/src/definition-public-values.ts) | 756 |
-| [SQLite definitions](../platform/modules/definitions/src/sqlite-definition-repository.ts) | 447 |
-| [PostgreSQL definitions](../platform/modules/definitions/src/postgresql-definition-repository.ts) | 663 |
-| [PostgreSQL values](../platform/modules/definitions/src/postgresql-definition-values.ts) | 535 |
-| [Journey host](../showcase/m3-human-work/src/host.ts) | 793 |
-| [Shared journey lifecycle](../showcase/m3-human-work/src/host-runtime.ts) | 709 |
-| [Browser journey](../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts) | 687 |
+- [Business source](../packages/bpmn-source/src/serial-business-task-source.ts)
+- [Metadata reader](../packages/bpmn-source/src/user-task-metadata-source.ts)
+- [Serial admission](../packages/semantic-core/src/serial-business-task-admission.ts)
+- [Mixed admission](../packages/semantic-core/src/mixed-task-control-flow-admission.ts)
+- [Profile selection](../packages/semantic-core/src/semantic-process-profile.ts)
+- [Lean serial admission](../BpmnSemantics/SemanticProcess/SerialBusinessTaskAdmission.lean)
+- [Lean mixed admission](../BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean)
+- [Lean profile shape](../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean)
+- [Public definitions](../platform/contracts/src/definitions.ts)
+- [E1 identity](../platform/contracts/src/execution-publications.ts)
+- [E2 identity](../platform/contracts/src/flow-node-occurrence-publications.ts)
+- [Engine gateway](../platform/foundation/engine-gateway/src/index.ts)
+- [Definitions contracts](../platform/modules/definitions/src/contracts.ts)
+- [HTTP request](../platform/modules/definitions/src/http-request.ts)
+- [HTTP routes](../platform/modules/definitions/src/http-routes.ts)
+- [Deployment](../platform/modules/definitions/src/definition-deployment-service.ts)
+- [Start/recovery](../platform/modules/definitions/src/definition-start-service.ts)
+- [Definition values](../platform/modules/definitions/src/definition-values.ts)
+- [Public values](../platform/modules/definitions/src/definition-public-values.ts)
+- [SQLite definitions](../platform/modules/definitions/src/sqlite-definition-repository.ts)
+- [PostgreSQL definitions](../platform/modules/definitions/src/postgresql-definition-repository.ts)
+- [PostgreSQL values](../platform/modules/definitions/src/postgresql-definition-values.ts)
+- [Journey host](../showcase/m3-human-work/src/host.ts)
+- [Shared journey lifecycle](../showcase/m3-human-work/src/host-runtime.ts)
+- [Browser journey](../showcase/m3-human-work/e2e/corpus-user-task-journey.spec.ts)
 
 ## Review question and stop conditions
 

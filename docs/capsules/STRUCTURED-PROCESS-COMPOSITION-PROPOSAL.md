@@ -170,20 +170,20 @@ The [contract evolution policy](../../contracts/README.md#evolution-policy) and 
 
 ### Owners this implementation grows
 
-| Owner | Headroom | Constraint |
-|---|---:|---|
-| [Checked compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | 375 | Delegate data projection; retain one structural compiler. |
-| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | 405 | Retain the existing composition profile route. |
-| [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 | Extract reusable association projection while preserving predecessor admission. |
-| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | 85 | Delegate the new profile analysis. |
-| [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | 470 | Select the structural capability without fixture IDs. |
-| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | 288 | Delegate start requirements and per-task completion payload checks. |
-| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | 437 | Classify string/null start and completion surfaces. |
-| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | 339 | Independently select the checked analysis. |
-| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | 3 | Delegate; do not put the analysis in this nearly full owner. |
-| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | 47 | Delegate start and completion decisions. |
+| Owner | Constraint |
+| --- | --- |
+| [Checked compiler](../../packages/bpmn-source/src/checked-process-compiler.ts) | Delegate data projection; retain one structural compiler. |
+| [Compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) | Retain the existing composition profile route. |
+| [Composed data source](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | Extract reusable association projection while preserving predecessor admission. |
+| [Checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) | Delegate the new profile analysis. |
+| [Profile selection](../../packages/semantic-core/src/semantic-process-profile.ts) | Select the structural capability without fixture IDs. |
+| [Core command admission](../../packages/semantic-core/src/semantic-command-admission.ts) | Delegate start requirements and per-task completion payload checks. |
+| [Value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) | Classify string/null start and completion surfaces. |
+| [Lean checked admission](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) | Independently select the checked analysis. |
+| [Lean Program validation](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) | Delegate; keep the analysis out of this shared owner. |
+| [Lean command admission](../../BpmnSemantics/SemanticProcess/CommandAdmission.lean) | Delegate start and completion decisions. |
 
-These are measured nonblank lines before the existing 800-line review target. If planned growth exceeds available headroom, first extract a cohesive existing responsibility without changing its contract. The guard remeasures these figures; rerun `what-binds` when target paths change. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
+`what-binds` reports each owner's headroom before the existing 800-line review target; rerun it when target paths change. If planned growth would exceed it, first extract a cohesive existing responsibility without changing its contract. New analysis and proof mechanisms belong in focused owners, with their source-map and library reachability obligations.
 
 No operation variant, RuntimeState collection or public observation field is added, so exhaustive operation/collection readers and generated wire schemas should remain byte-identical. A new profile may require closed profile readers and capability registries to change; compiler success alone cannot prove those inventories complete. Public profile/corpus/product obligations now belong to the implemented atomic registration below; the earlier private checkpoint alone established no public support.
 

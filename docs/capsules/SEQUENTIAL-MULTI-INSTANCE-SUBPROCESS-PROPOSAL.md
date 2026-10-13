@@ -256,14 +256,12 @@ Producer/consumer routes are the [source package](../../packages/bpmn-source/REA
 
 ### Owners this implementation grows
 
-Mechanically inspected owners and their measured headroom are below. A structural split is required only if planned growth would exceed the measured target; these figures cease to apply when the owner changes and must be recomputed before editing.
+Mechanically inspected owners are below; `what-binds` reports their current headroom. A structural split is required only if planned growth would exceed the review target.
 
-| Owner | Headroom before 800 nonblank lines |
-|---|---:|
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 |
-| [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts) | 532 |
-| [Public contract](../../packages/semantic-core/src/contract.ts) | 283 |
+- [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts)
+- [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts)
+- [Scope runtime](../../packages/semantic-core/src/semantic-process-scope-runtime.ts)
+- [Public contract](../../packages/semantic-core/src/contract.ts)
 
 The `what-binds` inventory requires [operation consumers](../../scripts/semantic-operation-consumer-census.test.ts), [runtime cleanup completeness](../../scripts/runtime-collection-removal-completeness.test.ts), [commutation census](../../scripts/internal-commutation-census.test.ts), [Activity ownership](../../scripts/activity-occurrence-writer-census.test.ts), [shared schema coverage](../../scripts/contract-schema-coverage.test.ts), [publication coverage](../../scripts/execution-publication-contract-coverage.test.ts), [Lean/source contracts](../../scripts/lean-source-contracts.test.ts), [source hygiene](../../scripts/source-hygiene.test.ts), [artifact relationship references](../../scripts/contract-artifact-projections.test.ts) and [reviewability](../../scripts/document-reviewability.test.ts). These are constraints on implementation, not proposed exemptions. Run binding discovery again for concrete new source/Lean/host paths before editing them.
 

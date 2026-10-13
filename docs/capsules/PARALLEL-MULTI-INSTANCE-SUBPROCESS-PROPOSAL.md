@@ -380,17 +380,15 @@ Current proof composition reuses these cohesive downstream owners; executable ev
 - [Record accounting](../../BpmnSemantics/SemanticProcess/ParallelScopeRecordAccounting.lean) composes actual population/declaration coverage and complete charged counts. [Collection provenance](../../BpmnSemantics/SemanticProcess/ParallelScopeCollectionProvenance.lean) and [collection data proofs](../../BpmnSemantics/SemanticProcess/ParallelScopeCollectionDataProofs.lean) derive String-list ancestry through real writes, connecting entry cardinality to Start capacity without assumed equality. The data-proof extraction preserves the original contracts and remains outside executable imports.
 - [Scheduler accounting](../../BpmnSemantics/SemanticProcess/ParallelScopeSchedulerAccounting.lean) composes phases and outcome-independent charged prefixes; [command-phase proofs](../../BpmnSemantics/SemanticProcess/ParallelScopeCommandPhaseProofs.lean) supply their actual command provenance. [Progress](../../BpmnSemantics/SemanticProcess/ParallelScopeProgress.lean) retains locality proofs; the [current evidence](#entry-and-retirement-publication-checkpoint) distinguishes these accounting laws from refusal-free scheduling and fuel sufficiency.
 
-Measured on 2026-10-05 against `1454aa91`; Activity ownership refreshed after claim consolidation. Recompute before implementation. These are directly affected owners, not an exhaustive migration census. If a planned change exceeds its remaining headroom, extract a cohesive owner before growth rather than increasing the limit.
+These are directly affected owners, not an exhaustive migration census; `what-binds` reports their current headroom. If a planned change would exceed it, extract a cohesive owner before growth rather than increasing the limit.
 
-| Owner | Headroom before 800 nonblank lines |
-|---|---:|
-| [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts) | 545 |
-| [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts) | 97 |
-| [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts) | 658 |
-| [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts) | 41 |
-| [Closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts) | 609 |
-| [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts) | 342 |
-| [Workflow capacity contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts) | 234 |
+- [Activity body ownership](../../packages/semantic-core/src/activity-occurrence.ts)
+- [IL contract](../../packages/semantic-core/src/semantic-process-contract.ts)
+- [Internal frontier](../../packages/semantic-core/src/internal-transition-preparation.ts)
+- [Runtime dispatch](../../packages/semantic-core/src/semantic-process-runtime.ts)
+- [Closure evaluator](../../packages/semantic-core/src/semantic-process-closure.ts)
+- [Runtime state](../../packages/semantic-core/src/semantic-process-state.ts)
+- [Workflow capacity contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts)
 
 ## Independent cold-review receipt
 

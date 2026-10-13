@@ -10,11 +10,7 @@ import { withoutBackticks } from "./markdown-tables.ts";
 import { processFindingSections, type ProcessFinding } from "./process-assessment-ledger.ts";
 import { headingSection } from "./markdown-sections.ts";
 import { reviewedDetailMapWordBudget } from "./document-control-plane.ts";
-import {
-  headroom,
-  isHandWrittenSourcePath,
-  nonblankLines,
-} from "./source-measure.ts";
+import { isHandWrittenSourcePath } from "./source-measure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const maximumReviewUnitWords = 120;
@@ -103,7 +99,7 @@ function registeredSemanticProfileIds(source: string): ReadonlyArray<string> {
 
 /** Heading owning the atomic-change inventory required of every capsule proposal. */
 const bindingInventoryHeading = "## Versioning consequences";
-/** Subsection whose rows pair one source owner with its measured remaining headroom. */
+/** Subsection naming each source owner the implementation grows and the condition that constrains it. */
 const ownerInventoryHeading = "### Owners this implementation grows";
 /** Closed disposition set of the process-assessment ledger, with the dispositions prose may use once. */
 const processDispositions = [
@@ -162,46 +158,6 @@ function assessProcessFindings(
     }
     return [];
   });
-}
-
-/**
- * Recomputes every headroom figure a capsule states about a source owner it plans to grow.
- *
- * This is the whole point of the check rather than a tidiness rule. A structural claim such as "this
- * owner is full, so extract before adding semantics" is true only under a measurement, and recording
- * the conclusion without re-deriving the measurement is what lets it outlive its own premise. Because
- * the figure is recomputed on every run, changing an owner's size forces the capsule to be revisited
- * instead of leaving a stale requirement that reads as permanent.
- *
- * It cannot decide whether the capsule really needs to grow a named owner. That stays a review
- * question, because no measurement distinguishes a demonstrated change site from a predicted one.
- */
-async function staleOwnerHeadroom(
-  section: string,
-  documentDirectory: string,
-  measure: (repositoryPath: string) => Promise<number | null>,
-): Promise<ReadonlyArray<string>> {
-  const findings: string[] = [];
-  for (const line of section.split("\n")) {
-    if (!line.startsWith("| [") || line.startsWith("| Owner ")) {
-      continue;
-    }
-    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-    const [ownerCell, statedCell] = cells;
-    const target = linkedPaths(ownerCell ?? "", documentDirectory)[0];
-    const stated = Number(statedCell);
-    if (target === undefined || !Number.isInteger(stated)) {
-      findings.push(`${line.slice(0, 60)}: needs one owner link and an integer headroom`);
-      continue;
-    }
-    const measured = await measure(target);
-    if (measured === null) {
-      findings.push(`${target}: not a measurable source owner`);
-    } else if (measured !== stated) {
-      findings.push(`${target}: states ${stated} lines of headroom, measures ${measured}`);
-    }
-  }
-  return findings;
 }
 
 /** Repository-relative targets of every inline Markdown link, without any heading anchor. */
@@ -512,37 +468,22 @@ test("the maintained process-assessment ledger satisfies its own escalation rule
 // grow — as links that resolve. The oracle is the filesystem, so a renamed guard or owner fails here.
 //
 // The obligation is pre-implementation, which is why it binds proposals and not specifications: once a
-// capsule graduates, the constraints have already been met and re-asserting them is churn. Enforcing
-// that the owners are *named* composes with the size gate, which then reports their headroom without
-// the capsule having to keep a figure current. `node scripts/what-binds.ts <path>...` derives both
-// lists mechanically; nothing here trusts recall.
+// capsule graduates, the constraints have already been met and re-asserting them is churn. Only the
+// owners' *names* are required: `node scripts/what-binds.ts <path>...` reports each named owner's
+// current headroom, so the capsule keeps no figure of its own (see the ban below).
 test("every capsule proposal names the guards and owners that already bind it", async () => {
-  // Two trees with different obligations. `docs/capsules` carries the full binding-inventory contract.
-  // A root-placed proposal carries only the owner-headroom staleness half, and that asymmetry is
-  // deliberate rather than lazy: the section contract was written for capsules and four older root
-  // proposals predate it, while a stale headroom figure is wrong wherever it sits. A cross-cutting
-  // proposal at `docs/` root had left this jurisdiction entirely and carried six stale figures plus a
-  // sentence claiming this guard recomputed them.
-  const proposalTrees = ["docs/capsules", "docs"] as const;
-  const capsules: Array<{ tree: string; entry: string }> = [];
-  for (const tree of proposalTrees) {
-    for (const entry of await readdir(path.join(projectRoot, tree))) {
-      if (entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md")) {
-        capsules.push({ tree, entry });
-      }
-    }
-  }
-  const proposals = capsules.filter(({ entry }) => entry.endsWith("-PROPOSAL.md"));
+  const capsuleRoot = "docs/capsules";
+  const entries = await readdir(path.join(projectRoot, capsuleRoot));
+  const proposals = entries.filter((entry) => entry.endsWith("-PROPOSAL.md"));
   const findings: string[] = [];
-  for (const { tree: capsuleRoot, entry: proposal } of proposals) {
+  for (const proposal of proposals) {
     const markdown = await readFile(path.join(projectRoot, capsuleRoot, proposal), "utf8");
-    const headroomOnly = capsuleRoot === "docs";
     const section = headingSection(markdown, bindingInventoryHeading);
-    if (section === null && !headroomOnly) {
+    if (section === null) {
       findings.push(`${proposal}: no ${bindingInventoryHeading} section`);
       continue;
     }
-    const linked = [...new Set(linkedPaths(section ?? "", capsuleRoot))];
+    const linked = [...new Set(linkedPaths(section, capsuleRoot))];
     const unresolved: string[] = [];
     for (const target of linked) {
       if (!await exists(target)) {
@@ -553,48 +494,21 @@ test("every capsule proposal names the guards and owners that already bind it", 
     if (unresolved.length > 0) {
       findings.push(`${proposal}: unresolved ${unresolved.sort().join(", ")}`);
     }
-    if (!headroomOnly && !resolved.some((target) => target.endsWith(".test.ts"))) {
+    if (!resolved.some((target) => target.endsWith(".test.ts"))) {
       findings.push(`${proposal}: names no executable guard or test oracle`);
     }
-    if (
-      !headroomOnly &&
-      !resolved.some((target) =>
-        !target.endsWith(".test.ts") &&
-        isHandWrittenSourcePath(target)
-      )
-    ) {
+    if (!resolved.some((target) => !target.endsWith(".test.ts") && isHandWrittenSourcePath(target))) {
       findings.push(`${proposal}: names no source owner it will grow`);
     }
-    // The section contract requires the owner table *inside* the binding section, and that requirement
-    // applies to capsules only. The headroom half then looks the table up document-wide, because
-    // reaching it through the binding section made a second placement decide jurisdiction one level
-    // down: a root proposal without that section escaped the staleness check entirely. Row scoping
-    // stays at the heading rather than the whole document, because other tables also open with a link
-    // cell and would be read as malformed headroom rows.
-    if (section !== null && !headroomOnly && headingSection(section, ownerInventoryHeading) === null) {
+    if (headingSection(section, ownerInventoryHeading) === null) {
       findings.push(`${proposal}: no ${ownerInventoryHeading} subsection`);
-      continue;
     }
-    const owners = headingSection(markdown, ownerInventoryHeading);
-    if (owners === null) {
-      continue;
-    }
-    findings.push(
-      ...(await staleOwnerHeadroom(owners, capsuleRoot, async (target) => {
-        if (!isHandWrittenSourcePath(target) || !await exists(target)) {
-          return null;
-        }
-        return headroom(
-          nonblankLines(await readFile(path.join(projectRoot, target), "utf8")),
-        );
-      })).map((finding) => `${proposal}: ${finding}`),
-    );
   }
 
   // Anti-vacuity guards the discovery, not the project's current state: every capsule graduating to
   // `-SPEC` is a legitimate outcome and leaves zero proposals, while a broken glob must still fail.
   assert.deepEqual(
-    { capsuleCount: capsules.length > 0, findings },
+    { capsuleCount: entries.some((entry) => entry.endsWith("-SPEC.md")), findings },
     { capsuleCount: true, findings: [] },
   );
 });
@@ -607,57 +521,70 @@ test("every capsule proposal names the guards and owners that already bind it", 
 // enumeration such as a registry listing every family in prose, whose names are not derivable —
 // those are kept out of maintained prose instead of guarded.
 /**
- * A graduated specification must retain no owner-headroom figure at all.
+ * A living proposal or specification keeps no owner-headroom figure at all.
  *
- * The inventory guard above reads proposals only, because headroom figures constrain a *plan*. A
- * graduated capsule therefore leaves that jurisdiction silently and its figures drift while the
- * table's own preamble still promises they are recomputed, which is a false claim about coverage
- * rather than a stale number. That happened: the interrupting Activity boundary Timer specification
- * carried seven wrong figures out of eight after graduation, and the first attempt to record *that*
- * defect miscounted it as three of four by reading only the first rows of the table it described.
+ * Headroom has one owner: `node scripts/what-binds.ts <path>...` measures it from the source at the
+ * moment a change is planned. A figure copied into a document is a second copy of a fact that changes
+ * whenever any capsule grows the shared owner, so it went stale in documents unrelated to the change:
+ * fifteen documents carried about 250 such rows, a guard recomputed them on every run, and growing one
+ * core file failed the gate for capsules that never touched it. Recomputation kept the copies true but
+ * still made every size change edit unrelated documents; removing the copies removes that coupling.
+ * A structural condition stays expressible without a figure ("extract before growth would exceed the
+ * review target"), which is the form a plan needs.
  *
- * This matches the measured row shape rather than one heading string, so renaming the table does not
- * evade it and a stray figure outside a table is still caught.
+ * The match is on any table's column header rather than one heading string, so a renamed owner table
+ * stays inside the ban. A dated record of lines a past change *added* is history, not a headroom
+ * copy, and its header names no headroom.
  */
 function retainedHeadroomFigures(markdown: string): ReadonlyArray<string> {
-  return markdown.split("\n").flatMap((line, index) => {
-    const row = /^\|\s*\[[^\]]+\]\((\.\.\/[^)]+)\)\s*\|\s*(\d+)\s*\|/u.exec(line);
-    return row === null ? [] : [`line ${index + 1}: ${row[1]} states ${row[2]}`];
+  const lines = markdown.split("\n");
+  return lines.flatMap((line, index) => {
+    const header = /^\|[\s:|-]+\|\s*$/u.test(lines[index + 1] ?? "");
+    return header && /headroom|before (?:the )?800/iu.test(line)
+      ? [`line ${index + 1}: table column states owner headroom`]
+      : [];
   });
 }
 
-test("no graduated specification retains an owner-headroom figure", async () => {
-  const capsuleRoot = path.join(projectRoot, "docs/capsules");
-  const specifications = (await readdir(capsuleRoot))
-    .filter((entry) => entry.endsWith("-SPEC.md"));
-  assert.ok(
-    specifications.length > 5,
-    `specification enumeration returned ${specifications.length} files`,
-  );
+test("no living proposal or specification retains an owner-headroom figure", async () => {
+  const documents: string[] = [];
+  for (const tree of ["docs", "docs/capsules"] as const) {
+    for (const entry of await readdir(path.join(projectRoot, tree))) {
+      if (entry.endsWith("-PROPOSAL.md") || entry.endsWith("-SPEC.md")) {
+        documents.push(`${tree}/${entry}`);
+      }
+    }
+  }
+  assert.ok(documents.length > 5, `document enumeration returned ${documents.length} files`);
   const findings: string[] = [];
-  for (const specification of specifications) {
-    const markdown = await readFile(path.join(capsuleRoot, specification), "utf8");
-    findings.push(
-      ...retainedHeadroomFigures(markdown).map((finding) => `${specification}: ${finding}`),
-    );
+  for (const document of documents) {
+    const markdown = await readFile(path.join(projectRoot, document), "utf8");
+    findings.push(...retainedHeadroomFigures(markdown).map((finding) => `${document}: ${finding}`));
   }
 
   assert.deepEqual(
     findings,
     [],
-    "graduation drops owner-headroom figures; record the extractions the capsule forced instead",
+    "name the owner and the structural condition; `what-binds` owns its current headroom",
   );
 });
 
-test("the graduation policy matches a headroom row and ignores prose and guard rows", () => {
+test("the headroom ban matches headroom columns and ignores prose, guard rows and history", () => {
   assert.deepEqual(
     retainedHeadroomFigures([
-      "| [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Sufficient. |",
-      "| [guard](../../scripts/capsule-roundtrip.test.ts) | Every artifact is registered. |",
-      "Prose naming [an owner](../../packages/semantic-core/src/index.ts) with 47 lines spare.",
       "| Owner | Headroom | Consequence |",
+      "|---|---:|---|",
+      "| [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts) | 47 | Sufficient. |",
+      "",
+      "| Owner | Remaining nonblank lines before the 800-line review target |",
+      "|---|---:|",
+      "",
+      "| Existing helper owner | Added nonblank lines | Proven function contract |",
+      "|---|---:|---|",
+      "| [what-binds](../../scripts/what-binds.test.ts) | Reports current headroom. |",
+      "Prose naming [an owner](../../packages/semantic-core/src/index.ts) with 47 lines of headroom.",
     ].join("\n")),
-    ["line 1: ../../packages/semantic-core/src/semantic-process-runtime.ts states 47"],
+    ["line 1: table column states owner headroom", "line 5: table column states owner headroom"],
   );
 });
 
