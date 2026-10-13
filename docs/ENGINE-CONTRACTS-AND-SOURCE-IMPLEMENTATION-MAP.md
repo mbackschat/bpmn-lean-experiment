@@ -40,7 +40,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 
 ## Implemented
 
-[Structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification): public registration and hosted journeys implemented; registration audit and Closure remain open.
+[Structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification): public registration and hosted journeys implemented; registration independently accepted; Closure open.
 
 ### Wire contracts
 
