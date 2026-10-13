@@ -76,3 +76,20 @@ function reorderTopLevelBatchesAndCurrent(canonical: string): string {
   const current = canonical.slice(currentStart + 1, definitionStart);
   return `{${current},${batches}${canonical.slice(definitionStart)}}`;
 }
+
+// PBV-IDENTITY-01: canonical value objects use code-point-sorted fields, so a Decimal spells `coefficient`, `kind`,
+// `scale`; the declaration-order spelling is a noncanonical alias the exact-byte reader refuses.
+test("pins the code-point-sorted Decimal spelling and refuses the declaration-order alias", () => {
+  const decimal = { kind: "decimal", coefficient: "-125", scale: 2 };
+  const fixture = structuredClone(canonicalExportFixture());
+  const text = new TextDecoder().decode(serializeExecutionPublicationExport(fixture, publicationContext))
+    .replaceAll('{"kind":"boolean","value":true}', JSON.stringify(decimal));
+  const parsed: unknown = JSON.parse(text);
+  const canonical = new TextDecoder().decode(serializeExecutionPublicationExport(parsed, publicationContext));
+  assert.ok(canonical.includes('{"name":"truth","value":{"coefficient":"-125","kind":"decimal","scale":2}}'));
+  assert.equal(canonical, text.replaceAll(JSON.stringify(decimal), '{"coefficient":"-125","kind":"decimal","scale":2}'));
+  assert.throws(
+    () => requireCanonicalExecutionPublicationExport(Buffer.from(text, "utf8"), publicationContext),
+    /canonical execution publication export/,
+  );
+});

@@ -81,7 +81,7 @@ Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: recursive values/identity; selected Property-path runtime with root String bound and `PBV-COPY-01`; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
 Current result: AA-13 is [accepted](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-acceptance). The [shared value and reader checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#shared-value-and-reader-checkpoint) adds Decimal, List and Map everywhere while every profile refuses them, using about 235 of 480 minutes by 08:50 UTC. `/tmp/pbv-lean-full-on-fedb8850-20261013` is green. Deferred `890b010f` keeps main red: `/tmp/pbv-lean-full-main-20261013` fails only its two scope modules and `/tmp/pbv-infra-runtime2-20261013` only its unremeasured cost row. PMIS capacity timeouts remain held.
 

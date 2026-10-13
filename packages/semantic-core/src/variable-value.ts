@@ -371,8 +371,8 @@ function isPortableEntry(
 }
 
 /**
- * Rebuilds an already validated value in the contract's canonical field order. Only the UTF-8 length of its JSON text
- * is consumed, so the byte ceiling cannot depend on the field order of the caller's objects.
+ * Rebuilds an already validated value with the contract's code-point-sorted fields. Only the UTF-8 length of its JSON
+ * text is consumed, so the byte ceiling cannot depend on the field order of the caller's objects.
  */
 function canonicalValueShape(value: BusinessValue): unknown {
   switch (value.kind) {
@@ -383,7 +383,7 @@ function canonicalValueShape(value: BusinessValue): unknown {
     case VariableValueKind.Null:
       return { kind: value.kind };
     case VariableValueKind.Decimal:
-      return { kind: value.kind, coefficient: value.coefficient, scale: value.scale };
+      return { coefficient: value.coefficient, kind: value.kind, scale: value.scale };
     case VariableValueKind.List:
       return { kind: value.kind, value: value.value.map(canonicalValueShape) };
     case VariableValueKind.Map:

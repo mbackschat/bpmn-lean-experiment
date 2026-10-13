@@ -6,6 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
+import type { RuntimeState } from "./semantic-process-state.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID,
@@ -63,6 +64,11 @@ const structuredHumanWorkValueDomain = Object.freeze([
   ...stringNullBooleanValueDomain,
   VariableValueKind.Integer,
   VariableValueKind.StringList,
+]);
+const portableValueKinds: ReadonlyArray<VariableValueKind> = Object.freeze([
+  VariableValueKind.Decimal,
+  VariableValueKind.List,
+  VariableValueKind.Map,
 ]);
 const scalarValueDomain = Object.freeze([
   VariableValueKind.Boolean,
@@ -259,6 +265,37 @@ function profileValueDomain(
     default:
       return assertNever(semanticProfile);
   }
+}
+
+/**
+ * Whether a carried state holds a portable recursive value only under a profile that admits one.
+ *
+ * A portable value reaches state solely through an external write surface, so under a profile that
+ * selects one at no surface, a carried or restored Decimal, List or Map was never committed
+ * (PBV-INGRESS-01). Legacy scalar kinds are not profile-checked here.
+ */
+export function runtimeStateCarriesOnlyProfilePortableValues(
+  semanticProfile: string,
+  state: RuntimeState,
+): boolean {
+  if (profileSelectsPortableValue(semanticProfile)) {
+    return true;
+  }
+  const { process, scopes, processInterfaces, activities } = state.variables;
+  return [
+    process.bindings,
+    ...scopes.map(({ bindings }) => bindings),
+    ...processInterfaces.flatMap(({ inputs, outputs }) => [inputs, outputs]),
+    ...activities.map(({ bindings }) => bindings),
+    ...state.effectWaits.map((wait) => wait.arguments),
+    ...(state.compensationHandlerEffectWaits ?? []).map((wait) => wait.arguments),
+  ].every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
+}
+
+function profileSelectsPortableValue(semanticProfile: string): boolean {
+  return isAdmissionProfile(semanticProfile) &&
+    Object.values(VariableWriteSurface).some((surface) =>
+      profileValueDomain(semanticProfile, surface)?.some((kind) => portableValueKinds.includes(kind)) ?? false);
 }
 
 /** Applies the profile value domain to every variable-bearing external stimulus. */

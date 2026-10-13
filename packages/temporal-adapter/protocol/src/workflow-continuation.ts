@@ -23,6 +23,7 @@ import {
   observeStableState,
   projectCurrentControlPositions,
   projectOpenFlowNodeOccurrences,
+  runtimeStateCarriesOnlyProfilePortableValues,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
@@ -211,6 +212,7 @@ export function requireBpmnWorkflowContinuationStateV1(
   }
   if (!isGateAdmissibleRuntimeState(program, processInstanceId, value) ||
     !callDataStateIsValid(program, value) ||
+    !runtimeStateCarriesOnlyProfilePortableValues(program.identity.semanticProfile, value) ||
     !(program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
       ? parallelScopeCheckpointValid(program, value)
       : value.parallelScopeControllers === undefined && sequentialScopeCheckpointValid(program, value)) ||

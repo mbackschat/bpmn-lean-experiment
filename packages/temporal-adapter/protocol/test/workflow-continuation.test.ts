@@ -28,6 +28,7 @@ import type {
   RuntimeState,
   SemanticOperation,
   SemanticProcessProgram,
+  VariableValue,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -47,26 +48,7 @@ const rootScopeId = `scope:${processId}`;
 test("decodes only the paired declaration-owned compensation collections", () => {
   const program = declaringProgram();
   assert.equal(isWellFormedSemanticProcessProgram(program), true);
-  const started = admitProcessStart(program, initialState, {
-    kind: StimulusKind.StartProcess,
-    commandId: "start-compensation-continuation",
-    processId,
-    instanceId,
-    initialVariables: [],
-  });
-  assert.ok(started !== null);
-  const initiated = applyInternalOperation(
-    program,
-    requiredOperation(program, "operation:Start"),
-    started,
-  );
-  assert.ok(initiated !== null);
-  const state = applyInternalOperation(
-    program,
-    requiredOperation(program, "operation:Task"),
-    initiated,
-  );
-  assert.ok(state !== null);
+  const state = taskWaitState(program);
   assert.ok(state.compensationTriggers !== undefined);
   assert.ok(state.compensationHandlerEffectWaits !== undefined);
   assert.deepEqual(
@@ -139,6 +121,26 @@ test("decodes only the paired declaration-owned compensation collections", () =>
     ),
     /Malformed committed RuntimeState continuation/u,
   );
+});
+
+// PBV-INGRESS-01: a profile that selects no portable write surface cannot restore a portable value,
+// even though the shared structural reader now recognizes the arm.
+test("restoration refuses portable values carried under a profile that selects none", () => {
+  const program = declaringProgram();
+  const state = taskWaitState(program);
+  const withProcessBinding = (value: VariableValue): RuntimeState => ({
+    ...state, variables: { ...state.variables, process: { bindings: [{ name: "order", value }] } },
+  });
+  const control = withProcessBinding({ kind: VariableValueKind.String, value: "order" });
+  assert.deepEqual(requireBpmnWorkflowContinuationStateV1(control, program, instanceId), control);
+  for (const value of [
+    { kind: VariableValueKind.Decimal, coefficient: "-125", scale: 2 },
+    { kind: VariableValueKind.List, value: [{ kind: VariableValueKind.String, value: "item" }] },
+    { kind: VariableValueKind.Map, value: [{ name: "total", value: { kind: VariableValueKind.Integer, value: 1 } }] },
+  ] as const satisfies readonly VariableValue[]) {
+    assert.throws(() => requireBpmnWorkflowContinuationStateV1(withProcessBinding(value), program, instanceId),
+      /representable committed state/u, value.kind);
+  }
 });
 
 test("round-trips all four compensation collections with deferred restored context", () => {
@@ -507,6 +509,23 @@ test("round-trips all four compensation collections with deferred restored conte
     /Publication open occurrences do not match RuntimeState/u,
   );
 });
+
+/** The committed stable state with the compensable Task's effect open, reached by the actual Start and Task steps. */
+function taskWaitState(program: SemanticProcessProgram): RuntimeState {
+  const started = admitProcessStart(program, initialState, {
+    kind: StimulusKind.StartProcess,
+    commandId: "start-compensation-continuation",
+    processId,
+    instanceId,
+    initialVariables: [],
+  });
+  assert.ok(started !== null);
+  const initiated = applyInternalOperation(program, requiredOperation(program, "operation:Start"), started);
+  assert.ok(initiated !== null);
+  const state = applyInternalOperation(program, requiredOperation(program, "operation:Task"), initiated);
+  assert.ok(state !== null);
+  return state;
+}
 
 function requiredOperation(
   program: SemanticProcessProgram,

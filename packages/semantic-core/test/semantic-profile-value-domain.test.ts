@@ -9,9 +9,11 @@ import {
   SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
   VariableValueKind,
+  initialState,
   isVariablePatch,
+  runtimeStateCarriesOnlyProfilePortableValues,
 } from "@bpmn-lean/semantic-core";
-import type { VariableBinding } from "@bpmn-lean/semantic-core";
+import type { RuntimeState, VariableBinding } from "@bpmn-lean/semantic-core";
 
 const surfaces = [
   "processStart",
@@ -620,17 +622,7 @@ test("does not inherit String or Null writes into preservation and composition p
 
 test("refuses a well-formed recursive portable value at every surface of every admitted profile", async () => {
   const compiled = await importCompiledValueDomain();
-  // The interrupting Message Event Sub-Process identity is package-internal, so it is read from the built catalog.
-  const catalog = await import(
-    new URL("../dist/semantic-profile-catalog.js", import.meta.url).href
-  ) as { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID: string };
-  const profiles = [
-    ...Object.values(SemanticProfileId),
-    SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
-    PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
-    catalog.INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
-  ];
-  assert.ok(profiles.length > 30, "profile enumeration must not be vacuous");
+  const profiles = await admittedProfiles();
   for (const kind of portableKinds) {
     const binding = bindings.get(kind);
     assert.ok(binding !== undefined);
@@ -647,3 +639,35 @@ test("refuses a well-formed recursive portable value at every surface of every a
     }
   }
 });
+
+// Restoration reads carried state structurally, so profile eligibility must be rechecked there (PBV-INGRESS-01).
+test("refuses a carried portable value under every admitted profile while keeping legacy kinds", async () => {
+  const string = bindings.get(VariableValueKind.String);
+  assert.ok(string !== undefined);
+  const carrying = (binding: VariableBinding): RuntimeState => ({
+    ...initialState, variables: { ...initialState.variables, process: { bindings: [binding] } },
+  });
+  for (const profile of await admittedProfiles()) {
+    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
+    for (const kind of portableKinds) {
+      const binding = bindings.get(kind);
+      assert.ok(binding !== undefined);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(binding)), false, `${profile} ${kind}`);
+    }
+  }
+});
+
+async function admittedProfiles(): Promise<readonly string[]> {
+  // The interrupting Message Event Sub-Process identity is package-internal, so it is read from the built catalog.
+  const catalog = await import(
+    new URL("../dist/semantic-profile-catalog.js", import.meta.url).href
+  ) as { INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID: string };
+  const profiles = [
+    ...Object.values(SemanticProfileId),
+    SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+    PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+    catalog.INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  ];
+  assert.ok(profiles.length > 30, "profile enumeration must not be vacuous");
+  return profiles;
+}
