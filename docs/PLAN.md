@@ -83,7 +83,7 @@ Deliverable: Carry a nested order through both tasks and terminal publication.
 
 Acceptance blockers: independent review of the [live hosting checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-checkpoint); retained corpus model and Product 2 disclosure before Closure. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-acceptance) was accepted at `eb69d834` after one correction audit, using 198 of its 300 minutes; the Property-path runtime was accepted at `4e15fa4b`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
+Current result: The [live hosting checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-checkpoint) is green at `17fb8a09` and in correction after its cold review, at about 50 of its 180 minutes; the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-acceptance) was accepted at `eb69d834`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
 Effort budget: 180 minutes wall from 2026-10-13 19:10 UTC for the live hosting qualification through its review, reusing the [Activity data-input/output refinement harness](../packages/temporal-adapter/testkit/test/activity-data-input-output-refinement.temporal-test.ts). At the limit, stop and record before renewal.
 

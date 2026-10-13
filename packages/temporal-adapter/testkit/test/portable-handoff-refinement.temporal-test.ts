@@ -3,12 +3,17 @@
  * admission): the order reaches both User Tasks exactly, across refusal, forced Continue-As-New, Worker replacement
  * and content-bound recovery, and every Run replays.
  *
- * The oracle is the pure semantic core stepping the same stimuli. The hosted published state, the open-task Query,
- * both publications and the retained trace must equal it at every wait; the Archive input and the terminal Process
- * values are additionally checked against the submitted values directly, so a flaw shared by host and core would
- * still fail. Every journey starts through the production client path (`startBpmnProcess`), so the pre-start capacity
- * envelope is on it; only the host input's event threshold is lowered, which makes each handled command roll the
- * Workflow over.
+ * The reference is the semantic core stepping the same stimuli in this process. It is the TypeScript core the Worker
+ * runs, so this is a refinement check of the host, not an independent lane. Against the core's own steps the test
+ * compares: the published state and the open-task Query at every wait; every E1 batch (all transition records,
+ * positionDelta included, with revisions numbered from 1) and E1 `current` (state, control tokens, scopes); every E2
+ * batch (each transition's started and ended occurrences with owner and terminal) and E2 `currentOpen`, all in full
+ * but for host clock stamps; the outcome of every command; and the retained trace of all Runs. The core's publications
+ * are numbered by the oracle in core-publication-oracle-test-support.ts, whose own sensitivity is locked by the last
+ * subtest. The Archive input, the terminal Process values and the E1 stimuli are also checked against the submitted
+ * values directly, so a flaw shared by host and core would still fail. Every journey starts through the production
+ * client path (`startBpmnProcess`), so the pre-start capacity envelope is on it; only the host input's event
+ * threshold is lowered, which makes each handled command roll the Workflow over.
  */
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
@@ -83,6 +88,12 @@ import type {
   ReplayedChain,
   StartedScenario,
 } from "./live-process-observation-test-support.ts";
+import {
+  assertPublicationsMatchCore,
+  coreCommit,
+  publicationDefects,
+} from "./core-publication-oracle-test-support.ts";
+import type { CoreCommit, PublicationSnapshot } from "./core-publication-oracle-test-support.ts";
 import { loadJson, temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
 import {
   startBpmnTestWorker,
@@ -159,6 +170,15 @@ type CoreJourney = DeepReadonly<{
   trace: CanonicalObservation[];
   states: StateObservation[];
   outcomes: CommandOutcome[];
+  /** The committed commands only, in order; a refusal publishes nothing. */
+  commits: CoreCommit[];
+}>;
+
+/** The Archive-wait snapshot with the core commits it must equal, kept to prove the comparison rejects defects. */
+type MidJourneyEvidence = DeepReadonly<{
+  snapshot: PublicationSnapshot;
+  commits: CoreCommit[];
+  processInstanceId: string;
 }>;
 
 test("portable handoff keeps nested business values exact across live hosting boundaries", async (context) => {
@@ -186,11 +206,12 @@ test("portable handoff keeps nested business values exact across live hosting bo
       },
     };
 
+    let midJourney: MidJourneyEvidence | undefined;
     await timed(context, "capsule order with refusals", async () => {
       const journey = await scenarioJourney(program, "order-revised", true);
       assert.deepEqual(startValue(journey), capsuleOrder);
       assert.deepEqual(outputValue(journey.review), revisedOrder);
-      await driveJourney(host, journey);
+      midJourney = await driveJourney(host, journey);
     });
     await timed(context, "present Null control", async () => {
       const journey = await scenarioJourney(program, "order-null", false);
@@ -202,6 +223,16 @@ test("portable handoff keeps nested business values exact across live hosting bo
     });
     await timed(context, "over-envelope Start creates no Workflow", async () => {
       await assertEnvelopeRefusal(host);
+    });
+    await timed(context, "publication comparison rejects dropped produced tokens, lost scope, phantom token, wrong owner, wrong terminal and lost open task", async () => {
+      assert.ok(midJourney !== undefined, "the capsule-order journey must supply the mid-journey snapshot");
+      const { snapshot, commits, processInstanceId } = midJourney;
+      assertPublicationsMatchCore(snapshot, commits, processInstanceId);
+      for (const [label, defective] of publicationDefects(snapshot)) {
+        assert.notDeepEqual(defective, snapshot, `${label} must change the snapshot`);
+        assert.throws(() => assertPublicationsMatchCore(defective, commits, processInstanceId),
+          assert.AssertionError, label);
+      }
     });
   } finally {
     try {
@@ -224,7 +255,7 @@ async function timed(context: TestContext, label: string, body: () => Promise<vo
  * Each wait is entered, refused where the journey offers refusals, observed across the Continue-As-New its commands
  * force, and left only by a completion; the Worker is replaced at each wait before that completion.
  */
-async function driveJourney(host: Host, journey: Journey): Promise<void> {
+async function driveJourney(host: Host, journey: Journey): Promise<MidJourneyEvidence> {
   const { environment, program } = host;
   const stimuli = journeyStimuli(journey);
   const expected = coreJourney(program, stimuli);
@@ -255,6 +286,7 @@ async function driveJourney(host: Host, journey: Journey): Promise<void> {
   assert.deepEqual(reviewWait, atReview);
   assertWait(reviewWait, reviewTaskId, reviewInputId, [[receivedProperty, received]], received);
   const reviewSnapshot = await waitSnapshot(host, started);
+  assertPublicationsMatchCore(reviewSnapshot, expected.commits.slice(0, 1), started.instanceId);
   assert.deepEqual(reviewSnapshot.execution.current.state, atReview);
   assert.deepEqual(reviewSnapshot.openTasks, atReview.openUserTasks);
   assert.deepEqual(openElementIds(reviewSnapshot), [reviewTaskId]);
@@ -283,6 +315,7 @@ async function driveJourney(host: Host, journey: Journey): Promise<void> {
     [[receivedProperty, received], [reviewedProperty, reviewed]], reviewed);
   await waitForRolloverPast(environment, started, journey.review.commandId);
   const archiveSnapshot = await waitSnapshot(host, started);
+  assertPublicationsMatchCore(archiveSnapshot, expected.commits.slice(0, 2), started.instanceId);
   assert.deepEqual(archiveSnapshot.execution.current.state, atArchive);
   assert.deepEqual(archiveSnapshot.openTasks, atArchive.openUserTasks);
   assert.deepEqual(openElementIds(archiveSnapshot), [archiveTaskId]);
@@ -332,13 +365,14 @@ async function driveJourney(host: Host, journey: Journey): Promise<void> {
 
   // Closed-chain recovery still answers from the retained ledger, without a new publication.
   const closed = await waitSnapshot(host, started);
+  assertPublicationsMatchCore(closed, expected.commits, started.instanceId);
   assert.deepEqual(closed.execution.current.state, atEnd);
   for (const completion of [journey.review, journey.archive]) {
     await assertCompletion(environment, started, completion, CommandOutcome.Committed);
   }
   assert.deepEqual(await waitSnapshot(host, started), closed);
 
-  // E1 and E2 together: three committed batches, each carrying its submitted stimulus with the nested values intact.
+  // Independent of the core: three committed batches, each carrying exactly the stimulus the test submitted.
   const committed = [journey.start, journey.review, journey.archive];
   assert.deepEqual(closed.execution.batches.map(({ commandId }) => commandId), committed.map(({ commandId }) => commandId));
   for (const [index, batch] of closed.execution.batches.entries()) {
@@ -369,6 +403,11 @@ async function driveJourney(host: Host, journey: Journey): Promise<void> {
   const archiveRun = runOfCommand(chain, journey.archive.commandId);
   assert.ok(startRun < reviewRun && reviewRun < archiveRun,
     `commits must span Runs, found ${startRun}, ${reviewRun}, ${archiveRun}`);
+  return {
+    snapshot: archiveSnapshot,
+    commits: expected.commits.slice(0, 2),
+    processInstanceId: started.instanceId,
+  };
 }
 
 /** Starts through the production client path, lowering only the host input's event threshold so each handled command rolls the Workflow over. */
@@ -574,6 +613,7 @@ function coreJourney(program: SemanticProcessProgram, stimuli: ReadonlyArray<Sti
   const trace: CanonicalObservation[] = [deployment.observation];
   const states: StateObservation[] = [];
   const outcomes: CommandOutcome[] = [];
+  const commits: CoreCommit[] = [];
   let state = initialState;
   for (const stimulus of stimuli) {
     const step = advanceScenario(program, state, stimulus);
@@ -586,8 +626,9 @@ function coreJourney(program: SemanticProcessProgram, stimuli: ReadonlyArray<Sti
     assert.ok(observed?.kind === CanonicalObservationKind.State);
     outcomes.push(command.outcome);
     states.push(observed);
+    if (step.kind === ScenarioStepKind.Committed) commits.push(coreCommit(program, stimulus, step));
   }
-  return { trace, states, outcomes };
+  return { trace, states, outcomes, commits };
 }
 
 function assertWait(
