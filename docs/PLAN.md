@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; select the next existing delivery slice under the exact resume budget. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; select `PC-DATA-01` for the mandatory portable-value contract supporting the typed-order delivery path. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -24,7 +24,7 @@ Exactly one stable work ID is active. Required maps govern routing.
 
 ### Assurance trigger assessment
 
-Assurance base: `dd5101fbb0b15f62569361931fa60e389a2220ef`.
+Assurance base: `36058b60b2949d45350a69f42833f1579a1ff923`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
@@ -38,8 +38,8 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
 | AA-09 | not-met | No proof relocation is selected for hosting qualification; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
-| AA-13 | not-met | Exact numeric and UTF-8 admission contracts are unchanged. | — | — |
-| AA-15 | not-met | No lane declaration or fixture-only guarantee is selected. | — | — |
+| AA-13 | met-review | The portable-value design must decide exact numeric admission before widening values. | Review the finite numeric/UTF-8 admission contract within the design budget; no parser repair is selected yet. | [Held admission obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
+| AA-15 | met | The design must name the value-domain assurance lane without implying runtime evidence. | Separate design acceptance from checked/proved implementation obligations within the design budget. | [Named guarantee obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-15). |
 | AA-18 | not-met | No ordering/uniqueness or identity-family contract extension is selected. | — | — |
 | AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
 | AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-HUM-01`, structured registration and runnable handoff complete; select the next existing acceptance obligation. Related `PC-CF-02` remains separately open.
+Current task: `PC-DATA-01`, the mandatory portable business-value design supporting the `PC-DATA-03` typed-order journey.
 
-Deliverable: Preserve the accepted [structured invoice/serial handoffs](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification) and select one next independently finishable business-process increment.
+Deliverable: An independently approved finite contract for scalar values, precise amounts and nested lists/maps, with exact bounds, encoding and Start/Human/Message/effect/Call eligibility. Design acceptance supplies no runtime coverage.
 
-Acceptance blockers: No registration enrollment gap remains. Whole-capsule cost and complete runtime qualification remain required for Closure; retained runtime failures block release acceptance.
+Acceptance blockers: The proposed domain, bounds and AA-13 numeric decision require independent approval. Nearby invoice/Call/Message delivery retains runtime holds, and MI guarantees remain deferred.
 
-Current result: Registration `104121b5` is independently accepted after audits `8380da72` and `7fbdd523`. Five public routes, cross-target agreement and recovery/replay pass. The omitted independent value-domain enrollment and runnable example are corrected; full domain matrix, concurrent testkit and engine API gates pass. No whole-checklist closure is claimed.
+Current result: The [portable-value proposal](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md) selects recursive tagged collections, exact signed Decimal and lexical numeric admission. Source preflight verifies pinned CIB precedent. The proposal is unapproved; no production value contract has changed.
 
-Effort budget: 10 minutes for enrollment corrections from 2026-10-13 00:31 UTC; completed within budget. Resume the remaining 10 minutes of the prior 15-minute next-slice selection allowance. Stop and reassess at the limit; no automatic renewal.
+Effort budget: 45 minutes from 2026-10-13 00:40 UTC for source preflight and the bounded design; reserve 15 minutes for independent proposal review and focused document qualification. Stop and reassess at either limit; no automatic extension or implementation before approval.
 
-Next action: Commit the enrollment integration, then select one existing acceptance obligation without reopening SDK repair or deferred MI guarantees. Nearby serial/Call/Message closure paths retain runtime holds; new scope requires its ordinary proposal boundary.
+Next action: Freeze one source-grounded proposal, qualify its document contracts, commit and request cold review. Own only the proposal, registries, selected coverage row and PLAN; preserve unrelated edits.
 
-Oracle: Exact owner evidence identifies the deliverable, mandatory blockers, deciding witness and finite implementation budget before new edits.
+Oracle: Independent review accepts the closed domain/ingress table and separating order examples, exact/over-bound negatives and cross-target obligations. Record the immutable design receipt before any checklist closure.
 
-Stop if the path requires deferred SDK work or an unapproved semantic change. Preserve unrelated pending work, resource limits and open capsule Closure.
+Stop if review invalidates the bounded path or implementation requires SDK work or deferred guarantees.
