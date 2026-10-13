@@ -1058,7 +1058,7 @@ The Temporal target indexed its batch by pipeline case identity; the projection 
 A helper process was started with no way to stop itself, and its only exit was a cleanup step that never ran.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `unguardable`
@@ -1069,6 +1069,8 @@ Evidence
 **First observed:** [Activity data-input mediation](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) capsule
 
 Eight `while :; do :; done` load generators were spawned to measure a gate under CPU pressure; `PIDS=$(jobs -p)` captured nothing because command substitution runs in a subshell that owns no jobs, so the `kill` succeeded against an empty list, the loops were reparented to `init` when their shell exited, and they ran at about 80% CPU each until the owner reported a load average above 100. Two consequences outlast the cleanup: every figure measured while they ran is contended and was briefly reported as a quiet-host baseline, and a separate killed test run had also left an ephemeral Temporal server listening for 44 minutes. The correction is a lifetime rule rather than a better capture: bound every started process with `timeout`, a deadline, or a fixed iteration count so no failure path can strand it, capture `$!` per job when an identity is still needed, and sweep for strays before reporting any host measurement
+
+The second instance, 2026-10-13, was that empty-list `node --test`: it ran with no `timeout` for twelve minutes until it was killed by hand, and the sweep afterwards found no strays. A deadline on the command would have ended it whatever the list contained.
 
 ### Finding 57
 
@@ -1367,7 +1369,7 @@ The guard evaluates actual step predicates across branch, phase-tag and version-
 An ad hoc command relied on unquoted parameter expansion to split a list into words, under a shell whose splitting rules differed from the author's assumption.
 
 Instances
-: 4
+: 6
 
 Disposition
 : `unguardable`
@@ -1380,6 +1382,8 @@ Evidence
 The failing commands were typed interactively and never entered a tracked script, so no repository fact can observe this class. zsh does not word-split an unquoted `$files` or `$pids`. One copy loop therefore failed before a patch was applied, and one `kill` of bounded CPU spinners matched nothing. A third command, inside `bash -c`, split a `PATH` containing a space so that `env` failed before its gate started. The bounded `gtimeout` lifetimes contained the stray spinners, and no measurement was taken while they ran. The reusable question: before relying on a multi-word expansion, does the command run under the shell whose splitting it assumes, with every list held in an array and every value quoted?
 
 The fourth instance, 2026-10-13, passed an unquoted `$FILES` test list to the receipt wrapper under zsh, so `node --test` received one newline-joined argument and the closure diagnosis lost a run. The array-in-`bash -c` repair then failed the host's command-safety check because it nested an `rm`; piping the list into `xargs` needs neither a nested shell nor word splitting.
+
+Instances five and six, 2026-10-13, ran a guard list built in a variable under zsh: the unquoted `$G` again reached `node --test` as one argument, and the corrected `${=G}` split an empty list, so bare `node --test` fell back to discovering every test file in the repository. A list that can be empty needs an explicit non-empty check before it becomes arguments.
 
 ### Finding 74
 
