@@ -85,7 +85,7 @@ Acceptance blockers: Closure review with its reflection, cost row and complete a
 
 Current result: The [live hosting checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-acceptance) was accepted at `17fb8a09` after one correction audit, using about 60 of its 180 minutes; the capacity envelope was accepted at `eb69d834`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
-Effort budget: 120 minutes wall from 2026-10-13 20:00 UTC, the unused part of the hosting allowance, cover corpus and Product 2 disclosure; Closure review gets its own budget. At the limit, stop and record before renewal.
+Effort budget: 150 minutes wall from 2026-10-13 20:15 UTC for Closure through its review, including one run each of the model-corpus pipeline (its Lean executables are already up to date) and the complete Temporal package gate within their documented allowances. At the limit, stop and record before renewal.
 
 Next action: Prepare Closure: epistemic-closure reflection, cost-ledger row, self-assessment, exact map status, and the complete affected gates including the differential model-corpus test, then the closure review. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this deliverable.
 
