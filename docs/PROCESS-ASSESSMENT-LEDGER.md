@@ -63,7 +63,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 17
+: 19
 
 Disposition
 : `executable guard`
@@ -120,7 +120,7 @@ Retained recurrence evidence: [Finding 03](process-assessment/VERIFICATION-LEDGE
 A generated semantic-review packet or continuity manifest was hand-transcribed into the reviewer prompt, corrupting one digest even though the source artifact was exact.
 
 Instances
-: 5
+: 6
 
 Disposition
 : `unguardable`
@@ -607,13 +607,13 @@ Retained recurrence evidence: [Finding 30](process-assessment/REVIEW-AND-DELIVER
 Verification obligations existed outside the aggregate gate that was treated as complete, and the gate could report only what it selected.
 
 Instances
-: 2
+: 3
 
 Disposition
 : `executable guard`
 
 Evidence
-: [test-selection coverage](../scripts/test-selection-coverage.test.ts), [pre-push security failure propagation](../scripts/pre-push-selection.test.ts)
+: [test-selection coverage](../scripts/test-selection-coverage.test.ts), [pre-push security failure propagation](../scripts/pre-push-selection.test.ts), [interpreted Lean entry build](../scripts/lean-test-lane-policy.test.ts)
 
 **First observed:** [Runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md) closure follow-up
 
@@ -855,7 +855,7 @@ The first instance named cancellation laws, but its checked theorems restated a 
 An exhaustiveness claim about source was written as a count and an "everything else" clause from a partial search, so each correction produced a new partial count: one paragraph of the runtime-state invariant proposal named four canonical insertion functions, then six, and still omitted `insertVariableBinding` while asserting that everything else prepends, which is false for the appended `variables.activities`.
 
 Instances
-: 9
+: 10
 
 Disposition
 : `unguardable`

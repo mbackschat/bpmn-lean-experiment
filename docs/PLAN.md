@@ -38,7 +38,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
 | AA-09 | not-met | No proof relocation is selected for the portable handoff; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
-| AA-13 | met-review | The admission decision is independently approved at `377b46e0` and its consuming amendment at `46fb3993`; implementation remains unqualified. | Repair actual raw readers within the active admission budget; preserve generic JSON behavior and qualify the independent readers. | [Admission obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
+| AA-13 | met | Raw-wire admission is independently accepted for the existing arms; the recursive-value batch extends the same readers. | Extend each independent reader to the new arms under the accepted lexical admission; listed residuals stay unselected. | [Accepted admission and residuals](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
 | AA-15 | met | The design must name the value-domain assurance lane without implying runtime evidence. | Separate design acceptance from checked/proved implementation obligations within the design budget. | [Named guarantee obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-15). |
 | AA-18 | not-met | No ordering/uniqueness or identity-family contract extension is selected. | — | — |
 | AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; first blocker is AA-13 raw-wire admission, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is recursive values, supporting `PC-DATA-02`.
 
-Deliverable: Carry a nested order through both tasks and terminal publication. AA-13 first aligns exact numeric, UTF-8 and own-property admission across raw readers for the existing value arms.
+Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: AA-13 qualification and independent acceptance; recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The AA-13 repair is committed at `fedb8850` and exact-target qualification passes except two capacity cases attributed to the unchanged `programStartCapacity` hold. The cold review required corrections R1–R4: cost row, lossy parallel-scope Lean readers, the Work `fields` carve-out and the closed-wire 400 rule. `890b010f` preserves deferred, unqualified scope/SMIS proof work.
+Current result: AA-13 raw-wire admission is [independently accepted](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-acceptance) at `fedb8850` with corrections `800c7009`; its 240-minute budget consumed 104 minutes. The 1024-operation capacity timeouts remain the PMIS hold. `890b010f` preserves deferred, unqualified scope/SMIS proof work.
 
-Effort budget: 240 minutes wall from 2026-10-13 03:06 UTC, for AA-13 acceptance only, covering the documented 120-minute full-Lean and 10-minute Lean-checks allowances, integration, resource measurements and independent review. At the limit, stop and record before renewal.
+Effort budget: 480 minutes wall from 2026-10-13 04:55 UTC for the shared recursive value/reader/admission batch through its semantic-checkpoint review, including focused Lean, one complete Lean gate and affected package qualification. At the limit, stop and record before renewal.
 
-Next action: Commit the R1–R4 corrections, then obtain the same reviewer's correction audit and record acceptance in the [portable-value capsule](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-checkpoint) before recursive values.
+Next action: Add Decimal, List and Map to the TypeScript and Lean value contracts, schemas, independent readers, canonical command identity and profile-domain recognition, with every current profile still refusing them; red/green from the `PBV-*` discriminators.
 
-Oracle: Fractional rounding, underflow, noncanonical integer tokens, malformed UTF-8 and prototype keys reject independently; canonical controls and generic JSON numbers retain their selected behavior.
+Oracle: `PBV-TYPE-01`, `PBV-TREE-01`, `PBV-AMOUNT-01`, `PBV-BOUND-01` and `PBV-IDENTITY-01` witnesses separate Lean and TypeScript independently; old profiles refuse the nested order.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

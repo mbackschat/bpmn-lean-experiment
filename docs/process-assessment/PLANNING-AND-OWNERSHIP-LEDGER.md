@@ -21,6 +21,8 @@ Recorded recurrences: instance 4 missed a guard already at 578/600 lines; 5 and 
 
 Instance 16 was [Transaction proposal review](../capsules/TRANSACTION-CANCELLATION-SPEC.md#independent-cold-review-receipt): merged flows violated a single-input End, and the inventory omitted root-only retention and exact-profile host admission. Correction `9a5c3a4a` retains distinct Ends, register cardinality and deciding owners/tests. Existing graph/retention/admission gates constrain implementation; they do not prove inventory completeness.
 
+Instances 18 and 19, 2026-10-13: two PLAN resume-point commits landed with the PLAN control-plane guard red, first over its word ceiling and then, in `75371e93`, naming review work without a governed owner link. `what-binds` on `docs/PLAN.md` names that guard; it was not run before either commit, and the infrastructure gate found both afterwards.
+
 ## Finding 06
 
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-06).
@@ -58,3 +60,5 @@ Instance 2 promised the sequential MI public-contract amendment with Activity oc
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-45).
 
 The first three revisions listed four then six canonical insertions yet missed `insertVariableBinding` and appended `variables.activities`. Instance 4's eight counter families wrongly included constant-minted called scopes and omitted an incident-retained effect activation. Instance 5's new criterion still required counter-numbering at every insertion, excluding effect retry and task-counter body turnover although both preserve the post-state inequality; express the inequality itself. Instance 6 removed "seven prose statements" during handoff before commit, evidence of a question catching the issue rather than a shipped escape. Instance 7 left a sibling "four fixtures/seven claims" at `d8c1091`; correction uses attribution/membership criteria. Instance 8 removed an observation-field count after `openMultiInstances` while preserving schema/table path equality. Instance 9 removed walkthrough/research totals drifting from 25 to 27 while generated catalogs/maps stayed correct; current owners carry row/summary and pipeline/catalog equality.
+
+Instance 10, 2026-10-13: the AA-13 checkpoint said that differential result readers and HTTP ingress used the exact wire boundary, and that structured Work fields kept a separate numeric policy, from a search of the shared result reader alone. Eleven parallel-scope Lean-output decodes still used `JSON.parse`, and the `fields` carve-out contradicted `SHW-DATA-01`. The independent review found both; [the Lean-output decode guard](../../packages/differential/test/raw-wire-admission.test.ts) now covers that one reader class, not prose membership in general.

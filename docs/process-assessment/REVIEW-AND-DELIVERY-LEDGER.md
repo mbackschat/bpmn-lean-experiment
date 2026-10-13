@@ -17,6 +17,8 @@ Distinct recurrence evidence for [the root findings](../PROCESS-ASSESSMENT-LEDGE
 
 Instance 2 shortened two identical preflight hashes by four characters at interchange closure; regeneration corrected them before substantive work. Instance 3 transmitted a 62-character routed digest in identity-bound proposal review, impossible from the generator's 64-character validation; the reviewer treated it as unverifiable. Instance 4 mislabeled the Sequential MI internal packet digest as the file digest; only independent file hashing separated the two valid hashes. Instance 5 duplicated a Compensation gate argument during pasting; the author disclosed it and the reviewer regenerated/matched the exact packet before auditing.
 
+Instance 6, 2026-10-13: the AA-13 cold-review prompt went out with a literal packet placeholder instead of the generated packet bytes; the packet followed in a separate message before the reviewer started work.
+
 ## Finding 20
 
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-20).

@@ -82,6 +82,8 @@ The recovery worker's twenty-eight stripped-type Node passes concealed a removed
 
 Instance 2, 2026-09-30: pre-push omitted the unconditional security workflow despite green Product 1/path-filtered Product 2 checks. A lockfile-only update would leave the selection defect intact.
 
+Instance 3, 2026-10-13: Lean-dependent integration tests interpret Lean source entries whose imports the Lean-checks stage never built, so integration failed on a missing olean after both Lean stages passed. [The lane policy test](../../scripts/lean-test-lane-policy.test.ts) now derives every interpreted entry from package tests and requires the Lean-checks build to name it.
+
 ## Finding 32
 
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-32).
