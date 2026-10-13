@@ -66,7 +66,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-profile-catalog.ts](src/semantic-profile-catalog.ts) | Semantic profile identities |
 | [semantic-profile-observations.ts](src/semantic-profile-observations.ts) | The exact observation request order retained by profiles predating Multi-Instance support |
 | [source-overlay-identity.ts](src/source-overlay-identity.ts) | Exact identity of an optional data-only source overlay selected at compilation |
-| [semantic-profile-value-domain.ts](src/semantic-profile-value-domain.ts) | Profile-sensitive value admission by command surface |
+| [semantic-profile-value-domain.ts](src/semantic-profile-value-domain.ts) | Profile-sensitive value admission by command surface and restored carried state |
+| [runtime-state-carried-values.ts](src/runtime-state-carried-values.ts) | Single enumeration of every variable patch a RuntimeState carries |
 | [simple-boolean-expression.ts](src/simple-boolean-expression.ts) | Evaluation of one admitted Simple Boolean v1 AST over complete Process bindings |
 | [simple-boolean-choice-admission.ts](src/simple-boolean-choice-admission.ts) | Exact program admission for the Simple Boolean conditional-choice surface |
 | [exact-balanced-two-branch-topology.ts](src/exact-balanced-two-branch-topology.ts) | The exact entry, balanced two-branch split/join, and end control shape |

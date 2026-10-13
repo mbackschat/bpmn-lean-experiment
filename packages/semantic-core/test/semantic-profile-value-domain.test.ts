@@ -671,3 +671,30 @@ async function admittedProfiles(): Promise<readonly string[]> {
   assert.ok(profiles.length > 30, "profile enumeration must not be vacuous");
   return profiles;
 }
+
+// Each forged state holds one portable value at a different carried path; only the path differs, so a path the
+// enumerator skips is the only way a case can pass. The states are deliberately partial: the profile check reads
+// carried values only, and structural validity is restoration's separate obligation.
+test("refuses a portable value at every carried RuntimeState path", () => {
+  const map = bindings.get(VariableValueKind.Map);
+  assert.ok(map !== undefined);
+  const owner = initialState.scopeOccurrences[0]?.id ?? { processInstanceId: "Instance", elementId: "scope", activation: 1 };
+  const snapshot = { frames: [{ owner, bindings: [map] }] };
+  const handler = (lifecycle: "pending" | "compensating") => ({ lifecycle, restoredContext: snapshot });
+  const forged = (fields: Record<string, unknown>): RuntimeState => ({ ...initialState, ...fields }) as RuntimeState;
+  const variables = (fields: Record<string, unknown>) => forged({ variables: { ...initialState.variables, ...fields } });
+  for (const [path, state] of [
+    ["process", variables({ process: { bindings: [map] } })],
+    ["scopes", variables({ scopes: [{ owner, bindings: [map] }] })],
+    ["processInterfaces.inputs", variables({ processInterfaces: [{ owner, inputs: [map], outputs: [] }] })],
+    ["processInterfaces.outputs", variables({ processInterfaces: [{ owner, inputs: [], outputs: [map] }] })],
+    ["activities", variables({ activities: [{ owner, bindings: [map] }] })],
+    ["effectWaits", forged({ effectWaits: [{ arguments: [map] }] })],
+    ["compensationHandlerEffectWaits", forged({ compensationHandlerEffectWaits: [{ arguments: [map] }] })],
+    ["pending restoredContext", forged({ compensationTriggers: [{ handlers: [handler("pending")] }] })],
+    ["compensating restoredContext", forged({ compensationTriggers: [{ handlers: [handler("compensating")] }] })],
+    ["promoted snapshot", forged({ compensationParentContextRetentions: [{ kind: "promoted", snapshot }] })],
+  ] as const) {
+    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(SemanticProfileId.UserTaskPreservedNotation, state), false, path);
+  }
+});

@@ -284,6 +284,17 @@ test("round-trips all four compensation collections with deferred restored conte
   const trigger = state.compensationTriggers[0];
   const handler = trigger?.handlers[0];
   assert.ok(trigger !== undefined && handler?.lifecycle === "pending");
+  // PBV-INGRESS-01: the frozen context later feeds the handler's effect argument, so it is carried state too.
+  const portableContext = {
+    ...state,
+    compensationTriggers: [{ ...trigger, handlers: [{ ...handler, restoredContext: {
+      frames: [{ owner, bindings: [{ name: "completionContext", value: {
+        kind: VariableValueKind.Map, value: [{ name: "total", value: { kind: VariableValueKind.Decimal, coefficient: "12345", scale: 2 } }],
+      } }] }, { owner: parent, bindings: [] }],
+    } }] }],
+  } as const satisfies RuntimeState;
+  assert.throws(() => requireBpmnWorkflowContinuationStateV1(portableContext, program, instanceId),
+    /representable committed state/u);
   const { restoredContext: _restoredContext, ...handlerWithoutContext } = handler;
   void _restoredContext;
   assert.throws(

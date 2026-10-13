@@ -6,6 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
+import { carriedVariablePatches } from "./runtime-state-carried-values.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
@@ -281,15 +282,8 @@ export function runtimeStateCarriesOnlyProfilePortableValues(
   if (profileSelectsPortableValue(semanticProfile)) {
     return true;
   }
-  const { process, scopes, processInterfaces, activities } = state.variables;
-  return [
-    process.bindings,
-    ...scopes.map(({ bindings }) => bindings),
-    ...processInterfaces.flatMap(({ inputs, outputs }) => [inputs, outputs]),
-    ...activities.map(({ bindings }) => bindings),
-    ...state.effectWaits.map((wait) => wait.arguments),
-    ...(state.compensationHandlerEffectWaits ?? []).map((wait) => wait.arguments),
-  ].every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
+  return carriedVariablePatches(state)
+    .every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
 }
 
 function profileSelectsPortableValue(semanticProfile: string): boolean {
