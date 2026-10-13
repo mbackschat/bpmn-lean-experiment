@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-02` scalar admission agreement; its closure verdict belongs in the [admission receipt](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt). `PC-DATA-03` stays open for its other mapping surfaces.
+Current task: select the next bounded `PC-DATA-03` outcome. `PC-DATA-02` is done; its verdict is in the [admission receipt](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt).
 
-Deliverable: Lean and the semantic core agree on typed scalar support or refusal for every registered profile, command surface and scalar kind, keeping whole-scenario unsupported, direct refusal and strict wire decoding distinct.
+Deliverable: One bounded `PC-DATA-03` structured-value outcome, chosen from its surfaces not covered by the accepted portable handoff, with named acceptance blockers and budget.
 
-Acceptance blockers: an independent closure verdict on the exhaustive matrix and its four corrections (refused-Start result, not-started well-formedness, hosted Start admission, flag-free rollback classification), plus classification of the PMIS and unrelated-profile late-value obligations selected with this task.
+Acceptance blockers: The `PC-DATA-03` surfaces beyond the portable handoff (effect results, mappings, observations, restoration and over-bound rejection) are not yet inventoried against the accepted [portable value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md).
 
-Current result: The [exhaustive matrix](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) is green across 48 profiles; a seeded core-table mutation fails it. A flag-free rollback is now semantic `rolledBack` in the core as in Lean, while the Workflow keeps its closure failure; a Program without exactly one root scope is unsupported in both.
+Current result: `PC-DATA-02` closed with the exhaustive Lean/core value-domain matrix across 48 profiles and four corrections; PMIS admission is routed to `PC-MI-05`.
 
-Effort budget: 180 minutes wall from 2026-10-13 21:37 UTC through the exhaustive matrix, the two surface negatives and discrepancy classification; a correction that changes admission needs its own independent verdict. At the limit, stop and record before renewal.
+Effort budget: 30 minutes wall from 2026-10-13 23:12 UTC to inventory the remaining surfaces and replace this resume point with one selected outcome. At the limit, stop and record before renewal.
 
-Next action: run the focused gates once at the committed target and obtain the cold closure verdict from the generated packet.
+Next action: Read the `PC-DATA-03` row and the portable value contract's deferred surfaces, choose the outcome by shared mechanism and reach, and record its blockers and budget here.
 
-Oracle: a seeded one-cell domain mutation in either implementation must fail the matrix.
+Oracle: the selected outcome names one separating structured-value witness that the current implementation fails.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

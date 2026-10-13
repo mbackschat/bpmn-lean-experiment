@@ -204,8 +204,11 @@ The current receipt covers Start identity and selected Call/Compensation initial
 
 The earlier whole-scenario value-domain checkpoint remains approved: target `e1929dcf2fef58506a4acc9a57fb6f2552787e3e`, isolation `fork-turns-none`, verdict `approve`, correction audit `not-required`, recorded in commit `06c6f3f88a2cf28b7a3bd8b36a453ba84b56678c`. Neither receipt reconstructs historical reviews of this pre-policy specification.
 
+The `PC-DATA-02` combined checkpoint and closure on 2026-10-13 reviewed `d420ef63..7c07dbb2` against the exhaustive value-domain matrix and its four corrections. The reviewer found no core defect, required classification of the PMIS and unrelated-profile late-value obligations, and approved the bounded correction at `f180255b`.
+
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Semantic checkpoint | `2ec376f8c2d602975396ecec7cf5ad2c153c6ab6` | `fork-turns-none` | `approve` | `not-required` |
+| Closure | `7c07dbb27ce0e97097fe4b217dc800f9cc647685` | `fork-turns-none-combined` | `approve-with-required-edits` | `f180255bb0845287611b6e970bf1e00f3240df31` |
 
 The combined correction at `2ec376f8c2d602975396ecec7cf5ad2c153c6ab6` completed full Lean library qualification on 2026-10-13: `/tmp/start-data-library-resumed-20261013` passed all 898 jobs and its terminal receipt was separately asserted. This closes the admission repair’s batch qualification alongside the independent checkpoint approval; broader capability acceptance remains governed by its owning capsule.
