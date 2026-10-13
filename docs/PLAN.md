@@ -83,11 +83,11 @@ Deliverable: Carry a nested order through both tasks and terminal publication. A
 
 Acceptance blockers: AA-13 qualification and independent acceptance; recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: The AA-13 repair is committed at `fedb8850`; CIB, source/differential, affected platform and focused Lean gates pass. The pause-interrupted full Lean receipt `/tmp/aa13-full-lean-20261013` (exit 130) is retained. `890b010f` preserves deferred, unqualified scope/SMIS proof work; its command-resumption proof is a `#check` placeholder.
+Current result: The AA-13 repair is committed at `fedb8850` and exact-target qualification passes except two capacity cases attributed to the unchanged `programStartCapacity` hold. The cold review required corrections R1–R4: cost row, lossy parallel-scope Lean readers, the Work `fields` carve-out and the closed-wire 400 rule. `890b010f` preserves deferred, unqualified scope/SMIS proof work.
 
 Effort budget: 240 minutes wall from 2026-10-13 03:06 UTC, for AA-13 acceptance only, covering the documented 120-minute full-Lean and 10-minute Lean-checks allowances, integration, resource measurements and independent review. At the limit, stop and record before renewal.
 
-Next action: Qualify exactly `fedb8850`. Full Lean runs in the source-verified isolated tree under `/tmp/aa13-full-lean-resume-20261013`. Lean checks and Lean-dependent integration then run with `fedb8850` checked out, because `HEAD` carries `890b010f` evaluator changes. Then measure resources and obtain independent acceptance before recursive values.
+Next action: Commit the R1–R4 corrections, then obtain the same reviewer's correction audit and record acceptance in the [portable-value capsule](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-checkpoint) before recursive values.
 
 Oracle: Fractional rounding, underflow, noncanonical integer tokens, malformed UTF-8 and prototype keys reject independently; canonical controls and generic JSON numbers retain their selected behavior.
 
