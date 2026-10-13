@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select the next bounded `PC-DATA-03` outcome. `PC-DATA-02` is done; its verdict is in the [admission receipt](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt).
+Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt) is done. Message, Call, Multi-Instance, expression and form surfaces stay open.
 
-Deliverable: One bounded `PC-DATA-03` structured-value outcome, chosen from its surfaces not covered by the accepted portable handoff, with named acceptance blockers and budget.
+Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: The `PC-DATA-03` surfaces beyond the portable handoff (effect results, mappings, observations, restoration and over-bound rejection) are not yet inventoried against the accepted [portable value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md).
+Acceptance blockers: no consuming amendment of the [portable value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md) selects this surface's profile, port, mapping and capacity; no Lean or core effect domain admits a structured value; Worker transport and the hosted capacity envelope count none; no retained whole model exercises it.
 
-Current result: `PC-DATA-02` closed with the exhaustive Lean/core value-domain matrix across 48 profiles and four corrections; PMIS admission is routed to `PC-MI-05`.
+Current result: selected for reach (Service Tasks are the commonest automation) and because it reuses the exact-result mapper `PC-DATA-06` needs; the effect-result local patch already carries portable values.
 
-Effort budget: 30 minutes wall from 2026-10-13 23:12 UTC to inventory the remaining surfaces and replace this resume point with one selected outcome. At the limit, stop and record before renewal.
+Effort budget: 120 minutes wall from 2026-10-13 23:13 UTC through the reviewed amendment with its Temporal preflight; implementation is budgeted after approval. At the limit, stop and record before renewal.
 
-Next action: Read the `PC-DATA-03` row and the portable value contract's deferred surfaces, choose the outcome by shared mechanism and reach, and record its blockers and budget here.
+Next action: Write the amendment on the serial-handoff amendment's structure, then obtain its proposal review.
 
-Oracle: the selected outcome names one separating structured-value witness that the current implementation fails.
+Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
