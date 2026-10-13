@@ -48,43 +48,6 @@ def completeEffect? (program : Program) (state : RuntimeState) (id : EffectOccur
   if hasParallelScopeDefinition program wait.owner then completeParallelScopeEffect? program state id result
   else completeSerialEffect? program state id result
 
-/-- PMIS-DATA-01 conserves continuation marking through either exact Human completion route. -/
-theorem completeTask_continuation_marking (program : Program) (before after : RuntimeState)
-    (id : UserTaskInstanceId) (values : List VariableBinding)
-    (completed : completeTask? program before id values = some after)
-    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
-    continuationMarking after owner place = continuationMarking before owner place := by
-  unfold completeTask? at completed
-  split at completed <;> try contradiction
-  split at completed
-  · exact completeParallelScopeUserTask_continuation_marking program before after id values completed owner place
-  · obtain ⟨successor, applied, completed⟩ := Option.bind_eq_some_iff.mp completed
-    unfold completeUserTask at applied
-    split at applied <;> try contradiction
-    rename_i wait selected
-    have present := List.mem_of_find?_eq_some selected
-    cases Option.some.inj applied
-    cases Option.some.inj completed
-    exact human_continuation_exchange before wait _ present owner place
-
-/-- PMIS-DATA-01 conserves continuation marking through either exact Service completion route. -/
-theorem completeEffect_continuation_marking (program : Program) (before after : RuntimeState)
-    (id : EffectOccurrenceId) (result : EffectExecutionResult)
-    (completed : completeEffect? program before id result = some after)
-    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
-    continuationMarking after owner place = continuationMarking before owner place := by
-  unfold completeEffect? at completed
-  split at completed <;> try contradiction
-  rename_i candidates wait selected
-  split at completed
-  · exact completeParallelScopeEffect_continuation_marking program before after id result completed owner place
-  · simp only [completeSerialEffect?, selected] at completed
-    obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
-    cases Option.some.inj completed
-    have present : wait ∈ before.effectWaits :=
-      (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
-    exact effect_continuation_exchange before wait variables present owner place
-
 /-- Ordinary parent Human completion only changes its wait, continuation token and Process values. -/
 theorem completeTask_preserves_clean_entry (program : Program) (before after : RuntimeState)
     (id : UserTaskInstanceId) (values : List VariableBinding) (entry : ParallelScopeEntry)

@@ -5,7 +5,7 @@ import test from "node:test";
 import { ActivityNotFoundError, ApplicationFailure, WorkflowFailedError } from "@temporalio/client";
 import { CompleteAsyncError, Context } from "@temporalio/activity";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
-import { CommandOutcome, EffectExecutionResultKind, ScenarioStepKind, StimulusKind, VariableValueKind, advanceScenario, observeStableState, projectEffectTransportMaterial, projectOpenEffects } from "@bpmn-lean/semantic-core";
+import { CommandOutcome, EffectExecutionResultKind, MultiInstanceBodyKind, ScenarioStepKind, StimulusKind, VariableValueKind, advanceScenario, observeStableState, projectEffectTransportMaterial, projectOpenEffects } from "@bpmn-lean/semantic-core";
 import type { CanonicalObservation, VariableBinding } from "@bpmn-lean/semantic-core";
 import {
   BpmnWorkflowHostInputKind, EffectActivityResultKind, WorkflowChainBudgetKind, bpmnProcessWorkflowType,
@@ -16,6 +16,7 @@ import {
 } from "@bpmn-lean/temporal-testkit";
 import type { EffectRequest, TemporalHistory } from "@bpmn-lean/temporal-testkit";
 import { profile, source, prepareSource, sourceOverlay, parallelBodySource } from "../../../bpmn-source/test/sequential-scope-source-fixture.ts";
+import { sequentialOutputMappingSources } from "../../../bpmn-source/test/sequential-scope-output-mapping-fixture.ts";
 import { createInvoiceEffectActivities } from "../../runner/examples/invoice-effect-activities.ts";
 import { createBusinessTaskHostOracle } from "./business-task-host-oracle.ts";
 import { decodeJsonPayload, historyEvents } from "./temporal-history-facts.ts";
@@ -25,6 +26,140 @@ import type { WorkerLease } from "./temporal-worker-test-support.ts";
 import { waitForPublishedWorkflowChainState, workflowChainRuns } from "./workflow-chain-test-support.ts";
 
 const scalar = (name: string, value: string): VariableBinding => ({ name, value: { kind: VariableValueKind.String, value } });
+
+test("private sequential MI output mappings preserve distinct and shared String/null writes through turnover and every-Run replay", { timeout: 60_000 }, async t => {
+  const sources = (await sequentialOutputMappingSources()).filter(({ shape }) => shape !== "single");
+  const requests: EffectRequest[] = [];
+  const invoice = createInvoiceEffectActivities();
+  const nullable = (name: string, value: string | null): VariableBinding => value === null
+    ? { name, value: { kind: VariableValueKind.Null } } : scalar(name, value);
+  const results = new Map<string, readonly VariableBinding[]>();
+  const environment = await withDeadline(createCachedLocalEnvironment({
+    identity: "mi-output-mappings", downloadDirectory: temporalCacheDirectory,
+  }), 40_000, "MI output mapping environment startup");
+  let worker: WorkerLease | undefined;
+  try {
+    const bundle = await loadBpmnWorkflowBundle();
+    worker = await startBpmnTestWorker(environment, bundle, "mi-output-mappings", {
+      executeBpmnEffect: async request => {
+        requests.push(structuredClone(request));
+        await invoice.executeBpmnEffect(request);
+        const payload = request.arguments.find(binding => binding.name === "payload")?.value;
+        assert.ok(payload?.kind === VariableValueKind.String);
+        const localPatch = results.get(payload.value);
+        assert.ok(localPatch !== undefined);
+        return { kind: EffectExecutionResultKind.Success, localPatch };
+      },
+    });
+    for (const sourceCase of sources) {
+      await t.test(sourceCase.shape, async () => {
+        requests.length = 0;
+        const output = '<camunda:outputParameter name="decision">${result}</camunda:outputParameter>';
+        assert.equal(sourceCase.bytes.split(output).length, 2);
+        const xml = sourceCase.bytes.replace(output,
+          output + '<camunda:outputParameter name="duplicateDecision">${result}</camunda:outputParameter>');
+        const compiled = await compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(xml),
+          sourceId: `mi-hosted-output-${sourceCase.shape}`, expectedSha256: undefined, semanticProfile: profile,
+          sourceOverlay: sourceOverlay(), limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 5000 } });
+        assert.equal(compiled.status, BpmnCompilationStatus.Accepted, JSON.stringify(compiled.diagnostics));
+        if (compiled.status !== BpmnCompilationStatus.Accepted) assert.fail("Expected admitted three-target invoice output");
+        assert.deepEqual(compiled.copyExactBytes(), new TextEncoder().encode(xml));
+        const program = compiled.semanticProcess;
+        const firstNull = sourceCase.shape === "shared";
+        const items = [`INV-${firstNull ? "202" : "201"}`, `INV-${firstNull ? "201" : "202"}`];
+        for (const [index, item] of items.entries()) {
+          const isNull = index === 0 ? firstNull : !firstNull;
+          results.set(item, [nullable("result", isNull ? null : "accepted"),
+            ...(sourceCase.shape === "distinct" ? [nullable("summaryResult", isNull ? "audited" : null)] : [])]);
+        }
+        const initialVariables: VariableBinding[] = [scalar("decision", "parent-shadow"),
+          scalar("duplicateDecision", "previous-duplicate"),
+          { name: "items", value: { kind: VariableValueKind.StringList, value: items } },
+          scalar("summary", "previous-summary")];
+        const start = { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId,
+          instanceId: `mi-output-${sourceCase.shape}`, initialVariables } as const;
+        const workflowId = processWorkflowId(start.instanceId);
+        const oracle = createBusinessTaskHostOracle(environment, program, start);
+        const handle = await environment.client.workflow.start(bpmnProcessWorkflowType, {
+          args: [start, program, { protocol: bpmnWorkflowContinuationV1, kind: BpmnWorkflowHostInputKind.Initial,
+            eventHistoryEventLimit: 4,
+            eventHistoryByteLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryBytes) }],
+          taskQueue: bpmnSemanticTaskQueue, workflowId, workflowIdReusePolicy: "REJECT_DUPLICATE",
+        });
+        oracle.advance(start);
+        let previousBody: unknown;
+        let finalVariables: readonly VariableBinding[] = initialVariables;
+        for (const [index, item] of items.entries()) {
+          const review = oracle.state.userTaskWaits[0]!;
+          assert.equal(review.id.elementId, "Review");
+          assert.notDeepEqual(review.owner, previousBody);
+          assert.deepEqual(oracle.state.variables.scopes[0]?.bindings,
+            [scalar("decision", "unset"), scalar("reviewStatus", "pending")]);
+          await oracle.completeHuman("Review", `review-${index}`, [scalar("reviewStatus", `reviewed-${index}`)]);
+          const effect = projectOpenEffects(oracle.state)[0]!;
+          assert.deepEqual(effect.arguments, [scalar("payload", item), scalar("status", `reviewed-${index}`),
+            ...(sourceCase.shape === "distinct" ? [scalar("summaryResult", "argument-only")] : [])]);
+          oracle.completeEffect({ kind: EffectExecutionResultKind.Success, localPatch: results.get(item)! });
+          const published = await waitForPublishedWorkflowChainState(environment, workflowId, program, start.instanceId,
+            state => state.openUserTasks.length === 1 && state.openUserTasks[0]?.id.elementId === "Confirm");
+          assert.deepEqual(published, observeStableState(program, oracle.state));
+          const progress = published.openMultiInstances?.[0];
+          assert.ok(progress?.bodyKind === MultiInstanceBodyKind.SubProcess);
+          const iteration = progress.activeIterations[0]!;
+          assert.equal(iteration.loopCounter, index);
+          assert.deepEqual(iteration.body, review.owner);
+          const isNull = index === 0 ? firstNull : !firstNull;
+          const mapped = isNull ? null : "accepted";
+          const summary = sourceCase.shape === "distinct" ? isNull ? "audited" : null : mapped;
+          const expectedLocal = [nullable("decision", mapped), scalar("reviewStatus", `reviewed-${index}`)];
+          finalVariables = [scalar("decision", "parent-shadow"), nullable("duplicateDecision", mapped),
+            initialVariables[2]!, nullable("summary", summary)];
+          const assertWrites = (state: typeof published) => {
+            const current = state.openMultiInstances?.[0];
+            assert.ok(current?.bodyKind === MultiInstanceBodyKind.SubProcess);
+            assert.deepEqual(current.activeIterations[0]?.bindings, expectedLocal);
+            assert.deepEqual(state.variables, finalVariables);
+            assert.deepEqual(state.openEffects, []);
+          };
+          assertWrites(published);
+          // SMIS-DATA-01 and SBT-RESULT-01 require the oracle to reject lost targets and captured-input substitution.
+          assert.throws(() => assertWrites({ ...published, openMultiInstances: [{ ...progress,
+            activeIterations: [{ ...iteration, bindings: iteration.bindings.filter(binding => binding.name !== "decision") }] }] }));
+          assert.throws(() => assertWrites({ ...published,
+            variables: published.variables.filter(binding => binding.name !== "duplicateDecision") }));
+          assert.throws(() => assertWrites({ ...published, variables: published.variables.map(binding => binding.name === "summary"
+            ? scalar("summary", "argument-only") : binding) }));
+          await oracle.assertPublications();
+          await oracle.completeHuman("Confirm", `confirm-${index}`);
+          previousBody = review.owner;
+        }
+        await oracle.completeHuman("PublishBatch", "publish");
+        const terminal = await withDeadline(readTestProcessTerminalResult(handle), 20_000, "MI mapped-output terminal result");
+        assert.deepEqual(terminal.receipt.finalState, observeStableState(program, oracle.state));
+        assert.deepEqual(terminal.receipt.finalState.variables, finalVariables);
+        assert.deepEqual(terminal.receipt.finalState.openMultiInstances, []);
+        await oracle.assertPublications();
+        assert.deepEqual(requests, oracle.requests);
+        const runs = await workflowChainRuns(environment, workflowId);
+        assert.ok(runs.length > 1);
+        const trace: CanonicalObservation[] = [];
+        let completedEffects = 0;
+        for (const run of runs) {
+          const runHandle = environment.client.workflow.getHandle(workflowId, run.runId);
+          const history = await runHandle.fetchHistory();
+          trace.push(...await runHandle.query<readonly CanonicalObservation[]>(bpmnTraceQueryName));
+          completedEffects += historyEvents(history as TemporalHistory, "activityTaskCompletedEventAttributes").length;
+          await replayBpmnHistory(bundle, history, workflowId);
+        }
+        assert.equal(completedEffects, 2);
+        assert.deepEqual(trace, oracle.trace);
+      });
+    }
+  } finally {
+    if (worker !== undefined) await stopBpmnTestWorker(worker);
+    await environment.teardown();
+  }
+});
 
 test("private sequential MI preserves parallel body progress through Worker loss, continuation and every-Run replay", async () => {
   const xml = parallelBodySource(prepareSource(await readFile(source, "utf8")), 3, true);

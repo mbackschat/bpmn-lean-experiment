@@ -745,6 +745,61 @@ theorem sequentialScope_invariant_effect_completion (program : Program) (analysi
   exact sequentialScope_invariant_frame program { before with variables := writtenVariables } _ updated rfl rfl rfl rfl rfl
     updated.processData (fun _ _ => rfl)
 
+/-- SMIS-ADMIT-01 exposes actual owner selection and the exact body-operation result once for invariant and certificate consumers. -/
+theorem sequentialScope_body_fire_outcome (program : Program) (operation : SemanticOperation)
+    (bodyOperations : List SemanticOperation) (vertex : StructuredParallelBody.Vertex) (before after : RuntimeState)
+    (admitted : SequentialScopeControl.bodyVertex? bodyOperations operation = some vertex)
+    (absent : program.compensationEventSubProcessSnapshots = none)
+    (fired : fire? program operation before = some after) :
+    ∃ owner, match operation with
+    | .awaitUserTask _ _ input output task =>
+        onlyTokenOwner? before input = some owner ∧
+          after = activateUserTask before owner.processInstanceId owner input output task
+    | .awaitEffect _ _ input output effect route =>
+        onlyTokenOwner? before input = some owner ∧ ∃ arguments,
+          after = activateEffect before owner.processInstanceId owner input output effect route arguments
+    | .duplicate _ _ input outputs =>
+        onlyTokenOwner? before input = some owner ∧ after = duplicateToken before owner input outputs
+    | .synchronize _ _ inputs output =>
+        commonTokenOwner? before inputs = some owner ∧ after = synchronizeTokens before owner inputs output
+    | .reachNoneEnd _ _ input =>
+        onlyTokenOwner? before input = some owner ∧ after = reachNoneEndToken before owner input
+    | _ => False := by
+  cases operation <;> simp only [SequentialScopeControl.bodyVertex?] at admitted <;> try contradiction
+  all_goals simp only [fire?, absent] at fired
+  case awaitUserTask =>
+    change awaitUserTaskState? before _ _ _ = some after at fired
+    simp only [awaitUserTaskState?, bind, pure, Option.bind_eq_some_iff] at fired
+    obtain ⟨owner, selected, instanceId, _, fired⟩ := fired
+    cases Option.some.inj fired
+    exact ⟨owner, selected, rfl⟩
+  case awaitEffect =>
+    change awaitEffectState? program before _ _ _ _ = some after at fired
+    simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at fired
+    obtain ⟨owner, selected, instanceId, _, arguments, _, fired⟩ := fired
+    split at fired <;> try contradiction
+    cases Option.some.inj fired
+    exact ⟨owner, selected, arguments, rfl⟩
+  case duplicate =>
+    change duplicateState? before _ _ = some after at fired
+    simp only [duplicateState?, bind, pure, Option.bind_eq_some_iff] at fired
+    obtain ⟨owner, selected, fired⟩ := fired
+    cases Option.some.inj fired
+    exact ⟨owner, selected, rfl⟩
+  case synchronize =>
+    change synchronizeState? before _ _ = some after at fired
+    simp only [synchronizeState?, bind, pure, Option.bind_eq_some_iff] at fired
+    obtain ⟨owner, selected, fired⟩ := fired
+    cases Option.some.inj fired
+    exact ⟨owner, selected, rfl⟩
+  case reachNoneEnd =>
+    change reachNoneEndState? before _ = some after at fired
+    simp only [reachNoneEndState?, bind, pure, Option.bind_eq_some_iff] at fired
+    obtain ⟨owner, selected, instanceId, _, fired⟩ := fired
+    cases Option.some.inj fired
+    exact ⟨owner, selected, rfl⟩
+
+
 /-- Every operation admitted by the MI body graph preserves the boundary through the actual operation evaluator. -/
 theorem sequentialScope_invariant_body_fire (program : Program) (operation : SemanticOperation)
     (bodyOperations : List SemanticOperation) (vertex : StructuredParallelBody.Vertex) (before after : RuntimeState)
@@ -753,42 +808,11 @@ theorem sequentialScope_invariant_body_fire (program : Program) (operation : Sem
     (absent : program.compensationEventSubProcessSnapshots = none)
     (fired : fire? program operation before = some after) :
     SequentialScopeBoundaryInvariant program after := by
+  obtain ⟨owner, outcome⟩ := sequentialScope_body_fire_outcome program operation bodyOperations vertex before after admitted absent fired
   cases operation <;> simp only [SequentialScopeControl.bodyVertex?] at admitted <;> try contradiction
-  all_goals simp only [fire?, absent] at fired
-  case awaitUserTask =>
-    change awaitUserTaskState? before _ _ _ = some after at fired
-    simp only [awaitUserTaskState?, bind, pure, Option.bind_eq_some_iff] at fired
-    obtain ⟨owner, _, instanceId, _, fired⟩ := fired
-    cases Option.some.inj fired
-    exact sequentialScope_invariant_frame program before _ invariant rfl rfl rfl rfl rfl
-      invariant.processData (fun _ _ => rfl)
-  case awaitEffect =>
-    change awaitEffectState? program before _ _ _ _ = some after at fired
-    simp only [awaitEffectState?, bind, pure, Option.bind_eq_some_iff] at fired
-    obtain ⟨owner, _, instanceId, _, arguments, _, fired⟩ := fired
-    split at fired <;> try contradiction
-    cases Option.some.inj fired
-    exact sequentialScope_invariant_frame program before _ invariant rfl rfl rfl rfl rfl
-      invariant.processData (fun _ _ => rfl)
-  case duplicate =>
-    change duplicateState? before _ _ = some after at fired
-    simp only [duplicateState?, bind, pure, Option.bind_eq_some_iff] at fired
-    obtain ⟨owner, _, fired⟩ := fired
-    cases Option.some.inj fired
-    exact sequentialScope_invariant_frame program before _ invariant rfl rfl rfl rfl rfl
-      invariant.processData (fun _ _ => rfl)
-  case synchronize =>
-    change synchronizeState? before _ _ = some after at fired
-    simp only [synchronizeState?, bind, pure, Option.bind_eq_some_iff] at fired
-    obtain ⟨owner, _, fired⟩ := fired
-    cases Option.some.inj fired
-    exact sequentialScope_invariant_frame program before _ invariant rfl rfl rfl rfl rfl
-      invariant.processData (fun _ _ => rfl)
-  case reachNoneEnd =>
-    change reachNoneEndState? before _ = some after at fired
-    simp only [reachNoneEndState?, bind, pure, Option.bind_eq_some_iff] at fired
-    obtain ⟨owner, _, instanceId, _, fired⟩ := fired
-    cases Option.some.inj fired
+  all_goals dsimp only at outcome
+  all_goals first | obtain ⟨_, rfl⟩ := outcome | obtain ⟨_, arguments, rfl⟩ := outcome
+  all_goals
     exact sequentialScope_invariant_frame program before _ invariant rfl rfl rfl rfl rfl
       invariant.processData (fun _ _ => rfl)
 

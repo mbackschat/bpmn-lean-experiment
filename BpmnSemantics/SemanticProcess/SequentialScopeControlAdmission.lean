@@ -1,17 +1,13 @@
 import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.ClosureLimit
+import BpmnSemantics.SemanticProcess.ContinuationMarking
 
 /-! SMIS-ADMIT-01 composes body bursts with the outer lifecycle; generic graph and data admission remain separate conjuncts. -/
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeControl
 
-def inputs : SemanticOperation → List ControlPlaceId
-  | .awaitUserTask _ _ input .. | .awaitEffect _ _ input ..
-  | .enterSequentialMultiInstanceScope _ _ input .. | .enterParallelMultiInstanceScope _ _ input .. | .duplicate _ _ input _
-  | .reachNoneEnd _ _ input => [input]
-  | .synchronize _ _ places _ => places
-  | _ => []
+def inputs : SemanticOperation → List ControlPlaceId := bodyConsumedPorts
 
 def consumer? (operations : List SemanticOperation) (place : ControlPlaceId) : Option String := do
   let [operation] := operations.filter (fun operation => (inputs operation).contains place) | none
@@ -93,5 +89,68 @@ def analyze (program : Program) : Option Analysis := do
           let maximum := maximumBurst bursts before after
           if maximum > scenarioClosureLimit then none
           else return ⟨entry.id, entry.childScopeId, maximum⟩
+
+/-- SMIS-ADMIT-01 retains the exact graph and parent spine used to calculate the accepted command bound. -/
+theorem analyze_body_certificate (program : Program) (analysis : Analysis)
+    (accepted : analyze program = some analysis) :
+    ∃ (entry : SequentialScopeEntry) (root : DefinitionScope)
+      (parent child body : List SemanticOperation) (completion : SemanticOperation)
+      (origin : BpmnElementOrigin) (waits : Nat × Nat) (first : String)
+      (vertices : List StructuredParallelBody.Vertex) (bursts : StructuredParallelBody.Bursts),
+      program.operations.filterMap sequentialScopeEntry? = [entry] ∧
+      program.definitionScopes.filter (·.parentScopeId.isNone) = [root] ∧
+      parent = program.operations.filter (fun operation => program.operationScopes.any
+        (fun owner => owner.operationId == operation.id && owner.scopeId == root.id)) ∧
+      child = program.operations.filter (fun operation => program.operationScopes.any
+        (fun owner => owner.operationId == operation.id && owner.scopeId == entry.childScopeId)) ∧
+      child.filter (fun operation => match operation with
+        | .completeSequentialMultiInstanceScope .. => true | _ => false) = [completion] ∧
+      completion = .completeSequentialMultiInstanceScope completion.id origin entry.id ∧
+      origin.elementId = entry.elementId ∧ body = child.filter (·.id != completion.id) ∧
+      parentWaits? parent entry.id = some waits ∧ consumer? body entry.childEntry = some first ∧
+      body.mapM (bodyVertex? body) = some vertices ∧
+      StructuredParallelBody.analyze (⟨entry.id.value, .start, [first]⟩ :: vertices) = some bursts ∧
+      analysis = ⟨entry.id, entry.childScopeId, maximumBurst bursts waits.1 waits.2⟩ ∧
+      analysis.maximumBurst ≤ scenarioClosureLimit := by
+  unfold analyze at accepted
+  split at accepted <;> try contradiction
+  split at accepted <;> try contradiction
+  rename_i entries entry entrySelected
+  split at accepted <;> try contradiction
+  rename_i roots root rootSelected
+  split at accepted <;> try contradiction
+  dsimp only at accepted
+  split at accepted <;> try contradiction
+  try dsimp only at accepted
+  split at accepted <;> try contradiction
+  rename_i completions completion completionSelected
+  split at accepted <;> try contradiction
+  rename_i id origin entryId
+  split at accepted <;> try contradiction
+  rename_i paired
+  try dsimp only at accepted
+  obtain ⟨waits, waitsSelected, accepted⟩ := Option.bind_eq_some_iff.mp accepted
+  obtain ⟨first, firstSelected, accepted⟩ := Option.bind_eq_some_iff.mp accepted
+  obtain ⟨vertices, verticesSelected, accepted⟩ := Option.bind_eq_some_iff.mp accepted
+  obtain ⟨bursts, burstsSelected, accepted⟩ := Option.bind_eq_some_iff.mp accepted
+  split at accepted <;> try contradiction
+  rename_i limited
+  cases Option.some.inj accepted
+  let parent := program.operations.filter (fun operation => program.operationScopes.any
+    (fun owner => owner.operationId == operation.id && owner.scopeId == root.id))
+  let child := program.operations.filter (fun operation => program.operationScopes.any
+    (fun owner => owner.operationId == operation.id && owner.scopeId == entry.childScopeId))
+  let completion := SemanticOperation.completeSequentialMultiInstanceScope id origin entryId
+  let body := child.filter (·.id != completion.id)
+  refine ⟨entry, root, parent, child, body, completion, origin, waits, first, vertices, bursts,
+    entrySelected, rootSelected, rfl, rfl, completionSelected, ?_, ?_, rfl,
+    waitsSelected, firstSelected, verticesSelected, burstsSelected, rfl, ?_⟩
+  · have same : entryId = entry.id := by
+      simp only [Bool.or_eq_true, bne_iff_ne, not_or] at paired
+      exact Classical.byContradiction paired.1
+    simp only [completion, SemanticOperation.id, same]
+  · simp only [Bool.or_eq_true, bne_iff_ne, not_or] at paired
+    exact Classical.byContradiction paired.2
+  · exact Nat.le_of_not_gt limited
 
 end BpmnSemantics.SemanticProcess.SequentialScopeControl

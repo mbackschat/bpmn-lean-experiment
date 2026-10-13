@@ -21,7 +21,8 @@ private theorem filter_erase_of_false {α : Type} [BEq α] [LawfulBEq α]
   have kept := (List.mem_filter.mp member).2
   simp [absent] at kept
 
-private theorem human_disposal_valid (program : Program) (before : RuntimeState)
+/-- Exact Human wait disposal preserves projection independently of the enclosing repeated-scope family. -/
+theorem human_disposal_valid (program : Program) (before : RuntimeState)
     (wait : UserTaskWait) (variables : ScopedVariables)
     (activities : variables.activities = before.variables.activities)
     (prior : flowNodeOccurrenceWaitProgramValidity program before = true)
@@ -159,7 +160,8 @@ theorem completeTask_wait_program_validity (program : Program)
     cases Option.some.inj completed
     exact human_disposal_valid program before _ _ rfl prior messages timers
 
-private theorem service_disposal_valid (program : Program) (before : RuntimeState)
+/-- Exact Service wait and local-frame disposal preserves projection independently of the enclosing repeated-scope family. -/
+theorem service_disposal_valid (program : Program) (before : RuntimeState)
     (wait : EffectWait) (member : wait ∈ before.effectWaits)
     (variables : ScopedVariables) (activities : variables.activities = before.variables.activities)
     (prior : flowNodeOccurrenceWaitProgramValidity program before = true)

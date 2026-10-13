@@ -261,7 +261,8 @@ private def occurrenceBatchPublications? (program : Program) (commandId : Semant
   acceptOccurrencePublicationPrefixes? program state publications successors
   pure publications
 
-private def executeSelectedFrontier? (program : Program) (commandId : SemanticId)
+/-- Execute the selected offers using the scheduler's actual singleton, reservation or revalidated-batch path. The cursor induction exposes this operation so preservation proofs can retain exact execution provenance. -/
+def executeSelectedFrontier? (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (frontier : InternalExecutionFrontier)
     (offers : List InternalExecutionOffer) : Option InternalClosureStep :=
   match frontier.occurrenceBatch with

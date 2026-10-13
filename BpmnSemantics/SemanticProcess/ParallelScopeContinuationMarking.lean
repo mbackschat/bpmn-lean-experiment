@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
@@ -14,197 +15,91 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 open InternalCommutation
+open ContinuationMarkingLaws
 
-def bodyConsumedPorts : SemanticOperation → List ControlPlaceId := SequentialScopeControl.inputs
+/-- Actual scoped Human completion conserves every owner/place continuation marking. -/
+theorem completeParallelScopeUserTask_continuation_marking
+    (program : Program) (before after : RuntimeState) (id : UserTaskInstanceId)
+    (values : List VariableBinding)
+    (completed : completeParallelScopeUserTask? program before id values = some after)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
+    continuationMarking after owner place = continuationMarking before owner place := by
+  unfold completeParallelScopeUserTask? at completed
+  split at completed <;> try contradiction
+  rename_i candidates wait selected
+  have present : wait ∈ before.waits :=
+    (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
+  split at completed <;> try contradiction
+  obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  cases Option.some.inj completed
+  exact human_continuation_exchange before wait variables present owner place
 
-def bodyProducedPorts : SemanticOperation → List ControlPlaceId
-  | .awaitUserTask _ _ _ output _ | .awaitEffect _ _ _ output .. |
-    .synchronize _ _ _ output => [output]
-  | .duplicate _ _ _ outputs => outputs
-  | _ => []
+/-- Actual scoped Service completion conserves marking independently of mapped data writes. -/
+theorem completeParallelScopeEffect_continuation_marking
+    (program : Program) (before after : RuntimeState) (id : EffectOccurrenceId)
+    (result : EffectExecutionResult)
+    (completed : completeParallelScopeEffect? program before id result = some after)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
+    continuationMarking after owner place = continuationMarking before owner place := by
+  unfold completeParallelScopeEffect? at completed
+  split at completed <;> try contradiction
+  rename_i candidates wait selected
+  have present : wait ∈ before.effectWaits :=
+    (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
+  cases result <;> try contradiction
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  split at completed <;> try contradiction
+  obtain ⟨projected, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+  cases Option.some.inj completed
+  exact effect_continuation_exchange before wait
+    { variables with activities := variables.activities.filter fun scope => !activityScopeMatches id scope }
+    present owner place
+  case h_2 =>
+    rename_i patch missingResult impossible
+    exact False.elim (impossible patch rfl)
 
-def ownedPortCount (ports : List ControlPlaceId) (owner queried : ScopeOccurrenceId)
-    (place : ControlPlaceId) : Nat :=
-  (ports.filter (fun port => owner == queried && port == place)).length
+namespace ParallelScopeCommand
 
-/-- Exact ownership makes every declared port contribution zero at another scope occurrence. -/
-theorem ownedPortCount_foreign (ports : List ControlPlaceId) (owner queried : ScopeOccurrenceId)
-    (place : ControlPlaceId) (different : owner ≠ queried) :
-    ownedPortCount ports owner queried place = 0 := by
-  simp [ownedPortCount, different]
-
-private def tokenCount (tokens : List ControlToken) (owner : ScopeOccurrenceId)
-    (place : ControlPlaceId) : Nat :=
-  (tokens.filter (fun token => token.owner == owner && token.placeId == place)).length
-
-private theorem remove_balance (tokens : List ControlToken) (input : ControlPlaceId)
-    (owner queried : ScopeOccurrenceId) (place : ControlPlaceId)
-    (present : ({ placeId := input, owner } : ControlToken) ∈ tokens) :
-    tokenCount (removeToken tokens input owner) queried place +
-      ownedPortCount [input] owner queried place = tokenCount tokens queried place := by
-  have count := ((List.perm_cons_erase present).filter
-    (fun token => token.owner == queried && token.placeId == place)).length_eq
-  unfold tokenCount ownedPortCount
-  rw [removeToken_eq_erase]
-  cases selectedInput : (owner == queried && input == place) <;>
-    simpa [selectedInput, Nat.add_comm] using count.symm
-
-private theorem remove_many_balance (tokens : List ControlToken) (inputs : List ControlPlaceId)
-    (owner queried : ScopeOccurrenceId) (place : ControlPlaceId) (unique : inputs.Nodup)
-    (present : ∀ input ∈ inputs, ({ placeId := input, owner } : ControlToken) ∈ tokens) :
-    tokenCount (removeTokens tokens inputs owner) queried place +
-      ownedPortCount inputs owner queried place = tokenCount tokens queried place := by
-  induction inputs generalizing tokens with
-  | nil => simp [removeTokens, ownedPortCount]
-  | cons input rest ih =>
-      have first := remove_balance tokens input owner queried place (present input (by simp))
-      have tail := ih (removeToken tokens input owner) (List.nodup_cons.mp unique).2
-        (fun next member => by
-          rw [removeToken_eq_erase, List.mem_erase_of_ne]
-          · exact present next (by simp [member])
-          · intro same
-            apply (List.nodup_cons.mp unique).1
-            have equal : next = input := congrArg ControlToken.placeId same
-            exact equal ▸ member)
-      change tokenCount (removeTokens (removeToken tokens input owner) rest owner) queried place + _ = _
-      have ports : ownedPortCount (input :: rest) owner queried place =
-          ownedPortCount [input] owner queried place + ownedPortCount rest owner queried place := by
-        unfold ownedPortCount
-        simp only [List.filter_cons]
-        split <;> simp [Nat.add_comm]
-      rw [ports]
-      omega
-
-private theorem add_many_count (tokens : List ControlToken) (outputs : List ControlPlaceId)
-    (owner queried : ScopeOccurrenceId) (place : ControlPlaceId) :
-    tokenCount (addTokens tokens outputs owner) queried place =
-      tokenCount tokens queried place + ownedPortCount outputs owner queried place := by
-  have count := ((addTokens_perm tokens outputs owner).filter
-    (fun token => token.owner == queried && token.placeId == place)).length_eq
-  simpa [tokenCount, ownedPortCount, List.filter_append, List.filter_map,
-    Function.comp_def, Nat.add_comm] using count
-
-private theorem token_present (tokens : List ControlToken) (owner : ScopeOccurrenceId)
-    (place : ControlPlaceId)
-    (unit : (tokens.filter fun token => token.placeId == place && token.owner == owner).length = 1) :
-    ({ placeId := place, owner } : ControlToken) ∈ tokens := by
-  have positive : 0 < (tokens.filter fun token => token.placeId == place && token.owner == owner).length := by omega
-  obtain ⟨token, member⟩ := List.exists_mem_of_length_pos positive
-  obtain ⟨tokenMember, selected⟩ := List.mem_filter.mp member
-  simp only [Bool.and_eq_true, beq_iff_eq] at selected
-  cases token
-  cases selected.1
-  cases selected.2
-  exact tokenMember
-
-private theorem user_arm_balance (before : RuntimeState) (instanceId : SemanticId)
-    (owner queried : ScopeOccurrenceId) (input output place : ControlPlaceId) (task : UserTaskDefinition)
-    (present : ({ placeId := input, owner } : ControlToken) ∈ before.tokens) :
-    continuationMarking (activateUserTask before instanceId owner input output task) queried place +
-      ownedPortCount [input] owner queried place =
-      continuationMarking before queried place + ownedPortCount [output] owner queried place := by
-  have removed := remove_balance before.tokens input owner queried place present
-  have inserted := length_filter_insertUserTaskWait
-    (fun wait => wait.owner == queried && wait.output == place)
-    { processInstanceId := instanceId, owner, task, activation := activationCount before task.id + 1,
-      output, metadata := task.metadata } before.waits
-  simp only [continuationMarking, activateUserTask]
-  dsimp only at inserted ⊢
-  unfold ownedPortCount tokenCount at *
-  cases selected : (owner == queried && output == place) <;>
-    simp [selected] at inserted ⊢ <;> omega
-
-private theorem effect_arm_balance (before : RuntimeState) (instanceId : SemanticId)
-    (owner queried : ScopeOccurrenceId) (input output place : ControlPlaceId)
-    (effect : EffectDefinition) (route : Option BpmnErrorRoute) (arguments : List VariableBinding)
-    (present : ({ placeId := input, owner } : ControlToken) ∈ before.tokens) :
-    continuationMarking (activateEffect before instanceId owner input output effect route arguments) queried place +
-      ownedPortCount [input] owner queried place =
-      continuationMarking before queried place + ownedPortCount [output] owner queried place := by
-  have removed := remove_balance before.tokens input owner queried place present
-  have inserted := length_filter_canonicalInsertBy effectWaitBefore
-    (fun wait : EffectWait => wait.owner == queried && wait.output == place)
-    { processInstanceId := instanceId, owner, elementId := effect.elementId,
-      activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-      arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route } before.effectWaits
-  simp only [continuationMarking, activateEffect, insertEffectWait]
-  dsimp only at inserted ⊢
-  unfold ownedPortCount tokenCount at *
-  cases selected : (owner == queried && output == place) <;>
-    simp [selected] at inserted ⊢ <;> omega
-
-/-- Successful actual body execution consumes and produces precisely its declared owned ports. -/
-theorem applyInternalOperationOccurrence_continuation_balance
-    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
-    (operation : SemanticOperation)
-    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
-    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
-      .duplicate, .synchronize, .reachNoneEnd])
-    (applied : applyInternalOperationOccurrence? program before candidate = some after)
-    (queried : ScopeOccurrenceId) (place : ControlPlaceId) :
-    continuationMarking after queried place + ownedPortCount (bodyConsumedPorts operation) candidate.owner queried place =
-      continuationMarking before queried place + ownedPortCount (bodyProducedPorts operation) candidate.owner queried place := by
-  cases control : before.control <;> try { simp [applyInternalOperationOccurrence?, control] at applied }
-  cases operation <;> simp [SemanticOperation.kind] at bodyOperation
-  all_goals simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied
-  case awaitUserTask id origin input output task =>
+/-- PMIS-DATA-01 conserves continuation marking through either exact Human completion route. -/
+theorem completeTask_continuation_marking (program : Program) (before after : RuntimeState)
+    (id : UserTaskInstanceId) (values : List VariableBinding)
+    (completed : completeTask? program before id values = some after)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
+    continuationMarking after owner place = continuationMarking before owner place := by
+  unfold completeTask? at completed
+  split at completed <;> try contradiction
+  split at completed
+  · exact completeParallelScopeUserTask_continuation_marking program before after id values completed owner place
+  · obtain ⟨successor, applied, completed⟩ := Option.bind_eq_some_iff.mp completed
+    unfold completeUserTask at applied
     split at applied <;> try contradiction
-    rename_i valid
-    have unit : (before.tokens.filter fun token => token.placeId == input && token.owner == candidate.owner).length = 1 := by
-      simp only [Bool.or_eq_true, Bool.not_eq_true, not_or] at valid
-      have first := valid.1.1.1
-      cases unitEq : ((before.tokens.filter fun token => token.placeId == input && token.owner == candidate.owner).length == 1) <;>
-        simp_all
-    cases parallel : hasParallelScopeDefinition program candidate.owner <;>
-      simp only [parallel, ↓reduceIte, pure, Option.bind_some] at applied
-    · cases Option.some.inj applied
-      exact user_arm_balance before _ candidate.owner queried input output place task (token_present _ _ _ unit)
-    · obtain ⟨_, _, applied⟩ := Option.bind_eq_some_iff.mp applied
-      cases Option.some.inj applied
-      exact user_arm_balance before _ candidate.owner queried input output place task (token_present _ _ _ unit)
-  case awaitEffect id origin input output effect route =>
-    split at applied <;> try contradiction
-    rename_i valid
-    have unit : (before.tokens.filter fun token => token.placeId == input && token.owner == candidate.owner).length = 1 := by
-      simp only [Bool.or_eq_true, Bool.not_eq_true, not_or] at valid
-      have first := valid.1.1.1
-      cases unitEq : ((before.tokens.filter fun token => token.placeId == input && token.owner == candidate.owner).length == 1) <;>
-        simp_all
-    cases parallel : hasParallelScopeDefinition program candidate.owner <;>
-      simp only [parallel, ↓reduceIte] at applied
-    all_goals
-      obtain ⟨arguments, _, applied⟩ := Option.bind_eq_some_iff.mp applied
-      cases Option.some.inj applied
-      exact effect_arm_balance before _ candidate.owner queried input output place effect route arguments (token_present _ _ _ unit)
-  case duplicate id origin input outputs =>
-    split at applied <;> try contradiction
-    rename_i unit
+    rename_i wait selected
+    have present := List.mem_of_find?_eq_some selected
     cases Option.some.inj applied
-    have removed := remove_balance before.tokens input candidate.owner queried place (token_present _ _ _ (by simpa using unit))
-    have added := add_many_count (removeToken before.tokens input candidate.owner) outputs candidate.owner queried place
-    simp only [bodyConsumedPorts, SequentialScopeControl.inputs, bodyProducedPorts, continuationMarking, duplicateToken]
-    unfold tokenCount at removed added
-    omega
-  case synchronize id origin inputs output =>
-    split at applied <;> try contradiction
-    rename_i valid
-    simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, beq_iff_eq] at valid
-    cases Option.some.inj applied
-    have removed := remove_many_balance before.tokens inputs candidate.owner queried place valid.1.2
-      (fun input member => token_present _ _ _ (valid.2 input member))
-    have added := add_many_count (removeTokens before.tokens inputs candidate.owner) [output] candidate.owner queried place
-    simp only [bodyConsumedPorts, SequentialScopeControl.inputs, bodyProducedPorts, continuationMarking, synchronizeTokens]
-    simp only [addTokens, List.foldr_cons, List.foldr_nil] at added
-    unfold tokenCount at removed added
-    omega
-  case reachNoneEnd id origin input =>
-    split at applied <;> try contradiction
-    rename_i unit
-    cases Option.some.inj applied
-    have removed := remove_balance before.tokens input candidate.owner queried place (token_present _ _ _ (by simpa using unit))
-    simp only [bodyConsumedPorts, SequentialScopeControl.inputs, bodyProducedPorts, continuationMarking, reachNoneEndToken, ownedPortCount, List.filter_nil, List.length_nil, Nat.add_zero]
-    unfold tokenCount ownedPortCount at removed
-    omega
+    cases Option.some.inj completed
+    exact human_continuation_exchange before wait _ present owner place
+
+/-- PMIS-DATA-01 conserves continuation marking through either exact Service completion route. -/
+theorem completeEffect_continuation_marking (program : Program) (before after : RuntimeState)
+    (id : EffectOccurrenceId) (result : EffectExecutionResult)
+    (completed : completeEffect? program before id result = some after)
+    (owner : ScopeOccurrenceId) (place : ControlPlaceId) :
+    continuationMarking after owner place = continuationMarking before owner place := by
+  unfold completeEffect? at completed
+  split at completed <;> try contradiction
+  rename_i candidates wait selected
+  split at completed
+  · exact completeParallelScopeEffect_continuation_marking program before after id result completed owner place
+  · simp only [completeSerialEffect?, selected] at completed
+    obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
+    cases Option.some.inj completed
+    have present : wait ∈ before.effectWaits :=
+      (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
+    exact effect_continuation_exchange before wait variables present owner place
+
+end ParallelScopeCommand
 
 /-- The exact outer Activity holds its normal parent continuation while parallel bodies are live. -/
 def parentContinuationMarking (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId)
