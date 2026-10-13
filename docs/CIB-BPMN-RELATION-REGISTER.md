@@ -22,12 +22,12 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 13 | 1 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 14 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 17 | 1 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 8 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| CIB extension records | 19 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 9 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
@@ -541,9 +541,9 @@ CIB input parameters capture enclosing values into each concurrently created bod
 
 ### CIB-EXT-0019 — structured business-task inputs and local results
 
-**Status:** Proposed bounded extension under the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); no profile references it yet.
+**Status:** Candidate bounded extension for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review, profile selection and qualification pending.
 
-CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw variable object and stores that reference without copying (`OutputParameter.java:47,52`, `AbstractVariableScope.java:149-153,317-319`, JUEL `TypeConverterImpl.java:343-345`). Output mapping runs when the Activity scope is destroyed, after the delegate returns, and then removes every Activity-local variable (`ExecutionEntity.java:523-527,554`). The selected account carries one `SingletonBusinessItem` per mapped name and copies it by value.
+CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw variable object and stores that reference without copying (`InputParameter.java:46,51`, `OutputParameter.java:47,52`, `AbstractVariableScope.java:149-153,317-319`, JUEL `TypeConverterImpl.java:343-345`). Output mapping runs when the Activity scope is destroyed, after the delegate returns, and then removes every Activity-local variable (`ExecutionEntity.java:523-527,554`). BPMN 2.0.2 §10.4.1 states that executing a Data Association copies data to its target; the selected account follows it, carrying one `SingletonBusinessItem` per mapped name by value.
 
 **Boundary:** A delegate mutating a structured input in place changes the Process variable through aliasing, and implicit update detection persists it (`TypedValueField.java:155-168`). The project's handler receives an immutable snapshot, so this aliasing is outside the selected account. No general JUEL, nested expression, Java object or listener mutation is claimed.
 
@@ -723,9 +723,9 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 
 ### CIB-CFG-0009 — default Java serialization of structured business values
 
-**Status:** Proposed configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment).
+**Status:** Candidate configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review, profile selection and qualification pending.
 
-Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. A Spin JSON default serialization format maps `BigDecimal` through binary floating point and is excluded. The observation projection reads the deserialized value, orders Map keys canonically and projects nonnegative in-bound `Integer`/`Long` to the portable Integer.
+Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. The observation projection reads the deserialized value, orders Map keys canonically, projects nonnegative in-bound `Integer`/`Long` to the portable Integer and projects a `BigDecimal` to the canonical portable Decimal of the same mathematical value: trailing zeros are stripped and a negative scale becomes zero, and a canonical scale above 6 or a coefficient outside the signed 64-bit range is outside the domain. CIB-retained scale is therefore not a compared fact. A Spin JSON default is excluded: the project runner installs no Spin plugin and its value fidelity is unverified.
 
 ## Audit of previously visited findings
 
