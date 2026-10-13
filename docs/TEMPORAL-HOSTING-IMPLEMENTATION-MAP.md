@@ -174,7 +174,7 @@ Transaction protocol/admission boundary: [`implementation-status-owner:ENGINE-SE
 - production history baseline
 - deployment exclusions: legacy conversion, auto-upgrade, ramps, pin overrides, and retirement before retained-Run support ends
 - expression evaluation beyond pure Simple Boolean v1
-- integer values outside exact M6 User Task completion, String-list values outside M6 completion and the exact profile-gated Multi-Instance Process-start bindings, nested or heterogeneous values, or general effect faults/Error propagation beyond the direct-parent internal slice
+- values outside a registered profile's declared domain in [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md#semantic-profile), or general effect faults/Error propagation beyond the direct-parent internal slice
 - Activity heartbeats beyond the exact one-second Compensation cancellation-delivery policy
 - host cancellation recovery and exceptional child-scope interruption or propagation beyond the exact direct-parent Error slice
 - timer forms/races/cancellation beyond the exact capsule
