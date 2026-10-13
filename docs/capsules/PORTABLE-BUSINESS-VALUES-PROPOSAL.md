@@ -2,10 +2,12 @@
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: draft
+Review: pending
 
 ## Decision and delivery boundary
+
+The portable-value design remains accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is pending independent approval. Its additions authorize no implementation until that review succeeds.
 
 Freeze the finite value contract required by `PC-DATA-01` so an order can retain repeated line items, a nested address and an exact signed amount through the `PC-DATA-03` delivery path. This is design acceptance, not runtime coverage. No profile, decoder, evaluator, source admission, host or platform capability changes on approval alone. Implementation still requires its selected profile identity, governed checkpoint and applicable qualification.
 
@@ -146,6 +148,48 @@ The smallest future live witness carries the order through Start, one Human hand
 
 Common-mode risks are shared test fixtures/serialization assumptions, projecting CIB Objects as though their type were portable Decimal, and testing only already-parsed numbers after precision was lost. Independent raw-byte cases, exact CIB type observations and separately written Lean/TypeScript readers address different risks. The nearest unsupported claim remains a usable end-to-end typed-order process; this document supplies no such evidence.
 
+## Serial-handoff consuming amendment
+
+This amendment selects `bpmn-2.0.2-portable-business-values-handoff-draft` as the first executable consumer. Its useful outcome is Start → Review → Archive → End: Review receives the complete order, submits its differently named DataOutput, and Archive receives the value copied through the declared Process Property. It supplies a bounded public engine handoff toward `PC-DATA-03`, with `PC-DATA-02` admission obligations; it does not close either broad runtime task by itself.
+
+### Source, type and port contract
+
+Reuse the [retained serial source role shape](../../scenarios/structured-process-composition/serial.bpmn), not its identifiers or a business-model whitelist. Admit one executable root Process, one None Start/End, exactly two composed User Tasks in one acyclic serial path, and their direct Property-to-DataInput/DataOutput-to-Property associations. The second task reads the first task's output Property. No disconnected nodes, branches, ordinary tasks, conditions, loops, scopes, metadata, optional sets, transformations or extra behavior are admitted. Preserve generic ownership, global identity, distinctness and independent checked/Program validation through the existing [structural admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md).
+
+Each task has one required InputSet/DataInput and one required OutputSet/DataOutput. Keep absent ItemDefinition/DataState and the existing omitted/default-false `isCollection` syntax. BPMN §8.4.10 permits a structured information item; §10.4.1 Tables 10.51, 10.59 and 10.60 permit an absent item type and distinguish a noncollection port. [Normative CMOF/XSD provenance](../SOURCES.md#omg-bpmn-202) remains authoritative; the [existing source reader](../../packages/bpmn-source/src/scalar-io-specification.ts) enforces these facts.
+
+The selected port domain is `SingletonBusinessItem`: String, Null, Boolean, Integer, Decimal or Map from BusinessValue, excluding only a root List. A Map represents one structured record; its fields may contain the complete recursive BusinessValue domain, including Lists. This is an explicit profile interpretation, not a claim that BPMN declares a JSON Map datatype. A top-level List would represent a collection on this untyped port and is therefore a well-formed but unsupported port value. Legacy StringList stays excluded at every depth. The generic BusinessValue bounds and encodings are unchanged.
+
+Start requires exactly one binding named by the first task's source Property, carrying one SingletonBusinessItem; unrelated initial bindings reject for this profile. Both completions require exactly their declared DataOutput-named binding with a SingletonBusinessItem. Missing input/output, a Property-named output, extra binding, wrong occurrence or root List rejects without partial writes. Present Null and an empty Map are available items, distinct from absence. Null is not an automatic replacement for missing data. Neither completion is required to equal the captured input: Review may revise an order, and Archive copies the submitted value as declared.
+
+Only Process Start and these two Human completions select this domain. Message, effect, Call, MI, expression and platform form capabilities remain unselected. Existing profile identities and their value domains retain their meanings. The same generic schema-valid nested value must still fail old-profile admission, including direct commands and restoration; widening shared readers must not widen an old profile.
+
+### Runtime, ownership and acceptance
+
+Reuse the existing composed operation, occurrence identity, Property associations and one Activity-local input snapshot. No new opcode, runtime owner, wire policy flag or profile-independent collection capability is added. Derive the Property-path value policy from the exact Program profile and apply it consistently to admission, arming, local-scope validation, completion, observation and restoration. A generic value decoder is insufficient. Keep Process-interface/Call and other scalar mappings on their existing contracts; never replace `processInterfaceScalar` globally.
+
+Select complete required input before arming; copy it by value into the occurrence-local input, then expose the task. Exact completion writes its declared Property and retires that same local/Activity/task lifetime before subsequent arming. The next task receives the newly written value under its own input ID and occurrence. No submitted DataOutput name becomes a Process variable. Failed validation preserves the predecessor's complete data, waits, counters and publication. The serial shape permits only one semantic wait, and Start/each accepted completion must reach that wait or terminal state within the unchanged internal closure limit.
+
+The existing proved scalar-profile accounts remain required regression evidence. This new profile retains the declared checked lane: finite source/admission, independent evaluator, actual command and restoration discriminators establish its selected behavior without claiming the SPC profile's scalar-premised universal resumption theorem for recursive values. Reuse shared transition/lifetime facts where their premises hold; do not assume scalar premises for a Map or copy the scalar proof programme under new names. Any invalidated existing guarantee must be restored before acceptance. Proof growth beyond the finite implementation allowance triggers replanning, not additional owners.
+
+Public enrollment is mandatory: compile/start/observe/command support, independent value-domain matrix, answer-free scenarios, runnable example, standard-only pipeline cases, retained whole-model corpus and truthful Product 2 disclosure. The corpus model remains unavailable as a browser-ready demonstration until a separately selected UI journey exists. No new CIB execution claim follows from this profile; its authority is the standard-facing account and independent Lean/core/Temporal evidence.
+
+### Capacity admission
+
+Keep the initial Property and both output Properties distinct. Together with the single initial binding and retired predecessor local, this bounds the successful journey to two root-value copies at the first wait and three at the second wait or termination. Each paired E1/E2 batch carries one root in its external stimulus; internal transition records carry identities, not copied states. A continuation carries at most seven roots across runtime state, publication current and original Start. A selected-Run publication query can carry nine across the echoed snapshot, returned current and three stimuli. These are structural copy counts from the existing [publication owner](../../packages/temporal-adapter/workflow/src/execution-publication-state.ts), [segment owner](../../packages/temporal-adapter/workflow/src/workflow-publication-segments.ts) and [query capacity owner](../../packages/temporal-adapter/workflow/src/workflow-publication-query-capacity.ts), not measured aggregate qualification.
+
+Before Workflow creation, derive a conservative envelope from the actual admitted Program, identities, names and Start arguments, reserving the full 16,384-byte allowance for each permitted future output. Require that envelope to fit the existing 64 KiB state/batch, 192 KiB query/result and 448 KiB continuation limits, including tags, escaping, directories, retained trace/publication, command recovery and non-value metadata. Component limits alone are insufficient. Refuse the hosted start before creating a Workflow if the full successful path cannot fit; do not reduce the generic value domain, raise production limits or accept a value only to discover its unavoidable copying overflow later. Exercise actual maximum-value journeys and nearest-over-bound envelopes to settle the bound before runtime acceptance.
+
+This reserves the two-completion business path; it is not an unlimited retry, command-history or Run-longevity guarantee. Existing recovery, queue, directory and total-Run policies continue to bound additional traffic. Unexpected host capacity failure remains the existing typed host failure with the last committed publication preserved. The [Workflow capacity owner](../../packages/temporal-adapter/workflow/src/workflow-chain-capacity.ts) latches that failure; a later smaller value is not promised to resume the failed Workflow. Ordinary semantic refusals still preserve the active task and permit a later valid completion within the host limits.
+
+### Decisive witnesses and checkpoint
+
+The positive journey uses the 12-node order above, then a revision with ordered unequal items and negative Decimal, and a present-Null control. Assert the exact copied input and complete committed Process values at both waits and terminal completion. Repeat with renamed BPMN IDs and reordered semantically unordered declarations; business names must not enter admission logic. Preserve list multiplicity, canonical Map keys and type tags at all observations.
+
+Negative cases cover root List versus nested List, missing versus Null, wrong/extra output, stale occurrence, old-profile refusal, malformed raw numbers/UTF-8, exact/over value bounds and aliased caller data. Mutations that deduplicate items, round the signed coefficient, omit a nested leaf from command identity, flatten a Map or leak a retired local must be observed. Generic wire validity, profile support, typed command rejection, internal rollback and host capacity failure remain separate outcomes.
+
+The first green shared value/reader/admission batch is a material semantic checkpoint. Stop before downstream hosting/registration crosses it; commit and obtain cold review with complete affected package qualification. Use focused Lean owner/consumer builds while stabilizing, followed by one complete Lean acceptance gate for the coherent batch. Reuse unchanged evidence; review does not request another full build. Then reuse the production handoff's Worker replacement, forced rollover, full E1/E2, content-bound recovery and every-Run replay mechanisms. Closure remains independently governed; unrelated retained runtime failures cannot be represented as passed.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): update every producer/consumer of the shared union atomically, preserve current profile meanings, and assign new semantic identities when selecting wider behavior. No parallel legacy parser, embedded format switch, dependency installation or durable-history migration is selected. Published artifacts are not rewritten; an actual retained-history boundary would require a separately evidenced migration/replay decision.
@@ -165,6 +209,15 @@ The shared change must inventory and satisfy the [schemas](../../contracts/READM
 | [Lean profile domain](../../BpmnSemantics/SemanticProcess/ValueDomain.lean) | 647 |
 | [Content-bound command encoding](../../packages/temporal-adapter/protocol/src/command-identity.ts) | 543 |
 | [Cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts) | 603 |
+| [Composed-task arming](../../packages/semantic-core/src/internal-transition-data-arming-patch.ts) | 691 |
+| [Composed-task completion](../../packages/semantic-core/src/semantic-process-activity-data-input-output-runtime.ts) | 621 |
+| [Property/interface endpoint policy](../../packages/semantic-core/src/activity-data-endpoint.ts) | 707 |
+| [Serial structural admission](../../packages/semantic-core/src/structured-process-composition-admission.ts) | 521 |
+| [Lean endpoint policy](../../BpmnSemantics/SemanticProcess/ActivityDataEndpointRuntime.lean) | 721 |
+| [Lean composed-task runtime](../../BpmnSemantics/SemanticProcess/ActivityDataInputOutputRuntime.lean) | 616 |
+| [Source association lowering](../../packages/bpmn-source/src/activity-data-input-output-source.ts) | 490 |
+| [Host semantic candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) | 654 |
+| [Lean strict JSON boundary](../../BpmnSemantics/StrictJson.lean) | 664 |
 
 These measurements describe the unchanged owners at design time, not permanent headroom. A changed owner invalidates its figure; remeasure and extract a cohesive value owner only if its responsibility or measured growth requires it. No unlimited parser/proof/infrastructure programme follows from this proposal. Full capsule implementation cost remains unmeasured and open under the [cost ledger](../CAPSULE-COST-LEDGER.md).
 
@@ -172,8 +225,10 @@ These measurements describe the unchanged owners at design time, not permanent h
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `377b46e0` | `fork-turns-none` | `approve` | `not-required` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+### Portable-value design acceptance
 
 Design accepted on 2026-10-13 against `377b46e028c2c92d2ce32a044d992cc7c60e1dcc`, baseline `36058b60b2949d45350a69f42833f1579a1ff923`; no required findings. Packet: `a544a375045ff57924324750f39d7229340e8b09671a76e555a117f25ceef965`. Independent source, recursive-type and exact-boundary probes plus the asserted `/tmp/pbv-review-focused-20261013` and `/tmp/pbv-review-doctor-research-20261013` receipts support design approval only. `PC-DATA-01` is accepted; AA-13 implementation, consuming profiles, aggregate capacity and `PC-DATA-02/03` runtime delivery remain open.

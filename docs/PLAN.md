@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is independently accepted; select its bounded typed-order implementation slice. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is accepted; select the portable Review→Archive handoff under `PC-DATA-03`, with `PC-DATA-02` admission obligations. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -24,19 +24,19 @@ Exactly one stable work ID is active. Required maps govern routing.
 
 ### Assurance trigger assessment
 
-Assurance base: `36058b60b2949d45350a69f42833f1579a1ff923`.
+Assurance base: `99cfe6fc810d06c7538712680302765a75212686`.
 
 Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 | Finding | Result | Reason | Bounded action | Acceptance |
 |---|---|---|---|---|
-| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; the passive-task hosting witness changes no history transport. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; the portable handoff selects no history-transport change. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 | AA-02 | not-met | No batch-member interface extension is selected. | — | — |
 | AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
 | AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | not-met | No proof relocation is selected for hosting qualification; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
+| AA-09 | not-met | No proof relocation is selected for the portable handoff; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
 | AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
 | AA-13 | met-review | The portable-value design must decide exact numeric admission before widening values. | Review the finite numeric/UTF-8 admission contract within the design budget; no parser repair is selected yet. | [Held admission obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
 | AA-15 | met | The design must name the value-domain assurance lane without implying runtime evidence. | Separate design acceptance from checked/proved implementation obligations within the design budget. | [Named guarantee obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-15). |
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-01` design accepted; select the bounded `PC-DATA-02/03` implementation slice supporting the typed-order journey.
+Current task: `PC-DATA-03`, portable serial Review→Archive handoff; related `PC-DATA-02` admission obligations remain distinct.
 
-Deliverable: Preserve the [accepted portable-value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#independent-cold-review-receipt) and identify the smallest implementable typed-order slice with exact blockers and acceptance budget.
+Deliverable: Carry one nested order with repeated items, nullable address data and exact signed amount through Start, Review output, Archive input and terminal publication using existing direct associations and hosting.
 
-Acceptance blockers: AA-13 exact-byte admission, recursive codecs, selected profile/source contracts and aggregate state/publication capacity remain unimplemented. Existing invoice/Call/Message runtime holds and deferred MI guarantees remain unchanged.
+Acceptance blockers: The consuming amendment needs independent approval. Mandatory implementation covers AA-13 exact-byte admission, recursive codecs/identity, Activity Property-path scalar guards and aggregate publication/restoration capacity. Call, Message, MI, expressions and browser forms are excluded from this slice.
 
-Current result: Independent proposal review approves `377b46e0` with no required findings. The recursive type compiles; the representative order and exact node/byte limits are independently checked. All 100 focused review checks pass. `PC-DATA-01` closes as design only; no runtime task or AA-13 repair is claimed.
+Current result: `PC-DATA-01` design is accepted at `377b46e0`, recorded by `99cfe6fc`. The amendment selects singleton Map records with nested Lists, exactly two serial tasks and prospective host-capacity admission. Structural copy counts support a bounded path; aggregate qualification and typed-order runtime acceptance remain open.
 
-Effort budget: 10 minutes from 2026-10-13 01:05 UTC for implementation-slice selection, including mandatory obligations, exact consumer inventory and finite code/qualification budgets. Stop and reassess at the limit. The completed design and review stayed within their 45-minute and 15-minute allowances.
+Effort budget: 30 minutes from 2026-10-13 01:12 UTC for the consuming amendment; 15 minutes separately for cold review. Candidate implementation allowance is 180 minutes plus 60 minutes qualification, confirmed against the approved amendment before code. Stop and reassess at each limit; no automatic renewal.
 
-Next action: Commit design acceptance, then select the smallest source/profile-bound carrier and admission slice. Reuse existing handoff/hosting mechanisms; own only selected paths and preserve unrelated pending changes.
+Next action: Qualify and cold-review the [consuming amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#serial-handoff-consuming-amendment) for `bpmn-2.0.2-portable-business-values-handoff-draft` before code. Then stabilize one coherent value batch using focused builds and one full Lean acceptance gate; preserve unrelated pending changes.
 
-Oracle: The selected implementation names its useful public outcome, remaining blockers, separating end-to-end witness, mandatory checkpoint and finite effort bound before code.
+Oracle: Public Review→Archive retains the complete order across replacement/rollover, E1/E2, recovery and replay; rounding, deduplication, aliasing, omitted nested identity and over-capacity controls separate failures.
 
-Stop if the path requires SDK work, deferred guarantees or an unreviewed change to the accepted value contract.
+Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
