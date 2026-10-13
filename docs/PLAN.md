@@ -85,9 +85,9 @@ Acceptance blockers: aggregate capacity (pre-start envelope); public hosting qua
 
 Current result: The [Property-path runtime](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#property-path-runtime-acceptance) was accepted at `4e15fa4b` after three correction audits; it used 190 of its 480 budgeted minutes. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
-Effort budget: 300 minutes wall from 2026-10-13 12:45 UTC for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses. At the limit, stop and record before renewal.
+Effort budget: 300 minutes wall for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses; 159 used before the owner pause (12:45–15:24 UTC), resumed 18:29 UTC, limit 20:50 UTC. At the limit, stop and record before renewal.
 
-Next action: Paused by the owner before implementation. Resume with the owner-approved design: a pure `protocol` envelope from semantic-core journey artifacts with sentinel outputs and named bookkeeping allowances, refusing typed on both client start paths before Workflow creation, with a `workflow` test driving the real encoders over maximum-value and nearest-over-bound journeys; package ownership stays unchanged.
+Next action: Implement the owner-approved design: a pure `protocol` envelope from semantic-core journey artifacts with sentinel outputs and named bookkeeping allowances, refusing typed on both client start paths before Workflow creation, with a `workflow` test driving the real encoders over maximum-value and nearest-over-bound journeys; package ownership stays unchanged.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
