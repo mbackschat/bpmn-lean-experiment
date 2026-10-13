@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is live hosting qualification, supporting `PC-DATA-02`.
+Current task: `PC-DATA-03` portable Review→Archive handoff; current blocker is review of the live hosting checkpoint, supporting `PC-DATA-02`.
 
 Deliverable: Carry a nested order through both tasks and terminal publication.
 
-Acceptance blockers: live hosting qualification (Worker replacement, forced rollover, E1/E2, recovery, every-Run replay). Browser forms, Call, Message, MI and expressions remain excluded.
+Acceptance blockers: independent review of the [live hosting checkpoint](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#live-hosting-checkpoint); retained corpus model and Product 2 disclosure before Closure. Browser forms, Call, Message, MI and expressions remain excluded.
 
 Current result: The [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-envelope-acceptance) was accepted at `eb69d834` after one correction audit, using 198 of its 300 minutes; the Property-path runtime was accepted at `4e15fa4b`. Removing the `890b010f` alias waits for a scheduled complete rebuild; that commit's placeholder module and `SequentialScopeGraphConformance` cost row stay red. PMIS capacity timeouts remain held.
 
 Effort budget: 180 minutes wall from 2026-10-13 19:10 UTC for the live hosting qualification through its review, reusing the [Activity data-input/output refinement harness](../packages/temporal-adapter/testkit/test/activity-data-input-output-refinement.temporal-test.ts). At the limit, stop and record before renewal.
 
-Next action: Add one focused portable-handoff Temporal refinement test driving the maximal order through Worker replacement, forced rollover, E1/E2 publication, content-bound recovery and every-Run replay, then obtain closure-lane review. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this deliverable.
+Next action: Obtain the semantic-checkpoint cold review of the live hosting checkpoint; after approval, add the retained corpus model with its capability row and Product 2 disclosure, then Closure. The direct start path still never applies the initial Start/Program argument budgets before Workflow creation; that pre-existing gap is outside this deliverable.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 

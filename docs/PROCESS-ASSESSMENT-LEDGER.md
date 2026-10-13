@@ -64,7 +64,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 20
+: 21
 
 Disposition
 : `executable guard`

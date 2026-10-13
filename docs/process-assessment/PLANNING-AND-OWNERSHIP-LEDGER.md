@@ -23,7 +23,7 @@ Instance 16 was [Transaction proposal review](../capsules/TRANSACTION-CANCELLATI
 
 Instances 18 and 19, 2026-10-13: two PLAN resume-point commits landed with the PLAN control-plane guard red, first over its word ceiling and then, in `75371e93`, naming review work without a governed owner link. `what-binds` on `docs/PLAN.md` names that guard; it was not run before either commit, and the infrastructure gate found both afterwards.
 
-Instance 20, 2026-10-13: the capacity envelope grew `variable-value.ts`, whose headroom the portable-value capsule inventories. The worker ran `what-binds` but not the capsule binding inventory it implies, and the root gate set omitted it too, so `eb69d834` and its correction audit both carried a stale 413-line figure until the handoff ledger guards ran.
+Instance 20, 2026-10-13: the capacity envelope grew `variable-value.ts`, whose headroom the portable-value capsule inventories. The worker ran `what-binds` but not the capsule binding inventory it implies, and the root gate set omitted it too, so `eb69d834` and its correction audit both carried a stale 413-line figure until the handoff ledger guards ran. Instance 21, same change: `what-binds` named the operation-consumer census as a scan guard over the new protocol journey, which reads Activity-data operations; the census stayed red from `eb69d834` until the next worker ran every named guard. A gate set chosen from memory, not from the guard list `what-binds` prints, missed both.
 
 ## Finding 06
 

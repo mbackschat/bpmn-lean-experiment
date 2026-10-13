@@ -9,45 +9,32 @@ import {
   runScenario,
 } from "@bpmn-lean/semantic-core";
 import type {
-  CanonicalObservation,
   CompleteUserTaskInstanceStimulus,
-  DeepReadonly,
   ScenarioResult,
   SemanticProcessProgram,
   StateObservation,
   VariableValue,
 } from "@bpmn-lean/semantic-core";
-import type { WorkflowHandle } from "@temporalio/client";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 
 import {
   BpmnProcessStartResultKind,
   BpmnWorkflowHostInputKind,
-  FlowNodeOccurrencePublicationResultKind,
   FlowNodeOccurrenceTerminalKind,
-  ProcessCommandResultKind,
   WorkflowChainBudgetKind,
   bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue,
-  bpmnTraceQueryName,
   bpmnWorkflowContinuationV1,
   createCachedLocalEnvironment,
   getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
-  observeTemporalFlowNodeOccurrences,
   processWorkflowId,
   readTestProcessTerminalResult,
   startBpmnProcess,
-  submitUserTaskCompletion,
   workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
-import type {
-  BpmnProcessWorkflow,
-  FlowNodeOccurrenceBatch,
-  OpenFlowNodeOccurrence,
-  TemporalFlowNodeOccurrencePublicationClient,
-} from "@bpmn-lean/temporal-testkit";
+import type { OpenFlowNodeOccurrence } from "@bpmn-lean/temporal-testkit";
 
 import {
   claimDecisionDataOutputId,
@@ -60,34 +47,24 @@ import {
   requireClaimCompletion,
 } from "./activity-data-input-output-fixture.ts";
 import type { DataInputOutputScenarioFixture } from "./activity-data-input-output-fixture.ts";
+import {
+  assertCompletion,
+  occurrences,
+  publishedState,
+  replayWorkflowChain,
+} from "./live-process-observation-test-support.ts";
+import type { OccurrenceSnapshot, StartedScenario } from "./live-process-observation-test-support.ts";
 import { temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts";
 import {
-  replayBpmnHistory,
   startBpmnTestWorker,
   stopBpmnTestWorker,
 } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
-import {
-  waitForPublishedWorkflowChainState,
-  waitForWorkflowChainRunCount,
-  workflowChainRuns,
-} from "./workflow-chain-test-support.ts";
+import { waitForWorkflowChainRunCount } from "./workflow-chain-test-support.ts";
 
 const operationDeadlineMs = 20_000;
 const identity = "bpmn-lean-activity-data-input-output";
 const presentInput = { kind: VariableValueKind.String, value: "claim-4711" } as const;
-
-type StartedScenario = Readonly<{
-  handle: WorkflowHandle;
-  workflowId: string;
-  instanceId: string;
-}>;
-
-type OccurrenceSnapshot = DeepReadonly<{
-  headRevision: number;
-  batches: FlowNodeOccurrenceBatch[];
-  currentOpen: OpenFlowNodeOccurrence[];
-}>;
 
 test("composed Activity data survives refusal, rollover, Worker replacement, recovery, and termination", async () => {
   const fixture = await loadActivityDataInputOutputFixture();
@@ -198,34 +175,10 @@ test("composed Activity data survives refusal, rollover, Worker replacement, rec
       [absent, fixture.absent.expected, 1],
       [omitted, fixture.omitted.expected, 1],
     ] as const) {
-      const runs = await workflowChainRuns(environment, started.workflowId);
-      assert.equal(runs.length, runCount);
-      const trace: CanonicalObservation[] = [];
-      let rolloverCount = 0;
-      for (const run of runs) {
-        const handle = environment.client.workflow.getHandle<BpmnProcessWorkflow>(
-          started.workflowId, run.runId,
-        );
-        trace.push(...await withDeadline(
-          handle.query<ReadonlyArray<CanonicalObservation>>(bpmnTraceQueryName),
-          operationDeadlineMs, "composed Activity-data retained trace",
-        ));
-        const history = await withDeadline(handle.fetchHistory(), operationDeadlineMs,
-          "composed Activity-data retained history");
-        assert.ok(history.events !== undefined && history.events !== null);
-        for (const event of history.events) {
-          assert.equal(event.activityTaskScheduledEventAttributes ?? null, null);
-          assert.equal(event.timerStartedEventAttributes ?? null, null);
-          assert.equal(event.workflowExecutionSignaledEventAttributes ?? null, null);
-          assert.equal(event.startChildWorkflowExecutionInitiatedEventAttributes ?? null, null);
-          if (event.workflowExecutionContinuedAsNewEventAttributes != null) {
-            rolloverCount += 1;
-          }
-        }
-        await replayBpmnHistory(bundle, history, started.workflowId);
-      }
-      assert.equal(rolloverCount, runCount - 1);
-      assert.deepEqual(trace, result.trace);
+      const chain = await replayWorkflowChain(environment, bundle, started.workflowId);
+      assert.equal(chain.runCount, runCount);
+      assert.equal(chain.rolloverCount, runCount - 1);
+      assert.deepEqual(chain.trace, result.trace);
     }
   } finally {
     try {
@@ -270,16 +223,6 @@ async function startScenario(
   return { handle, workflowId: handle.workflowId, instanceId: fixture.start.instanceId };
 }
 
-function publishedState(
-  environment: TestWorkflowEnvironment,
-  started: StartedScenario,
-  program: SemanticProcessProgram,
-  taskCount: number,
-): Promise<StateObservation> {
-  return waitForPublishedWorkflowChainState(environment, started.workflowId, program,
-    started.instanceId, (state) => state.openUserTasks.length === taskCount);
-}
-
 function assertActiveInput(state: StateObservation, value: VariableValue): void {
   assert.equal(state.status, ProcessStatus.Running);
   assert.deepEqual(state.variables, [{ name: claimSummaryPropertyId, value }]);
@@ -288,20 +231,6 @@ function assertActiveInput(state: StateObservation, value: VariableValue): void 
   assert.ok(task !== undefined);
   assert.equal(task.id.elementId, claimTaskElementId);
   assert.deepEqual(task.inputs, [{ name: claimSummaryDataInputId, value }]);
-}
-
-async function assertCompletion(
-  environment: TestWorkflowEnvironment,
-  started: StartedScenario,
-  completion: CompleteUserTaskInstanceStimulus,
-  outcome: CommandOutcome,
-): Promise<void> {
-  assert.deepEqual(await submitUserTaskCompletion(environment.client.workflow,
-    started.instanceId, completion), {
-    kind: ProcessCommandResultKind.Semantic,
-    commandId: completion.commandId,
-    outcome,
-  });
 }
 
 async function completeAndRecover(
@@ -350,31 +279,6 @@ async function terminateAndPreserve(
     operationDeadlineMs, "composed Activity-data host termination");
   assert.deepEqual(await publishedState(environment, started, program, state.openUserTasks.length), state);
   assert.deepEqual(await occurrences(environment, started, program), lifecycle);
-}
-
-async function occurrences(
-  environment: TestWorkflowEnvironment,
-  started: StartedScenario,
-  program: SemanticProcessProgram,
-): Promise<OccurrenceSnapshot> {
-  const batches: FlowNodeOccurrenceBatch[] = [];
-  let afterRevision = 0;
-  for (let pageIndex = 0; pageIndex < 16; pageIndex += 1) {
-    const result = await observeTemporalFlowNodeOccurrences(
-      environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-      started.workflowId,
-      { definition: program.identity, processId: program.processId, processInstanceId: started.instanceId },
-      { afterRevision },
-    );
-    assert.ok(result.kind === FlowNodeOccurrencePublicationResultKind.Available);
-    batches.push(...result.page.batches);
-    if (result.page.currentOpen !== null) {
-      return { headRevision: result.page.headRevision, batches, currentOpen: result.page.currentOpen };
-    }
-    assert.ok(result.page.pageThroughRevision > afterRevision);
-    afterRevision = result.page.pageThroughRevision;
-  }
-  assert.fail("composed Activity-data occurrence publication exceeded its bounded page count");
 }
 
 function claimStarts(snapshot: OccurrenceSnapshot) {
