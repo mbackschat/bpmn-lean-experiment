@@ -132,3 +132,25 @@ export function manifestTestEntrypoints(
     );
   }))].sort();
 }
+
+/**
+ * Names the Lean source entries that package code passes to `./scripts/lake.sh run`.
+ *
+ * The interpreter loads every imported object file but builds none, so an entry whose imports lie
+ * outside the library closure fails with a missing `.olean` unless the Lean-checks stage built it
+ * before the integration lane restored that output. Discovery is lexical over package source:
+ * every `BpmnSemantics/….lean` literal there is a run entry, and a computed path would escape it.
+ */
+export function interpretedLeanEntryModules(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return [...new Set(surfaces
+    .filter(({ relativePath }) => relativePath.startsWith("packages/"))
+    .flatMap(({ source }) => [...source.matchAll(/["'`](BpmnSemantics\/[\w/]+)\.lean["'`]/gu)])
+    .flatMap((match) => match[1] === undefined ? [] : [match[1].replaceAll("/", ".")]))].sort();
+}
+
+export function leanCheckBuildModules(verifyLeanChecksBody: string): ReadonlyArray<string> {
+  return [...verifyLeanChecksBody.matchAll(/\.\/scripts\/lake\.sh build ([^\n]+)/gu)]
+    .flatMap((match) => (match[1] ?? "").trim().split(/\s+/u));
+}

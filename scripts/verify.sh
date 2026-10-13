@@ -26,7 +26,7 @@ verify_lean_library() {
 }
 
 verify_lean_checks() {
-  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain
+  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain BpmnSemantics.DefinitionAdmissionJsonMain BpmnSemantics.ParallelScopeAdmissionMain BpmnSemantics.ParallelScopeStartAdmissionMain BpmnSemantics.ParallelScopeReservationMain
   ./scripts/lake.sh run BpmnSemantics/Experiments/CheckedSourceRelationMain.lean
   ./scripts/lake.sh run BpmnSemantics/CommittedExecutionPublicationJsonMain.lean
 }

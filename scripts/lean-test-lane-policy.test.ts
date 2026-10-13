@@ -5,7 +5,9 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import {
+  interpretedLeanEntryModules,
   invokedPnpmGates,
+  leanCheckBuildModules,
   leanDependentEntrypoints,
   manifestTestEntrypoints,
   programmaticLeanInvocationFindings,
@@ -168,5 +170,35 @@ test("the restored-output guard follows a package test's direct helper import", 
       surfaces.map(({ relativePath }) => relativePath),
     ),
     ["packages/example/test/parity.integration-test.ts"],
+  );
+});
+
+test("the Lean-checks stage builds every Lean source entry a package test interprets", async () => {
+  const [verifyScript, surfaces] = await Promise.all([
+    readFile("scripts/verify.sh", "utf8"),
+    codeSurfaces(worktreePaths()),
+  ]);
+  const built = new Set(leanCheckBuildModules(verificationFunctionBody(verifyScript, "verify_lean_checks")));
+  const entries = interpretedLeanEntryModules(surfaces);
+  assert.ok(entries.length > 0, "no interpreted Lean entry was discovered");
+  assert.deepEqual(
+    entries.filter((entry) => !built.has(entry)),
+    [],
+    "an interpreted entry loads imported object files without building them, so the restored Lean-checks output must contain its whole import closure",
+  );
+});
+
+test("interpreted entry discovery reads package source paths and the Lean-checks build line", () => {
+  assert.deepEqual(
+    interpretedLeanEntryModules([
+      { relativePath: "packages/example/test/targets.ts", source: 'runLeanInterpreter("BpmnSemantics/ExampleMain.lean", [], 1);' },
+      { relativePath: "packages/example/test/other.ts", source: "const program = 'BpmnSemantics/Nested/OtherMain.lean';" },
+      { relativePath: "scripts/source-analysis.ts", source: 'readFile("BpmnSemantics/NotAnEntry.lean");' },
+    ]),
+    ["BpmnSemantics.ExampleMain", "BpmnSemantics.Nested.OtherMain"],
+  );
+  assert.deepEqual(
+    leanCheckBuildModules("\n  ./scripts/lake.sh build A.Main B.Main\n  ./scripts/lake.sh run A/Main.lean\n"),
+    ["A.Main", "B.Main"],
   );
 });

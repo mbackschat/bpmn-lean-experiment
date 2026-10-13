@@ -109,7 +109,7 @@ The [verification workflow](../.github/workflows/verify.yml) selects Product 1 f
 |---|---|
 | Proof library | Starts with runtime; the library is Lake's test driver. Source-derived reachability includes every maintained non-experimental conformance and named-theorem owner. Compilation has 120 minutes inside a 135-minute job. |
 | Runtime | Prerequisite inventory, infrastructure, XML, TypeScript builds/tests, CIB and Temporal; no Lean-dependent package tests. |
-| Lean checks | After proof library; restore that run's exact output, elaborate checked-source/JSON roots and run no-argument checks through the Lean interpreter within 10 minutes. Programmatic witnesses must not rebuild native executables or bypass the wrapper. |
+| Lean checks | After proof library; restore that run's exact output, elaborate checked-source/JSON roots and every Lean source entry a package test interprets, and run no-argument checks through the Lean interpreter within 10 minutes. Programmatic witnesses must not rebuild native executables or bypass the wrapper. |
 | Integration | After runtime and Lean checks; restore exact run-attempt outputs, run every Lean-dependent parity test, the prepared pipeline and `git diff --check`. Primary Lean execution and three mutants form one serial resource-exclusive sub-lane; CIB and Temporal remain concurrent. |
 
 `verify-complete` requires all four selected stages and accepts a legitimate Product 2-only skip. Source-derived guards follow package helper imports to prevent parity omissions or accidental runtime assignment. Weekly execution builds Lean from scratch; ordinary execution may restore the exact-source cache with incremental fallback. Lake validates reuse, and cache presence is never qualification evidence.

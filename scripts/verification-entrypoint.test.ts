@@ -536,7 +536,7 @@ test("Lean checks elaborate executable roots and interpret them without native c
   const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain",
+    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain BpmnSemantics.DefinitionAdmissionJsonMain BpmnSemantics.ParallelScopeAdmissionMain BpmnSemantics.ParallelScopeStartAdmissionMain BpmnSemantics.ParallelScopeReservationMain",
   );
   await assertLineOccursOnce(
     verifyScriptPath,
