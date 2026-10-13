@@ -2,12 +2,12 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Decision and delivery boundary
 
-The portable-value design remains accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is pending independent approval. Its additions authorize no implementation until that review succeeds.
+The portable-value design is accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is independently accepted at `46fb3993`. Implementation follows the bounded checkpoint and qualification below.
 
 Freeze the finite value contract required by `PC-DATA-01` so an order can retain repeated line items, a nested address and an exact signed amount through the `PC-DATA-03` delivery path. This is design acceptance, not runtime coverage. No profile, decoder, evaluator, source admission, host or platform capability changes on approval alone. Implementation still requires its selected profile identity, governed checkpoint and applicable qualification.
 
@@ -225,9 +225,11 @@ These measurements describe the unchanged owners at design time, not permanent h
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `46fb39933116782162de61ff1cd0e9ca3585e54c` | `fork-turns-none` | `approve` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+Consuming amendment accepted on 2026-10-13 against baseline `99cfe6fc810d06c7538712680302765a75212686`; no required findings. Packet: `d95272b2724f1802171ab6ca9b84fe2d4535e7ed9f7a6125aa847e68e45397c3`. Independent normative/source and publication-shape probes, XML validation, doctor and 100 focused guards passed, with asserted receipts under `/tmp/pbv-handoff-review-{doctor,focused,source,shapes,xsd}-20261013`. The 16,384-byte Map produced a 50,044-byte substituted terminal state; this is feasibility evidence, not recursive-value runtime or aggregate hosted qualification.
 
 ### Portable-value design acceptance
 

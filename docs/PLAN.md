@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03`, portable serial Review→Archive handoff; related `PC-DATA-02` admission obligations remain distinct.
+Current task: `PC-DATA-03` portable Review→Archive handoff; first mandatory blocker is AA-13 raw-wire admission, supporting `PC-DATA-02`.
 
-Deliverable: Carry one nested order with repeated items, nullable address data and exact signed amount through Start, Review output, Archive input and terminal publication using existing direct associations and hosting.
+Deliverable: Carry a nested order through both tasks and terminal publication. The current checkpoint preserves existing value arms while aligning exact numeric, UTF-8 and own-property admission across raw readers.
 
-Acceptance blockers: The consuming amendment needs independent approval. Mandatory implementation covers AA-13 exact-byte admission, recursive codecs/identity, Activity Property-path scalar guards and aggregate publication/restoration capacity. Call, Message, MI, expressions and browser forms are excluded from this slice.
+Acceptance blockers: AA-13 implementation; recursive values/identity; selected Property-path runtime; aggregate capacity; public hosting qualification. Browser forms, Call, Message, MI and expressions remain excluded.
 
-Current result: `PC-DATA-01` design is accepted at `377b46e0`, recorded by `99cfe6fc`. The amendment selects singleton Map records with nested Lists, exactly two serial tasks and prospective host-capacity admission. Structural copy counts support a bounded path; aggregate qualification and typed-order runtime acceptance remain open.
+Current result: The [consuming amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#serial-handoff-consuming-amendment) is independently approved at `46fb3993`; 100 focused guards and independent source/capacity-shape probes pass. `PC-DATA-01` design is closed; no typed-order runtime acceptance is claimed.
 
-Effort budget: 30 minutes from 2026-10-13 01:12 UTC for the consuming amendment; 15 minutes separately for cold review. Candidate implementation allowance is 180 minutes plus 60 minutes qualification, confirmed against the approved amendment before code. Stop and reassess at each limit; no automatic renewal.
+Effort budget: 180 minutes from 2026-10-13 01:37 UTC for the admission checkpoint, including corrections; 60 minutes separately for qualification. Reassess after 30 minutes if no bounded field-selected mechanism exists. This is not an estimate for the complete handoff. Stop at limits; no automatic renewal.
 
-Next action: Qualify and cold-review the [consuming amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#serial-handoff-consuming-amendment) for `bpmn-2.0.2-portable-business-values-handoff-draft` before code. Then stabilize one coherent value batch using focused builds and one full Lean acceptance gate; preserve unrelated pending changes.
+Next action: Red/green raw-byte tests and scoped parser corrections. Preserve generic JSON behavior. Root owns Lean StrictJson/JsonSupport/conformance and affected entry readers; MEDIUM owns TypeScript/Java readers. Focused Lean modules and decoder consumers precede one full coherent-batch gate and cold checkpoint review. Preserve unrelated pending work.
 
-Oracle: Public Review→Archive retains the complete order across replacement/rollover, E1/E2, recovery and replay; rounding, deduplication, aliasing, omitted nested identity and over-capacity controls separate failures.
+Oracle: Fractional rounding, underflow, noncanonical integer tokens, malformed UTF-8 and prototype keys reject independently; canonical controls and generic JSON numbers retain their selected behavior.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
