@@ -87,7 +87,7 @@ Current result: The [Property-path runtime](capsules/PORTABLE-BUSINESS-VALUES-PR
 
 Effort budget: 300 minutes wall from 2026-10-13 12:45 UTC for the [capacity envelope](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) through its review, including focused Temporal maximum-value and nearest-over-bound witnesses. At the limit, stop and record before renewal.
 
-Next action: Inventory the publication, segment, query and chain capacity owners with `what-binds`, then add the failing nearest-over-bound pre-start witness.
+Next action: Paused by the owner before implementation. Resume with the owner-approved design: a pure `protocol` envelope from semantic-core journey artifacts with sentinel outputs and named bookkeeping allowances, refusing typed on both client start paths before Workflow creation, with a `workflow` test driving the real encoders over maximum-value and nearest-over-bound journeys; package ownership stays unchanged.
 
 Oracle: the consuming amendment's decisive witnesses separate Lean and TypeScript independently; old profiles keep refusing the nested order.
 
