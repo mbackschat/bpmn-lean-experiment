@@ -93,6 +93,35 @@ test("out-of-domain Start values retain direct rejection separately from unsuppo
 
 test("Lean scenario support checks every selected profile and both late effect result arms", async () => {
   const inputs = await domainCases();
+  const actual = await leanScenarioSupport(inputs.map(({ context, scenario }) => ({ program: context.semanticProcess, scenario })));
+  const mismatches = inputs.flatMap((input, index) => {
+    assert.equal(actual[index]?.id, input.scenario.id);
+    assert.equal(actual[index]?.unsupportedResultExact, true, `${input.scenario.id}: exact pure unsupported result`);
+    return actual[index]?.supported === input.supported ? [] : [input.scenario.id];
+  });
+  assert.deepEqual(mismatches, []);
+});
+
+// Lean answers a Start on a Program without exactly one root scope with `semanticFailure`, an outcome the
+// core never produces; both supports must refuse such a Program so no scenario can reach that arm.
+test("a Program without exactly one root scope is unsupported by both implementations", async () => {
+  const inputs = [...await selectedProfileContexts()].flatMap(([, { semanticProcess, scenario }]) => {
+    const root = semanticProcess.definitionScopes.find(({ parentScopeId, originElementId }) =>
+      parentScopeId === null && originElementId === semanticProcess.processId);
+    assert.ok(root !== undefined, scenario.id);
+    return [semanticProcess.definitionScopes.filter((candidate) => candidate !== root),
+      [...semanticProcess.definitionScopes, { ...root, id: `${root.id}_Second` }]]
+      .map((definitionScopes, index) => ({ program: { ...semanticProcess, definitionScopes },
+        scenario: { ...scenario, id: `${scenario.id}-root-${index === 0 ? "absent" : "duplicated"}` } }));
+  });
+  const supported = (await leanScenarioSupport(inputs)).filter(({ supported }) => supported).map(({ id }) => `lean: ${id}`);
+  for (const { program, scenario } of inputs) {
+    if (supportsSemanticProcessScenario(scenario, program)) supported.push(`core: ${scenario.id}`);
+  }
+  assert.deepEqual(supported, []);
+});
+
+async function leanScenarioSupport(inputs: ReadonlyArray<{ program: unknown; scenario: { id: string } }>) {
   const directory = await mkdtemp(path.join(tmpdir(), "scenario-value-domain-support-"));
   try {
     const driver = path.join(directory, "Admission.lean");
@@ -118,23 +147,18 @@ def main (paths : List String) : IO Unit := do
     | .ok (id, supported, unsupportedResultExact) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported),
         ("unsupportedResultExact", toJson unsupportedResultExact)]).compress
 `);
-    const paths = await Promise.all(inputs.map(async ({ context, scenario }) => {
+    const paths = await Promise.all(inputs.map(async ({ program, scenario }) => {
       const file = path.join(directory, `${scenario.id}.json`);
-      await writeFile(file, JSON.stringify({ program: context.semanticProcess, scenario }));
+      await writeFile(file, JSON.stringify({ program, scenario }));
       return file;
     }));
     const execution = await runLeanInterpreter(driver, paths, inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ id: string; supported: boolean;
       unsupportedResultExact: boolean }>(line, "scenario support"));
     assert.equal(actual.length, inputs.length);
-    const mismatches = inputs.flatMap((input, index) => {
-      assert.equal(actual[index]?.id, input.scenario.id);
-      assert.equal(actual[index]?.unsupportedResultExact, true, `${input.scenario.id}: exact pure unsupported result`);
-      return actual[index]?.supported === input.supported ? [] : [input.scenario.id];
-    });
-    assert.deepEqual(mismatches, []);
+    return actual;
   } finally { await rm(directory, { recursive: true, force: true }); }
-});
+}
 
 /** The emitter requires a Start naming the Program's Process and a scenario carrying the Program's profile and source identity. */
 function emitterBindsDefinition({ scenario, context }: DomainCase): boolean {

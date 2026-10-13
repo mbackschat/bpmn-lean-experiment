@@ -222,7 +222,6 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 
 ### TypeScript semantic core
 
-- **unclassified:** a recurring boundary Timer capacity refusal is semantic `rolledBack` in Lean but a core harness failure.
 - I/O, byte-level parser, Temporal SDK, CIB dependency, JUEL/XPath/FEEL/script grammar or evaluation, conditional-evaluation receipts, form schema or validation, general BPMN state model, raw source-binding interpretation, effect execution or transport digest, values outside a registered profile's declared domain in [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md#semantic-profile), general mapping expressions or scope nesting, [general Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#current-implementation-boundary) or generalized definition graphs, general faults or Error propagation beyond one direct parent, timer forms or races beyond the exact capsule, public or hosted scheduled choice, arbitrary graph execution
 
 ### BPMN conformance

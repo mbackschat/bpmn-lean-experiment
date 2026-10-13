@@ -486,76 +486,73 @@ export function advanceScenario(
     closureLimit,
   );
   const result = traced.result;
-  if (
-    result.internalStepBoundExceeded || result.ambiguousInternalChoice ||
-    result.outcome === CommandOutcome.RolledBack
-  ) {
-    return {
-      kind: ScenarioStepKind.HarnessFailure,
-      outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-      observations: [],
-      diagnostic: {
-        stage: "commandClosure",
-        outcome: result.outcome,
-        internalStepBoundExceeded: result.internalStepBoundExceeded,
-        ambiguousInternalChoice: result.ambiguousInternalChoice,
-      },
-    };
+  // Each arm transcribes Lean's `executeStimuli`: closure flags are harness failures before the
+  // outcome is read, and every other outcome is classified by its own arm rather than grouped.
+  if (result.internalStepBoundExceeded || result.ambiguousInternalChoice) {
+    return closureHarnessFailure("commandClosure", result);
   }
-
   const snapshot = observeStableState(program, result.state);
   const command = {
     kind: CanonicalObservationKind.Command,
     commandId: stimulusCommandId(stimulus),
     outcome: result.outcome,
   } as const;
-  // Lean's `terminalExecution` ends a rejection whose unchanged state has no stable observation, such as
-  // a refused first Start, with only the command observation: refusal is semantic, not a projection failure.
-  if (snapshot === null && result.outcome === CommandOutcome.Rejected) {
-    return {
-      kind: ScenarioStepKind.Terminal,
-      state: result.state,
-      outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: result.outcome },
-      observations: [command],
-    };
-  }
-  if (snapshot === null) {
-    return {
-      kind: ScenarioStepKind.HarnessFailure,
-      outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
-      observations: [],
-      diagnostic: {
-        stage: "observationProjection",
-        outcome: result.outcome,
-        internalStepBoundExceeded: result.internalStepBoundExceeded,
-        ambiguousInternalChoice: result.ambiguousInternalChoice,
-      },
-    };
-  }
-  const observations = [command, snapshot] as const;
-
   switch (result.outcome) {
     case CommandOutcome.Committed:
-      return {
+      return snapshot === null ? closureHarnessFailure("observationProjection", result) : {
         kind: ScenarioStepKind.Committed,
         state: result.state,
-        observations,
+        observations: [command, snapshot],
         publication: committedPublication(traced, snapshot),
         flowNodeOccurrenceLifecycles: committedFlowNodeOccurrenceLifecycles(traced),
       };
+    // Lean's `terminalExecution`: a refusal or an atomic capacity rollback is semantic and carries the
+    // stable state when one exists, such as for a refused first Start, which has none.
     case CommandOutcome.Rejected:
+    case CommandOutcome.RolledBack:
       return {
         kind: ScenarioStepKind.Terminal,
         state: result.state,
-        outcome: {
-          kind: ScenarioOutcomeKind.Semantic,
-          outcome: result.outcome,
-        },
-        observations,
+        outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: result.outcome },
+        observations: snapshot === null ? [command] : [command, snapshot],
       };
     default:
       return assertNever(result.outcome);
   }
+}
+
+function closureHarnessFailure(
+  stage: HarnessFailureScenarioStep["diagnostic"]["stage"],
+  result: CommandResult,
+): HarnessFailureScenarioStep {
+  return {
+    kind: ScenarioStepKind.HarnessFailure,
+    outcome: { kind: ScenarioOutcomeKind.HarnessFailure },
+    observations: [],
+    diagnostic: {
+      stage,
+      outcome: result.outcome,
+      internalStepBoundExceeded: result.internalStepBoundExceeded,
+      ambiguousInternalChoice: result.ambiguousInternalChoice,
+    },
+  };
+}
+
+/**
+ * The closure diagnostic a host raises for a semantic capacity rollback.
+ *
+ * The scenario reports the rollback semantically, as Lean does, but a host cannot continue from it:
+ * the refused firing leaves its due Timer armed, and refiring would repeat the same refusal. The
+ * Repeatable Event Subscriptions specification keeps `BpmnSemanticClosureFailure` for core rollback,
+ * so this returns the diagnostic that failure carries, or null for every other step.
+ */
+export function rolledBackClosureDiagnostic(
+  step: ScenarioStep,
+): HarnessFailureScenarioStep["diagnostic"] | null {
+  return step.kind === ScenarioStepKind.Terminal && step.outcome.kind === ScenarioOutcomeKind.Semantic &&
+      step.outcome.outcome === CommandOutcome.RolledBack
+    ? { stage: "commandClosure", outcome: CommandOutcome.RolledBack, internalStepBoundExceeded: false, ambiguousInternalChoice: false }
+    : null;
 }
 
 function committedFlowNodeOccurrenceLifecycles(

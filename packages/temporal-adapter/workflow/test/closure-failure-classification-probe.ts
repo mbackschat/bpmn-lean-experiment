@@ -32,6 +32,7 @@ const TimerFailureMode = {
   Fuel: "fuel",
   LiveRejection: "live rejection",
   Projection: "injected projection failure",
+  Rollback: "semantic capacity rollback",
   Capacity: "candidate capacity",
 } as const;
 type TimerFailureMode = typeof TimerFailureMode[keyof typeof TimerFailureMode];
@@ -114,11 +115,20 @@ const semanticMockOptions = {
             });
             break;
           case TimerFailureMode.Projection:
-            // ESL-HANDOFF-01 tests cause propagation here, not a reachable Timer projection defect.
-            // The actual rejected wrong-Start/NotStarted result supplies the injected diagnostic.
-            firingStep = core.advanceScenario(program, core.initialState, {
-              ...subscriptionStart, processId: "Wrong_Process",
-            });
+            // ESL-HANDOFF-01 tests cause propagation here: a committed step without a stable state is
+            // unreachable, so the harness step is injected rather than produced.
+            firingStep = {
+              kind: core.ScenarioStepKind.HarnessFailure, outcome: { kind: core.ScenarioOutcomeKind.HarnessFailure },
+              observations: [], diagnostic: { stage: "observationProjection", outcome: core.CommandOutcome.Committed,
+                internalStepBoundExceeded: false, ambiguousInternalChoice: false },
+            };
+            break;
+          case TimerFailureMode.Rollback:
+            // The core reports the capacity rollback semantically, as Lean does; 2^53 is unreachable from a
+            // scenario, so the exact due Timer is moved to the boundary to reach the real refusal.
+            firingStep = core.advanceScenario(program, {
+              ...state, timerWaits: state.timerWaits.map((wait) => ({ ...wait, deadlineMs: Number.MAX_SAFE_INTEGER })),
+            }, { ...stimulus, logicalTimeMs: Number.MAX_SAFE_INTEGER });
             break;
           case TimerFailureMode.Capacity:
             firingStep = core.advanceScenario(program, state, stimulus);
@@ -304,11 +314,18 @@ for (const failure of Object.values(TimerFailureMode)) {
             if (firingStep.kind !== core.ScenarioStepKind.HarnessFailure) return false;
             assert.deepEqual(firingStep.diagnostic, {
               stage: failure === TimerFailureMode.Fuel ? "commandClosure" : "observationProjection",
-              outcome: failure === TimerFailureMode.Fuel ? core.CommandOutcome.RolledBack : core.CommandOutcome.Rejected,
+              outcome: failure === TimerFailureMode.Fuel ? core.CommandOutcome.RolledBack : core.CommandOutcome.Committed,
               internalStepBoundExceeded: failure === TimerFailureMode.Fuel,
               ambiguousInternalChoice: false,
             });
             assert.deepEqual(error.details, [{ ...firingStep.diagnostic, ...firingDetails }]);
+            break;
+          case TimerFailureMode.Rollback:
+            // The Repeatable Event Subscriptions specification keeps the closure failure for core rollback.
+            assert.equal(error.type, "BpmnSemanticClosureFailure");
+            assert.equal(firingStep.kind, core.ScenarioStepKind.Terminal);
+            assert.deepEqual(error.details, [{ stage: "commandClosure", outcome: core.CommandOutcome.RolledBack,
+              internalStepBoundExceeded: false, ambiguousInternalChoice: false, ...firingDetails }]);
             break;
           case TimerFailureMode.LiveRejection:
             assert.equal(error.type, "BpmnHostCapabilityInvariantViolation");

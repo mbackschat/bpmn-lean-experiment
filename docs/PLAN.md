@@ -81,13 +81,13 @@ Current task: `PC-DATA-02` scalar admission agreement; its closure verdict belon
 
 Deliverable: Lean and the semantic core agree on typed scalar support or refusal for every registered profile, command surface and scalar kind, keeping whole-scenario unsupported, direct refusal and strict wire decoding distinct.
 
-Acceptance blockers: an independent closure verdict on the exhaustive matrix and its three corrections (refused-Start result, not-started well-formedness, hosted Start admission).
+Acceptance blockers: an independent closure verdict on the exhaustive matrix and its four corrections (refused-Start result, not-started well-formedness, hosted Start admission, capacity-rollback classification).
 
-Current result: The [exhaustive matrix](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) is green across 48 profiles; a seeded core-table mutation fails it. The capacity-rollback divergence is recorded as unclassified in the runtime/proof map, outside this deliverable.
+Current result: The [exhaustive matrix](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#whole-scenario-value-admission) is green across 48 profiles; a seeded core-table mutation fails it. A capacity rollback is now semantic `rolledBack` in the core as in Lean, while the Workflow keeps its closure failure; a Program without exactly one root scope is unsupported in both.
 
 Effort budget: 180 minutes wall from 2026-10-13 21:37 UTC through the exhaustive matrix, the two surface negatives and discrepancy classification; a correction that changes admission needs its own independent verdict. At the limit, stop and record before renewal.
 
-Next action: Commit, run the focused gates once at that commit, and obtain the cold closure verdict from the generated packet.
+Next action: run the focused gates once at the committed target and obtain the cold closure verdict from the generated packet.
 
 Oracle: a seeded one-cell domain mutation in either implementation must fail the matrix.
 

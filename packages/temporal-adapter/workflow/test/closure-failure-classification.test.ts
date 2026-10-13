@@ -10,5 +10,5 @@ test("Workflow closure and native firing failures preserve committed state and n
   const result = await promisify(execFile)(process.execPath, [
     "--experimental-test-module-mocks", "--test", "--test-reporter=tap", probe,
   ], { timeout: 20_000, env: environment });
-  assert.match(result.stdout, /# pass 7\b/u);
+  assert.match(result.stdout, /# pass 8\b/u);
 });

@@ -2,11 +2,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CommandOutcome, SemanticOperationKind, StimulusKind, applyStimulus, initialState,
+  CanonicalObservationKind, CommandOutcome, ScenarioOutcomeKind, ScenarioStepKind, SemanticOperationKind, StimulusKind,
+  advanceScenario, applyStimulus, initialState, observeStableState,
   applyStimulusWithTrace, attachedHandlersForBodyAnchor, projectOpenFlowNodeOccurrences,
   requireCompleteFlowNodeOccurrenceLifecycles,
 } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import type { FireTimerStimulus, RuntimeState, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import * as message from "./activity-boundary-message-fixture.ts";
 import * as taskTimer from "./monitored-task-fixture.ts";
 import * as childTimer from "./bounded-scope-fixture.ts";
@@ -88,13 +89,23 @@ for (const host of ["task", "child"] as const) {
           ? started.state.timerActivations.map((counter) => ({ ...counter, count: Number.MAX_SAFE_INTEGER }))
           : started.state.timerActivations,
       };
-      const overflowResult = applyStimulusWithTrace(program, beforeOverflow, {
+      const fire: FireTimerStimulus = {
         kind: StimulusKind.FireTimer, commandId: `overflow-${overflow}`, timerId: old.id, logicalTimeMs: deadlineMs,
-      });
+      };
+      const overflowResult = applyStimulusWithTrace(program, beforeOverflow, fire);
       assert.equal(overflowResult.result.outcome, CommandOutcome.RolledBack);
       assert.deepEqual(overflowResult.result.state, beforeOverflow);
       assert.deepEqual(overflowResult.committedTransitions, []);
       assert.deepEqual(overflowResult.flowNodeOccurrenceLifecycles, []);
+      // Lean's `executeStimuli` ends a capacity rollback as semantic `rolledBack` through `terminalExecution`,
+      // never as a harness failure; no scenario from the initial state reaches 2^53, so this state is built.
+      const snapshot = observeStableState(program, beforeOverflow);
+      assert.ok(snapshot !== null);
+      assert.deepEqual(advanceScenario(program, beforeOverflow, fire), {
+        kind: ScenarioStepKind.Terminal, state: beforeOverflow,
+        outcome: { kind: ScenarioOutcomeKind.Semantic, outcome: CommandOutcome.RolledBack },
+        observations: [{ kind: CanonicalObservationKind.Command, commandId: fire.commandId, outcome: CommandOutcome.RolledBack }, snapshot],
+      });
     }
     const missingDeadline = {
       ...started.state, timerWaits: [],
