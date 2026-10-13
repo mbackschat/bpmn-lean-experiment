@@ -93,7 +93,7 @@ Registered answer-free scenarios run declared Lean, TypeScript, Temporal and pin
 
 - complete artifact-catalog coverage with per-case targets
 - exact-release CIB groups, standards-only cases, and one raw-only Service Task retry execution
-- [Composition parity](../packages/differential/test/structured-composition-lean-core.integration-test.ts): invoice/null/mutations pass; hosting/registration unavailable.
+- [Composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification): registered; parity/hosting/replay/mutations pass; Closure open.
 - [PMIS](../packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts) and [sequential mapping parity](../packages/differential/test/sequential-scope-lean-core.integration-test.ts) pass; hosting remains unqualified.
 - generic Lean result emitter
 - one core batch

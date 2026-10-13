@@ -40,7 +40,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 
 ## Implemented
 
-[Private composition checkpoint](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#semantic-checkpoint-implementation): checkpoint approved; component gates pass. Hosting and public registration are unavailable.
+[Structured composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification): public registration and hosted journeys implemented; registration audit and Closure remain open.
 
 ### Wire contracts
 
