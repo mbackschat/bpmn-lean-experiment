@@ -25,6 +25,7 @@ import {
   ProcessStatus,
   ScenarioStepKind,
   SemanticProfileId,
+  StimulusKind,
   advanceScenario,
   initialState,
   observeStableState,
@@ -747,6 +748,44 @@ test("admits every example through both pre-start gates without connecting", asy
       `${path.basename(file)} must pass semantic start admission`,
     );
   }
+});
+
+test("executes structured serial handoff through the configured User Task driver", async () => {
+  const config = await loadRunnableMvpConfig(path.join(exampleRoot, "structured-process-composition.json"));
+  assert.equal(config.bpmn.semanticProfile, SemanticProfileId.StructuredProcessComposition);
+  assert.equal(config.bpmn.file, path.join(projectRoot, "scenarios/structured-process-composition/serial.bpmn"));
+  const compilation = await compileExample(config);
+  assert.ok(compilation.status === BpmnCompilationStatus.Accepted);
+  const program = compilation.semanticProcess;
+  assert.equal(program.identity.sourceSha256, "401a62e88bb93fe0d0f5bd32628800b269cc601bca9e6bcad601075aa9a80ec7");
+  let state = initialState;
+  const readState = async () => {
+    const observation = observeStableState(program, state);
+    assert.ok(observation !== null);
+    return observation;
+  };
+  const submit = async (stimulus: Stimulus) => {
+    if (stimulus.kind === StimulusKind.CompleteUserTaskInstance) {
+      const assess = stimulus.taskId.elementId === "assess";
+      assert.deepEqual((await readState()).openUserTasks.map(task => [task.id.elementId, task.inputs]),
+        [[assess ? "assess" : "archive", [{ name: assess ? "assess_in" : "archive_in",
+          value: { kind: "string", value: assess ? "Invoice 4711" : "approved" } }]]]);
+    }
+    const step = advanceScenario(program, state, stimulus);
+    assert.ok(step.kind === ScenarioStepKind.Committed);
+    state = step.state;
+    return { kind: ProcessCommandResultKind.Semantic, commandId: stimulus.commandId, outcome: CommandOutcome.Committed } as const;
+  };
+  await submit(createRunnableMvpStartStimulus(config, program));
+  const unexpected = async () => { throw new Error("Unexpected non-User Task interaction"); };
+  const result = await driveHostInteractions(config.interactions, { readState,
+    readUserTaskDetail: async request => projectUserTaskDetail(state, request), submitCompletion: submit,
+    submitMessage: unexpected, publishCorrelated: unexpected, submitCancellation: unexpected }, async () => {});
+  assert.deepEqual(result, { kind: HostInteractionResultKind.Driven, submitted: 2 });
+  assert.equal((await readState()).status, ProcessStatus.Completed);
+  assert.deepEqual((await readState()).variables, [["decision", "approved"], ["receipt", "saved"], ["summary", "Invoice 4711"]]
+    .map(([name, value]) => ({ name, value: { kind: "string", value } })));
+  assert.deepEqual(state.variables.activities, []);
 });
 
 test("declares an effect handler for every effect the program awaits", async () => {

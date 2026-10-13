@@ -6,6 +6,8 @@ This contributor map assigns package responsibilities and Temporal SDK ownership
 
 Structured Human Task composition uses the existing passive Update scheduler after the approved [hosting checkpoint](../../docs/capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#independent-cold-review-receipt). [Admission controls](protocol/test/structured-composition-host-refusal.test.ts) retain malformed-definition and predecessor-profile refusal; the [retained-source hosting witness](testkit/test/structured-composition-recovery.temporal-test.ts) adds public exact-definition compile/start without changing the Workflow or its production budgets.
 
+The [structured serial runner configuration](../../examples/temporal-mvp/structured-process-composition.json) reuses the retained source and ordinary User Task driver. [Product example controls](testkit/test/product-example-configs.test.ts) check complete profile enrollment, both pre-start gates and the exact copied inputs, routed writes and terminal cleanup.
+
 ## Registered business-task boundaries
 
 [Host admission](protocol/src/host-admission.ts) admits the registered [serial business-task profile](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md). Its [admission witness](protocol/test/serial-business-task-host-refusal.test.ts) checks hosted support while preserving semantic rejection of missing required start data.

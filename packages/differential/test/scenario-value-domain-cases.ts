@@ -14,7 +14,8 @@ const userDomains = new Map<string, readonly VariableValueKind[]>([
   ...[SemanticProfileId.UserTask, SemanticProfileId.UserTaskProcessDataPreservedNotation, SemanticProfileId.UserTaskCycle,
     SemanticProfileId.ActivityDataOutputUserTask, SemanticProfileId.ActivityDataInputOutputUserTask,
     SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.SerialBusinessTaskComposition,
-    SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError].map(profile => [profile, stringNull] as const),
+    SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError,
+    SemanticProfileId.StructuredProcessComposition].map(profile => [profile, stringNull] as const),
   ...[SemanticProfileId.UserTaskBooleanCompletionData, SemanticProfileId.UserTaskAssignmentFormMetadata,
     SemanticProfileId.ParallelUserTaskAssignmentFormMetadata].map(profile => [profile, booleanCompletion] as const),
   ...[SemanticProfileId.SequentialMultiInstanceUserTask, SemanticProfileId.ParallelMultiInstanceUserTask]

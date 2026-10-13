@@ -1,0 +1,42 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/structured-process-composition/serial.bpmn",
+    "sourceId": "structured-composition-serial",
+    "semanticProfile": "bpmn-2.0.2-structured-process-composition-draft",
+    "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
+  },
+  "process": {
+    "instanceId": "MvpExample_structured_process_composition_1",
+    "initialVariables": [
+      { "name": "summary", "value": { "kind": "string", "value": "Invoice 4711" } }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "assess",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        { "name": "assess_out", "value": { "kind": "string", "value": "approved" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "archive",
+      "delayMs": 1,
+      "inputVariableNames": [],
+      "submittedValues": [
+        { "name": "archive_out", "value": { "kind": "string", "value": "saved" } }
+      ]
+    }
+  ],
+  "effectHandlers": []
+}

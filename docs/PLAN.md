@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-HUM-01` structured registration accepted; choose the next existing delivery slice. Related `PC-CF-02` remains separately open.
+Current task: `PC-HUM-01`, structured registration and runnable handoff complete; select the next existing acceptance obligation. Related `PC-CF-02` remains separately open.
 
-Deliverable: Select one existing capability with a credible bounded path to independent acceptance, preserving the accepted [structured invoice/serial handoffs](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification).
+Deliverable: Preserve the accepted [structured invoice/serial handoffs](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#public-registration-qualification) and select one next independently finishable business-process increment.
 
-Acceptance blockers: Identify the next capability's mandatory remaining obligations. Structured capsule Closure still requires complete runtime qualification and whole-capsule cost; retained runtime failures block release acceptance.
+Acceptance blockers: No registration enrollment gap remains. Whole-capsule cost and complete runtime qualification remain required for Closure; retained runtime failures block release acceptance.
 
-Current result: Registration `104121b5` independently accepted after audits `8380da72` and `7fbdd523`. Five public routes, registered cross-target agreement, recovery/replay and mutations pass. Registration cost is reconciled. No whole-checklist closure is claimed.
+Current result: Registration `104121b5` is independently accepted after audits `8380da72` and `7fbdd523`. Five public routes, cross-target agreement and recovery/replay pass. The omitted independent value-domain enrollment and runnable example are corrected; full domain matrix, concurrent testkit and engine API gates pass. No whole-checklist closure is claimed.
 
-Effort budget: 15 minutes to select the next existing slice and its bounded acceptance path. Registration, qualification and independent review completed within their separate budgets. Stop and reassess at the limit; no automatic renewal.
+Effort budget: 10 minutes for enrollment corrections from 2026-10-13 00:31 UTC; completed within budget. Resume the remaining 10 minutes of the prior 15-minute next-slice selection allowance. Stop and reassess at the limit; no automatic renewal.
 
-Next action: Compare remaining blockers of existing delivery checkpoints; choose independent project work that can advance without SDK repair or repeating unchanged failed qualification. Name the deliverable, deciding witness and implementation budget before editing.
+Next action: Commit the enrollment integration, then select one existing acceptance obligation without reopening SDK repair or deferred MI guarantees. Nearby serial/Call/Message closure paths retain runtime holds; new scope requires its ordinary proposal boundary.
 
-Oracle: Exact owner evidence and checklist dependency rows support the chosen acceptance path; reviewed scope and quality gates remain intact.
+Oracle: Exact owner evidence identifies the deliverable, mandatory blockers, deciding witness and finite implementation budget before new edits.
 
-Stop if the proposed path requires deferred SDK work, changes semantic scope or reopens a deferred guarantee. Preserve invoice/Call/Message holds, unrelated pending work and resource limits. Keep the inherited startup-timeout cleanup concern recorded separately.
+Stop if the path requires deferred SDK work or an unapproved semantic change. Preserve unrelated pending work, resource limits and open capsule Closure.
