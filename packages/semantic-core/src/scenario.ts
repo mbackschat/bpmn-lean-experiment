@@ -506,8 +506,9 @@ export function advanceScenario(
         publication: committedPublication(traced, snapshot),
         flowNodeOccurrenceLifecycles: committedFlowNodeOccurrenceLifecycles(traced),
       };
-    // Lean's `terminalExecution`: a refusal or an atomic capacity rollback is semantic and carries the
-    // stable state when one exists, such as for a refused first Start, which has none.
+    // Lean's `terminalExecution`: a refusal or a flag-free atomic rollback (a capacity refusal, or a schedule
+    // failure under a required choice schedule) is semantic and carries the stable state when one exists,
+    // such as for a refused first Start, which has none.
     case CommandOutcome.Rejected:
     case CommandOutcome.RolledBack:
       return {
@@ -539,10 +540,11 @@ function closureHarnessFailure(
 }
 
 /**
- * The closure diagnostic a host raises for a semantic capacity rollback.
+ * The closure diagnostic a host raises for a semantic flag-free rollback.
  *
  * The scenario reports the rollback semantically, as Lean does, but a host cannot continue from it:
- * the refused firing leaves its due Timer armed, and refiring would repeat the same refusal. The
+ * the rolled-back command leaves the state unchanged, so reissuing it repeats the same refusal; a
+ * refused recurring Timer firing, for instance, stays armed and due. The
  * Repeatable Event Subscriptions specification keeps `BpmnSemanticClosureFailure` for core rollback,
  * so this returns the diagnostic that failure carries, or null for every other step.
  */

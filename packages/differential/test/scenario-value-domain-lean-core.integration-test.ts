@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, initialState, isWellFormedRuntimeState, observeStableState,
+import { CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, compareCanonicalStrings, initialState, isWellFormedRuntimeState, observeStableState,
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, runtimeStateDefects, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
 import { assessBpmnProcessAdmission, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
@@ -103,14 +103,16 @@ test("Lean scenario support checks every selected profile and both late effect r
 });
 
 // Lean answers a Start on a Program without exactly one root scope with `semanticFailure`, an outcome the
-// core never produces; both supports must refuse such a Program so no scenario can reach that arm.
+// core never produces; both supports must refuse such a Program so no scenario can reach that arm. The
+// duplicate keeps canonical scope order, so only root multiplicity, never sortedness, can cause the refusal.
 test("a Program without exactly one root scope is unsupported by both implementations", async () => {
   const inputs = [...await selectedProfileContexts()].flatMap(([, { semanticProcess, scenario }]) => {
     const root = semanticProcess.definitionScopes.find(({ parentScopeId, originElementId }) =>
       parentScopeId === null && originElementId === semanticProcess.processId);
     assert.ok(root !== undefined, scenario.id);
     return [semanticProcess.definitionScopes.filter((candidate) => candidate !== root),
-      [...semanticProcess.definitionScopes, { ...root, id: `${root.id}_Second` }]]
+      [...semanticProcess.definitionScopes, { ...root, id: `${root.id}_Second` }]
+        .sort((left, right) => compareCanonicalStrings(left.id, right.id))]
       .map((definitionScopes, index) => ({ program: { ...semanticProcess, definitionScopes },
         scenario: { ...scenario, id: `${scenario.id}-root-${index === 0 ? "absent" : "duplicated"}` } }));
   });
