@@ -17,7 +17,7 @@ import {
   bpmnProcessWorkflowType, bpmnSemanticTaskQueue, bpmnTraceQueryName,
   bpmnWorkflowContinuationV1, contentBoundUpdateId,
   createCachedLocalEnvironment, getTestProcessHandle, isCompletedProcessReceipt,
-  loadBpmnWorkflowBundle, observeTemporalExecutionPublication,
+  loadBpmnWorkflowBundle, readPublicationUntilAnswered, observeTemporalExecutionPublication,
   observeTemporalFlowNodeOccurrences, processTerminalReceiptFormatV1,
   processWorkflowId, readTestProcessTerminalResult, submitUserTaskCompletion,
   workflowChainProductionLimit,
@@ -571,14 +571,14 @@ async function readPairedPublication(
       processInstanceId,
     };
     const [execution, occurrences] = await Promise.all([
-      observeTemporalExecutionPublication(
+      readPublicationUntilAnswered("PMI E1 publication", () => observeTemporalExecutionPublication(
         environment.client.workflow as unknown as TemporalExecutionPublicationClient,
         workflowId, identity, { afterRevision, limit: 100 },
-      ),
-      observeTemporalFlowNodeOccurrences(
+      )),
+      readPublicationUntilAnswered("PMI E2 publication", () => observeTemporalFlowNodeOccurrences(
         environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
         workflowId, identity, { afterRevision, limit: 100 },
-      ),
+      )),
     ]);
     assert.equal(execution.kind, ExecutionPublicationResultKind.Available);
     assert.equal(occurrences.kind, FlowNodeOccurrencePublicationResultKind.Available);

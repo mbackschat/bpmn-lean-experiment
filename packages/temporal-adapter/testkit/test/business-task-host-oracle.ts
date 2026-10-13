@@ -12,6 +12,7 @@ import type {
 import {
   completeEffectStimulus, effectTransportKey, processWorkflowId, submitUserTaskCompletion,
   ExecutionPublicationResultKind, FlowNodeOccurrencePublicationResultKind,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication, observeTemporalFlowNodeOccurrences,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -73,10 +74,12 @@ export function createBusinessTaskHostOracle(
     let afterRevision = 0;
     for (let pageIndex = 0; pageIndex <= expectedExecution.length; pageIndex += 1) {
       const [execution, occurrences] = await Promise.all([
-        observeTemporalExecutionPublication(environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-          workflowId, identity, { afterRevision, limit: 2 }),
-        observeTemporalFlowNodeOccurrences(environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-          workflowId, identity, { afterRevision, limit: 2 }),
+        readPublicationUntilAnswered("business-task E1 publication", () => observeTemporalExecutionPublication(
+          environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+          workflowId, identity, { afterRevision, limit: 2 })),
+        readPublicationUntilAnswered("business-task E2 publication", () => observeTemporalFlowNodeOccurrences(
+          environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+          workflowId, identity, { afterRevision, limit: 2 })),
       ]);
       assert.equal(execution.kind, ExecutionPublicationResultKind.Available);
       assert.equal(occurrences.kind, FlowNodeOccurrencePublicationResultKind.Available);

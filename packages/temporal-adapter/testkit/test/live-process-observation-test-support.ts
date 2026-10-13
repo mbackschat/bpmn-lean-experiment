@@ -27,6 +27,7 @@ import {
   FlowNodeOccurrencePublicationResultKind,
   ProcessCommandResultKind,
   bpmnTraceQueryName,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication,
   observeTemporalFlowNodeOccurrences,
   submitUserTaskCompletion,
@@ -121,12 +122,13 @@ export async function occurrences(
   const batches: FlowNodeOccurrenceBatch[] = [];
   let afterRevision = 0;
   for (let pageIndex = 0; pageIndex < publicationPageBound; pageIndex += 1) {
-    const result = await observeTemporalFlowNodeOccurrences(
-      environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-      started.workflowId,
-      { definition: program.identity, processId: program.processId, processInstanceId: started.instanceId },
-      { afterRevision },
-    );
+    const result = await readPublicationUntilAnswered("occurrence publication", () =>
+      observeTemporalFlowNodeOccurrences(
+        environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+        started.workflowId,
+        { definition: program.identity, processId: program.processId, processInstanceId: started.instanceId },
+        { afterRevision },
+      ));
     assert.ok(result.kind === FlowNodeOccurrencePublicationResultKind.Available);
     batches.push(...result.page.batches);
     if (result.page.currentOpen !== null) {
@@ -147,12 +149,13 @@ export async function executionPublication(
   const batches: CommittedTransitionBatch[] = [];
   let afterRevision = 0;
   for (let pageIndex = 0; pageIndex < publicationPageBound; pageIndex += 1) {
-    const result = await observeTemporalExecutionPublication(
-      environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-      started.workflowId,
-      { definition: program.identity, processId: program.processId, processInstanceId: started.instanceId },
-      { afterRevision },
-    );
+    const result = await readPublicationUntilAnswered("execution publication", () =>
+      observeTemporalExecutionPublication(
+        environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+        started.workflowId,
+        { definition: program.identity, processId: program.processId, processInstanceId: started.instanceId },
+        { afterRevision },
+      ));
     assert.ok(result.kind === ExecutionPublicationResultKind.Available);
     batches.push(...result.page.batches);
     if (result.page.current !== null) {

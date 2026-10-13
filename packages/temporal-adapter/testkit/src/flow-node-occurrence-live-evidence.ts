@@ -52,6 +52,7 @@ import { withDeadline } from "./contracts.js";
 import type { TemporalHistory } from "./contracts.js";
 import { createCachedLocalEnvironment } from "./ephemeral-server.js";
 import { readTestProcessTerminalResult } from "./private-process-handle.js";
+import { readPublicationUntilAnswered } from "./publication-read-retry.js";
 import { requireStartStimulus } from "./runner-support.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 
@@ -422,15 +423,18 @@ function observeOccurrences(
   request: Readonly<{ afterRevision: number; limit?: number }>,
 ): Promise<FlowNodeOccurrencePublicationResult> {
   const start = requireStartStimulus(input.scenario);
-  return observeTemporalFlowNodeOccurrences(
-    environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-    workflowId,
-    {
-      definition: input.semanticProcess.identity,
-      processId: input.semanticProcess.processId,
-      processInstanceId: start.instanceId,
-    },
-    request,
+  return readPublicationUntilAnswered(
+    `occurrence publication after revision ${request.afterRevision}`,
+    () => observeTemporalFlowNodeOccurrences(
+      environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+      workflowId,
+      {
+        definition: input.semanticProcess.identity,
+        processId: input.semanticProcess.processId,
+        processInstanceId: start.instanceId,
+      },
+      request,
+    ),
   );
 }
 
@@ -440,15 +444,18 @@ async function requireExecutionPage(
   input: FlowNodeOccurrenceEvidenceInput,
 ): Promise<ExecutionPublicationPage> {
   const start = requireStartStimulus(input.scenario);
-  const result = await observeTemporalExecutionPublication(
-    environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-    workflowId,
-    {
-      definition: input.semanticProcess.identity,
-      processId: input.semanticProcess.processId,
-      processInstanceId: start.instanceId,
-    },
-    { afterRevision: 0 },
+  const result = await readPublicationUntilAnswered(
+    "execution publication terminal page",
+    () => observeTemporalExecutionPublication(
+      environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+      workflowId,
+      {
+        definition: input.semanticProcess.identity,
+        processId: input.semanticProcess.processId,
+        processInstanceId: start.instanceId,
+      },
+      { afterRevision: 0 },
+    ),
   );
   if (result.kind !== ExecutionPublicationResultKind.Available) {
     throw new TypeError(`execution publication Query returned ${result.kind}`);

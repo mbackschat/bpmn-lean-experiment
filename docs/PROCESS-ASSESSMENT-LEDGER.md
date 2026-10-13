@@ -29,6 +29,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 12. **Presentation choice.** What question does this screen answer, which facts need scanning versus sustained reading, and did I inspect realistic expanded content before calling the design usable?
 13. **Outward action.** Before anything was published under the owner's identity — an issue, comment, pull request, push or post — did the owner see its exact text, and did their approval name that act rather than a direction?
 14. **Gate cadence.** Which complete gate did I start, and was the batch it qualifies already final, or did I use it to discover consumers that a focused dependent build would have found? Which edit, including a comment-only one, invalidates a widely imported module and therefore the whole downstream build? Which known failure blocks downstream modules from being checked, and is its approved fix applied before the gate? Did I enumerate a failure class statically before rebuilding to find its next instance?
+15. **Failure attribution.** For each gate failure I attributed to a known class such as host load, did I read the failing run's own log for the signature of every open entry in the [Temporal defects ledger](TEMPORAL-DEFECTS-LEDGER.md), and which line separates my attribution from that defect?
 
 ## Escalation rule
 
@@ -49,7 +50,7 @@ Dispositions are a closed set:
 |---|---|---|
 | Plan scope, bounds and required consumers | [01](#finding-01), [05](#finding-05), [07](#finding-07), [16](#finding-16), [17](#finding-17), [26](#finding-26), [27](#finding-27), [52](#finding-52), [58](#finding-58) | [01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01), [17](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-17), [58](process-assessment/VERIFICATION-LEDGER.md#finding-58) |
 | Establish claims and independent semantic evidence | [02](#finding-02), [11](#finding-11), [12](#finding-12), [41](#finding-41), [42](#finding-42), [43](#finding-43), [44](#finding-44), [46](#finding-46), [47](#finding-47), [48](#finding-48), [51](#finding-51), [54](#finding-54), [62](#finding-62) | [02](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-02), [12](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-12), [46](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-46), [47](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-47), [54](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-54) |
-| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
+| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
 | Maintain owned facts and complete correction sweeps | [06](#finding-06), [10](#finding-10), [14](#finding-14), [15](#finding-15), [37](#finding-37), [45](#finding-45), [55](#finding-55), [59](#finding-59) | [06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06), [14](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-14), [15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15), [45](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-45) |
 | Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
@@ -1413,6 +1414,23 @@ Evidence
 **First observed:** `PC-DATA-03` Property-path runtime on 2026-10-13.
 
 After threading the Property-path policy through widely imported owners, the agent ran the full `./scripts/lake.sh build` to find remaining consumers while the new conformance module was still uncompiled and one proof owner was edited mid-run. The capsule and testing policy select focused owner/consumer builds while stabilizing and one complete gate for the coherent batch. Lake reuses unchanged artifacts, which limits the waste, but the run still competed for the host and cannot be cited as acceptance. The same session then edited only a docstring in `CanonicalBusinessValue.lean`, which Lake keys by content and 835 modules import; it was reverted before the next gate. In the same session, the complete gate then ran while the known `890b010f` replay failure still blocked 63 dependents, and its approved alias fix was applied only afterwards; the next run found a second site of the same alias class by compilation instead of by static enumeration. Applying the fix first and enumerating the seven sites statically would have needed one incremental run instead of three. No repository fact observes the class: the build target is chosen in the session before any tracked artifact changes, so question 14 remains the control.
+
+### Finding 76
+
+A hosted gate failure was attributed to documented host-load unreliability from correlation alone, while each failing read in the run's own log followed the leftover-buffer warning that identifies the confirmed SDK defect TD-001.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [self-assessment question 15](#self-assessment-questions)
+
+**First observed:** `PC-DATA-03` portable handoff Closure on 2026-10-13.
+
+The complete Temporal gate failed a varying set of publication reads with `unavailable`. They passed in isolation and failed more under load, which matched the hosting map's host-load note, so the agent reported host load and briefed a retry repair before reading the log lines that preceded each failure. All five failures in `/tmp/pbv-closure-temporal-2c5f4c3e-a` follow Core's "There were leftover buffered tasks when evicting run" warning, the TD-001 signature; load widens that defect's window rather than causing the failures. The attribution also reached the owner, whose direction then needed restating against TD-001's no-workaround rule before the repair could land.
 
 ## Update rule
 

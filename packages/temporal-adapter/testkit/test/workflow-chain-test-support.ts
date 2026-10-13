@@ -9,6 +9,7 @@ import type { TestWorkflowEnvironment } from "@temporalio/testing";
 
 import {
   ExecutionPublicationResultKind,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication,
 } from "@bpmn-lean/temporal-testkit";
 import type {
@@ -83,16 +84,17 @@ export async function waitForPublishedWorkflowChainState(
   let afterRevision = 0;
   const state = await pollWorkflowChainObservation(async () => {
     for (let pageIndex = 0; pageIndex < 16; pageIndex += 1) {
-      const result = await observeTemporalExecutionPublication(
-        environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-        workflowId,
-        {
-          definition: semanticProcess.identity,
-          processId: semanticProcess.processId,
-          processInstanceId,
-        },
-        { afterRevision },
-      );
+      const result = await readPublicationUntilAnswered("workflow-chain execution publication", () =>
+        observeTemporalExecutionPublication(
+          environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+          workflowId,
+          {
+            definition: semanticProcess.identity,
+            processId: semanticProcess.processId,
+            processInstanceId,
+          },
+          { afterRevision },
+        ));
       if (result.kind !== ExecutionPublicationResultKind.Available) {
         return undefined;
       }

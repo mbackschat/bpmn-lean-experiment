@@ -20,6 +20,7 @@ import {
   BpmnWorkflowHostInputKind, ExecutionPublicationResultKind, FlowNodeOccurrencePublicationResultKind,
   WorkflowChainBudgetKind, bpmnProcessWorkflowType, bpmnSemanticTaskQueue, bpmnTraceQueryName,
   bpmnWorkflowContinuationV1, createCachedLocalEnvironment, getTestProcessHandle, loadBpmnWorkflowBundle, mutateConditionalSelection,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication, observeTemporalFlowNodeOccurrences, processWorkflowId,
   readTestProcessTerminalResult, requireBpmnWorkflowContinuationStateV1, runBranchBypassMutation,
   submitUserTaskCompletion, workflowChainProductionLimit,
@@ -275,10 +276,12 @@ test("registered composition preserves public input, routing and merge through r
           state => !state.openUserTasks.some(task => isDeepStrictEqual(task.id, assess.openUserTasks[0]!.id)));
         const identity = { definition: program.identity, processId: program.processId, processInstanceId: start.instanceId };
         const [execution, occurrences] = await Promise.all([
-          observeTemporalExecutionPublication(environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-            handle.workflowId, identity, { afterRevision: 0 }),
-          observeTemporalFlowNodeOccurrences(environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-            handle.workflowId, identity, { afterRevision: 0 }),
+          readPublicationUntilAnswered("branch-bypass E1 publication", () => observeTemporalExecutionPublication(
+            environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+            handle.workflowId, identity, { afterRevision: 0 })),
+          readPublicationUntilAnswered("branch-bypass E2 publication", () => observeTemporalFlowNodeOccurrences(
+            environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+            handle.workflowId, identity, { afterRevision: 0 })),
         ]);
         assert.equal(execution.kind, ExecutionPublicationResultKind.Available);
         assert.equal(occurrences.kind, FlowNodeOccurrencePublicationResultKind.Available);

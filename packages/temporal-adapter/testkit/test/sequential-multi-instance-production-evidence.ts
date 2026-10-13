@@ -7,6 +7,7 @@ import type {
 import {
   FlowNodeOccurrencePublicationResultKind,
   bpmnTraceQueryName,
+  readPublicationUntilAnswered,
   observeTemporalFlowNodeOccurrences,
   type BpmnProcessWorkflow,
   type FlowNodeOccurrenceBatch,
@@ -109,17 +110,18 @@ async function readOccurrenceBatches(
   const batches: FlowNodeOccurrenceBatch[] = [];
   let afterRevision = 0;
   for (let page = 0; page < 32; page += 1) {
-    const result = await observeTemporalFlowNodeOccurrences(
-      environment.client.workflow as unknown as
-        TemporalFlowNodeOccurrencePublicationClient,
-      workflowId,
-      {
-        definition: semanticProcess.identity,
-        processId: semanticProcess.processId,
-        processInstanceId,
-      },
-      { afterRevision, limit: 100 },
-    );
+    const result = await readPublicationUntilAnswered("SMI occurrence publication", () =>
+      observeTemporalFlowNodeOccurrences(
+        environment.client.workflow as unknown as
+          TemporalFlowNodeOccurrencePublicationClient,
+        workflowId,
+        {
+          definition: semanticProcess.identity,
+          processId: semanticProcess.processId,
+          processInstanceId,
+        },
+        { afterRevision, limit: 100 },
+      ));
     assert.equal(
       result.kind,
       FlowNodeOccurrencePublicationResultKind.Available,

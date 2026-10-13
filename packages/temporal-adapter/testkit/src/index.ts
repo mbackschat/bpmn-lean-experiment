@@ -18,6 +18,7 @@ export * from "./history-evidence-decoding.js";
 export * from "./mapped-boundary-error-scenario-execution.js";
 export * from "./mutation-probes.js";
 export * from "./private-process-handle.js";
+export * from "./publication-read-retry.js";
 export * from "./runner.js";
 export * from "./scenario-admission.js";
 export * from "./scenario-stimulus-sequencing.js";

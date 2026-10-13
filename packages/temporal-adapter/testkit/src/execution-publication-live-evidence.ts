@@ -62,6 +62,7 @@ import { withDeadline } from "./contracts.js";
 import type { TemporalHistory } from "./contracts.js";
 import { createCachedLocalEnvironment } from "./ephemeral-server.js";
 import { readTestProcessTerminalResult } from "./private-process-handle.js";
+import { readPublicationUntilAnswered } from "./publication-read-retry.js";
 import { requireStartStimulus } from "./runner-support.js";
 import { startScenarioWorkflow } from "./runner-workflow-start.js";
 import { historyEvents } from "./history-evidence-decoding.js";
@@ -477,15 +478,18 @@ function observe(
   request: Readonly<{ afterRevision: number; limit?: number }>,
 ): Promise<ExecutionPublicationResult> {
   const start = requireStartStimulus(input.scenario);
-  return observeTemporalExecutionPublication(
-    environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-    workflowId,
-    {
-      definition: input.semanticProcess.identity,
-      processId: input.semanticProcess.processId,
-      processInstanceId: start.instanceId,
-    },
-    request,
+  return readPublicationUntilAnswered(
+    `execution publication after revision ${request.afterRevision}`,
+    () => observeTemporalExecutionPublication(
+      environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+      workflowId,
+      {
+        definition: input.semanticProcess.identity,
+        processId: input.semanticProcess.processId,
+        processInstanceId: start.instanceId,
+      },
+      request,
+    ),
   );
 }
 
@@ -505,12 +509,15 @@ async function readPairedPages(
   for (let index = 0; index < 4; index += 1) {
     const [execution, occurrences] = await Promise.all([
       observe(environment, workflowId, input, { afterRevision }),
-      observeTemporalFlowNodeOccurrences(
-        environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-        workflowId,
-        { definition: input.semanticProcess.identity, processId: input.semanticProcess.processId,
-          processInstanceId: requireStartStimulus(input.scenario).instanceId },
-        { afterRevision },
+      readPublicationUntilAnswered(
+        `occurrence publication after revision ${afterRevision}`,
+        () => observeTemporalFlowNodeOccurrences(
+          environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+          workflowId,
+          { definition: input.semanticProcess.identity, processId: input.semanticProcess.processId,
+            processInstanceId: requireStartStimulus(input.scenario).instanceId },
+          { afterRevision },
+        ),
       ),
     ]);
     const page = requireAvailable(execution);

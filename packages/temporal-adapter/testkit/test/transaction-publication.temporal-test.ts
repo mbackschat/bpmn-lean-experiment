@@ -11,6 +11,7 @@ import {
   ProcessCommandResultKind, BpmnProcessStartResultKind, ExecutionPublicationResultKind, FlowNodeOccurrencePublicationResultKind,
   EffectExecutionSchedule, EffectProbeStore, bpmnProcessWorkflowType, bpmnSemanticTaskQueue,
   createCachedLocalEnvironment, loadBpmnWorkflowBundle, listOpenUserTasks,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication, observeTemporalFlowNodeOccurrences, processWorkflowId,
   readTestProcessTerminalResult, startBpmnProcess, submitUserTaskCompletion,
 } from "@bpmn-lean/temporal-testkit";
@@ -113,8 +114,10 @@ test("Transaction public commands preserve paired publication through empty, com
           let afterRevision = 0;
           for (let page = 0; page < 16; page += 1) {
             const [e1, e2] = await Promise.all([
-              observeTemporalExecutionPublication(client as unknown as TemporalExecutionPublicationClient, workflowId, identity, { afterRevision }),
-              observeTemporalFlowNodeOccurrences(client as unknown as TemporalFlowNodeOccurrencePublicationClient, workflowId, identity, { afterRevision }),
+              readPublicationUntilAnswered(`Transaction ${selected} E1 publication`, () =>
+                observeTemporalExecutionPublication(client as unknown as TemporalExecutionPublicationClient, workflowId, identity, { afterRevision })),
+              readPublicationUntilAnswered(`Transaction ${selected} E2 publication`, () =>
+                observeTemporalFlowNodeOccurrences(client as unknown as TemporalFlowNodeOccurrencePublicationClient, workflowId, identity, { afterRevision })),
             ]);
             assert.equal(e1.kind, ExecutionPublicationResultKind.Available);
             assert.equal(e2.kind, FlowNodeOccurrencePublicationResultKind.Available);

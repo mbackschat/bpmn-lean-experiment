@@ -22,6 +22,7 @@ import {
   getTestProcessHandle,
   isCompletedProcessReceipt,
   loadBpmnWorkflowBundle,
+  readPublicationUntilAnswered,
   observeTemporalExecutionPublication,
   observeTemporalFlowNodeOccurrences,
   processTerminalReceiptFormatV1,
@@ -102,18 +103,20 @@ test("traverses aligned publication segments without exposing Workflow Runs", as
       processInstanceId: start.instanceId,
     };
     const [execution, occurrences] = await Promise.all([
-      observeTemporalExecutionPublication(
-        environment.client.workflow as unknown as TemporalExecutionPublicationClient,
-        workflowId,
-        identity,
-        request,
-      ),
-      observeTemporalFlowNodeOccurrences(
-        environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
-        workflowId,
-        identity,
-        request,
-      ),
+      readPublicationUntilAnswered("segmented E1 publication", () =>
+        observeTemporalExecutionPublication(
+          environment.client.workflow as unknown as TemporalExecutionPublicationClient,
+          workflowId,
+          identity,
+          request,
+        )),
+      readPublicationUntilAnswered("segmented E2 publication", () =>
+        observeTemporalFlowNodeOccurrences(
+          environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient,
+          workflowId,
+          identity,
+          request,
+        )),
     ]);
     publicValues.push(execution, occurrences);
     assert.equal(execution.kind, ExecutionPublicationResultKind.Available);
