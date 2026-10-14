@@ -32,6 +32,7 @@ import {
   bpmnProcessWorkflowType,
   productionBpmnWorkflowInitialHostInput,
   requireWorkflowChainInitialArgumentBudgets,
+  startCapacityEffectEvidence,
   startCapacityEnvelopeEvidence,
 } from "@bpmn-lean/temporal-protocol";
 import type {
@@ -213,6 +214,14 @@ function assessStartCapacity(
         failure: {
           code: BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded,
           evidence: startCapacityEnvelopeEvidence(envelope.failure),
+        },
+      };
+    case StartCapacityEnvelopeResultKind.EffectTaskExceeded:
+      return {
+        kind: BpmnProcessAdmissionResultKind.Rejected,
+        failure: {
+          code: BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded,
+          evidence: startCapacityEffectEvidence(envelope.failure),
         },
       };
   }

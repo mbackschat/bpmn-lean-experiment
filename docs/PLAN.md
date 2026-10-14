@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no hosted capacity envelope (`PBV-EFF-05`), live Worker-replacement witness, CIB calibration probe, corpus/About disclosure or closure review.
+Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no closure reflection, cost-ledger row or independent closure review.
 
-Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport.
+Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport; the Start capacity envelope reserves every Service Task result (`PBV-EFF-05`); live recovery, the old-profile refusal, the CIB calibration probe and the corpus/About disclosure are in place.
 
 Effort budget: 180 minutes wall from 2026-10-14 09:23 UTC, set under the owner's delegation of budget decisions, for the hosting lane, sized by the portable handoff's comparable lane; enrollment closed at 09:22 within its 120 minutes. At the limit, stop and record before renewal.
 
-Next action: extend the Start capacity envelope to the effect-data journey with per-task Activity and patch reservations (`PBV-EFF-05`).
+Next action: run the complete closure gates once, then the closure reflection, cost-ledger row and cold closure review of the amendment.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 

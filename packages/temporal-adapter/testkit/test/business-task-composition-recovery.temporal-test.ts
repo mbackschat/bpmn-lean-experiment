@@ -5,10 +5,11 @@ import { isDeepStrictEqual } from "node:util";
 import test from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  EffectExecutionResultKind, StimulusKind, VariableValueKind, observeStableState,
+  EffectExecutionResultKind, SemanticProfileId, StimulusKind, VariableValueKind, observeStableState,
 } from "@bpmn-lean/semantic-core";
-import type { CanonicalObservation, EffectExecutionResult, VariableBinding } from "@bpmn-lean/semantic-core";
+import type { BusinessValue, CanonicalObservation, EffectExecutionResult, VariableBinding } from "@bpmn-lean/semantic-core";
 import type { EffectActivityImplementationResult } from "@bpmn-lean/temporal-protocol";
+import { ApplicationFailure, WorkflowFailedError } from "@temporalio/client";
 import {
   BpmnWorkflowHostInputKind, WorkflowChainBudgetKind, bpmnProcessWorkflowType,
   bpmnSemanticTaskQueue, bpmnTraceQueryName, bpmnWorkflowContinuationV1,
@@ -38,6 +39,20 @@ const effect = (element: string, result: EffectExecutionResult): Step => ({ kind
 const serialXml = await readFile(serialSource, "utf8");
 const chainXml = await readFile(new URL("../../../bpmn-source/test/fixtures/serial-invoice-classification.bpmn", import.meta.url), "utf8");
 const assessmentXml = await readFile(new URL("../../../bpmn-source/test/fixtures/mixed-task-assessment-routing.bpmn", import.meta.url), "utf8");
+const creditXml = await readFile(new URL("../../../../scenarios/portable-business-effect-data/credit-decision.bpmn", import.meta.url), "utf8");
+const text = (value: string): BusinessValue => ({ kind: VariableValueKind.String, value });
+const map = (...entries: Array<readonly [string, BusinessValue]>): BusinessValue =>
+  ({ kind: VariableValueKind.Map, value: entries.map(([name, value]) => ({ name, value })) });
+// PBV-EFF witness: repeated equal checks, a negative scale-two Decimal, a nested Map and present Nulls.
+const creditAssessment = map(
+  ["amount", { kind: VariableValueKind.Decimal, coefficient: "-123455", scale: 2 }],
+  ["approved", { kind: VariableValueKind.Boolean, value: true }],
+  ["checks", { kind: VariableValueKind.List, value: [map(["code", text("ID")]), map(["code", text("ID")]), map(["code", text("INCOME")])] }],
+  ["contact", map(["city", text("Berlin")], ["line2", { kind: VariableValueKind.Null }])],
+  ["note", { kind: VariableValueKind.Null }],
+);
+const returns = (name: string, value: BusinessValue): EffectExecutionResult =>
+  ({ kind: EffectExecutionResultKind.Success, localPatch: [{ name, value }] });
 const cases = [
   { name: "serial-invoice", xml: serialXml, profile: serialProfile, handlers: ["invoiceValidator"], recoverEffect: 0,
     initial: [scalar("payload", "parent"), scalar("request", "draft")],
@@ -53,6 +68,10 @@ const cases = [
     initial: [scalar("assessment", "approved"), scalar("route", route)],
     steps: [route === "supplier" ? effect("Supplier", success(null)) : human("Internal"),
       effect("Record", { kind: EffectExecutionResultKind.Success, localPatch: [] }), human("Approve")] })),
+  // Worker loss during Notify carries the structured assessment in the open argument snapshot across rollover.
+  { name: "effect-data-credit", xml: creditXml, profile: SemanticProfileId.PortableBusinessEffectData,
+    handlers: ["assessCredit", "notifyApplicant"], recoverEffect: 1, initial: [scalar("applicantRef", "A-17")],
+    steps: [effect("AssessCredit", returns("assessment", creditAssessment)), effect("NotifyApplicant", returns("receipt", text("sent")))] },
 ];
 
 // These named operations depend on business arguments, never on oracle state or expected answers.
@@ -70,6 +89,12 @@ async function executeBusinessOperation(request: EffectRequest): Promise<EffectA
     case "recordAssessment":
       assert.ok(payload !== undefined);
       return { kind: EffectExecutionResultKind.Success, localPatch: [] };
+    case "assessCredit":
+      assert.deepEqual(request.arguments, [scalar("applicant", "A-17")]);
+      return returns("assessment", creditAssessment);
+    case "notifyApplicant":
+      assert.deepEqual(request.arguments, [{ name: "assessment", value: creditAssessment }]);
+      return returns("receipt", text("sent"));
     default: throw new TypeError(`Unknown business operation ${request.operation}`);
   }
 }
@@ -198,3 +223,44 @@ for (const scenario of cases) {
     }
   });
 }
+
+// PBV-EFF-01: an existing profile keeps its scalar port domain, so a structured handler result is refused by the
+// committed semantic intent rather than written or invalidated by transport.
+test("an existing serial profile refuses a structured handler result as a typed host failure with no committed change", async () => {
+  const compiled = await compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(serialXml),
+    sourceId: "serial-structured-refusal", expectedSha256: undefined, semanticProfile: serialProfile,
+    sourceOverlay: sourceOverlay(["invoiceValidator"], serialProfile), limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1000 } });
+  assert.ok(compiled.status === BpmnCompilationStatus.Accepted);
+  const program = compiled.semanticProcess;
+  const start = { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId,
+    instanceId: "serial-structured-refusal", initialVariables: [scalar("payload", "parent"), scalar("request", "draft")] } as const;
+  const activities = { executeBpmnEffect: async (request: EffectRequest): Promise<EffectActivityImplementationResult> => {
+    assert.equal(request.operation, "invoiceValidator");
+    return returns("result", creditAssessment);
+  } };
+  const environment = await withDeadline(createCachedLocalEnvironment({ identity: start.instanceId,
+    downloadDirectory: temporalCacheDirectory }), 40_000, "structured refusal environment startup");
+  const oracle = createBusinessTaskHostOracle(environment, program, start);
+  let worker: WorkerLease | undefined;
+  try {
+    worker = await startBpmnTestWorker(environment, await loadBpmnWorkflowBundle(), "structured-refusal", activities);
+    const handle = await environment.client.workflow.start(bpmnProcessWorkflowType, {
+      args: [start, program, { protocol: bpmnWorkflowContinuationV1, kind: BpmnWorkflowHostInputKind.Initial,
+        eventHistoryEventLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryEvents),
+        eventHistoryByteLimit: workflowChainProductionLimit(WorkflowChainBudgetKind.EventHistoryBytes) }],
+      taskQueue: bpmnSemanticTaskQueue, workflowId: processWorkflowId(start.instanceId), workflowIdReusePolicy: "REJECT_DUPLICATE",
+    });
+    oracle.advance(start);
+    await oracle.completeHuman("Review", "human-0", [scalar("request", "INV-42")]);
+    const failure = await withDeadline(readTestProcessTerminalResult(handle).then(
+      () => assert.fail("The structured result must not complete the Process"), (error: unknown) => error), 20_000, "structured refusal");
+    assert.ok(failure instanceof WorkflowFailedError && failure.cause instanceof ApplicationFailure);
+    assert.equal(failure.cause.type, "BpmnEffectExecutionResultRejected");
+    // The oracle never completed Validate, so equal publications and trace show nothing was committed.
+    await oracle.assertPublications();
+    assert.deepEqual(await handle.query<readonly CanonicalObservation[]>(bpmnTraceQueryName), oracle.trace);
+  } finally {
+    if (worker !== undefined) await stopBpmnTestWorker(worker);
+    await environment.teardown();
+  }
+});

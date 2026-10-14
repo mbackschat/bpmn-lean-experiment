@@ -1,6 +1,7 @@
 /**
  * Both client start paths refuse a portable handoff Start whose capacity envelope is exceeded, with one typed failure
- * and before any Workflow-creation SDK call, while a Start that fits and every other profile start as before.
+ * and before any Workflow-creation SDK call, while a Start that fits and every other profile start as before. An
+ * effect-data Program whose Service Task cannot fit its reserved Activity result is refused the same way.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -24,8 +25,15 @@ import {
   StartCapacityEnvelopeResultKind,
   assessStartCapacityEnvelope,
   fullAllowanceValue,
+  startCapacityEffectEvidence,
   startCapacityEnvelopeEvidence,
 } from "@bpmn-lean/temporal-protocol";
+
+import {
+  creditDecisionProgram,
+  creditStart,
+  withExtraAssessOutputs,
+} from "../../protocol/test/effect-data-capacity-fixture.ts";
 
 import {
   portableHandoffProgram,
@@ -102,6 +110,28 @@ test("leaves every other profile to the unchanged admission", async () => {
   const portable = assessBpmnProcessAdmission(portableHandoffStart(longInstance, fullAllowanceValue()), program);
   assert.ok(portable.kind === BpmnProcessAdmissionResultKind.Rejected);
   assert.equal(portable.failure.code, BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded);
+});
+
+test("startBpmnProcess refuses an effect-data Program with an unfittable Service Task result before any SDK call", async () => {
+  const unsupported = await creditDecisionProgram(withExtraAssessOutputs(3));
+  const start = creditStart("Credit_1", "a");
+  const envelope = assessStartCapacityEnvelope(start, unsupported);
+  assert.ok(envelope.kind === StartCapacityEnvelopeResultKind.EffectTaskExceeded);
+  const refusedCalls: unknown[] = [];
+  assert.deepEqual(await startBpmnProcess(fakeClient(refusedCalls), start, unsupported, { taskQueue }), {
+    kind: BpmnProcessStartResultKind.Rejected,
+    failure: {
+      code: BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded,
+      evidence: startCapacityEffectEvidence(envelope.failure),
+    },
+  });
+  assert.equal(refusedCalls.length, 0);
+  assert.match(startCapacityEffectEvidence(envelope.failure), /^Service Task AssessCredit reserves \d+ canonical UTF-8 bytes/u);
+
+  const startedCalls: unknown[] = [];
+  assert.equal((await startBpmnProcess(fakeClient(startedCalls), creditStart("Credit_1"), await creditDecisionProgram(),
+    { taskQueue })).kind, BpmnProcessStartResultKind.Started);
+  assert.equal(startedCalls.length, 1);
 });
 
 function fakeClient(calls: unknown[]): never {

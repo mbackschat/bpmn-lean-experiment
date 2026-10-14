@@ -93,6 +93,16 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "the browser offers no form editor for these values",
     "Message, effect, Call, Multi-Instance and expression use of them is excluded",
   ]) assert.ok(dataRow.includes(disclosed), `Data Input and Output row must disclose: ${disclosed}`);
+  const serviceRowStart = html.indexOf('data-capability-id="serviceTask"');
+  assert.notEqual(serviceRowStart, -1);
+  const serviceRow = html.slice(serviceRowStart, html.indexOf("</tr>", serviceRowStart));
+  for (const disclosed of [
+    "The portable effect-data profile instead admits a serial chain of Service Tasks without Human Tasks",
+    "never a root List",
+    "a handler changes Process data only through its result",
+    "A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope",
+    "earlier profiles refuse structured results",
+  ]) assert.ok(serviceRow.includes(disclosed), `Service Task row must disclose: ${disclosed}`);
   assert.match(html, /No CIB target selected/u);
   assert.deepEqual(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]).sort(),

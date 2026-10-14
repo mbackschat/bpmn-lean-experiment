@@ -176,7 +176,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. No general JUEL or Java delegate compatibility.",
+    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. The portable effect-data profile instead admits a serial chain of Service Tasks without Human Tasks whose handler results carry one structured item per output: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes. Inputs receive copies, so a handler changes Process data only through its result. A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope; earlier profiles refuse structured results. No general JUEL or Java delegate compatibility.",
     cibEvidence: exactCib("service-task-effect-success"),
   },
   {

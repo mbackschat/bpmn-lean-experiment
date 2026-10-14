@@ -241,20 +241,33 @@ function variableValueTuple(
   }
 }
 
+/** Canonical identity bytes one binding of a variable patch may occupy; the content-bound encoder refuses more. */
+export const variableBindingIdentityByteLimit = 20_480;
+/** Canonical identity bytes a whole variable patch may occupy; the content-bound encoder refuses more. */
+export const variablePatchIdentityByteLimit = 65_536;
+
+/** Canonical identity bytes of one binding, as the content-bound encoder measures it against its limit. */
+export function variableBindingIdentityBytes(binding: VariableBinding): number {
+  return utf8ByteLength(canonicalTypedTupleEncoding(variableBindingTuple(binding)));
+}
+
+/** Canonical identity bytes of a whole patch, as the content-bound encoder measures it against its limit. */
+export function variablePatchIdentityBytes(bindings: ReadonlyArray<VariableBinding>): number {
+  return utf8ByteLength(canonicalTypedTupleEncoding(bindings.map(variableBindingTuple)));
+}
+
 function variablePatchTuple(
   bindings: ReadonlyArray<VariableBinding>,
 ): ReadonlyArray<CanonicalTupleValue> {
-  const patch = bindings.map((binding) => {
-    const tuple = variableBindingTuple(binding);
-    if (utf8ByteLength(canonicalTypedTupleEncoding(tuple)) > 20_480) {
-      throw new RangeError("Variable binding exceeds 20480 canonical UTF-8 bytes");
+  for (const binding of bindings) {
+    if (variableBindingIdentityBytes(binding) > variableBindingIdentityByteLimit) {
+      throw new RangeError(`Variable binding exceeds ${variableBindingIdentityByteLimit} canonical UTF-8 bytes`);
     }
-    return tuple;
-  });
-  if (utf8ByteLength(canonicalTypedTupleEncoding(patch)) > 65_536) {
-    throw new RangeError("Variable patch exceeds 65536 canonical UTF-8 bytes");
   }
-  return patch;
+  if (variablePatchIdentityBytes(bindings) > variablePatchIdentityByteLimit) {
+    throw new RangeError(`Variable patch exceeds ${variablePatchIdentityByteLimit} canonical UTF-8 bytes`);
+  }
+  return bindings.map(variableBindingTuple);
 }
 
 function encodeCommandTuple(tuple: ReadonlyArray<CanonicalTupleValue>): string {

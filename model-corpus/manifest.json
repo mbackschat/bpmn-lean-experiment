@@ -401,6 +401,42 @@
       }
     },
     {
+      "id": "credit-decision-structured-assessment",
+      "title": "Decide a credit application",
+      "businessPurpose": "Assess a credit application into a structured assessment with repeated checks, a nested contact and an exact signed amount, then notify the applicant with that assessment and record the notification receipt.",
+      "cloneFamily": "credit-decision-structured-assessment",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/portable-business-effect-data/credit-decision.bpmn",
+        "sha256": "889fcab0db55dba0fa117e96f0689571e5643c4ddb145bbb4766948a2db04835",
+        "scenarioRelativePath": "scenarios/portable-business-effect-data/credit-assessed.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-portable-business-effect-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "effect-data-credit-assessed",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected and no Product 2 handler registration exists for structured results; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

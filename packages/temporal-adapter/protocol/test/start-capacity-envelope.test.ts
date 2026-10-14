@@ -70,7 +70,7 @@ test("admits the maximal order at production limits and reports an estimate for 
   }
 });
 
-test("applies only to the portable handoff profile", async () => {
+test("leaves a profile outside the envelope unchanged", async () => {
   const program = await portableHandoffProgram();
   const older: SemanticProcessProgram = { ...program, identity: { ...program.identity,
     semanticProfile: SemanticProfileId.StructuredProcessComposition } };
