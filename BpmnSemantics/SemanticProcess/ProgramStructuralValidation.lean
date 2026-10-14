@@ -417,7 +417,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty origin.elementId.value &&
         nonempty effect.elementId.value &&
         decide (origin.elementId = effect.elementId) &&
-        (((program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId ||
+        (((program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == portableEffectDataProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId ||
             sequentialScopeProgramSelected program || program.identity.semanticProfile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") &&
           SerialBusinessTask.descriptorValid effect.descriptor && bpmnErrorRoute.isNone) ||
         (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId &&

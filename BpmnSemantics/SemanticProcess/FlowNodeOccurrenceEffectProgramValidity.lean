@@ -18,7 +18,8 @@ private def effectWaitValid (program : Program) (state : RuntimeState)
       else match operation with
       | .awaitEffect _ _ _ output effect route =>
           effect.elementId = wait.elementId && effect.descriptor = wait.descriptor &&
-            inputSnapshotMatches effect.inputMappings wait.arguments = true &&
+            inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
+              wait.arguments = true &&
             effect.outputMappings = wait.outputMappings && output = wait.output &&
             route = wait.bpmnErrorRoute
       | _ => false).length = 1
@@ -291,7 +292,8 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
     (originElement : origin.elementId = wait.elementId)
     (effectElement : effect.elementId = wait.elementId)
     (descriptor : effect.descriptor = wait.descriptor)
-    (arguments : inputSnapshotMatches effect.inputMappings wait.arguments = true)
+    (arguments : inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
+      wait.arguments = true)
     (outputMappings : effect.outputMappings = wait.outputMappings)
     (routeEq : route = wait.bpmnErrorRoute)
     (bindingsEq : bindings = wait.arguments)
@@ -325,7 +327,8 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
         operationOwnedBy program operation wait.owner && match operation with
         | .awaitEffect _ _ _ output candidate candidateRoute =>
             candidate.elementId = wait.elementId && candidate.descriptor = wait.descriptor &&
-              inputSnapshotMatches candidate.inputMappings wait.arguments = true &&
+              inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) candidate.inputMappings
+                wait.arguments = true &&
               candidate.outputMappings = wait.outputMappings && output = wait.output &&
               candidateRoute = wait.bpmnErrorRoute
         | _ => false).length = 1 := by

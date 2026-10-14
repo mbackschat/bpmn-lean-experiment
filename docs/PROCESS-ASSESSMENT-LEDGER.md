@@ -53,7 +53,7 @@ Dispositions are a closed set:
 | Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
 | Maintain owned facts and complete correction sweeps | [06](#finding-06), [10](#finding-10), [14](#finding-14), [15](#finding-15), [37](#finding-37), [45](#finding-45), [55](#finding-55), [59](#finding-59) | [06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06), [14](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-14), [15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15), [45](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-45) |
-| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
+| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
 | Preserve identity, wire values and canonical order | [23](#finding-23), [35](#finding-35), [36](#finding-36), [50](#finding-50), [71](#finding-71) | [50](process-assessment/VERIFICATION-LEDGER.md#finding-50) |
 | Design and verify user journeys | [28](#finding-28), [29](#finding-29), [69](#finding-69), [70](#finding-70) | In the current records |
 | Bound helper processes and outward actions | [56](#finding-56), [73](#finding-73), [74](#finding-74) | In the current records |
@@ -1473,6 +1473,23 @@ Evidence
 `EffectDataConformance.lean` ran `applyStimulus` under `cbv` from Start in each conjunct and admitted 1,025-character literals by `splitOn` under `decide +kernel`. Its first build reached a 13 GB footprint, 12 GB compressed, with swap at 9.5 of 10 GB after 20 minutes; `ps` showed 0.8 GB resident, so the worker's own RSS samples missed it, and the owner noticed first. The delegation protocol already makes the root first-build changed kernel-decided fixtures under a hard ceiling, but the brief did not carry that rule. The wrapper now terminates any tree above `config.leanMemoryBrakeMiB`; the hard measurement ceiling and root-only first builds remain required.
 
 The brake closes host exhaustion for every Lean tree; it does not explain why the witnesses were written. The root cause is evidence selection: neither the amendment's witness list nor the root's brief assigned witnesses to lanes, and the brief asked for the 1,024/1,025-byte boundaries as Lean finite witnesses, following the measured `PortableHandoffConformance` precedent. A textual ban on large constructed values was tried and withdrawn: it flagged cheap `#eval` witnesses in `SemanticProcessJsonConformance` and could not see computed sizes. Lane-and-cost placement is now [Lean proof design rule 6](REVIEW-POLICY.md#lean-proof-design-and-review); the [measured module-cost rows](../scripts/lean-module-cost.test.ts) reject an unmeasured or over-ceiling conformance module before commit.
+
+### Finding 79
+
+A new guard in a shared command dispatcher pushed near-limit proofs over their per-declaration heartbeat budget, and the delegated fix threaded a profile premise into each failing proof site instead of discharging the guard once for the whole proof family.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [class `simp` lemma](../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [root-only Lean delegation](../CLAUDE.md#delegated-implementation)
+
+**First observed:** `PC-DATA-03` effect-data shared batch on 2026-10-14.
+
+The worker added `EffectData.commandAdmitted` to `admitStimulusWithoutCompensationSnapshots` and patched six parallel-scope modules with a `notEffectData` premise; an unpatched seventh, `ParallelScopeProgress`, then timed out. A scratch reproduction showed `simp` itself was cheap per goal: the theorem's four cases × ten goals shared one 200,000-heartbeat budget, and the extra unresolved `if` tipped it. One `@[simp]` lemma discharging the guard from `ParallelScopeStart.programSelected`, which every such proof already passes to `simp`, replaced all six patches. Review question: when a shared definition change breaks a second proof file, does the correction discharge it at the family's existing selection fact rather than per site?
 
 ## Update rule
 

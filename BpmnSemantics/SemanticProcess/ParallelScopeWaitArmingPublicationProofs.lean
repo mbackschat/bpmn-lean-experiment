@@ -28,15 +28,28 @@ theorem evaluateParallelScopeInputs_snapshot (program : Program) (state : Runtim
   split at evaluated <;> try contradiction
   exact evaluateInputMappings_snapshot _ mappings bindings evaluated
 
+/-- Parallel Multi-Instance is a scalar profile, so its scoped inputs never carry a structured value. -/
+private theorem analyzeProgram_effectMapping_scalar (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis) :
+    programEffectMappingValuePolicy program = .scalar := by
+  have selected : programSelected program = true := by
+    cases chosen : programSelected program with
+    | false => simp [analyzeProgram, chosen] at admitted
+    | true => rfl
+  exact programEffectMappingValuePolicy_eq_scalar_of_value (by simpa only [programSelected, beq_iff_eq] using selected)
+    (by decide +kernel)
+
 private theorem native_effect_inputs_snapshot (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (scalar : programEffectMappingValuePolicy program = .scalar)
     (evaluated : (if hasParallelScopeDefinition program owner then
       evaluateParallelScopeInputs? program state owner mappings
       else evaluateEffectInputs? program state owner mappings) = some bindings) :
-    inputSnapshotMatches mappings bindings = true := by
+    inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) mappings bindings = true := by
   split at evaluated
-  · exact evaluateParallelScopeInputs_snapshot program state owner mappings bindings evaluated
-  · exact evaluateEffectInputs_snapshot program state owner mappings bindings evaluated
+  · rw [scalar, inputSnapshotMatchesUnder_scalar]
+    exact evaluateParallelScopeInputs_snapshot program state owner mappings bindings evaluated
+  · exact evaluateEffectInputs_snapshotUnder program state owner mappings bindings evaluated
 
 /-- Native Human arming needs only its exact resolved declaration, live identity and prior wait correspondence. -/
 theorem parallelScope_activateHuman_wait_program_validity
@@ -81,7 +94,7 @@ theorem parallelScope_activateEffect_wait_program_validity
     (reservationValid : occurrenceReservationStateValid before = true)
     (fresh : openWaitAnchorAbsent before
       ⟨candidate.owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount before effect.elementId + 1⟩ = true)
-    (snapshot : inputSnapshotMatches effect.inputMappings arguments = true) :
+    (snapshot : inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings arguments = true) :
     flowNodeOccurrenceWaitProgramValidity program
       (activateEffect before candidate.owner.processInstanceId candidate.owner input output effect route arguments) = true := by
   have wellFormed := (analyzeProgram_incidence_admission program analysis admitted).1
@@ -189,6 +202,7 @@ theorem ParallelScopeInternalPrefixReachable.body_wait_program_validity
     all_goals
       obtain ⟨arguments, evaluated, applied⟩ := Option.bind_eq_some_iff.mp applied
       have snapshot := native_effect_inputs_snapshot program before candidate.owner effect.inputMappings arguments
+        (analyzeProgram_effectMapping_scalar program analysis admitted)
         (by simpa only [parallel, Bool.false_eq_true, ↓reduceIte] using evaluated)
       cases Option.some.inj applied
       exact parallelScope_activateEffect_wait_program_validity program analysis admitted before candidate id origin input output
@@ -236,7 +250,8 @@ private theorem reservedArm_wait_program_validity
     simp only [internalArmInput?, Option.some.injEq] at inputEq
     rw [← inputEq] at patchInput
     obtain ⟨arguments, evaluated, write⟩ := shape
-    have snapshot := native_effect_inputs_snapshot program before arm.owner effect.inputMappings arguments evaluated
+    have snapshot := native_effect_inputs_snapshot program before arm.owner effect.inputMappings arguments
+      (analyzeProgram_effectMapping_scalar program analysis admitted) evaluated
     have fresh : openWaitAnchorAbsent before
         ⟨arm.owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount before effect.elementId + 1⟩ = true := by
       simpa only [write, InternalArmingWrite.occurrence, effectWaitOccurrence, next] using absent

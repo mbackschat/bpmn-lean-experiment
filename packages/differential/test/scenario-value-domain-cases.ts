@@ -30,7 +30,8 @@ export const values: readonly VariableValue[] = [
  * profile accepts an unrelated canonical Start binding, which keeps the probe on the value kind alone.
  */
 const declaredStartData: ReadonlySet<string> = new Set([SemanticProfileId.CallActivityDataBoundaries, SemanticProfileId.Compensation,
-  SemanticProfileId.SerialBusinessTaskComposition, SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError]);
+  SemanticProfileId.SerialBusinessTaskComposition, SemanticProfileId.MixedTaskControlFlow, SemanticProfileId.MixedTaskBusinessError,
+  SemanticProfileId.PortableBusinessEffectData]);
 
 export function changedScenario(context: DomainContext, suffix: string, stimuli: readonly Stimulus[]): Scenario {
   return { ...context.scenario, id: `${context.scenario.id}-${suffix}`, stimuli };
@@ -109,6 +110,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     }
   }
   addPortableHandoffCases(selected.get(SemanticProfileId.PortableBusinessValuesHandoff)!, add);
+  addEffectDataCases(selected.get(SemanticProfileId.PortableBusinessEffectData)!, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -236,5 +238,24 @@ function addPortableHandoffCases(context: DomainContext, add: AddCase): void {
     const stimulus: Stimulus = { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-human-${label}`,
       taskId: occurrence, submittedValues: [{ name: "candidate", value: values[0]! }, { name: "zzLater", value }] };
     add(context, `human-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+  }
+}
+
+/**
+ * The structured effect-data profile keeps String/Null at Start and admits a SingletonBusinessItem result, both with the
+ * 1,024-byte root String bound that the kind table cannot express. Each case changes one fact of the retained answer-free
+ * Start or appends one late result, so only that fact can move the expectation.
+ */
+function addEffectDataCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess && start.initialVariables.length > 0);
+  const declared = start.initialVariables[0]!;
+  const string = (bytes: number): VariableValue => ({ kind: VariableValueKind.String, value: "a".repeat(bytes) });
+  for (const [label, value, supported] of [["exact-bound", string(1024), true], ["over-bound", string(1025), false]] as const) {
+    add(context, `start-string-${label}`, [{ ...start, initialVariables: start.initialVariables.map(binding =>
+      binding.name === declared.name ? { ...binding, value } : binding) }, ...context.scenario.stimuli.slice(1)], supported);
+    const stimulus: Stimulus = { kind: StimulusKind.CompleteEffect, commandId: `late-effect-${label}`, effectId: occurrenceOf(start),
+      result: { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "zzLater", value }] } };
+    add(context, `effect-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
   }
 }

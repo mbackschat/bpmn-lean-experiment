@@ -585,9 +585,10 @@ theorem serial_patch_preserves_domain (handlers : List String) (inputs outputs :
     beforeValid (Bool.and_eq_true_iff.mpr ⟨by simpa [names] using ordered, domain⟩)
 
 theorem program_analysis_effect_inputs (program : Program) (analysis : Analysis)
-    (analyzed : programAnalysis program = some analysis) (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
+    (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
+    (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
     evaluateEffectInputs? program state owner mappings = evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
-  apply evaluateEffectInputs_without_repeated_scope
+  apply evaluateEffectInputs_without_repeated_scope _ _ _ _ scalar
   intro operation member
   have allowed := program_analysis_operations_allowed program analysis analyzed operation member
   cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]

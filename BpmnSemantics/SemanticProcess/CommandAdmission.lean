@@ -1,4 +1,5 @@
 import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
@@ -374,7 +375,10 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
                 else if program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
                 completeBusinessEffect? (SerialBusinessTask.programHandlers program) state effectId result
                 else if program.identity.semanticProfile == serialBusinessTaskProfileId || program.identity.semanticProfile == mixedTaskControlFlowProfileId then
-                completeSerialEffect? program state effectId result else completeEffect state effectId result) with
+                completeSerialEffect? program state effectId result
+                else if program.identity.semanticProfile == portableEffectDataProfileId then
+                completeSerialEffectUnder? .singletonBusinessItem program state effectId result
+                else completeEffect state effectId result) with
               | some successor =>
                   if effectId.processInstanceId = instanceId then
                     { outcome := .committed, state := successor }
@@ -443,6 +447,7 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
     (stimulus : Stimulus) : ExternalAdmission :=
   if !committedStateCollectionAdmitted state then { outcome := .rejected, state }
   else if !serialBusinessCommandAdmitted program state stimulus then { outcome := .rejected, state }
+  else if !EffectData.commandAdmitted program state stimulus then { outcome := .rejected, state }
   else if !callDataRuntimeStateValid program state then { outcome := .rejected, state }
   else if !interruptingMessageEventSubProcessStateValid program state then { outcome := .rejected, state }
   else if !SequentialScopeData.stimulusAdmitted program stimulus then { outcome := .rejected, state }
@@ -606,6 +611,14 @@ def admitStimulus (program : Program) (state : RuntimeState)
   | none => admitStimulusWithoutCompensationSnapshots program state stimulus
   | some _ => { outcome := .rejected, state }
 
+/-- Parallel-scope proofs pass their profile selection to `simp`; this discharges the effect-data guard from it,
+so a guard added to `admitStimulusWithoutCompensationSnapshots` costs those proofs no extra case split. -/
+@[simp] theorem effectDataCommandAdmitted_of_parallelScopeSelected (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) (selected : ParallelScopeStart.programSelected program = true) :
+    EffectData.commandAdmitted program state stimulus = true :=
+  EffectData.commandAdmitted_of_other_profile program state stimulus
+    (ParallelScopeStart.programSelected_not_effectData selected)
+
 /-- CDATA-REFUSE-01 rejects malformed owned data before any command mutation. -/
 theorem admitStimulus_invalid_call_data_state (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) (invalid : callDataRuntimeStateValid program state = false) :
@@ -652,26 +665,30 @@ private theorem rawCommittedStart_shape (program : Program) (stimulus : Stimulus
     cases checked : serialBusinessCommandAdmitted program initialState stimulus with
     | false => simp [admitStimulusWithoutCompensationSnapshots, checked] at committed
     | true => rfl
+  have effectValid : EffectData.commandAdmitted program initialState stimulus = true := by
+    cases checked : EffectData.commandAdmitted program initialState stimulus with
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, checked] at committed
+    | true => rfl
   have valid : callDataRuntimeStateValid program initialState = true := by
     cases checked : callDataRuntimeStateValid program initialState with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, effectValid, checked] at committed
     | true => rfl
   have handlerValid : interruptingMessageEventSubProcessStateValid program initialState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid program initialState with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, effectValid, valid, checked] at committed
     | true => rfl
   have scopeValid : SequentialScopeData.stimulusAdmitted program stimulus = true := by
     cases checked : SequentialScopeData.stimulusAdmitted program stimulus with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, effectValid, valid, handlerValid, checked] at committed
     | true => rfl
   have parallelValid : ParallelScopeCommand.stimulusAdmitted program initialState stimulus = true := by
     cases checked : ParallelScopeCommand.stimulusAdmitted program initialState stimulus with
-    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, valid, handlerValid, scopeValid, checked] at committed
+    | false => simp [admitStimulusWithoutCompensationSnapshots, serialValid, effectValid, valid, handlerValid, scopeValid, checked] at committed
     | true => rfl
   cases stimulus <;> simp only at startKind <;> try contradiction
   all_goals subst instanceId
   all_goals
-    simp only [admitStimulusWithoutCompensationSnapshots, collectionValid, serialValid, valid, handlerValid, scopeValid, parallelValid, Bool.not_true,
+    simp only [admitStimulusWithoutCompensationSnapshots, collectionValid, serialValid, effectValid, valid, handlerValid, scopeValid, parallelValid, Bool.not_true,
       Bool.false_eq_true, ↓reduceIte] at committed ⊢
     simp only [initialState, dispatchStimulusWithoutCompensationSnapshots] at committed ⊢
   case startProcess commandId processId requested variables =>

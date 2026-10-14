@@ -701,7 +701,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
       origin input effect
         route wait bindings valid declarers declared live processId
         (by simpa [wait] using elementId) (by simp [wait]) rfl originElement rfl rfl
-        (evaluateEffectInputs_snapshot _ _ _ _ _ arguments) rfl rfl rfl
+        (evaluateEffectInputs_snapshotUnder _ _ _ _ _ arguments) rfl rfl rfl
         (fun candidateId candidateOrigin candidateInput candidateOutput candidateEffect
           candidateRoute member => programWellFormed_awaitEffect_elements_align program
             programAdmitted candidateId candidateOrigin candidateInput candidateOutput candidateEffect

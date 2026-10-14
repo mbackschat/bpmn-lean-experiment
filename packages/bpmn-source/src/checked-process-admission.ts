@@ -1,7 +1,8 @@
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
-  SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
+  isSerialChainProfile,
+  serialChainRulesForProfile,
   serialBusinessCheckedGraph,
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID,
@@ -79,7 +80,7 @@ export function isAdmittedCheckedProcess(
     (semanticProfile !== STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID ||
       structuredCompositionCheckedGraph(graph)) &&
     (semanticProfile !== SemanticProfileId.PortableBusinessValuesHandoff || portableHandoffCheckedGraph(graph)) &&
-    (semanticProfile !== SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || serialBusinessCheckedGraph(graph)) &&
+    (!isSerialChainProfile(semanticProfile) || serialBusinessCheckedGraph(graph, serialChainRulesForProfile(semanticProfile))) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&

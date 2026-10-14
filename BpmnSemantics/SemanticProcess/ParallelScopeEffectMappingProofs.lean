@@ -488,16 +488,18 @@ theorem ParallelScopeInternalPrefixReachable.parent_service_enabled (program : P
     (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).2
     (fun name member => reachable.required_scalar_read program analysis analyzed state name
       (reads name member).1 (reads name member).2.1 (reads name member).2.2)
+  have selected : ParallelScopeStart.programSelected program = true := by
+    cases chosen : ParallelScopeStart.programSelected program with
+    | false => simp [ParallelScopeStart.analyzeProgram, chosen] at analyzed
+    | true => rfl
+  have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+    simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
   have ordinary : sequentialScopeProgramSelected program = false := by
-    have selected : ParallelScopeStart.programSelected program = true := by
-      cases chosen : ParallelScopeStart.programSelected program with
-      | false => simp [ParallelScopeStart.analyzeProgram, chosen] at analyzed
-      | true => rfl
-    have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
-      simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
     simp [sequentialScopeProgramSelected, profile]
+  have scalarPolicy := programEffectMappingValuePolicy_eq_scalar_of_value profile (by decide +kernel)
   have inputs : evaluateEffectInputs? program state candidate.owner effect.inputMappings = some arguments := by
-    simpa only [evaluateEffectInputs?, ordinary, Bool.false_and, Bool.false_eq_true, ↓reduceIte] using evaluated
+    simpa only [evaluateEffectInputs?, ordinary, Bool.false_and, Bool.false_eq_true, ↓reduceIte, scalarPolicy,
+      evaluateEnclosingInputMappingsUnder_scalar] using evaluated
   exact ⟨_, reachable.parent_effect_enabled program analysis analyzed state instanceId running candidate id origin input output
     effect route resolved parent unit arguments inputs⟩
 

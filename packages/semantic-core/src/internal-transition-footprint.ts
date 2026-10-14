@@ -46,7 +46,8 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
-import { evaluateInputMappings } from "./semantic-process-data.js";
+import { evaluateInputMappingsUnder } from "./semantic-process-data.js";
+import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
 import { hasSequentialScopeDefinition, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
@@ -400,7 +401,11 @@ export function deriveInternalTransitionFootprint(
       if (repeated && binding === undefined) return null;
       const arguments_ = repeated
         ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
-        : evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
+        : evaluateInputMappingsUnder(
+          effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+          operation.effect.inputMappings,
+          state.variables.process.bindings,
+        );
       if (arguments_ === null) return null;
       const inputNames: string[] = [];
       const processNames: string[] = [];

@@ -1,6 +1,6 @@
-import { isSerialBusinessIdentifier, serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { isSerialBusinessIdentifier, isSerialChainProfile, serialBusinessEffectAdmitted, serialChainRulesForProfile } from "./serial-business-task-policy.js";
 import { sequentialScopeBodyMappingsAdmitted } from "./sequential-scope-data-admission.js";
-import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import {
   EffectOperation,
   EffectProtocol,
@@ -586,7 +586,7 @@ function isSupportedEffectContract(
   semanticProfile: string,
 ): boolean {
   if (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return (bpmnErrorRoute === null || isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds)) && serialBusinessEffectAdmitted(effect);
-  if (semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect);
+  if (semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || isSerialChainProfile(semanticProfile)) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect, new Set(), serialChainRulesForProfile(semanticProfile));
   if (
     !isRecord(effect.descriptor) ||
     !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||

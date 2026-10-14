@@ -62,6 +62,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [structured-process-composition-admission.ts](src/structured-process-composition-admission.ts) | Registered acyclic structured composition analysis, required initial inputs and task-local completion admission |
 | [portable-handoff-admission.ts](src/portable-handoff-admission.ts) | Independent checked/IL admission of the serial portable handoff's exact four-vertex path and Property wiring, and its command binding names |
 | [singleton-business-item.ts](src/singleton-business-item.ts) | The SingletonBusinessItem port domain and its 1,024-byte root String bound, consulted at every Property-path point |
+| [effect-mapping-value-policy.ts](src/effect-mapping-value-policy.ts) | The Service Task effect-mapping value domain derived from the exact Program profile: scalar for every profile but structured effect data |
 | [property-path-value-policy.ts](src/property-path-value-policy.ts) | The Property-path value domain derived from the exact Program profile: scalar for every profile but the serial portable handoff |
 | [semantic-process-limits.ts](src/semantic-process-limits.ts) | Shared automatic-closure limit for admission and execution |
 | [checked-process-profile-shape.ts](src/checked-process-profile-shape.ts) | Profile-selected checked-node shapes |
@@ -189,6 +190,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [flow-node-occurrence-interrupting-message-event-subprocess-completeness.ts](src/flow-node-occurrence-interrupting-message-event-subprocess-completeness.ts) | Independent bounded Message handler lifecycle reconstruction from declarations and retained ordinary work |
 | [flow-node-occurrence-compensation.ts](src/flow-node-occurrence-compensation.ts) | Exact open and transition-local Compensation throw, handler, and distinct handler-body occurrence projection |
 | [flow-node-occurrence-open-set.ts](src/flow-node-occurrence-open-set.ts) | Open flow-node occurrence projection with exact Boundary Timer declaration and host binding |
+| [flow-node-occurrence-open-set-order.ts](src/flow-node-occurrence-open-set-order.ts) | Canonical total order and anchor-identity validation of open flow-node occurrence entries |
 | [flow-node-occurrence-publication-completeness.ts](src/flow-node-occurrence-publication-completeness.ts) | Internal-transition publication completeness |
 | [flow-node-occurrence-publication-external-completeness.ts](src/flow-node-occurrence-publication-external-completeness.ts) | External-stimulus and cancellation publication completeness |
 | [flow-node-occurrence-publication-compensation-completeness.ts](src/flow-node-occurrence-publication-compensation-completeness.ts) | Exact source-checkpoint Compensation trigger, frontier, completion, and failure lifecycle completeness from the Program and retained anchors |

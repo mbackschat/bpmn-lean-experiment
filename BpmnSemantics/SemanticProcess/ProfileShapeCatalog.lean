@@ -1,6 +1,7 @@
 import BpmnSemantics.SemanticProcess.ProfileCardinalities
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
+import BpmnSemantics.SemanticProcess.EffectDataAdmission
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
@@ -524,6 +525,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
       profile = structuredCompositionCheckpointProfileId.value ||
       profile = portableHandoffProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
+      profile = portableEffectDataProfileId.value ||
       profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
       profile = callDataCheckpointProfileId.value ||
@@ -566,6 +568,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
     (MixedTaskControlFlow.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == serialBusinessTaskProfileId then
     (SerialBusinessTask.checkedAnalysis source).isSome
+  else if source.identity.semanticProfile == portableEffectDataProfileId then
+    (EffectData.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
   else if source.identity.semanticProfile == portableHandoffProfileId then
@@ -686,6 +690,8 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
         (MixedTaskControlFlow.programAnalysis program).isSome
       else if program.identity.semanticProfile == serialBusinessTaskProfileId then
         (SerialBusinessTask.programAnalysis program).isSome
+      else if program.identity.semanticProfile == portableEffectDataProfileId then
+        (EffectData.programAnalysis program).isSome
       else if program.identity.semanticProfile == portableHandoffProfileId then
         portableHandoffProgramGraph program
       else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&

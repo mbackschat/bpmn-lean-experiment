@@ -16,6 +16,7 @@
  */
 import { source as mixedTaskSource, profile as mixedTaskProfile, sourceOverlay as mixedTaskSourceOverlay } from "./mixed-task-control-flow-fixture.ts";
 import assert from "node:assert/strict";
+import { creditNames, effectDataProfile, overlay as effectDataOverlay } from "./effect-data-fixture.ts";
 import { source as serialBusinessSource, profile as serialBusinessProfile, sourceOverlay as serialBusinessSourceOverlay } from "./serial-business-task-fixture.ts";
 import { source as sequentialScopeSource, profile as sequentialScopeProfile, sourceOverlay as sequentialScopeOverlay,
   prepareSource as prepareSequentialScopeSource } from "./sequential-scope-source-fixture.ts";
@@ -269,6 +270,11 @@ const dispatchFixtures = {
   serialBusinessTasks: {
     path: "the serial business task reader", source: serialBusinessSource, sourceId: "invoice",
     semanticProfile: serialBusinessProfile, sourceOverlay: serialBusinessSourceOverlay(), find: '<startEvent id="Start"',
+  },
+  portableBusinessEffectData: {
+    path: "the structured effect-data reader", source: new URL("./fixtures/effect-data-credit-decision.bpmn", import.meta.url),
+    sourceId: "credit-decision", semanticProfile: effectDataProfile,
+    sourceOverlay: effectDataOverlay(effectDataProfile, [creditNames.assessHandler, creditNames.notifyHandler]), find: '<startEvent id="Start"',
   },
   sequentialMultiInstanceSubProcess: {
     path: "the sequential MI Sub-Process reader", source: sequentialScopeSource, sourceId: "invoice-batch",

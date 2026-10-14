@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 
 /-! # Semantic Process value-domain admission
 
@@ -71,6 +72,8 @@ private inductive ProcessDataValueDomain where
   | scalar
   | structuredHumanWork
   | singletonBusinessItem
+  /-- Start of the structured effect-data profile: String or Null under the item policy's root String bound. -/
+  | stringNullItemBound
 
 @[simp] private abbrev profileIsOneOf (profile : ProfileId) (ids : List String) : Bool :=
   ids.any fun id => profile.value == id
@@ -79,7 +82,9 @@ private inductive ProcessDataValueDomain where
 @[simp] private abbrev profileValueDomain (profile : ProfileId) :
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
-      if profile.value = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
+      if profile = portableHandoffProfileId then
+        .singletonBusinessItem
+      else if profile.value = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
         .stringNullBooleanList
       else if profile = compensationSourceCheckpointProfileId then
         .stringOnly
@@ -108,12 +113,14 @@ private inductive ProcessDataValueDomain where
           , structuredCompositionCheckpointProfileId.value
           , structuredHumanWorkProfileId.value ] then
         .stringNull
-      else if profile = portableHandoffProfileId then
-        .singletonBusinessItem
+      else if profile = portableEffectDataProfileId then
+        .stringNullItemBound
       else
         .empty
   | .userTaskCompletion =>
-      if profileIsOneOf profile
+      if profile = portableHandoffProfileId then
+        .singletonBusinessItem
+      else if profileIsOneOf profile
           [ "cibseven-2.2.0-user-task-process-data-draft"
           , userTaskProcessDataPreservedNotationProfileId.value
           -- A supplied null makes the single required Data Output available exactly as a supplied
@@ -136,8 +143,6 @@ private inductive ProcessDataValueDomain where
         .stringNullBoolean
       else if profile = structuredHumanWorkProfileId then
         .structuredHumanWork
-      else if profile = portableHandoffProfileId then
-        .singletonBusinessItem
       else
         .empty
   | .messagePayload =>
@@ -173,12 +178,32 @@ def variableValueAdmitted (profile : ProfileId) (surface : ProcessDataIngress)
   | .singletonBusinessItem, value =>
       PropertyPathValuePolicy.singletonBusinessItem.admits value &&
         BpmnSemantics.SemanticProcessJson.variableValueWellFormed value
+  | .stringNullItemBound, value@(.string _)
+  | .stringNullItemBound, value@.null => EffectMappingValuePolicy.singletonBusinessItem.admits true value
   | _, _ => false
 
 /-- A submitted patch is admitted only when every value belongs to the exact surface/profile domain. -/
 def processDataBindingsAdmitted (profile : ProfileId)
     (surface : ProcessDataIngress) (bindings : List VariableBinding) : Bool :=
   bindings.all fun binding => variableValueAdmitted profile surface binding.value
+
+/-- Each surface's chain is a separate lemma so that a new profile row costs one chain's elaboration, not three. -/
+private theorem processStart_domain_ne_singleton (profile : ProfileId)
+    (other : profile ≠ portableHandoffProfileId) :
+    profileValueDomain profile .processStart ≠ .singletonBusinessItem := by
+  simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
+  all_goals exact fun same => by cases same
+
+private theorem userTaskCompletion_domain_ne_singleton (profile : ProfileId)
+    (other : profile ≠ portableHandoffProfileId) :
+    profileValueDomain profile .userTaskCompletion ≠ .singletonBusinessItem := by
+  simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
+  all_goals exact fun same => by cases same
+
+private theorem messagePayload_domain_ne_singleton (profile : ProfileId) :
+    profileValueDomain profile .messagePayload ≠ .singletonBusinessItem := by
+  simp only [profileValueDomain] <;> repeat' split
+  all_goals exact fun same => by cases same
 
 /-- PBV-INGRESS-01: no profile domain other than the portable handoff's admits a portable Decimal,
 List or Map at any surface, so schema recognition alone cannot widen an existing profile. -/
@@ -190,10 +215,14 @@ theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
       variableValueAdmitted profile surface (.list members) = false ∧
       variableValueAdmitted profile surface (.map entries) = false := by
   have selected : profileValueDomain profile surface ≠ .singletonBusinessItem := by
-    cases surface <;> simp only [profileValueDomain] <;> repeat' split
-    all_goals first | simp_all | exact fun same => by cases same
+    cases surface
+    · exact processStart_domain_ne_singleton profile other
+    · exact userTaskCompletion_domain_ne_singleton profile other
+    · exact messagePayload_domain_ne_singleton profile
   unfold variableValueAdmitted
-  cases domain : profileValueDomain profile surface <;> simp_all
+  -- `profileValueDomain` is a simp abbreviation, so it is abstracted before simp can expand every row.
+  generalize profileValueDomain profile surface = domain at selected ⊢
+  cases domain <;> first | exact absurd rfl selected | simp
 
 /-- The handoff profile selects `SingletonBusinessItem` at Start and User Task completion only: a
 well-formed value whose root the Property-path policy admits. A root List is refused there and every

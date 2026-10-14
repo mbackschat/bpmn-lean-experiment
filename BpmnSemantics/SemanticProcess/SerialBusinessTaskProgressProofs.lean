@@ -61,7 +61,7 @@ def SerialFirePhase (before : RuntimeState) (operation : SemanticOperation) (own
 /-- Actual internal firing either retains the current waiting vertex or advances along its unique admitted output; its root frame and firing phase are derived from the same transition inversion. -/
 theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysis)
     (operation : SemanticOperation) (before after : RuntimeState)
-    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
+    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (member : operation ∈ program.operations) (remaining : List Vertex)
     (indexed : ∃ earlier, analysis.ordered = earlier ++ remaining ∧ OrderedPosition program analysis.ordered before remaining ∧
       SuffixAvailable before.variables.process.bindings remaining ∧ bindingsValid (programHandlers program) before.variables.process.bindings = true)
@@ -176,7 +176,7 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
     | none =>
       cases step with
       | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed scalar, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨owner, found, instanceId, running, arguments, evaluated, active⟩ := active
         obtain ⟨vertex, rest, token, rfl, fields, inputEq, ownerEq, consumer, tokenDeclared⟩ :=
           position_with_token_has_current_head program analysis.ordered remaining before input owner position found
@@ -396,21 +396,21 @@ theorem committed_start_has_serial_invariant (program : Program) (analysis : Ana
 /-- The phase is a projection of joint preservation, under the same admitted-position premises. -/
 theorem serial_fire_phase (program : Program) (analysis : Analysis) (before after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
-    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
+    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (declared : DeclaredRoot program owner) (framed : RootFrame owner before)
     (indexed : AtOrderedSuffix program analysis before) (member : operation ∈ program.operations)
     (fired : fire? program operation before = some after) : SerialFirePhase before operation owner := by
   obtain ⟨earlier, remaining, ordered, position, available, canonical⟩ := indexed
-  exact (fire_preserves_suffix_with_depth program analysis operation before after wellFormed analyzed member remaining
+  exact (fire_preserves_suffix_with_depth program analysis operation before after wellFormed analyzed scalar member remaining
     ⟨earlier, ordered, position, available, canonical⟩ owner declared framed fired).2.2
 
 theorem serial_firing_unique (program : Program) (analysis : Analysis) (state leftAfter rightAfter : RuntimeState)
     (left right : SemanticOperation) (owner : ScopeOccurrenceId)
-    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
+    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (declared : DeclaredRoot program owner) (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state)
     (leftMember : left ∈ program.operations) (rightMember : right ∈ program.operations)
     (leftFired : fire? program left state = some leftAfter) (rightFired : fire? program right state = some rightAfter) : left = right := by
-  have phase := fun operation after member fired => serial_fire_phase program analysis state after operation owner wellFormed analyzed declared framed indexed member fired
+  have phase := fun operation after member fired => serial_fire_phase program analysis state after operation owner wellFormed analyzed scalar declared framed indexed member fired
   have singletonSame (predicate : SemanticOperation → Bool) (count : (program.operations.filter predicate).length = 1)
       (leftSelected : predicate left = true) (rightSelected : predicate right = true) : left = right := by
     obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp count
@@ -475,6 +475,7 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
       preparation := prepareInternalTransition? program state operation }
     deriveInternalExecutionFrontier program state = { offers := [offer] } ∧
       (∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) := by
+  have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
   dsimp only
   constructor
   · apply deriveInternalExecutionFrontier_singleton program state operation
@@ -490,14 +491,14 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
       case reachNoneEnd id origin input =>
         obtain ⟨token, single, port⟩ : ∃ token, state.tokens = [token] ∧ token.placeId = input := by
           simpa [SerialFirePhase, operationInputs, StructuredComposition.isScopeCompletion] using serial_fire_phase program analysis
-            state after (.reachNoneEnd id origin input) owner wellFormed analyzed declared framed indexed member fired
+            state after (.reachNoneEnd id origin input) owner wellFormed analyzed scalar declared framed indexed member fired
         simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired, selectInternalEnd?, single, port]
     · intro candidate included different
       have refused : fire? program candidate state = none := by
         cases selected : fire? program candidate state with
         | none => rfl
         | some successor => exact False.elim (different (serial_firing_unique program analysis state successor after candidate operation
-            owner wellFormed analyzed declared framed indexed included member selected fired))
+            owner wellFormed analyzed scalar declared framed indexed included member selected fired))
       have allowed := program_analysis_operations_allowed program analysis analyzed candidate included
       cases candidate <;> simp only [OperationAllowed] at allowed
       all_goals try contradiction
@@ -507,7 +508,7 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
 /-- Every indexed position either exposes its live external interaction, has completed, or enables a real declared operation. -/
 theorem serial_position_progress (program : Program) (analysis : Analysis) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
-    (analyzed : programAnalysis program = some analysis) (declared : DeclaredRoot program owner)
+    (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar) (declared : DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state) :
     state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId ∨
       ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after := by
@@ -575,7 +576,7 @@ theorem serial_position_progress (program : Program) (analysis : Analysis) (stat
             obtain ⟨arguments, evaluated⟩ := current_service_inputs_evaluable program state id origin input output effect vertex rest projected available canonical
             simp only [fire?, absent]
             change ∃ after, awaitEffectState? program state input output effect none = some after
-            simp [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, onlyTokenOwner?, tokenOwners,
+            simp [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed scalar, onlyTokenOwner?, tokenOwners,
               fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
         case reachNoneEnd id origin input =>
           simp [fire_reachNoneEnd_withoutSnapshotDeclaration _ _ _ _ _ absent,
@@ -611,13 +612,14 @@ theorem serial_settled_frontier (program : Program) (analysis : Analysis) (state
     (framed : RootFrame owner state) (indexed : AtOrderedSuffix program analysis state)
     (settled : state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId) :
     deriveInternalExecutionFrontier program state = {} := by
+  have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
   apply deriveInternalExecutionFrontier_empty
   intro operation member
   have refused : fire? program operation state = none := by
     cases fired : fire? program operation state with
     | none => rfl
     | some after =>
-        have phase := serial_fire_phase program analysis state after operation owner wellFormed analyzed declared framed indexed member fired
+        have phase := serial_fire_phase program analysis state after operation owner wellFormed analyzed scalar declared framed indexed member fired
         obtain ⟨_, _, _, position, _⟩ := indexed
         have life := framed.2.2.2.1
         rcases life with ⟨running, _⟩ | ⟨completed, scopes, tokens, waits, effects, pending⟩
@@ -640,6 +642,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
     let closed := closeScheduledTraced fuel program commandId index ordinal [] state
     closed.failed = false ∧ ExecutionReachable program baseline closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed owner.processInstanceId) := by
+  have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
   induction fuel using Nat.strongRecOn generalizing state remaining index with
   | ind fuel ih =>
     obtain ⟨earlier, ordered, position, available, canonical⟩ := indexed
@@ -648,7 +651,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
     · rw [closeScheduledTraced_stable fuel program commandId index ordinal state
         (serial_settled_frontier program analysis state profile owner wellFormed analyzed declared framed atSuffix settled)]
       exact ⟨rfl, reachable, settled⟩
-    · have progress := serial_position_progress program analysis state owner wellFormed analyzed declared framed atSuffix
+    · have progress := serial_position_progress program analysis state owner wellFormed analyzed scalar declared framed atSuffix
       have enabled : ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after := by
         rcases progress with human | effect | completed | enabled
         · exact False.elim (settled (Or.inl human))
@@ -657,7 +660,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
         · exact enabled
       obtain ⟨operation, member, after, fired⟩ := enabled
       obtain ⟨afterFrame, ⟨nextEarlier, next, nextOrder, nextPosition, nextAvailable, nextCanonical, decreased⟩, _⟩ :=
-        fire_preserves_suffix_with_depth program analysis operation state after wellFormed analyzed member remaining
+        fire_preserves_suffix_with_depth program analysis operation state after wellFormed analyzed scalar member remaining
           ⟨earlier, ordered, position, available, canonical⟩ owner declared framed fired
       have selected : program.operations.find? (fun op => decide (op.id = operation.id)) = some operation := by
         rw [← List.head?_filter, filter_key_eq_singleton_of_nodup program.operations (·.id) operation
@@ -705,6 +708,7 @@ theorem reached_serial_invariant (program : Program) (analysis : Analysis)
     ∃ owner, owner.processInstanceId = instanceId ∧ instanceId.value ≠ "" ∧ DeclaredRoot program owner ∧ RootFrame owner reached ∧ AtOrderedSuffix program analysis reached ∧
       serialRuntimeAssociationsValid program reached = true ∧ runtimeStateWellFormed program instanceId reached = true ∧
       ∀ stimulus, AdmissibleCompletion program reached stimulus → (admitStimulus program reached stimulus).outcome = .committed := by
+  have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
   have guarded := serial_committed_ingress_has_checked_predecessor program initialState
     (.startProcess commandId processId instanceId bindings) committed
   obtain ⟨wellFormed, capabilities⟩ := guarded_program_admission program initialState
@@ -723,7 +727,7 @@ theorem reached_serial_invariant (program : Program) (analysis : Analysis)
           have member := List.mem_of_find?_eq_some selected
           obtain ⟨earlier, remaining, order, position, available, canonical⟩ := ih.2
           obtain ⟨frame, ⟨nextEarlier, next, nextOrder, nextPosition, nextAvailable, nextCanonical, _⟩, _⟩ :=
-            fire_preserves_suffix_with_depth program analysis operation _ _ wellFormed analyzed member remaining
+            fire_preserves_suffix_with_depth program analysis operation _ _ wellFormed analyzed scalar member remaining
               ⟨earlier, order, position, available, canonical⟩ owner declared ih.1 executed
           exact ⟨frame, nextEarlier, next, nextOrder, nextPosition, nextAvailable, nextCanonical⟩
     | human commandId taskId bindings reachable ih =>
@@ -757,6 +761,7 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
     closed.failed = false ∧ ExecutionReachable program
       (admitStimulus program initialState (.startProcess startCommandId processId instanceId bindings)).state closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed instanceId) := by
+  have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
   obtain ⟨owner, instanceEq, _, declared, framed, indexed, _⟩ :=
     reached_serial_invariant program analysis startCommandId processId instanceId bindings state profile analyzed committed reachable
   have static := guarded_program_admission program initialState (.startProcess startCommandId processId instanceId bindings) profile

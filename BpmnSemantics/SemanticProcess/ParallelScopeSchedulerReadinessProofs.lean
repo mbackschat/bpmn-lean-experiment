@@ -140,7 +140,7 @@ theorem parallelScope_admission_commits_or_preserves_state (program : Program)
   case startProcess commandId processId instanceId values =>
     cases snapshot : program.compensationEventSubProcessSnapshots <;>
       cases control : before.control <;>
-        simp [admitStimulus, snapshot, control]
+        simp [admitStimulus, snapshot, selected, control]
     all_goals repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeUserTaskInstance commandId taskId values =>
     cases snapshot : program.compensationEventSubProcessSnapshots <;>

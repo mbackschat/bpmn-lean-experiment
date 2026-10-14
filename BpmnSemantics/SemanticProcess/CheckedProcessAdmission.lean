@@ -465,7 +465,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                     candidateFlowIds.contains flow.id
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
-      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
+      (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == portableEffectDataProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
         source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft")
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)

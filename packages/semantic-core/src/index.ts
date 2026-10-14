@@ -137,6 +137,7 @@ export * from "./transaction-cancellation-admission.js";
 export { structuredCompositionCheckedGraph } from "./structured-process-composition-admission.js";
 export { portableHandoffCheckedGraph } from "./portable-handoff-admission.js";
 export { isSingletonBusinessItem } from "./singleton-business-item.js";
+export { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 export * from "./serial-business-task-policy.js";
 export * from "./serial-business-task-admission.js";
 

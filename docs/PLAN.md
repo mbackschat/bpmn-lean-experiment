@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: no Lean or core effect domain admits a structured value under the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment)'s profile; Worker transport and the hosted capacity envelope count none; no retained whole model exercises it.
+Acceptance blockers: the shared admission/runtime checkpoint of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent cold review; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
 
-Current result: the amendment is accepted at `b9ea31ad`, Service-Task-only, after 61 of 120 design minutes.
+Current result: the shared batch is committed with its [checkpoint evidence](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses): Lean and the core admit a Service-only chain and write a structured result exactly. About 230 of 240 minutes and both batch full builds are spent.
 
 Effort budget: 240 minutes wall from 2026-10-14 00:20 UTC through the green shared admission/runtime checkpoint; hosting and enrollment are budgeted after its review. Lean batch `effect-data-shared-batch`: one full build at that checkpoint, at most one more after a correction. At the limit, stop and record before renewal.
 
-Next action: run `what-binds` on every listed owner, then implement the effect-mapping policy and profile routing red/green in Lean, core and source.
+Next action: run the independent cold checkpoint review of the batch commit; after a green verdict, budget and implement Worker transport, the hosted capacity envelope and public enrollment.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 

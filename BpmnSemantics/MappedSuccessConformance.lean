@@ -343,7 +343,7 @@ theorem invalid_patch_is_rejected
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   exact effect_result_mapping_failure_is_rejected
-    program effectWait commandId result 0 (by decide +kernel) (by decide +kernel) (by decide +kernel) invalid
+    program effectWait commandId result 0 (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel) invalid
 
 theorem missing_patch_is_rejected :
     applyStimulus scenarioClosureLimit program waitingState

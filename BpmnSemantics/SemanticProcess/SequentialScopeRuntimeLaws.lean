@@ -123,15 +123,38 @@ theorem evaluateSequentialScopeInputs_snapshot (program : Program) (state : Runt
   obtain ⟨binding, _, evaluated⟩ := evaluated
   exact evaluateInputMappings_snapshot _ mappings bindings evaluated
 
-theorem evaluateEffectInputs_snapshot (program : Program) (state : RuntimeState)
+/-- The repeated-scope family is a scalar profile, so its input context never carries a structured value. -/
+theorem sequentialScopeProgramSelected_effectMapping_scalar (program : Program)
+    (selected : sequentialScopeProgramSelected program = true) :
+    programEffectMappingValuePolicy program = .scalar := by
+  apply programEffectMappingValuePolicy_eq_scalar
+  intro same
+  simp [sequentialScopeProgramSelected, same, portableEffectDataProfileId] at selected
+
+/-- Every input context produces a snapshot that the Program's own effect-mapping policy accepts. -/
+theorem evaluateEffectInputs_snapshotUnder (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (mappings : List VariableMapping)
     (bindings : List BpmnSemantics.VariableBinding)
     (evaluated : evaluateEffectInputs? program state owner mappings = some bindings) :
-    inputSnapshotMatches mappings bindings = true := by
+    inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) mappings bindings = true := by
   unfold evaluateEffectInputs? at evaluated
   split at evaluated
-  · exact evaluateSequentialScopeInputs_snapshot program state owner mappings bindings evaluated
-  · exact evaluateEnclosingInputMappings_snapshot _ mappings bindings evaluated
+  · rename_i selected
+    have scalar := sequentialScopeProgramSelected_effectMapping_scalar program
+      (by simpa using (Bool.and_eq_true_iff.mp selected).1)
+    rw [scalar, inputSnapshotMatchesUnder_scalar]
+    exact evaluateSequentialScopeInputs_snapshot program state owner mappings bindings evaluated
+  · exact evaluateEnclosingInputMappingsUnder_snapshot _ _ mappings bindings evaluated
+
+/-- The scalar reading of `evaluateEffectInputs_snapshotUnder`, for profiles that select the scalar policy. -/
+theorem evaluateEffectInputs_snapshot (program : Program) (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (mappings : List VariableMapping)
+    (bindings : List BpmnSemantics.VariableBinding)
+    (scalar : programEffectMappingValuePolicy program = .scalar)
+    (evaluated : evaluateEffectInputs? program state owner mappings = some bindings) :
+    inputSnapshotMatches mappings bindings = true := by
+  have snapshot := evaluateEffectInputs_snapshotUnder program state owner mappings bindings evaluated
+  rwa [scalar, inputSnapshotMatchesUnder_scalar] at snapshot
 
 /-- Declaration order cannot change the canonical snapshot, including a present null source. -/
 theorem canonical_input_target_order :
@@ -153,11 +176,13 @@ theorem canonical_input_duplicate_targets_refused :
 /-- Families without repeated-scope declarations retain ordinary Process input evaluation. -/
 theorem evaluateEffectInputs_without_repeated_scope (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (mappings : List VariableMapping)
+    (scalar : programEffectMappingValuePolicy program = .scalar)
     (absent : ∀ operation ∈ program.operations, sequentialScopeEntry? operation = none) :
     evaluateEffectInputs? program state owner mappings =
       evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
   have empty := List.filterMap_eq_nil_iff.mpr absent
-  simp [evaluateEffectInputs?, hasSequentialScopeDefinition, empty]
+  simp [evaluateEffectInputs?, hasSequentialScopeDefinition, empty, scalar,
+    evaluateEnclosingInputMappingsUnder_scalar]
 
 theorem sequentialScopeBindingForEntry_insert_scope
     (entry : SequentialScopeEntry) (state : RuntimeState) (created : RuntimeScopeOccurrence)

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             targetNamespace="urn:bpmn-lean:test:effect-data-credit-decision">
+  <process id="Process_CreditDecision" isExecutable="true">
+    <startEvent id="Start" />
+    <serviceTask id="AssessCredit" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:asyncBefore="true" camunda:delegateExpression="${assessCredit}">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="applicant">${applicantRef}</camunda:inputParameter>
+          <camunda:outputParameter name="assessment">${assessment}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="NotifyApplicant" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:asyncBefore="true" camunda:delegateExpression="${notifyApplicant}">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="assessment">${assessment}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${receipt}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="End" />
+    <sequenceFlow id="Flow_0" sourceRef="Start" targetRef="AssessCredit" />
+    <sequenceFlow id="Flow_1" sourceRef="AssessCredit" targetRef="NotifyApplicant" />
+    <sequenceFlow id="Flow_2" sourceRef="NotifyApplicant" targetRef="End" />
+  </process>
+</definitions>

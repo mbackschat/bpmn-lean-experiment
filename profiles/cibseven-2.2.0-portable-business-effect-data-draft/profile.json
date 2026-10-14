@@ -1,0 +1,106 @@
+{
+  "kind": "semanticProfile",
+  "id": "cibseven-2.2.0-portable-business-effect-data-draft",
+  "status": "draft",
+  "claim": "bpmn-2.0.2-serial-service-task-structured-effect-data-with-classified-cib-extensions",
+  "normativeAuthority": {
+    "name": "OMG Business Process Model and Notation",
+    "version": "2.0.2",
+    "references": [
+      "Clause 10.4.1",
+      "Clause 13.2",
+      "Clause 13.3.3"
+    ]
+  },
+  "bpmn": {
+    "process": "private-executable",
+    "features": [
+      "none-start-event",
+      "service-task",
+      "named-activity-effect",
+      "process-start-string-null-data",
+      "enclosing-singleton-business-item-input-snapshot",
+      "literal-input-mapping",
+      "exact-singleton-business-item-local-result-patch",
+      "local-variable-output-mapping",
+      "required-start-input-presence",
+      "fresh-effect-occurrences",
+      "none-end-event",
+      "sequence-flow",
+      "process-completion",
+      "finite-serial-service-task-chain",
+      "successful-effect-result"
+    ],
+    "extensions": [
+      "runtime-service-process-start-variable-map",
+      "camunda-delegate-expression-exact-business-operation-token",
+      "camunda-async-before-continuation",
+      "camunda-input-output-enclosing-input-local-output",
+      "bpmn-lean-content-bound-source-overlay-effect-binding"
+    ],
+    "relationships": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-CFG-0009",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0015",
+      "CIB-EXT-0019",
+      "CIB-OP-0001"
+    ]
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "comparison": {
+    "trace": "exact-after-canonical-projection",
+    "semanticConcurrency": false
+  },
+  "excluded": [
+    "whole-profile-cib-equivalence",
+    "cib-juel-compatibility-claim",
+    "general-juel",
+    "arbitrary-beans",
+    "java-delegate-interoperability",
+    "cib-java-object-serialization-beyond-the-pinned-default",
+    "in-place-delegate-mutation-of-a-structured-input",
+    "engine-context-and-handler-shadowing-variable-names",
+    "missing-required-start-inputs",
+    "input-local-chaining",
+    "parent-output-fallback",
+    "root-list-or-collection-ports",
+    "legacy-string-list-values",
+    "arithmetic-or-implicit-conversion",
+    "user-tasks",
+    "human-completion-surfaces",
+    "implicit-task-split-merge",
+    "concurrent-control-units",
+    "nested-scopes",
+    "call-activities",
+    "multi-instance",
+    "messages",
+    "expressions-beyond-enclosing-variable-references",
+    "platform-forms",
+    "scripts",
+    "listeners",
+    "semantic-incidents-and-retry",
+    "semantic-cancellation",
+    "compensation",
+    "transactions",
+    "cib-transaction-timing-equivalence",
+    "exactly-once-external-effects",
+    "gateways",
+    "cycles",
+    "boundary-events",
+    "business-error-results"
+  ]
+}

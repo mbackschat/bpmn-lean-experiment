@@ -81,6 +81,11 @@ test("classifies every registered profile against the regional exclusion investi
         assert.equal(requiredProgramShape(profile), undefined);
         assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
         break;
+      case SemanticProfileId.PortableBusinessEffectData:
+        assert.equal(excluded, false, "the Service-Task-only serial chain owns its single-control graph guarantee, as serial business-task admission does");
+        assert.equal(requiredProgramShape(profile), undefined);
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
+        break;
       case SemanticProfileId.MixedTaskControlFlow:
       case SemanticProfileId.MixedTaskBusinessError:
         assert.equal(excluded, false, "mixed-task admission owns its single-control resumption guarantee outside the legacy fixed-shape premises");

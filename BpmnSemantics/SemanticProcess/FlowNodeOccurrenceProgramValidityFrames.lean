@@ -172,7 +172,8 @@ theorem flowNodeOccurrenceProgramValidity_insertOrdinaryEffect (program : Progra
     (originElement : origin.elementId = wait.elementId)
     (effectElement : effect.elementId = wait.elementId)
     (descriptor : effect.descriptor = wait.descriptor)
-    (arguments : inputSnapshotMatches effect.inputMappings wait.arguments = true)
+    (arguments : inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
+      wait.arguments = true)
     (outputMappings : effect.outputMappings = wait.outputMappings)
     (routeEq : route = wait.bpmnErrorRoute) (bindingsEq : bindings = wait.arguments)
     (aligned : ∀ candidateId candidateOrigin candidateInput candidateOutput candidateEffect

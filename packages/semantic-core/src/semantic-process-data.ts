@@ -10,6 +10,7 @@ import {
   compareCanonicalStrings,
 } from "./wire.js";
 import { cloneVariableBinding } from "./variable-value.js";
+import { EffectMappingValuePolicy, effectMappingAcceptsValue } from "./effect-mapping-value-policy.js";
 import type {
   ScopedVariables,
 } from "./semantic-process-state.js";
@@ -21,7 +22,22 @@ import {
   matchesEffectLocalDataOwner,
 } from "./local-data-owner.js";
 
+/** The scalar specialization of `evaluateInputMappingsUnder`; every profile except structured effect data. */
 export function evaluateInputMappings(
+  mappings: ReadonlyArray<VariableMapping>,
+  enclosingBindings: ReadonlyArray<VariableBinding> = [],
+): ReadonlyArray<VariableBinding> | null {
+  return evaluateInputMappingsUnder(EffectMappingValuePolicy.Scalar, mappings, enclosingBindings);
+}
+
+/**
+ * Captures each referenced enclosing value by value into a fresh argument snapshot (PBV-EFF-03).
+ *
+ * The snapshot shares no structure with `enclosingBindings`, so a later change to the enclosing value cannot reach an
+ * open snapshot.
+ */
+export function evaluateInputMappingsUnder(
+  policy: EffectMappingValuePolicy,
   mappings: ReadonlyArray<VariableMapping>,
   enclosingBindings: ReadonlyArray<VariableBinding> = [],
 ): ReadonlyArray<VariableBinding> | null {
@@ -42,7 +58,7 @@ export function evaluateInputMappings(
         const sourceName = mapping.expression.name;
         const matching = enclosingBindings.filter(({ name }) => name === sourceName);
         const source = matching[0];
-        if (matching.length !== 1 || source === undefined || !isPermittedValue(source, true)) return null;
+        if (matching.length !== 1 || source === undefined || !effectMappingAcceptsValue(policy, source.value, true)) return null;
         result.push({ ...cloneVariableBinding(source), name: mapping.target });
         break;
       }
@@ -57,8 +73,17 @@ export function evaluateInputMappings(
   return result.sort(compareBindings);
 }
 
-/** SBT-SNAPSHOT-01 captures enclosing reads at activation; projection must not reevaluate mutable Process data. */
+/** The scalar specialization of `inputMappingSnapshotMatchesUnder`; every profile except structured effect data. */
 export function inputMappingSnapshotMatches(
+  mappings: ReadonlyArray<VariableMapping>,
+  arguments_: ReadonlyArray<VariableBinding>,
+): boolean {
+  return inputMappingSnapshotMatchesUnder(EffectMappingValuePolicy.Scalar, mappings, arguments_);
+}
+
+/** SBT-SNAPSHOT-01 captures enclosing reads at activation; projection must not reevaluate mutable Process data. */
+export function inputMappingSnapshotMatchesUnder(
+  policy: EffectMappingValuePolicy,
   mappings: ReadonlyArray<VariableMapping>,
   arguments_: ReadonlyArray<VariableBinding>,
 ): boolean {
@@ -72,7 +97,7 @@ export function inputMappingSnapshotMatches(
       case MappingExpressionKind.StringLiteral:
         return binding.value.kind === VariableValueKind.String && binding.value.value === mapping.expression.value;
       case MappingExpressionKind.EnclosingVariable:
-        return isPermittedValue(binding, true);
+        return effectMappingAcceptsValue(policy, binding.value, true);
       case MappingExpressionKind.LocalVariable:
         return false;
       default:
@@ -102,7 +127,8 @@ export function addActivityVariableScope(
     ...variables,
     activities: [
       ...variables.activities,
-      { owner: createEffectLocalDataOwner(owner), bindings: [...bindings] },
+      // Deep copy: the argument snapshot and the Activity-local scope are separate owners that must not alias a value.
+      { owner: createEffectLocalDataOwner(owner), bindings: bindings.map(cloneVariableBinding) },
     ].sort(compareActivityVariableScopes),
   };
 }
@@ -180,7 +206,19 @@ export function completeActivityVariableScope(
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): ScopedVariables | null {
-  const result = projectActivityVariableScopeResult(variables, owner, outputMappings, localPatch, allowNull);
+  return completeActivityVariableScopeUnder(EffectMappingValuePolicy.Scalar, variables, owner, outputMappings, localPatch, allowNull);
+}
+
+/** Policy-parameterized completion (PBV-EFF-04); the committed state shares no structure with `localPatch`. */
+export function completeActivityVariableScopeUnder(
+  policy: EffectMappingValuePolicy,
+  variables: ScopedVariables,
+  owner: EffectOccurrenceId,
+  outputMappings: ReadonlyArray<VariableMapping>,
+  localPatch: ReadonlyArray<VariableBinding>,
+  allowNull: boolean,
+): ScopedVariables | null {
+  const result = projectActivityVariableScopeResultUnder(policy, variables, owner, outputMappings, localPatch, allowNull);
   return result === null ? null : {
     ...result.variables,
     process: { bindings: mergeProcessVariableBindings(variables.process.bindings, result.outputs) },
@@ -195,10 +233,21 @@ export function projectActivityVariableScopeResult(
   localPatch: ReadonlyArray<VariableBinding>,
   allowNull: boolean,
 ): Readonly<{ variables: ScopedVariables; outputs: ReadonlyArray<VariableBinding> }> | null {
+  return projectActivityVariableScopeResultUnder(EffectMappingValuePolicy.Scalar, variables, owner, outputMappings, localPatch, allowNull);
+}
+
+export function projectActivityVariableScopeResultUnder(
+  policy: EffectMappingValuePolicy,
+  variables: ScopedVariables,
+  owner: EffectOccurrenceId,
+  outputMappings: ReadonlyArray<VariableMapping>,
+  localPatch: ReadonlyArray<VariableBinding>,
+  allowNull: boolean,
+): Readonly<{ variables: ScopedVariables; outputs: ReadonlyArray<VariableBinding> }> | null {
   const matching = variables.activities.filter((scope) => matchesEffectLocalDataOwner(scope.owner, owner));
   const activity = matching[0];
   if (matching.length !== 1 || activity === undefined) return null;
-  const outputs = projectEffectPatch(activity.bindings, outputMappings, localPatch, allowNull);
+  const outputs = projectEffectPatch(policy, activity.bindings, outputMappings, localPatch, allowNull);
   if (outputs === null) return null;
   return {
     variables: { ...variables, activities: variables.activities.filter((scope) => scope !== activity) },
@@ -207,6 +256,7 @@ export function projectActivityVariableScopeResult(
 }
 
 function projectEffectPatch(
+  policy: EffectMappingValuePolicy,
   arguments_: ReadonlyArray<VariableBinding>,
   outputMappings: ReadonlyArray<VariableMapping>,
   localPatch: ReadonlyArray<VariableBinding>,
@@ -227,6 +277,7 @@ function projectEffectPatch(
     }
   }))].sort(compareCanonicalStrings);
   const patch = validatePatch(
+    policy,
     localPatch,
     requiredLocalNames,
     allowNull,
@@ -252,6 +303,7 @@ function projectEffectPatch(
 }
 
 function validatePatch(
+  policy: EffectMappingValuePolicy,
   patch: ReadonlyArray<VariableBinding>,
   requiredNames: ReadonlyArray<string>,
   allowNull: boolean,
@@ -265,28 +317,12 @@ function validatePatch(
     if (
       binding === undefined ||
       binding.name !== requiredNames[index] ||
-      !isPermittedValue(binding, allowNull)
+      !effectMappingAcceptsValue(policy, binding.value, allowNull)
     ) {
       return null;
     }
   }
   return sorted;
-}
-
-function isPermittedValue(
-  binding: VariableBinding,
-  allowNull: boolean,
-): boolean {
-  switch (binding.value.kind) {
-    case VariableValueKind.Boolean:
-      return false;
-    case VariableValueKind.String:
-      return true;
-    case VariableValueKind.Null:
-      return allowNull;
-    default:
-      return false;
-  }
 }
 
 /** Applies a canonical create-or-replace patch to Process bindings without mutating either input. */

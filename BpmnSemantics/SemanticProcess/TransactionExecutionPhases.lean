@@ -234,7 +234,8 @@ theorem transaction_admission_commits_or_preserves_state (p : Program) (roles : 
   case startProcess commandId processId instanceId submitted =>
     cases control : before.control
     all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control, inert.2.2.2.1,
-      roles.profileSelected, transactionCancellationCheckpointProfileId, serialBusinessTaskProfileId, mixedTaskControlFlowProfileId]
+      roles.profileSelected, transactionCancellationCheckpointProfileId, serialBusinessTaskProfileId, mixedTaskControlFlowProfileId,
+      portableEffectDataProfileId]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeUserTaskInstance commandId taskId submitted =>
     obtain ⟨parallel, sequential, messageMonitored, messageBounded, bounded, composed,
@@ -242,12 +243,12 @@ theorem transaction_admission_commits_or_preserves_state (p : Program) (roles : 
     cases control : before.control
     all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control,
       inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded, bounded, composed,
-      dataInput, dataOutput, monitored]
+      dataInput, dataOutput, monitored, roles.profileSelected, transactionCancellationCheckpointProfileId, portableEffectDataProfileId]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | split
   case completeEffect commandId effectId result =>
     cases control : before.control
     all_goals simp [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent, storage, control,
-      inert.2.2.2.1, inert.2.2.1]
+      inert.2.2.2.1, inert.2.2.1, roles.profileSelected, transactionCancellationCheckpointProfileId, portableEffectDataProfileId]
     repeat' first | exact Or.inl rfl | exact Or.inr rfl | contradiction | split
   all_goals
     exact Or.inr (transaction_other_admissions_preserve_state p roles graph roles.profileSelected before _

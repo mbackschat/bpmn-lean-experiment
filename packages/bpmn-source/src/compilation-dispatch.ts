@@ -1,6 +1,6 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
 import { compileSequentialScopeSource } from "./multi-instance-scope-source-compiler.js";
-import { compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
+import { compileEffectDataSource, compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
   CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID,
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
@@ -78,6 +78,7 @@ export const CompilationDispatchId = Object.freeze({
   MixedTaskBusinessError: "mixedTaskBusinessError",
   MixedTaskControlFlow: "mixedTaskControlFlow",
   SerialBusinessTasks: "serialBusinessTasks",
+  PortableBusinessEffectData: "portableBusinessEffectData",
   Generic: "generic",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
@@ -129,6 +130,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     { id: CompilationDispatchId.MixedTaskBusinessError, semanticProfile: MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskBusinessErrorSource },
     { id: CompilationDispatchId.MixedTaskControlFlow, semanticProfile: MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskControlFlowSource },
     { id: CompilationDispatchId.SerialBusinessTasks, semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, reader: compileSerialBusinessTaskSource },
+    { id: CompilationDispatchId.PortableBusinessEffectData, semanticProfile: SemanticProfileId.PortableBusinessEffectData, reader: compileEffectDataSource },
     { id: CompilationDispatchId.SequentialMultiInstanceSubProcess, semanticProfile: SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, reader: compileSequentialScopeSource },
     {
       id: CompilationDispatchId.MappedSuccessServiceTask,
@@ -319,6 +321,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MixedTaskBusinessError:
     case CompilationDispatchId.MixedTaskControlFlow:
     case CompilationDispatchId.SerialBusinessTasks:
+    case CompilationDispatchId.PortableBusinessEffectData:
     case CompilationDispatchId.SequentialMultiInstanceSubProcess:
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:

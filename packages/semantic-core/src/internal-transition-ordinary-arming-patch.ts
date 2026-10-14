@@ -1,10 +1,11 @@
+import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
 import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
 import { evaluateParallelScopeInputs, hasParallelScopeDefinition } from "./parallel-scope-data.js";
 import type { OccurrenceId } from "./contract.js";
 import {
   addActivityVariableScope,
-  evaluateInputMappings,
+  evaluateInputMappingsUnder,
 } from "./semantic-process-data.js";
 import {
   SemanticOperationKind,
@@ -155,7 +156,11 @@ export function deriveInternalOrdinaryArmingPatch(
         ? evaluateParallelScopeInputs(program, state, owner, operation.effect.inputMappings)
         : hasSequentialScopeDefinition(program, owner)
         ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
-        : evaluateInputMappings(operation.effect.inputMappings, state.variables.process.bindings);
+        : evaluateInputMappingsUnder(
+          effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+          operation.effect.inputMappings,
+          state.variables.process.bindings,
+        );
       if (arguments_ === null) return null;
       return {
         kind: InternalOrdinaryArmingPatchKind.Effect,

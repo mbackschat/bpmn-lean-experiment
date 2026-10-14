@@ -65,6 +65,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.UserTaskCycle:
       return userTaskResumptionBoundedGraphPolicy;
     case SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID:
+    case SemanticProfileId.PortableBusinessEffectData:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
     case PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:

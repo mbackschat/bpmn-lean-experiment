@@ -4,8 +4,8 @@ import { projectCheckedSequenceFlows, projectExclusiveMerge, projectUserTaskMeta
 import { admitsUserTaskMetadataForeignAttribute } from "./user-task-metadata-source.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, mixedTaskControlCheckedGraph,
-  CheckedNodeKind, CheckedProcessKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID,
-  compareCanonicalStrings, serialBusinessCheckedGraph,
+  CheckedNodeKind, CheckedProcessKind, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, SemanticProfileId,
+  SerialChainHumanTasks, compareCanonicalStrings, serialBusinessCheckedGraph, serialChainRulesForProfile,
 } from "@bpmn-lean/semantic-core";
 import type { CheckedBpmnErrorRoute, CheckedNode, CheckedProcess, CheckedSequenceFlow } from "@bpmn-lean/semantic-core";
 import { isAdmittedCheckedProcess } from "./checked-process-admission.js";
@@ -28,6 +28,11 @@ const camunda = "http://camunda.org/schema/1.0/bpmn";
 /** CIB-EXT-0015 consumes exact binding and mapping syntax before independent checked-chain admission. */
 export function compileSerialBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
   return compileBusinessTaskSource(root, source, overlay, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID);
+}
+
+/** The serial grammar restricted to Service Tasks, with structured effect results (PBV-EFF-01). */
+export function compileEffectDataSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
+  return compileBusinessTaskSource(root, source, overlay, SemanticProfileId.PortableBusinessEffectData);
 }
 
 export function compileMixedTaskControlFlowSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
@@ -73,6 +78,9 @@ function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, ov
       case "bpmn:StartEvent": node = projectPlainNode(element, CheckedNodeKind.NoneStartEvent); break;
       case "bpmn:EndEvent": node = projectPlainNode(element, CheckedNodeKind.NoneEndEvent); break;
       case "bpmn:UserTask": {
+        if (serialChainRulesForProfile(semanticProfile).humanTasks === SerialChainHumanTasks.Forbidden) {
+          return unsupported("The selected profile admits no User Task.");
+        }
         const id = readId(element);
         if (id !== undefined) node = projectUserTaskMetadata(element, definitions, id,
           typeof element.name === "string" ? element.name : null, semanticProfile);
@@ -97,7 +105,7 @@ function compileBusinessTaskSource(root: unknown, source: BpmnSourceIdentity, ov
     nodes.push(node);
   }
   const ids = [processId, ...elements.map(readId), ...errors.map(readId)];
-  if (new Set(ids).size !== ids.length || (!mixed && !serialBusinessCheckedGraph({ nodes, flows }))) return unsupported("Expected a complete, unique serial business chain with exact mappings.");
+  if (new Set(ids).size !== ids.length || (!mixed && !serialBusinessCheckedGraph({ nodes, flows }, serialChainRulesForProfile(semanticProfile)))) return unsupported("Expected a complete, unique serial business chain with exact mappings.");
   const scopeId = definitionScopeId(processId);
   const checkedProcess: CheckedProcess = {
     kind: CheckedProcessKind.CheckedProcess,

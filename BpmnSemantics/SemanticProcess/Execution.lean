@@ -115,6 +115,7 @@ theorem effect_result_mapping_failure_is_rejected
     (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (legacyMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId)
     (legacyError : program.identity.semanticProfile ≠ mixedTaskBusinessErrorProfileId)
+    (legacyEffectData : program.identity.semanticProfile ≠ portableEffectDataProfileId)
     (invalid :
       let owner : EffectOccurrenceId :=
         { processInstanceId := wait.processInstanceId
@@ -173,7 +174,7 @@ theorem effect_result_mapping_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError]
+          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData]
         intro _ _ _ _ admitted selected
         have refused := empty_process_refuses_parallel_scope_effect program state
           completionCommandId effectId result rfl selected
@@ -189,6 +190,7 @@ theorem effect_result_route_failure_is_rejected
     (legacy : program.identity.semanticProfile ≠ serialBusinessTaskProfileId)
     (legacyMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId)
     (legacyError : program.identity.semanticProfile ≠ mixedTaskBusinessErrorProfileId)
+    (legacyEffectData : program.identity.semanticProfile ≠ portableEffectDataProfileId)
     (invalid : effectResultOutput wait result = none) :
     let effectId : EffectOccurrenceId :=
       { processInstanceId := wait.processInstanceId
@@ -230,7 +232,7 @@ theorem effect_result_route_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError]
+          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData]
         intro _ _ _ _ admitted selected
         have refused := empty_process_refuses_parallel_scope_effect program state
           completionCommandId effectId result rfl selected
@@ -271,6 +273,7 @@ theorem user_task_completion_with_same_successor_is_equal
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues) =
       serialBusinessCommandAdmitted program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues))
+    (unselectedEffectData : program.identity.semanticProfile ≠ portableEffectDataProfileId)
     (leftRunning : leftState.control = .running submittedTaskId.processInstanceId)
     (rightRunning : rightState.control = .running submittedTaskId.processInstanceId)
     (ordinaryTask :
@@ -335,7 +338,7 @@ theorem user_task_completion_with_same_successor_is_equal
     simp [callDataRuntimeStateValid, notCallData]
   have leftPhaseValid : interruptingMessageEventSubProcessStateValid program leftState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid program leftState with
-    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftSerial, leftDataValid, checked] at committed
+    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftSerial, unselectedEffectData, leftDataValid, checked] at committed
     | true => rfl
   have rightPhaseValid : interruptingMessageEventSubProcessStateValid program rightState = true := by
     rw [← raw_task_completion_frames_message_phase program rightState successor _ _ _ _ rightRunning rightCompletion,
@@ -376,7 +379,7 @@ theorem user_task_completion_with_same_successor_is_equal
     decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
-    simp [admitStimulus, leftStorage, rightStorage, noRepeatedScope, noParallelRepeatedScope, snapshotAbsent, leftSerial, rightSerial, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
+    simp [admitStimulus, leftStorage, rightStorage, noRepeatedScope, noParallelRepeatedScope, snapshotAbsent, leftSerial, rightSerial, unselectedEffectData, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,

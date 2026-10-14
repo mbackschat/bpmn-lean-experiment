@@ -6,6 +6,7 @@ import type {
   Stimulus,
   VariableBinding,
 } from "./contract.js";
+import { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 import { PropertyPathValuePolicy, propertyPathAcceptsValue, propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
 import { carriedVariablePatches } from "./runtime-state-carried-values.js";
 import type { RuntimeState } from "./semantic-process-state.js";
@@ -116,11 +117,13 @@ export function profileAllowsVariableBindings(
     return false;
   }
   const allowedKinds = profileValueDomain(semanticProfile, surface);
-  // The kind table cannot state the SingletonBusinessItem String bound, so the Property-path policy is consulted too.
-  const policy = propertyPathValuePolicyForProfile(semanticProfile);
+  // The kind table cannot state the SingletonBusinessItem String bound, so each widened path's policy is consulted too.
+  const propertyPolicy = propertyPathValuePolicyForProfile(semanticProfile);
+  const effectPolicy = effectMappingValuePolicyForProfile(semanticProfile);
   return allowedKinds !== null &&
     bindings.every(({ value }) => allowedKinds.includes(value.kind) &&
-      (policy === PropertyPathValuePolicy.Scalar || propertyPathAcceptsValue(policy, value)));
+      (propertyPolicy === PropertyPathValuePolicy.Scalar || propertyPathAcceptsValue(propertyPolicy, value)) &&
+      (effectPolicy === EffectMappingValuePolicy.Scalar || effectMappingAcceptsValue(effectPolicy, value, true)));
 }
 
 function isAdmissionProfile(
@@ -254,6 +257,15 @@ function profileValueDomain(
         singletonBusinessItemValueDomain,
         singletonBusinessItemValueDomain,
       );
+    case SemanticProfileId.PortableBusinessEffectData:
+      // Process Start keeps the String/Null domain, whose 1,024-byte root bound is the effect policy's value rule.
+      // User Task completion stays empty: this profile admits no User Task.
+      return surfaceValueDomain(
+        surface,
+        stringNullValueDomain,
+        emptyValueDomain,
+        singletonBusinessItemValueDomain,
+      );
     case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
@@ -291,26 +303,29 @@ function profileValueDomain(
  *
  * A portable value reaches state solely through an external write surface, so under a profile that selects one at no
  * surface, a carried or restored Decimal, List or Map was never committed (PBV-INGRESS-01); legacy scalar kinds are
- * not profile-checked there. Under the serial portable handoff every value at every carried path must instead be a
- * SingletonBusinessItem, because the Property path copies only that domain: a root List or an over-long root String
- * cannot be the result of any admitted command.
+ * not profile-checked there. Under a profile that widens the Property path or effect mapping, every value at every
+ * carried path must instead be a SingletonBusinessItem, because those paths copy only that domain: a root List or an
+ * over-long root String cannot be the result of any admitted command (PBV-EFF-01).
  */
 export function runtimeStateCarriesOnlyProfilePortableValues(
   semanticProfile: string,
   state: RuntimeState,
 ): boolean {
-  const policy = propertyPathValuePolicyForProfile(semanticProfile);
-  switch (policy) {
-    case PropertyPathValuePolicy.SingletonBusinessItem:
-      return carriedVariablePatches(state)
-        .every((bindings) => bindings.every(({ value }) => propertyPathAcceptsValue(policy, value)));
-    case PropertyPathValuePolicy.Scalar:
-      if (profileSelectsPortableValue(semanticProfile)) {
-        return true;
-      }
-      return carriedVariablePatches(state)
-        .every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
+  const propertyPolicy = propertyPathValuePolicyForProfile(semanticProfile);
+  const effectPolicy = effectMappingValuePolicyForProfile(semanticProfile);
+  if (propertyPolicy === PropertyPathValuePolicy.SingletonBusinessItem) {
+    return carriedVariablePatches(state)
+      .every((bindings) => bindings.every(({ value }) => propertyPathAcceptsValue(propertyPolicy, value)));
   }
+  if (effectPolicy === EffectMappingValuePolicy.SingletonBusinessItem) {
+    return carriedVariablePatches(state)
+      .every((bindings) => bindings.every(({ value }) => effectMappingAcceptsValue(effectPolicy, value, true)));
+  }
+  if (profileSelectsPortableValue(semanticProfile)) {
+    return true;
+  }
+  return carriedVariablePatches(state)
+    .every((bindings) => bindings.every(({ value }) => !portableValueKinds.includes(value.kind)));
 }
 
 function profileSelectsPortableValue(semanticProfile: string): boolean {

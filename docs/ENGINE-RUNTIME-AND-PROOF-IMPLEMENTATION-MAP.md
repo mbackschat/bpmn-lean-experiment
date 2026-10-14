@@ -74,6 +74,8 @@ Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lea
 
 [Portable handoff](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#lean-assurance-lane): checked lane with [finite witnesses](../BpmnSemantics/PortableHandoffConformance.lean); no restoration.
 
+[Structured effect data](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment): checked lane with [finite witnesses](../BpmnSemantics/EffectDataConformance.lean) and String-bound laws; review, hosting and enrollment open.
+
 [Call data](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#registration-evidence): isolated scalar transfer/return, typed task endpoints, scheduled publications and atomic refusal; registered; closure pending.
 
 ### Runtime scoped data

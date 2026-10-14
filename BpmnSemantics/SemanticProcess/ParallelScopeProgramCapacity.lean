@@ -17,6 +17,13 @@ def programSelected (program : Program) : Bool :=
     programSelected program = false := by
   simp [programSelected, different]
 
+/-- The effect-data command guard is the identity outside its own profile, so callers of the dispatcher
+discharge it from the profile they already select. -/
+theorem programSelected_not_effectData {program : Program} (selected : programSelected program = true) :
+    program.identity.semanticProfile ≠ portableEffectDataProfileId := by
+  intro same
+  simp [programSelected, same] at selected
+
 structure ProgramAnalysis where
   entry : ParallelScopeEntry
   handlers : List String

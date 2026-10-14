@@ -108,6 +108,10 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
     processStart: capability(singletonBusinessItem, "process-start-singleton-business-item-data"),
     userTaskCompletion: capability(singletonBusinessItem, "user-task-singleton-business-item-completion-data"),
   }],
+  [SemanticProfileId.PortableBusinessEffectData, {
+    processStart: capability(stringNull, "process-start-string-null-data"),
+    effectCompletion: capability(singletonBusinessItem, "exact-singleton-business-item-local-result-patch"),
+  }],
   [SemanticProfileId.StructuredProcessComposition, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
@@ -642,9 +646,11 @@ test("refuses a well-formed recursive portable value at every surface of every p
     assert.equal(isVariablePatch([binding]), true, kind);
     for (const profile of profiles) {
       for (const surface of surfaces) {
-        // Only the serial handoff selects Decimal and Map, at its two Property-path surfaces; a root List nowhere.
-        const selected = profile === SemanticProfileId.PortableBusinessValuesHandoff && kind !== VariableValueKind.List &&
-          surface !== "effectCompletion";
+        // Only two profiles select Decimal and Map: the serial handoff at its two Property-path surfaces and the
+        // structured effect-data profile at effect completion alone; a root List nowhere.
+        const selected = kind !== VariableValueKind.List && (
+          (profile === SemanticProfileId.PortableBusinessValuesHandoff && surface !== "effectCompletion") ||
+          (profile === SemanticProfileId.PortableBusinessEffectData && surface === "effectCompletion"));
         assert.equal(
           compiled.profileAllowsVariableBindings(profile, surface, [binding]),
           selected,
@@ -660,7 +666,7 @@ test("refuses a carried portable value under every admitted profile that selects
   const string = bindings.get(VariableValueKind.String);
   assert.ok(string !== undefined);
   for (const profile of await admittedProfiles()) {
-    if (profile === SemanticProfileId.PortableBusinessValuesHandoff) continue;
+    if (profile === SemanticProfileId.PortableBusinessValuesHandoff || profile === SemanticProfileId.PortableBusinessEffectData) continue;
     assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
     for (const kind of portableKinds) {
       const binding = bindings.get(kind);
@@ -736,6 +742,44 @@ test("the serial handoff accepts a SingletonBusinessItem and refuses any other v
   for (const candidate of refused) {
     for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
       assert.equal(runtimeStateCarriesOnlyProfilePortableValues(handoff, state), false, `${path} ${candidate.value.kind}`);
+    }
+  }
+});
+
+// The effect-data profile's Start surface stays String/Null but takes the SingletonBusinessItem 1,024-byte root bound.
+test("the structured effect-data profile bounds a Start String and admits a SingletonBusinessItem result only", async () => {
+  const compiled = await importCompiledValueDomain();
+  const profile = SemanticProfileId.PortableBusinessEffectData;
+  const named = (value: VariableBinding["value"]): VariableBinding => ({ name: "candidate", value });
+  const text = (length: number) => named({ kind: VariableValueKind.String, value: "a".repeat(length) });
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [text(1024)]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [text(1025)]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [named({ kind: VariableValueKind.Null })]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [bindings.get(VariableValueKind.Map)!]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [text(1024)]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [text(1025)]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [bindings.get(VariableValueKind.Map)!]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [bindings.get(VariableValueKind.List)!]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(profile, "userTaskCompletion", [text(1)]), false);
+  // Existing profiles keep their meaning: a 1,025-byte Start String is still a legacy String.
+  assert.equal(compiled.profileAllowsVariableBindings(SemanticProfileId.SerialBusinessTaskComposition, "processStart", [text(1025)]), true);
+});
+
+test("the structured effect-data profile accepts a SingletonBusinessItem and refuses any other value at every carried path", () => {
+  const profile = SemanticProfileId.PortableBusinessEffectData;
+  const named = (value: VariableBinding["value"]): VariableBinding => ({ name: "candidate", value });
+  const accepted = [named({ kind: VariableValueKind.String, value: "a".repeat(1024) }), named({ kind: VariableValueKind.Null }),
+    named({ kind: VariableValueKind.Map, value: [] }), bindings.get(VariableValueKind.Decimal)!, bindings.get(VariableValueKind.Map)!];
+  const refused = [bindings.get(VariableValueKind.List)!, bindings.get(VariableValueKind.StringList)!,
+    named({ kind: VariableValueKind.String, value: "a".repeat(1025) })];
+  for (const candidate of accepted) {
+    for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, state), true, `${path} ${candidate.value.kind}`);
+    }
+  }
+  for (const candidate of refused) {
+    for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, state), false, `${path} ${candidate.value.kind}`);
     }
   }
 });

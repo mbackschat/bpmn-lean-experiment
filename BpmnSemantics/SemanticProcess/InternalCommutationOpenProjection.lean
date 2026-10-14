@@ -700,7 +700,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
           (.awaitEffect id origin input output effect route) owner owner.processInstanceId
           effect.elementId (effectActivationCount state effect.elementId + 1) runtimeProcess binding
           operationSelection scopeSelection scopeMatches processAligned rfl (by omega)
-        have snapshot := evaluateEffectInputs_snapshot _ _ _ _ _ evaluatedEq
+        have snapshot := evaluateEffectInputs_snapshotUnder _ _ _ _ _ evaluatedEq
         simp [candidate, snapshot]
         rfl
 

@@ -348,7 +348,7 @@ def FirePhase (before : RuntimeState) (operation : SemanticOperation) (owner : S
 /-- Selection must consume the indexed control unit; phase facts are derived from the actual firing rather than supplied as readiness assumptions. -/
 theorem fire_phase (program : Program) (analysis : Analysis) (before after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId) (frontier : Option Vertex)
-    (analyzed : programAnalysis program = some analysis) (framed : RootFrame owner before)
+    (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar) (framed : RootFrame owner before)
     (position : Position program analysis before frontier) (member : operation ∈ program.operations)
     (fired : fire? program operation before = some after) : FirePhase before operation owner := by
   have tokenPhase (input : ControlPlaceId) (root : ScopeOccurrenceId)
@@ -378,7 +378,7 @@ theorem fire_phase (program : Program) (analysis : Analysis) (before after : Run
   case awaitEffect id origin input output effect route =>
     cases step with
     | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed scalar, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨root, found, _⟩ := active
         exact Or.inr (Or.inl (by simpa [operationInputs] using tokenPhase input root found))
   case choose id origin input candidates default defaultOrigin =>
@@ -418,12 +418,12 @@ theorem fire_phase (program : Program) (analysis : Analysis) (before after : Run
 
 theorem firing_unique (program : Program) (analysis : Analysis) (state leftAfter rightAfter : RuntimeState)
     (left right : SemanticOperation) (owner : ScopeOccurrenceId)
-    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis)
+    (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
     (leftMember : left ∈ program.operations) (rightMember : right ∈ program.operations)
     (leftFired : fire? program left state = some leftAfter) (rightFired : fire? program right state = some rightAfter) : left = right := by
   obtain ⟨frontier, position, _⟩ := indexed
-  have phase := fun operation after member fired => fire_phase program analysis state after operation owner frontier analyzed framed position member fired
+  have phase := fun operation after member fired => fire_phase program analysis state after operation owner frontier analyzed scalar framed position member fired
   have singletonSame (predicate : SemanticOperation → Bool) (count : (program.operations.filter predicate).length = 1)
       (leftSelected : predicate left = true) (rightSelected : predicate right = true) : left = right := by
     obtain ⟨only, singleton⟩ := List.length_eq_one_iff.mp count

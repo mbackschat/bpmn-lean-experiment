@@ -288,7 +288,7 @@ def candidateEffectStart? (program : Program) (operation : SemanticOperation)
     match operation with
     | .awaitEffect _ _ _ output effect route =>
         if wait.elementId ≠ effect.elementId || wait.descriptor ≠ effect.descriptor ||
-            !inputSnapshotMatches effect.inputMappings wait.arguments ||
+            !inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings wait.arguments ||
             wait.outputMappings ≠ effect.outputMappings || wait.output ≠ output ||
             wait.bpmnErrorRoute ≠ route then none
         else

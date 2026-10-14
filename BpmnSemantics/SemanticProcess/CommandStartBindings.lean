@@ -69,6 +69,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
     MixedTaskControlFlow.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = serialBusinessTaskProfileId then
     SerialBusinessTask.startBindingsAdmitted program bindings
+  else if program.identity.semanticProfile = portableEffectDataProfileId then
+    EffectData.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = callDataCheckpointProfileId then
     callDataStartBindingsAdmitted program bindings
   else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then

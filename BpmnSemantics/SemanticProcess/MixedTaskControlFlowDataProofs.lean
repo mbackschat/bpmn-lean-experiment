@@ -347,10 +347,20 @@ theorem program_analysis_operations_allowed (program : Program) (analysis : Anal
     obtain ⟨vertex, _, projected⟩ := operation_has_vertex program analysis operation analyzed member completes
     exact projected_operation_allowed program operation vertex projected
 
+/-- Both mixed-task profiles are scalar profiles: only the structured effect-data identity widens effect mapping. -/
+theorem mixedProfile_effectMapping_scalar (program : Program)
+    (profile : program.identity.semanticProfile = mixedTaskControlFlowProfileId ∨
+      program.identity.semanticProfile = mixedTaskBusinessErrorProfileId) :
+    programEffectMappingValuePolicy program = .scalar := by
+  rcases profile with same | same
+  · exact programEffectMappingValuePolicy_eq_scalar_of_profile same (by decide +kernel)
+  · exact programEffectMappingValuePolicy_eq_scalar_of_profile same (by decide +kernel)
+
 theorem program_analysis_effect_inputs (program : Program) (analysis : Analysis)
-    (analyzed : programAnalysis program = some analysis) (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
+    (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
+    (state : RuntimeState) (owner : ScopeOccurrenceId) (mappings : List VariableMapping) :
     evaluateEffectInputs? program state owner mappings = evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
-  apply evaluateEffectInputs_without_repeated_scope
+  apply evaluateEffectInputs_without_repeated_scope _ _ _ _ scalar
   intro operation member
   have allowed := program_analysis_operations_allowed program analysis analyzed operation member
   cases operation <;> simp_all [OperationAllowed, sequentialScopeEntry?]
@@ -748,7 +758,7 @@ theorem effect_issuance_counters (state : RuntimeState) (instanceId : SemanticId
     exact Nat.le_refl _
 
 theorem fire_counters_monotone (program : Program) (analysis : Analysis) (operation : SemanticOperation)
-    (before after : RuntimeState) (analyzed : programAnalysis program = some analysis)
+    (before after : RuntimeState) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (member : operation ∈ program.operations) (fired : fire? program operation before = some after) :
     CountersMonotone before after := by
   have allowed := program_analysis_operations_allowed program analysis analyzed operation member
@@ -773,7 +783,7 @@ theorem fire_counters_monotone (program : Program) (analysis : Analysis) (operat
   case awaitEffect id origin input output effect route =>
     cases step with
     | awaitEffect _ _ _ _ _ _ _ _ active =>
-        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed, bind, pure, Option.bind_eq_some_iff] at active
+        simp only [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed scalar, bind, pure, Option.bind_eq_some_iff] at active
         obtain ⟨owner, _, instanceId, _, arguments, _, active⟩ := active
         split at active
         · contradiction

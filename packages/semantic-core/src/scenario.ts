@@ -28,6 +28,7 @@ import {
   projectSelectedTaskInputs,
 } from "./activity-data-input-observation.js";
 import { projectOpenMultiInstances } from "./multi-instance-observation.js";
+import { cloneVariableBinding } from "./variable-value.js";
 import {
   supportsSemanticProcessExecution,
   supportsSemanticProcessScenario,
@@ -183,7 +184,8 @@ export function projectOpenEffects(
     .map(({ id, descriptor, arguments: arguments_ }) => ({
       id,
       descriptor,
-      arguments: arguments_,
+      // A copy, so a consumer mutating a projected structured argument cannot reach the committed open snapshot.
+      arguments: arguments_.map(cloneVariableBinding),
     }))
     .sort(compareOpenOccurrences);
 }

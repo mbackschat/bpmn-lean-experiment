@@ -95,6 +95,8 @@ private def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : Li
       profile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" then
     bindings.all (fun binding => SerialBusinessTask.scalar binding.value)
+  else if profile == portableEffectDataProfileId then
+    bindings.all (fun binding => EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value)
   else bindings.isEmpty
 
 /-- Whole-scenario support scans every stimulus independently of execution; supported-domain wrong names, occurrences and result sets remain executable negative commands. -/
@@ -125,6 +127,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     portableHandoffScenarioStartAdmitted program scenario.stimuli &&
     businessTaskScenarioStartAdmitted program scenario.stimuli &&
+    EffectData.scenarioStartAdmitted program scenario.stimuli &&
     stimulusSequenceSupported scenario.stimuli &&
     firstStimulusMatchesProgram program scenario.stimuli &&
     decide (
