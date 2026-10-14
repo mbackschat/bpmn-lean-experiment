@@ -10,7 +10,10 @@ const messagePayloadCatchProfile =
   "bpmn-2.0.2-message-payload-catch-draft";
 const portableHandoffProfile =
   "bpmn-2.0.2-portable-business-values-handoff-draft";
-// SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion.
+const portableEffectDataProfile =
+  "cibseven-2.2.0-portable-business-effect-data-draft";
+// SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion, which the
+// effect-data profile also applies to its String/Null Process Start and its effect results.
 const portableHandoffRootStringBytes = 1_024;
 
 export type ScenarioVariableValueContractInput = Readonly<{
@@ -217,7 +220,9 @@ function verifyProfileValue(
     verifyMessagePayloadValue(profile, tagged);
     return;
   }
-  const portableHandoffSurface = profile === portableHandoffProfile && (surface === "start" || surface === "completion");
+  const portableHandoffSurface = (profile === portableHandoffProfile && (surface === "start" || surface === "completion")) ||
+    (profile === portableEffectDataProfile && surface === "effect");
+  const boundedRootString = portableHandoffSurface || (profile === portableEffectDataProfile && surface === "start");
   switch (tagged.kind) {
     case "integer":
       if (portableHandoffSurface) return;
@@ -232,7 +237,7 @@ function verifyProfileValue(
       verifyStructuredValue(tagged);
       return;
     case "string":
-      if (portableHandoffSurface && typeof tagged.value === "string" &&
+      if (boundedRootString && typeof tagged.value === "string" &&
           Buffer.byteLength(tagged.value, "utf8") > portableHandoffRootStringBytes) {
         throw new TypeError(`portable handoff String exceeds ${portableHandoffRootStringBytes} UTF-8 bytes`);
       }
@@ -258,7 +263,7 @@ function verifyProfileValue(
       );
     case "decimal":
     case "map":
-      // The recursive portable arms are well-formed wire values; only the serial handoff selects them, at two surfaces.
+      // The recursive portable arms are well-formed wire values; only the serial handoff and effect-data profiles select them.
       if (portableHandoffSurface) return;
       throw new TypeError(
         `${tagged.kind} values are admitted by no registered scenario profile`,

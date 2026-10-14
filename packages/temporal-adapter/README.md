@@ -14,6 +14,8 @@ Run the retained serial data handoff with `./scripts/pnpm.sh run mvp:run -- exam
 
 Run the nested-order handoff with `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/portable-business-values-handoff.json` against your configured Temporal service. The [example](../../examples/temporal-mvp/portable-business-values-handoff.json) submits a 12-node order at Start, a revision at Review and a receipt at Archive through the shared User Task driver; [restoration controls](protocol/test/portable-handoff-continuation.test.ts) require every carried value to be a singleton item. Both client start paths refuse a Start whose [pre-start capacity envelope](protocol/src/start-capacity-envelope.ts) shows that the successful journey cannot fit a hosted budget; hosted rollover qualification for this profile is not part of this registration.
 
+Run the credit decision with `./scripts/pnpm.sh run mvp:run -- examples/temporal-mvp/portable-business-effect-data.json`. The [example](../../examples/temporal-mvp/portable-business-effect-data.json) returns a structured assessment from *Assess credit*, which *Notify applicant* receives as its input; effect idempotency keys and completion identities encode it through the shared [command-identity encoder](protocol/src/command-identity.ts).
+
 ## What you can do
 
 Run an admitted BPMN Process against an existing Temporal service, observe current semantic waits, submit occurrence-bound commands, and recover or replay the durable execution through the same product boundary.

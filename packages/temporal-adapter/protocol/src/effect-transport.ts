@@ -1,7 +1,6 @@
 import {
   EffectExecutionResultKind,
   StimulusKind,
-  VariableValueKind,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteEffectStimulus,
@@ -10,7 +9,6 @@ import type {
   EffectOccurrenceId,
   EffectTransportMaterial,
   OccurrenceId,
-  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 
 import {
@@ -19,6 +17,7 @@ import {
 import type {
   CanonicalTupleValue,
 } from "./canonical-encoding.js";
+import { variableBindingTuple } from "./command-identity.js";
 import { deterministicSha256Hex } from "./deterministic-sha256.js";
 
 export function canonicalEffectTransportEncoding(
@@ -132,15 +131,6 @@ function effectExecutionResultTuple(
   }
 }
 
-function variableBindingTuple(
-  binding: VariableBinding,
-): ReadonlyArray<CanonicalTupleValue> {
-  return [
-    binding.name,
-    variableValueTuple(binding),
-  ];
-}
-
 function effectDefinitionTuple(
   definition: EffectTransportMaterial["definition"],
 ): ReadonlyArray<CanonicalTupleValue> {
@@ -167,29 +157,6 @@ function occurrenceTuple(
     occurrence.elementId,
     occurrence.activation,
   ];
-}
-
-function variableValueTuple(
-  binding: VariableBinding,
-): ReadonlyArray<CanonicalTupleValue> {
-  switch (binding.value.kind) {
-    case VariableValueKind.Boolean:
-      return [binding.value.kind, binding.value.value];
-    case VariableValueKind.String:
-      return [binding.value.kind, binding.value.value];
-    case VariableValueKind.Integer:
-    case VariableValueKind.StringList:
-    case VariableValueKind.Decimal:
-    case VariableValueKind.List:
-    case VariableValueKind.Map:
-      throw new TypeError(
-        `Unsupported effect transport variant: ${JSON.stringify(binding.value)}`,
-      );
-    case VariableValueKind.Null:
-      return [binding.value.kind];
-    default:
-      return assertNever(binding.value);
-  }
 }
 
 function assertNever(value: never): never {

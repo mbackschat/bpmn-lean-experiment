@@ -1,0 +1,184 @@
+{
+  "kind": "scenario",
+  "id": "effect-data-credit-assessed",
+  "profile": "cibseven-2.2.0-portable-business-effect-data-draft",
+  "bpmn": {
+    "id": "credit-decision",
+    "relativePath": "scenarios/portable-business-effect-data/credit-decision.bpmn",
+    "sha256": "889fcab0db55dba0fa117e96f0689571e5643c4ddb145bbb4766948a2db04835",
+    "sourceOverlay": {
+      "id": "credit-handlers",
+      "sha256": "a211570d2aed1dff31be9caa8f12227fc308ecf7975c8099a0d96cd838566eba"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-CFG-0009",
+      "CIB-EXT-0015",
+      "CIB-EXT-0019"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_CreditDecision",
+      "instanceId": "Credit_assessed",
+      "initialVariables": [
+        {
+          "name": "applicantRef",
+          "value": {
+            "kind": "string",
+            "value": "A-17"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:83808a48e195fc9e07c9b5fc3807faa898b9040cb18c7f83164c06ee7012b4cc",
+      "effectId": {
+        "processInstanceId": "Credit_assessed",
+        "elementId": "AssessCredit",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amount",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-123455",
+                    "scale": 2
+                  }
+                },
+                {
+                  "name": "approved",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "checks",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "ID"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "ID"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "INCOME"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "contact",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
+                        }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:ff05d444f7a5c2e6da5df51104caff6d94b6d12d733cdda3afcdc1f9661620eb",
+      "effectId": {
+        "processInstanceId": "Credit_assessed",
+        "elementId": "NotifyApplicant",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "sent"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

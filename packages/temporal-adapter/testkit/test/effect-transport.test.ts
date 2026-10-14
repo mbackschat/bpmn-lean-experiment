@@ -229,6 +229,34 @@ test("keeps Boolean values typed in effect transport identity", () => {
   );
 });
 
+test("content-binds every nested leaf of a structured argument and result (PBV-EFF-01)", () => {
+  const assessment = (score: string) => ({
+    kind: VariableValueKind.Map,
+    value: [
+      { name: "flags", value: { kind: VariableValueKind.List, value: [
+        { kind: VariableValueKind.String, value: "a" }, { kind: VariableValueKind.String, value: "a" },
+      ] } },
+      { name: "note", value: { kind: VariableValueKind.Null } },
+      { name: "score", value: { kind: VariableValueKind.Decimal, coefficient: score, scale: 2 } },
+    ],
+  } as const);
+  const withArgument = (score: string): EffectTransportMaterial => ({
+    ...mappedSuccessMaterial, arguments: [{ name: "requestValue", value: assessment(score) }],
+  });
+  const result = (score: string): EffectExecutionResult => ({
+    kind: EffectExecutionResultKind.Success, localPatch: [{ name: "result", value: assessment(score) }],
+  });
+  assert.equal(
+    canonicalCompleteEffectEncoding(mappedSuccessMaterial.occurrence, result("-123455")),
+    '["completeEffect",["Instance_1","MappedSuccessTask",1],["success",[["result",["map",[["flags",["list",[["string","a"],["string","a"]]]],["note",["null"]],["score",["decimal","-123455",2]]]]]]]]',
+  );
+  assert.notEqual(effectTransportKey(withArgument("-123455")), effectTransportKey(withArgument("-123456")));
+  assert.notEqual(
+    completeEffectCommandId(mappedSuccessMaterial.occurrence, result("-123455")),
+    completeEffectCommandId(mappedSuccessMaterial.occurrence, result("-123456")),
+  );
+});
+
 test("argument and result omission mutations collapse discriminating pairs", () => {
   const otherArguments: EffectTransportMaterial = {
     ...mappedSuccessMaterial,

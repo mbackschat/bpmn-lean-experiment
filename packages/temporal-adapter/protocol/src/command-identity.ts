@@ -206,7 +206,8 @@ function effectResultTuple(
   }
 }
 
-function variableBindingTuple(
+/** The typed, recursive identity tuple of one binding, shared by command identity and effect transport. */
+export function variableBindingTuple(
   binding: VariableBinding,
 ): ReadonlyArray<import("./canonical-encoding.js").CanonicalTupleValue> {
   return [binding.name, variableValueTuple(binding.value)];

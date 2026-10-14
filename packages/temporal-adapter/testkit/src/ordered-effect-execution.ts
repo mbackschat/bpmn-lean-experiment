@@ -3,10 +3,10 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 import { Context } from "@temporalio/activity";
 import {
-  CommandOutcome, ControlStateKind, StimulusKind, applyStimulus, initialState,
+  CommandOutcome, ControlStateKind, StimulusKind, applyStimulus, effectMappingValuePolicyForProfile, initialState,
   projectCompensationEffectTransportMaterial, projectEffectTransportMaterial, projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
-import type { CompleteEffectStimulus, Scenario, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import type { CompleteEffectStimulus, EffectMappingValuePolicy, Scenario, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { completeEffectCommandId, compensationEffectTransportKey, effectTransportKey } from "@bpmn-lean/temporal-protocol";
 import type { EffectRequest } from "@bpmn-lean/temporal-protocol";
 import type { TemporalHistory, TemporalScenarioExecution } from "./contracts.js";
@@ -30,8 +30,10 @@ export class OrderedEffectExecution {
   private readonly entries = new Map<string, EffectEntry>();
   private readonly frontiers = new Map<string, readonly EffectEntry[]>();
   private stopped = false;
+  private readonly argumentPolicy: EffectMappingValuePolicy;
 
   constructor(scenario: Scenario, program: SemanticProcessProgram) {
+    this.argumentPolicy = effectMappingValuePolicyForProfile(program.identity.semanticProfile);
     let state = initialState;
     for (const stimulus of scenario.stimuli) {
       if (stimulus.kind === StimulusKind.CompleteEffect) {
@@ -100,7 +102,7 @@ export class OrderedEffectExecution {
           }
           if (entry.completion === undefined) throw new Error("Cancelled handler has no completion input");
           return entry.completion.result;
-        });
+        }, this.argumentPolicy);
         registrations.push(entry.request.idempotencyKey);
       }
       const execution = await execute((stimulus) => this.release(stimulus));

@@ -2,6 +2,8 @@ import {
   EffectOperation,
   EffectProtocol,
   EffectExecutionResultKind,
+  EffectMappingValuePolicy,
+  effectMappingAcceptsValue,
   isDenseArray,
   isVariableBinding,
   isVariablePatch,
@@ -69,7 +71,7 @@ export class EffectProbeStore {
       default:
         throw new TypeError("The built-in effect probe requires a calibration operation");
     }
-    requireEffectRequest(request);
+    requireEffectRequest(request, EffectMappingValuePolicy.Scalar);
     const priorInvocations =
       this.invocationCountByKey.get(request.idempotencyKey) ?? 0;
     this.invocationCountByKey.set(
@@ -118,6 +120,7 @@ export class EffectProbeStore {
 
 type EffectProbeRegistration = DeepReadonly<{
   request: EffectRequest;
+  argumentPolicy: EffectMappingValuePolicy;
   execute(request: EffectRequest): Promise<EffectActivityImplementationResult>;
 }>;
 
@@ -131,11 +134,16 @@ export class EffectProbeActivityRegistry {
   private readonly registrations =
     new Map<string, EffectProbeRegistration>();
 
+  /**
+   * `argumentPolicy` is the registering harness's profile policy: a request names no profile, so a serial-chain
+   * argument is admitted only under the domain of the Program that armed it.
+   */
   register(
     request: EffectRequest,
     execute: EffectProbeRegistration["execute"],
+    argumentPolicy: EffectMappingValuePolicy = EffectMappingValuePolicy.Scalar,
   ): void {
-    requireEffectRequest(request);
+    requireEffectRequest(request, argumentPolicy);
     if (this.registrations.has(request.idempotencyKey)) {
       throw new Error(
         `Effect transport key already has an active probe registration: ${request.idempotencyKey}`,
@@ -144,6 +152,7 @@ export class EffectProbeActivityRegistry {
     this.registrations.set(request.idempotencyKey, {
       request,
       execute,
+      argumentPolicy,
     });
   }
 
@@ -157,10 +166,10 @@ export class EffectProbeActivityRegistry {
 
   readonly activities: EffectActivityImplementations = {
     executeBpmnEffect: async (request) => {
-      requireEffectRequest(request);
       const registration = this.registrations.get(
         request.idempotencyKey,
       );
+      requireEffectRequest(request, registration?.argumentPolicy ?? EffectMappingValuePolicy.Scalar);
       if (
         registration === undefined ||
         registration.request.protocol !== request.protocol ||
@@ -178,6 +187,7 @@ export class EffectProbeActivityRegistry {
 
 function requireEffectRequest(
   request: EffectRequest,
+  argumentPolicy: EffectMappingValuePolicy,
 ): void {
   if (request.protocol !== EffectProtocol.Activity) {
     throw new TypeError(
@@ -199,7 +209,8 @@ function requireEffectRequest(
       break;
     default:
       requireArguments(isSerialBusinessIdentifier(request.operation) && request.operation.length <= 1_024 &&
-        isVariablePatch(request.arguments) && serialBusinessBindingsAdmitted(request.arguments, new Set([request.operation])));
+        isVariablePatch(request.arguments) && serialBusinessBindingsAdmitted(request.arguments, new Set([request.operation]),
+          (value) => effectMappingAcceptsValue(argumentPolicy, value, true)));
   }
   if (
     !/^effect-transport-sha256:[0-9a-f]{64}$/u.test(

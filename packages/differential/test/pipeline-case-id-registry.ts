@@ -48,6 +48,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "portable-handoff-order-nested",
   "portable-handoff-order-revised",
   "portable-handoff-order-null",
+  "effect-data-credit-assessed",
+  "effect-data-credit-null",
   "user-task-cycle-repeat-rework-exit",
   "message-start-event",
   "timer-start-event",

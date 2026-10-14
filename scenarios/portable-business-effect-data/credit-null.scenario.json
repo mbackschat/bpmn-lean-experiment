@@ -1,0 +1,96 @@
+{
+  "kind": "scenario",
+  "id": "effect-data-credit-null",
+  "profile": "cibseven-2.2.0-portable-business-effect-data-draft",
+  "bpmn": {
+    "id": "credit-decision",
+    "relativePath": "scenarios/portable-business-effect-data/credit-decision.bpmn",
+    "sha256": "889fcab0db55dba0fa117e96f0689571e5643c4ddb145bbb4766948a2db04835",
+    "sourceOverlay": {
+      "id": "credit-handlers",
+      "sha256": "a211570d2aed1dff31be9caa8f12227fc308ecf7975c8099a0d96cd838566eba"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-CFG-0009",
+      "CIB-EXT-0015",
+      "CIB-EXT-0019"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_CreditDecision",
+      "instanceId": "Credit_null",
+      "initialVariables": [
+        {
+          "name": "applicantRef",
+          "value": {
+            "kind": "string",
+            "value": "A-18"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+      "effectId": {
+        "processInstanceId": "Credit_null",
+        "elementId": "AssessCredit",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+      "effectId": {
+        "processInstanceId": "Credit_null",
+        "elementId": "NotifyApplicant",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

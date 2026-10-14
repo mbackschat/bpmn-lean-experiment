@@ -1,0 +1,157 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/portable-business-effect-data/credit-decision.bpmn",
+    "sourceId": "credit-decision",
+    "semanticProfile": "cibseven-2.2.0-portable-business-effect-data-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/portable-business-effect-data/source-overlay.json",
+      "id": "credit-handlers",
+      "sha256": "a211570d2aed1dff31be9caa8f12227fc308ecf7975c8099a0d96cd838566eba"
+    },
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_portable_business_effect_data_1",
+    "initialVariables": [
+      {
+        "name": "applicantRef",
+        "value": {
+          "kind": "string",
+          "value": "A-17"
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "assessCredit",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amount",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-123455",
+                    "scale": 2
+                  }
+                },
+                {
+                  "name": "approved",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "checks",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "ID"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "ID"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "code",
+                            "value": {
+                              "kind": "string",
+                              "value": "INCOME"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "contact",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
+                        }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "null"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "notifyApplicant",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "sent"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

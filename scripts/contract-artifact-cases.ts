@@ -149,6 +149,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["order-nested", "order-revised", "order-null"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/portable-business-values-handoff/${name}.scenario.json`,
   })),
+  ...["credit-assessed", "credit-null"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/portable-business-effect-data/${name}.scenario.json`,
+  })),
   Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/string.scenario.json" }),
   Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/null.scenario.json" }),
   ...["success-b-c-a", "success-b-a-c", "success-c-b-a", "failure-a", "failure-b", "failure-c"].map((name) => Object.freeze({

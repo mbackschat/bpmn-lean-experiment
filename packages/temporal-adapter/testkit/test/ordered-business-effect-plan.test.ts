@@ -3,7 +3,7 @@ import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
-import { EffectExecutionResultKind, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
+import { EffectExecutionResultKind, EffectMappingValuePolicy, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import type { EffectExecutionResult, Scenario, VariableBinding } from "@bpmn-lean/semantic-core";
 import { EffectExecutionSchedule, EffectProbeActivityRegistry, EffectProbeStore,
   completeEffectCommandId, effectTransportKey, requireOrderedEffectHistory, requireScenarioAdmission } from "@bpmn-lean/temporal-testkit";
@@ -165,4 +165,19 @@ test("named callback registration rejects noncanonical and unsupported business 
       async () => ({ kind: EffectExecutionResultKind.Success, localPatch: [] })),
       /admitted protocol, operation, and argument contract/);
   }
+});
+
+test("named callback registration admits structured arguments only under the registering profile's policy", () => {
+  const request = { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "notifyApplicant",
+    idempotencyKey: `effect-transport-sha256:${"2".repeat(64)}` };
+  const assessment: VariableBinding = { name: "assessment", value: { kind: VariableValueKind.Map, value: [
+    { name: "amount", value: { kind: VariableValueKind.Decimal, coefficient: "-123455", scale: 2 } }] } };
+  const rootList: VariableBinding = { name: "assessment", value: { kind: VariableValueKind.List, value: [] } };
+  const handler = async () => ({ kind: EffectExecutionResultKind.Success, localPatch: [] }) as const;
+  const register = (arguments_: readonly VariableBinding[], policy?: EffectMappingValuePolicy) =>
+    new EffectProbeActivityRegistry().register({ ...request, arguments: arguments_ }, handler, policy);
+  assert.throws(() => register([assessment]), /admitted protocol, operation, and argument contract/, "scalar by default");
+  assert.doesNotThrow(() => register([assessment], EffectMappingValuePolicy.SingletonBusinessItem));
+  assert.throws(() => register([rootList], EffectMappingValuePolicy.SingletonBusinessItem),
+    /admitted protocol, operation, and argument contract/, "a root List is no SingletonBusinessItem");
 });
