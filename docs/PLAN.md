@@ -77,13 +77,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the embedded and called scope family, `PC-SCOPE-01`/`02`/`04` primary, carrying `PC-DATA-04`–`06` (non-expression) and the Call/embedded part of `PC-DATA-03` on the same scope mechanism, per the [batch order](#scheduled-delivery-batches). Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
+Current task: the nested embedded scope data batch, first of the embedded and called scope family per the [batch order](#scheduled-delivery-batches): serial nested scopes carrying the embedded, scope-local clauses of `PC-DATA-03`–`06`. `PC-SCOPE-01`/`02`/`04` follow as later batches. Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
 
-Deliverable: nested and repeated embedded scopes and reusable Call mappings whose locals shadow by present null, write to the nearest existing owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
+Deliverable: serial nested embedded scopes whose locals shadow by present null, take writes at the nearest declaring owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
 
-Acceptance blockers: no family proposal; nested scopes, multi-port Call mappings and structured scope-local values are unimplemented. Core Lean edits (`Data`, `ScopeVariableData`, `ProcessInterfaceRuntime`, `ValueDomain` lint) are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at family acceptance, also covering `310cb4cd`.
+Acceptance blockers: the [proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md) is not yet accepted; the IL fields, frame chain, User Task contract and capacity reservation are unimplemented. Core Lean edits are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at batch acceptance, also covering `310cb4cd`.
 
-Current result: cited inventory of every mapping and visibility surface; CIB `setVariable` resolves the nearest existing owner up to the root at the pinned revision.
+Current result: the first proposal draft was rejected and redesigned to serial scopes; the redesign's required corrections are applied.
 
 Effort budget: 120 minutes wall from 2026-10-14 12:50 UTC for the proposal stage. At the limit, stop and record before renewal.
 

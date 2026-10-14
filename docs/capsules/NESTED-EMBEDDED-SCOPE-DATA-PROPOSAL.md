@@ -11,7 +11,7 @@ Can a business process nest ordinary embedded Sub-Processes in a serial chain, d
 
 This is the first increment of the embedded and called scope family selected in [PLAN](../PLAN.md#exact-resume-point). It serves the embedded, scope-local surfaces of `PC-DATA-03` and the embedded-owner clauses of `PC-DATA-04`, `PC-DATA-05` and `PC-DATA-06` in the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#business-data-and-expressions), restricted to serial composition. It does not claim `PC-SCOPE-01`: concurrent branches inside nested scopes need a concurrent-wait Start capacity account, and concurrent branches with effects need a concurrent-effect hosting mechanism that [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) refuses today. Expression-based mappings wait for `PC-DATA-07`.
 
-Later increments of this family are concurrent nested scopes (`PC-SCOPE-01`), Call input/output mapping (`PC-SCOPE-04`, after the called-definition policy of `PC-SCOPE-03`) and repeated or concurrent activations of one definition (`PC-SCOPE-02`, after `PC-CF-06`/`PC-CF-07`). Each is proposed as an amendment to this capsule and takes its own proposal review before any implementation; under the [family review unit](../REVIEW-POLICY.md#independent-cold-review-gate) the family then shares one checkpoint and one closure review.
+Later increments of this family are concurrent nested scopes (`PC-SCOPE-01`), Call input/output mapping (`PC-SCOPE-04`, after the called-definition policy of `PC-SCOPE-03`) and repeated or concurrent activations of one definition (`PC-SCOPE-02`, after `PC-CF-06`/`PC-CF-07`). This increment is the family's selected batch under the [family review unit](../REVIEW-POLICY.md#independent-cold-review-gate): it takes this proposal review, is implemented as one batch and then takes its own checkpoint and closure review. Each later increment is proposed as an amendment to this capsule and forms its own batch with its own proposal, checkpoint and closure review, so no Call, concurrent or repeated-activation semantics are implemented under this review.
 
 ## Normative basis and CIB classification
 
@@ -23,7 +23,7 @@ Candidate `CIB-EXT-0020` in the [relation register](../CIB-BPMN-RELATION-REGISTE
 
 ## Required, optional and excluded scope
 
-Required: one private executable root Process with one None Start and one None End; ordinary embedded Sub-Processes nested to a definition depth of at most three below the root; every scope, including the root, is one serial path from its None Start through User Tasks, mapped Service Tasks under the existing effect contract and nested Sub-Processes to its single None End; at most eight `camunda:inputParameter` declarations per Sub-Process, each a String literal or an exact `${name}` reference; at most eight `camunda:outputParameter` declarations per Sub-Process, each an exact `${name}` reference to a name declared by an input parameter of the same Sub-Process.
+Required: one private executable root Process with one None Start and one None End; ordinary embedded Sub-Processes nested to a definition depth of at most three below the root; every scope, including the root, is one serial path from its None Start through User Tasks, mapped Service Tasks under the existing effect contract and nested Sub-Processes to its single None End; at most eight `camunda:inputParameter` declarations per Sub-Process, each a String literal of at most 1,024 UTF-8 bytes or an exact `${name}` reference; at most eight `camunda:outputParameter` declarations per Sub-Process, each an exact `${name}` reference to a name declared by an input parameter of the same Sub-Process.
 
 Optional: scopes without declarations; one name declared at several levels; one local copied to several output targets.
 
@@ -33,9 +33,11 @@ Because every Sub-Process definition is activated at most once per Process insta
 
 ## Profile and value domain
 
-Candidate identity: `cibseven-2.2.0-nested-embedded-scope-data-draft`, the family's cumulative profile, widened in place by later increments under the [pre-baseline profile rule](../../contracts/README.md). Its value domain is `SingletonBusinessItem` from the [portable values capsule](PORTABLE-BUSINESS-VALUES-PROPOSAL.md#public-value-contract), with the 1,024-byte root-String bound, at every surface: Start bindings, User Task completion patches, Service effect arguments and results, scope locals and output targets. Every copy across a scope boundary is by value; no committed state shares structure with a caller-owned stimulus.
+Candidate identity: `cibseven-2.2.0-nested-embedded-scope-data-draft`, the family's cumulative profile, widened in place by later increments under the [pre-baseline profile rule](../../contracts/README.md). Its value domain is `SingletonBusinessItem` from the [portable values capsule](PORTABLE-BUSINESS-VALUES-PROPOSAL.md#public-value-contract), with the 1,024-byte root-String bound, at every surface: Start bindings, User Task completion patches, Service effect arguments and results, scope locals and output targets.
 
-`NSD-AVAILABLE-01` generalizes `SBT-AVAILABLE-01` from the [serial business-task capsule](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md): admission scans the serial chain, tracking names declared by enclosing input parameters and names definitely produced by earlier Service outputs or Sub-Process outputs. Every other `${name}` read becomes a required Start binding; Start without one is `rejected`, and null counts as present. An unavailable read is therefore unreachable after an accepted Start.
+`NSD-TASK-01`: a User Task completion patch may carry only names declared by a frame on the task's chain, each at most once and each with a `SingletonBusinessItem` value; it updates those frame bindings by `NSD-WRITE-01` and never adds a Process binding. A User Task outside every declaring frame therefore admits only the empty patch. A name outside that set, a duplicate name or an out-of-domain value makes the patch wrong, and a wrong patch is `rejected`. Assignment-form metadata is excluded. This bounds every completion by the declared frame names, at most twenty-four across three levels. Every copy across a scope boundary is by value; no committed state shares structure with a caller-owned stimulus.
+
+`NSD-AVAILABLE-01` generalizes `SBT-AVAILABLE-01` from the [serial business-task capsule](SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md): admission scans the serial chain, tracking names declared by enclosing input parameters and names definitely produced by earlier Service outputs or Sub-Process outputs. A definite write lands at its statically resolved owner, the nearest enclosing scope declaring the target name or otherwise the Process, and it counts as available only while that owner is on the reader's chain; a write landing in a frame stops counting when that frame's scope completes. Every other `${name}` read becomes a required Start binding; Start without one is `rejected`, and null counts as present. An unavailable read is therefore unreachable after an accepted Start.
 
 ## Representation and runtime ownership
 
@@ -45,11 +47,11 @@ Scope locals use the existing occurrence-keyed `variables.scopes` frames from [s
 
 ## Stable rules
 
-`NSD-ADMIT-01`: admission accepts exactly the required and optional scope above and rejects every exclusion and every parser warning.
+`NSD-ADMIT-01`: admission accepts exactly the required and optional scope above and rejects every exclusion, every parser warning and every String literal input over 1,024 UTF-8 bytes.
 
 `NSD-AVAILABLE-01`: as stated under the profile above.
 
-`NSD-INIT-01`: automatic entry evaluates every `localInputs` mapping against the visible context of the entering parent occurrence, before the new frame exists, then installs one frame owned by the new occurrence. Declaration order is irrelevant and an input cannot read a sibling input of the same Sub-Process.
+`NSD-INIT-01`: automatic entry with a nonempty `localInputs` list evaluates every mapping against the visible context of the entering parent occurrence, through that occurrence's whole chain, before the new frame exists, then installs one frame owned by the new occurrence. An empty list installs no frame, so a scope without declarations owns none and the operation is state-identical to today's `enterScope`. Declaration order is irrelevant and an input cannot read a sibling input of the same Sub-Process.
 
 `NSD-READ-01`: a name resolves by walking from the reading occurrence outward through parent occurrences. The first frame declaring the name decides, including a present null; otherwise the Process binding decides.
 
@@ -57,7 +59,7 @@ Scope locals use the existing occurrence-keyed `variables.scopes` frames from [s
 
 `NSD-OUTPUT-01`: at normal completion, each `localOutputs` mapping reads its source from the completing frame only and writes through `NSD-WRITE-01` starting at the parent occurrence. Validation, all writes and disposal commit atomically with the completion step. Because sources are declared locals whose values are already in the profile domain, an earlier output cannot change a later source and an output value cannot be invalid at completion.
 
-`NSD-RETIRE-01`: completion disposes exactly the completing occurrence's frame; the Process and the ancestors keep their bindings, and no retired local remains readable.
+`NSD-RETIRE-01`: completion disposes exactly the completing occurrence's frame, if it has one; the Process and the ancestors keep their bindings, and no retired local remains readable.
 
 `NSD-VALUE-01`: structured values keep multiplicity, order, Map keys, Decimal scale and present null through every frame, state, observation and restoration; a root List or a 1,025-byte root String is refused atomically at the surface that introduces it.
 
@@ -72,12 +74,13 @@ All witnesses run in one purchase-order approval model with three serial levels 
 | Rule | Witness | Seeded mutation it must catch | Lanes |
 |---|---|---|---|
 | `NSD-ADMIT-01` | Each exclusion, including a Parallel fork in a scope and an output sourced from a parent name, is refused; the retained models compile. | Admit an output whose source is not a declared local. | Source, core, Lean admission |
-| `NSD-AVAILABLE-01` | A compliance-scope read of `riskClass`, not declared or produced, makes `riskClass` a required Start binding; Start without it is rejected, with present null it commits. | Drop the required-binding derivation. | Source, core, Lean |
-| `NSD-INIT-01` | Credit review declares `limit = ${requestedLimit}` and `requestedLimit = "0"`; the nested effect reads `limit` as the Process value, not `"0"`; reversing the declarations commits the identical state. | Evaluate inputs in declaration order against the new frame. | Core, Lean, pipeline |
+| `NSD-AVAILABLE-01` | A compliance-scope read of `riskClass`, not declared or produced, makes `riskClass` a required Start binding; Start without it is rejected, with present null it commits. An inner Service output targets `note`, declared by order approval; a root read of `note` after order approval completes is a required Start binding. | Drop the required-binding derivation; keep a monotone produced-name set. | Source, core, Lean |
+| `NSD-TASK-01` | A credit-review completion naming a frame-declared name commits; one naming an undeclared name, repeating a name or carrying a root List is rejected with the state unchanged. | Admit an undeclared name as a new Process binding. | Core, Lean, pipeline |
+| `NSD-INIT-01` | Credit review declares `limit = ${requestedLimit}` and `requestedLimit = "0"`; the nested effect reads `limit` as the Process value, not `"0"`; reversing the declarations commits the identical state. Compliance declares `reviewer = ${status}` while order approval's `status` is null over a Process `"open"`; the compliance effect shows `reviewer = null`. | Evaluate inputs in declaration order against the new frame; initialize from the Process only. | Core, Lean, pipeline |
 | `NSD-READ-01` | Process `status = "open"`, `initialStatus = null`; order approval declares `status = ${initialStatus}`; the compliance Service maps `${status}` and its open effect shows `null`. | Read the Process before the frames. | Core, Lean, pipeline |
-| `NSD-WRITE-01` | The credit-review User Task completes with `status = "approved"`; the next compliance effect reads `"approved"` and the Process `status` stays `"open"`. | Write to the Process; write to the innermost frame. | Core, Lean, pipeline |
-| `NSD-OUTPUT-01` | Order approval outputs `order` to `approvedOrder` and `status` to both `finalStatus` and `auditStatus`; reversed declarations commit the identical state. | Read output sources from the parent frame. | Core, Lean, pipeline |
-| `NSD-RETIRE-01` | After credit review completes, an order-approval effect reads `limit` as the Process value again. | Keep the retired frame. | Core, Lean, pipeline |
+| `NSD-WRITE-01` | The credit-review User Task completes with `status = "approved"`; the Process `status` stays `"open"` and order approval's later output of `status` to `finalStatus` publishes `"approved"`. Order approval and credit review both declare `decision`; a credit-review completion writing `decision` changes only the credit frame, so order approval's output of `decision` to `finalDecision` publishes its initial value. | Write to the Process; write to the innermost frame; write to the outermost declaring frame. | Core, Lean, pipeline |
+| `NSD-OUTPUT-01` | Order approval outputs `order` to `approvedOrder` and `status` to both `finalStatus` and `auditStatus`; reversed declarations commit the identical state. Compliance outputs `checkResult` to `status`, declared by order approval, which changes that frame and leaves the Process `status`; credit review outputs its own local `limit` to `limit`, which writes the Process `limit`. | Read output sources from the parent frame; start the write at the completing occurrence. | Core, Lean, pipeline |
+| `NSD-RETIRE-01` | After credit review completes, its frame is absent from runtime state and an order-approval effect reads `limit` as the Process value. A kept orphan frame is invisible at the public boundary, so its evidence is the Lean disposal law and the core state-validity check that every frame's owner is a live scope occurrence. | Keep the retired frame. | Lean law, core state validity |
 | `NSD-VALUE-01` | An order Map with two equal line items, a nested address with a present null and a negative Decimal passes Start, two frames, an effect result and an output unchanged. | Deduplicate list members. | Core, Lean, pipeline, restoration |
 | `NSD-REFUSE-01` | A root List patch and a 1,025-byte root String result are rejected with the predecessor state unchanged. | Commit a partial frame update. | Core, Lean, value-domain matrix |
 
@@ -94,6 +97,7 @@ The frame laws are proved and reused by every later increment; admission and the
 - Disposal law: completion removes exactly one frame and preserves every other frame and the Process.
 - Initialization law: entry evaluates against the parent's visible context only.
 - Reduction law: on states in which every chain carries at most one frame, the generalized read, write and initialization equal the current one-frame operations.
+- Entry and completion preservation: with empty `localInputs` and `localOutputs`, `enterScope` and `completeScope` produce exactly the states they produce today, so every embedded, Transaction and Call-bearing profile, whose producers emit only empty lists, keeps its runtime state, including validators that require no scope frames.
 - Preservation: the reduction law is the preservation basis for every existing profile, because their admission keeps every chain to at most one frame (Multi-Instance bodies directly under the root only). The value-policy `scalar` pin preserves only their value domain.
 - Nearest checked non-law: writing to the innermost frame is not the nearest-owner write when only an ancestor declares the name.
 
@@ -103,7 +107,7 @@ The declarative relation arms for `enterScope` and `completeScope` gain the init
 
 The profile admits no token split, so [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) accepts its effect waits as serial and the `concurrentHostDrivenWaits` refusal stays unchanged; its [guard](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) must stay green. Durable ingress stays the existing Start, User Task completion and effect result; waits are one User Task or one effect at a time. There are no timers, Message waits, cancellation or interruption. Scope entry and completion are internal closure steps inside the command that reaches them, so no new Update, signal or Activity is added and no dedicated refinement witness is required under the once-per-mechanism rule.
 
-Nested frames are ordinary runtime state carried through Continue-As-New, so the hosting risk is size. The profile joins the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts), whose [serial journey](../../packages/temporal-adapter/protocol/src/start-capacity-journey.ts) supports exactly this shape: one open wait at a time, with automatic scope entry and completion as internal steps. The reserved journey covers the deepest admitted state: three frames of eight locals each at the portable bounds. Its guards are the effect-data and Message-payload envelope tests' counterparts for this profile, each with a record-drop mutation.
+Nested frames are ordinary runtime state carried through Continue-As-New, so the hosting risk is size. The profile joins the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts), whose [serial journey](../../packages/temporal-adapter/protocol/src/start-capacity-journey.ts) supports exactly this shape: one open wait at a time, with automatic scope entry and completion as internal steps. The reserved journey covers the deepest admitted state: three frames of eight locals each at the portable bounds. Today `completionFor` in the journey submits an empty patch for a plain User Task; for this profile it submits, for each User Task, every name `NSD-TASK-01` admits at its full allowance, so completions are reserved before Start rather than discovered after acceptance. Its guards are the effect-data and Message-payload envelope tests' counterparts for this profile, each with a record-drop mutation, plus a mutation that reserves the empty patch.
 
 ## Evidence and acceptance
 
@@ -132,8 +136,10 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `ae20b678ba0516823c47610e459e2a24b56f1791` | `fork-turns-none` | `reject` | `not-required` |
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The first proposal review, against `ae20b678` from baseline `ece0021f` with packet `23aa96b9a395a8de50f7765d9b93d14e159b059b4556da38d902d35b5eb6b6fd`, rejected the draft. Its three blocking findings were host admission refusing Parallel forks combined with effects, the serial-only Start capacity journey, and an IL with no place for Sub-Process mappings. Six further findings covered unsupported preservation premises, missing witnesses, inconsistent coverage claims, an unaddressed reopen trigger, family review scope and CIB boundary precision. The correction narrows the account to serial nested scopes and adds typed IL fields, so it is material and returns to a fresh cold proposal review.
+
+The fresh cold review of `eff1bee8`, packet `4891a6a82c6e477d27f126e933e9a670fb7c6b2d9044333e045817700707d6ee`, returned `approve-with-required-edits` with six required findings: the User Task completion contract and its capacity reservation, scope-aware availability, frame existence for empty input lists, witnesses that separate at the public boundary, the family batch arrangement, and the String-literal admission bound. The bounded correction awaits that reviewer's audit.
