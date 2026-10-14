@@ -12,6 +12,8 @@ The [registered portable-handoff cases](test/portable-handoff-pipeline-cases.ts)
 
 The [registered effect-data cases](test/effect-data-pipeline-cases.ts) bind a structured credit assessment and a present-Null control to Lean/core/Temporal. [Registration controls](test/effect-data-pipeline-cases.test.ts) check public admission, both seeded mutations and the profile's rows of the scenario-domain matrix.
 
+The [registered Message-payload cases](test/portable-message-payload-pipeline-cases.ts) bind a structured shipment manifest and a refused payload-free delivery followed by the same manifest to Lean/core/Temporal. [Registration controls](test/portable-message-payload-pipeline-cases.test.ts) check public admission, both seeded mutations and the profile's rows of the scenario-domain matrix.
+
 The independent [scenario-domain matrix](test/scenario-value-domain-cases.ts) assigns structured composition's existing String/null Human completion domain; [Lean/core controls](test/scenario-value-domain-lean-core.integration-test.ts) distinguish unsupported late values from supported-domain command refusal.
 
 The [scalar Call cases](test/call-data-pipeline-cases.ts) bind supplier String/null schedules to Lean, core and Temporal targets, with an exact called-owner mutation. [Registration controls](test/call-data-pipeline-cases.test.ts) check public admission, normal return and malformed-Program refusal.

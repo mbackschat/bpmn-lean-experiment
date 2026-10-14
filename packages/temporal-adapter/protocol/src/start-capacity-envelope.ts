@@ -1,5 +1,5 @@
 /**
- * Pre-start aggregate capacity envelope of the portable handoff and effect-data profiles.
+ * Pre-start aggregate capacity envelope of the portable handoff, effect-data and structured Message-payload profiles.
  *
  * Every per-value bound is already enforced, but one admitted root value is copied into committed state, the
  * paired publication batch, the selected-Run Query response, the terminal envelope and every Continue-As-New
@@ -12,13 +12,14 @@
  *
  * The estimate is deliberately conservative: it counts every structural copy the capsule enumerates and never
  * subtracts one. See the [capacity admission](../../../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission)
- * rule and `PBV-EFF-05`. It reserves the successful business path only; retries, command history and Run
+ * rule, `PBV-EFF-05` and `PBV-MSG-03`. It reserves the successful business path only; retries, command history and Run
  * longevity stay bounded by their own policies and the typed host capacity failure. The effect-data profile adds
  * per-task Activity checks, owned by [their module](./start-capacity-effect-tasks.ts), beside these budgets.
  */
 import {
   CommandOutcome,
   SemanticProfileId,
+  StimulusKind,
   projectOpenFlowNodeOccurrences,
   stimulusCommandId,
 } from "@bpmn-lean/semantic-core";
@@ -36,6 +37,7 @@ import {
   startCapacityEffectChecks,
 } from "./start-capacity-effect-tasks.js";
 import type { StartCapacityEffectFailure, StartCapacityEffectLimits } from "./start-capacity-effect-tasks.js";
+import { MessageDeliveryResolutionKind } from "./contracts.js";
 import { runStartCapacityJourney } from "./start-capacity-journey.js";
 import type { StartCapacityJourney } from "./start-capacity-journey.js";
 import {
@@ -166,6 +168,7 @@ export type StartCapacityEnvelopeResult =
 const envelopedProfiles: ReadonlySet<string> = new Set([
   SemanticProfileId.PortableBusinessValuesHandoff,
   SemanticProfileId.PortableBusinessEffectData,
+  SemanticProfileId.PortableBusinessMessagePayload,
 ]);
 
 export function productionStartCapacityEnvelopeLimits(): StartCapacityEnvelopeLimits {
@@ -274,7 +277,7 @@ function artifactBytes(budget: StartCapacityEnvelopeBudget, subject: Journey): n
     case WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes:
       return largest(waitingHeads(subject).flatMap((index) => [
         measured(publicationContinuationParts(subject, index)),
-        measured(hostContinuationParts(subject)),
+        measured(hostContinuationParts(subject, index)),
       ]));
     case WorkflowChainBudgetKind.QueryResponseBytes:
       return largest(steps.map((_, index) => measured(queryParts(subject, index))));
@@ -330,8 +333,18 @@ function publicationContinuationParts(subject: Journey, headIndex: number): unkn
   ];
 }
 
-function hostContinuationParts(subject: Journey): unknown[] {
-  return [subject.program.identity, subject.program.processId, subject.start.instanceId, subject.start.commandId];
+/**
+ * The host input copies the definition identity and Start identifiers, and carries one completed delivery record per
+ * Message delivery committed up to `headIndex`, each holding the delivered stimulus and its payload (`PBV-MSG-03`).
+ */
+function hostContinuationParts(subject: Journey, headIndex: number): unknown[] {
+  const longest = longestOutcome();
+  const deliveries = subject.journey.steps.slice(1, headIndex + 1).flatMap(({ stimulus }) =>
+    stimulus.kind === StimulusKind.DeliverPayloadMessage
+      ? [{ kind: MessageDeliveryResolutionKind.Semantic, stimulus, outcome: longest }]
+      : []);
+  return [subject.program.identity, subject.program.processId, subject.start.instanceId, subject.start.commandId,
+    ...deliveries];
 }
 
 /** Everything one successor Run carries after the command at `headIndex` left the Process at a wait. */
@@ -339,7 +352,7 @@ function successorBytes(subject: Journey, headIndex: number): number {
   const head = subject.journey.steps[headIndex];
   if (head === undefined) throw new TypeError("Capacity journey has no such head");
   return measured(subject.start) + measured(subject.program) +
-    measured(hostContinuationParts(subject)) +
+    measured(hostContinuationParts(subject, headIndex)) +
     measured(head.committed.state) +
     measured(ledgerEntries(subject, headIndex)) +
     measured(publicationContinuationParts(subject, headIndex));
@@ -368,14 +381,16 @@ function terminalObservation(subject: Journey): unknown {
  * outcome so that the estimate covers any outcome the Workflow could record.
  */
 function ledgerEntries(subject: Journey, count: number): WorkflowChainRecoveryEntry[] {
-  const longest = Object.values(CommandOutcome).reduce((best, outcome) =>
-    outcome.length > best.length ? outcome : best
-  );
+  const longest = longestOutcome();
   return subject.journey.steps.slice(1, 1 + count).map(({ stimulus }) => ({
     commandId: stimulusCommandId(stimulus),
     stimulusSha256: "0".repeat(64),
     outcome: longest,
   }));
+}
+
+function longestOutcome(): CommandOutcome {
+  return Object.values(CommandOutcome).reduce((best, outcome) => outcome.length > best.length ? outcome : best);
 }
 
 /** The Start's command ID is caller-chosen, the future ones are the reserved length; the longer bounds a batch. */

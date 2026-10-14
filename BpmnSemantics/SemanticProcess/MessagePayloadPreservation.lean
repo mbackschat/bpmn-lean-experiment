@@ -44,13 +44,15 @@ private theorem messageWaitBefore_compose (a b c : MessageWait) :
   simp only [messageWaitBefore, waitOccurrenceBefore, scopeOwnerBefore]
   grind
 
-/-- An admitted payload profile preserves the complete runtime-state invariant across every
-successful scalar payload delivery. -/
+/-- Either payload-catch profile preserves the complete runtime-state invariant across every
+successful payload delivery. Runtime-state well-formedness inspects no value, so the structured
+profile's wider payload domain (PBV-MSG-01) needs no further premise. -/
 theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId : SemanticId)
     (before after : RuntimeState) (subscriptionId : MessageSubscriptionId)
     (channel : MessageChannel) (payload : VariableValue)
-    (profile : program.identity.semanticProfile = messagePayloadCatchProfileId)
+    (profile : program.identity.semanticProfile = messagePayloadCatchProfileId ∨
+      program.identity.semanticProfile = portableMessagePayloadProfileId)
     (structural : programWellFormed program = true)
     (_capabilities : programProfileCapabilitiesValid program = true)
     (wellFormed : runtimeStateWellFormed program expectedInstanceId before = true)
@@ -59,7 +61,7 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
   have semanticStep := deliverPayloadMessage_sound program before after subscriptionId channel
     payload success
   cases semanticStep with
-  | commit wait operation directOutput occurrence ordinary unattached callerChannel scalar declarer =>
+  | commit wait operation directOutput occurrence ordinary unattached callerChannel admitted declarer =>
       have waitMember : wait ∈ before.messageWaits := List.mem_of_find?_eq_some occurrence
       obtain ⟨operationMember, id, origin, input, message, operationEq, elementEq, channelEq,
         ownerScope⟩ := payloadMessageOperation?_facts program wait operation directOutput declarer
@@ -107,25 +109,26 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have repeated := wellFormed.2.2
       have capabilities := _capabilities
       have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
-        rw [profile]
-        simp [messagePayloadCatchProfileId, repeatableSubscriptionCheckpointProfileId]
+        rcases profile with same | same <;> rw [same] <;>
+          simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
+            repeatableSubscriptionCheckpointProfileId]
       have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-        rw [profile]
-        decide +kernel
+        rcases profile with same | same <;> rw [same] <;> decide +kernel
       have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-        rw [profile]
-        decide +kernel
+        rcases profile with same | same <;> rw [same] <;> decide +kernel
       have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-        rw [profile]
-        decide +kernel
+        rcases profile with same | same <;> rw [same] <;> decide +kernel
       have repeatedScope : (program.identity.semanticProfile.value ==
           "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
-        rw [profile]; decide +kernel
+        rcases profile with same | same <;> rw [same] <;> decide +kernel
+      have notParallel : program.identity.semanticProfile ≠ parallelMultiInstanceUserTaskProfileId := by
+        rcases profile with same | same <;> rw [same] <;>
+          simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
+            parallelMultiInstanceUserTaskProfileId]
       simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.2.1.2
-      simp [programParallelMultiInstanceProfileMatches, profile, messagePayloadCatchProfileId,
-        parallelMultiInstanceUserTaskProfileId] at parallelFamily
+      simp [programParallelMultiInstanceProfileMatches, notParallel] at parallelFamily
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
       obtain ⟨aggregate, notExhausted⟩ := aggregate
       obtain ⟨aggregate, controllerIds⟩ := aggregate
@@ -294,12 +297,12 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
           program expectedInstanceId before wait.owner position ownerLive
         rw [compensationExecutionStateValid_running_frame program
           (RootCompensationExecutionDomain.of_zero_profile program
-            (by rw [profile]; decide +kernel) (by rw [profile]; rfl) _capabilities) before settled instanceId
+            (by rcases profile with same | same <;> rw [same] <;> decide +kernel) (by rcases profile with same | same <;> rw [same] <;> rfl) _capabilities) before settled instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       have repeatedAfter : sequentialScopeStateValid program settled = true :=
         sequentialScopeStateValid_zero_profile_frame program before settled legacy
-          (by rw [profile]; rfl) _capabilities rfl repeated
+          (by rcases profile with same | same <;> rw [same] <;> rfl) _capabilities rfl repeated
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       refine ⟨?_, ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩, repeatedAfter⟩⟩
       refine ⟨?_, lifecycleAfter⟩

@@ -6,6 +6,10 @@
  * This reader therefore resolves every semantic edge against the parser's object graph. Neither an
  * identifier spelling nor the presentation-only DataOutput name participates in resolution.
  *
+ * The closed payload-catch profile pins every identifier and presentation name of its reviewed settlement source. The
+ * structured Message-payload profile admits the same structure under any spelling, because business names must not
+ * enter admission (PBV-MSG-01); both read the structure through the single reader below.
+ *
  * The profile requires optional typing and requiredness attributes physically absent. This matters
  * for `isCollection="false"`: bpmn-moddle exposes the same false value from the prototype when the
  * attribute is omitted, so value comparison alone would erase a source distinction the profile
@@ -64,7 +68,16 @@ const selectedTypes = Object.freeze({
   dataOutputAssociation: "bpmn:DataOutputAssociation",
 });
 
-const ids = Object.freeze({
+type PayloadSourceIds = Readonly<{
+  definitions: string; targetNamespace: string; itemDefinition: string; message: string; messageName: string;
+  interface: string; interfaceName: string; operation: string; operationName: string; process: string;
+  property: string; start: string; startFlow: string; catchEvent: string; dataOutput: string; dataOutputName: string;
+  association: string; outputSet: string; eventDefinition: string; catchFlow: string; task: string; taskName: string;
+  taskFlow: string; end: string;
+}>;
+
+/** The closed payload-catch profile's reviewed settlement spellings. */
+const settlementIds: PayloadSourceIds = Object.freeze({
   definitions: "Definitions_MessagePayloadSettlement",
   targetNamespace:
     "https://bpmn-lean.org/scenarios/message-payload-settlement",
@@ -157,6 +170,7 @@ const exactContainmentCardinalities: ReadonlyArray<ExactContainmentCardinality> 
   ]);
 
 type ExactSource = Readonly<{
+  ids: PayloadSourceIds;
   definitions: ElementRecord;
   process: ElementRecord;
   message: ElementRecord;
@@ -174,18 +188,39 @@ type ExactSource = Readonly<{
 export function messagePayloadCatchContainmentCardinalities(
   semanticProfile: string,
 ): ReadonlyArray<ExactContainmentCardinality> {
-  return semanticProfile === SemanticProfileId.MessagePayloadCatch
+  return isPayloadCatchProfile(semanticProfile)
     ? exactContainmentCardinalities
     : [];
+}
+
+export type PayloadCatchProfile =
+  | typeof SemanticProfileId.MessagePayloadCatch
+  | typeof SemanticProfileId.PortableBusinessMessagePayload;
+
+function isPayloadCatchProfile(semanticProfile: string): semanticProfile is PayloadCatchProfile {
+  return semanticProfile === SemanticProfileId.MessagePayloadCatch ||
+    semanticProfile === SemanticProfileId.PortableBusinessMessagePayload;
+}
+
+function admitsIdentifiers(semanticProfile: PayloadCatchProfile, ids: PayloadSourceIds): boolean {
+  switch (semanticProfile) {
+    case SemanticProfileId.MessagePayloadCatch:
+      return (Object.keys(settlementIds) as Array<keyof PayloadSourceIds>).every((key) => ids[key] === settlementIds[key]);
+    case SemanticProfileId.PortableBusinessMessagePayload:
+      return true;
+    default:
+      return assertNever(semanticProfile);
+  }
 }
 
 export function compileMessagePayloadCatchCheckedProcess(
   rootElement: unknown,
   source: BpmnSourceIdentity,
   sourceOverlay: SourceOverlayIdentity | null,
+  semanticProfile: PayloadCatchProfile,
 ): CheckedCompilationProjection {
   const exact = readExactSource(rootElement);
-  if (exact === undefined) {
+  if (exact === undefined || !admitsIdentifiers(semanticProfile, exact.ids)) {
     return unsupported(
       "Message payload catch source must match the reviewed ItemDefinition, Message operation, direct Event DataOutput, required OutputSet, and Process Property association exactly.",
     );
@@ -224,7 +259,7 @@ export function compileMessagePayloadCatchCheckedProcess(
         },
         undefined,
         undefined,
-        SemanticProfileId.MessagePayloadCatch,
+        semanticProfile,
       );
   if (sequenceFlows === undefined || ordinaryNodes === undefined) {
     return unsupported(
@@ -232,6 +267,7 @@ export function compileMessagePayloadCatchCheckedProcess(
     );
   }
   const nodes = [...ordinaryNodes, exact.payloadNode].sort(compareIds);
+  const { ids } = exact;
   const scopeId = definitionScopeId(ids.process);
   const definitionScopes = [{
     id: scopeId,
@@ -255,7 +291,7 @@ export function compileMessagePayloadCatchCheckedProcess(
         flows,
       },
       exact.definitions.expressionLanguage,
-      SemanticProfileId.MessagePayloadCatch,
+      semanticProfile,
     )
   ) {
     return unsupported(
@@ -266,7 +302,7 @@ export function compileMessagePayloadCatchCheckedProcess(
     checkedProcess: {
       kind: CheckedProcessKind.CheckedProcess,
       identity: {
-        semanticProfile: SemanticProfileId.MessagePayloadCatch,
+        semanticProfile,
         sourceId: source.id,
         sourceSha256: source.sha256,
         sourceOverlay,
@@ -293,8 +329,8 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
       "targetNamespace",
       "rootElements",
     ]) ||
-    readId(definitions) !== ids.definitions ||
-    definitions.targetNamespace !== ids.targetNamespace
+    readId(definitions) === undefined ||
+    typeof definitions.targetNamespace !== "string"
   ) {
     return undefined;
   }
@@ -337,12 +373,12 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
     task === undefined ||
     taskFlow === undefined ||
     end === undefined ||
-    !isExactPlainNode(start, bpmnTypes.startEventType, ids.start, undefined) ||
-    !isExactPlainNode(task, bpmnTypes.userTaskType, ids.task, ids.taskName) ||
-    !isExactPlainNode(end, bpmnTypes.endEventType, ids.end, undefined) ||
-    !isExactFlow(startFlow, ids.startFlow, start, catchEvent) ||
-    !isExactFlow(catchFlow, ids.catchFlow, catchEvent, task) ||
-    !isExactFlow(taskFlow, ids.taskFlow, task, end) ||
+    !isExactPlainNode(start, bpmnTypes.startEventType, false) ||
+    !isExactPlainNode(task, bpmnTypes.userTaskType, true) ||
+    !isExactPlainNode(end, bpmnTypes.endEventType, false) ||
+    !isExactFlow(startFlow, start, catchEvent) ||
+    !isExactFlow(catchFlow, catchEvent, task) ||
+    !isExactFlow(taskFlow, task, end) ||
     !hasExactNodeReferences(start, [], [startFlow]) ||
     !hasExactNodeReferences(catchEvent, [startFlow], [catchFlow]) ||
     !hasExactNodeReferences(task, [catchFlow], [taskFlow]) ||
@@ -350,14 +386,44 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
   ) {
     return undefined;
   }
-  const payloadNode = projectPayloadMessageCatchEvent(
+  const payload = readPayloadCatchInterface(
     catchEvent,
     property,
     itemDefinition,
     message,
     operation,
   );
-  return payloadNode === undefined ? undefined : {
+  if (payload === undefined) {
+    return undefined;
+  }
+  const ids = {
+    definitions: definitions.id,
+    targetNamespace: definitions.targetNamespace,
+    itemDefinition: itemDefinition.id,
+    message: message.id,
+    messageName: message.name,
+    interface: interface_.id,
+    interfaceName: interface_.name,
+    operation: operation.id,
+    operationName: operation.name,
+    process: process.id,
+    property: property.id,
+    start: start.id,
+    startFlow: startFlow.id,
+    catchEvent: catchEvent.id,
+    dataOutput: payload.dataOutput.id,
+    dataOutputName: payload.dataOutput.name,
+    association: payload.association.id,
+    outputSet: payload.outputSet.id,
+    eventDefinition: payload.eventDefinition.id,
+    catchFlow: catchFlow.id,
+    task: task.id,
+    taskName: task.name,
+    taskFlow: taskFlow.id,
+    end: end.id,
+  };
+  return !hasOnlyNonEmptyStrings(ids) ? undefined : {
+    ids,
     definitions,
     process,
     message,
@@ -365,13 +431,19 @@ function readExactSource(rootElement: unknown): ExactSource | undefined {
     operation,
     ordinaryNodes: [start, task, end],
     sequenceFlows: [startFlow, catchFlow, taskFlow],
-    payloadNode,
+    payloadNode: payloadMessageCatchEvent(ids),
   };
+}
+
+function hasOnlyNonEmptyStrings<K extends string>(
+  value: Readonly<Record<K, unknown>>,
+): value is Readonly<Record<K, string>> {
+  return Object.values(value).every((entry) => typeof entry === "string" && entry.length > 0);
 }
 
 function isExactItemDefinition(value: ElementRecord): boolean {
   return value.$type === selectedTypes.itemDefinition &&
-    readId(value) === ids.itemDefinition &&
+    readId(value) !== undefined &&
     hasOnlyModelledKeys(value, ["$type", "id"]) &&
     !Object.hasOwn(value, "structureRef") &&
     !Object.hasOwn(value, "itemKind") &&
@@ -383,8 +455,8 @@ function isExactMessage(
   itemDefinition: ElementRecord,
 ): boolean {
   return value.$type === bpmnTypes.messageType &&
-    readId(value) === ids.message &&
-    value.name === ids.messageName &&
+    readId(value) !== undefined &&
+    typeof value.name === "string" &&
     hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
     value.itemRef === itemDefinition;
 }
@@ -395,8 +467,8 @@ function readExactOperation(
 ): ElementRecord | undefined {
   if (
     value.$type !== bpmnTypes.interfaceType ||
-    readId(value) !== ids.interface ||
-    value.name !== ids.interfaceName ||
+    readId(value) === undefined ||
+    typeof value.name !== "string" ||
     !hasOnlyModelledKeys(value, ["$type", "id", "name", "operations"])
   ) {
     return undefined;
@@ -406,8 +478,8 @@ function readExactOperation(
   return operations?.length === 1 &&
       operation !== undefined &&
       operation.$type === bpmnTypes.operationType &&
-      readId(operation) === ids.operation &&
-      operation.name === ids.operationName &&
+      readId(operation) !== undefined &&
+      typeof operation.name === "string" &&
       hasOnlyModelledKeys(operation, ["$type", "id", "name"]) &&
       operation.inMessageRef === message &&
       operation.outMessageRef === undefined &&
@@ -419,7 +491,7 @@ function readExactOperation(
 
 function isExactProcess(value: ElementRecord): boolean {
   return value.$type === bpmnTypes.processType &&
-    readId(value) === ids.process &&
+    readId(value) !== undefined &&
     value.isExecutable === true &&
     hasOnlyModelledKeys(value, [
       "$type",
@@ -432,7 +504,7 @@ function isExactProcess(value: ElementRecord): boolean {
 
 function isExactProperty(value: ElementRecord): boolean {
   return value.$type === selectedTypes.property &&
-    readId(value) === ids.property &&
+    readId(value) !== undefined &&
     hasOnlyModelledKeys(value, ["$type", "id"]) &&
     value.itemSubjectRef === undefined &&
     value.dataState === undefined;
@@ -441,25 +513,23 @@ function isExactProperty(value: ElementRecord): boolean {
 function isExactPlainNode(
   value: ElementRecord,
   type: string,
-  id: string,
-  name: string | undefined,
+  named: boolean,
 ): boolean {
   return value.$type === type &&
-    readId(value) === id &&
-    value.name === name &&
-    hasOnlyModelledKeys(value, name === undefined
-      ? ["$type", "id"]
-      : ["$type", "id", "name"]);
+    readId(value) !== undefined &&
+    (named ? typeof value.name === "string" : value.name === undefined) &&
+    hasOnlyModelledKeys(value, named
+      ? ["$type", "id", "name"]
+      : ["$type", "id"]);
 }
 
 function isExactFlow(
   value: ElementRecord,
-  id: string,
   source: ElementRecord,
   target: ElementRecord,
 ): boolean {
   return value.$type === bpmnTypes.sequenceFlowType &&
-    readId(value) === id &&
+    readId(value) !== undefined &&
     hasOnlyModelledKeys(value, ["$type", "id"]) &&
     value.sourceRef === source &&
     value.targetRef === target &&
@@ -479,16 +549,23 @@ function hasExactNodeReferences(
       : sameReferences(value.outgoing, outgoing));
 }
 
-function projectPayloadMessageCatchEvent(
+type PayloadCatchInterface = Readonly<{
+  dataOutput: ElementRecord;
+  association: ElementRecord;
+  outputSet: ElementRecord;
+  eventDefinition: ElementRecord;
+}>;
+
+function readPayloadCatchInterface(
   event: ElementRecord,
   property: ElementRecord,
   itemDefinition: ElementRecord,
   message: ElementRecord,
   operation: ElementRecord,
-): ExactSource["payloadNode"] | undefined {
+): PayloadCatchInterface | undefined {
   if (
     event.$type !== bpmnTypes.intermediateCatchEventType ||
-    readId(event) !== ids.catchEvent ||
+    readId(event) === undefined ||
     !hasOnlyModelledKeys(event, [
       "$type",
       "id",
@@ -524,6 +601,13 @@ function projectPayloadMessageCatchEvent(
   ) {
     return undefined;
   }
+  const association = associations?.[0];
+  return association === undefined
+    ? undefined
+    : { dataOutput, association, outputSet, eventDefinition: definition };
+}
+
+function payloadMessageCatchEvent(ids: PayloadSourceIds): ExactSource["payloadNode"] {
   return {
     kind: CheckedNodeKind.PayloadMessageCatchEvent,
     id: ids.catchEvent,
@@ -548,7 +632,7 @@ function isExactEventDefinition(
   operation: ElementRecord,
 ): boolean {
   return value.$type === bpmnTypes.messageEventDefinitionType &&
-    readId(value) === ids.eventDefinition &&
+    readId(value) !== undefined &&
     hasOnlyModelledKeys(value, ["$type", "id"]) &&
     value.messageRef === message &&
     value.operationRef === operation &&
@@ -560,8 +644,8 @@ function isExactDataOutput(
   itemDefinition: ElementRecord,
 ): boolean {
   return value.$type === selectedTypes.dataOutput &&
-    readId(value) === ids.dataOutput &&
-    value.name === ids.dataOutputName &&
+    readId(value) !== undefined &&
+    typeof value.name === "string" &&
     hasOnlyModelledKeys(value, ["$type", "id", "name"]) &&
     !Object.hasOwn(value, "isCollection") &&
     value.itemSubjectRef === itemDefinition &&
@@ -573,7 +657,7 @@ function isExactOutputSet(
   dataOutput: ElementRecord,
 ): boolean {
   return value.$type === selectedTypes.outputSet &&
-    readId(value) === ids.outputSet &&
+    readId(value) !== undefined &&
     hasOnlyModelledKeys(value, ["$type", "id"]) &&
     sameReferences(value.dataOutputRefs, [dataOutput]) &&
     value.optionalOutputRefs === undefined &&
@@ -590,7 +674,7 @@ function hasExactAssociation(
   return associations?.length === 1 &&
     association !== undefined &&
     association.$type === selectedTypes.dataOutputAssociation &&
-    readId(association) === ids.association &&
+    readId(association) !== undefined &&
     hasOnlyModelledKeys(association, ["$type", "id"]) &&
     sameReferences(association.sourceRef, [dataOutput]) &&
     association.targetRef === property &&
@@ -621,6 +705,10 @@ function compareIds(
   right: Readonly<{ id: string }>,
 ): number {
   return compareCanonicalStrings(left.id, right.id);
+}
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unsupported payload-catch profile: ${String(value)}`);
 }
 
 function unsupported(evidence: string): CheckedCompilationProjection {

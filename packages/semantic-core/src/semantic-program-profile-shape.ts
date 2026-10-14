@@ -109,6 +109,7 @@ export function requiredProgramShape(
         SemanticOperationKind.CompleteScope,
       ]);
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.PortableBusinessMessagePayload:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitPayloadMessage,

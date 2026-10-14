@@ -4,9 +4,10 @@
  *
  * It exists only to hand the capacity envelope genuine semantic-core artifacts (committed states, stimuli,
  * publications, observations) instead of a second model of their shape. The portable handoff completes User Tasks;
- * the effect-data profile completes Service Task effects whose handler result is external but reserved here. See
+ * the effect-data profile completes Service Task effects whose handler result is external but reserved here; the
+ * structured Message-payload profile answers its one payload-bearing Message wait with the reserved payload. See
  * the [capacity admission](../../../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) rule
- * and its effect-data counterpart `PBV-EFF-05`.
+ * and its counterparts `PBV-EFF-05` and `PBV-MSG-03`.
  */
 import {
   EffectExecutionResultKind,
@@ -28,6 +29,7 @@ import type {
   BusinessValue,
   CompleteUserTaskInstanceStimulus,
   DeepReadonly,
+  DeliverPayloadMessageStimulus,
   EffectExecutionResult,
   ProcessStartStimulus,
   RuntimeState,
@@ -90,7 +92,9 @@ export function runStartCapacityJourney(
       throw new TypeError("The capacity journey did not terminate within its serial chain");
     }
     const effect = projectOpenEffects(state);
-    const next = state.userTaskWaits.length === 1 && effect.length === 0
+    const next = state.messageWaits.length > 0
+      ? { stimulus: payloadDeliveryFor(program, state, steps.length, sentinel), effect: null }
+      : state.userTaskWaits.length === 1 && effect.length === 0
       ? { stimulus: completionFor(program, state, steps.length, sentinel), effect: null }
       : effectCompletionFor(program, state, effect, sentinel);
     steps.push(commit(program, state, next.stimulus, next.effect));
@@ -160,6 +164,10 @@ function effectCompletionFor(
   };
 }
 
+/**
+ * A data-output User Task submits the sentinel under its declared output; a plain User Task, whose profile admits
+ * no completion data, submits nothing.
+ */
 function completionFor(
   program: SemanticProcessProgram,
   state: RuntimeState,
@@ -170,21 +178,47 @@ function completionFor(
   const operation = wait === undefined
     ? undefined
     : program.operations.find((candidate) =>
-      candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask &&
+      (candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask ||
+        candidate.kind === SemanticOperationKind.AwaitUserTask) &&
       candidate.task.elementId === wait.id.elementId
     );
-  if (
-    wait === undefined || others.length > 0 ||
-    operation?.kind !== SemanticOperationKind.AwaitDataInputOutputUserTask
-  ) {
+  if (wait === undefined || others.length > 0 || operation === undefined) {
     throw new TypeError("The capacity journey lost its single open User Task");
   }
   return {
     kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: `${"c".repeat(reservedFutureCommandIdBytes - 1)}${ordinal}`,
+    commandId: reservedCommandId(ordinal),
     taskId: wait.id,
-    submittedValues: [{ name: operation.directOutput.sourceDataOutputId, value }],
+    submittedValues: operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask
+      ? [{ name: operation.directOutput.sourceDataOutputId, value }]
+      : [],
   };
+}
+
+/** The single open payload-bearing Message wait answered with the sentinel payload (`PBV-MSG-03`). */
+function payloadDeliveryFor(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  ordinal: number,
+  value: BusinessValue,
+): DeliverPayloadMessageStimulus {
+  const [wait, ...others] = state.messageWaits;
+  const declared = wait !== undefined && program.operations.some((candidate) =>
+    candidate.kind === SemanticOperationKind.AwaitPayloadMessage && candidate.message.elementId === wait.id.elementId);
+  if (wait === undefined || others.length > 0 || !declared || state.userTaskWaits.length > 0 || state.effectWaits.length > 0) {
+    throw new TypeError("The capacity journey lost its single open payload-bearing Message wait");
+  }
+  return {
+    kind: StimulusKind.DeliverPayloadMessage,
+    commandId: reservedCommandId(ordinal),
+    subscriptionId: wait.id,
+    channel: wait.channel,
+    payload: value,
+  };
+}
+
+function reservedCommandId(ordinal: number): string {
+  return `${"c".repeat(reservedFutureCommandIdBytes - 1)}${ordinal}`;
 }
 
 /**

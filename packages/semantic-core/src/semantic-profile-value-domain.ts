@@ -5,6 +5,7 @@ import {
 import type {
   Stimulus,
   VariableBinding,
+  VariableValue,
 } from "./contract.js";
 import { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 import { PropertyPathValuePolicy, propertyPathAcceptsValue, propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
@@ -25,6 +26,7 @@ import {
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
 } from "./semantic-profile-catalog.js";
+import { isSingletonBusinessItem } from "./singleton-business-item.js";
 import { isVariablePatch } from "./variable-value.js";
 
 export enum VariableWriteSurface {
@@ -275,6 +277,8 @@ function profileValueDomain(
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    // The structured payload enters through Message delivery only; Start and User Task completion stay empty.
+    case SemanticProfileId.PortableBusinessMessagePayload:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
@@ -303,9 +307,9 @@ function profileValueDomain(
  *
  * A portable value reaches state solely through an external write surface, so under a profile that selects one at no
  * surface, a carried or restored Decimal, List or Map was never committed (PBV-INGRESS-01); legacy scalar kinds are
- * not profile-checked there. Under a profile that widens the Property path or effect mapping, every value at every
- * carried path must instead be a SingletonBusinessItem, because those paths copy only that domain: a root List or an
- * over-long root String cannot be the result of any admitted command (PBV-EFF-01).
+ * not profile-checked there. Under a profile that widens the Property path, effect mapping or Message payload, every
+ * value at every carried path must instead be a SingletonBusinessItem, because those paths copy only that domain: a
+ * root List or an over-long root String cannot be the result of any admitted command (PBV-EFF-01, PBV-MSG-01).
  */
 export function runtimeStateCarriesOnlyProfilePortableValues(
   semanticProfile: string,
@@ -320,6 +324,9 @@ export function runtimeStateCarriesOnlyProfilePortableValues(
   if (effectPolicy === EffectMappingValuePolicy.SingletonBusinessItem) {
     return carriedVariablePatches(state)
       .every((bindings) => bindings.every(({ value }) => effectMappingAcceptsValue(effectPolicy, value, true)));
+  }
+  if (semanticProfile === SemanticProfileId.PortableBusinessMessagePayload) {
+    return carriedVariablePatches(state).every((bindings) => bindings.every(({ value }) => isSingletonBusinessItem(value)));
   }
   if (profileSelectsPortableValue(semanticProfile)) {
     return true;
@@ -372,14 +379,25 @@ export function profileAllowsStimulusValueDomain(
     case StimulusKind.FireTimer:
       return true;
     case StimulusKind.DeliverPayloadMessage:
-      return (semanticProfile === SemanticProfileId.MessagePayloadCatch ||
-        semanticProfile === MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID) &&
-        scalarValueDomain.includes(stimulus.payload.kind);
+      return messagePayloadAccepts(semanticProfile, stimulus.payload);
     case StimulusKind.DeliverCorrelatedPayloadMessage:
       return semanticProfile === MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID &&
         stimulus.payload.kind === VariableValueKind.String;
     default:
       return assertNever(stimulus);
+  }
+}
+
+/** PBV-MSG-01: the structured profile's payload port is a SingletonBusinessItem; the closed profiles keep scalars. */
+function messagePayloadAccepts(semanticProfile: string, payload: VariableValue): boolean {
+  switch (semanticProfile) {
+    case SemanticProfileId.PortableBusinessMessagePayload:
+      return isSingletonBusinessItem(payload);
+    case SemanticProfileId.MessagePayloadCatch:
+    case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
+      return scalarValueDomain.includes(payload.kind);
+    default:
+      return false;
   }
 }
 

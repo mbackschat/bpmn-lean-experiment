@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` structured Message payloads, with `PC-MESSAGE-03` payload obligations; the [effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#effect-data-closure-acceptance) is closed. Call, Multi-Instance, expression and form surfaces stay open.
+Current task: `PC-DATA-03` structured Message payloads, with `PC-MESSAGE-03` payload obligations, as the first slice of the Business-data family batch (`PC-DATA-03`–`PC-DATA-06` next).
 
 Deliverable: A payload-bearing Message delivered to a waiting catch carries one structured `BusinessValue` payload into its mapped Process Property exactly through Lean, the core, Message ingress, publications and restoration; an over-bound or out-of-domain payload is refused atomically.
 
-Acceptance blockers: the [accepted Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-message-payload-consuming-amendment) has no implementation, checkpoint, enrollment, hosting or closure.
+Acceptance blockers: Business-data family acceptance. Core Lean edits for the `PC-DATA-03` mapping remainder and `PC-DATA-04`–`06` (input lookups, scope-local domain and nesting, output mappings) are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at family acceptance; slices commit on focused builds.
 
-Current result: the amendment is independently accepted after one correction audit; no profile admits a structured payload yet.
+Current result: profile `bpmn-2.0.2-portable-business-message-payload-draft` is implemented and registered across Lean, core, source admission, capacity envelope, scenarios, corpus and About; focused Lean build, core, source, contracts and hosted Message witness are green.
 
-Effort budget: 180 minutes wall from 2026-10-14 11:25 UTC, set under the owner's delegation of budget decisions, for the shared admission/runtime batch and its checkpoint review; the proposal stage closed in 20 of its 120 minutes. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-14 11:25 UTC for the slice; the proposal stage closed in 20 of its 120 minutes. At the limit, stop and record before renewal.
 
-Next action: red/green the shared batch: profile identity and routing, `SingletonBusinessItem` payload domain with its root-String bound in both languages, restoration and the Lean conformance owner.
+Next action: draft one family amendment for structured values through mappings and scope-local data, then batch the core Lean edits.
 
-Oracle: a payload Map with a repeated List member and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every profile refuses it.
+Oracle: a payload Map with a repeated List member and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; the closed payload-catch profile refuses it.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

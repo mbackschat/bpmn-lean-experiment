@@ -103,6 +103,18 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope",
     "earlier profiles refuse structured results",
   ]) assert.ok(serviceRow.includes(disclosed), `Service Task row must disclose: ${disclosed}`);
+  const payloadRowStart = html.indexOf('data-capability-id="messagePayloadCatchEvent"');
+  assert.notEqual(payloadRowStart, -1);
+  const payloadRow = html.slice(payloadRowStart, html.indexOf("</tr>", payloadRowStart));
+  for (const disclosed of [
+    "The portable Message-payload profile instead admits one structured item",
+    "never a root List",
+    "writes a copy of it to the Property",
+    "Process Start and User Task completion carry no values there",
+    "a hosted Start is refused when the reserved payload delivery cannot fit the capacity envelope",
+    "the browser offers no delivery form for these values",
+    "earlier profiles refuse structured payloads",
+  ]) assert.ok(payloadRow.includes(disclosed), `Message payload row must disclose: ${disclosed}`);
   assert.match(html, /No CIB target selected/u);
   assert.deepEqual(
     [...html.matchAll(/data-capability-id="([^"]+)"/gu)].map((match) => match[1]).sort(),

@@ -91,6 +91,7 @@ export const CompilationDispatchId = Object.freeze({
   ActivityDataInputOutputUserTask: "activityDataInputOutputUserTask",
   ActivityDataOutputUserTask: "activityDataOutputUserTask",
   MessagePayloadCatch: "messagePayloadCatch",
+  PortableBusinessMessagePayload: "portableBusinessMessagePayload",
   MessageKeyCorrelation: "messageKeyCorrelation",
   CompensationSource: "compensationSource",
   TransactionCancellation: "transactionCancellation",
@@ -244,9 +245,19 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
       semanticProfile: SemanticProfileId.MessagePayloadCatch,
       reader: (rootElement, source, overlay) =>
         overlay === null
-          ? compileMessagePayloadCatchCheckedProcess(rootElement, source, null)
+          ? compileMessagePayloadCatchCheckedProcess(rootElement, source, null, SemanticProfileId.MessagePayloadCatch)
           : unsupported(
               "The Message payload catch profile does not admit a source overlay.",
+            ),
+    },
+    {
+      id: CompilationDispatchId.PortableBusinessMessagePayload,
+      semanticProfile: SemanticProfileId.PortableBusinessMessagePayload,
+      reader: (rootElement, source, overlay) =>
+        overlay === null
+          ? compileMessagePayloadCatchCheckedProcess(rootElement, source, null, SemanticProfileId.PortableBusinessMessagePayload)
+          : unsupported(
+              "The structured Message payload profile does not admit a source overlay.",
             ),
     },
     {
@@ -329,6 +340,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.ActivityDataInputOutputUserTask:
     case CompilationDispatchId.ActivityDataOutputUserTask:
     case CompilationDispatchId.MessagePayloadCatch:
+    case CompilationDispatchId.PortableBusinessMessagePayload:
     case CompilationDispatchId.MessageKeyCorrelation:
     case CompilationDispatchId.TransactionCancellation:
     case CompilationDispatchId.CompensationSource:

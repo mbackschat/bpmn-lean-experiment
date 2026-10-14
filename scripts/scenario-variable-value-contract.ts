@@ -12,8 +12,11 @@ const portableHandoffProfile =
   "bpmn-2.0.2-portable-business-values-handoff-draft";
 const portableEffectDataProfile =
   "cibseven-2.2.0-portable-business-effect-data-draft";
+const portableMessagePayloadProfile =
+  "bpmn-2.0.2-portable-business-message-payload-draft";
 // SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion, which the
-// effect-data profile also applies to its String/Null Process Start and its effect results.
+// effect-data profile also applies to its String/Null Process Start and its effect results, and the Message-payload
+// profile to its payload.
 const portableHandoffRootStringBytes = 1_024;
 
 export type ScenarioVariableValueContractInput = Readonly<{
@@ -282,9 +285,13 @@ function verifyMessagePayloadValue(
   profile: string,
   tagged: Readonly<{ kind?: unknown; value?: unknown }>,
 ): void {
+  if (profile === portableMessagePayloadProfile) {
+    verifySingletonBusinessPayload(tagged);
+    return;
+  }
   if (profile !== messagePayloadCatchProfile) {
     throw new TypeError(
-      "payload-bearing Message delivery is only admitted for the Message payload catch profile",
+      "payload-bearing Message delivery is only admitted for the Message payload catch profile or the structured Message payload profile",
     );
   }
   switch (tagged.kind) {
@@ -318,6 +325,33 @@ function verifyMessagePayloadValue(
     default:
       throw new TypeError(
         "Message payload catch admits only Boolean, Integer, String, and Null payloads",
+      );
+  }
+}
+
+/**
+ * The structured Message-payload profile selects a SingletonBusinessItem: the portable arms are well-formed wire values,
+ * so only the root String bound needs a check here, and a root List stays outside every registered scenario's domain.
+ */
+function verifySingletonBusinessPayload(
+  tagged: Readonly<{ kind?: unknown; value?: unknown }>,
+): void {
+  switch (tagged.kind) {
+    case "string":
+      if (typeof tagged.value === "string" &&
+          Buffer.byteLength(tagged.value, "utf8") > portableHandoffRootStringBytes) {
+        throw new TypeError(`structured Message payload String exceeds ${portableHandoffRootStringBytes} UTF-8 bytes`);
+      }
+      return;
+    case "null":
+    case "boolean":
+    case "integer":
+    case "decimal":
+    case "map":
+      return;
+    default:
+      throw new TypeError(
+        "structured Message payload admits only String, Null, Boolean, Integer, Decimal, and Map payloads",
       );
   }
 }

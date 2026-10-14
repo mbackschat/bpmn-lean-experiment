@@ -164,7 +164,7 @@ The principal common-mode risk is the host-transparency one recorded above: unde
 
 The nearest realistic counterexample delivers a payload whose value equals the target Property's id, which would make a name-merged implementation and a routed one agree by coincidence. The registered model must therefore keep the `DataOutput`, `Message`, and `Property` ids pairwise distinct, and the merged-identity program must be refused in both languages.
 
-Reopen before admitting `structureRef` or any structured payload, a collection, an `optionalOutputRefs` or `whileExecutingOutputRefs` entry, which additionally requires revisiting `MPAYLOAD-REQUIRE-01`'s refusal because the model would then permit the omission, a second `Property`, `DataOutput`, `OutputSet`, association, or `EventDefinition`, correlation of any form, payload on another Event or Task host, another trigger family's payload, or a lenient payload-free delivery.
+Reopen before admitting `structureRef` or any structured payload, a collection, an `optionalOutputRefs` or `whileExecutingOutputRefs` entry, which additionally requires revisiting `MPAYLOAD-REQUIRE-01`'s refusal because the model would then permit the omission, a second `Property`, `DataOutput`, `OutputSet`, association, or `EventDefinition`, correlation of any form, payload on another Event or Task host, another trigger family's payload, or a lenient payload-free delivery. Structured payloads are selected under the separate identity `bpmn-2.0.2-portable-business-message-payload-draft` by the [structured Message-payload amendment](PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-message-payload-consuming-amendment); this profile's meaning is unchanged.
 
 ## Independent cold-review receipt
 

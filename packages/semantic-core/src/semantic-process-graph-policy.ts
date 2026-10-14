@@ -90,6 +90,7 @@ export function semanticGraphPolicyForProfile(
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.PortableBusinessMessagePayload:
     case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
     case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:

@@ -2,8 +2,9 @@
  * Drives one capacity journey through the real Workflow encoders and reports the worst bytes each Start envelope
  * budget measured, so the envelope's estimates can be checked against owners it never sees.
  *
- * Shared by the portable-handoff and effect-data envelope tests. Only stimuli the Workflow records for external
- * recovery enter the ledger; a host-derived `CompleteEffect` does not, which the envelope's estimate over-counts.
+ * Shared by the portable-handoff, effect-data and Message-payload envelope tests. Only stimuli the Workflow records
+ * for external recovery enter the ledger; a host-derived `CompleteEffect` does not, which the envelope's estimate
+ * over-counts. Each committed payload delivery becomes the completed delivery record a successor's host input carries.
  */
 import assert from "node:assert/strict";
 
@@ -27,12 +28,13 @@ import type {
   Stimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  MessageDeliveryResolutionKind,
   WorkflowChainBudgetKind,
   bpmnWorkflowPublicationSegmentsV1,
   startCapacityEnvelopeBudgets,
   workflowChainCanonicalUtf8ByteLength as bytes,
 } from "@bpmn-lean/temporal-protocol";
-import type { StartCapacityEnvelopeBudget } from "@bpmn-lean/temporal-protocol";
+import type { MessageDeliveryRecord, StartCapacityEnvelopeBudget } from "@bpmn-lean/temporal-protocol";
 
 import {
   WorkflowChainCapacityState,
@@ -83,6 +85,7 @@ export function measureWithWorkflowEncoders(
   let state: RuntimeState = initialState;
   let publication: CommandPublicationState = createCommandPublicationState(program, instanceId);
   const trace: CanonicalObservation[] = [];
+  const deliveries: MessageDeliveryRecord[] = [];
   for (const stimulus of stimuli) {
     const step = advanceScenario(program, state, stimulus);
     assert.ok(step.kind === ScenarioStepKind.Committed, `${stimulus.commandId.slice(0, 8)} commits`);
@@ -108,11 +111,14 @@ export function measureWithWorkflowEncoders(
         recovery.record(admitted.admission, CommandOutcome.Committed);
       }
     }
+    if (stimulus.kind === StimulusKind.DeliverPayloadMessage) {
+      deliveries.push({ kind: MessageDeliveryResolutionKind.Semantic, stimulus, outcome: CommandOutcome.Committed });
+    }
     state = step.state;
     trace.push(...step.observations);
     measureQuery(program, instanceId, publication, raise);
     if (step.state.control.kind === "running") {
-      measureSuccessor(runtime, start, program, step.state, publication, raise);
+      measureSuccessor(runtime, start, program, step.state, publication, deliveries, raise);
     }
   }
   raise(WorkflowChainBudgetKind.CommandRecoveryLedgerBytes, bytes(recovery.snapshot()));
@@ -148,9 +154,10 @@ function measureSuccessor(
   program: SemanticProcessProgram,
   state: RuntimeState,
   publication: CommandPublicationState,
+  deliveries: ReadonlyArray<MessageDeliveryRecord>,
   raise: (budget: StartCapacityEnvelopeBudget, value: number) => void,
 ): void {
-  const successor = buildWorkflowChainSuccessor(runtime, start, program, state, publication, []);
+  const successor = buildWorkflowChainSuccessor(runtime, start, program, state, publication, deliveries);
   const [, , host, , , continuationPublication] = successor;
   raise(WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
     Math.max(bytes(host), bytes(continuationPublication)));

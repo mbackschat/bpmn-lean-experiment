@@ -22,6 +22,8 @@ import {
 } from "./intermediate-catch-message-temporal-cases.ts";
 import {
   exercisePayloadMessageAcrossWorkflowChain,
+  scalarPayloadMessageCase,
+  structuredPayloadMessageCase,
 } from "./message-payload-temporal-cases.ts";
 import {
   replayMessageHistories,
@@ -109,7 +111,11 @@ describe("Message Signal delivery", { concurrency: false }, () => {
   });
 
   test("payload routing and refusal survive Worker replacement and continuation", async () => {
-    await exercisePayloadMessageAcrossWorkflowChain(caseContext());
+    await exercisePayloadMessageAcrossWorkflowChain(caseContext(), scalarPayloadMessageCase);
+  });
+
+  test("a structured manifest payload survives Worker replacement and two continuations", async () => {
+    await exercisePayloadMessageAcrossWorkflowChain(caseContext(), structuredPayloadMessageCase);
   });
 
   function caseContext(): MessageTemporalCaseContext {

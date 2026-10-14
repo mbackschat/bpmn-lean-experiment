@@ -28,6 +28,8 @@ export const SemanticProfileId = Object.freeze({
     "cibseven-2.2.0-serial-business-tasks-draft",
   PortableBusinessEffectData:
     "cibseven-2.2.0-portable-business-effect-data-draft",
+  PortableBusinessMessagePayload:
+    "bpmn-2.0.2-portable-business-message-payload-draft",
   MixedTaskControlFlow:
     "cibseven-2.2.0-mixed-task-control-flow-draft",
   MixedTaskBusinessError:

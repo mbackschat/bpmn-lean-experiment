@@ -45,6 +45,8 @@ const expectedDomains = new Map<string, ProfileValueDomains>([
     { start: singletonBusinessItem, human: singletonBusinessItem, effect: none, payload: none }],
   [SemanticProfileId.PortableBusinessEffectData,
     { start: stringNull, human: none, effect: singletonBusinessItem, payload: none }],
+  [SemanticProfileId.PortableBusinessMessagePayload,
+    { start: none, human: none, effect: none, payload: singletonBusinessItem }],
   [SemanticProfileId.SerialBusinessTaskComposition, { start: stringNull, human: stringNull, effect: stringNull, payload: none }],
   [SemanticProfileId.MixedTaskControlFlow, { start: stringNull, human: stringNull, effect: stringNull, payload: none }],
   [SemanticProfileId.MixedTaskBusinessError, { start: stringNull, human: stringNull, effect: stringNull, payload: none }],

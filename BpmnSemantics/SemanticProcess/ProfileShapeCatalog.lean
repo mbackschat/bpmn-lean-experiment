@@ -109,7 +109,8 @@ def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
     some (1,
       { starts := 1, userTasks := 1, messages := 1, ends := 1 })
-  else if profile = messagePayloadCatchProfileId.value then
+  else if profile = messagePayloadCatchProfileId.value ∨
+      profile = portableMessagePayloadProfileId.value then
     some (1,
       { starts := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
   else if profile = messageKeyCorrelationProfileId.value then
@@ -229,7 +230,8 @@ def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
   else if profile = "bpmn-2.0.2-intermediate-catch-message-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, messages := 1, ends := 1 })
-  else if profile = messagePayloadCatchProfileId.value then
+  else if profile = messagePayloadCatchProfileId.value ∨
+      profile = portableMessagePayloadProfileId.value then
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, payloadMessages := 1, ends := 1 })
   else if profile = messageKeyCorrelationProfileId.value then
@@ -604,7 +606,8 @@ private def operationPayloadCapabilitiesValid (profile : String)
           outputs.length = 1
       | .initiateMessage .. => false
       | _ => true
-  else if profile = messagePayloadCatchProfileId.value then
+  else if profile = messagePayloadCatchProfileId.value ∨
+      profile = portableMessagePayloadProfileId.value then
     operations.all fun
       | .awaitPayloadMessage _ origin _ _ message directOutput =>
           origin.elementId = message.elementId &&

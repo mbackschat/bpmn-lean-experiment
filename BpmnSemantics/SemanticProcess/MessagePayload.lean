@@ -3,9 +3,9 @@ import BpmnSemantics.SemanticProcess.Transition
 /-! # Direct Message Catch Event payload mediation
 
 This module owns payload-bearing Message delivery after the unchanged Message wait has been armed.
-The received scalar first fills the declared Catch Event `DataOutput`; its direct association then
-routes the value into the owning Process scope under the target `Property` identity. Neither pure
-intermediate binding is committed.
+The received payload, admitted by the selected profile's Message-payload domain, first fills the
+declared Catch Event `DataOutput`; its direct association then routes the value into the owning
+Process scope under the target `Property` identity. Neither pure intermediate binding is committed.
 -/
 
 namespace BpmnSemantics.SemanticProcess
@@ -90,7 +90,8 @@ def routeCatchEventOutput (directOutput : DirectCatchEventPayloadOutput)
   { name := directOutput.targetPropertyId, value := filled.value }
 
 /-- Atomically withdraw the exact ordinary Message wait, follow its output, and merge only the
-association target into Process scope. Event-race ownership and non-scalar payloads fail closed. -/
+association target into Process scope. Event-race ownership and payloads outside the profile's
+Message-payload domain fail closed. -/
 def deliverPayloadMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel)
     (payload : VariableValue) : Option RuntimeState :=
@@ -132,7 +133,7 @@ inductive PayloadMessageDeliveryStep :
       (ordinary : before.eventRaces.any (eventRaceHasMessage · wait) = false)
       (unattached : activityRecordsAttachMessageWait before.activityOccurrences wait = false)
       (callerChannel : wait.channel = channel)
-      (scalar : variableValueAdmitted program.identity.semanticProfile
+      (admitted : variableValueAdmitted program.identity.semanticProfile
         .messagePayload payload = true)
       (declarer : payloadMessageOperation? program wait = some (operation, directOutput)) :
       PayloadMessageDeliveryStep program before subscriptionId channel payload
@@ -167,7 +168,7 @@ theorem deliverPayloadMessage_sound (program : Program) (before after : RuntimeS
   split at success
   · rename_i callerChannel
     split at success
-    · rename_i scalar
+    · rename_i admitted
       split at success
       · contradiction
       rename_i entry declarer
@@ -175,7 +176,7 @@ theorem deliverPayloadMessage_sound (program : Program) (before after : RuntimeS
       cases success
       exact .commit program before subscriptionId channel payload wait operation
         directOutput occurrence (Bool.eq_false_iff.mpr ordinary)
-          (Bool.eq_false_iff.mpr unattached) callerChannel scalar declarer
+          (Bool.eq_false_iff.mpr unattached) callerChannel admitted declarer
     · contradiction
   · contradiction
 

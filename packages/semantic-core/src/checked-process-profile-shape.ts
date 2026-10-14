@@ -95,6 +95,7 @@ export function requiredCheckedProcessShape(
         end,
       ]);
     case SemanticProfileId.MessagePayloadCatch:
+    case SemanticProfileId.PortableBusinessMessagePayload:
       return rootChecked([
         start,
         CheckedNodeKind.PayloadMessageCatchEvent,

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_ShipmentManifestIntake" targetNamespace="https://bpmn-lean.org/scenarios/shipment-manifest-intake">
+  <bpmn:itemDefinition id="ItemDefinition_ShipmentManifest" />
+  <bpmn:message id="Message_ManifestReceived" name="Manifest received" itemRef="ItemDefinition_ShipmentManifest" />
+  <bpmn:interface id="Interface_Carrier" name="Carrier">
+    <bpmn:operation id="Operation_SubmitManifest" name="Submit manifest"><bpmn:inMessageRef>Message_ManifestReceived</bpmn:inMessageRef></bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_ShipmentManifestIntake" isExecutable="true">
+    <bpmn:property id="Property_ShipmentManifest" />
+    <bpmn:startEvent id="StartEvent_ShipmentBooked"><bpmn:outgoing>Flow_Booked_Manifest</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_Booked_Manifest" sourceRef="StartEvent_ShipmentBooked" targetRef="MessageCatch_ManifestReceived" />
+    <bpmn:intermediateCatchEvent id="MessageCatch_ManifestReceived">
+      <bpmn:incoming>Flow_Booked_Manifest</bpmn:incoming>
+      <bpmn:outgoing>Flow_Manifest_Review</bpmn:outgoing>
+      <bpmn:dataOutput id="DataOutput_Manifest" name="Received manifest" itemSubjectRef="ItemDefinition_ShipmentManifest" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Manifest">
+        <bpmn:sourceRef>DataOutput_Manifest</bpmn:sourceRef>
+        <bpmn:targetRef>Property_ShipmentManifest</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet id="OutputSet_ManifestReceived"><bpmn:dataOutputRefs>DataOutput_Manifest</bpmn:dataOutputRefs></bpmn:outputSet>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ManifestReceived" messageRef="Message_ManifestReceived" operationRef="Operation_SubmitManifest" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Manifest_Review" sourceRef="MessageCatch_ManifestReceived" targetRef="UserTask_ReviewManifest" />
+    <bpmn:userTask id="UserTask_ReviewManifest" name="Review manifest">
+      <bpmn:incoming>Flow_Manifest_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_Accepted</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Review_Accepted" sourceRef="UserTask_ReviewManifest" targetRef="EndEvent_ManifestAccepted" />
+    <bpmn:endEvent id="EndEvent_ManifestAccepted"><bpmn:incoming>Flow_Review_Accepted</bpmn:incoming></bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

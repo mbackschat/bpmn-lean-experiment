@@ -666,7 +666,9 @@ test("refuses a carried portable value under every admitted profile that selects
   const string = bindings.get(VariableValueKind.String);
   assert.ok(string !== undefined);
   for (const profile of await admittedProfiles()) {
-    if (profile === SemanticProfileId.PortableBusinessValuesHandoff || profile === SemanticProfileId.PortableBusinessEffectData) continue;
+    // These widen a write path, so restoration requires a SingletonBusinessItem instead; their own tests own that rule.
+    if (profile === SemanticProfileId.PortableBusinessValuesHandoff || profile === SemanticProfileId.PortableBusinessEffectData ||
+      profile === SemanticProfileId.PortableBusinessMessagePayload) continue;
     assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
     for (const kind of portableKinds) {
       const binding = bindings.get(kind);

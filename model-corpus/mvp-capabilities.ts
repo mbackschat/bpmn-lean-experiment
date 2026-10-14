@@ -312,7 +312,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Catch Events",
     element: "Message Intermediate Catch Event with a direct Data Output",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One operation-addressed subscription with one required scalar DataOutput in one OutputSet and one direct Data Output Association into a Process Property; String and explicit null payloads are written, while an absent payload is refused and leaves the subscription live.",
+    restriction: "One operation-addressed subscription with one required scalar DataOutput in one OutputSet and one direct Data Output Association into a Process Property; String and explicit null payloads are written, while an absent payload is refused and leaves the subscription live. The portable Message-payload profile instead admits one structured item: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes, and writes a copy of it to the Property. Process Start and User Task completion carry no values there, a hosted Start is refused when the reserved payload delivery cannot fit the capacity envelope, and the browser offers no delivery form for these values; earlier profiles refuse structured payloads.",
     cibEvidence: notSelected,
   },
   {

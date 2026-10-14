@@ -1,4 +1,9 @@
-/** Durable refinement witness for one payload-bearing Intermediate Catch Message Event. */
+/**
+ * Durable refinement witness for one payload-bearing Intermediate Catch Message Event, run for the closed scalar
+ * profile and for the structured Message-payload profile (`PBV-MSG-01`..`03`): each refused delivery leaves the
+ * subscription live across Continue-As-New, the routed delivery survives a Worker outage, a reused command ID with a
+ * changed payload leaf is an identity conflict, Review survives a second outage, and every Run replays.
+ */
 import assert from "node:assert/strict";
 
 import {
@@ -20,6 +25,7 @@ import type {
   SemanticProcessProgram,
   StateObservation,
   Stimulus,
+  VariableValue,
 } from "@bpmn-lean/semantic-core";
 import {
   BpmnCommandIdentityConflict,
@@ -66,21 +72,42 @@ import {
   workflowChainRuns,
 } from "./workflow-chain-test-support.ts";
 
-const scenarioUrl = new URL(
-  "../../../../scenarios/message-payload-catch/supplied-scalar.scenario.json",
-  import.meta.url,
-);
-const bpmnUrl = new URL(
-  "../../../../scenarios/message-payload-catch/process.bpmn",
-  import.meta.url,
-);
+const scenarios = new URL("../../../../scenarios/", import.meta.url);
 const operationDeadlineMs = 10_000;
+
+export type PayloadMessageWorkflowChainCase = Readonly<{
+  scenarioUrl: URL;
+  bpmnUrl: URL;
+  propertyId: string;
+  /** Well-formed payloads the profile refuses, each delivered after the payload-free command. */
+  refusedPayloads: ReadonlyArray<VariableValue>;
+  /** The delivered payload with one leaf changed, reused under the delivery's command ID. */
+  conflictingPayload: (payload: VariableValue) => VariableValue;
+}>;
+
+/** The closed scalar profile also refuses a structured payload, hosted (`PBV-MSG-01`). */
+export const scalarPayloadMessageCase: PayloadMessageWorkflowChainCase = {
+  scenarioUrl: new URL("message-payload-catch/supplied-scalar.scenario.json", scenarios),
+  bpmnUrl: new URL("message-payload-catch/process.bpmn", scenarios),
+  propertyId: "Property_SettlementReference",
+  refusedPayloads: [{ kind: VariableValueKind.Map, value: [{ name: "reference", value: { kind: VariableValueKind.String, value: "s" } }] }],
+  conflictingPayload: () => ({ kind: VariableValueKind.String, value: "settlement-reference-conflict" }),
+};
+
+export const structuredPayloadMessageCase: PayloadMessageWorkflowChainCase = {
+  scenarioUrl: new URL("portable-business-message-payload/manifest-delivered.scenario.json", scenarios),
+  bpmnUrl: new URL("portable-business-message-payload/process.bpmn", scenarios),
+  propertyId: "Property_ShipmentManifest",
+  refusedPayloads: [{ kind: VariableValueKind.List, value: [{ kind: VariableValueKind.String, value: "P-1" }] }],
+  conflictingPayload: withChangedNestedLeaf,
+};
 
 export async function exercisePayloadMessageAcrossWorkflowChain(
   context: MessageTemporalCaseContext,
+  selected: PayloadMessageWorkflowChainCase,
 ): Promise<void> {
-  const scenario = await loadJson<Scenario>(scenarioUrl);
-  const input = await compileExecutionInput(scenario, bpmnUrl);
+  const scenario = await loadJson<Scenario>(selected.scenarioUrl);
+  const input = await compileExecutionInput(scenario, selected.bpmnUrl);
   const start = requiredAt(input.scenario.stimuli, 0, "Message payload stimuli");
   const payloadDelivery = requiredAt(
     input.scenario.stimuli,
@@ -111,16 +138,19 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
   } satisfies DeliverMessageStimulus;
   const conflictingDelivery = {
     ...payloadDelivery,
-    payload: {
-      kind: VariableValueKind.String,
-      value: "settlement-reference-conflict",
-    },
+    payload: selected.conflictingPayload(payloadDelivery.payload),
   } satisfies DeliverPayloadMessageStimulus;
+  const refusedDeliveries = selected.refusedPayloads.map((payload, index) => ({
+    ...payloadDelivery,
+    commandId: `deliver-refused-payload-${index}`,
+    payload,
+  }) satisfies DeliverPayloadMessageStimulus);
   const expected = expectedSemanticExecution(
     input.semanticProcess,
     [
       start,
       payloadFreeDelivery,
+      ...refusedDeliveries,
       payloadDelivery,
       completion,
     ],
@@ -176,7 +206,14 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
       outcome: CommandOutcome.Rejected,
     },
   );
-  await waitForWorkflowChainRunCount(context.environment, workflowId, 2);
+  for (const refused of refusedDeliveries) {
+    assert.deepEqual(
+      await submitMessageDelivery(context.environment.client.workflow, start.instanceId, refused),
+      { kind: ProcessCommandResultKind.Semantic, commandId: refused.commandId, outcome: CommandOutcome.Rejected },
+    );
+  }
+  const refusedRuns = refusedDeliveries.length;
+  await waitForWorkflowChainRunCount(context.environment, workflowId, 2 + refusedRuns);
   const successorWait = await waitForPublishedWorkflowChainState(
     context.environment,
     workflowId,
@@ -234,7 +271,7 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
   }
   assert.ok(conflict.error instanceof BpmnCommandIdentityConflict);
 
-  await waitForWorkflowChainRunCount(context.environment, workflowId, 3);
+  await waitForWorkflowChainRunCount(context.environment, workflowId, 3 + refusedRuns);
   const taskState = await waitForPublishedWorkflowChainState(
     context.environment,
     workflowId,
@@ -243,17 +280,21 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
     (state) => state.openUserTasks.length === 1,
   );
   assert.deepEqual(taskState.variables, [{
-    name: "Property_SettlementReference",
+    name: selected.propertyId,
     value: payloadDelivery.payload,
   }]);
   assert.deepEqual(taskState.openMessageSubscriptions, []);
 
+  // A second outage while Review waits with the routed Property; the replacement Worker completes it.
+  await context.suspendWorker();
+  const completionResult = submitUserTaskCompletion(
+    context.environment.client.workflow,
+    start.instanceId,
+    completion,
+  );
+  await context.resumeWorker();
   assert.deepEqual(
-    await submitUserTaskCompletion(
-      context.environment.client.workflow,
-      start.instanceId,
-      completion,
-    ),
+    await completionResult,
     {
       kind: ProcessCommandResultKind.Semantic,
       commandId: completion.commandId,
@@ -273,6 +314,9 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
       payloadFreeDelivery,
       CommandOutcome.Rejected,
     ),
+    ...refusedDeliveries.map((refused) =>
+      expectedWorkflowChainRecoveryEntry(start.instanceId, refused, CommandOutcome.Rejected)
+    ),
     expectedWorkflowChainRecoveryEntry(
       start.instanceId,
       payloadDelivery,
@@ -287,7 +331,7 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
   assert.deepEqual(terminal.legacyMessageDeliveryRecords, []);
 
   const runs = await workflowChainRuns(context.environment, workflowId);
-  assert.equal(runs.length, 3);
+  assert.equal(runs.length, 3 + refusedRuns);
   const histories: TemporalHistory[] = [];
   const trace: CanonicalObservation[] = [];
   for (const run of runs) {
@@ -307,10 +351,31 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
   } as TemporalHistory;
   assertExactMessageSignals(combinedHistory, [
     payloadFreeDelivery,
+    ...refusedDeliveries,
     payloadDelivery,
     conflictingDelivery,
   ]);
   assertNoNonSignalMessageHostEvents(combinedHistory);
+}
+
+/** Appends to the first String leaf below the root, so only a nested leaf separates the two command identities. */
+function withChangedNestedLeaf(payload: VariableValue): VariableValue {
+  const copy = structuredClone(payload) as VariableValue;
+  const visit = (value: { kind: string; value?: unknown }, depth: number): boolean => {
+    if (value.kind === VariableValueKind.String && depth > 0) {
+      value.value = `${String(value.value)}-conflict`;
+      return true;
+    }
+    if (value.kind === VariableValueKind.Map) {
+      return (value.value as Array<{ value: { kind: string } }>).some((entry) => visit(entry.value, depth + 1));
+    }
+    if (value.kind === VariableValueKind.List) {
+      return (value.value as Array<{ kind: string }>).some((member) => visit(member, depth + 1));
+    }
+    return false;
+  };
+  assert.ok(visit(copy as { kind: string; value?: unknown }, 0), "the payload has a nested String leaf");
+  return copy;
 }
 
 function expectedSemanticExecution(

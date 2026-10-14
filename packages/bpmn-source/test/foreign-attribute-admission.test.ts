@@ -409,6 +409,16 @@ const dispatchFixtures = {
     semanticProfile: SemanticProfileId.MessagePayloadCatch,
     find: '<bpmn:startEvent id="StartEvent_PaymentInstructed"',
   },
+  portableBusinessMessagePayload: {
+    path: "the structured Message payload reader",
+    source: new URL(
+      "../../../scenarios/portable-business-message-payload/process.bpmn",
+      import.meta.url,
+    ),
+    sourceId: "shipment-manifest-intake",
+    semanticProfile: SemanticProfileId.PortableBusinessMessagePayload,
+    find: '<bpmn:startEvent id="StartEvent_ShipmentBooked"',
+  },
   messageKeyCorrelation: {
     path: "the Message key correlation reader",
     source: new URL(

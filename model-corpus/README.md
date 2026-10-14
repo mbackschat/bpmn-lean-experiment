@@ -27,6 +27,8 @@ The [portable-handoff order model](../scenarios/portable-business-values-handoff
 
 The [credit-decision model](../scenarios/portable-business-effect-data/README.md) retains Service Task handler results carrying a structured assessment under the portable effect-data profile, bound to its registered assessed-credit pipeline case. It remains `notCatalogReady` because no production browser journey or Product 2 handler registration exists for structured results. The existing capability catalog supplies its About restriction on the Service Task row without a new UI surface.
 
+The [shipment-manifest model](../scenarios/portable-business-message-payload/README.md) retains an Intermediate Catch Message Event whose payload is one structured manifest, recorded on the case and reviewed by a User Task, under the portable Message-payload profile, bound to its registered delivered-manifest pipeline case. It remains `notCatalogReady` because no production browser journey is selected and the Product 2 decoders refuse structured values. The existing capability catalog supplies its About restriction on the Message payload catch row without a new UI surface.
+
 ## Admission and product-readiness gate
 
 The curated corpus is an engine and product acceptance input, not a fourth conformance denominator. Its manifest distinguishes exact source admission, semantic execution, durable Temporal execution, selected CIB comparison, and Product 2 usability. Clone-normalized family reach and semantic risk remain separate scheduling inputs under the [breadth-ordering rule](../docs/PROJECT-DESIGN.md#cib-seven-220-breadth-ordering).

@@ -43,6 +43,11 @@ abbrev activityDataOutputUserTaskProfileId : ProfileId :=
 abbrev messagePayloadCatchProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-message-payload-catch-draft"⟩
 
+/-- Runtime-frozen identity of the structured Message-payload profile: the payload-catch source with a
+`SingletonBusinessItem` payload port (PBV-MSG-01). -/
+abbrev portableMessagePayloadProfileId : ProfileId :=
+  ⟨"bpmn-2.0.2-portable-business-message-payload-draft"⟩
+
 /-- Runtime-frozen identity of the owner-approved Compensation source checkpoint. -/
 abbrev compensationSourceCheckpointProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-compensation-source-checkpoint-draft"⟩
@@ -146,7 +151,8 @@ private inductive ProcessDataValueDomain where
       else
         .empty
   | .messagePayload =>
-      if profile = messagePayloadCatchProfileId ||
+      if profile = portableMessagePayloadProfileId then .singletonBusinessItem
+      else if profile = messagePayloadCatchProfileId ||
           profile = messageKeyCorrelationProfileId then .scalar else .empty
 
 /-- Decide whether one typed value is admitted at an external Process-data surface under an exact profile. -/
@@ -200,15 +206,18 @@ private theorem userTaskCompletion_domain_ne_singleton (profile : ProfileId)
   simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
   all_goals exact fun same => by cases same
 
-private theorem messagePayload_domain_ne_singleton (profile : ProfileId) :
+private theorem messagePayload_domain_ne_singleton (profile : ProfileId)
+    (other : profile ≠ portableMessagePayloadProfileId) :
     profileValueDomain profile .messagePayload ≠ .singletonBusinessItem := by
-  simp only [profileValueDomain] <;> repeat' split
+  simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
   all_goals exact fun same => by cases same
 
-/-- PBV-INGRESS-01: no profile domain other than the portable handoff's admits a portable Decimal,
-List or Map at any surface, so schema recognition alone cannot widen an existing profile. -/
+/-- PBV-INGRESS-01: no profile domain other than the portable handoff's and the structured
+Message-payload profile's admits a portable Decimal, List or Map at any surface, so schema
+recognition alone cannot widen an existing profile. -/
 theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
     (other : profile ≠ portableHandoffProfileId)
+    (otherPayload : profile ≠ portableMessagePayloadProfileId)
     (surface : ProcessDataIngress) (coefficient : Int) (scale : Nat)
     (members : List BusinessValue) (entries : List (String × BusinessValue)) :
     variableValueAdmitted profile surface (.decimal coefficient scale) = false ∧
@@ -218,7 +227,7 @@ theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
     cases surface
     · exact processStart_domain_ne_singleton profile other
     · exact userTaskCompletion_domain_ne_singleton profile other
-    · exact messagePayload_domain_ne_singleton profile
+    · exact messagePayload_domain_ne_singleton profile otherPayload
   unfold variableValueAdmitted
   -- `profileValueDomain` is a simp abbreviation, so it is abstracted before simp can expand every row.
   generalize profileValueDomain profile surface = domain at selected ⊢
@@ -237,6 +246,20 @@ theorem portableHandoff_value_domain (value : VariableValue) :
       variableValueAdmitted portableHandoffProfileId .messagePayload value = false := by
   unfold variableValueAdmitted
   refine ⟨?_, ?_, ?_⟩ <;> simp [profileValueDomain, portableHandoffProfileId,
-    messagePayloadCatchProfileId, messageKeyCorrelationProfileId]
+    messagePayloadCatchProfileId, messageKeyCorrelationProfileId, portableMessagePayloadProfileId]
+
+/-- PBV-MSG-01: the structured Message-payload profile selects `SingletonBusinessItem` at Message
+ingress alone: a well-formed value whose root the port admits, so a root List, a root `stringList`
+and a root String over 1,024 UTF-8 bytes are refused, while Start and User Task completion stay
+empty. -/
+theorem portableMessagePayload_value_domain (value : VariableValue) :
+    variableValueAdmitted portableMessagePayloadProfileId .messagePayload value =
+        (PropertyPathValuePolicy.singletonBusinessItem.admits value &&
+          BpmnSemantics.SemanticProcessJson.variableValueWellFormed value) ∧
+      variableValueAdmitted portableMessagePayloadProfileId .processStart value = false ∧
+      variableValueAdmitted portableMessagePayloadProfileId .userTaskCompletion value = false := by
+  unfold variableValueAdmitted
+  refine ⟨?_, ?_, ?_⟩ <;> simp [profileValueDomain, portableHandoffProfileId,
+    messageKeyCorrelationProfileId, portableMessagePayloadProfileId]
 
 end BpmnSemantics.SemanticProcess

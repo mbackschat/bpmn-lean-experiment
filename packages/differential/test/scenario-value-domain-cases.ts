@@ -111,6 +111,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   }
   addPortableHandoffCases(selected.get(SemanticProfileId.PortableBusinessValuesHandoff)!, add);
   addEffectDataCases(selected.get(SemanticProfileId.PortableBusinessEffectData)!, add);
+  addMessagePayloadCases(selected.get(SemanticProfileId.PortableBusinessMessagePayload)!, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -184,10 +185,13 @@ function declaredStartBinding(context: DomainContext, start: StartProcessStimulu
   return first.name;
 }
 
+/** A well-formed channel for a late delivery to no live subscription, so only the payload value can move the expectation. */
+const lateDeliveryChannel = { kind: MessageChannelKind.OperationMessage, interfaceId: "Interface", interfaceOperationId: "Operation", messageId: "Message" } as const;
+
 /** Direct payload delivery checks the profile's payload kinds; correlated delivery is wire-restricted to String. */
 function addPayloadCases(context: DomainContext, start: Stimulus, admitted: readonly VariableValueKind[], add: AddCase): void {
   const occurrence = occurrenceOf(start);
-  const channel = { kind: MessageChannelKind.OperationMessage, interfaceId: "Interface", interfaceOperationId: "Operation", messageId: "Message" } as const;
+  const channel = lateDeliveryChannel;
   for (const value of values) {
     const payload: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-${value.kind}`,
       subscriptionId: occurrence, channel, payload: value };
@@ -257,5 +261,19 @@ function addEffectDataCases(context: DomainContext, add: AddCase): void {
     const stimulus: Stimulus = { kind: StimulusKind.CompleteEffect, commandId: `late-effect-${label}`, effectId: occurrenceOf(start),
       result: { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "zzLater", value }] } };
     add(context, `effect-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+  }
+}
+
+/**
+ * The structured Message-payload profile admits a SingletonBusinessItem payload with the 1,024-byte root String bound
+ * that the kind table cannot express. Each case appends one late delivery to the retained answer-free schedule, so only
+ * the payload String can move the expectation.
+ */
+function addMessagePayloadCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  for (const [label, bytes, supported] of [["exact-bound", 1024, true], ["over-bound", 1025, false]] as const) {
+    const stimulus: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-string-${label}`,
+      subscriptionId: occurrenceOf(start), channel: lateDeliveryChannel, payload: { kind: VariableValueKind.String, value: "a".repeat(bytes) } };
+    add(context, `payload-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
   }
 }

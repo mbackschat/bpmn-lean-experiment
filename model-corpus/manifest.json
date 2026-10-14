@@ -654,6 +654,42 @@
       }
     },
     {
+      "id": "shipment-manifest-intake",
+      "title": "Review a received shipment manifest",
+      "businessPurpose": "Wait for the carrier to submit a shipment manifest with repeated parcels, a nested consignee and an exact signed declared value, record the whole manifest on the case, and then hand it to a reviewer.",
+      "cloneFamily": "shipment-manifest-structured-payload",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "messageWait",
+        "messagePayloadCatchMediation",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/portable-business-message-payload/process.bpmn",
+        "sha256": "656f738c78b90d5318b8a1dd2aa3385dd7a1d1da061e5d6c63942afa0e6a297a",
+        "scenarioRelativePath": "scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-portable-business-message-payload-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "portable-message-payload-manifest-delivered",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected and the Product 2 decoders refuse structured values; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "correlated-settlement-confirmation",
       "title": "Correlate a settlement confirmation to its waiting case",
       "businessPurpose": "Route a clearing-house settlement confirmation to the one waiting settlement case whose recorded reference matches the incoming message.",
