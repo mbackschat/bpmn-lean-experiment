@@ -83,11 +83,11 @@ Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches 
 
 Acceptance blockers: three registry guards red until enrollment; the shared admission/runtime checkpoint of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent cold review; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
 
-Current result: the shared batch `079c6e72` received cold checkpoint verdict approve-with-required-edits: registering the profile left three registry guards red under the amendment's later enrollment order, a routed map and two Lean docstrings are stale. The 240-minute budget is spent.
+Current result: the shared batch `079c6e72` received cold checkpoint verdict approve-with-required-edits: registering the profile left three registry guards red under the amendment's later enrollment order, a routed map and two Lean docstrings were stale. Corrections `16773cc7` disclose the guards (owner-accepted ordering), fix the map and label, and defer the `ValueDomain` docstring.
 
 Effort budget: 60 minutes wall from 2026-10-14 04:22 UTC, owner-granted after the spent 240-minute allowance, for checkpoint corrections and the reviewer's audit; enrollment is budgeted after approval. At the limit, stop and record before renewal.
 
-Next action: owner decision on the registry-guard conflict and a bounded correction allowance; then commit corrections for the same reviewer's audit.
+Next action: the same reviewer audits `16773cc7`; on approval record the receipt, then budget enrollment.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 
