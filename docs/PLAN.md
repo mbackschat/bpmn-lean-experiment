@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: no consuming amendment of the [portable value contract](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md) selects this surface's profile, port, mapping and capacity; no Lean or core effect domain admits a structured value; Worker transport and the hosted capacity envelope count none; no retained whole model exercises it.
+Acceptance blockers: no Lean or core effect domain admits a structured value under the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment)'s profile; Worker transport and the hosted capacity envelope count none; no retained whole model exercises it.
 
-Current result: selected for reach (Service Tasks are the commonest automation) and because it reuses the exact-result mapper `PC-DATA-06` needs; the effect-result local patch already carries portable values.
+Current result: the amendment is accepted at `b9ea31ad`, Service-Task-only, after 61 of 120 design minutes.
 
-Effort budget: 120 minutes wall from 2026-10-13 23:13 UTC through the reviewed amendment with its Temporal preflight; implementation is budgeted after approval. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-14 00:20 UTC through the green shared admission/runtime checkpoint; hosting and enrollment are budgeted after its review. At the limit, stop and record before renewal.
 
-Next action: Write the amendment on the serial-handoff amendment's structure, then obtain its proposal review.
+Next action: run `what-binds` on every listed owner, then implement the effect-mapping policy and profile routing red/green in Lean, core and source.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 

@@ -25,6 +25,8 @@ Instances 18 and 19, 2026-10-13: two PLAN resume-point commits landed with the P
 
 Instance 20, 2026-10-13: the capacity envelope grew `variable-value.ts`, whose headroom the portable-value capsule inventories. The worker ran `what-binds` but not the capsule binding inventory it implies, and the root gate set omitted it too, so `eb69d834` and its correction audit both carried a stale 413-line figure until the handoff ledger guards ran. Instance 21, same change: `what-binds` named the operation-consumer census as a scan guard over the new protocol journey, which reads Activity-data operations; the census stayed red from `eb69d834` until the next worker ran every named guard. A gate set chosen from memory, not from the guard list `what-binds` prints, missed both.
 
+Instance 22, 2026-10-14: the [structured effect-data amendment](../capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#independent-cold-review-receipt) wrote its owner inventory from recall instead of `what-binds` on the mapper, routing and host paths. Its first review found the effect mapper hard-wired to scalars and profile routing owners absent; the corrected version's review still found missing value-domain and arming owners, and its first audit found a history reservation the profile's host path never calls. Each was caught by review, not by the enumerator, because it was never run on those paths.
+
 ## Finding 06
 
 [Current mechanism and control](../PROCESS-ASSESSMENT-LEDGER.md#finding-06).

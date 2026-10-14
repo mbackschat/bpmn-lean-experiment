@@ -541,7 +541,7 @@ CIB input parameters capture enclosing values into each concurrently created bod
 
 ### CIB-EXT-0019 — structured business-task inputs and local results
 
-**Status:** Candidate bounded extension for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review, profile selection and qualification pending.
+**Status:** Candidate bounded extension for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review approved; profile selection and qualification pending.
 
 CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw variable object and stores that reference without copying (`InputParameter.java:46,51`, `OutputParameter.java:47,52`, `AbstractVariableScope.java:149-153,317-319`, JUEL `TypeConverterImpl.java:343-345`). Output mapping runs when the Activity scope is destroyed, after the delegate returns, and then removes every Activity-local variable (`ExecutionEntity.java:523-527,554`). BPMN 2.0.2 §10.4.1 states that executing a Data Association copies data to its target; the selected account follows it, carrying one `SingletonBusinessItem` per mapped name by value.
 
@@ -725,7 +725,7 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 
 ### CIB-CFG-0009 — default Java serialization of structured business values
 
-**Status:** Candidate configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review, profile selection and qualification pending.
+**Status:** Candidate configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review approved; profile selection and qualification pending.
 
 Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. The planned calibration probe's local projection reads the deserialized value, orders String Map keys by Unicode scalar value rather than Java's UTF-16 `compareTo`, projects nonnegative in-bound `Integer`/`Long` to the portable Integer and projects a `BigDecimal` to the canonical portable Decimal of the same mathematical value: trailing zeros are stripped and a negative scale becomes zero, and a canonical scale above 6 or a coefficient outside the signed 64-bit range is outside the domain. Non-String keys and negative or out-of-bound `Integer`/`Long` values are outside the domain and never become Decimals. CIB-retained scale is therefore not a compared fact. A Spin JSON default is excluded: the project runner installs no Spin plugin and its value fidelity is unverified.
 
