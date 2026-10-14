@@ -116,6 +116,7 @@ import {
 } from "./semantic-process-user-task-runtime.js";
 import {
   profileAllowsStimulusValueDomain,
+  runtimeStateCarriesOnlyProfilePortableValues,
 } from "./semantic-profile-value-domain.js";
 import {
   SemanticProfileId,
@@ -167,11 +168,13 @@ function admissibleCommittedState(
   program: SemanticProcessProgram,
   state: RuntimeState,
 ): boolean {
+  // Restoration and command admission share one carried-value eligibility, so a command cannot commit from a state
+  // restoration refuses; Lean's EffectData.commandAdmitted makes the same refusal for the effect-data profile.
   return isGateAdmissibleRuntimeState(
     program,
     state.control.kind === ControlStateKind.NotStarted ? "" : state.control.instanceId,
     state,
-  );
+  ) && runtimeStateCarriesOnlyProfilePortableValues(program.identity.semanticProfile, state);
 }
 
 function activityDataInputOutputStartDataAdmitted(

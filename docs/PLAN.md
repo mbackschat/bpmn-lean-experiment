@@ -81,7 +81,7 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: three registry guards red until enrollment of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); the TypeScript core commits a root-List result Lean refuses; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
+Acceptance blockers: three registry guards red until enrollment of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
 
 Current result: the shared admission/runtime checkpoint `079c6e72` is approved after the same reviewer's audit of corrections `bbb2ea49`. The 60-minute correction allowance ran to 09:01 UTC wall time, including owner waits.
 

@@ -153,6 +153,34 @@ test("restoration under the profile requires every carried value to be a Singlet
   assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withLocal(list())), false, "root List Activity local");
 });
 
+// Lean's EffectData.commandAdmitted refuses these states through bindingsValidUnder and inputSnapshotMatchesUnder.
+test("a command refuses committed state carrying a value outside the profile domain", async () => {
+  const { p, state } = await atNotify();
+  const notify = complete(state.effectWaits[0]!.id, [binding(names.receipt, text("sent"))]);
+  assert.equal(applyStimulus(p, state, notify).outcome, CommandOutcome.Committed);
+  const withProperty = (value: VariableValue): RuntimeState => ({
+    ...state, variables: { ...state.variables, process: { bindings: state.variables.process.bindings
+      .map((entry) => entry.name === names.assessed ? binding(entry.name, value) : entry) } },
+  });
+  const withSnapshot = (value: VariableValue): RuntimeState => {
+    const replace = (bindings: readonly VariableBinding[]) => bindings.map((entry) => binding(entry.name, value));
+    return {
+      ...state,
+      effectWaits: state.effectWaits.map((wait) => ({ ...wait, arguments: replace(wait.arguments) })),
+      variables: { ...state.variables, activities: state.variables.activities.map((scope) => ({ ...scope, bindings: replace(scope.bindings) })) },
+    };
+  };
+  for (const [label, raw] of [
+    ["root List Property", withProperty(list(nothing))],
+    ["root List snapshot and local", withSnapshot(list(nothing))],
+    ["over-long root String snapshot and local", withSnapshot(text("a".repeat(1025)))],
+  ] as const) {
+    const result = applyStimulus(p, raw, notify);
+    assert.equal(result.outcome, CommandOutcome.Rejected, label);
+    assert.deepEqual(result.state, raw, label);
+  }
+});
+
 test("PBV-COPY-01: mutating the caller-owned completion stimulus after commit changes nothing committed", async () => {
   const p = await program();
   const atAssess = committed(p, initialState, start);
