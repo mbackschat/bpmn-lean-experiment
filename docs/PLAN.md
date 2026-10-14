@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: the shared admission/runtime checkpoint of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent cold review; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
+Acceptance blockers: three registry guards red until enrollment; the shared admission/runtime checkpoint of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent cold review; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
 
-Current result: the shared batch is committed with its [checkpoint evidence](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses): Lean and the core admit a Service-only chain and write a structured result exactly. About 230 of 240 minutes and both batch full builds are spent.
+Current result: the shared batch `079c6e72` received cold checkpoint verdict approve-with-required-edits: registering the profile left three registry guards red under the amendment's later enrollment order, a routed map and two Lean docstrings are stale. The 240-minute budget is spent.
 
-Effort budget: 240 minutes wall from 2026-10-14 00:20 UTC through the green shared admission/runtime checkpoint; hosting and enrollment are budgeted after its review. Lean batch `effect-data-shared-batch`: one full build at that checkpoint, at most one more after a correction. At the limit, stop and record before renewal.
+Effort budget: 60 minutes wall from 2026-10-14 04:22 UTC, owner-granted after the spent 240-minute allowance, for checkpoint corrections and the reviewer's audit; enrollment is budgeted after approval. At the limit, stop and record before renewal.
 
-Next action: run the independent cold checkpoint review of the batch commit; after a green verdict, budget and implement Worker transport, the hosted capacity envelope and public enrollment.
+Next action: owner decision on the registry-guard conflict and a bounded correction allowance; then commit corrections for the same reviewer's audit.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 

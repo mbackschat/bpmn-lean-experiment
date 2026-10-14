@@ -59,8 +59,8 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 - exact Call Activity checked-node arm and paired `invokeProcess`/`returnProcess` operations with called definition, root, entry, return, and caller-output identities
 - explicit checked boundary Error and Error End variants plus one resolved direct-parent `throwError` handler with exact Error and Sequence Flow provenance
 - one canonical definition-scope forest with exact node/Sequence-Flow and operation/control-place ownership, retaining one rooted tree for existing profiles and one distinct called root for the bounded Call profile, plus one shared occurrence-ID shape reused by User Tasks, Message subscriptions, timers, effects, and Call records
-- one strict String/null/Boolean/non-negative-safe-integer/ordered-String-list value union, plus Decimal/List/Map on the handoff path, with profile-specific surface admission and bounded canonical transport
-- Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches
+- one strict String/null/Boolean/non-negative-safe-integer/ordered-String-list value union, plus Decimal/List/Map for handoff and [effect-data](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) effects, with profile-specific surface admission and bounded canonical transport
+- Process-variable observation, immutable effect arguments, and closed string/null successful/business-error patches, plus unhosted effect-data `SingletonBusinessItem` results
 - required canonical `submittedValues` on exact User Task completion, with empty-patch preservation and no legacy reader
 - raw CIB state-query, task-query, timer-job, effect-job, effect-execution, and mapping-execution observations with verifier-reconstructed canonical projections that reuse the adapter's ordering and constant-field rules
 - exhaustive schema-depth CIB fidelity classification for all twelve top-level state fields and every nested field, with exact schema/table path equality rejecting any top-level or nested omission

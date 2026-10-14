@@ -132,7 +132,7 @@ theorem null_and_empty_map_are_present_results :
         [[{ name := "assessment", value := .map [] }]] := by
   decide +kernel
 
-/-- PBV-EFF-03: a root List or StringList result, a missing or extra local, and a patch for another
+/-- PBV-EFF-02: a root List or StringList result, a missing or extra local, and a patch for another
 occurrence are semantic rejections that leave the committed state byte for byte unchanged. -/
 theorem invalid_results_refuse_without_partial_writes :
     refusedUnchanged (completeAssess (assessmentPatch (.list [.string "a"]))) started.state = true ∧
