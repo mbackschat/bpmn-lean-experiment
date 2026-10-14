@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  EffectMappingValuePolicy,
   StimulusKind,
   VariableValueKind,
+  effectMappingAcceptsValue,
+  effectMappingValuePolicyForProfile,
 } from "@bpmn-lean/semantic-core";
 import type {
   EffectTransportMaterial,
@@ -93,7 +96,9 @@ test("enforces binding, completion-patch, and complete-command byte ceilings", (
   );
 });
 
-test("keeps the new value arms outside effect transport", () => {
+test("keeps the new value arms outside the profile's effect mapping, not the transport encoder", () => {
+  // PBV-EFF-01 made effect transport encode every value arm; the refusal is owned by the Program profile's policy.
+  const integer = { kind: VariableValueKind.Integer, value: 1 } as const;
   const material: EffectTransportMaterial = {
     definition: {
       semanticProfile: "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
@@ -111,13 +116,12 @@ test("keeps the new value arms outside effect transport", () => {
       protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
       operation: "urn:bpmn-lean:effect-operation:probe-v1",
     },
-    arguments: [{
-      name: "value",
-      value: { kind: VariableValueKind.Integer, value: 1 },
-    }],
+    arguments: [{ name: "value", value: integer }],
   };
-  assert.throws(
-    () => canonicalEffectTransportEncoding(material),
-    /unsupported effect transport variant/iu,
-  );
+  assert.match(canonicalEffectTransportEncoding(material), /"value"/u);
+  const policy = effectMappingValuePolicyForProfile(material.definition.semanticProfile);
+  assert.equal(policy, EffectMappingValuePolicy.Scalar);
+  for (const value of [integer, { kind: VariableValueKind.StringList, value: ["a"] } as const]) {
+    assert.equal(effectMappingAcceptsValue(policy, value, true), false, value.kind);
+  }
 });
