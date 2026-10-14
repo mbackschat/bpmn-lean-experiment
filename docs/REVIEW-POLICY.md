@@ -30,7 +30,7 @@ Before proof-task expansion, record guarantee, next deliverable, separating evid
 
 ## Delegated implementation protocol
 
-Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; at most one lane is Lean-capable. Apply [tier/reuse/concurrency rules](../CLAUDE.md#delegated-implementation) and separate [reviewer continuity](#when-a-warm-review-is-valid).
+Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; no delegated lane edits Lean or runs a Lean command. Apply [tier/reuse/concurrency rules](../CLAUDE.md#delegated-implementation) and separate [reviewer continuity](#when-a-warm-review-is-valid).
 
 The root retains shared integration points, lifecycle/status docs, commits and complete verification. Give new agents task-shaped names and reused agents explicit replacement assignments. Before work, define:
 
@@ -46,7 +46,7 @@ A LOW brief instead names the exact commands, supplied text or search scope, the
 
 Edit assigned paths only; route owner-authorized commands through the root. During active lanes, stage reviewed paths explicitly, never `git add -A` or `git add .`, and never run a whole-tree working-tree command such as `git stash`, `git restore .` or `git reset --hard`: another lane's uncommitted files share the tree. Handoffs are not commit boundaries.
 
-Delegate only `./scripts/lake.sh build <module target>` for owned Lean modules after the root has narrowly built any changed dependencies they import; never warm with a full-library build. Use one process tree within wrapper limits; exit `75` (`LEAN_BUILD_REFUSED`) stops without retry. The root first-builds changed kernel-decided fixtures. Retain/reap yielded builds, never interrupt/replace them for yielding. Report commands/outcomes at **Ready for root Lean gate**; the root runs that narrow gate before integration.
+Lean code, proofs and every Lean command stay with the root ([Finding 78](PROCESS-ASSESSMENT-LEDGER.md#finding-78)); a delegated brief names no `.lean` path and no wrapper invocation. The root builds narrow targets first, first-builds changed kernel-decided fixtures under the measurement ceiling, and never warms with a full-library build. Exit `75` (`LEAN_BUILD_REFUSED`) stops without retry. Retain/reap yielded builds, never interrupt/replace them for yielding.
 
 Each nontrivial implementation agent sends exactly three concise safe-boundary reports:
 
