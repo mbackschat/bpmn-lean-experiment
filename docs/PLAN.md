@@ -83,11 +83,11 @@ Deliverable: serial nested embedded scopes whose locals shadow by present null, 
 
 Acceptance blockers: the [proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md) is not yet accepted; the IL fields, frame chain, User Task contract and capacity reservation are unimplemented. Core Lean edits are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at batch acceptance, also covering `310cb4cd`.
 
-Current result: the first proposal draft was rejected and redesigned to serial scopes; the redesign's required corrections are applied.
+Current result: the serial nested-scope data proposal is approved after its correction audits; implementation has not started.
 
-Effort budget: 120 minutes wall from 2026-10-14 12:50 UTC for the proposal stage. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-14 13:45 UTC for the implementation batch through checkpoint review. At the limit, stop and record before renewal.
 
-Next action: close the proposal's correction audit, then implement the batch.
+Next action: implement the batch, core Lean edits first, then the TypeScript core, source admission and scenarios.
 
 Oracle: a present-null local in an inner scope hides a Process namesake and a write updates the nearest existing owner only; today each is refused or flattened.
 

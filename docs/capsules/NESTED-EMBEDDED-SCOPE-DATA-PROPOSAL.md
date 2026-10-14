@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and delivery boundary
 
@@ -125,7 +125,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 
 ### Owners this implementation grows
 
-- IL: the IL specification, schema, TypeScript contract (with the conditional extraction above), Lean IL constructor and both JSON codecs.
+- IL and checked graph: the IL specification, the Semantic Process and checked-process schemas, both TypeScript contracts (with the conditional extraction above), the Lean Program structure and `CheckedProcessContract`, lowering and both JSON codecs.
 - Lean: scope variable data, scoped data primitives, Multi-Instance scope write, value domains, profile shapes, embedded scope admission, entry and completion relations, and one new conformance owner.
 - TypeScript core: scope variable data, sequential and parallel scope data readers, Multi-Instance scope write, semantic process data, profile catalog, value domains and restoration, graph policy and scope runtime.
 - Source: embedded Sub-Process source admission, the business mapping source for Sub-Process parameters, compilation dispatch and preservation capability.
@@ -136,10 +136,12 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `eff1bee8` | `fork-turns-none` | `approve-with-required-edits` | `d3592d43, f01865c8, a1b63e22, d711848e, owner-authorized` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
 The first proposal review, against `ae20b678` from baseline `ece0021f` with packet `23aa96b9a395a8de50f7765d9b93d14e159b059b4556da38d902d35b5eb6b6fd`, rejected the draft. Its three blocking findings were host admission refusing Parallel forks combined with effects, the serial-only Start capacity journey, and an IL with no place for Sub-Process mappings. Six further findings covered unsupported preservation premises, missing witnesses, inconsistent coverage claims, an unaddressed reopen trigger, family review scope and CIB boundary precision. The correction narrows the account to serial nested scopes and adds typed IL fields, so it is material and returns to a fresh cold proposal review.
 
 The fresh cold review of `eff1bee8`, packet `4891a6a82c6e477d27f126e933e9a670fb7c6b2d9044333e045817700707d6ee`, returned `approve-with-required-edits` with six required findings: the User Task completion contract and its capacity reservation, scope-aware availability, frame existence for empty input lists, witnesses that separate at the public boundary, the family batch arrangement, and the String-literal admission bound. The bounded correction awaits that reviewer's audit.
+
+The same reviewer audited the corrections in four rounds; rounds three and four were owner-authorized. Round one (`d3592d43`) closed the semantic findings and raised the User Task capacity reservation and the CIB status of the patch-name restriction; round two (`f01865c8`) required the patch byte measure and a full-cap reservation; round three (`a1b63e22`, with the Program-level table of `7d29bed8` judged non-material) required the table's optionality and checked counterpart; round four (`d711848e`) approved.

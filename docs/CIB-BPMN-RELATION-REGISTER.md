@@ -551,7 +551,7 @@ CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw var
 
 ### CIB-EXT-0020 — nested embedded scope locals and nearest-owner writes
 
-**Status:** Candidate bounded extension for the [nested embedded scope data proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md); proposal review pending; profile selection and qualification pending.
+**Status:** Candidate bounded extension for the [nested embedded scope data proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md); proposal approved; profile selection and qualification pending.
 
 CIB Seven `2.2.0` accepts `camunda:inputOutput` on an ordinary embedded `subProcess` (`BpmnParse.checkActivityInputOutputSupported`), runs its input parameters at entry in the outer scope (`PvmExecutionImpl.executeIoMapping`, `IoParameter.execute`, `InputParameter`) and its output parameters when the scope is destroyed in the inner scope (`ExecutionEntity.destroy`, `OutputParameter`). `AbstractVariableScope.setVariable` updates the nearest scope that has the name locally, walking parent by parent, and creates the binding at the root otherwise; a present null is a local binding and shadows.
 
