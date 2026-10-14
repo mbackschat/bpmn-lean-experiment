@@ -85,7 +85,7 @@ Acceptance blockers: the [accepted Message-payload amendment](capsules/PORTABLE-
 
 Current result: the amendment is independently accepted after one correction audit; no profile admits a structured payload yet.
 
-Effort budget: 180 minutes wall from 2026-10-14 12:30 UTC, set under the owner's delegation of budget decisions, for the shared admission/runtime batch and its checkpoint review; the proposal stage closed within its 120 minutes. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-14 11:25 UTC, set under the owner's delegation of budget decisions, for the shared admission/runtime batch and its checkpoint review; the proposal stage closed in 20 of its 120 minutes. At the limit, stop and record before renewal.
 
 Next action: red/green the shared batch: profile identity and routing, `SingletonBusinessItem` payload domain with its root-String bound in both languages, restoration and the Lean conformance owner.
 
