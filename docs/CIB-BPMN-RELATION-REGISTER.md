@@ -547,6 +547,8 @@ CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw var
 
 **Boundary:** A delegate mutating a structured input in place changes the Process variable through aliasing, and implicit update detection persists it (`TypedValueField.java:155-168`). The project's handler receives an immutable snapshot, so this aliasing is outside the selected account. No general JUEL, nested expression, Java object or listener mutation is claimed.
 
+**Evidence:** none retained yet; the amendment plans one public-service calibration probe in the [CIB runner tests](../runners/cibseven/src/test/java/org/bpmnlean/cibseven) that records the projected result and the excluded input aliasing.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -725,7 +727,7 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 
 **Status:** Candidate configuration dependency for the [structured effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); proposal review, profile selection and qualification pending.
 
-Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. The observation projection reads the deserialized value, orders Map keys canonically, projects nonnegative in-bound `Integer`/`Long` to the portable Integer and projects a `BigDecimal` to the canonical portable Decimal of the same mathematical value: trailing zeros are stripped and a negative scale becomes zero, and a canonical scale above 6 or a coefficient outside the signed 64-bit range is outside the domain. CIB-retained scale is therefore not a compared fact. A Spin JSON default is excluded: the project runner installs no Spin plugin and its value fidelity is unverified.
+Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. The planned calibration probe's local projection reads the deserialized value, orders String Map keys by Unicode scalar value rather than Java's UTF-16 `compareTo`, projects nonnegative in-bound `Integer`/`Long` to the portable Integer and projects a `BigDecimal` to the canonical portable Decimal of the same mathematical value: trailing zeros are stripped and a negative scale becomes zero, and a canonical scale above 6 or a coefficient outside the signed 64-bit range is outside the domain. Non-String keys and negative or out-of-bound `Integer`/`Long` values are outside the domain and never become Decimals. CIB-retained scale is therefore not a compared fact. A Spin JSON default is excluded: the project runner installs no Spin plugin and its value fidelity is unverified.
 
 ## Audit of previously visited findings
 
