@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: three registry guards red until enrollment; the shared admission/runtime checkpoint of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent cold review; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
+Acceptance blockers: three registry guards red until enrollment of the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment); the TypeScript core commits a root-List result Lean refuses; Worker transport and the hosted capacity envelope count no structured value; no retained whole model exercises it.
 
-Current result: the shared batch `079c6e72` received cold checkpoint verdict approve-with-required-edits: registering the profile left three registry guards red under the amendment's later enrollment order, a routed map and two Lean docstrings were stale. Corrections `16773cc7` disclose the guards (owner-accepted ordering), fix the map and label, and defer the `ValueDomain` docstring.
+Current result: the shared admission/runtime checkpoint `079c6e72` is approved after the same reviewer's audit of corrections `bbb2ea49`. The 60-minute correction allowance ran to 09:01 UTC wall time, including owner waits.
 
-Effort budget: 60 minutes wall from 2026-10-14 04:22 UTC, owner-granted after the spent 240-minute allowance, for checkpoint corrections and the reviewer's audit; enrollment is budgeted after approval. At the limit, stop and record before renewal.
+Effort budget: 120 minutes wall from 2026-10-14 09:05 UTC, set under the owner's delegation of budget decisions, for enrollment and the root-List agreement; hosting is budgeted after that commit. At the limit, stop and record before renewal.
 
-Next action: the same reviewer audits `16773cc7`; on approval record the receipt, then budget enrollment.
+Next action: enroll the scenario, pipeline case, example configuration and value-matrix row, and make Lean and core agree on root-List results.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 
