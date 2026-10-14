@@ -101,6 +101,10 @@ if [ "$(uname -s)" = Darwin ] && ! command -v footprint >/dev/null 2>&1; then
   echo "LEAN_BUILD_REFUSED the memory brake needs macOS footprint(1)" >&2
   exit 69
 fi
+if [ "$(uname -s)" != Darwin ] && [ ! -r /proc/self/stat ]; then
+  echo "LEAN_BUILD_REFUSED the memory brake needs a readable /proc" >&2
+  exit 69
+fi
 
 lean_build_lock="/tmp/bpmn-lean-experiment-$(id -u).lake-build.lock"
 if ! mkdir "$lean_build_lock" 2>/dev/null; then

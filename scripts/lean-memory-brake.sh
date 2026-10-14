@@ -19,8 +19,24 @@ limit_kib=$2
 marker=$3
 brake_pid=$$
 
+# Linux reads `/proc` because minimal images such as the measurement container ship no `ps`; an empty
+# process table would sum to zero and silently disarm the brake (Finding 78).
+process_table() {
+  if [ -d /proc/self ]; then
+    for stat in /proc/[0-9]*/stat; do
+      read -r line 2>/dev/null < "$stat" || continue
+      rest=${line##*) }
+      # shellcheck disable=SC2086
+      set -- $rest
+      printf '%s %s\n' "${line%% *}" "$2"
+    done
+  else
+    ps -A -o pid= -o ppid=
+  fi
+}
+
 descendants() {
-  ps -A -o pid= -o ppid= | awk -v root="$wrapper_pid" -v brake="$brake_pid" '
+  process_table | awk -v root="$wrapper_pid" -v brake="$brake_pid" '
     { children[$2] = children[$2] " " $1 }
     END {
       queue = root
