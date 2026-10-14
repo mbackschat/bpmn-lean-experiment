@@ -85,9 +85,9 @@ Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSI
 
 Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport.
 
-Effort budget: 120 minutes wall from 2026-10-14 09:05 UTC, set under the owner's delegation of budget decisions, for enrollment and the root-List agreement; the hosting lane is budgeted after this commit. At the limit, stop and record before renewal.
+Effort budget: 180 minutes wall from 2026-10-14 09:23 UTC, set under the owner's delegation of budget decisions, for the hosting lane, sized by the portable handoff's comparable lane; enrollment closed at 09:22 within its 120 minutes. At the limit, stop and record before renewal.
 
-Next action: budget the hosting lane: capacity envelope, live replacement witness, CIB probe, corpus disclosure, closure.
+Next action: extend the Start capacity envelope to the effect-data journey with per-task Activity and patch reservations (`PBV-EFF-05`).
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every implementation refuses it.
 
