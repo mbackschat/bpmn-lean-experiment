@@ -85,13 +85,37 @@ if [ "$full_gate_required" = true ] &&
   exit 64
 fi
 
+lean_memory_brake_mib=$required_lean_memory_brake_mib
+if [ "${LEAN_MEMORY_BRAKE_MIB+set}" = set ]; then
+  case "$LEAN_MEMORY_BRAKE_MIB" in
+    '' | *[!0-9]* | 0*)
+      echo "LEAN_BUILD_REFUSED LEAN_MEMORY_BRAKE_MIB must be a positive whole number of MiB" >&2
+      exit 64
+      ;;
+  esac
+  if [ "$LEAN_MEMORY_BRAKE_MIB" -lt "$required_lean_memory_brake_mib" ]; then
+    lean_memory_brake_mib=$LEAN_MEMORY_BRAKE_MIB
+  fi
+fi
+if [ "$(uname -s)" = Darwin ] && ! command -v footprint >/dev/null 2>&1; then
+  echo "LEAN_BUILD_REFUSED the memory brake needs macOS footprint(1)" >&2
+  exit 69
+fi
+
 lean_build_lock="/tmp/bpmn-lean-experiment-$(id -u).lake-build.lock"
 if ! mkdir "$lean_build_lock" 2>/dev/null; then
   echo "LEAN_BUILD_REFUSED another Lean build is active, or the fail-closed lock remains at $lean_build_lock" >&2
   exit 75
 fi
 
+lean_memory_brake_marker="/tmp/bpmn-lean-experiment-$(id -u).memory-brake.$$"
+lean_memory_brake_pid=
+
 cleanup_lean_build_lock() {
+  if [ -n "$lean_memory_brake_pid" ]; then
+    kill "$lean_memory_brake_pid" 2>/dev/null || true
+  fi
+  rm -f "$lean_memory_brake_marker"
   rmdir "$lean_build_lock" 2>/dev/null || true
 }
 trap cleanup_lean_build_lock 0
@@ -100,4 +124,17 @@ trap 'exit 130' 1 2 15
 LEAN_NUM_THREADS="$required_lean_build_threads"
 export LEAN_NUM_THREADS
 
-lake "$@"
+# Every Lean process tree runs under the memory brake; see scripts/lean-memory-brake.sh.
+"$script_dir/lean-memory-brake.sh" "$$" "$((lean_memory_brake_mib * 1024))" "$lean_memory_brake_marker" &
+lean_memory_brake_pid=$!
+
+if lake "$@"; then
+  lake_status=0
+else
+  lake_status=$?
+fi
+if [ -s "$lean_memory_brake_marker" ]; then
+  echo "LEAN_MEMORY_BRAKE terminated the Lean process tree at $(($(cat "$lean_memory_brake_marker") / 1024)) MiB, above the ${lean_memory_brake_mib} MiB brake; record the breach and diagnose its mechanism before rebuilding" >&2
+  exit 70
+fi
+exit "$lake_status"

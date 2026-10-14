@@ -604,7 +604,7 @@ test("one wrapper owns the Lean thread pin", async () => {
   );
   assert.match(
     wrapper,
-    /^lake "\$@"$/mu,
+    /^if lake "\$@"; then$/mu,
     "scripts/lake.sh must forward every argument to lake so it can replace bare invocations",
   );
 });

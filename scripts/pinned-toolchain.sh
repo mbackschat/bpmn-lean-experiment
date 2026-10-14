@@ -29,8 +29,14 @@ required_lean_build_threads=$(
   sed -n 's/^[[:space:]]*"leanBuildThreads"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
 )
 
+# The Lean memory brake shares that owner for the same reason: scripts/lake.sh enforces it and only
+# an environment value below it may replace it.
+required_lean_memory_brake_mib=$(
+  sed -n 's/^[[:space:]]*"leanMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+
 if test -z "$required_node_version" || test -z "$required_pnpm_version" ||
-    test -z "$required_lean_build_threads"; then
+    test -z "$required_lean_build_threads" || test -z "$required_lean_memory_brake_mib"; then
   echo "pinned-toolchain.sh read no Node or pnpm pin from $manifest" >&2
   exit 1
 fi
@@ -38,3 +44,4 @@ fi
 printf 'required_node_version=%s\n' "$required_node_version"
 printf 'required_pnpm_version=%s\n' "$required_pnpm_version"
 printf 'required_lean_build_threads=%s\n' "$required_lean_build_threads"
+printf 'required_lean_memory_brake_mib=%s\n' "$required_lean_memory_brake_mib"
