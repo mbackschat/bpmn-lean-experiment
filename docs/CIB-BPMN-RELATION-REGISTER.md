@@ -549,6 +549,16 @@ CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw var
 
 **Evidence:** the calibration probe [`CibSevenStructuredEffectResultProbeTest`](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenStructuredEffectResultProbeTest.java) records the projected result and the excluded input aliasing; it is not retained differential evidence.
 
+### CIB-EXT-0020 — nested embedded scope locals and nearest-owner writes
+
+**Status:** Candidate bounded extension for the [nested embedded scope data proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md); proposal review pending; profile selection and qualification pending.
+
+CIB Seven `2.2.0` accepts `camunda:inputOutput` on an ordinary embedded `subProcess` (`BpmnParse.checkActivityInputOutputSupported`), runs its input parameters at entry in the outer scope (`PvmExecutionImpl.executeIoMapping`, `InputParameter`) and its output parameters when the scope ends in the inner scope (`ExecutionEntity.destroy`, `OutputParameter`). `AbstractVariableScope.setVariable` updates the nearest scope that has the name locally, walking parent by parent, and creates the binding at the root otherwise; a present null is a local binding and shadows.
+
+**Boundary:** Nested ordinary embedded scopes up to definition depth three, String-literal or exact `${name}` inputs, outputs sourced from a declared local of the same scope, and `SingletonBusinessItem` values. It broadens the one-body-level account of `CIB-EXT-0017` without changing that entry. No JUEL beyond exact references, Call or Multi-Instance mapping, aliasing of structured values (see `CIB-EXT-0019`) or BPMN `property`/`dataObject` notation.
+
+**Evidence:** pending; the selected calibration extends the [body-data probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstanceDataProbeTest.java) to two nested levels.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
