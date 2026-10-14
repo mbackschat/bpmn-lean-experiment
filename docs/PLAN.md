@@ -14,7 +14,7 @@ Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-p
 
 Exactly one stable work ID is active. Required maps govern routing.
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is accepted; select the portable Review→Archive handoff under `PC-DATA-03`, with `PC-DATA-02` admission obligations. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
+1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is accepted; advance `PC-DATA-03` surface by surface through consuming amendments; the handoff and effect-data amendments are closed. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
 ### Deferred checkpoints
 
@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md#independent-cold-review-receipt) is done. Message, Call, Multi-Instance, expression and form surfaces stay open.
+Current task: `PC-DATA-03` structured Message payloads, with `PC-MESSAGE-03` payload obligations; the [effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#effect-data-closure-acceptance) is closed. Call, Multi-Instance, expression and form surfaces stay open.
 
-Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
+Deliverable: A payload-bearing Message delivered to a waiting catch carries one structured `BusinessValue` payload into its mapped Process Property exactly through Lean, the core, Message ingress, publications and restoration; an over-bound or out-of-domain payload is refused atomically.
 
-Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) awaits the closure reviewer's correction audit; Temporal is green per lane, not in one run.
+Acceptance blockers: no consuming amendment selects the Message payload surface, its profile, CIB relationship or Temporal preflight; none is independently reviewed.
 
-Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport; the Start capacity envelope reserves every Service Task result (`PBV-EFF-05`); live recovery, the old-profile refusal, the CIB calibration probe and the corpus/About disclosure are in place; the [closure reflection](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#effect-data-epistemic-closure) and cost row are recorded.
+Current result: the [value design](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#public-value-contract) already assigns every arm to payload Messages; no profile admits one.
 
-Effort budget: 180 minutes wall from 2026-10-14 09:23 UTC, set under the owner's delegation of budget decisions, for the hosting lane, sized by the portable handoff's comparable lane; enrollment closed at 09:22 within its 120 minutes. At the limit, stop and record before renewal.
+Effort budget: 120 minutes wall from 2026-10-14 11:05 UTC, set under the owner's delegation of budget decisions, for the amendment and its cold proposal review, sized by the effect-data amendment. At the limit, stop and record before renewal.
 
-Next action: send the corrections to the same closure reviewer for audit.
+Next action: inventory existing payload-bearing Message catches, ingress and CIB payload evidence, then draft the consuming amendment.
 
-Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications.
+Oracle: a payload Map with a repeated List member and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; today every profile refuses it.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
