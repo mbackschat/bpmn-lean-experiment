@@ -81,13 +81,13 @@ Current task: `PC-DATA-03` structured Service Task effect results; [`PC-DATA-02`
 
 Deliverable: A configured Service Task's `SingletonBusinessItem` result reaches its mapped Process Property exactly through Lean, the core, Worker transport, publications and restoration; an over-bound or out-of-domain result is refused atomically.
 
-Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) has no independent closure review.
+Acceptance blockers: the [accepted effect-data amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-effect-data-consuming-amendment) awaits the closure reviewer's correction audit; Temporal is green per lane, not in one run.
 
-Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport; the Start capacity envelope reserves every Service Task result (`PBV-EFF-05`); live recovery, the old-profile refusal, the CIB calibration probe and the corpus/About disclosure are in place; the [closure reflection](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#effect-data-epistemic-closure) and cost row are recorded. The first closure gate exposed a stale test ([Finding 77](PROCESS-ASSESSMENT-LEDGER.md#finding-77)), corrected in `041ad7f5`.
+Current result: the shared checkpoint is approved; enrollment registers the credit-decision model and two schedules that agree across Lean, core and Temporal in the full pipeline, with structured effect transport; the Start capacity envelope reserves every Service Task result (`PBV-EFF-05`); live recovery, the old-profile refusal, the CIB calibration probe and the corpus/About disclosure are in place; the [closure reflection](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#effect-data-epistemic-closure) and cost row are recorded.
 
 Effort budget: 180 minutes wall from 2026-10-14 09:23 UTC, set under the owner's delegation of budget decisions, for the hosting lane, sized by the portable handoff's comparable lane; enrollment closed at 09:22 within its 120 minutes. At the limit, stop and record before renewal.
 
-Next action: run the cold closure review of the amendment against the committed closure target.
+Next action: send the corrections to the same closure reviewer for audit.
 
 Oracle: a structured result with a nested list and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications.
 
