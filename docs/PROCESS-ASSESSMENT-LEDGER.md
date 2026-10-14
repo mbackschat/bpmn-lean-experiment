@@ -1466,11 +1466,13 @@ Disposition
 : `executable guard`
 
 Evidence
-: [wrapper memory brake](../scripts/lean-memory-brake.sh), [its termination witness](../scripts/lean-memory-brake.test.ts)
+: [wrapper memory brake](../scripts/lean-memory-brake.sh), [its termination witness](../scripts/lean-memory-brake.test.ts), [measured module-cost rows](../scripts/lean-module-cost.test.ts), [Lean proof design rule 6](REVIEW-POLICY.md#lean-proof-design-and-review)
 
 **First observed:** `PC-DATA-03` effect-data shared batch on 2026-10-14.
 
 `EffectDataConformance.lean` ran `applyStimulus` under `cbv` from Start in each conjunct and admitted 1,025-character literals by `splitOn` under `decide +kernel`. Its first build reached a 13 GB footprint, 12 GB compressed, with swap at 9.5 of 10 GB after 20 minutes; `ps` showed 0.8 GB resident, so the worker's own RSS samples missed it, and the owner noticed first. The delegation protocol already makes the root first-build changed kernel-decided fixtures under a hard ceiling, but the brief did not carry that rule. The wrapper now terminates any tree above `config.leanMemoryBrakeMiB`; the hard measurement ceiling and root-only first builds remain required.
+
+The brake closes host exhaustion for every Lean tree; it does not explain why the witnesses were written. The root cause is evidence selection: neither the amendment's witness list nor the root's brief assigned witnesses to lanes, and the brief asked for the 1,024/1,025-byte boundaries as Lean finite witnesses, following the measured `PortableHandoffConformance` precedent. A textual ban on large constructed values was tried and withdrawn: it flagged cheap `#eval` witnesses in `SemanticProcessJsonConformance` and could not see computed sizes. Lane-and-cost placement is now [Lean proof design rule 6](REVIEW-POLICY.md#lean-proof-design-and-review); the [measured module-cost rows](../scripts/lean-module-cost.test.ts) reject an unmeasured or over-ceiling conformance module before commit.
 
 ## Update rule
 
