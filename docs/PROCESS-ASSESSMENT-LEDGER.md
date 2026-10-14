@@ -56,7 +56,7 @@ Dispositions are a closed set:
 | Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
 | Preserve identity, wire values and canonical order | [23](#finding-23), [35](#finding-35), [36](#finding-36), [50](#finding-50), [71](#finding-71) | [50](process-assessment/VERIFICATION-LEDGER.md#finding-50) |
 | Design and verify user journeys | [28](#finding-28), [29](#finding-29), [69](#finding-69), [70](#finding-70) | In the current records |
-| Bound helper processes and outward actions | [56](#finding-56), [73](#finding-73), [74](#finding-74) | In the current records |
+| Bound helper processes and outward actions | [56](#finding-56), [73](#finding-73), [74](#finding-74), [81](#finding-81) | In the current records |
 
 ## Findings
 
@@ -1443,10 +1443,10 @@ The complete Temporal gate failed a varying set of publication reads with `unava
 A semantic-core classification change was qualified by hand-picked consumer tests, so a Workflow component test that pins the changed classification stayed red in the committed target although the complete Temporal component lane would have run it.
 
 Instances
-: 1
+: 2
 
 Disposition
-: `review question`
+: `unguardable`
 
 Evidence
 : [self-assessment question 14](#self-assessment-questions)
@@ -1454,6 +1454,8 @@ Evidence
 **First observed:** `PC-DATA-02` scalar admission agreement on 2026-10-13.
 
 Commit `2fb8a861` made a refused Start a semantic rejection in `advanceScenario` and was qualified by the semantic-core suite, the value-domain matrix, selected host-admission tests and the pipeline. `closure-failure-classification-probe.ts` used exactly such a Start to provoke a projection failure, and only `test:temporal:built:components` runs it. The consumer set had an exact criterion, the importers of `advanceScenario`, which a census would have listed.
+
+Second instance, `PC-DATA-03` effect-data closure on 2026-10-14: `b6a6fe74` widened effect transport to every value arm and was qualified by the component lane, selected hosted files and the pipeline, while a structured-human-work testkit test in `test:temporal:built:concurrent` still pinned the old transport refusal; the closure `test:temporal` gate failed on it and `041ad7f5` moved the lock to the profile policy. Which lanes an author ran before a local commit leaves no tracked fact, and the acceptance-boundary complete gate that observed both instances is the designed backstop, so the class is unguardable short of running every complete lane per commit, which the verification cadence rejects. Reusable question: before committing a change to an exported encoder or classifier, have the complete lanes of every package that imports it run, not only the lanes already under attention?
 
 ### Finding 78
 
@@ -1507,6 +1509,23 @@ Evidence
 **First observed:** `PC-DATA-03` effect-data checkpoint review on 2026-10-14.
 
 The serial-handoff amendment avoided the conflict by registering its scenarios inside the runtime checkpoint; the effect-data amendment ordered enrollment after it, and neither its proposal review nor the root's packet named the three guards that a registered but unenrolled profile fails. The owner accepted disclosure with enrollment as the next change. Review question: when a proposal orders registration after a checkpoint, does its checkpoint either avoid the profile artifact or name each registry guard it will leave red?
+
+### Finding 81
+
+An ad hoc command bypassed the repository wrapper that owns its argument semantics and handed a tool an operator or relative path that the tool interpreted differently from the author.
+
+Instances
+: 2
+
+Disposition
+: `unguardable`
+
+Evidence
+: [self-terminating helper processes](../CLAUDE.md#verification)
+
+**First observed:** `PC-DATA-03` effect-data hosting lane on 2026-10-14.
+
+An escaped `&&` after the receipt wrapper's `--` reached pnpm as two literal arguments, so the build failed and the receipt recorded a command nobody meant to run. A direct `mvnw` call passed the CIB build directory relative to the project root while Maven resolved it against the runner's `pom.xml`, so test output landed in an untracked `runners/cibseven/runners/` tree that had to be moved aside. Both were typed interactively, and the repository's own [CIB test runner](../scripts/run-cibseven-tests.ts) already resolves the directory absolutely, so no tracked fact observes the class. Reusable question: before replacing a repository wrapper with a hand-built command, does every operator stay outside the wrapped argument list and every path stay absolute?
 
 ## Update rule
 
