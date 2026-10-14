@@ -85,6 +85,8 @@ Material changes select/change BPMN meaning, profile/CIB relationship, checked-s
 
 Require cold proposal review, conditional cold checkpoint and governed closure; closure is cold except [warm continuity](#when-a-warm-review-is-valid) or [single-lane combined review](#combined-checkpoint-and-closure).
 
+Owner direction (2026-10-14), for Practical CIB7 Coverage: the review unit is a checklist family, not a slice. A family takes one proposal review covering its selected increments, implements them as one batch through registration and hosting, and then takes one checkpoint and one closure review, or one combined review when its conditions hold. Intermediate slices inside the batch are private checkpoints and open no review stage; a review already in flight for a slice may complete.
+
 | Stage | Immutable target and timing | Isolation | Boundary |
 |---|---|---|---|
 | Proposal | Committed proposal with complete normative basis, scope, Temporal preflight, rules, exclusions, versioning consequences, and open question | `fork-turns-none` | Before approval and implementation |
