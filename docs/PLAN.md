@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-DATA-03` structured Message payloads, with `PC-MESSAGE-03` payload obligations, as the first slice of the Business-data family batch (`PC-DATA-03`–`PC-DATA-06` next).
+Current task: the embedded and called scope family, `PC-SCOPE-01`/`02`/`04` primary, carrying `PC-DATA-04`–`06` (non-expression) and the Call/embedded part of `PC-DATA-03` on the same scope mechanism, per the [batch order](#scheduled-delivery-batches). Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
 
-Deliverable: A payload-bearing Message delivered to a waiting catch carries one structured `BusinessValue` payload into its mapped Process Property exactly through Lean, the core, Message ingress, publications and restoration; an over-bound or out-of-domain payload is refused atomically.
+Deliverable: nested and repeated embedded scopes and reusable Call mappings whose locals shadow by present null, write to the nearest existing owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
 
-Acceptance blockers: Business-data family acceptance. Core Lean edits for the `PC-DATA-03` mapping remainder and `PC-DATA-04`–`06` (input lookups, scope-local domain and nesting, output mappings) are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at family acceptance; slices commit on focused builds.
+Acceptance blockers: no family proposal; nested scopes, multi-port Call mappings and structured scope-local values are unimplemented. Core Lean edits (`Data`, `ScopeVariableData`, `ProcessInterfaceRuntime`, `ValueDomain` lint) are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at family acceptance, also covering `310cb4cd`.
 
-Current result: profile `bpmn-2.0.2-portable-business-message-payload-draft` is implemented and registered across Lean, core, source admission, capacity envelope, scenarios, corpus and About; focused Lean build, core, source, contracts and hosted Message witness are green.
+Current result: cited inventory of every mapping and visibility surface; CIB `setVariable` resolves the nearest existing owner up to the root at the pinned revision.
 
-Effort budget: 180 minutes wall from 2026-10-14 11:25 UTC for the slice; the proposal stage closed in 20 of its 120 minutes. At the limit, stop and record before renewal.
+Effort budget: 120 minutes wall from 2026-10-14 12:50 UTC for the proposal stage. At the limit, stop and record before renewal.
 
-Next action: draft one family amendment for structured values through mappings and scope-local data, then batch the core Lean edits.
+Next action: draft the family proposal.
 
-Oracle: a payload Map with a repeated List member and a Decimal reaches the mapped Property exactly in Lean, core and hosted publications; the closed payload-catch profile refuses it.
+Oracle: a present-null local in an inner scope hides a Process namesake, a write updates the nearest existing owner only, and a Call returns a structured value to its mapped caller Property; today each is refused or flattened.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
