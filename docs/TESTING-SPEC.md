@@ -42,7 +42,7 @@ During development, run the smallest executable oracle separating the changed me
 | Decision boundary | Required verification |
 |---|---|
 | Before a regular commit | Reproduce the intended red and pass the focused oracle. Local Lean commits require focused module/consumer builds and regression tests; the full library is not a commit prerequisite. Other affected package gates retain their current requirements. |
-| Before semantic-batch acceptance | Complete the affected package gates, including `./scripts/lake.sh test` for a Lean-bearing batch, and required independent review against the exact candidate. Neither a local commit nor review alone establishes acceptance. |
+| Before semantic-batch acceptance | Complete the affected package gates, including `LEAN_FULL_GATE=<batch-id> ./scripts/lake.sh test` for a Lean-bearing batch, and required independent review against the exact candidate. Neither a local commit nor review alone establishes acceptance. |
 | Before push | Commit the intended changes, require a clean tree, then run `./scripts/pnpm.sh run test:pre-push` against that exact `HEAD`. A pre-commit run does not substitute: tests may inspect committed ancestry or tracked state. |
 | Before milestone or tag | Complete repository verification and every applicable release-acceptance gate, regardless of earlier focused passes. |
 
@@ -67,7 +67,7 @@ Commands below select the affected boundary; [cadence](#three-level-verification
 | Change | Required focused gate |
 |---|---|
 | Semantic profile, scenario, evidence, or JSON Schema | `./scripts/pnpm.sh run test:contracts` |
-| Lean semantic definition or law | Local: `./scripts/lake.sh build <module target>...` for changed owners and affected proof consumers, plus the separating regression. Batch acceptance: `./scripts/lake.sh test`. |
+| Lean semantic definition or law | Local: `./scripts/lake.sh build <module target>...` for changed owners and the direct importers of every module whose exported statements change, plus the separating regression. Batch acceptance: `LEAN_FULL_GATE=<batch-id> ./scripts/lake.sh test`. PLAN's effort budget names the Lean batch, whose ID is that label, and its full-build allowance: one at batch close plus at most one after a correction. |
 | TypeScript semantic core | `./scripts/pnpm.sh run test:semantic-core` |
 | Lean plus TypeScript semantic loop | `./scripts/pnpm.sh run test:semantic` |
 | TypeScript semantic contract or type abstraction | `./scripts/pnpm.sh run check:semantic-types` plus its owning runtime/package gate. |

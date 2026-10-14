@@ -65,7 +65,7 @@ const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\
 function assertLeanGateCadence(testing: string, review: string, guide: string): void {
   assert.match(testing, /Local Lean commits require focused module\/consumer builds and regression tests; the full library is not a commit prerequisite\./u,
     "local Lean commits must use focused verification");
-  assert.match(testing, /Before semantic-batch acceptance[^\n]*`\.\/scripts\/lake\.sh test`/u,
+  assert.match(testing, /Before semantic-batch acceptance[^\n]*`LEAN_FULL_GATE=<batch-id> \.\/scripts\/lake\.sh test`/u,
     "full Lean qualification must remain required at semantic-batch acceptance");
   assert.match(testing, /Lean semantic definition or law[^\n]*`\.\/scripts\/lake\.sh build <module target>\.\.\.`/u,
     "the Lean matrix must expose the focused entry point");
@@ -237,7 +237,7 @@ test("the semantic package gate uses the library test driver without a duplicate
   ) as { scripts?: Record<string, string> };
   assert.equal(
     manifest.scripts?.["test:semantic"],
-    "./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
   );
 });
 

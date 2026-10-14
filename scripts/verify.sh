@@ -22,7 +22,7 @@ verify_common() {
 }
 
 verify_lean_library() {
-  ./scripts/lake.sh test
+  LEAN_FULL_GATE=verify-lean-library ./scripts/lake.sh test
 }
 
 verify_lean_checks() {

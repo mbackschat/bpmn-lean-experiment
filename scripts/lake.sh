@@ -40,10 +40,49 @@ fi
 if [ "${1:-}" = "build" ]; then
   for target in "$@"; do
     if [ "$target" = "BpmnSemantics" ]; then
-      echo "LEAN_BUILD_REFUSED explicit BpmnSemantics umbrella target; use './scripts/lake.sh build' only for the root-owned full gate" >&2
+      echo "LEAN_BUILD_REFUSED explicit BpmnSemantics umbrella target; use 'LEAN_FULL_GATE=<gate-or-batch-id> ./scripts/lake.sh build' only for the root-owned full gate" >&2
       exit 64
     fi
   done
+fi
+
+# A full-library build recompiles every module downstream of an edit, so it must name the gate or
+# Lean batch that owns it; full builds started as consumer discovery or "still red?" probes are
+# Finding 75 in docs/PROCESS-ASSESSMENT-LEDGER.md. Classification fails closed: only a
+# `BpmnSemantics.` submodule or a declared `lean_exe` is narrow, so package, facet and umbrella
+# spellings count as full. A permitted invocation prints nothing, because retained Lean memory
+# receipts hash the build output.
+full_gate_required=false
+if [ "${1:-}" = "test" ]; then
+  full_gate_required=true
+elif [ "${1:-}" = "build" ]; then
+  declared_executables=$(awk '/^\[\[lean_exe\]\]/ { executable = 1; next } /^\[/ { executable = 0 } executable && /^name = "/ { sub(/^name = "/, ""); sub(/".*/, ""); print }' "$script_dir/../lakefile.toml")
+  narrow_targets=0
+  shift_done=false
+  for target in "$@"; do
+    if [ "$shift_done" = false ]; then
+      shift_done=true
+      continue
+    fi
+    case "$target" in
+      -*) continue ;;
+      BpmnSemantics.?* | +BpmnSemantics.?*) ;;
+      *)
+        if ! printf '%s\n' "$declared_executables" | grep -Fqx -- "$target"; then
+          full_gate_required=true
+        fi
+        ;;
+    esac
+    narrow_targets=$((narrow_targets + 1))
+  done
+  if [ "$narrow_targets" -eq 0 ]; then
+    full_gate_required=true
+  fi
+fi
+if [ "$full_gate_required" = true ] &&
+  ! printf '%s' "${LEAN_FULL_GATE:-}" | grep -Eqx '[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}'; then
+  echo "LEAN_BUILD_REFUSED a full-library build requires LEAN_FULL_GATE=<gate-or-batch-id>; during development build only the changed modules and their direct importers" >&2
+  exit 64
 fi
 
 lean_build_lock="/tmp/bpmn-lean-experiment-$(id -u).lake-build.lock"

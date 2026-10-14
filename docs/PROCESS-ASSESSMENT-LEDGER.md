@@ -1407,17 +1407,19 @@ The owner answered four recommendations with "take all steps with your recommend
 A complete Lean gate was started as a consumer-discovery tool before the batch it should qualify was final, so it could not serve as that batch's acceptance gate and a second complete run became necessary.
 
 Instances
-: 2
+: 3
 
 Disposition
-: `unguardable`
+: `executable guard`
 
 Evidence
-: [self-assessment question 14](#self-assessment-questions)
+: [declared full-gate wrapper check](../scripts/lake.sh), [its fail-closed witness](../scripts/lean-full-gate.test.ts), [self-assessment question 14](#self-assessment-questions)
 
 **First observed:** `PC-DATA-03` Property-path runtime on 2026-10-13.
 
 After threading the Property-path policy through widely imported owners, the agent ran the full `./scripts/lake.sh build` to find remaining consumers while the new conformance module was still uncompiled and one proof owner was edited mid-run. The capsule and testing policy select focused owner/consumer builds while stabilizing and one complete gate for the coherent batch. Lake reuses unchanged artifacts, which limits the waste, but the run still competed for the host and cannot be cited as acceptance. The same session then edited only a docstring in `CanonicalBusinessValue.lean`, which Lake keys by content and 835 modules import; it was reverted before the next gate. In the same session, the complete gate then ran while the known `890b010f` replay failure still blocked 63 dependents, and its approved alias fix was applied only afterwards; the next run found a second site of the same alias class by compilation instead of by static enumeration. Applying the fix first and enumerating the seven sites statically would have needed one incremental run instead of three. No repository fact observes the class: the build target is chosen in the session before any tracked artifact changes, so question 14 remains the control.
+
+Instance 3, 2026-10-14: the root ran the full `./scripts/lake.sh build` as "dependency warming" before delegating `PC-DATA-03` effect-data work, although only documentation had changed since the last build and `890b010f` was known red. Warm outputs made it a two-second no-op, but a recurrence refutes the `unguardable` disposition: the wrapper can observe the class. It now refuses `build` without a narrow target, any package, facet or umbrella spelling, and every `test`, unless `LEAN_FULL_GATE` names the owning gate or Lean batch; `verify.sh` and `test:semantic` declare theirs. The guard makes a full build deliberate; whether the named batch is final remains question 14.
 
 ### Finding 76
 

@@ -85,7 +85,7 @@ Acceptance blockers: no Lean or core effect domain admits a structured value und
 
 Current result: the amendment is accepted at `b9ea31ad`, Service-Task-only, after 61 of 120 design minutes.
 
-Effort budget: 240 minutes wall from 2026-10-14 00:20 UTC through the green shared admission/runtime checkpoint; hosting and enrollment are budgeted after its review. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-14 00:20 UTC through the green shared admission/runtime checkpoint; hosting and enrollment are budgeted after its review. Lean batch `effect-data-shared-batch`: one full build at that checkpoint, at most one more after a correction. At the limit, stop and record before renewal.
 
 Next action: run `what-binds` on every listed owner, then implement the effect-mapping policy and profile routing red/green in Lean, core and source.
 
