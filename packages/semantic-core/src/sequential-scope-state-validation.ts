@@ -7,6 +7,7 @@ import type { RuntimeState } from "./semantic-process-state.js";
 import { sequentialScopeBindingForEntry, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
 import { sequentialMultiInstanceCollectionWithinLimits } from "./sequential-multi-instance-command-data-admission.js";
 import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
+import { nestedScopeFramesValid } from "./nested-scope-data.js";
 
 /** SMIS-IDENTITY-01 and SMIS-ENTER-01 bind both directions and retain the captured collection index. */
 export function sequentialScopeStateValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
@@ -36,7 +37,7 @@ export function sequentialScopeStateValid(program: SemanticProcessProgram, state
 /** SMIS-IDENTITY-01 and SMIS-DATA-01 require reconstructible body locals and non-reused live identities at restoration. */
 export function sequentialScopeCheckpointValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
   const selected = program.operations.some(operation => operation.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope);
-  if (!selected) return state.sequentialScopeControllers === undefined && state.variables.scopes.length === 0;
+  if (!selected) return state.sequentialScopeControllers === undefined && nestedScopeFramesValid(program, state);
   const analysis = analyzeSequentialScopeData(program);
   if (analysis === undefined || !sequentialScopeStartDataAdmitted(analysis, state.variables.process.bindings) ||
       !sequentialScopeStateValid(program, state)) return false;

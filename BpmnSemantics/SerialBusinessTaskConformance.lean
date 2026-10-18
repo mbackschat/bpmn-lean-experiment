@@ -85,11 +85,10 @@ theorem explicit_null_start_reaches_review :
     review.outcome = .committed ∧ review.state.waits.map (·.task.id.value) = ["B"] := by
   decide +kernel
 
--- List.mergeSort is well-founded; cbv uses its equations instead of kernel-unfolding the recursion.
 theorem review_arms_immutable_enclosing_arguments :
     validation.outcome = .committed ∧ validation.state.effectWaits.map (·.arguments) =
       [[{ name := "echo", value := .string "parent" },
-        { name := "payload", value := .string "reviewed" }]] := by cbv
+        { name := "payload", value := .string "reviewed" }]] := by decide +kernel
 
 theorem local_result_fanout_and_parent_frame :
     classification.outcome = .committed ∧

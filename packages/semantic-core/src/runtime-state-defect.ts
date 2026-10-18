@@ -20,6 +20,7 @@ export const RuntimeStateDefect = {
   UnownedAttachedWait: "unownedAttachedWait",
   DuplicateActivityOccurrence: "duplicateActivityOccurrence",
   SequentialScopeControllerBindingMismatch: "sequentialScopeControllerBindingMismatch",
+  NestedScopeFrameOwnershipMismatch: "nestedScopeFrameOwnershipMismatch",
   SequentialMultiInstanceControllerProfileMismatch:
     "sequentialMultiInstanceControllerProfileMismatch",
   SequentialMultiInstanceControllerUnowned: "sequentialMultiInstanceControllerUnowned",

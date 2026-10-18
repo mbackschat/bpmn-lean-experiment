@@ -365,11 +365,15 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent,
 ]);
 
-/** The operation alphabet and scope range; the tree walk decides the rest. */
+/**
+ * The operation alphabet and the lower scope bound: a Process needs at least one Sub-Process. The number of scopes has
+ * no upper bound here, matching the Lean admission, which bounds only depth (`depthLimit`, enforced by the tree walk)
+ * and declarations; a serial chain of sibling Sub-Processes adds scopes without adding depth.
+ */
 export function nestedScopeProgramShape(operations: readonly SemanticOperation[], scopeCount: number): boolean {
-  return scopeCount >= 2 && scopeCount <= depthLimit + 1 && operations.every(({ kind }) => programOperationKinds.has(kind));
+  return scopeCount >= 2 && operations.every(({ kind }) => programOperationKinds.has(kind));
 }
 
 export function nestedScopeCheckedShape(nodes: readonly CheckedProcess["nodes"][number][], scopeCount: number): boolean {
-  return scopeCount >= 2 && scopeCount <= depthLimit + 1 && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
+  return scopeCount >= 2 && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
 }

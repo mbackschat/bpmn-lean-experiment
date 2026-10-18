@@ -185,13 +185,14 @@ theorem completeScopeState?_retires_frame (state completed : RuntimeState) (scop
       decide (candidate.id.definitionScopeId = scopeId)) = [occurrence])
     (child : occurrence.parent = some parent)
     (completion : completeScopeState? state scopeId (some output) = some completed) :
-    completed.variables.scopes = state.variables.scopes.filter fun frame => decide (frame.owner ≠ occurrence.id) := by
+    completed.variables.scopes = state.variables.scopes.filter (fun frame => decide (frame.owner ≠ occurrence.id)) ∧
+      completed.variables.process = state.variables.process := by
   obtain ⟨_, rewrite⟩ := completeScopeState_selected_update state completed scopeId (some output) occurrence
     unique completion
   rw [child] at rewrite
   cases control : state.control <;> simp only [control] at rewrite <;> try contradiction
   split at rewrite
-  · cases rewrite; rfl
+  · cases rewrite; exact ⟨rfl, rfl⟩
   · contradiction
 
 theorem innermost_write_is_not_the_nearest_owner_write :

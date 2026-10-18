@@ -197,6 +197,27 @@ export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: 
   return variables === null ? null : { ...state, variables };
 }
 
+/**
+ * NSD-INIT-01 and NSD-RETIRE-01 as one committed-state property: frames correspond one-to-one with the live occurrences
+ * of declaring scopes, and each frame holds exactly its scope's declared locals with values in the item domain. Writes
+ * never add a name, so the declared set is the frame's whole lifetime. Outside the nested profile no frame may exist.
+ */
+export function nestedScopeFramesValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
+  if (!nestedScopeDataProgram(program)) return state.variables.scopes.length === 0;
+  const declaredOccurrences = state.scopeOccurrences.filter(({ id }) => nestedScopeRecord(program, id.definitionScopeId));
+  return state.variables.scopes.length === declaredOccurrences.length &&
+    declaredOccurrences.every(({ id }) => {
+      const frames = state.variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, id));
+      const record = nestedScopeRecord(program, id.definitionScopeId);
+      const frame = frames[0];
+      if (frames.length !== 1 || frame === undefined || record === undefined) return false;
+      const names = frame.bindings.map(binding => binding.name);
+      return new Set(names).size === names.length && names.length === record.localInputs.length &&
+        record.localInputs.every(input => names.includes(input.target)) &&
+        frame.bindings.every(binding => effectMappingAcceptsValue(itemPolicy, binding.value, true));
+    });
+}
+
 /** NSD-INIT-01 around an entry rewrite; an undeclared child keeps exactly `enter`. */
 export function enterDeclaredScope(program: SemanticProcessProgram, childScopeId: string,
   enter: () => RuntimeState | null): RuntimeState | null {

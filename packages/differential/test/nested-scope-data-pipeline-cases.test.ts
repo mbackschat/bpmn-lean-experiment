@@ -14,10 +14,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
-import { CanonicalObservationKind, CommandOutcome, ProcessStatus, ScenarioOutcomeKind, ScenarioStepKind, SemanticProfileId, StimulusKind,
-  VariableValueKind, advanceScenario, canonicalNamedValueArrayUtf8ByteLength, initialState, runScenario,
-  supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
-import type { BusinessValue, CanonicalObservation, Scenario, VariableBinding } from "@bpmn-lean/semantic-core";
+import { CanonicalObservationKind, CommandOutcome, ControlStateKind, ProcessStatus, RuntimeStateDefect, ScenarioOutcomeKind, ScenarioStepKind,
+  SemanticProfileId, StimulusKind, VariableValueKind, advanceScenario, applyStimulus, canonicalNamedValueArrayUtf8ByteLength,
+  initialState, runScenario, runtimeStateDefects, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
+import type { BusinessValue, CanonicalObservation, RuntimeState, Scenario, SemanticProcessProgram, VariableBinding } from "@bpmn-lean/semantic-core";
+import { requireBpmnWorkflowContinuationStateV1 } from "@bpmn-lean/temporal-protocol";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import { assessBpmnProcessAdmission, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
 import { nestedScopeDataPipelineCases } from "./nested-scope-data-pipeline-cases.ts";
@@ -279,4 +280,59 @@ test("the core rejects repeated, unordered and String List patches and an unadmi
   const record = program.scopeLocalData![0]!;
   const unadmitted = { ...program, scopeLocalData: [record, record] };
   assert.notEqual(advanceScenario(unadmitted, started.state, accepted).kind, ScenarioStepKind.Committed);
+});
+
+function frameValid(program: SemanticProcessProgram, instanceId: string, state: RuntimeState): boolean {
+  return !runtimeStateDefects(program, instanceId, state).includes(RuntimeStateDefect.NestedScopeFrameOwnershipMismatch);
+}
+
+function continues(program: SemanticProcessProgram, instanceId: string, state: RuntimeState): boolean {
+  try {
+    requireBpmnWorkflowContinuationStateV1(state, program, instanceId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test("every committed state of each schedule owns exactly its live declared frames and survives continuation", async () => {
+  for (const { scenario, semanticProcess: program } of await loadAndCompileCases(nestedScopeDataPipelineCases)) {
+    const start = scenario.stimuli[0];
+    assert.ok(start?.kind === StimulusKind.StartProcess);
+    let state: RuntimeState = initialState;
+    let framed = false;
+    for (const stimulus of scenario.stimuli) {
+      state = applyStimulus(program, state, stimulus).state;
+      framed ||= state.variables.scopes.length > 0;
+      assert.ok(frameValid(program, start.instanceId, state), `${scenario.id} ${stimulus.commandId} frame ownership`);
+      // Continue-As-New carries only a running instance; the completed final state is outside its contract.
+      if (state.control.kind === ControlStateKind.Running) {
+        assert.ok(continues(program, start.instanceId, state), `${scenario.id} ${stimulus.commandId} continuation`);
+      }
+    }
+    assert.ok(framed, `${scenario.id} reaches a state with a live frame`);
+    assert.deepEqual(state.variables.scopes, [], `${scenario.id} retires every frame with its scope (NSD-RETIRE-01)`);
+  }
+});
+
+test("a missing, stale or widened frame is a state defect and refuses continuation", async () => {
+  const { scenario, semanticProcess: program } = (await loadAndCompileCases(nestedScopeDataPipelineCases))
+    .find(({ scenario: { id } }) => id === "nested-scope-data-order-approved")!;
+  const start = scenario.stimuli[0];
+  assert.ok(start?.kind === StimulusKind.StartProcess);
+  const started = applyStimulus(program, initialState, start).state;
+  const [outer, ...inner] = started.variables.scopes;
+  assert.ok(outer !== undefined && inner.length > 0, "the Start enters nested declaring scopes");
+  const withFrames = (scopes: RuntimeState["variables"]["scopes"]): RuntimeState =>
+    ({ ...started, variables: { ...started.variables, scopes } });
+  const defective = [
+    ["missing", withFrames(inner)],
+    ["stale", withFrames([{ ...outer, owner: { ...outer.owner, activation: outer.owner.activation + 1 } }, ...inner])],
+    ["widened", withFrames([{ ...outer, bindings: [...outer.bindings, { name: "zzUndeclared", value: nothing }] }, ...inner])],
+  ] as const;
+  assert.ok(frameValid(program, start.instanceId, started) && continues(program, start.instanceId, started));
+  for (const [label, state] of defective) {
+    assert.equal(frameValid(program, start.instanceId, state), false, label);
+    assert.equal(continues(program, start.instanceId, state), false, label);
+  }
 });

@@ -1,5 +1,6 @@
 import { validParallelScopeIterations } from "./parallel-scope-population.js";
 import { sequentialScopeStateValid } from "./sequential-scope-state-validation.js";
+import { nestedScopeDataProgram, nestedScopeFramesValid } from "./nested-scope-data.js";
 import {
   SemanticOperationKind,
   type SemanticProcessProgram,
@@ -419,6 +420,9 @@ export function runtimeStateDefects(
   defects.push(...sequentialMultiInstanceDefects(program, state));
   defects.push(...parallelMultiInstanceStateDefectCodes(program, state));
   if (!sequentialScopeStateValid(program, state)) defects.push(RuntimeStateDefect.SequentialScopeControllerBindingMismatch);
+  if (nestedScopeDataProgram(program) && !nestedScopeFramesValid(program, state)) {
+    defects.push(RuntimeStateDefect.NestedScopeFrameOwnershipMismatch);
+  }
 
   defects.push(...collectionDefects);
 
@@ -717,6 +721,9 @@ const GATED_DEFECTS: ReadonlySet<RuntimeStateDefect> = new Set([
   RuntimeStateDefect.DuplicateActivityOccurrence,
   // SMIS-IDENTITY-01 fixes controller/body/collection agreement from this Program and one state.
   RuntimeStateDefect.SequentialScopeControllerBindingMismatch,
+  // NSD-RETIRE-01 frame ownership is decidable from this Program and one state; gating it stops an orphaned or
+  // missing frame crossing a Run.
+  RuntimeStateDefect.NestedScopeFrameOwnershipMismatch,
   // Presence is decidable from the supplied program and one state, unlike the wait-declaration
   // classes excluded above. Gating it prevents both a profile-owned collection disappearing across
   // a Run and the optional field changing every older profile's canonical state shape.
