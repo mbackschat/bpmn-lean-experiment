@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: nested embedded scope data, first batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches). `PC-SCOPE-01`/`02`/`04` follow. Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches), proposed as an amendment to the [nested scope-data capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md), whose serial batch is closed. `PC-SCOPE-02`/`04` follow. Multi-Instance closure stays held at qualification.
 
-Deliverable: serial nested embedded scopes whose locals shadow by present null, take writes at the nearest declaring owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
+Deliverable: nested ordinary embedded scopes containing mixed activities and selected gateways that complete at exact owned quiescence, with separate child Ends and outside parent work preserved, through Lean, core, hosting and public registration.
 
-Acceptance blockers: the closure review. The pipeline, Temporal and model-corpus gates are green (also covering `310cb4cd`); the full Lean gate builds all but the `890b010f` placeholder `SequentialScopeCommandResumptionProofs`, failing until its Multi-Instance owner closes or removes it.
+Acceptance blockers: the amendment and its proposal review, which must settle the concurrent-wait Start capacity account and concurrent-effect hosting that host admission refuses today.
 
-Current result: the batch implements the IL table, frame chain, source reader, profile, three retained models and the Start capacity reservation, with frame validity enforced at every committed state and continuation. Core, source, contracts, differential and capacity tests pass; fixture builds are bounded and recorded.
+Current result: no amendment drafted; nesting is admitted only serially, and concurrent bodies only one level deep.
 
-Effort budget: 240 minutes wall from 2026-10-18 16:00 UTC, renewed by owner direction, through checkpoint review and commit. At the limit, stop and record before renewal.
+Effort budget: 120 minutes wall from 2026-10-18 19:45 UTC for the amendment and its proposal review. At the limit, stop and record before renewal.
 
-Next action: the warm closure review the [capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#status) governs, then propose `PC-SCOPE-01`.
+Next action: inventory the existing nesting, quiescence, Parallel-region and host-admission owners, then draft the amendment.
 
-Oracle: a present-null local in an inner scope hides a Process namesake and a write updates the nearest existing owner only; today each is refused or flattened.
+Oracle: a first child End or a wrong-parent completion completes a nested scope early; today nesting beyond the serial scope-data account is unsupported.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

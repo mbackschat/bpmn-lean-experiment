@@ -170,10 +170,10 @@ Closure cost: `ece0021f..903499aa` measures code `+3522/-255` and documentation 
 |---|---|---|---|---|
 | Proposal | `eff1bee8` | `fork-turns-none` | `approve-with-required-edits` | `d3592d43, f01865c8, a1b63e22, d711848e, owner-authorized` |
 | Semantic checkpoint | `822aa91b` | `fork-turns-none` | `approve-with-required-edits` | `bf840375, fdbe1a5f` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `a5a740b3` | `checkpoint-reviewer-warm` | `approve-with-required-edits` | `f02b5e3d` |
 
 The rejected first proposal review of `ae20b678` (baseline `ece0021f`, packet `23aa96b9a395a8de50f7765d9b93d14e159b059b4556da38d902d35b5eb6b6fd`) found parallel scopes unhostable; the narrowing to serial scopes was material and returned to a fresh cold review. That review of `eff1bee8` (packet `4891a6a82c6e477d27f126e933e9a670fb7c6b2d9044333e045817700707d6ee`) required six edits, audited in four rounds (`d3592d43`, `f01865c8`, `a1b63e22`, `d711848e`), the last two owner-authorized.
 
 The semantic-checkpoint review of `822aa91b` (baseline `fee496d4`, packet `aa5f4a608e114770b86523efa71d8bfe93cded9f8fbeeb19ef1b6a883346cb3b`) required six edits, recorded under [implementation corrections](#implementation-corrections), and approved at `fdbe1a5f`. Its full Lean gate builds 926 of 927 modules; the one failure, the `890b010f` placeholder `SequentialScopeCommandResumptionProofs`, is unchanged by this batch and accepted as outside it.
 
-The closure review continued warm with the checkpoint reviewer from baseline `fdbe1a5f` (continuity manifest `ec09228d1a1e491b359de12a7f7bf857a364c0ab6be180f3853f64b748f04f9c`, packet `ecb9d1e36e1273c52063035b1724e06507c747b6d68f5e3be87139dd0179f39e`) and required three edits: stale cost-ledger rank claims, a closure-cost attribution the range did not support, and a doc comment displaced onto the wrong function.
+The closure review continued warm with the checkpoint reviewer from baseline `fdbe1a5f` (continuity manifest `ec09228d1a1e491b359de12a7f7bf857a364c0ab6be180f3853f64b748f04f9c`, packet `ecb9d1e36e1273c52063035b1724e06507c747b6d68f5e3be87139dd0179f39e`) and required three edits: stale cost-ledger rank claims, a closure-cost attribution the range did not support, and a doc comment displaced onto the wrong function. The same reviewer approved the corrections at `f02b5e3d`.
