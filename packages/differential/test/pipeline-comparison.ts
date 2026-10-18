@@ -334,6 +334,8 @@ export function compareCase(
     scenario,
     semanticCoreResult,
     pipelineCase.temporalRelation === TemporalCaseRelation.PostTerminalClosed,
+    pipelineCase.executionSchedule,
+    pipelineCase.expectedWaitTraceLength,
   );
 
   return {

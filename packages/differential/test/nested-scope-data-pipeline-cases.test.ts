@@ -23,6 +23,7 @@ import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-
 import { assessBpmnProcessAdmission, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
 import { nestedScopeDataPipelineCases } from "./nested-scope-data-pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
+import { hostInteractionExpectations } from "./pipeline-expectations.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 import { domainCases } from "./scenario-value-domain-cases.ts";
 
@@ -156,6 +157,17 @@ test("each journey exposes the open waits and Process values the capsule derives
     assert.deepEqual(final.openUserTasks, [], scenario.id);
     if (scenario.id !== "nested-scope-data-claim-limits") assert.deepEqual(final.variables, bindings(journey.final), scenario.id);
     assert.equal(result.trace.length, journey.completedAt + 1, `${scenario.id} ends at the completed state`);
+  }
+});
+
+// A stimulus-order host queries open User Tasks at the initial wait, before delivering any stimulus; the
+// purchase-order journeys first await an effect, so that wait holds no User Task even though the core opens one later.
+test("the first-completion wait a stimulus-order host observes is the initial wait, not the later state that opens the task", async () => {
+  for (const { pipelineCase, scenario, semanticProcess: program } of await loadAndCompileCases(nestedScopeDataPipelineCases)) {
+    const result = runScenario(scenario, program);
+    const expected = hostInteractionExpectations(scenario, result, false, pipelineCase.executionSchedule, pipelineCase.expectedWaitTraceLength);
+    assert.deepEqual(expected.openUserTasksAtFirstCompletionWait, stateAt(result.trace, pipelineCase.expectedWaitTraceLength - 1).openUserTasks, scenario.id);
+    if (scenario.id === "nested-scope-data-order-approved") assert.deepEqual(expected.openUserTasksAtFirstCompletionWait, [], scenario.id);
   }
 });
 

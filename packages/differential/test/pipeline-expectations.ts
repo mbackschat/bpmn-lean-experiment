@@ -18,6 +18,7 @@ import type {
   ScenarioResult,
   Scenario,
 } from "@bpmn-lean/semantic-core";
+import { TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 
 export type HostInteractionExpectations = Readonly<{
   completionOutcomes: ReadonlyArray<CommandOutcome>;
@@ -28,11 +29,17 @@ export type HostInteractionExpectations = Readonly<{
 /**
  * @param dropFinalCompletionOutcome drops the last completion's outcome, for a post-terminal
  * schedule whose final command is refused by a closed Process rather than answered semantically.
+ * @param executionSchedule selects where the host takes its first-completion wait: a stimulus-order
+ * host queries at the initial wait, before delivering any stimulus, so an effect awaited first leaves
+ * that wait without the User Task; other schedules wait until the first completed task opens.
+ * @param waitTraceLength the initial-wait trace length the host awaits before that query.
  */
 export function hostInteractionExpectations(
   scenario: Scenario,
   semanticCoreResult: ScenarioResult,
   dropFinalCompletionOutcome: boolean,
+  executionSchedule: TemporalExecutionSchedule,
+  waitTraceLength: number,
 ): HostInteractionExpectations {
   const completions = scenario.stimuli.slice(1).filter(
     (stimulus) => stimulus.kind === StimulusKind.CompleteUserTaskInstance,
@@ -52,10 +59,13 @@ export function hostInteractionExpectations(
     openUserTasksAfterCompletions: completions
       .slice(0, -1)
       .map(({ commandId }) => openUserTasksAfter(semanticCoreResult, commandId)),
-    openUserTasksAtFirstCompletionWait: openUserTasksWhenElementOpens(
-      semanticCoreResult,
-      completions[0]?.taskId.elementId,
-    ),
+    openUserTasksAtFirstCompletionWait:
+      executionSchedule === TemporalExecutionSchedule.StimulusOrder
+        ? openUserTasksAtInitialWait(semanticCoreResult, waitTraceLength)
+        : openUserTasksWhenElementOpens(
+          semanticCoreResult,
+          completions[0]?.taskId.elementId,
+        ),
   };
 }
 
@@ -88,6 +98,18 @@ function openUserTasksAfter(
  * before sending it, so matching the occurrence would find no state for exactly the schedules
  * written to exercise a refusal.
  */
+function openUserTasksAtInitialWait(
+  semanticCoreResult: ScenarioResult,
+  waitTraceLength: number,
+): ReadonlyArray<OpenUserTask> {
+  const state = semanticCoreResult.trace
+    .slice(0, waitTraceLength)
+    .findLast((observation) => observation.kind === CanonicalObservationKind.State);
+  return state?.kind === CanonicalObservationKind.State
+    ? state.openUserTasks
+    : [];
+}
+
 function openUserTasksWhenElementOpens(
   semanticCoreResult: ScenarioResult,
   elementId: string | undefined,
