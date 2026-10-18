@@ -418,7 +418,7 @@ Three follow-on errors compounded it and each is part of the mechanism: the regr
 A correction-audit loop ran three rounds with nothing bounding it, because each round closed its predecessor's findings while the correction itself introduced a new required defect.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
@@ -429,6 +429,8 @@ Evidence
 **First observed:** Non-interrupting boundary Timer proposal review
 
 [The receipt contract](REVIEW-POLICY.md#review-receipt) now limits unattended audits to two: apply remaining advisories without audit and present open required findings for owner direction. It records one correction commit per round and rejects more than two without final `owner-authorized`; older final-audit-only receipts retain their original historical meaning rather than reconstructed rounds.
+
+Second instance, nested scope-control proposal: a third audit round was launched without owner direction. The receipt guard refused to record it, and the owner then authorized the round retroactively. The guard binds at recording, not at launch, so the bound is still enforced only after the round has been spent.
 
 Retained recurrence evidence: [Finding 20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20).
 

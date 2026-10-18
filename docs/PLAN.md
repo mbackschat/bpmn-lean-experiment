@@ -81,13 +81,13 @@ Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope f
 
 Deliverable: ordinary embedded scopes nested to depth three, composing User Tasks through Parallel blocks and separate child Ends, that complete at exact owned quiescence with outside parent work preserved, through Lean, core, hosting and public registration. Mixed activities and Exclusive decisions stay later increments.
 
-Acceptance blockers: the proposal's correction audit, then implementation, gates and checkpoint review.
+Acceptance blockers: implementation in both languages and Lean, registration, gates and checkpoint review.
 
-Current result: proposal corrected after its cold review; nesting is admitted only serially, and concurrent bodies only one level deep.
+Current result: proposal approved; red source witnesses fail at checked-graph admission, as expected.
 
-Effort budget: 120 minutes wall from 2026-10-18 19:45 UTC for the amendment and its proposal review. At the limit, stop and record before renewal.
+Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. At the limit, stop and record before renewal.
 
-Next action: obtain the correction audit, then implement the composition owner red/green.
+Next action: implement the TypeScript composition owner over the reused structured-body analysis, then the Lean mirror.
 
 Oracle: a first child End or a wrong-parent completion completes a nested scope early; today nesting beyond the serial scope-data account is unsupported.
 
