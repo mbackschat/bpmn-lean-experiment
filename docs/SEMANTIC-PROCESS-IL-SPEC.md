@@ -79,6 +79,7 @@ type CheckedProcess = DeepReadonly<{
   sequenceFlows: CheckedSequenceFlow[];
   compensation?: CheckedCompensation;
   interruptingMessageEventSubProcesses?: CheckedInterruptingMessageEventSubProcess[];
+  scopeLocalData?: ScopeLocalData[];
 }>;
 
 type CheckedInterruptingMessageEventSubProcess = DeepReadonly<{
@@ -430,6 +431,13 @@ type SemanticProcessProgram = DeepReadonly<{
   compensationEventSubProcessSnapshots?: CompensationEventSubProcessSnapshotDeclaration;
   compensationExecution?: CompensationExecutionDeclaration;
   interruptingMessageEventSubProcesses?: InterruptingMessageEventSubProcess[];
+  scopeLocalData?: ScopeLocalData[];
+}>;
+
+type ScopeLocalData = DeepReadonly<{
+  scopeId: string;
+  localInputs: VariableMapping[];
+  localOutputs: VariableMapping[];
 }>;
 
 type InterruptingMessageEventSubProcess = DeepReadonly<{
@@ -1084,6 +1092,8 @@ Simple Boolean v1 is total after admission. The operation therefore has no seman
 
 `completeScope` is enabled only when exactly one occurrence of its definition scope exists and that complete owned region is quiescent: it owns no token, task, Message, Timer, or effect wait, no selected-branch or event-race record, and no live child occurrence. Child completion removes the child occurrence and emits exactly one token to the parent-owned Sub-Process output. Root completion requires no initiation work and marks the Process complete. Nonquiescent, missing, or duplicate occurrences refuse the internal step without state change.
 
+The optional `scopeLocalData` table belongs only to `cibseven-2.2.0-nested-embedded-scope-data-draft`. It is canonical by `scopeId`, keeps definition-scope identity through lowering, so checked and Program records share one shape, and holds a nonempty `localInputs` list and a possibly empty `localOutputs` list, both canonical by target name. `enterScope` into a declaring scope evaluates every local input against the entering parent occurrence's visible chain and installs the child's frame in the same step. `completeScope` of a declaring child writes every output to its statically resolved owner before the completion disposes the frame. A scope without a record keeps exactly the entry and completion above. The [nested scope-data capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#stable-rules) owns name resolution, value domains and refusals.
+
 The process instance is complete only through root-scope completion. Reaching one none End Event does not by itself discard unrelated work in the same scope, and completing one child branch does not complete its containing scope while a sibling wait remains live.
 
 ### Compensation Event Sub-Process parent snapshots
@@ -1150,6 +1160,7 @@ The [final preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#prepared-transi
 - when `compensationEventSubProcessSnapshots` is present, the forest has exactly one parentless root; targets are nonempty, canonical, and unique by parent and handler; each selected parent is that root or one direct embedded child; each handler is a distinct dormant immediate child of its parent with no operation, control place, entry, or completion; and each selected non-root parent has exactly one `enterScope` or `enterBoundedScope` entry;
 - snapshot limits are positive safe integers with `maxCanonicalBytes` between two and 65,536 inclusive; Program admission derives the exact dormant-handler exception before graph validation, while the exported raw graph validator receives no caller-supplied exception and continues to reject the same operation-free child scope;
 - when `interruptingMessageEventSubProcesses` is present, only the exact private Message profile is admitted: one root-owned declaration binds one immediate child handler, its Start/channel and child-owned entry; the root topology is initiation/fork/two ordinary task-to-End branches, and the handler is one task-to-End path with one token-free `completeEventSubProcess`; declaration, operation, place, ownership and origin censuses agree exactly, with no ordinary handler entry or completion;
+- when `scopeLocalData` is present, only the nested scope-data profile is admitted, and each `scopeId` names an ordinary embedded scope entered by exactly one `enterScope`;
 - when `compensationExecution` is present, the Program has exactly one parentless root and one root-owned trigger matching the declaration; its canonical zero-or-more subject collection exactly covers the optional retention and snapshot declarations, uses only the closed body/input shapes with disjoint identities, and its canonical Sequence Flow dependency graph references only subjects and is acyclic; without the declaration no trigger operation is permitted;
 - execution-byte limits are safe integers from seven through 65,536, so the canonical empty pair `[[],[]]` fits before any trigger exists; the [empty-state capacity repair](capsules/COMPENSATION-EMPTY-STATE-CAPACITY-REPAIR-SPEC.md) preserves the separate two-byte retention and snapshot minima;
 - every referenced control place exists;
