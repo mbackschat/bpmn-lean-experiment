@@ -91,19 +91,7 @@ function openUserTasksAfter(
   return state.openUserTasks;
 }
 
-/**
- * The tasks open in the state where `elementId` first has one.
- *
- * The runner queries its open tasks once it has waited for the first completion's element, so this
- * is the state that interaction was taken in. Deriving it from the element rather than from trace
- * position keeps families with different progress shapes on one rule: host-driven progress may open
- * the awaited task beside a task that stays open, replace an already open one, or precede any task.
- *
- * The occurrence's activation is deliberately not matched. A schedule whose completion names a
- * stale activation is refused by design, and the runner still waits for that element's live task
- * before sending it, so matching the occurrence would find no state for exactly the schedules
- * written to exercise a refusal.
- */
+/** The tasks open in the last state of the initial wait-trace prefix, where a host that waits for no task queries. */
 function openUserTasksAtInitialWait(
   semanticCoreResult: ScenarioResult,
   waitTraceLength: number,
@@ -116,6 +104,20 @@ function openUserTasksAtInitialWait(
     : [];
 }
 
+/**
+ * The tasks open in the state where `elementId` first has one.
+ *
+ * When host progress precedes the first completion outside stimulus order, the runner queries its
+ * open tasks once it has waited for that completion's element, so this is the state that interaction
+ * was taken in. Deriving it from the element rather than from trace position keeps families with
+ * different progress shapes on one rule: host-driven progress may open the awaited task beside a task
+ * that stays open, replace an already open one, or precede any task.
+ *
+ * The occurrence's activation is deliberately not matched. A schedule whose completion names a
+ * stale activation is refused by design, and the runner still waits for that element's live task
+ * before sending it, so matching the occurrence would find no state for exactly the schedules
+ * written to exercise a refusal.
+ */
 function openUserTasksWhenElementOpens(
   semanticCoreResult: ScenarioResult,
   elementId: string,

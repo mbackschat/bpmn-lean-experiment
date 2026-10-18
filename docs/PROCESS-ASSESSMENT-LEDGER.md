@@ -65,7 +65,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 22
+: 23
 
 Disposition
 : `executable guard`
@@ -78,6 +78,8 @@ Evidence
 The enumerator reports constraints only when invoked on every actual added/grown path and its reported guards are read. It cannot enforce its own invocation or detect owners omitted from a capsule inventory; completeness remains review work. Re-run it after placement or scope changes, including documentation and guard edits.
 
 Retained recurrence evidence: [Finding 01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01).
+
+Twenty-third instance, nested scope-data closure on 2026-10-18: a new cost-ledger row shifted the rank and row-count claims that `scripts/capsule-cost-comparison.test.ts` checks, and only `capsule-cost.test.ts` was run before commit; the warm closure review found it.
 
 ### Finding 02
 
@@ -261,7 +263,7 @@ Evidence
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
-Second instance, nested embedded scope data on 2026-10-18: the pipeline expected the open User Tasks of the state in which the first completed task opens, while a stimulus-order host queries at the initial wait; the purchase-order journeys, which first await an effect, were the first to separate the two, and the complete pipeline failed. The expectation now selects its wait through the runner's own exported `requiresHostProgressBeforeCompletion` rule, so the proxy cannot diverge from the host per schedule; across all 120 registered cases only the two purchase-order expectations changed.
+Second instance, nested embedded scope data on 2026-10-18: the pipeline expected the open User Tasks of the state in which the first completed task opens, while a stimulus-order host queries at the initial wait; the purchase-order journeys, which first await an effect, were the first to separate the two, and the complete pipeline failed. The expectation now selects its wait through the runner's own exported `requiresHostProgressBeforeCompletion` rule, so host-progress classification can no longer diverge; the stimulus-order condition and the initial wait-trace length are still restated beside the runner, and the witness locks only the purchase-order schedule. Across all 120 registered cases only the two purchase-order expectations changed.
 
 ### Finding 12
 
