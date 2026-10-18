@@ -1,4 +1,6 @@
 import { PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
+import { nestedScopeStimulusDataAdmitted } from "./nested-scope-data-admission.js";
+import { completeNestedScopeEffectData, nestedScopeDataProgram } from "./nested-scope-data.js";
 import { parallelScopeCommandCapacity } from "./parallel-scope-command-admission.js";
 import { completeParallelScopeEffect, hasParallelScopeDefinition } from "./parallel-scope-data.js";
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
@@ -213,6 +215,7 @@ function admitValidated(
     !callDataStimulusDataAdmitted(program, stimulus) ||
     !mixedTaskControlStimulusDataAdmitted(program, stimulus) ||
     !serialBusinessStimulusDataAdmitted(program, stimulus) ||
+    !nestedScopeStimulusDataAdmitted(program, stimulus) ||
     !sequentialScopeStimulusDataAdmitted(program, stimulus) ||
     !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
     !portableHandoffStimulusDataAdmitted(program, stimulus) ||
@@ -466,8 +469,14 @@ function admitValidated(
       ) {
         return { outcome: CommandOutcome.Rejected, state };
       }
+      if (nestedScopeDataProgram(program) &&
+          (stimulus.result.kind === EffectExecutionResultKind.BpmnError || wait.bpmnErrorRoute !== null)) {
+        return { outcome: CommandOutcome.Rejected, state };
+      }
       const variables = hasSequentialScopeDefinition(program, wait.owner)
         ? completeSequentialScopeEffectData(program, state, wait, stimulus.result.localPatch)
+        : nestedScopeDataProgram(program)
+        ? completeNestedScopeEffectData(program, state.variables, wait, stimulus.result.localPatch)
         : completeActivityVariableScopeUnder(
         effectMappingValuePolicyForProfile(program.identity.semanticProfile),
         state.variables,

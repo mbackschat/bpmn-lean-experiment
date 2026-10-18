@@ -437,6 +437,129 @@
       }
     },
     {
+      "id": "purchase-order-nested-approval",
+      "title": "Approve a purchase order",
+      "businessPurpose": "Approve a purchase order through order approval, credit review and a compliance check as three nested approval levels, where each level keeps its own working copy of the order data, the credit reviewer records a decision and a limit, and only the declared results reach the published order.",
+      "cloneFamily": "purchase-order-nested-approval",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/nested-embedded-scope-data/purchase-order.bpmn",
+        "sha256": "cdf02a871ba3a36f4e3c937d8b64dda74d63da10903b894b2079344b2be72e3b",
+        "scenarioRelativePath": "scenarios/nested-embedded-scope-data/order-approved.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "nested-scope-data-order-approved",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected, no Product 2 handler registration exists for structured results and the browser has no form editor for portable values; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "expense-claim-patch-allowance",
+      "title": "Review an expense claim",
+      "businessPurpose": "Review an expense claim in a bounded review stage whose reviewer may replace the claim up to a fixed size allowance, then record the reviewed claim.",
+      "cloneFamily": "expense-claim-patch-allowance",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/nested-embedded-scope-data/expense-claim.bpmn",
+        "sha256": "9bf2da91734cbabcec42d0dca35ce4a2f24d2e8030dea94a197b5656ab1706bb",
+        "scenarioRelativePath": "scenarios/nested-embedded-scope-data/claim-limits.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "nested-scope-data-claim-limits",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected, no Product 2 handler registration exists for structured results and the browser has no form editor for portable values; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "bulk-quote-capacity",
+      "title": "Sign off a bulk quote",
+      "businessPurpose": "Sign off a bulk quote through three nested approval levels that each hold a copy of the structured quote, then archive the prepared quote.",
+      "cloneFamily": "bulk-quote-capacity",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/nested-embedded-scope-data/bulk-quote.bpmn",
+        "sha256": "0698681f9a0745d7c614d340ed822a5a083e5fa2195240719ae9a2dd165459fe",
+        "scenarioRelativePath": "scenarios/nested-embedded-scope-data/quote-signed.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "nested-scope-data-quote-signed",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected, no Product 2 handler registration exists for structured results and the browser has no form editor for portable values; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

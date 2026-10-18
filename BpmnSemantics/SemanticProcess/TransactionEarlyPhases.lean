@@ -18,9 +18,10 @@ private theorem completion_disabled (p : Program) (roles : TransactionAdmittedRo
     attemptInternalOperation p (.completeScope id origin scope output) state =
       .disabled (.completeScope id origin scope output) := by
   simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent]
-  change (match completeSelectedScope? p state scope output with
+  change (match completeDeclaredScope? p state scope output with
     | none => InternalOperationAttempt.disabled _
     | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _
+  rw [completeDeclaredScope?_other_profile p state scope output roles.not_nested]
   rw [transaction_scope_completion_dispatch p graph, missing]
 
 private theorem barrier_completion_disabled (p : Program) (roles : TransactionAdmittedRoles p)

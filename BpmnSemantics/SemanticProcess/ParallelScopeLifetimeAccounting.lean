@@ -794,7 +794,7 @@ theorem applyInternalOperationOccurrence_compensation_absent (program : Program)
       obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record rfl replay
       exact retirement_compensation_absent entry before after candidate.owner completed absent
     case completeScope =>
-      obtain ⟨scopeId, output, root, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay
+      obtain ⟨scopeId, output, root, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (analyzed_not_nested program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored, completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed
       exact (scope_completion_compensation_frame before after scopeId output completed).trans absent

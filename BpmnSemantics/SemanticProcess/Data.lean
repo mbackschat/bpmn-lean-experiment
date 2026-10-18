@@ -267,10 +267,37 @@ def orderedInputSnapshotMatches : List VariableMapping → List VariableBinding 
         | .localVariable _ => false) && orderedInputSnapshotMatches mappings bindings
   | _, _ => false
 
+/-- Inserts by ascending target. Structural rather than `List.mergeSort`, whose well-founded
+recursion the kernel cannot unfold, so a kernel-decided witness can capture two or more inputs. On the
+distinct targets `canonicalInputMappings?` admits, every stable ascending sort agrees. -/
+def insertByTarget (mapping : VariableMapping) : List VariableMapping → List VariableMapping
+  | [] => [mapping]
+  | current :: rest =>
+      if mapping.target ≤ current.target then mapping :: current :: rest
+      else current :: insertByTarget mapping rest
+
+def sortByTarget : List VariableMapping → List VariableMapping
+  | [] => []
+  | mapping :: rest => insertByTarget mapping (sortByTarget rest)
+
+theorem insertByTarget_perm (mapping : VariableMapping) (mappings : List VariableMapping) :
+    (insertByTarget mapping mappings).Perm (mapping :: mappings) := by
+  induction mappings with
+  | nil => exact List.Perm.refl _
+  | cons current rest ih =>
+      unfold insertByTarget
+      split
+      · exact List.Perm.refl _
+      · exact (List.Perm.cons current ih).trans (List.Perm.swap mapping current rest)
+
+theorem sortByTarget_perm (mappings : List VariableMapping) : (sortByTarget mappings).Perm mappings := by
+  induction mappings with
+  | nil => exact List.Perm.refl _
+  | cons mapping rest ih => exact (insertByTarget_perm mapping _).trans (List.Perm.cons mapping ih)
+
 /-- SBT-SNAPSHOT-01 treats mapping declarations by target name; duplicate targets cannot define a snapshot. -/
 def canonicalInputMappings? (mappings : List VariableMapping) : Option (List VariableMapping) :=
-  if (mappings.map (·.target)).Nodup then
-    some (mappings.mergeSort fun left right => decide (left.target ≤ right.target))
+  if (mappings.map (·.target)).Nodup then some (sortByTarget mappings)
   else none
 
 /-- Immutable snapshots use canonical target order independently of declaration order. -/
@@ -325,7 +352,7 @@ theorem evaluateInputMappings_evaluable (read : String → Option VariableValue)
   simp only [unique, ↓reduceIte]
   apply evaluateInputMappingsInOrder_evaluable
   intro mapping member
-  exact available mapping ((List.mergeSort_perm mappings _).mem_iff.mp member)
+  exact available mapping ((sortByTarget_perm mappings).mem_iff.mp member)
 
 theorem evaluateInputMappingsInOrder_snapshot (read : String → Option VariableValue)
     (mappings : List VariableMapping) (bindings : List VariableBinding)

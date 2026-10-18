@@ -314,6 +314,7 @@ theorem admitted_internal_step_preserves_process_bindings
         have step := fire_sound program _ before after fired
         cases step with
         | completeScope _ _ _ _ _ _ completed =>
+            change completeSelectedScope? program before scope none = some after at completed
             rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
             unfold completeScopeState? at completed
             split at completed

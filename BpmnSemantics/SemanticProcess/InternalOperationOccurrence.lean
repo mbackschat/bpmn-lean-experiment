@@ -59,7 +59,7 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
       if root.id == owner then initiateState? state output else none
   | .completeScope _ _ scopeId parentOutput => do
       let [selected] := state.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) | none
-      if selected.id == owner then completeSelectedScope? program state scopeId parentOutput else none
+      if selected.id == owner then completeDeclaredScope? program state scopeId parentOutput else none
   | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. =>
       applyParallelScopeOperation? program operation.id state owner
   | .awaitEffect _ _ input output effect route => do

@@ -103,6 +103,17 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope",
     "earlier profiles refuse structured results",
   ]) assert.ok(serviceRow.includes(disclosed), `Service Task row must disclose: ${disclosed}`);
+  const subProcessRowStart = html.indexOf('data-capability-id="embeddedSubProcess"');
+  assert.notEqual(subProcessRowStart, -1);
+  const subProcessRow = html.slice(subProcessRowStart, html.indexOf("</tr>", subProcessRowStart));
+  for (const disclosed of [
+    "The nested scope-data profile instead admits ordinary Sub-Processes nested to depth three in one serial path",
+    "a read resolves to the nearest enclosing declaring frame, otherwise the Process",
+    "a write updates that owner and never creates a local",
+    "every local retires with its Sub-Process",
+    "A User Task completion may name only declared locals, within 16,384 canonical bytes",
+    "a hosted Start whose structured values cannot fit the capacity envelope is refused",
+  ]) assert.ok(subProcessRow.includes(disclosed), `Embedded Sub-Process row must disclose: ${disclosed}`);
   const payloadRowStart = html.indexOf('data-capability-id="messagePayloadCatchEvent"');
   assert.notEqual(payloadRowStart, -1);
   const payloadRow = html.slice(payloadRowStart, html.indexOf("</tr>", payloadRowStart));

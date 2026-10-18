@@ -176,6 +176,19 @@ theorem evaluateInputMappingsInOrderUnder_snapshot (policy : EffectMappingValueP
                         · simp [accepted] at lookup
                   simp [orderedInputSnapshotMatchesUnder, expression, admitted, ih tail tailEq]
 
+theorem evaluateInputMappingsUnder?_snapshot (policy : EffectMappingValuePolicy)
+    (read : String → Option VariableValue) (mappings : List VariableMapping)
+    (bindings : List VariableBinding)
+    (evaluated : evaluateInputMappingsUnder? policy read mappings = some bindings) :
+    inputSnapshotMatchesUnder policy mappings bindings = true := by
+  unfold evaluateInputMappingsUnder? at evaluated
+  cases ordered : canonicalInputMappings? mappings with
+  | none => simp [ordered] at evaluated
+  | some mappings' =>
+      simp only [ordered] at evaluated
+      simpa only [inputSnapshotMatchesUnder, ordered] using
+        evaluateInputMappingsInOrderUnder_snapshot policy read mappings' bindings evaluated
+
 theorem evaluateEnclosingInputMappingsUnder_snapshot (policy : EffectMappingValuePolicy)
     (context : List VariableBinding) (mappings : List VariableMapping)
     (bindings : List VariableBinding)

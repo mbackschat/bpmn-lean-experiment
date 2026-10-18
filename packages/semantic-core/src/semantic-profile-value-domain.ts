@@ -268,6 +268,14 @@ function profileValueDomain(
         emptyValueDomain,
         singletonBusinessItemValueDomain,
       );
+    case SemanticProfileId.NestedEmbeddedScopeData:
+      // NSD-VALUE-01: every ingress surface carries the SingletonBusinessItem domain.
+      return surfaceValueDomain(
+        surface,
+        singletonBusinessItemValueDomain,
+        singletonBusinessItemValueDomain,
+        singletonBusinessItemValueDomain,
+      );
     case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:

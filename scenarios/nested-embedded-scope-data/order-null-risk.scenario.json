@@ -1,0 +1,161 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-data-order-null-risk",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "purchase-order",
+    "relativePath": "scenarios/nested-embedded-scope-data/purchase-order.bpmn",
+    "sha256": "cdf02a871ba3a36f4e3c937d8b64dda74d63da10903b894b2079344b2be72e3b",
+    "sourceOverlay": {
+      "id": "purchase-order-handlers",
+      "sha256": "3951d791bcbc6852abe3828c72a7c9f706efa2802427ee3a1deaa3e214f9c655"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0017",
+      "CIB-EXT-0020"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "P",
+      "instanceId": "Order_null_risk",
+      "initialVariables": [
+        {
+          "name": "initialStatus",
+          "value": {
+            "kind": "string",
+            "value": "intake"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "n1"
+          }
+        },
+        {
+          "name": "order",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "items",
+                "value": {
+                  "kind": "list",
+                  "value": []
+                }
+              },
+              {
+                "name": "memo",
+                "value": {
+                  "kind": "map",
+                  "value": []
+                }
+              },
+              {
+                "name": "total",
+                "value": {
+                  "kind": "decimal",
+                  "coefficient": "0",
+                  "scale": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "requestedLimit",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "riskClass",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "status",
+          "value": {
+            "kind": "string",
+            "value": "open"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:46e0d8a3f0522d1a304c6138285a51b6c71ef595e5978b30065a74eb9e59d140",
+      "effectId": {
+        "processInstanceId": "Order_null_risk",
+        "elementId": "KS",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-credit-review",
+      "taskId": {
+        "processInstanceId": "Order_null_risk",
+        "elementId": "CU",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:c949bc98ebe0ab83da1f56a07bd2049bcfbd064da359c613e177baaed9bc9b89",
+      "effectId": {
+        "processInstanceId": "Order_null_risk",
+        "elementId": "OS",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:7815d2f29654f1c0cf3c9e066891640c4b4cfc3cb36d90b1291c4418e204112a",
+      "effectId": {
+        "processInstanceId": "Order_null_risk",
+        "elementId": "R",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ]
+}

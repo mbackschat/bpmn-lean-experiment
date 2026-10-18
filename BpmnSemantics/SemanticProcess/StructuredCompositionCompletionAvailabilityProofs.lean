@@ -102,6 +102,8 @@ theorem exact_task_lifetime_has_admitted_completion
   · exact False.elim (hasWait empty)
   · have live : wait ∈ state.waits := by simp [waits]
     have staticOwner := scopeOwned operation member wait live
+    have notNested : nestedScopeDataProgram program = false :=
+      nestedScopeDataProgram_of_profile_value (by rw [profile])
     obtain ⟨_, _, noRetention, noSnapshots, _⟩ := program_analysis_excludes_foreign_declarations program analysis analyzed
     have noIncidents := foreign.2.2.2.1
     have noDeclarations := well_formed_foreign_profile_has_no_message_declarations program wellFormed (by rw [profile]; decide +kernel)
@@ -122,7 +124,7 @@ theorem exact_task_lifetime_has_admitted_completion
         noMessageBounded, noBounded, noData, guards.2, noInput, noOutput, noMonitored,
         completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention,
         completeUserTask, taskIdNamesWait, waits, isCallActivityProgram, profile, structuredCompositionCheckpointProfileId,
-        processDataBindingsAdmitted]
+        processDataBindingsAdmitted, notNested]
     case awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput =>
       obtain ⟨taskEq, outputEq, metadata, activityActivation, binding, bindingName, typed, records, scopes⟩ := details
       have declared := declared_data_task_has_exact_contract program id origin input output taskId taskName directInput

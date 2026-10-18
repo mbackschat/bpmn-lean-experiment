@@ -126,8 +126,8 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
       obtain ⟨withdrawal, kind, _⟩ := regionalSelection_complete_census program before id origin definition output prepared.selection selected
       simp only [kind]
       apply completion_update program before after hosting id origin definition output prepared.selection withdrawal running afterRunning selected kind
-      simp only [fire?, facts.1] at fired
-      exact fired
+      exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+        selected facts.1 fired
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, facts.1] at fired
@@ -394,8 +394,8 @@ theorem regional_pair_effect_populations (program : Program) (before after : Run
       have same : actual = after := Option.some.inj (executed.symm.trans applied)
       subst actual
       have raw : completeSelectedScope? program before definition output = some after := by
-        simp only [fire?, leftFacts.1] at fired
-        exact fired
+        exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+          selected leftFacts.1 fired
       have fields := regionalSelectedCompletion_effect_and_branch_fields program before after definition output raw
       rw [fields.1, fields.2.1]
       exact ⟨rfl, rfl⟩

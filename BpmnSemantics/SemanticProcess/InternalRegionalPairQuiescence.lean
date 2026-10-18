@@ -120,7 +120,8 @@ theorem preparedRegional_quiescence_of_token_query (program : Program) (before a
       all_goals exact fun _ member => (List.mem_filter.mp member).1
   | completeScope id origin definition output =>
       exact selected_completion_quiescent program before after definition output owner
-        (by simp only [fire?, snapshots] at fired; exact fired) quiet tokens
+        (selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+          selected snapshots fired) quiet tokens
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired

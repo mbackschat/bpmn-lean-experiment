@@ -31,10 +31,11 @@ theorem transaction_consuming_attempt_without_token
   all_goals cases consumes
   all_goals simp only [attemptInternalOperation, declared, snapshots]
   case enterScope id origin childEntry childScope =>
-    change (match enterScopeWithCompensationRetention? program state input childEntry childScope with
+    change (match enterDeclaredScope? program state input childEntry childScope with
       | none => InternalOperationAttempt.disabled _
       | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _
-    simp [enterScopeWithCompensationRetention?, enterScopeState?, missing]
+    rw [enterDeclaredScope?_eq_none program state input childEntry childScope
+      (by simp [enterScopeWithCompensationRetention?, enterScopeState?, missing])]
   case awaitUserTask id origin output task =>
     change (match awaitUserTaskState? state input output task with
       | none => InternalOperationAttempt.disabled _
@@ -166,6 +167,13 @@ theorem transaction_entry_initializes_selected_child
       BEq.rfl, ↓reduceIte, Option.some.injEq] at applied
     exact ⟨entered, occurrence, enteredSelected, selected, owned, applied.symm⟩
   · contradiction
+
+/-- A Transaction Program is not of the nested scope-data profile, so its scope entries and
+completions are exactly the undeclared ones. -/
+theorem TransactionAdmittedRoles.not_nested {p : Program} (roles : TransactionAdmittedRoles p) :
+    nestedScopeDataProgram p = false := by
+  simp only [nestedScopeDataProgram, roles.profileSelected, beq_eq_false_iff_ne]
+  decide +kernel
 
 /-- The live branch, handler or child prevents its owning scope's normal completion. -/
 inductive TransactionScopeBarrier (state : RuntimeState) (owner : ScopeOccurrenceId) : Prop where
@@ -351,12 +359,18 @@ theorem transaction_scope_barrier_disables_completion_attempt
     (barrier : TransactionScopeBarrier state occurrence.id) :
     attemptInternalOperation program (.completeScope id origin scopeId output) state =
       .disabled (.completeScope id origin scopeId output) := by
-  have refused := transaction_scope_barrier_disables_completion program state scopeId output
-    occurrence unique barrier
+  have refused := completeDeclaredScope?_eq_none program state scopeId output fun written same => by
+    rw [same]
+    exact transaction_scope_barrier_disables_completion program _ scopeId output occurrence unique (by
+      cases barrier with
+      | token token member owned => exact .token token member owned
+      | task wait member owned => exact .task wait member owned
+      | compensation trigger member active owned => exact .compensation trigger member active owned
+      | child child member parent => exact .child child member parent)
   cases execution : program.compensationExecution <;>
     simp only [attemptInternalOperation, execution, snapshots]
   all_goals
-    change (match completeSelectedScope? program state scopeId output with
+    change (match completeDeclaredScope? program state scopeId output with
       | none => InternalOperationAttempt.disabled (.completeScope id origin scopeId output)
       | some successor => InternalOperationAttempt.applied
           { operation := .completeScope id origin scopeId output, successor }) = _

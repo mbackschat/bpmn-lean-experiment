@@ -310,6 +310,13 @@ export function canonicalValueUtf8ByteLength(value: BusinessValue): number {
   return utf8ByteLength(JSON.stringify(canonicalValueShape(value)));
 }
 
+/** NSD-TASK-01's patch measure: the canonical JSON of the `{name, value}` array in the given order. */
+export function canonicalNamedValueArrayUtf8ByteLength(
+  entries: ReadonlyArray<Readonly<{ name: string; value: BusinessValue }>>,
+): number {
+  return utf8ByteLength(JSON.stringify(entries.map(({ name, value }) => ({ name, value: canonicalValueShape(value) }))));
+}
+
 /** `containerDepth` counts the List/Map nodes strictly above this node, which bounds recursion on cyclic storage. */
 function isPortableNode(
   value: unknown,

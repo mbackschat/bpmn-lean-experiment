@@ -80,7 +80,10 @@ theorem preparedChildComplete_wait_program_validity (program : Program) (before 
   have snapshots := (prepareInternalRegional_facts program before _ prepared found).1
   have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeSelectedScope? program before definition (some output) = some after at fired
+    change completeDeclaredScope? program before definition (some output) = some after at fired
+    rw [selectInternalRegional?_completeScope_fires_selected program before _ _ definition (some output) _
+      (ownershipClosedSelection_facts program before _ prepared.selection
+        (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1] at fired
     exact fired
   obtain ⟨effects, incidents, _⟩ := regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result
   have locals := congrArg ScopedVariables.activities
@@ -143,7 +146,10 @@ theorem preparedChildComplete_program_validity (program : Program) (before : Run
   have snapshots := (prepareInternalRegional_facts program before _ prepared found).1
   have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeSelectedScope? program before definition (some output) = some after at fired
+    change completeDeclaredScope? program before definition (some output) = some after at fired
+    rw [selectInternalRegional?_completeScope_fires_selected program before _ _ definition (some output) _
+      (ownershipClosedSelection_facts program before _ prepared.selection
+        (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1] at fired
     exact fired
   have branches := (regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result).2.2
   have structural := regional_child_structural_program_validity program before after prepared.selection.root.id

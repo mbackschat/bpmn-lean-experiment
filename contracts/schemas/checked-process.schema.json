@@ -72,6 +72,13 @@
       "items": {
         "$ref": "#/$defs/interruptingMessageEventSubProcess"
       }
+    },
+    "scopeLocalData": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scopeLocalData"
+      }
     }
   },
   "$defs": {
@@ -2330,6 +2337,33 @@
         },
         "childEntryFlowId": {
           "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "scopeLocalData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeId",
+        "localInputs",
+        "localOutputs"
+      ],
+      "properties": {
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "localInputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
+        },
+        "localOutputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variableMapping"
+          }
         }
       }
     }

@@ -231,6 +231,12 @@ test("keeps the owner-approved detail-map budget exceptions exactly scoped", () 
   );
   assert.equal(
     reviewedDetailMapWordBudget(
+      "docs/ENGINE-DATA-FAMILY-IMPLEMENTATION-MAP.md",
+    ),
+    4000,
+  );
+  assert.equal(
+    reviewedDetailMapWordBudget(
       "docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md",
     ),
     4500,

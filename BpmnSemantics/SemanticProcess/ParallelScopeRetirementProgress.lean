@@ -620,6 +620,7 @@ theorem ParallelScopeRemainingFrame.nonretirement_exit_refused (program : Progra
     rename_i sameOwner
     have rootId : root.id = candidate.owner := by simpa only [beq_iff_eq] using sameOwner
     obtain ⟨unmonitored, unbounded⟩ := ParallelScopeReplay.admitted_completion_unwrapped program analysis analyzed scopeId
+    simp only [completeDeclaredScope?] at applied
     rw [completeSelectedScope?, unmonitored,
       completeBoundedScope_eq_completeScope_of_unbounded program after scopeId none unbounded] at applied
     have uniqueAfter : after.scopeOccurrences.filter (fun occurrence => decide (occurrence.id.definitionScopeId = scopeId)) = [root] := by
@@ -639,7 +640,7 @@ theorem ParallelScopeRemainingFrame.nonretirement_exit_refused (program : Progra
       (by intro occurrence _ same; simp [same, otherScope])
     have uniqueStable : stable.scopeOccurrences.filter (fun occurrence => decide (occurrence.id.definitionScopeId = scopeId)) = [root] := by
       simpa only [Bool.beq_eq_decide_eq] using census.symm.trans unique
-    simp only [← census, unique, sameOwner, ↓reduceIte] at refused
+    simp only [← census, unique, sameOwner, ↓reduceIte, completeDeclaredScope?] at refused
     rw [completeSelectedScope?, unmonitored,
       completeBoundedScope_eq_completeScope_of_unbounded program stable scopeId none unbounded] at refused
     have pendingFalse : stable.initiationPending = false := by

@@ -250,6 +250,7 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_completion_is_root program before scope allowed] at completed
         obtain ⟨running, quiet, pending, rfl⟩ := root_completion_shape before after rootOwner scope
           ⟨tokenOwners, humanOwners, effectOwners, life, foreign, issued⟩ completed

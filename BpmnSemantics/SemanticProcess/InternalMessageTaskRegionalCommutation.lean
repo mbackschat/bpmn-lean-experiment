@@ -98,12 +98,12 @@ private theorem regional_messageTask_successors_equal (program : Program) (befor
         cases write : patch.arm.write <;>
           simpa only [applyInternalMessageTaskPatch, applyInternalArmingPatch, write] using result
       have raw : completeSelectedScope? program before definition output = some after := by
-        simp only [fire?, snapshots] at fired
-        exact fired
+        exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _ selected
+          snapshots fired
       have taskRaw : completeSelectedScope? program (applyInternalMessageTaskPatch before patch)
           definition output = some afterTask := by
-        simp only [fire?, snapshots] at taskFired
-        exact taskFired
+        exact selectInternalRegional?_completeScope_fired program before (applyInternalMessageTaskPatch before patch) afterTask id origin definition output _
+          selected snapshots taskFired
       exact messageTask_selected_completion_successors_equal program before after afterTask contract patch _ definition output
         regional.selection.root withdrawal taskFound canonical running census withdrawn quiet tokenFrame raw taskRaw
   | terminateScope id origin input definition =>

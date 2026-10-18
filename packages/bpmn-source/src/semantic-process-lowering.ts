@@ -111,6 +111,8 @@ export function lowerCheckedProcess(
     ...lowerCompensationSourceDeclarations(source),
     ...lowerTransactionDeclarations(source),
     ...lowerInterruptingMessageEventSubProcessDeclarations(source),
+    // Definition-scope identities survive lowering unchanged, so the checked table is the Program table.
+    ...(source.scopeLocalData === undefined ? {} : { scopeLocalData: source.scopeLocalData }),
   };
   return program;
 }

@@ -45,6 +45,7 @@ Run the focused compiler gate:
 - [Sequential Service mapping inputs](test/sequential-scope-output-mapping-fixture.ts) compile the same mapping shapes for repeated-body turnover and exact-result refusal checks.
 
 - [Business-task source reader](src/serial-business-task-source.ts) shares exact-overlay, named-handler and mapping projection across [serial composition](../../docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md), [mixed-task branching/rework](../../docs/capsules/MIXED-TASK-CONTROL-FLOW-PROPOSAL.md) and [attached business Error recovery](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md). Each private profile retains its graph admission and qualification boundary.
+- [Nested scope-data source reader](src/nested-scope-data-source.ts) reads serial embedded Sub-Process scopes and their `camunda:inputOutput` locals for the [nested scope data proposal](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md); independent checked admission decides the result.
 
 - [BPMN XML ingestion decision](../../docs/BPMN-XML-INGESTION-DECISION.md) owns the trust, parser, and source-preservation boundary.
 - [Semantic Process IL specification](../../docs/SEMANTIC-PROCESS-IL-SPEC.md) owns the checked graph and lowering contracts.

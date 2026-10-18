@@ -1,0 +1,163 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-data-quote-signed",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "bulk-quote",
+    "relativePath": "scenarios/nested-embedded-scope-data/bulk-quote.bpmn",
+    "sha256": "0698681f9a0745d7c614d340ed822a5a083e5fa2195240719ae9a2dd165459fe",
+    "sourceOverlay": {
+      "id": "bulk-quote-handlers",
+      "sha256": "cc140b9d7c19be7749b0515addc402569debbc6353485205cdca09d26360208e"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0017",
+      "CIB-EXT-0020"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_BulkQuote",
+      "instanceId": "Quote_signed",
+      "initialVariables": [
+        {
+          "name": "quote",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "lines",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "qty",
+                          "value": {
+                            "kind": "integer",
+                            "value": 10
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "B-7"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "qty",
+                          "value": {
+                            "kind": "integer",
+                            "value": 10
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "B-7"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "valid",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "until",
+                      "value": {
+                        "kind": "null"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "sign-quote",
+      "taskId": {
+        "processInstanceId": "Quote_signed",
+        "elementId": "SignQuote",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "signedQuote",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "lines",
+                "value": {
+                  "kind": "list",
+                  "value": []
+                }
+              },
+              {
+                "name": "signedBy",
+                "value": {
+                  "kind": "string",
+                  "value": "QA-3"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:d44b1b0df328a40c1251babb9897d29a583ce7410e86ba102640123454ad3b7a",
+      "effectId": {
+        "processInstanceId": "Quote_signed",
+        "elementId": "ArchiveQuote",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ]
+}

@@ -140,6 +140,8 @@ export { isSingletonBusinessItem } from "./singleton-business-item.js";
 export { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
 export * from "./serial-business-task-policy.js";
 export * from "./serial-business-task-admission.js";
+export * from "./nested-scope-data.js";
+export * from "./nested-scope-data-admission.js";
 
 export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admission.js";
 

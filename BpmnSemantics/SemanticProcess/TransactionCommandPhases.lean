@@ -120,7 +120,7 @@ theorem transaction_admitted_task_continuation (p : Program) (roles : Transactio
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
   simp [storage, handlerValid, running, noIncidents, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
-    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
+    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId, roles.not_nested]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
   | none => dsimp only; exact phase
   | some successor =>

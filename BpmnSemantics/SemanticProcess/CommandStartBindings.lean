@@ -9,6 +9,7 @@ import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 
 /-! Declaration-bound Start binding policy shared by raw command dispatch and private capacity admission. -/
 
@@ -71,6 +72,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
     SerialBusinessTask.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = portableEffectDataProfileId then
     EffectData.startBindingsAdmitted program bindings
+  else if program.identity.semanticProfile = nestedScopeDataProfileId then
+    NestedScopeData.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = callDataCheckpointProfileId then
     callDataStartBindingsAdmitted program bindings
   else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then

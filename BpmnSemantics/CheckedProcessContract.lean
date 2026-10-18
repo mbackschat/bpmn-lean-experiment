@@ -384,6 +384,15 @@ structure CheckedInterruptingMessageEventSubProcess where
   childEntryFlowId : SequenceFlowId
   deriving Repr, DecidableEq
 
+/-- NSD-INIT-01 and NSD-OUTPUT-01: the declared locals of one ordinary embedded Sub-Process scope.
+Checked and Program contracts share this shape because lowering keeps definition-scope identity;
+each record keys one scope, and `localInputs` is nonempty since every output reads a declared local. -/
+structure ScopeLocalData where
+  scopeId : DefinitionScopeId
+  localInputs : List VariableMapping
+  localOutputs : List VariableMapping
+  deriving Repr, DecidableEq
+
 structure CheckedProcess where
   identity : SourceIdentity
   processId : ProcessId
@@ -395,6 +404,7 @@ structure CheckedProcess where
   compensation : Option CheckedCompensation := none
   transactionCancellation : Option CheckedTransactionCancellation := none
   interruptingMessageEventSubProcesses : List CheckedInterruptingMessageEventSubProcess := []
+  scopeLocalData : List ScopeLocalData := []
   deriving Repr, DecidableEq
 
 end BpmnSemantics.SemanticProcess

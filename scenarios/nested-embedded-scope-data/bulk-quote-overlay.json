@@ -1,0 +1,1 @@
+{"kind":"bpmnSourceOverlay","id":"bulk-quote-handlers","semanticProfile":"cibseven-2.2.0-nested-embedded-scope-data-draft","effectBindings":[{"source":{"implementation":"urn:bpmn-lean:effect-protocol:activity-v1","delegateExpression":"${archiveQuote}"},"descriptor":{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"archiveQuote"}}],"inertAttributes":[]}

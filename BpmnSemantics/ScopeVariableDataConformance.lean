@@ -35,14 +35,14 @@ theorem inputs_use_pre_entry_context_and_ignore_declaration_order :
     initializeScopeVariables? before owner [input "status" "status", input "b" "a", literal "a" "seed"] = initialized := by
   simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
-    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
+    sortByTarget, insertByTarget] <;> decide +kernel
 
 theorem missing_parent_is_not_supplied_by_local_declarations :
     initializeScopeVariables? emptyScopedVariables owner [input "status" "status"] = none ∧
     initializeScopeVariables? emptyScopedVariables owner [literal "a" "seed", input "b" "a"] = none := by
   simp [owner, input, literal, initializeScopeVariables?, evaluateEnclosingInputMappings,
-    evaluateInputMappings?, canonicalInputMappings?, List.mergeSort,
-    List.MergeSort.Internal.splitInTwo] <;> decide +kernel
+    evaluateInputMappings?, canonicalInputMappings?, sortByTarget,
+    insertByTarget] <;> decide +kernel
 
 theorem present_null_initializes_and_shadows_parent :
     ((initializeScopeVariables? { before with process := { bindings := [{ name := "status", value := .null }] } }
@@ -51,7 +51,7 @@ theorem present_null_initializes_and_shadows_parent :
       fun variables => readScopeVariable? variables owner "status") = some .null := by
   simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
-    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
+    sortByTarget, insertByTarget] <;> decide +kernel
 
 theorem writes_choose_existing_body_and_otherwise_process :
     ((initialized.bind fun variables => writeScopeVariables? variables owner
@@ -61,7 +61,7 @@ theorem writes_choose_existing_body_and_otherwise_process :
       { name := "status", value := .string "parent" }], some (.string "foreign")) := by
   simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
-    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
+    sortByTarget, insertByTarget] <;> decide +kernel
 
 theorem duplicate_complete_owner_refuses_before_binding_availability :
     let variables := { before with scopes := [{ owner, bindings := [] },
@@ -78,6 +78,6 @@ theorem disposal_preserves_other_owners_and_reentry_initializes_fresh_data :
         fun next => readScopeVariable? next { owner with activation := 2 } "status") = some (.string "pending") := by
   simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
-    List.mergeSort, List.MergeSort.Internal.splitInTwo] <;> decide +kernel
+    sortByTarget, insertByTarget] <;> decide +kernel
 
 end BpmnSemantics.ScopeVariableDataConformance

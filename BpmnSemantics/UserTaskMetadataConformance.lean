@@ -491,6 +491,7 @@ theorem completion_is_metadata_irrelevant
         serialBusinessCommandAdmitted_of_other_profile _ _ _ (by decide +kernel) (by decide +kernel) (by decide +kernel)
       simp only [guard])
     (unselectedEffectData := by decide +kernel)
+    (unselectedNested := by decide +kernel)
     (noDataInputOutputTask := by decide +kernel)
     (noMessageMonitoredTask := by decide +kernel)
   · rfl

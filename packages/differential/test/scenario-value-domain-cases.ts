@@ -112,6 +112,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   addPortableHandoffCases(selected.get(SemanticProfileId.PortableBusinessValuesHandoff)!, add);
   addEffectDataCases(selected.get(SemanticProfileId.PortableBusinessEffectData)!, add);
   addMessagePayloadCases(selected.get(SemanticProfileId.PortableBusinessMessagePayload)!, add);
+  addNestedScopeDataCases(selected.get(SemanticProfileId.NestedEmbeddedScopeData)!, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -275,5 +276,36 @@ function addMessagePayloadCases(context: DomainContext, add: AddCase): void {
     const stimulus: Stimulus = { kind: StimulusKind.DeliverPayloadMessage, commandId: `late-payload-string-${label}`,
       subscriptionId: occurrenceOf(start), channel: lateDeliveryChannel, payload: { kind: VariableValueKind.String, value: "a".repeat(bytes) } };
     add(context, `payload-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+  }
+}
+
+/**
+ * The nested scope-data profile selects a SingletonBusinessItem at Start, User Task completion and effect result, each
+ * with the 1,024-byte root String bound, and derives its required Start names from the scope chain (NSD-AVAILABLE-01).
+ * Each case changes one fact of the retained answer-free Start or appends one late command, so only that fact can move
+ * the expectation; a present null satisfies a required name and an absent one does not.
+ */
+function addNestedScopeDataCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess);
+  const required = start.initialVariables.find(binding => binding.name === "riskClass");
+  assert.ok(required !== undefined, "the retained purchase-order Start carries the scope-chain-required riskClass");
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+  const replaced = (value: VariableValue) => start.initialVariables.map(binding => binding.name === "riskClass" ? { ...binding, value } : binding);
+  const string = (bytes: number): VariableValue => ({ kind: VariableValueKind.String, value: "a".repeat(bytes) });
+  startWith("invalid-start-data-missing-required", start.initialVariables.filter(binding => binding.name !== "riskClass"), false);
+  startWith("valid-start-data-present-null", replaced({ kind: VariableValueKind.Null }), true);
+  for (const [label, value, supported] of [["exact-bound", string(1024), true], ["over-bound", string(1025), false]] as const) {
+    startWith(`start-string-${label}`, replaced(value), supported);
+    for (const surface of ["human", "effect"] as const) {
+      const occurrence = occurrenceOf(start);
+      const bindings = [{ name: "zzLater", value }];
+      const stimulus: Stimulus = surface === "human"
+        ? { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-${surface}-${label}`, taskId: occurrence, submittedValues: bindings }
+        : { kind: StimulusKind.CompleteEffect, commandId: `late-${surface}-${label}`, effectId: occurrence,
+          result: { kind: EffectExecutionResultKind.Success, localPatch: bindings } };
+      add(context, `${surface}-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+    }
   }
 }

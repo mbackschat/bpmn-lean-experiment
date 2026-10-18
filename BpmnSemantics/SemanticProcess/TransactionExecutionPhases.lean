@@ -151,7 +151,7 @@ private theorem admitted_task_invariant (p : Program) (roles : TransactionAdmitt
   simp only [admitStimulusWithCompensationSnapshots, roles.snapshotsAbsent]
   simp [storage, handlerValid, running, invariant.inert.2.2.2.1, parallel, sequential, messageMonitored, messageBounded,
     bounded, composed, dataInput, dataOutput, monitored, callDataRuntimeStateValid,
-    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId]
+    roles.profileSelected, transactionCancellationCheckpointProfileId, callDataCheckpointProfileId, roles.not_nested]
   cases completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId with
   | none => dsimp only; exact invariant
   | some successor =>

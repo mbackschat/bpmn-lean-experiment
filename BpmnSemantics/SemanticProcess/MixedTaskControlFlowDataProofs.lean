@@ -592,6 +592,8 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
     have noParallelScope : ParallelScopeStart.programSelected program = false := by
       apply ParallelScopeStart.programSelected_of_other_profile
       simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
+    have notNested : nestedScopeDataProgram program = false :=
+      nestedScopeDataProgram_of_profile_value (by rw [profile])
     have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
         completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
       simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
@@ -606,7 +608,7 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
     cases control : before.control <;>
       simp only [dispatchStimulus, noSnapshots] <;>
       simp [control, noParallelScope, noRepeated, noParallel, noSequential, noMessageMonitored, noMessageBounded,
-        noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
+        noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, notNested, legacy]
     case running instanceId =>
       cases completed : completeUserTask before taskId.processInstanceId
           ⟨taskId.elementId.value⟩ taskId.activation with
@@ -814,6 +816,7 @@ theorem fire_counters_monotone (program : Program) (analysis : Analysis) (operat
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_completion_is_root program analysis before scope analyzed] at completed
         unfold completeScopeState? completeQuiescentScope? at completed
         repeat' split at completed

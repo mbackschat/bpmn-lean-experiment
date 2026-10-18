@@ -91,7 +91,10 @@ theorem preparedChildComplete_projection_associations (program : Program) (befor
   subst actual
   have result : completeSelectedScope? program before definition (some output) = some after := by
     simp only [fire?, snapshots] at fired
-    change completeSelectedScope? program before definition (some output) = some after at fired
+    change completeDeclaredScope? program before definition (some output) = some after at fired
+    rw [selectInternalRegional?_completeScope_fires_selected program before _ _ definition (some output) _
+      (ownershipClosedSelection_facts program before _ prepared.selection
+        (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1] at fired
     exact fired
   have parent := completeSelectedScope_child_has_parent program before after definition output prepared.selection.root children result
   have callFrame := regional_child_call_associations_frame before after prepared.selection.root definition children parent scopes control calls

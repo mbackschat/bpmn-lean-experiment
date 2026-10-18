@@ -1,4 +1,5 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
+import { compileNestedScopeDataSource } from "./nested-scope-data-source.js";
 import { compileSequentialScopeSource } from "./multi-instance-scope-source-compiler.js";
 import { compileEffectDataSource, compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
@@ -79,6 +80,7 @@ export const CompilationDispatchId = Object.freeze({
   MixedTaskControlFlow: "mixedTaskControlFlow",
   SerialBusinessTasks: "serialBusinessTasks",
   PortableBusinessEffectData: "portableBusinessEffectData",
+  NestedEmbeddedScopeData: "nestedEmbeddedScopeData",
   Generic: "generic",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
@@ -132,6 +134,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     { id: CompilationDispatchId.MixedTaskControlFlow, semanticProfile: MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, reader: compileMixedTaskControlFlowSource },
     { id: CompilationDispatchId.SerialBusinessTasks, semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, reader: compileSerialBusinessTaskSource },
     { id: CompilationDispatchId.PortableBusinessEffectData, semanticProfile: SemanticProfileId.PortableBusinessEffectData, reader: compileEffectDataSource },
+    { id: CompilationDispatchId.NestedEmbeddedScopeData, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, reader: compileNestedScopeDataSource },
     { id: CompilationDispatchId.SequentialMultiInstanceSubProcess, semanticProfile: SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, reader: compileSequentialScopeSource },
     {
       id: CompilationDispatchId.MappedSuccessServiceTask,
@@ -333,6 +336,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.MixedTaskControlFlow:
     case CompilationDispatchId.SerialBusinessTasks:
     case CompilationDispatchId.PortableBusinessEffectData:
+    case CompilationDispatchId.NestedEmbeddedScopeData:
     case CompilationDispatchId.SequentialMultiInstanceSubProcess:
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:

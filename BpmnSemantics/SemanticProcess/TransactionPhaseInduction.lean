@@ -169,9 +169,10 @@ theorem transaction_continuation_internal_step (p : Program) (roles : Transactio
     have empty := transaction_scope_completion_requires_empty_tokens p roles before leaf shape owned
       id origin scope output _ applied
     simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent] at applied
-    change (match completeSelectedScope? p before scope output with
+    change (match completeDeclaredScope? p before scope output with
       | none => InternalOperationAttempt.disabled _
       | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _ at applied
+    rw [completeDeclaredScope?_other_profile p before scope output roles.not_nested] at applied
     rw [transaction_scope_completion_dispatch p graph] at applied
     cases selected : completeScopeState? before scope output with
     | none => simp [selected] at applied

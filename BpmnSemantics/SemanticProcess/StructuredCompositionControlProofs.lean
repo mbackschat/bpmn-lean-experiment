@@ -61,6 +61,15 @@ theorem selected_scope_completion_delegates_to_root
     noBounded, List.find?_nil]
   cases completeScopeState? state scope none <;> rfl
 
+
+/-- The `completeScope` arm's declared form of `selected_scope_completion_delegates_to_root`: root
+completion bypasses NSD-OUTPUT-01, so the delegation is unchanged. -/
+theorem declared_scope_completion_delegates_to_root
+    (program : Program) (state : RuntimeState) (scope : DefinitionScopeId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    completeDeclaredScope? program state scope none = completeScopeState? state scope none :=
+  selected_scope_completion_delegates_to_root program state scope allowed
+
 theorem root_completion_preserves_control_fields
     (program : Program) (before after : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (scope : DefinitionScopeId)
@@ -71,6 +80,7 @@ theorem root_completion_preserves_control_fields
   have step := fire_sound program _ before after fired
   cases step with
   | completeScope _ _ _ _ _ _ completed =>
+      change completeSelectedScope? program before scope none = some after at completed
       rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
       unfold completeScopeState? at completed
       split at completed
@@ -464,6 +474,10 @@ theorem completion_admission_cases
                     exact Or.inr (Or.inl ⟨after, rfl, accepted.2, rfl⟩)
                   · exact Or.inl rfl
           | false =>
+              have nestedRefused := NestedScopeData.completeUserTask?_unadmitted program before taskId bindings
+                (NestedScopeData.programAnalysis_one_scope program oneScope)
+              cases nested : nestedScopeDataProgram program
+              case true => simp [nestedRefused]
               cases completed : completeUserTask before taskId.processInstanceId
                   ⟨taskId.elementId.value⟩ taskId.activation with
               | none => simp
@@ -706,6 +720,7 @@ theorem admitted_fire_preserves_root_ownership
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
         unfold completeScopeState? at completed
         split at completed

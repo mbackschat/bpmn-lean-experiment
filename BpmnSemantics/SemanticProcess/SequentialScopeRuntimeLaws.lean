@@ -127,9 +127,8 @@ theorem evaluateSequentialScopeInputs_snapshot (program : Program) (state : Runt
 theorem sequentialScopeProgramSelected_effectMapping_scalar (program : Program)
     (selected : sequentialScopeProgramSelected program = true) :
     programEffectMappingValuePolicy program = .scalar := by
-  apply programEffectMappingValuePolicy_eq_scalar
-  intro same
-  simp [sequentialScopeProgramSelected, same, portableEffectDataProfileId] at selected
+  apply programEffectMappingValuePolicy_eq_scalar <;> intro same <;>
+    simp [sequentialScopeProgramSelected, same, portableEffectDataProfileId, nestedScopeDataProfileId] at selected
 
 /-- Every input context produces a snapshot that the Program's own effect-mapping policy accepts. -/
 theorem evaluateEffectInputs_snapshotUnder (program : Program) (state : RuntimeState)
@@ -144,7 +143,14 @@ theorem evaluateEffectInputs_snapshotUnder (program : Program) (state : RuntimeS
       (by simpa using (Bool.and_eq_true_iff.mp selected).1)
     rw [scalar, inputSnapshotMatchesUnder_scalar]
     exact evaluateSequentialScopeInputs_snapshot program state owner mappings bindings evaluated
-  · exact evaluateEnclosingInputMappingsUnder_snapshot _ _ mappings bindings evaluated
+  · split at evaluated
+    · rename_i nested
+      have item : programEffectMappingValuePolicy program = .singletonBusinessItem := by
+        simp only [nestedScopeDataProgram, beq_iff_eq] at nested
+        simp [programEffectMappingValuePolicy, effectMappingValuePolicy, nested]
+      rw [item]
+      exact evaluateInputMappingsUnder?_snapshot _ _ mappings bindings evaluated
+    · exact evaluateEnclosingInputMappingsUnder_snapshot _ _ mappings bindings evaluated
 
 /-- The scalar reading of `evaluateEffectInputs_snapshotUnder`, for profiles that select the scalar policy. -/
 theorem evaluateEffectInputs_snapshot (program : Program) (state : RuntimeState)
@@ -161,17 +167,26 @@ theorem canonical_input_target_order :
     evaluateEnclosingInputMappings [⟨"source", .null⟩]
       [⟨"z", .stringLiteral "last"⟩, ⟨"a", .enclosingVariable "source"⟩] =
       some [⟨"a", .null⟩, ⟨"z", .string "last"⟩] := by
-  simp [evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?, List.mergeSort,
-    List.MergeSort.Internal.splitInTwo, evaluateInputMappingsInOrder, scalarInputLookup?, enclosingVariable?]
+  simp [evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?, sortByTarget,
+    insertByTarget, evaluateInputMappingsInOrder, scalarInputLookup?, enclosingVariable?]
 
 theorem canonical_input_snapshot_target_order :
     inputSnapshotMatches [⟨"z", .stringLiteral "last"⟩, ⟨"a", .enclosingVariable "source"⟩]
       [⟨"a", .null⟩, ⟨"z", .string "last"⟩] = true := by
-  simp [inputSnapshotMatches, canonicalInputMappings?, List.mergeSort,
-    List.MergeSort.Internal.splitInTwo, orderedInputSnapshotMatches]
+  simp [inputSnapshotMatches, canonicalInputMappings?, sortByTarget,
+    insertByTarget, orderedInputSnapshotMatches]
 
 theorem canonical_input_duplicate_targets_refused :
     evaluateEnclosingInputMappings [] [⟨"a", .stringLiteral "one"⟩, ⟨"a", .stringLiteral "two"⟩] = none := by decide +kernel
+
+/-- A scalar effect policy excludes the nested scope-data profile, whose policy is the item domain. -/
+theorem nestedScopeDataProgram_false_of_scalar {program : Program}
+    (scalar : programEffectMappingValuePolicy program = .scalar) : nestedScopeDataProgram program = false := by
+  cases nested : nestedScopeDataProgram program with
+  | false => rfl
+  | true =>
+      simp only [nestedScopeDataProgram, beq_iff_eq] at nested
+      simp [programEffectMappingValuePolicy, effectMappingValuePolicy, nested] at scalar
 
 /-- Families without repeated-scope declarations retain ordinary Process input evaluation. -/
 theorem evaluateEffectInputs_without_repeated_scope (program : Program) (state : RuntimeState)
@@ -182,7 +197,7 @@ theorem evaluateEffectInputs_without_repeated_scope (program : Program) (state :
       evaluateEnclosingInputMappings state.variables.process.bindings mappings := by
   have empty := List.filterMap_eq_nil_iff.mpr absent
   simp [evaluateEffectInputs?, hasSequentialScopeDefinition, empty, scalar,
-    evaluateEnclosingInputMappingsUnder_scalar]
+    nestedScopeDataProgram_false_of_scalar scalar, evaluateEnclosingInputMappingsUnder_scalar]
 
 theorem sequentialScopeBindingForEntry_insert_scope
     (entry : SequentialScopeEntry) (state : RuntimeState) (created : RuntimeScopeOccurrence)

@@ -116,6 +116,7 @@ theorem effect_result_mapping_failure_is_rejected
     (legacyMixed : program.identity.semanticProfile ≠ mixedTaskControlFlowProfileId)
     (legacyError : program.identity.semanticProfile ≠ mixedTaskBusinessErrorProfileId)
     (legacyEffectData : program.identity.semanticProfile ≠ portableEffectDataProfileId)
+    (legacyNested : nestedScopeDataProgram program = false)
     (invalid :
       let owner : EffectOccurrenceId :=
         { processInstanceId := wait.processInstanceId
@@ -174,7 +175,8 @@ theorem effect_result_mapping_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData]
+          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData,
+          legacyNested]
         intro _ _ _ _ admitted selected
         have refused := empty_process_refuses_parallel_scope_effect program state
           completionCommandId effectId result rfl selected
@@ -232,7 +234,9 @@ theorem effect_result_route_failure_is_rejected
     cases declared : program.compensationEventSubProcessSnapshots with
     | none =>
         simp [admitStimulus, declared, noIncidents, running, noCompensationWaits,
-          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData]
+          exactOrdinaryWaits, noCompletion, noScopedCompletion, legacy, legacyMixed, legacyError, legacyEffectData,
+          NestedScopeData.completeEffect?_without_success program state effectId result (by
+            intro patch success; simp [success, effectResultOutput] at invalid)]
         intro _ _ _ _ admitted selected
         have refused := empty_process_refuses_parallel_scope_effect program state
           completionCommandId effectId result rfl selected
@@ -274,6 +278,7 @@ theorem user_task_completion_with_same_successor_is_equal
       serialBusinessCommandAdmitted program rightState
         (.completeUserTaskInstance completionCommandId submittedTaskId submittedValues))
     (unselectedEffectData : program.identity.semanticProfile ≠ portableEffectDataProfileId)
+    (unselectedNested : nestedScopeDataProgram program = false)
     (leftRunning : leftState.control = .running submittedTaskId.processInstanceId)
     (rightRunning : rightState.control = .running submittedTaskId.processInstanceId)
     (ordinaryTask :
@@ -338,7 +343,7 @@ theorem user_task_completion_with_same_successor_is_equal
     simp [callDataRuntimeStateValid, notCallData]
   have leftPhaseValid : interruptingMessageEventSubProcessStateValid program leftState = true := by
     cases checked : interruptingMessageEventSubProcessStateValid program leftState with
-    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftSerial, unselectedEffectData, leftDataValid, checked] at committed
+    | false => simp [applyStimulus, admitStimulus, snapshotAbsent, leftSerial, unselectedEffectData, unselectedNested, leftDataValid, checked] at committed
     | true => rfl
   have rightPhaseValid : interruptingMessageEventSubProcessStateValid program rightState = true := by
     rw [← raw_task_completion_frames_message_phase program rightState successor _ _ _ _ rightRunning rightCompletion,
@@ -379,7 +384,7 @@ theorem user_task_completion_with_same_successor_is_equal
     decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
     cases outputPresent : (dataOutputTaskOperations program).any (fun entry =>
       decide (entry.1 = ⟨submittedTaskId.elementId.value⟩)) <;>
-    simp [admitStimulus, leftStorage, rightStorage, noRepeatedScope, noParallelRepeatedScope, snapshotAbsent, leftSerial, rightSerial, unselectedEffectData, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
+    simp [admitStimulus, leftStorage, rightStorage, noRepeatedScope, noParallelRepeatedScope, snapshotAbsent, leftSerial, rightSerial, unselectedEffectData, unselectedNested, leftDataValid, rightDataValid, leftPhaseValid, rightPhaseValid, leftNoIncidents,
     rightNoIncidents, leftRunning, rightRunning,
     ordinaryTask.1, ordinaryTask.2, noSequentialMultiInstance, noParallelMultiInstance,
     noMessageBoundedTask, noMessageMonitoredTask, noDataInputOutputTask, inputPresent, outputPresent,
@@ -486,7 +491,8 @@ theorem task_identity_mismatch_is_rejected
         dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
         completeMessageBoundedUserTask?, messageBoundedPairForTask?,
           empty_activities_refuse_message_monitored_completion,
-        singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance, noParallelMultiInstance, processMismatch]
+        NestedScopeData.completeUserTask?, singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance,
+          noParallelMultiInstance, processMismatch]
   · rcases remainingMismatch with elementMismatch | activationMismatch
     · apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
@@ -500,7 +506,8 @@ theorem task_identity_mismatch_is_rejected
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
           empty_activities_refuse_message_monitored_completion,
-          singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance, noParallelMultiInstance, elementMismatch]
+          NestedScopeData.completeUserTask?, singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance,
+          noParallelMultiInstance, elementMismatch]
     · apply applyStimulus_rejected_of_admission
       cases declared : program.compensationEventSubProcessSnapshots <;>
         simp [taskIdNamesWait, admitStimulus, declared, ParallelScopeCommand.stimulusAdmitted, unselected,
@@ -513,7 +520,8 @@ theorem task_identity_mismatch_is_rejected
           dataOutputTaskOperations, dataOutputTaskWait?, dataInputTaskWait?,
           completeMessageBoundedUserTask?, messageBoundedPairForTask?,
           empty_activities_refuse_message_monitored_completion,
-          singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance, noParallelMultiInstance, activationMismatch]
+          NestedScopeData.completeUserTask?, singletonWaitingState, sequentialScopeTaskWaits, noSequentialMultiInstance,
+          noParallelMultiInstance, activationMismatch]
 
 private theorem empty_activities_refuse_monitored_scope (program : Program) (state : RuntimeState)
     (identity : TimerOccurrenceId) (time : Nat) (empty : state.activityOccurrences = []) :

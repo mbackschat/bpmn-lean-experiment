@@ -127,7 +127,7 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
             parallelMultiInstanceUserTaskProfileId]
       simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
-      have parallelFamily := capabilities.2.1.2
+      have parallelFamily := capabilities.2.2.1.2
       simp [programParallelMultiInstanceProfileMatches, notParallel] at parallelFamily
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1
       obtain ⟨aggregate, notExhausted⟩ := aggregate

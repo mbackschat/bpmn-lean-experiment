@@ -193,8 +193,9 @@ theorem preparedComplete_position_delta (program : Program) (before : RuntimeSta
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have result : completeSelectedScope? program before definition output = some after := by
     simp only [fire?, snapshots] at fired
-    change completeSelectedScope? program before definition output = some after at fired
-    exact fired
+    change completeDeclaredScope? program before definition output = some after at fired
+    rwa [selectInternalRegional?_completeScope_fires_selected program before id origin definition output _ selection]
+      at fired
   have position := completeSelectedScope_position_delta program before after hosting id origin definition output
     prepared.selection.root valid structural runningState member census result
   refine ⟨hosting, after, runningState, applied, ?_⟩

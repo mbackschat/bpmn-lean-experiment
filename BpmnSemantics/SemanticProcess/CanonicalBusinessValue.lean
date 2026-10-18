@@ -53,4 +53,9 @@ def canonicalBusinessEntriesUtf8Bytes : List (String × BusinessValue) → List 
         canonicalBusinessEntriesUtf8Bytes entries
 end
 
+/-- Canonical bytes of a JSON array of `{"name":…,"value":…}` entries in the given order: the Map-entry
+layout without the Map's own tag, used as the nested scope-data patch measure (`NSD-TASK-01`). -/
+def canonicalNamedValueArrayUtf8Bytes (entries : List (String × BusinessValue)) : Nat :=
+  canonicalArrayBytes (canonicalBusinessEntriesUtf8Bytes entries)
+
 end BpmnSemantics.SemanticProcess

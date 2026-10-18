@@ -112,6 +112,11 @@ const expectedCapabilities = new Map<string, ProfileCapabilities>([
     processStart: capability(stringNull, "process-start-string-null-data"),
     effectCompletion: capability(singletonBusinessItem, "exact-singleton-business-item-local-result-patch"),
   }],
+  [SemanticProfileId.NestedEmbeddedScopeData, {
+    processStart: capability(singletonBusinessItem, "process-start-singleton-business-item-data"),
+    userTaskCompletion: capability(singletonBusinessItem, "bounded-user-task-completion-patch"),
+    effectCompletion: capability(singletonBusinessItem, "exact-singleton-business-item-local-result-patch"),
+  }],
   [SemanticProfileId.StructuredProcessComposition, {
     processStart: capability(stringNull, "process-start-string-null-data"),
     userTaskCompletion: capability(stringNull, "user-task-string-null-completion-data"),
@@ -646,11 +651,13 @@ test("refuses a well-formed recursive portable value at every surface of every p
     assert.equal(isVariablePatch([binding]), true, kind);
     for (const profile of profiles) {
       for (const surface of surfaces) {
-        // Only two profiles select Decimal and Map: the serial handoff at its two Property-path surfaces and the
-        // structured effect-data profile at effect completion alone; a root List nowhere.
+        // Three profiles select Decimal and Map: the serial handoff at its two Property-path surfaces, the
+        // structured effect-data profile at effect completion alone and nested scope data at every surface; a root
+        // List nowhere.
         const selected = kind !== VariableValueKind.List && (
           (profile === SemanticProfileId.PortableBusinessValuesHandoff && surface !== "effectCompletion") ||
-          (profile === SemanticProfileId.PortableBusinessEffectData && surface === "effectCompletion"));
+          (profile === SemanticProfileId.PortableBusinessEffectData && surface === "effectCompletion") ||
+          profile === SemanticProfileId.NestedEmbeddedScopeData);
         assert.equal(
           compiled.profileAllowsVariableBindings(profile, surface, [binding]),
           selected,
@@ -668,7 +675,7 @@ test("refuses a carried portable value under every admitted profile that selects
   for (const profile of await admittedProfiles()) {
     // These widen a write path, so restoration requires a SingletonBusinessItem instead; their own tests own that rule.
     if (profile === SemanticProfileId.PortableBusinessValuesHandoff || profile === SemanticProfileId.PortableBusinessEffectData ||
-      profile === SemanticProfileId.PortableBusinessMessagePayload) continue;
+      profile === SemanticProfileId.PortableBusinessMessagePayload || profile === SemanticProfileId.NestedEmbeddedScopeData) continue;
     assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
     for (const kind of portableKinds) {
       const binding = bindings.get(kind);

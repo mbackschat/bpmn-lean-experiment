@@ -1,0 +1,67 @@
+# Engine data-flow family implementation map
+
+This detail map owns the exact implemented and absent status of each closed or in-progress semantic family whose BPMN capability is Process, Activity or scope data flow: data inputs and outputs, mapped task data, payloads and scope-local data. It keeps one section per capsule delegation. Other BPMN element families are owned by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), cross-cutting invariant and ownership mechanisms by [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), the cross-cutting runtime, Lean, semantic-core, and conformance boundary by [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), and root routing by [`implementation-status-router`](IMPLEMENTATION-MAP.md).
+
+This map exists because the semantic family map reached its reviewed word budget when the nested scope-data family needed recording. The stated axis is what a family's BPMN capability is: a section belongs here when it closes Process, Activity or scope data flow, and in the family map when it closes another BPMN element family. A newly closed data-flow family adds a section here.
+
+## Current boundary
+
+Each section below states the exact implemented and absent status of one data-flow family, delegated to this map by that family's capsule or specification. A section asserts nothing about any other family. The invariant and ownership mechanisms those families rely on are owned by [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), and the cross-cutting runtime, Lean, semantic-core, and conformance boundary by [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md); this map repeats neither.
+
+The union of these sections is not a coverage figure. BPMN requirement coverage, CIB profile coverage, and platform milestone coverage are three separate denominators with their own owners, and adding family sections changes none of them.
+
+## Implemented
+
+Each section below owns one family's exact rules, evidence lanes, and absences, including its closure status. Its claims do not extend to another family or an excluded composition.
+
+## Explicitly absent
+
+A family with no section here has no status in this map, which is an absence of routing rather than a claim that the family is unimplemented; [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions and the owning capsule owns meaning. No section here is a BPMN conformance or CIB compatibility claim, and none establishes that a mechanism one family proves holds for another.
+
+## Evidence owners
+
+The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemantics/`](../BpmnSemantics/), the pure core under [`packages/semantic-core/`](../packages/semantic-core/), the registered scenarios, and the differential pipeline bind every claim below. [TESTING-SPEC.md](TESTING-SPEC.md) owns the gate contract.
+
+## Nearest unsupported claims
+
+Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently. A mechanism recorded in the invariant map is likewise established for a family only where that family's section says so.
+
+## Serial business-task composition
+
+The approved [serial business-task account](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#implementation-in-progress) has an independently approved private checkpoint with proof corrections at `da2b3ca3`.
+
+**Implemented.** Exact-overlay source and independent Lean/TypeScript cover root User/Service chains, named handlers, enclosing input snapshots and exact String/null output mapping. Four-case metadata-free whole-chain lowering/result/publication checks pass. Committed start/execution derive nonempty instance/declared-root identity, exact token/wait ownership, canonical issuance, ordered suffix, required-input availability, canonical Process data and captured local lifetime. Valid payloads commit through public admission; scheduled closure reaches a wait/completion within two internal steps. The capsule owns bounded proof receipts/reassessment.
+
+**Open.** [Registration](capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary) passed public start/replay review `9048174d`. [Public-delivery composition](BUSINESS-PROCESS-PUBLIC-DELIVERY-PROPOSAL.md) implements optional complete `candidateGroups` plus one string field by exact Task identity in serial, mixed-task and business-Error profiles only. [Independent checked and profile IL gates](../BpmnSemantics/DefinitionAdmissionJsonMain.lean) refuse Boolean/handler-key metadata; generic IL stays structurally valid. Cross-target witnesses preserve old inputs, passive control/data, occurrences and stale refusal. Checkpoint audit approved `9133ea7b`; metadata-bearing hosting/browser/CIB closure remains open. No additional CIB coverage is established.
+
+## Activity data-input User Task
+
+The [Activity data-input mediation specification](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) is **implemented, independently closure-reviewed, and evidence-closed** for one exact required direct Process-`Property`-to-`DataInput` association on one ordinary User Task, with an empty `OutputSet` and no transformation.
+
+**Implemented.** Source admission and lowering accept exactly one required scalar `DataInput`, one `InputSet` referencing it, one empty `OutputSet`, and one `DataInputAssociation` whose `sourceRef` and `targetRef` resolve by object identity rather than by name. Lean and the independently written TypeScript core decide readiness from the committed Process binding alone, treat an explicit null as available and an absent binding as unavailable, copy the value once into a freshly minted Activity-occurrence-owned scope before the task exists, publish exactly that binding as the task's optional input collection, and dispose the scope atomically with the Activity on empty completion. Lean proves evaluator soundness for both transitions, exact copy with Process-binding preservation, single-scope disposal, wrong- and stale-identity refusal, and the absence-versus-null non-law; owner freshness is derived from a family-local bound proved at the unstarted and started states and preserved by both transitions, so no call site justifies it, though establishing that bound at an arbitrary reachable state still belongs to the open global-predicate lane. Three answer-free scenarios agree across Lean, the core, and Temporal, and one real service runs all three on one compiled program through Worker replacement, host termination, terminal receipts, and replay.
+
+**Absent.** Any `DataOutput` on *this* profile's task, output association or mapping, further `InputSet`, second input, optional or while-executing input, `Assignment`, transformation, `FormalExpression`, `ItemDefinition`, `DataObject`, `DataStore`, collection or nested value, Activity-local mutation while active, later data-ingress command, another Task type or Activity body, boundary Event, loop or Multi-Instance reuse, Sub-Process or Call Activity mapping, form or authorization rule, and any CIB data-mediation claim remain outside this slice. A Process whose source binding is absent stays durably Running; that is a recorded liveness limitation of this profile, not a hidden retry.
+
+## Activity data-output User Task
+
+The [Activity data-output mediation specification](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md) is **implemented and closure-reviewed** for one exact required direct `DataOutput`-to-Process-`Property` association on one ordinary User Task, with an empty `InputSet` and no transformation.
+
+**Implemented.** Source admission and lowering accept exactly one required scalar `DataOutput`, one `OutputSet` referencing it, one empty `InputSet`, and one `DataOutputAssociation` whose `sourceRef` and `targetRef` resolve by object identity rather than by name. Lean and the independently written TypeScript core activate the task on its incoming token alone, arm one empty Activity-occurrence-owned scope, and on an accepted completion fill the declared output by its exact id, execute the association into the Process `Property` the association names, and dispose the wait, the Activity record, and the scope in the same transition. A submission naming anything else, omitting the output, or adding a second name is refused with exact state preservation. Lean proves evaluator soundness for both transitions, token-only activation with no data premise, the routed write, single-scope disposal, wrong- and stale-identity refusal, and issuing-discipline and body-claim preservation for the arming writer. Three answer-free scenarios agree across Lean, the core, and Temporal, and one real service runs all three on one compiled program through Worker replacement, a refused completion, host termination, terminal receipts, and replay.
+
+**Absent.** A second `DataOutput` or `OutputSet`, optional or while-executing outputs, `OutputSet`/`InputSet` pairing, an Activity carrying input and output mediation together, `Assignment`, transformation, `FormalExpression`, `ItemDefinition`, `DataObject`, `DataStore`, collection or nested value, Activity-local mutation while active, another Task type or Activity body, boundary Event, loop or Multi-Instance reuse, Sub-Process or Call Activity mapping, form or authorization rule, and any CIB data-mediation claim remain outside this slice. The BPMN prose conflict between Clause 10.4.2's container context and Clause 13.3.2's Activity context is recorded and resolved in favour of the former; it is a standard-internal inconsistency, not a vendor relationship.
+
+## Message payload Catch Event
+
+The [Message payload catch mediation specification](capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md) is **implemented, independently closure-reviewed, and evidence-closed** for one exact operation-addressed Intermediate Catch Message Event with one required scalar Event-owned `DataOutput`, one direct association, and one distinct Process `Property`.
+
+**Implemented.** Source admission resolves the Message, `DataOutput`, `OutputSet`, association, and target by parser-graph identity and lowers the distinct checked and IL arms. Lean and the independently written TypeScript core retain the ordinary Message-wait shape while selecting the payload-bearing interaction, accept String, Boolean, Integer, and explicit Null payloads, atomically route only the associated Property binding while withdrawing the subscription and producing the outgoing token, and preserve exact state for the payload-free arm, collections, wrong channel or occurrence, Event-race ownership, and stale delivery. Lean proves the declarative delivery bridge and quantified complete runtime-state preservation; strict shared and Lean codecs lock the additive checked, IL, stimulus, interaction, and publication-kind shapes. Three answer-free scenarios agree across Lean, the core, and Temporal. The host content-binds payload in command and recovery identity, forces the live subscription through continuation and Worker replacement, retains refusal and routed-write behavior, obtains terminal receipts, and replays every Run. One settlement-confirmation model supplies retained whole-model and Product 2 disclosure evidence. The constrained Lean module-cost record is bound to exact source commit `9ea2a203` and discloses the payload conformance module and changed Timer Start consumer as near-cap.
+
+**Absent.** Structure-bearing or collection `ItemDefinition`s, optional or while-executing outputs, a second output, association, Property, or EventDefinition, expressions, transformation, correlation, modeled throw, Message Flow, and payload on every other Event or Task host remain outside the bounded profile.
+
+## Nested embedded scope data
+
+The approved [nested scope-data account](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md) for `cibseven-2.2.0-nested-embedded-scope-data-draft` has a private checkpoint candidate awaiting semantic-checkpoint review.
+
+**Implemented.** Lean and the independent core carry one Program-level `scopeLocalData` table and an occurrence-owned frame for each declaring serial embedded Sub-Process, nested at most three deep. Entry evaluates declared inputs against the enclosing chain and installs the frame; reads resolve innermost-out to the Process; writes land at the innermost declaring frame; completion writes outputs and then disposes the frame. Prepared scope-creation and regional-completion transitions refuse declared scopes, and frames never reach public observation. The Start capacity envelope runs one journey per combination of extreme nested User Task completions, capped at 1,024, and refuses the Start before any Workflow when a journey exceeds a budget or the cap; [protocol](../packages/temporal-adapter/protocol/test/nested-scope-data-capacity-envelope.test.ts) and [Workflow encoder](../packages/temporal-adapter/workflow/test/nested-scope-data-capacity-envelope.test.ts) tests bound the estimates.
+
+**Open.** Semantic-checkpoint review; the complete Lean, pipeline, Temporal and model-corpus gates; CIB calibration of the third nesting level (`CIB-EXT-0020`); closure.

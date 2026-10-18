@@ -584,6 +584,7 @@ theorem root_completion_decreases_runtime_burst_rank
   have step := fire_sound program _ before after fired
   cases step with
   | completeScope _ _ _ _ _ _ completed =>
+    change completeSelectedScope? program before scope none = some after at completed
     rw [selected_scope_completion_delegates_to_root program before scope
       (program_analysis_operations_allowed program analysis analyzed)] at completed
     unfold completeScopeState? at completed

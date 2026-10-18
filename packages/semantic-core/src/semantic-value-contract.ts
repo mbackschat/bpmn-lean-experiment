@@ -46,6 +46,17 @@ export type VariableMapping = DeepReadonly<{
   target: string;
   expression: MappingExpression;
 }>;
+
+/**
+ * NSD-INIT-01 and NSD-OUTPUT-01: the declared locals of one ordinary embedded Sub-Process scope. Checked and Program
+ * contracts share this shape because lowering keeps definition-scope identity; `localInputs` is nonempty since every
+ * output reads a declared local.
+ */
+export type ScopeLocalData = DeepReadonly<{
+  scopeId: string;
+  localInputs: VariableMapping[];
+  localOutputs: VariableMapping[];
+}>;
 export const EffectProtocol = {
   Activity: "urn:bpmn-lean:effect-protocol:activity-v1",
 } as const;

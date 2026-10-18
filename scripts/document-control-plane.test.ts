@@ -327,6 +327,21 @@ test("routes overrides and explicit multi-area paths without plan knowledge", ()
   assert.throws(() => routeImplementationPath("root-new-engine.ts"), /unrouted/u);
 });
 
+test("routes the nested scope-data artifacts to the data-flow family map beside their tree owner", () => {
+  for (const [file, owner] of [
+    ["BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean", AreaId.EngineRuntimeProof],
+    ["BpmnSemantics/NestedScopeDataConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/nested-embedded-scope-data/README.md", AreaId.AssuranceAdoption],
+    ["profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json", AreaId.EngineContractsSource],
+  ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineDataFamily], file);
+  for (const [file, owner] of [
+    ["BpmnSemantics/SemanticProcess/ScopedData.lean", AreaId.EngineRuntimeProof],
+    ["BpmnSemantics/NestedScopeDataLaws.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/activity-data-input-user-task/README.md", AreaId.AssuranceAdoption],
+    ["profiles/bpmn-2.0.2-activity-data-input-output-user-task-draft/profile.json", AreaId.EngineContractsSource],
+  ] as const) assert.deepEqual(routeImplementationPath(file), [owner], file);
+});
+
 /**
  * AA-16 oracle: a `docs/` path routes to the detail maps that link it, so session start loads the
  * subject's owners instead of every map. Fixtures vary only the link topology; the area directory is

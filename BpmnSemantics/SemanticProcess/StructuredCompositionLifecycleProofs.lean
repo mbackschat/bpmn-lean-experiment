@@ -86,7 +86,7 @@ theorem admitted_fire_preserves_lifecycle_frame
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
-        rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
+        rw [declared_scope_completion_delegates_to_root program before scope allowed] at completed
         unfold completeScopeState? at completed
         split at completed
         · split at completed
@@ -423,7 +423,7 @@ theorem admitted_fire_preserves_task_lifetime_shape
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
-        rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
+        rw [declared_scope_completion_delegates_to_root program before scope allowed] at completed
         unfold completeScopeState? at completed
         split at completed
         · rename_i occurrence selected

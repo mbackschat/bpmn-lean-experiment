@@ -32,6 +32,7 @@ import type {
   EffectDescriptor,
   ErrorReference,
   MessageChannel,
+  ScopeLocalData,
   VariableMapping,
 } from "./semantic-value-contract.js";
 
@@ -437,4 +438,6 @@ export type CheckedProcess = DeepReadonly<{
   compensation?: CheckedCompensation;
   transactionCancellation?: CheckedTransactionCancellation;
   interruptingMessageEventSubProcesses?: CheckedInterruptingMessageEventSubProcess[];
+  /** Absent unless nonempty; only the nested scope-data profile admits it. */
+  scopeLocalData?: ScopeLocalData[];
 }>;

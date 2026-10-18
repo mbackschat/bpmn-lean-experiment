@@ -378,7 +378,7 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
       "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [profile]; rfl
   simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler,
     Bool.false_eq_true, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
-  obtain ⟨_, capabilities⟩ := capabilities
+  obtain ⟨_, _, capabilities⟩ := capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
     programParallelMultiInstanceProfile_pair_census program profile capabilities.1.2
   have selectedExact := programWellFormed_parallel_projection_exact program entryOperation

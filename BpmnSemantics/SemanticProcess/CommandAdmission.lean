@@ -29,6 +29,7 @@ import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateVali
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
 import BpmnSemantics.SemanticProcess.CommandStartBindings
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import BpmnSemantics.SemanticProcess.NestedScopeDataCommand
 
 /-! # Semantic Process external command admission
 
@@ -236,6 +237,12 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
                 else
                   { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
+          else if nestedScopeDataProgram program then
+            match NestedScopeData.completeUserTask? program state taskId submittedValues with
+            | some successor =>
+                if taskId.processInstanceId = instanceId then { outcome := .committed, state := successor }
+                else { outcome := .rejected, state }
+            | none => { outcome := .rejected, state }
           else
           match completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId with
           | some successor =>
@@ -378,6 +385,8 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
                 completeSerialEffect? program state effectId result
                 else if program.identity.semanticProfile == portableEffectDataProfileId then
                 completeSerialEffectUnder? .singletonBusinessItem program state effectId result
+                else if nestedScopeDataProgram program then
+                NestedScopeData.completeEffect? program state effectId result
                 else completeEffect state effectId result) with
               | some successor =>
                   if effectId.processInstanceId = instanceId then

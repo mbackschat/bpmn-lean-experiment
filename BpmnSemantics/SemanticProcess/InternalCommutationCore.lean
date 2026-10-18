@@ -421,11 +421,18 @@ def InternalArmingWrite.available (state : RuntimeState) : InternalArmingWrite â
   | .effect wait _ => !state.variables.activities.any (activityScopeMatches (effectWaitOccurrence wait))
   | _ => true
 
-/-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. -/
+/-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. NSD-READ-01
+reads scope frames, which no footprint atom names individually; like the SMIS read, a nested read
+therefore claims the Activity population, which keeps it out of the Process-only read-frame law. -/
 def scopedEffectInputReads? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (operation : SemanticOperation) : Option (List InternalStateAtom) := do
   let .awaitEffect _ _ _ _ effect _ := operation | none
-  if !(sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner) then none
+  if !(sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner) then
+    if nestedScopeDataProgram program then
+      some (.activityPopulation :: effect.inputMappings.filterMap fun mapping => match mapping.expression with
+        | .enclosingVariable name => some (.processVariable name)
+        | _ => none)
+    else none
   else
     let binding â† sequentialScopeBindingForOwner? program state owner
     let processReads := effect.inputMappings.filterMap fun mapping => match mapping.expression with

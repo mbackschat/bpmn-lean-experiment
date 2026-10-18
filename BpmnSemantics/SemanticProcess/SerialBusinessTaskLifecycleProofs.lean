@@ -302,6 +302,8 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
       ⟨taskId.elementId.value⟩ analyzed
   have ordinary : isCallActivityProgram program = false := by
     simp [isCallActivityProgram, profile, serialBusinessTaskProfileId]
+  have notNested : nestedScopeDataProgram program = false :=
+    nestedScopeDataProgram_of_profile_value (by rw [profile])
   have legacy : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
       completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation := by
     simp [completeOrdinaryUserTaskWithCompensation?, compensationTargetDeclaredForFamily, noRetention]
@@ -316,7 +318,7 @@ theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before :
   cases control : before.control <;>
     simp only [dispatchStimulus, noSnapshots] <;>
     simp [control, profile, serialBusinessTaskProfileId, noParallel, noSequential, noMessageMonitored, noMessageBounded,
-      noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, legacy]
+      noBounded, noInput, noOutput, noMonitored, noComposed, ordinary, notNested, legacy]
   case running instanceId =>
     cases completed : completeUserTask before taskId.processInstanceId
         ⟨taskId.elementId.value⟩ taskId.activation with

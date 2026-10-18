@@ -1,6 +1,7 @@
 import { mixedTaskControlProgramShape, mixedTaskControlCheckedShape } from "./mixed-task-control-flow-admission.js";
 import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
 import { isSerialChainProfile, serialChainRulesForProfile } from "./serial-business-task-policy.js";
+import { nestedScopeCheckedShape, nestedScopeProgramShape } from "./nested-scope-data-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { sequentialScopeProgramShape } from "./sequential-scope-program-admission.js";
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
@@ -59,6 +60,7 @@ export function profileAllowsProgramShape(
 ): boolean {
   if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return sequentialScopeProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlProgramShape(actualOperations, definitionScopeCount, semanticProfile);
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeProgramShape(actualOperations, definitionScopeCount);
   if (isSerialChainProfile(semanticProfile)) return serialBusinessProgramShape(actualOperations, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionProgramShape(actualOperations, definitionScopeCount);
@@ -185,6 +187,7 @@ export function profileAllowsCheckedProcessShape(
   definitionScopeCount: number,
 ): boolean {
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlCheckedShape(nodes, definitionScopeCount, semanticProfile);
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeCheckedShape(nodes, definitionScopeCount);
   if (isSerialChainProfile(semanticProfile)) return serialBusinessCheckedShape(nodes, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionCheckedShape(nodes, definitionScopeCount);

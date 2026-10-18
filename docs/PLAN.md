@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the nested embedded scope data batch, first of the embedded and called scope family per the [batch order](#scheduled-delivery-batches): serial nested scopes carrying the embedded, scope-local clauses of `PC-DATA-03`–`06`. `PC-SCOPE-01`/`02`/`04` follow as later batches. Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
+Current task: nested embedded scope data, first batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches). `PC-SCOPE-01`/`02`/`04` follow. Structured Message payloads are committed (`310cb4cd`) on focused evidence; Multi-Instance closure stays held at qualification.
 
 Deliverable: serial nested embedded scopes whose locals shadow by present null, take writes at the nearest declaring owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
 
-Acceptance blockers: the [proposal](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md) is not yet accepted; the IL fields, frame chain, User Task contract and capacity reservation are unimplemented. Core Lean edits are made in one batch; complete Lean, pipeline, Temporal and model-corpus gates run once at batch acceptance, also covering `310cb4cd`.
+Acceptance blockers: the semantic-checkpoint review of the [implementation corrections](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#implementation-corrections), then the complete Lean, pipeline, Temporal and model-corpus gates once each (also covering `310cb4cd`).
 
-Current result: the serial nested-scope data proposal is approved after its correction audits; implementation has not started.
+Current result: the batch implements the IL table, frame chain, source reader, profile, three retained models and the Start capacity reservation; core, source, contracts, differential and capacity tests pass, and the container-bounded fixture builds are green and recorded. The hosted purchase-order model drops four mappings to fit the Start envelope; they stay Lean-only witnesses.
 
-Effort budget: 240 minutes wall from 2026-10-14 13:45 UTC for the implementation batch through checkpoint review. At the limit, stop and record before renewal.
+Effort budget: 240 minutes wall from 2026-10-18 16:00 UTC, renewed by owner direction, through checkpoint review and commit. At the limit, stop and record before renewal.
 
-Next action: implement the batch, core Lean edits first, then the TypeScript core, source admission and scenarios.
+Next action: commit the checkpoint target, start the cold semantic-checkpoint review, then run the heavy gates once each, one at a time.
 
 Oracle: a present-null local in an inner scope hides a Process namesake and a write updates the nearest existing owner only; today each is refused or flattened.
 

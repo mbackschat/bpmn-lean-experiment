@@ -162,7 +162,7 @@ theorem applyInternalOperationOccurrence_parallelScope_excluded_waits
       obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record rfl replay
       exact completeParallelScope_excluded_waits entry candidate.owner before after prior completed
     case completeScope =>
-      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay
+      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (analyzed_not_nested program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored, completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed
       exact completeScopeState_excluded_waits before after scopeId output prior completed

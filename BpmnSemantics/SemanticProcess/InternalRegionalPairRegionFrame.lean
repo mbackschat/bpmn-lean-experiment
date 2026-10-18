@@ -134,8 +134,8 @@ theorem preparedRegional_graph_filters (program : Program) (before after : Runti
       obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition output
         prepared.selection selected
       have raw : completeSelectedScope? program before definition output = some after := by
-        simp only [fire?, snapshots] at fired
-        exact fired
+        exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+          selected snapshots fired
       obtain ⟨ordinary, completed, _, scopes, calls, _⟩ := completeSelectedScope_position_fields program before after definition output raw
       have update := (completeScopeState_selected_update before ordinary definition output prepared.selection.root census completed).2
       obtain ⟨base, baseFound, baseWrites⟩ := regional_footprint_base before hosting prepared.selection prepared.region

@@ -95,7 +95,7 @@ private def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : Li
       profile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" then
     bindings.all (fun binding => SerialBusinessTask.scalar binding.value)
-  else if profile == portableEffectDataProfileId then
+  else if profile == portableEffectDataProfileId || profile == nestedScopeDataProfileId then
     bindings.all (fun binding => EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value)
   else bindings.isEmpty
 

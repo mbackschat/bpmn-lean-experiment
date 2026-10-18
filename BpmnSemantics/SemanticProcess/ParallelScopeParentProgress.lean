@@ -415,7 +415,7 @@ theorem ParallelScopeParentHistory.no_root_completion_replay (program : Program)
     (record : InternalTransitionRecord) (kind : record.operationKind = .completeScope)
     (replayed : replayInternalOperationOccurrence? program before record = some after) : False := by
   obtain ⟨scopeId, output, scope, _, selected, _, completed⟩ :=
-    replayed_scope_completion_execution program before after record kind replayed
+    replayed_scope_completion_execution program before after record kind replayed (analyzed_not_nested program analysis admitted)
   have present : scope ∈ before.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) := by
     rw [selected]
     simp

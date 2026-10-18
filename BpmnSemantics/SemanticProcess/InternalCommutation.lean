@@ -219,6 +219,24 @@ theorem prepared_effect_reads_activity_population (program : Program) (state : R
         simp [footprintOfPatch, scopedEffectInputReads?, selected, binding,
           canonicalStateAtomSet, mem_sortBy]
 
+theorem prepared_nested_effect_reads_activity_population (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state (.awaitEffect id origin input output effect route) = some patch)
+    (disabled : (sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner) = false)
+    (nested : nestedScopeDataProgram program = true) :
+    .activityPopulation ∈ (footprintOfPatch patch).reads := by
+  simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at prepared
+  obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+  split at prepared
+  · simp at prepared
+  · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+    all_goals
+      rcases prepared with ⟨evaluated, _, _, rfl⟩
+      simp only [Decidable.imp_iff_not_or] at disabled
+      simp [footprintOfPatch, scopedEffectInputReads?, nested, disabled, canonicalStateAtomSet, mem_sortBy]
+
 theorem prepared_arm_process_input_frames (program : Program) (state after : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)
     (prepared : prepareInternalArm? program state operation = some patch)
@@ -237,11 +255,17 @@ theorem prepared_arm_process_input_frames (program : Program) (state after : Run
     | false => rfl
     | true => exact False.elim (noPopulation
         (prepared_effect_reads_activity_population program state id origin input output effect route patch prepared selected))
+  have notNested : nestedScopeDataProgram program = false := by
+    cases nested : nestedScopeDataProgram program with
+    | false => rfl
+    | true => exact False.elim (noPopulation
+        (prepared_nested_effect_reads_activity_population program state id origin input output effect route patch
+          prepared disabled nested))
   constructor
   · intro mappings
-    simp only [evaluateEffectInputs?, disabled]
+    simp only [evaluateEffectInputs?, disabled, notNested]
     simp [processFrame]
-  · simp only [scopedEffectInputReads?, disabled]
+  · simp only [scopedEffectInputReads?, disabled, notNested]
     rfl
 
 theorem prepared_arm_read_frame (program : Program) (state after : RuntimeState)

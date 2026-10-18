@@ -1,4 +1,5 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
+import { isScopeLocalDataTable, nestedScopeProgramAnalysis, nestedScopeStimulusDataAdmitted } from "./nested-scope-data-admission.js";
 import { sequentialScopeProgramAdmitted } from "./sequential-scope-program-admission.js";
 import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
 import { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
@@ -119,6 +120,7 @@ export function supportsSemanticProcessScenario(
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
+    nestedScopeStimulusDataAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     portableHandoffStimulusDataAdmitted(program, start) &&
@@ -144,6 +146,7 @@ export function supportsSemanticProcessExecution(
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
+    nestedScopeStimulusDataAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     portableHandoffStimulusDataAdmitted(program, start) &&
@@ -176,6 +179,7 @@ export function isWellFormedSemanticProcessProgram(
     ? value.operations
     : undefined;
   const hasMessageEventSubProcesses = Object.hasOwn(value, "interruptingMessageEventSubProcesses");
+  const hasScopeLocalData = Object.hasOwn(value, "scopeLocalData");
   const hasCompensationActivityRetention = Object.prototype.hasOwnProperty.call(
     value,
     "compensationActivityRetention",
@@ -207,6 +211,7 @@ export function isWellFormedSemanticProcessProgram(
         ? ["compensationEventSubProcessSnapshots"]
         : []),
       ...(hasCompensationExecution ? ["compensationExecution"] : []),
+      ...(hasScopeLocalData ? ["scopeLocalData"] : []),
     ]) ||
     value.kind !== SemanticProcessKind.SemanticProcess ||
     identity === undefined ||
@@ -253,6 +258,8 @@ export function isWellFormedSemanticProcessProgram(
       )) ||
     (hasCompensationExecution &&
       !isCompensationExecutionDeclaration(value.compensationExecution)) ||
+    (hasScopeLocalData && (identity.semanticProfile !== SemanticProfileId.NestedEmbeddedScopeData ||
+      !isScopeLocalDataTable(value.scopeLocalData))) ||
     (hasMessageEventSubProcesses && (!Array.isArray(value.interruptingMessageEventSubProcesses) ||
       !value.interruptingMessageEventSubProcesses.every(isInterruptingMessageEventSubProcessDeclaration))) ||
     !isSortedById(controlPlaces) ||
@@ -299,6 +306,8 @@ export function isWellFormedSemanticProcessProgram(
   if (identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID && !sequentialScopeProgramAdmitted(program)) return false;
   if ((identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) && !mixedTaskControlProgramGraph(program)) return false;
   if (isSerialChainProfile(identity.semanticProfile) && !serialBusinessProgramGraph(program)) return false;
+  if (identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData &&
+      nestedScopeProgramAnalysis(program) === null) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;

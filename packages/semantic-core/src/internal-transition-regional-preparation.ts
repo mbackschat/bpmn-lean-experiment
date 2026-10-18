@@ -27,6 +27,7 @@ import type { SelectedErrorPropagation } from "./semantic-process-error-runtime.
 import { selectScopeTermination, terminateScope } from "./semantic-process-termination-runtime.js";
 import type { SelectedScopeTermination } from "./semantic-process-termination-runtime.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
+import { nestedScopeRecord } from "./nested-scope-data.js";
 
 export type InternalRegionalOperation = Extract<SemanticOperation, {
   kind: SemanticOperationKind.ReturnProcess | SemanticOperationKind.CompleteScope |
@@ -121,6 +122,8 @@ function selectRegionalTransition(
       };
     }
     case SemanticOperationKind.CompleteScope: {
+      // NSD-OUTPUT-01 writes data at completion, so a declared scope is never a regional candidate.
+      if (operation.parentOutput !== null && nestedScopeRecord(program, operation.scopeId) !== undefined) return null;
       const selected = selectScopeCompletion(operation, state);
       const withdrawal = selectScopeCompletionWithdrawal(program, operation.scopeId, state);
       return selected === null || withdrawal === null ? null : {

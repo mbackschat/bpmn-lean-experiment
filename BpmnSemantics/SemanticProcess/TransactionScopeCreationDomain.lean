@@ -127,10 +127,10 @@ theorem scopeCreation_rootCompensationDomain (program : Program) (state : Runtim
                   simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true,
                     decide_eq_true_eq] at definitionMatches
                   simp only [internalScopeCreationRetentionUnchanged, retentionPresent,
-                    Option.map_some, decide_eq_true_eq] at unchanged
+                    Option.map_some, Bool.and_eq_true, decide_eq_true_eq] at unchanged
                   rcases memberShape with root | child
                   · simp [root] at definitionMatches
-                  · exact False.elim (unchanged (by grind))
+                  · exact False.elim (unchanged.1 (by grind))
               | invokeProcess id callOrigin input process scope entry returnOperation data =>
                   cases data with
                   | scalar => simp [internalScopeCreationDefinitionMatches] at definitionMatches

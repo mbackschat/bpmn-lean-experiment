@@ -22,11 +22,13 @@ export type EffectMappingValuePolicy =
   typeof EffectMappingValuePolicy[keyof typeof EffectMappingValuePolicy];
 
 /**
- * Only the structured effect-data profile widens effect mapping. Every other profile, including one the catalog does
- * not know, keeps the scalar contract: widening must be an explicit classification, never an inherited default.
+ * Only the structured effect-data and nested scope-data profiles widen effect mapping. Every other profile, including
+ * one the catalog does not know, keeps the scalar contract: widening must be an explicit classification, never an
+ * inherited default.
  */
 export function effectMappingValuePolicyForProfile(semanticProfile: string): EffectMappingValuePolicy {
-  return semanticProfile === SemanticProfileId.PortableBusinessEffectData
+  return semanticProfile === SemanticProfileId.PortableBusinessEffectData ||
+      semanticProfile === SemanticProfileId.NestedEmbeddedScopeData
     ? EffectMappingValuePolicy.SingletonBusinessItem
     : EffectMappingValuePolicy.Scalar;
 }

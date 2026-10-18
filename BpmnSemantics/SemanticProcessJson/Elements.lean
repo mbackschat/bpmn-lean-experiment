@@ -96,6 +96,22 @@ def decodeErrorReference (json : Json) :
       errorElementId := ⟨← stringField json "errorElementId"⟩
       code := ← stringField json "code" }
 
+def decodeScopeLocalData (json : Json) : Except String ScopeLocalData := do
+  requireObjectShape json ["localInputs", "localOutputs", "scopeId"]
+  pure
+    { scopeId := ⟨← stringField json "scopeId"⟩
+      localInputs := ← decodeArray decodeVariableMapping (← field json "localInputs")
+      localOutputs := ← decodeArray decodeVariableMapping (← field json "localOutputs") }
+
+/-- The optional `scopeLocalData` table is absent unless nonempty, so an empty array is a second
+spelling of "no table" and is refused rather than normalized. -/
+def decodeScopeLocalDataField (json : Json) : Except String (List ScopeLocalData) := do
+  match ← optionalField json "scopeLocalData" with
+  | none => pure []
+  | some table =>
+      let records ← decodeArray decodeScopeLocalData table
+      if records.isEmpty then throw "scopeLocalData must be absent or nonempty" else pure records
+
 def decodeDefinitionScope (json : Json) : Except String DefinitionScope := do
   requireObjectShape json ["id", "originElementId", "parentScopeId"]
   pure

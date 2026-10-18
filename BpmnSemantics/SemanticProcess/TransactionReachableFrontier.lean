@@ -363,13 +363,14 @@ theorem transaction_entry_operation_reaches_child (p : Program) (roles : Transac
     simp [initializeTransactionRetention, roles.retentionPresent, roles.retentionScope,
       transactionChildOwner, transactionEnteredState]
   simp only [shape, attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent]
-  change (match enterScopeWithCompensationRetention? p
+  change (match enterDeclaredScope? p
       (transactionInitiatedState roles instanceId variables) roles.first roles.childEntry roles.child.id with
     | none => InternalOperationAttempt.disabled
         (.enterScope id origin roles.first roles.childEntry roles.child.id)
     | some successor => InternalOperationAttempt.applied
         { operation := .enterScope id origin roles.first roles.childEntry roles.child.id
           successor }) = _
+  rw [enterDeclaredScope?_other_profile p _ roles.first roles.childEntry roles.child.id roles.not_nested]
   rw [applied]
 
 def transactionSplitState {p : Program} (roles : TransactionAdmittedRoles p)
@@ -646,9 +647,10 @@ theorem transaction_initial_arming_completions_disabled (p : Program) (roles : T
       | some pair => dsimp only [Bind.bind, Option.bind]; split <;> simp [refused]
     · simp [completeBoundedScope?, refused]
   simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent]
-  change (match completeSelectedScope? p state scope output with
+  change (match completeDeclaredScope? p state scope output with
     | none => InternalOperationAttempt.disabled _
     | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _
+  rw [completeDeclaredScope?_other_profile p state scope output roles.not_nested]
   rw [selected]
 
 theorem transaction_frontier_attempt_iff (p : Program) (state : RuntimeState)

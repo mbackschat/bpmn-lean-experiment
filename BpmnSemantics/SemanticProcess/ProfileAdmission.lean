@@ -65,7 +65,7 @@ theorem activityDataInputOutputProfile_property_endpoints (program : Program)
   rw [profile] at capabilities
   simp [programShape?, activityDataInputOutputUserTaskProfileId,
     sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId] at capabilities
-  obtain ⟨_, capabilities⟩ := capabilities
+  obtain ⟨_, _, capabilities⟩ := capabilities
   have selected := capabilities.2.1.1.1.1.1.1.1.2
   have endpoint := selected _ member
   change ((match directInput.source with | .property _ => true | .processDataInput _ => false) &&

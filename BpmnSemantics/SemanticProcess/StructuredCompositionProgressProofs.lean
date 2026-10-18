@@ -372,6 +372,7 @@ theorem admitted_enabled_operation_has_phase
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_scope_completion_delegates_to_root program before scope allowed] at completed
         unfold completeScopeState? at completed
         split at completed

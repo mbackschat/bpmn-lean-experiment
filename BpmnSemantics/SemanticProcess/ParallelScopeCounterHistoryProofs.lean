@@ -135,7 +135,7 @@ private theorem replayed_root_completion_native_counter_frame
     after.activations = before.activations ∧ after.effectActivations = before.effectActivations ∧
       after.endOccurrences = before.endOccurrences := by
   obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
-    replayed_scope_completion_execution program before after record kind replayed
+    replayed_scope_completion_execution program before after record kind replayed (analyzed_not_nested program analysis admitted)
   obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
   rw [completeSelectedScope?, unmonitored,
     completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed

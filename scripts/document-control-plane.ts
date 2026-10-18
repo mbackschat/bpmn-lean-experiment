@@ -11,6 +11,7 @@ export const AreaId = Object.freeze({
   EngineContractsSource: "ENGINE-CONTRACTS-SOURCE",
   EngineRuntimeProof: "ENGINE-RUNTIME-PROOF",
   EngineSemanticFamily: "ENGINE-SEMANTIC-FAMILY",
+  EngineDataFamily: "ENGINE-DATA-FAMILY",
   EngineSemanticInvariant: "ENGINE-SEMANTIC-INVARIANT",
   TemporalHosting: "TEMPORAL-HOSTING",
   BpmPlatform: "BPM-PLATFORM",
@@ -380,6 +381,21 @@ function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
   }
 }
 
+/**
+ * Nested embedded scope-data artifacts, which the data-flow family map owns beside their top-level area.
+ *
+ * Routed by path rather than by directory because the family's Lean modules, scenarios, and profile sit
+ * inside trees whose other files belong to unrelated areas; the area stays first so a reader of the
+ * wider tree still receives its ordinary owner.
+ */
+function withNestedScopeDataOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
+  const nestedScopeData =
+    /^BpmnSemantics\/(?:SemanticProcess\/NestedScopeData[^/]*|NestedScopeDataConformance)\.lean$/u.test(file) ||
+    file.startsWith("scenarios/nested-embedded-scope-data/") ||
+    file.startsWith("profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/");
+  return nestedScopeData ? [...routes, AreaId.EngineDataFamily] : routes;
+}
+
 function packageRoutes(pathParts: ReadonlyArray<string>): ReadonlyArray<AreaId> {
   switch (pathParts[1]) {
     case "bpmn-source":
@@ -476,14 +492,16 @@ export function routeImplementationPath(file: string, routing?: DocumentRouting)
     case "adoption":
     case "model-corpus":
     case "runners":
-    case "scenarios":
     case "scripts":
       return [AreaId.AssuranceAdoption];
+    case "scenarios":
+      return withNestedScopeDataOwner(file, [AreaId.AssuranceAdoption]);
     case "BpmnSemantics":
-      return [AreaId.EngineRuntimeProof];
+      return withNestedScopeDataOwner(file, [AreaId.EngineRuntimeProof]);
     case "contracts":
-    case "profiles":
       return [AreaId.EngineContractsSource];
+    case "profiles":
+      return withNestedScopeDataOwner(file, [AreaId.EngineContractsSource]);
     case "deploy":
       return [AreaId.TemporalHosting, AreaId.BpmPlatform];
     case "docs":

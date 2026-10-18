@@ -86,7 +86,7 @@ Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lea
 - Effect activation copies mapped input; Activity arming copies the declared Property or Process input
 - Success and matching Error completion map outputs and atomically dispose the local owner
 - Process-only canonical variable projection; the selected one-element input collection of a live data-bearing task is the sole Activity-local fact reaching public observation
-- an Activity-owned scope of any cardinality but one publishes no input collection in either account, exactly as owning no scope does, rather than truncating a larger collection or failing the projection
+- an Activity-owned scope of any cardinality but one publishes no input collection in either account, as owning none does, never a truncated collection or a projection failure
 - cross-owner, missing-owner, duplicate-owner, private-local non-observability, closure-limit, data-independent-enabledness, and compile-time immutability guards
 - unchanged shared wire artifacts, canonical traces, effect transport, retained CIB evidence, and Temporal Commands
 
@@ -94,7 +94,7 @@ Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lea
 
 - one canonical checked definition-scope forest with exact node and Sequence Flow ownership; existing profiles remain one rooted tree while the bounded Call profile adds one distinct parentless called root
 - one canonical Semantic Process definition-scope forest with exact operation and control-place ownership plus entry-root and called-root completion strategies
-- one root runtime occurrence plus one level of parent-linked child occurrence identity or one occurrence-linked parentless called root under the exact profile
+- one root runtime occurrence plus, under the exact profile, parent-linked child occurrences or one occurrence-linked parentless called root
 - scope-owned tokens and User Task, Message, Timer, and effect waits
 - explicit `enterScope`, `invokeProcess`, `returnProcess`, `reachNoneEnd`, and quiescent `completeScope` operations
 - child None Start as entry structure rather than a second Process initiation
@@ -203,7 +203,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 - parallel legacy runtime representation
 - public Activity-local observation
 - bare-element or bare-ordinal ownership
-- variable-scope traversal, shadowing, or variable scope kinds beyond the implemented effect-local slice
+- variable-scope traversal, shadowing, or variable scope kinds beyond the implemented effect-local and nested scope-data slices
 
 ### Definition and execution scopes
 
@@ -257,4 +257,4 @@ The [Lean modules](../BpmnSemantics/), [pure core](../packages/semantic-core/), 
 - **Service Task incidents:** one literal-generation-1 report/retry account and one successor-only incident-gated hosting-root cancellation are implemented across CIB, Lean, the core, and Temporal. Product 2 implements bounded operations without semantic authority. A second incident, arbitrary retry policy, exception data, general or native cancellation, compensation, and arbitrary repair remain outside.
 - **Runtime wait identity:** private PMIS storage preservation establishes wait-key uniqueness at actual reachable boundaries/prefixes. General preservation across registered transition families remains unimplemented. `waitIdentitiesUnique` names cardinality one over each wait family's occurrence key; `key_absent_after_erase` derives quantified withdrawal finality from that hypothesis. Timer stale-identity laws assume uniqueness for their broader domains. Closing them requires preservation for the consuming family, not private PMIS evidence. The caller's Program cannot establish whether a called instance's wait is declared.
 - **Strongest unresolved proof claim:** full observational checked-source-to-program-run preservation. [The bounded experiment](experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md) retains a provisional direct account, a renamed positional-lowering discriminator, and accepted bounded structural and frontier results, but no run theorem. Production work uses the targeted preservation boundary in [the IL specification](SEMANTIC-PROCESS-IL-SPEC.md#lean-specification-and-proof-obligations); the general theorem reopens only when a second capsule needs the same proposition.
-- **Unsupported across families:** composition beyond the bounded serial and mixed-task accounts in [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#mixed-task-control-flow), general graph progress, repeated or nested scope activation, cycles outside the exact registered root-scope User Task profile and bounded mixed-task account, public or hosted concurrent Multi-Merge execution, Standard Loop Characteristics, Multi-Instance beyond the exact registered sequential and parallel slices, Message payloads beyond the exact single-output catch-Event profiles, Message key/global correlation beyond the exact registered single-property profile, Compensation beyond the registered source and retained semantic checkpoints, and general Event semantics.
+- **Unsupported across families:** composition beyond the bounded serial and mixed-task accounts in [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#mixed-task-control-flow), general graph progress, repeated scope activation, nesting beyond the nested scope-data account, cycles outside the exact registered root-scope User Task profile and bounded mixed-task account, public or hosted concurrent Multi-Merge execution, Standard Loop Characteristics, Multi-Instance beyond the exact registered sequential and parallel slices, Message payloads beyond the exact single-output catch-Event profiles, Message key/global correlation beyond the exact registered single-property profile, Compensation beyond the registered source and retained semantic checkpoints, and general Event semantics.

@@ -127,6 +127,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.PortableBusinessValuesHandoff:
     case SemanticProfileId.SerialBusinessTaskComposition:
     case SemanticProfileId.PortableBusinessEffectData:
+    case SemanticProfileId.NestedEmbeddedScopeData:
     case SemanticProfileId.MixedTaskControlFlow:
     case SemanticProfileId.MixedTaskBusinessError:
     case SemanticProfileId.Compensation:

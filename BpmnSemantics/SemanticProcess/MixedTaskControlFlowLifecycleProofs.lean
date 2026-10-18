@@ -410,6 +410,7 @@ theorem fire_phase (program : Program) (analysis : Analysis) (before after : Run
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_completion_is_root program analysis before scope analyzed] at completed
         obtain ⟨running, quiet, pending, _⟩ := SerialBusinessTask.root_completion_shape before after owner scope framed completed
         obtain ⟨tokens, humans, effects⟩ := SerialBusinessTask.quiescent_root_frontier_empty before owner framed.1

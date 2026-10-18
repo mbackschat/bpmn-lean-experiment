@@ -459,12 +459,14 @@ def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
   let compensation ← decodeOptionalCheckedCompensationField json
   let transactionCancellation ← decodeOptionalCheckedTransactionField json
   let messageHandlers ← optionalField json "interruptingMessageEventSubProcesses"
+  let scopeLocalData ← decodeScopeLocalDataField json
   requireObjectShape json
     (["definitionScopes", "identity", "kind", "nodeScopes", "nodes",
       "processId", "sequenceFlowScopes", "sequenceFlows"] ++
       (if compensation.isSome then ["compensation"] else []) ++
       (if transactionCancellation.isSome then ["transactionCancellation"] else []) ++
-      (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else []))
+      (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else []) ++
+      (if scopeLocalData.isEmpty then [] else ["scopeLocalData"]))
   expectStringField json "kind" "checkedProcess"
   pure
     { identity := ← decodeSourceIdentity (← field json "identity")
@@ -483,6 +485,7 @@ def decodeCheckedProcess (json : Json) : Except String CheckedProcess := do
       compensation, transactionCancellation
       interruptingMessageEventSubProcesses := ← match messageHandlers with
         | none => pure []
-        | some handlers => decodeArray decodeCheckedInterruptingMessageEventSubProcess handlers }
+        | some handlers => decodeArray decodeCheckedInterruptingMessageEventSubProcess handlers
+      scopeLocalData }
 
 end BpmnSemantics.SemanticProcessJson

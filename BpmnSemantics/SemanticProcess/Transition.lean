@@ -27,6 +27,7 @@ import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 
 /-! # Semantic Process internal transitions
 
@@ -126,12 +127,6 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
       some (interruptScope state owner parent handler.output)
     else none
 
-def completeSelectedScope? (program : Program) (state : RuntimeState)
-    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) : Option RuntimeState :=
-  if isMonitoredScopeDefinition program scopeId then
-    completeMonitoredScope? program state scopeId parentOutput
-  else completeBoundedScope? program state scopeId parentOutput
-
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
@@ -171,7 +166,7 @@ inductive OperationStep (program : Program) :
   | enterScope (id origin input childEntry childScopeId)
       (before after : RuntimeState)
       (transition :
-        enterScopeWithCompensationRetention? program before input childEntry childScopeId = some after) :
+        enterDeclaredScope? program before input childEntry childScopeId = some after) :
       OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
   | enterSequentialScope (id origin input childEntry childScopeId output collection item inputs condition)
@@ -366,7 +361,7 @@ inductive OperationStep (program : Program) :
   | completeScope (id origin scopeId parentOutput)
       (before after : RuntimeState)
       (transition :
-        completeSelectedScope? program before scopeId parentOutput = some after) :
+        completeDeclaredScope? program before scopeId parentOutput = some after) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 
@@ -384,7 +379,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .initiateMessage _ _ _ outputs => initiateMessageState? state outputs
   | .initiateTimer _ _ _ outputs => initiateTimerState? state outputs
   | .enterScope _ _ input childEntry childScopeId =>
-      enterScopeWithCompensationRetention? program state input childEntry childScopeId
+      enterDeclaredScope? program state input childEntry childScopeId
   | .enterSequentialMultiInstanceScope .. => (enterSequentialScope? operation state).map SequentialScopeEntryResult.state
   | .completeSequentialMultiInstanceScope .. => (completeSequentialScope? program operation state).map SequentialScopeCompletionResult.state
   -- PMIS-SELECT-01 requires an explicit scope occurrence; this operation-only evaluator cannot supply it.
@@ -458,7 +453,7 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .terminateScope id origin input scopeId =>
       terminateScopeState? program state id origin input scopeId
   | .completeScope _ _ scopeId parentOutput =>
-      completeSelectedScope? program state scopeId parentOutput
+      completeDeclaredScope? program state scopeId parentOutput
   | .completeEventSubProcess _ origin scopeId =>
       completeEventSubProcessState? program state scopeId origin.elementId
   | .triggerCompensation .. | .cancelTransaction .. => none

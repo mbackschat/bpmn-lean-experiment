@@ -114,11 +114,11 @@ theorem regional_localPatch_successors_equal (program : Program) (before after a
           exact congrArg RuntimeState.tokens (localControl_addToken_commutes before patch owner place ordered
             (continuation owner place (baseWrites _ (by simp)))))
       have raw : completeSelectedScope? program before definition output = some after := by
-        simp only [fire?, snapshots] at fired
-        exact fired
+        exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+          selected snapshots fired
       have localRaw : completeSelectedScope? program (patch.apply before) definition output = some afterLocal := by
-        simp only [fire?, snapshots] at localFired
-        exact localFired
+        exact selectInternalRegional?_completeScope_fired program before (patch.apply before) afterLocal id origin definition output _
+          selected snapshots localFired
       rw [raw] at commute
       exact Option.some.inj (localRaw.symm.trans commute)
   | throwError id origin input error handler =>

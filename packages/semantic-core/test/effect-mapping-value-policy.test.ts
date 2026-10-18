@@ -42,10 +42,10 @@ const owner = { processInstanceId: "credit", elementId: "Assess", activation: 1 
 
 const structured = () => map(["entries", { kind: VariableValueKind.List, value: [map(["a", { kind: VariableValueKind.Integer, value: 1 }])] } as VariableValue]);
 
-test("only the structured effect-data profile selects SingletonBusinessItem; unknown profiles stay scalar", () => {
+test("only the structured effect-data and nested scope-data profiles select SingletonBusinessItem; unknown profiles stay scalar", () => {
   for (const profile of [...Object.values(SemanticProfileId), "unknown-profile", ""]) {
     assert.equal(effectMappingValuePolicyForProfile(profile),
-      profile === SemanticProfileId.PortableBusinessEffectData
+      profile === SemanticProfileId.PortableBusinessEffectData || profile === SemanticProfileId.NestedEmbeddedScopeData
         ? EffectMappingValuePolicy.SingletonBusinessItem : EffectMappingValuePolicy.Scalar, profile);
   }
 });

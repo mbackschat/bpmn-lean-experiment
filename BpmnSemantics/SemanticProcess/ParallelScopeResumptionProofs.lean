@@ -465,6 +465,7 @@ theorem ParallelScopeOwnerFrame.nonretirement_exit_refused (program : Program)
     have rootId : root.id = candidate.owner := by simpa only [beq_iff_eq] using sameOwner
     simp only [unique, sameOwner, ↓reduceIte] at refused
     obtain ⟨unmonitored, unbounded⟩ := ParallelScopeReplay.admitted_completion_unwrapped program analysis analyzed scopeId
+    simp only [completeDeclaredScope?] at applied refused
     rw [completeSelectedScope?, unmonitored,
       completeBoundedScope_eq_completeScope_of_unbounded program current scopeId none unbounded] at applied
     rw [completeSelectedScope?, unmonitored,

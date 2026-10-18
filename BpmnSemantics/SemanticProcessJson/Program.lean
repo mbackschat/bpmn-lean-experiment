@@ -790,12 +790,14 @@ def decodeProgram (json : Json) : Except String Program := do
     decodeCompensationEventSubProcessSnapshotsField json
   let compensationExecution ← decodeCompensationExecutionField json
   let messageHandlers ← optionalField json "interruptingMessageEventSubProcesses"
+  let scopeLocalData ← decodeScopeLocalDataField json
   let optionalKeys :=
     (if compensationActivityRetention.isSome then ["compensationActivityRetention"] else []) ++
     (if compensationEventSubProcessSnapshots.isSome then
       ["compensationEventSubProcessSnapshots"] else []) ++
     (if compensationExecution.isSome then ["compensationExecution"] else []) ++
-    (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else [])
+    (if messageHandlers.isSome then ["interruptingMessageEventSubProcesses"] else []) ++
+    (if scopeLocalData.isEmpty then [] else ["scopeLocalData"])
   requireObjectShape json
     (optionalKeys ++
       ["controlPlaceScopes", "controlPlaces", "definitionScopes", "identity",
@@ -822,6 +824,7 @@ def decodeProgram (json : Json) : Except String Program := do
       compensationExecution
       interruptingMessageEventSubProcesses := ← match messageHandlers with
         | none => pure []
-        | some handlers => decodeArray decodeInterruptingMessageEventSubProcess handlers }
+        | some handlers => decodeArray decodeInterruptingMessageEventSubProcess handlers
+      scopeLocalData }
 
 end BpmnSemantics.SemanticProcessJson

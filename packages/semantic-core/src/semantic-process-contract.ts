@@ -39,6 +39,7 @@ import type {
   EffectDescriptor,
   ErrorReference,
   MessageChannel,
+  ScopeLocalData,
   SimpleBooleanExpression,
   VariableMapping,
 } from "./semantic-value-contract.js";
@@ -750,4 +751,6 @@ export type SemanticProcessProgram = DeepReadonly<{
   compensationEventSubProcessSnapshots?: CompensationEventSubProcessSnapshotDeclaration;
   compensationExecution?: CompensationExecutionDeclaration;
   interruptingMessageEventSubProcesses?: InterruptingMessageEventSubProcess[];
+  /** Absent unless nonempty; only the nested scope-data profile admits it. */
+  scopeLocalData?: ScopeLocalData[];
 }>;

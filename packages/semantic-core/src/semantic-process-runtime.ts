@@ -99,6 +99,7 @@ import {
 } from "./compensation-trigger-handler-transition.js";
 import { attemptTransactionCancellation } from "./transaction-cancellation.js";
 import { initializeCompensationActivityRetention } from "./compensation-activity-retention.js";
+import { completeDeclaredScope, enterDeclaredScope } from "./nested-scope-data.js";
 
 export {
   ControlStateKind,
@@ -403,7 +404,8 @@ function applyInternalOperationState(
       return applyOwnedOperation(
         owner,
         (selected) => {
-          const entered = enterScope(operation, state, selected);
+          const entered = enterDeclaredScope(program, operation.childScopeId,
+            () => enterScope(operation, state, selected));
           if (entered === null || program.compensationActivityRetention?.definitionScopeId !==
               operation.childScopeId) return entered;
           const child = entered.scopeOccurrences.find(({ id }) =>
@@ -640,7 +642,8 @@ function applyInternalOperationState(
       const owner = completeScopeOwner(operation.scopeId, state);
       return applyOwnedOperation(
         owner,
-        () => completeScopeWithdrawingDeadline(program, operation, state),
+        () => completeDeclaredScope(program, operation, state,
+          (written) => completeScopeWithdrawingDeadline(program, operation, written)),
         captureOwner,
       );
     }

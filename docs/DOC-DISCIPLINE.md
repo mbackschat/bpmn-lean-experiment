@@ -152,6 +152,8 @@ The contracts/source map had reached 3,984 words before its Compensation provena
 
 That commitment was tested and kept for the semantic-family maps. The family map reached 4,000 words while a closure-review correction was landing, and the owner chose the split over a raise to 5,000 on 2026-08-29 after the arithmetic showed 5,000 buying roughly three families. Cross-cutting mechanism status moved to [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md). The axis is what a section is about: a section belongs to the invariant map when its subject adds no BPMN capability, operation kind, profile, scenario, or public observation field, and to the family map when it closes one BPMN element family. Both semantic maps retain the 4,000-word default.
 
+On 2026-10-18 the family map reached 3,998 words when the nested embedded scope-data family needed recording, which applied the stated-split rule instead of compression or a raise. Families whose BPMN capability is Process, Activity or scope data flow (data inputs and outputs, mapped task data, payloads and scope-local data) moved to [`implementation-status-owner:ENGINE-DATA-FAMILY`](ENGINE-DATA-FAMILY-IMPLEMENTATION-MAP.md) under that axis, and the family map and the data-flow map both keep the 4,000-word default.
+
 ## Project document homes
 
 | Information | Owner role |

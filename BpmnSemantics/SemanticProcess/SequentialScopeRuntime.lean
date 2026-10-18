@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.EffectDataMapping
+import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Sequential repeated embedded scopes
 
@@ -135,11 +136,15 @@ def evaluateSequentialScopeInputs? (program : Program) (state : RuntimeState)
     else readSequentialScopeVariable? binding state name) mappings
 
 /-- SMIS-DATA-01 selects the input context before either direct execution or prepared arming; the
-value domain of an enclosing read is the Program's effect-mapping policy (PBV-EFF-03). -/
+value domain of an enclosing read is the Program's effect-mapping policy (PBV-EFF-03), and the nested
+scope-data profile reads through the scope chain (NSD-READ-01). -/
 def evaluateEffectInputs? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (mappings : List VariableMapping) : Option (List VariableBinding) :=
   if sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner then
     evaluateSequentialScopeInputs? program state owner mappings
+  else if nestedScopeDataProgram program then
+    evaluateInputMappingsUnder? .singletonBusinessItem
+      (NestedScopeData.read? program state.variables owner.processInstanceId owner.definitionScopeId) mappings
   else evaluateEnclosingInputMappingsUnder (programEffectMappingValuePolicy program)
     state.variables.process.bindings mappings
 

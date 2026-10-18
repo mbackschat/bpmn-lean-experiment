@@ -13,6 +13,7 @@ import {
   reportLines,
   searchTerms,
 } from "./what-binds.ts";
+import { allAreaIds } from "./document-control-plane.ts";
 import { EnumerationKind } from "./what-binds-source-facts.ts";
 import { EvidenceKind, GuardTier } from "./what-binds-classification.ts";
 
@@ -582,7 +583,7 @@ test("the command narrows a docs target to its linking maps and keeps all maps f
   assert.deepEqual(maps("docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md"), [
     "MAP TEMPORAL-HOSTING docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md",
   ]);
-  assert.equal(maps("docs/NO-SUCH-DOCUMENT-LINKED-BY-NO-MAP.md").length, 7);
+  assert.equal(maps("docs/NO-SUCH-DOCUMENT-LINKED-BY-NO-MAP.md").length, allAreaIds.length);
 });
 
 test("the command reports implementation maps and fails closed for an unknown root path", () => {

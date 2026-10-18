@@ -332,6 +332,7 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_completion_is_root program analysis before scope analyzed] at completed
         obtain ⟨running, quiet, pending, rfl⟩ := SerialBusinessTask.root_completion_shape before after rootOwner scope
           ⟨tokenOwners, humanOwners, effectOwners, life, foreign, issued⟩ completed

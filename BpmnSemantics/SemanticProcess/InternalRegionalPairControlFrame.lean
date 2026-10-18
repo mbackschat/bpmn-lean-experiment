@@ -46,8 +46,8 @@ theorem preparedRegional_pending_frame (program : Program) (before after : Runti
       rfl
   | completeScope id origin definition output =>
       apply completion_pending_frame program before after definition output
-      simp only [fire?, snapshots] at fired
-      exact fired
+      exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+        selected snapshots fired
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired

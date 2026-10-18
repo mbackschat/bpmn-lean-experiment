@@ -47,7 +47,8 @@ theorem rawOccurrencePrefix_effect_inputs (program : Program) (state : RuntimeSt
       evaluateEffectInputs? program state owner mappings := by
   have process := (rawOccurrencePrefix_population_frame state prior).2.2.2.2.2
   have nonSequential : sequentialScopeProgramSelected program = false := by simp [sequentialScopeProgramSelected, selected]
-  simp only [evaluateEffectInputs?, nonSequential, Bool.false_and, Bool.false_eq_true, ↓reduceIte, process]
+  have notNested := nestedScopeDataProgram_of_profile_value selected
+  simp only [evaluateEffectInputs?, nonSequential, notNested, Bool.false_and, Bool.false_eq_true, ↓reduceIte, process]
 
 /-- Equal selected reads and frozen-write gates transport an actual successful reservation, rather than postulating later preparation. -/
 theorem prepareReservedOccurrenceArm_read_frame (program : Program) (before after : RuntimeState)

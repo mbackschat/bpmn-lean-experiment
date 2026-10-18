@@ -63,7 +63,9 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
                 if state.initiationPending then none
                 else some { operation, root, kind := .completing withdrawal }
             | some parent, some _ =>
-                if state.scopeOccurrences.any (fun candidate => candidate.id == parent) then
+                -- NSD-OUTPUT-01 writes data at completion, so a declared scope is never a regional candidate.
+                if state.scopeOccurrences.any (fun candidate => candidate.id == parent) &&
+                    (NestedScopeData.recordFor? program definition).isNone then
                   some { operation, root, kind := .completing withdrawal }
                 else none
             | _, _ => none
@@ -195,7 +197,8 @@ theorem regionalSelection_completion_complete (program : Program) (state complet
     (definition : DefinitionScopeId) (output : Option ControlPlaceId) (withdrawal : InternalCompletionWithdrawal)
     (running : state.control = .running hosting)
     (withdrawn : selectSubscribedCompletionWithdrawal? program state definition output = some withdrawal)
-    (ordinary : completeScopeState? state definition output = some completed) :
+    (ordinary : completeScopeState? state definition output = some completed)
+    (undeclared : NestedScopeData.recordFor? program definition = none) :
     ∃ selected, selectInternalRegional? program state (.completeScope id origin definition output) = some selected := by
   unfold completeScopeState? at ordinary
   split at ordinary
@@ -210,7 +213,7 @@ theorem regionalSelection_completion_complete (program : Program) (state complet
       repeat' first | (solve | simp at ordinary) | split at ordinary
       all_goals
         simp_all only [selectInternalRegional?, runningInstance?, Option.bind_eq_bind,
-          Option.bind_some, Bool.false_eq_true, ↓reduceIte]
+          Option.bind_some, Bool.false_eq_true, Option.isNone_none, Bool.and_true, ↓reduceIte]
   · simp at ordinary
 
 theorem regionalSelection_termination_of_facts (program : Program) (state : RuntimeState)
@@ -257,6 +260,55 @@ private theorem uniqueScope_isLive (state : RuntimeState) (owner : ScopeOccurren
   obtain ⟨member, identity⟩ := List.mem_filter.mp present
   exact List.any_eq_true.mpr ⟨candidate, member, by simpa using identity⟩
 
+/-- A regionally selected child completion has no scope-local record, so it fires exactly the selected completion. -/
+theorem selectInternalRegional?_completeScope_undeclared (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId) (output : ControlPlaceId)
+    (selected : InternalRegionalSelection)
+    (found : selectInternalRegional? program state (.completeScope id origin definition (some output)) =
+      some selected) :
+    NestedScopeData.recordFor? program definition = none := by
+  unfold selectInternalRegional? at found
+  obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  dsimp only at found
+  split at found <;> try contradiction
+  split at found <;> try contradiction
+  obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
+  split at found <;> try contradiction
+  split at found
+  · rename_i guard
+    simp only [Bool.and_eq_true, Option.isNone_iff_eq_none] at guard
+    exact guard.2
+  · contradiction
+
+theorem selectInternalRegional?_completeScope_fires_selected (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (selected : InternalRegionalSelection)
+    (found : selectInternalRegional? program state (.completeScope id origin definition output) = some selected) :
+    completeDeclaredScope? program state definition output = completeSelectedScope? program state definition output := by
+  cases output with
+  | none => rfl
+  | some output =>
+      exact completeDeclaredScope?_undeclared program state definition (some output)
+        (selectInternalRegional?_completeScope_undeclared program state id origin definition output selected found)
+
+/-- A completion selected regionally in any state is undeclared, so in every state it fires exactly the
+selected scope completion. -/
+theorem selectInternalRegional?_completeScope_fired (program : Program) (selectedState state after : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (definition : DefinitionScopeId) (output : Option ControlPlaceId)
+    (selected : InternalRegionalSelection)
+    (found : selectInternalRegional? program selectedState (.completeScope id origin definition output) = some selected)
+    (snapshots : program.compensationEventSubProcessSnapshots = none)
+    (fired : fire? program (.completeScope id origin definition output) state = some after) :
+    completeSelectedScope? program state definition output = some after := by
+  simp only [fire?, snapshots] at fired
+  change completeDeclaredScope? program state definition output = some after at fired
+  cases output with
+  | none => exact fired
+  | some place =>
+      rwa [completeDeclaredScope?_undeclared program state definition (some place)
+        (selectInternalRegional?_completeScope_undeclared program selectedState id origin definition place selected
+          found)] at fired
+
 /-- Selection establishes actual evaluator availability without executing a speculative state.
 Bounded Complete additionally retains its strict Activity and Timer census. -/
 theorem regionalSelection_refines (program : Program) (state : RuntimeState)
@@ -265,6 +317,12 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
     (found : selectInternalRegional? program state operation = some selected) :
     ∃ after, fire? program operation state = some after := by
   obtain ⟨hosting, running⟩ := regionalSelection_running program state operation selected found
+  have declared : ∀ id origin definition output, operation = .completeScope id origin definition output →
+      completeDeclaredScope? program state definition output =
+        completeSelectedScope? program state definition output := by
+    intro id origin definition output same
+    subst same
+    exact selectInternalRegional?_completeScope_fires_selected program state id origin definition output selected found
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   unfold fire?
@@ -284,7 +342,8 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
               | (simp only [*, ↓reduceIte]; exact ⟨_, rfl⟩)
   | completeScope id origin definition output =>
       dsimp only at found
-      change ∃ after, completeSelectedScope? program state definition output = some after
+      change ∃ after, completeDeclaredScope? program state definition output = some after
+      rw [declared id origin definition output rfl]
       split at found
       · rename_i root census
         split at found
@@ -295,7 +354,8 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
           have ordinary : ∃ completed, completeScopeState? state definition output = some completed := by
             simp only [completeScopeState?, census, quiet, completeQuiescentScope?, running]
             repeat' first | (solve | simp at found) | split at found
-            all_goals simp_all only [Option.bind_eq_bind, Option.bind_some, Bool.false_eq_true, ↓reduceIte]
+            all_goals simp_all only [Option.bind_eq_bind, Option.bind_some, Bool.false_eq_true,
+              Bool.and_eq_true, ↓reduceIte]
             all_goals exact ⟨_, rfl⟩
           obtain ⟨completed, ordinary⟩ := ordinary
           obtain ⟨after, result, _⟩ := subscribedWithdrawal_refines program state completed definition output withdrawal withdrawn ordinary

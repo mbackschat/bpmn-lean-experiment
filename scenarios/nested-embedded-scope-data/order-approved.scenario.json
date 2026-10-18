@@ -1,0 +1,255 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-data-order-approved",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "purchase-order",
+    "relativePath": "scenarios/nested-embedded-scope-data/purchase-order.bpmn",
+    "sha256": "cdf02a871ba3a36f4e3c937d8b64dda74d63da10903b894b2079344b2be72e3b",
+    "sourceOverlay": {
+      "id": "purchase-order-handlers",
+      "sha256": "3951d791bcbc6852abe3828c72a7c9f706efa2802427ee3a1deaa3e214f9c655"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0017",
+      "CIB-EXT-0020"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "P",
+      "instanceId": "Order_approved",
+      "initialVariables": [
+        {
+          "name": "initialStatus",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "n0"
+          }
+        },
+        {
+          "name": "order",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "address",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "line1",
+                      "value": {
+                        "kind": "string",
+                        "value": "Dock 7"
+                      }
+                    },
+                    {
+                      "name": "line2",
+                      "value": {
+                        "kind": "null"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "items",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 2
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "A-1"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "map",
+                      "value": [
+                        {
+                          "name": "quantity",
+                          "value": {
+                            "kind": "integer",
+                            "value": 2
+                          }
+                        },
+                        {
+                          "name": "sku",
+                          "value": {
+                            "kind": "string",
+                            "value": "A-1"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "total",
+                "value": {
+                  "kind": "decimal",
+                  "coefficient": "-123455",
+                  "scale": 2
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "requestedLimit",
+          "value": {
+            "kind": "string",
+            "value": "5000"
+          }
+        },
+        {
+          "name": "riskClass",
+          "value": {
+            "kind": "string",
+            "value": "low"
+          }
+        },
+        {
+          "name": "status",
+          "value": {
+            "kind": "string",
+            "value": "open"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:d684256b1582c3a65d0f6cc5b27f391a6701e11fb23387a01f5d0a45225c3609",
+      "effectId": {
+        "processInstanceId": "Order_approved",
+        "elementId": "KS",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-undeclared-name",
+      "taskId": {
+        "processInstanceId": "Order_approved",
+        "elementId": "CU",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "unknown",
+          "value": {
+            "kind": "string",
+            "value": "x"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-credit-review",
+      "taskId": {
+        "processInstanceId": "Order_approved",
+        "elementId": "CU",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "credit-approved"
+          }
+        },
+        {
+          "name": "limit",
+          "value": {
+            "kind": "string",
+            "value": "7500"
+          }
+        },
+        {
+          "name": "status",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:731dbc256c58c246e317657820628b60e84504b8b45744cc9b0df7fe59e0abf5",
+      "effectId": {
+        "processInstanceId": "Order_approved",
+        "elementId": "OS",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:08836c071ac1bedefb3ce9429c511d5a66b91c90b9af1eeb2e0f817e8c2ff041",
+      "effectId": {
+        "processInstanceId": "Order_approved",
+        "elementId": "R",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ]
+}

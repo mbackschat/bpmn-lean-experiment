@@ -726,6 +726,7 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
           CheckedSequenceFlow.toControlPlace
     operations := scopedOperations.map (·.1)
     interruptingMessageEventSubProcesses := lowerMessageEventSubProcessDeclarations source
+    scopeLocalData := source.scopeLocalData
     compensationActivityRetention :=
       if source.transactionCancellation.isSome then lowerTransactionRetention source
       else lowerCheckedCompensationActivityRetention source

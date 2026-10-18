@@ -14,6 +14,7 @@ import BpmnSemantics.SemanticProcess.CallDataAdmission
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -528,6 +529,7 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
       profile = portableHandoffProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
       profile = portableEffectDataProfileId.value ||
+      profile = nestedScopeDataProfileId.value ||
       profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
       profile = callDataCheckpointProfileId.value ||
@@ -557,8 +559,10 @@ private def operationPropertyEndpoints : SemanticOperation → Bool
   | .awaitDataInputOutputUserTask _ _ _ _ _ _ input output => propertyInput input && propertyOutput output
   | _ => true
 
-/-- Exact checked node and definition-scope cardinalities selected by the profile. -/
+/-- Exact checked node and definition-scope cardinalities selected by the profile. Only the nested
+scope-data profile may declare scope locals. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
+  (source.scopeLocalData.isEmpty || source.identity.semanticProfile == nestedScopeDataProfileId) &&
   if source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
     (SequentialScopeChecked.analyze source).isSome
   else if source.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
@@ -572,6 +576,8 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
     (SerialBusinessTask.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == portableEffectDataProfileId then
     (EffectData.checkedAnalysis source).isSome
+  else if source.identity.semanticProfile == nestedScopeDataProfileId then
+    (NestedScopeData.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
   else if source.identity.semanticProfile == portableHandoffProfileId then
@@ -659,8 +665,10 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | _ => true
   else true
 
-/-- Exact operation and definition-scope cardinalities selected by the profile. -/
+/-- Exact operation and definition-scope cardinalities selected by the profile. Only the nested
+scope-data profile may declare scope locals. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
+  (program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId) &&
   if program.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
     SequentialScopeProgram.admitted program
   else if program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
@@ -695,6 +703,8 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
         (SerialBusinessTask.programAnalysis program).isSome
       else if program.identity.semanticProfile == portableEffectDataProfileId then
         (EffectData.programAnalysis program).isSome
+      else if program.identity.semanticProfile == nestedScopeDataProfileId then
+        (NestedScopeData.programAnalysis program).isSome
       else if program.identity.semanticProfile == portableHandoffProfileId then
         portableHandoffProgramGraph program
       else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&

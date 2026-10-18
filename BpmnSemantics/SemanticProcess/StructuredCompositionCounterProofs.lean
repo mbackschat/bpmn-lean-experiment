@@ -84,6 +84,7 @@ theorem admitted_fire_preserves_counter_storage
     | none =>
       cases step with
       | completeScope _ _ _ _ _ _ completed =>
+        change completeSelectedScope? program before scope none = some after at completed
         rw [selected_scope_completion_delegates_to_root program before scope
           (program_analysis_operations_allowed program analysis analyzed)] at completed
         unfold completeScopeState? at completed

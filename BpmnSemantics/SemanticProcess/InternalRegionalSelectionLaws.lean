@@ -31,6 +31,9 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
           exact declaredReturn_preserves_position program state after expectedInstanceId hosting id origin process definition output
             valid structural running declared result
   | completeScope id origin definition output =>
+      change completeDeclaredScope? program state definition output = some after at result
+      rw [selectInternalRegional?_completeScope_fires_selected program state id origin definition output selected found]
+        at result
       exact declaredSelectedComplete_preserves_position program state after expectedInstanceId hosting id origin definition output
         valid structural running declared result
   | throwError id origin input error handler =>

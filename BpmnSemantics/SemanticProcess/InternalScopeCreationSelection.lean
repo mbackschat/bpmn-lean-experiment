@@ -166,7 +166,8 @@ theorem selectInternalScopeCreation_running (state : RuntimeState)
 /-- TXC-RETAIN-01 adds a register write outside the ordinary retained scope patch. -/
 def internalScopeCreationRetentionUnchanged (program : Program) : SemanticOperation → Bool
   | .enterScope _ _ _ _ scope =>
-      decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope)
+      decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope) &&
+        (NestedScopeData.recordFor? program scope).isNone
   | _ => true
 
 /-- Retained patches agree with the evaluator when neither snapshot nor child retention is created;
@@ -189,10 +190,12 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
       · contradiction
       · next fresh =>
           cases found
-          change enterScopeWithCompensationRetention? program state input entry definition = _
+          simp only [internalScopeCreationRetentionUnchanged, Bool.and_eq_true, decide_eq_true_eq,
+            Option.isNone_iff_eq_none] at retentionUnchanged
+          change enterDeclaredScope? program state input entry definition = _
+          simp only [enterDeclaredScope?, retentionUnchanged.2]
           rw [enterScopeWithCompensationRetention_unselected program state input entry definition
-            (by simpa only [internalScopeCreationRetentionUnchanged, decide_eq_true_eq]
-              using retentionUnchanged)]
+            retentionUnchanged.1]
           simp only [enterScopeState?, owned, running, bind, Option.bind, fresh, Bool.false_eq_true,
             ↓reduceIte,
             InternalScopeCreationSelection.apply]

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_BulkQuote" targetNamespace="urn:bpmn-lean:bulk-quote-sign-off">
+  <process id="Process_BulkQuote" name="Sign off a bulk quote" isExecutable="true">
+    <startEvent id="QuoteRequested" name="Quote requested" />
+    <subProcess id="Preparation" name="Quote preparation">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="preparedQuote">${quote}</camunda:inputParameter>
+          <camunda:outputParameter name="finalQuote">${preparedQuote}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="PreparationOpened" name="Preparation opened" />
+      <subProcess id="PriceReview" name="Price review">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="pricedQuote">${quote}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="PriceReviewOpened" name="Price review opened" />
+        <subProcess id="SignOff" name="Sign-off">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="signedQuote">${quote}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+          <startEvent id="SignOffOpened" name="Sign-off opened" />
+          <userTask id="SignQuote" name="Sign off quote" />
+          <endEvent id="SignOffClosed" name="Sign-off closed" />
+          <sequenceFlow id="Flow_SignOffOpened" sourceRef="SignOffOpened" targetRef="SignQuote" />
+          <sequenceFlow id="Flow_Signed" sourceRef="SignQuote" targetRef="SignOffClosed" />
+        </subProcess>
+        <endEvent id="PriceReviewClosed" name="Price review closed" />
+        <sequenceFlow id="Flow_PriceReviewOpened" sourceRef="PriceReviewOpened" targetRef="SignOff" />
+        <sequenceFlow id="Flow_SignOffDone" sourceRef="SignOff" targetRef="PriceReviewClosed" />
+      </subProcess>
+      <endEvent id="PreparationClosed" name="Preparation closed" />
+      <sequenceFlow id="Flow_PreparationOpened" sourceRef="PreparationOpened" targetRef="PriceReview" />
+      <sequenceFlow id="Flow_PriceReviewDone" sourceRef="PriceReview" targetRef="PreparationClosed" />
+    </subProcess>
+    <serviceTask id="ArchiveQuote" name="Archive quote"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${archiveQuote}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="finalQuote">${finalQuote}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="QuoteArchived" name="Quote archived" />
+    <sequenceFlow id="Flow_QuoteRequested" sourceRef="QuoteRequested" targetRef="Preparation" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Preparation" targetRef="ArchiveQuote" />
+    <sequenceFlow id="Flow_Archived" sourceRef="ArchiveQuote" targetRef="QuoteArchived" />
+  </process>
+</definitions>

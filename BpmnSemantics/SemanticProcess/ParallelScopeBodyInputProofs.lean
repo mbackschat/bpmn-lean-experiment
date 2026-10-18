@@ -54,7 +54,7 @@ theorem parallelScope_evaluated_local_bindings (read : String → Option Variabl
   rename_i unique
   obtain ⟨names, typed⟩ := ordered_snapshot_fields _ bindings
     (evaluateInputMappingsInOrder_snapshot read _ bindings evaluated)
-  have permutation := (List.mergeSort_perm mappings (fun left right => decide (left.target ≤ right.target))).map (·.target)
+  have permutation := (sortByTarget_perm mappings).map (·.target)
   refine ⟨?_, typed, ?_⟩
   · rw [names]
     exact permutation.nodup_iff.mpr unique
@@ -523,7 +523,7 @@ private theorem phase_locals (program : Program) (analysis : ParallelScopeStart.
     rcases later with history | ⟨terminalPrefix, record, middle, _, history, kind, replayed, _, _⟩
     · exact history_locals program selected owner issued current suffix history initialValid
     · have middleValid := history_locals program selected owner issued middle terminalPrefix history initialValid
-      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed
+      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed (analyzed_not_nested program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed

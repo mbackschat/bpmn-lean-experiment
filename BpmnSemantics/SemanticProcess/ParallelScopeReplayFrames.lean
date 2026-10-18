@@ -254,7 +254,8 @@ theorem replayed_initiation_execution (program : Program) (before after : Runtim
 /-- Actual scope-completion replay supplies exact selected-scope ownership without claiming final root completion. -/
 theorem replayed_scope_completion_execution (program : Program) (before after : RuntimeState)
     (record : InternalTransitionRecord) (kind : record.operationKind = .completeScope)
-    (replayed : InternalCommutation.replayInternalOperationOccurrence? program before record = some after) :
+    (replayed : InternalCommutation.replayInternalOperationOccurrence? program before record = some after)
+    (other : nestedScopeDataProgram program = false) :
     ∃ scopeId parentOutput selectedScope,
       SemanticOperation.completeScope record.operationId record.origin scopeId parentOutput ∈ program.operations ∧
       before.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) = [selectedScope] ∧
@@ -274,6 +275,7 @@ theorem replayed_scope_completion_execution (program : Program) (before after : 
   rename_i selectedScope scopes
   split at applied <;> try contradiction
   rename_i ownerEq
+  rw [completeDeclaredScope?_other_profile program before scopeId parentOutput other] at applied
   refine ⟨scopeId, parentOutput, selectedScope, ?_, scopes, ?_, applied⟩
   · simpa only [key, originEq] using member
   · simpa only [beq_iff_eq] using ownerEq
@@ -538,7 +540,7 @@ theorem replayed_final_root_completion (program : Program) (analysis : ParallelS
       root ∈ before.scopeOccurrences ∧ after.control = .completed instanceId ∧
       ∀ next, InternalCommutation.replayInternalOperationOccurrence? program after next = none := by
   obtain ⟨scopeId, parentOutput, root, member, unique, owner, completed⟩ :=
-    replayed_scope_completion_execution program before after record kind replayed
+    replayed_scope_completion_execution program before after record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
   have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis admitted _ member
   have output : parentOutput = none := by
     cases parentOutput <;> simp [SequentialScopeProgram.operationAllowed] at allowed ⊢

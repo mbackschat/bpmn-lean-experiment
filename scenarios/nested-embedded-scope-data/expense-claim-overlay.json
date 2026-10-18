@@ -1,0 +1,1 @@
+{"kind":"bpmnSourceOverlay","id":"expense-claim-handlers","semanticProfile":"cibseven-2.2.0-nested-embedded-scope-data-draft","effectBindings":[{"source":{"implementation":"urn:bpmn-lean:effect-protocol:activity-v1","delegateExpression":"${recordClaim}"},"descriptor":{"protocol":"urn:bpmn-lean:effect-protocol:activity-v1","operation":"recordClaim"}}],"inertAttributes":[]}

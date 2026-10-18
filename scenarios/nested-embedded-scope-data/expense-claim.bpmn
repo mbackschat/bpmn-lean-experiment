@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExpenseClaim" targetNamespace="urn:bpmn-lean:expense-claim-review">
+  <process id="Process_ExpenseClaim" name="Review an expense claim" isExecutable="true">
+    <startEvent id="ClaimSubmitted" name="Claim submitted" />
+    <subProcess id="ClaimReview" name="Claim review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claim">${claim}</camunda:inputParameter>
+          <camunda:inputParameter name="ticket">T-1</camunda:inputParameter>
+          <camunda:outputParameter name="reviewedClaim">${claim}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ReviewOpened" name="Review opened" />
+      <userTask id="ReviewClaim" name="Review claim" />
+      <serviceTask id="RecordClaim" name="Record claim"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${recordClaim}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="claim">${claim}</camunda:inputParameter>
+            <camunda:inputParameter name="ticket">${ticket}</camunda:inputParameter>
+            <camunda:outputParameter name="recordRef">${recordRef}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="ReviewClosed" name="Review closed" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="ReviewClaim" />
+      <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewClaim" targetRef="RecordClaim" />
+      <sequenceFlow id="Flow_Recorded" sourceRef="RecordClaim" targetRef="ReviewClosed" />
+    </subProcess>
+    <endEvent id="ClaimSettled" name="Claim settled" />
+    <sequenceFlow id="Flow_Submitted" sourceRef="ClaimSubmitted" targetRef="ClaimReview" />
+    <sequenceFlow id="Flow_Settled" sourceRef="ClaimReview" targetRef="ClaimSettled" />
+  </process>
+</definitions>

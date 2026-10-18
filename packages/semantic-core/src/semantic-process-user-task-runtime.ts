@@ -1,5 +1,6 @@
 /** Pure transition for the ordinary, non-specialized User Task completion arm. */
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
+import { nestedScopeDataProgram, nestedScopePatchAdmitted, writeNestedScopeVariables } from "./nested-scope-data.js";
 import { SequentialScopeWriteKind, writeSequentialScopeValues } from "./sequential-scope-data.js";
 import { hasParallelScopeDefinition, writeParallelScopeValues } from "./parallel-scope-data.js";
 import type {
@@ -75,6 +76,9 @@ export function completeOrdinaryUserTask(
   if (staged === null) {
     return null;
   }
+  if (nestedScopeDataProgram(program) && (wait.id.processInstanceId !== wait.owner.processInstanceId ||
+      state.userTaskWaits.filter(candidate => sameOccurrence(candidate.id, stimulus.taskId)).length !== 1 ||
+      !nestedScopePatchAdmitted(program, state.variables, wait.owner, stimulus.submittedValues))) return null;
   const parallel = hasParallelScopeDefinition(program, wait.owner);
   if (parallel && (hasSequentialScopeDefinition(program, wait.owner) ||
       wait.id.processInstanceId !== wait.owner.processInstanceId ||
@@ -83,6 +87,9 @@ export function completeOrdinaryUserTask(
     ? writeParallelScopeValues(program, staged, wait.owner, stimulus.submittedValues, SequentialScopeWriteKind.UserTask)
     : hasSequentialScopeDefinition(program, wait.owner)
     ? writeSequentialScopeValues(program, staged, wait.owner, stimulus.submittedValues, SequentialScopeWriteKind.UserTask)
+    : nestedScopeDataProgram(program)
+    ? writeNestedScopeVariables(program, staged.variables, wait.owner.processInstanceId,
+      wait.owner.definitionScopeId, stimulus.submittedValues)
     : { ...staged.variables, process: { bindings: mergeProcessVariableBindings(staged.variables.process.bindings, stimulus.submittedValues) } };
   if (variables === null) return null;
   return {

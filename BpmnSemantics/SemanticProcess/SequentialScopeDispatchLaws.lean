@@ -295,7 +295,7 @@ theorem sequentialScope_admitted_start_initialization (program : Program)
   have names := sequentialScope_snapshot_names _ _ snapshot
   have inputUnique : scopeVariableNamesUnique inputs = true := by
     simp only [scopeVariableNamesUnique, decide_eq_true_eq, names]
-    exact ((List.mergeSort_perm analysis.entry.bodyInputs _).map (·.target)).nodup_iff.mpr unique
+    exact ((sortByTarget_perm analysis.entry.bodyInputs).map (·.target)).nodup_iff.mpr unique
   unfold initializeScopeVariables?
   simp only [fresh, Bool.false_eq_true, ↓reduceIte, process, evaluated, bind, Option.bind, inputUnique,
     Bool.not_true]

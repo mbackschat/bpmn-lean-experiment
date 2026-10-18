@@ -36,9 +36,14 @@ const effectDataRules: SerialChainRules = Object.freeze({
   humanTasks: SerialChainHumanTasks.Forbidden, literalByteLimit: 1024, valuePolicy: EffectMappingValuePolicy.SingletonBusinessItem,
 });
 
-/** The rules of a serial-chain profile; any other profile that reuses the grammar keeps the serial rules. */
+/**
+ * The rules of a serial-chain profile; any other profile that reuses the grammar keeps the serial rules. The nested
+ * scope-data profile reuses the effect-data mapping rules; its own admission, not `humanTasks`, decides Human Tasks.
+ */
 export function serialChainRulesForProfile(semanticProfile: string): SerialChainRules {
-  return semanticProfile === SemanticProfileId.PortableBusinessEffectData ? effectDataRules : serialBusinessTaskRules;
+  return semanticProfile === SemanticProfileId.PortableBusinessEffectData ||
+      semanticProfile === SemanticProfileId.NestedEmbeddedScopeData
+    ? effectDataRules : serialBusinessTaskRules;
 }
 
 /** Profiles whose Program and checked graph are one serial chain, as opposed to profiles that merely reuse its mappings. */

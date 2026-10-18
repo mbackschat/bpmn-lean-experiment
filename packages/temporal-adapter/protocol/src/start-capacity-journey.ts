@@ -5,9 +5,11 @@
  * It exists only to hand the capacity envelope genuine semantic-core artifacts (committed states, stimuli,
  * publications, observations) instead of a second model of their shape. The portable handoff completes User Tasks;
  * the effect-data profile completes Service Task effects whose handler result is external but reserved here; the
- * structured Message-payload profile answers its one payload-bearing Message wait with the reserved payload. See
- * the [capacity admission](../../../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) rule
- * and its counterparts `PBV-EFF-05` and `PBV-MSG-03`.
+ * structured Message-payload profile answers its one payload-bearing Message wait with the reserved payload; the
+ * nested scope-data profile completes each User Task with a patch at the `NSD-TASK-01` cap. See the
+ * [capacity admission](../../../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) rule, its
+ * counterparts `PBV-EFF-05` and `PBV-MSG-03`, and the nested
+ * [hosting preflight](../../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#temporal-hosting-and-refinement-preflight).
  */
 import {
   EffectExecutionResultKind,
@@ -17,10 +19,15 @@ import {
   VariableValueKind,
   advanceScenario,
   canonicalValueUtf8ByteLength,
+  canonicalNamedValueArrayUtf8ByteLength,
   compareCanonicalStrings,
   initialState,
   isSingletonBusinessItem,
   maximumCanonicalValueBytes,
+  nestedScopeDataProgram,
+  nestedScopeDeclaredNames,
+  nestedScopePatchAdmitted,
+  nestedScopePatchByteLimit,
   projectEffectTransportMaterial,
   projectOpenEffects,
   SemanticOperationKind,
@@ -35,7 +42,9 @@ import type {
   RuntimeState,
   ScenarioStep,
   SemanticProcessProgram,
+  SemanticUserTaskWait,
   Stimulus,
+  VariableBinding,
   VariableMapping,
 } from "@bpmn-lean/semantic-core";
 
@@ -66,15 +75,23 @@ export type StartCapacityJourneyStep = DeepReadonly<{
   effect: StartCapacityEffectExchange | null;
 }>;
 
-/** Start, then one completion per serial wait, each committed to its stable state; the last step is terminal. */
+/**
+ * Start, then one completion per serial wait, each committed to its stable state; the last step is terminal.
+ * `reservedTargets` counts, per nested scope-data User Task in journey order, the reserved patches it can submit.
+ */
 export type StartCapacityJourney = DeepReadonly<{
   steps: [StartCapacityJourneyStep, ...StartCapacityJourneyStep[]];
+  reservedTargets: number[];
 }>;
+
+/** The most journeys `startCapacityJourneys` runs before it refuses to reserve a Program's User Task patches. */
+export const maximumReservedCompletionJourneys = 1_024;
 
 /**
  * Runs Start and then completes the single open wait until the Process leaves the running state. A User Task
  * completion submits the sentinel under the output the Program declares for it; an effect completion returns the
- * sentinel for every local its output parameters read, as the handler of PBV-EFF-02 must.
+ * sentinel for every local its output parameters read, as the handler of PBV-EFF-02 must. The `index`-th nested
+ * scope-data User Task submits its `choices[index]`-th reserved patch, the first by default.
  *
  * Throws when the Program does not offer that journey. The caller has already admitted `start` against `program`,
  * and both profiles admit only serial chains, so an unreachable step, a parallel wait or a cycle is a broken
@@ -83,10 +100,17 @@ export type StartCapacityJourney = DeepReadonly<{
 export function runStartCapacityJourney(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
+  choices: ReadonlyArray<number> = [],
 ): StartCapacityJourney {
   const sentinel = fullAllowanceValue();
   const first = commit(program, initialState, start, null);
   const steps: [StartCapacityJourneyStep, ...StartCapacityJourneyStep[]] = [first];
+  const reservedTargets: number[] = [];
+  const choose = (targets: number): number => {
+    const choice = choices[reservedTargets.length] ?? 0;
+    reservedTargets.push(targets);
+    return choice;
+  };
   for (let state = first.committed.state; state.control.kind === "running"; state = steps[steps.length - 1]!.committed.state) {
     if (steps.length > program.operations.length) {
       throw new TypeError("The capacity journey did not terminate within its serial chain");
@@ -95,11 +119,42 @@ export function runStartCapacityJourney(
     const next = state.messageWaits.length > 0
       ? { stimulus: payloadDeliveryFor(program, state, steps.length, sentinel), effect: null }
       : state.userTaskWaits.length === 1 && effect.length === 0
-      ? { stimulus: completionFor(program, state, steps.length, sentinel), effect: null }
+      ? { stimulus: completionFor(program, state, steps.length, sentinel, choose), effect: null }
       : effectCompletionFor(program, state, effect, sentinel);
     steps.push(commit(program, state, next.stimulus, next.effect));
   }
-  return { steps };
+  return { steps, reservedTargets };
+}
+
+/**
+ * Every journey whose nested User Tasks each submit one of their reserved patches, or `null` above
+ * `maximumReservedCompletionJourneys`.
+ *
+ * A completion's contribution to every measured artifact is linear in the bytes it binds to each name, so over the
+ * patches `NSD-TASK-01` admits it is largest at a single name holding the whole allowance or at the empty patch.
+ * Enumerating those choices for every task therefore reaches each budget's maximum over admitted completions, where
+ * one fixed target would not: a value copied onward by an effect input or a scope output costs once per copy, so the
+ * worst name depends on the Program, not only on the prior value it replaces. Which names a task may write follows
+ * from the scope structure, never from values, so every choice vector replays the same waits.
+ */
+export function startCapacityJourneys(
+  start: ProcessStartStimulus,
+  program: SemanticProcessProgram,
+): StartCapacityJourney[] | null {
+  const first = runStartCapacityJourney(start, program);
+  const total = first.reservedTargets.reduce((product, targets) => product * targets, 1);
+  if (total > maximumReservedCompletionJourneys) return null;
+  const journeys = [first];
+  for (let ordinal = 1; ordinal < total; ordinal += 1) {
+    let rest = ordinal;
+    const choices = first.reservedTargets.map((targets) => {
+      const choice = rest % targets;
+      rest = Math.floor(rest / targets);
+      return choice;
+    });
+    journeys.push(runStartCapacityJourney(start, program, choices));
+  }
+  return journeys;
 }
 
 /**
@@ -165,14 +220,15 @@ function effectCompletionFor(
 }
 
 /**
- * A data-output User Task submits the sentinel under its declared output; a plain User Task, whose profile admits
- * no completion data, submits nothing.
+ * A data-output User Task submits the sentinel under its declared output; a nested scope-data User Task submits its
+ * reserved patch; any other plain User Task, whose profile admits no completion data, submits nothing.
  */
 function completionFor(
   program: SemanticProcessProgram,
   state: RuntimeState,
   ordinal: number,
   value: BusinessValue,
+  choose: (targets: number) => number,
 ): CompleteUserTaskInstanceStimulus {
   const [wait, ...others] = state.userTaskWaits;
   const operation = wait === undefined
@@ -191,8 +247,31 @@ function completionFor(
     taskId: wait.id,
     submittedValues: operation.kind === SemanticOperationKind.AwaitDataInputOutputUserTask
       ? [{ name: operation.directOutput.sourceDataOutputId, value }]
-      : [],
+      : nestedScopeDataProgram(program) ? reservedNestedPatch(program, state, wait, choose) : [],
   };
+}
+
+/**
+ * One `NSD-TASK-01` reserved patch: a declared name holding the whole patch allowance, in canonical name order,
+ * then the empty patch. A task outside every declaring frame has only the empty patch.
+ */
+function reservedNestedPatch(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  wait: SemanticUserTaskWait,
+  choose: (targets: number) => number,
+): VariableBinding[] {
+  const names = [...nestedScopeDeclaredNames(program, state.variables, wait.owner)].sort(compareCanonicalStrings);
+  const name = names[choose(names.length + 1)];
+  if (name === undefined) return [];
+  const framing = canonicalNamedValueArrayUtf8ByteLength([{ name, value: allowanceValue(0) }]) -
+    canonicalValueUtf8ByteLength(allowanceValue(0));
+  const patch = [{ name, value: allowanceValue(nestedScopePatchByteLimit - framing) }];
+  if (canonicalNamedValueArrayUtf8ByteLength(patch) !== nestedScopePatchByteLimit ||
+      !nestedScopePatchAdmitted(program, state.variables, wait.owner, patch)) {
+    throw new TypeError("The reserved nested completion does not fill the admitted patch allowance");
+  }
+  return patch;
 }
 
 /** The single open payload-bearing Message wait answered with the sentinel payload (`PBV-MSG-03`). */
@@ -221,12 +300,17 @@ function reservedCommandId(ordinal: number): string {
   return `${"c".repeat(reservedFutureCommandIdBytes - 1)}${ordinal}`;
 }
 
-/**
- * A Map of ASCII Strings whose canonical JSON is exactly the per-value allowance. Fewest entries wins, each String
- * at most its own byte bound, so every portable limit holds together; the final admission check is the single
- * oracle for that, not a restated list of limits.
- */
+/** The per-value allowance filled by `allowanceValue`. */
 export function fullAllowanceValue(): BusinessValue {
+  return allowanceValue(maximumCanonicalValueBytes);
+}
+
+/**
+ * A Map of ASCII Strings whose canonical JSON is exactly `bytes`, or the smallest such Map when `bytes` is below
+ * it. Fewest entries wins, each String at most its own byte bound, so every portable limit holds together; the
+ * final admission check is the single oracle for that, not a restated list of limits.
+ */
+function allowanceValue(bytes: number): BusinessValue {
   const entryText = (lengths: ReadonlyArray<number>): BusinessValue => ({
     kind: VariableValueKind.Map,
     value: lengths.map((length, index) => ({
@@ -234,17 +318,18 @@ export function fullAllowanceValue(): BusinessValue {
       value: { kind: VariableValueKind.String, value: "a".repeat(length) },
     })),
   });
+  const smallest = entryText([0]);
+  if (bytes <= canonicalValueUtf8ByteLength(smallest)) return smallest;
   for (let entries = 1; entries <= 99; entries += 1) {
-    const room = maximumCanonicalValueBytes -
-      canonicalValueUtf8ByteLength(entryText(Array.from({ length: entries }, () => 0)));
+    const room = bytes - canonicalValueUtf8ByteLength(entryText(Array.from({ length: entries }, () => 0)));
     if (room < 0) break;
     if (room > entries * textBound) continue;
     const lengths = Array.from({ length: entries }, (_, index) =>
       Math.min(textBound, Math.max(0, room - index * textBound)));
     const value = entryText(lengths);
-    if (canonicalValueUtf8ByteLength(value) === maximumCanonicalValueBytes && isSingletonBusinessItem(value)) {
+    if (canonicalValueUtf8ByteLength(value) === bytes && isSingletonBusinessItem(value)) {
       return value;
     }
   }
-  throw new TypeError("No admitted value fills the per-value canonical-byte allowance");
+  throw new TypeError("No admitted value fills the requested canonical-byte allowance");
 }

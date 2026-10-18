@@ -74,9 +74,10 @@ private theorem completion_live_quiet (p : Program) (roles : TransactionAdmitted
     ∃ occurrence ∈ state.scopeOccurrences, occurrence.id.definitionScopeId = scope ∧
       scopeQuiescent state occurrence.id = true := by
   simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent] at applied
-  change (match completeSelectedScope? p state scope output with
+  change (match completeDeclaredScope? p state scope output with
     | none => InternalOperationAttempt.disabled _
     | some successor => InternalOperationAttempt.applied { operation := _, successor }) = .applied step at applied
+  rw [completeDeclaredScope?_other_profile p state scope output roles.not_nested] at applied
   cases completed : completeScopeState? state scope output with
   | none => rw [selected_completion_none p state scope output completed] at applied; contradiction
   | some after =>
@@ -103,13 +104,15 @@ private theorem completion_disabled_by_leaf_token (p : Program) (roles : Transac
     have blocked := transaction_scope_barrier_not_quiescent state occurrence.id (.token token member same)
     simp [blocked] at quiet
   simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent] at impossible ⊢
-  change ∀ step, (match completeSelectedScope? p state scope output with
+  change ∀ step, (match completeDeclaredScope? p state scope output with
     | none => InternalOperationAttempt.disabled (.completeScope id origin scope output)
     | some successor => InternalOperationAttempt.applied
         { operation := .completeScope id origin scope output, successor }) = .applied step → False at impossible
-  change (match completeSelectedScope? p state scope output with
+  simp only [completeDeclaredScope?_other_profile p state scope output roles.not_nested] at impossible
+  change (match completeDeclaredScope? p state scope output with
     | none => InternalOperationAttempt.disabled _
     | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _
+  rw [completeDeclaredScope?_other_profile p state scope output roles.not_nested]
   cases result : completeSelectedScope? p state scope output with
   | none => rfl
   | some successor =>
@@ -712,9 +715,10 @@ theorem transaction_scope_frames_internal_step (p : Program) (roles : Transactio
         transaction_none_end_phase_frames before after inert live started input selected⟩
   case completeScope id origin scope output =>
     simp only [attemptInternalOperation, roles.executionPresent, roles.snapshotsAbsent] at applied
-    change (match completeSelectedScope? p before scope output with
+    change (match completeDeclaredScope? p before scope output with
       | none => InternalOperationAttempt.disabled _
       | some successor => InternalOperationAttempt.applied { operation := _, successor }) = _ at applied
+    rw [completeDeclaredScope?_other_profile p before scope output roles.not_nested] at applied
     rw [transaction_scope_primitive_completion p graph] at applied
     cases selected : completeScopeState? before scope output with
     | none => simp [selected] at applied

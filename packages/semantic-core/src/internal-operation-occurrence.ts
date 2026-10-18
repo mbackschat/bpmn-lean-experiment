@@ -5,6 +5,7 @@ import { createUserTaskWait, createEffectWait } from "./semantic-process-wait-ru
 import { applyParallelScopeOperation } from "./parallel-scope-runtime.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { completeScope, selectScopeCompletion } from "./semantic-process-scope-runtime.js";
+import { completeDeclaredScope } from "./nested-scope-data.js";
 import { duplicate, synchronize, reachNoneEnd } from "./semantic-process-control-flow-runtime.js";
 import { resolveInternalOperationOccurrence, internalOperationOccurrences } from "./internal-transition-alternative.js";
 import type { InternalOperationOccurrence } from "./internal-transition-alternative.js";
@@ -32,7 +33,7 @@ export function applyInternalOperationOccurrence(
     }
     case SemanticOperationKind.CompleteScope: {
       const selected = selectScopeCompletion(operation, state);
-      return selected !== null && sameScopeOccurrence(selected.occurrence.id, owner) ? completeScope(operation, state) : null;
+      return selected !== null && sameScopeOccurrence(selected.occurrence.id, owner) ? completeDeclaredScope(program, operation, state, (written) => completeScope(operation, written)) : null;
     }
     case SemanticOperationKind.EnterParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteParallelMultiInstanceScope:

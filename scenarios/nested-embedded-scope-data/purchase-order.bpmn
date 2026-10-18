@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_PurchaseOrder" targetNamespace="urn:bpmn-lean:purchase-order-approval">
+  <process id="P" name="Approve a purchase order" isExecutable="true">
+    <startEvent id="A" name="Purchase order received" />
+    <subProcess id="O" name="Order approval">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
+          <camunda:inputParameter name="note">draft</camunda:inputParameter>
+          <camunda:inputParameter name="order">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="status">${initialStatus}</camunda:inputParameter>
+          <camunda:outputParameter name="approvedOrder">${order}</camunda:outputParameter>
+          <camunda:outputParameter name="finalDecision">${decision}</camunda:outputParameter>
+          <camunda:outputParameter name="finalStatus">${status}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="OA" name="Approval opened" />
+      <subProcess id="C" name="Credit review">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="decision">credit-pending</camunda:inputParameter>
+            <camunda:inputParameter name="limit">${requestedLimit}</camunda:inputParameter>
+            <camunda:inputParameter name="requestedLimit">0</camunda:inputParameter>
+            <camunda:outputParameter name="limit">${limit}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="CA" name="Credit review opened" />
+        <subProcess id="K" name="Compliance check">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="checkResult">pending-check</camunda:inputParameter>
+              <camunda:inputParameter name="reviewer">${status}</camunda:inputParameter>
+              <camunda:outputParameter name="status">${checkResult}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+          <startEvent id="KA" name="Compliance check opened" />
+          <serviceTask id="KS" name="Check compliance"
+                       implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                       camunda:delegateExpression="${checkCompliance}" camunda:asyncBefore="true">
+            <extensionElements>
+              <camunda:inputOutput>
+                <camunda:inputParameter name="limit">${limit}</camunda:inputParameter>
+                <camunda:inputParameter name="reviewer">${reviewer}</camunda:inputParameter>
+                <camunda:inputParameter name="risk">${riskClass}</camunda:inputParameter>
+                <camunda:inputParameter name="status">${status}</camunda:inputParameter>
+              </camunda:inputOutput>
+            </extensionElements>
+          </serviceTask>
+          <endEvent id="KZ" name="Compliance checked" />
+          <sequenceFlow id="f10" sourceRef="KA" targetRef="KS" />
+          <sequenceFlow id="f11" sourceRef="KS" targetRef="KZ" />
+        </subProcess>
+        <userTask id="CU" name="Review credit" />
+        <endEvent id="CZ" name="Credit reviewed" />
+        <sequenceFlow id="f07" sourceRef="CA" targetRef="K" />
+        <sequenceFlow id="f08" sourceRef="K" targetRef="CU" />
+        <sequenceFlow id="f09" sourceRef="CU" targetRef="CZ" />
+      </subProcess>
+      <serviceTask id="OS" name="Approve order"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${approveOrder}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="limit">${limit}</camunda:inputParameter>
+            <camunda:inputParameter name="order">${order}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="OZ" name="Order approved" />
+      <sequenceFlow id="f04" sourceRef="OA" targetRef="C" />
+      <sequenceFlow id="f05" sourceRef="C" targetRef="OS" />
+      <sequenceFlow id="f06" sourceRef="OS" targetRef="OZ" />
+    </subProcess>
+    <serviceTask id="R" name="Publish order"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${publishOrder}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="approvedOrder">${approvedOrder}</camunda:inputParameter>
+          <camunda:inputParameter name="finalDecision">${finalDecision}</camunda:inputParameter>
+          <camunda:inputParameter name="note">${note}</camunda:inputParameter>
+          <camunda:inputParameter name="status">${status}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="Z" name="Order published" />
+    <sequenceFlow id="f01" sourceRef="A" targetRef="O" />
+    <sequenceFlow id="f02" sourceRef="O" targetRef="R" />
+    <sequenceFlow id="f03" sourceRef="R" targetRef="Z" />
+  </process>
+</definitions>

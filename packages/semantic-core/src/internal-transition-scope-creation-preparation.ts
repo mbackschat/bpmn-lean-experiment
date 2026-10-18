@@ -46,6 +46,7 @@ import type {
   RuntimeState,
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
+import { nestedScopeRecord } from "./nested-scope-data.js";
 
 export enum InternalScopeCreationResultKind {
   CalledProcess = "calledProcess",
@@ -110,8 +111,9 @@ export function deriveInternalEnterScopePreparation(
     { kind: SemanticOperationKind.EnterScope }
   >,
 ): PreparedInternalScopeCreation | null {
-  // TXC-CANCEL-01 requires child-register creation; the ordinary scope patch has no retention write.
-  if (program.compensationActivityRetention?.definitionScopeId === operation.childScopeId) return null;
+  // TXC-CANCEL-01 requires child-register creation and NSD-INIT-01 a frame write; the ordinary scope patch has neither.
+  if (program.compensationActivityRetention?.definitionScopeId === operation.childScopeId ||
+      nestedScopeRecord(program, operation.childScopeId) !== undefined) return null;
   const owner = onlyTokenOwner(state, operation.input);
   if (owner === undefined) {
     return null;

@@ -278,7 +278,7 @@ theorem ParallelScopeStart.capacity_parent_effect_inputs (program : Program)
   have ordinary : sequentialScopeProgramSelected program = false := by simp [sequentialScopeProgramSelected, selected]
   have scalarPolicy := programEffectMappingValuePolicy_eq_scalar_of_value selected (by decide +kernel)
   simp only [evaluateEffectInputs?, ordinary, Bool.false_and, Bool.false_eq_true, ↓reduceIte, scalarPolicy,
-    evaluateEnclosingInputMappingsUnder_scalar]
+    nestedScopeDataProgram_false_of_scalar scalarPolicy, evaluateEnclosingInputMappingsUnder_scalar]
   apply SerialBusinessTask.inputs_evaluable analysis.handlers state.variables.process.bindings effect.inputMappings
   · exact strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).1).1
   · exact (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp mappings).1).2

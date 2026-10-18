@@ -163,8 +163,8 @@ theorem preparedRegional_interface_census (program : Program) (before after : Ru
       simp only [identity, ← rootEq.trans chosenRoot, mask, outside, Bool.not_false]
   | completeScope id origin definition output =>
       have raw : completeSelectedScope? program before definition output = some after := by
-        simp only [fire?, snapshots] at fired
-        exact fired
+        exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _ selected
+          snapshots fired
       have interfaces := congrArg ScopedVariables.processInterfaces
         (regionalLocalData_selected_completion_variables program before after definition output raw)
       change after.variables.processInterfaces = before.variables.processInterfaces at interfaces
@@ -283,8 +283,8 @@ theorem preparedRegional_arming_retirement (program : Program) (before after : R
       constructor <;> first | rfl | exact fun _ member => (List.mem_filter.mp member).1
   | completeScope id origin definition output =>
       apply selectedCompletion_arming_retirement program before after definition output
-      simp only [fire?, snapshots] at fired
-      exact fired
+      exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
+        selected snapshots fired
   | throwError id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired

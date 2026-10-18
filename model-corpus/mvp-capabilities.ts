@@ -216,7 +216,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Embedded Sub-Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One-level exact completion, Error, boundary Timer, Terminate and Compensation shapes; no general Event Sub-Process.",
+    restriction: "One-level exact completion, Error, boundary Timer, Terminate and Compensation shapes; no general Event Sub-Process. The nested scope-data profile instead admits ordinary Sub-Processes nested to depth three in one serial path of User Tasks, mapped Service Tasks and further Sub-Processes, each declaring up to eight locals through input parameters (a String literal of at most 1,024 UTF-8 bytes or an exact ${name} reference) and publishing them through output parameters that name a declared local; a read resolves to the nearest enclosing declaring frame, otherwise the Process, a write updates that owner and never creates a local, and every local retires with its Sub-Process. A User Task completion may name only declared locals, within 16,384 canonical bytes. Gateways, Call Activities, Events, Multi-Instance, repeated activation and JUEL beyond ${name} are excluded; a hosted Start whose structured values cannot fit the capacity envelope is refused.",
     cibEvidence: exactCib("embedded-subprocess-completion-a-then-b"),
   },
   {

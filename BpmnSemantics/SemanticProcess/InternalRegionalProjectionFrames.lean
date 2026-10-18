@@ -153,8 +153,8 @@ theorem preparedChildComplete_projection_lookup_fields (program : Program) (befo
     prepared.selection selection
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have result : completeSelectedScope? program before definition (some output) = some after := by
-    simp only [fire?, snapshots] at fired
-    exact fired
+    exact selectInternalRegional?_completeScope_fired program before before after id origin definition (some output) _
+      selection snapshots fired
   obtain ⟨ordinary, completed, control, scopes, calls, _⟩ :=
     completeSelectedScope_position_fields program before after definition (some output) result
   exact ⟨after, applied, completion_child_lookup_fields before after ordinary hosting definition output

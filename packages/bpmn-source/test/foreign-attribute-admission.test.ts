@@ -276,6 +276,12 @@ const dispatchFixtures = {
     sourceId: "credit-decision", semanticProfile: effectDataProfile,
     sourceOverlay: effectDataOverlay(effectDataProfile, [creditNames.assessHandler, creditNames.notifyHandler]), find: '<startEvent id="Start"',
   },
+  nestedEmbeddedScopeData: {
+    path: "the nested scope-data reader", source: new URL("../../../scenarios/nested-embedded-scope-data/purchase-order.bpmn", import.meta.url),
+    sourceId: "purchase-order", semanticProfile: SemanticProfileId.NestedEmbeddedScopeData,
+    sourceOverlay: effectDataOverlay(SemanticProfileId.NestedEmbeddedScopeData, ["approveOrder", "checkCompliance", "publishOrder"]),
+    find: '<startEvent id="A"',
+  },
   sequentialMultiInstanceSubProcess: {
     path: "the sequential MI Sub-Process reader", source: sequentialScopeSource, sourceId: "invoice-batch",
     semanticProfile: sequentialScopeProfile, sourceOverlay: sequentialScopeOverlay(),

@@ -38,7 +38,7 @@ import {
 } from "./start-capacity-effect-tasks.js";
 import type { StartCapacityEffectFailure, StartCapacityEffectLimits } from "./start-capacity-effect-tasks.js";
 import { MessageDeliveryResolutionKind } from "./contracts.js";
-import { runStartCapacityJourney } from "./start-capacity-journey.js";
+import { maximumReservedCompletionJourneys, startCapacityJourneys } from "./start-capacity-journey.js";
 import type { StartCapacityJourney } from "./start-capacity-journey.js";
 import {
   WorkflowChainBudgetKind,
@@ -140,6 +140,8 @@ export enum StartCapacityEnvelopeResultKind {
   Exceeded = "exceeded",
   /** One Service Task's reserved Activity exchange exceeds a per-task check; no journey estimate is reported. */
   EffectTaskExceeded = "effectTaskExceeded",
+  /** The nested User Tasks admit more reserved completion combinations than the envelope evaluates. */
+  ReservedCompletionsExceeded = "reservedCompletionsExceeded",
 }
 
 export type StartCapacityEnvelopeFailure = Readonly<{
@@ -162,6 +164,10 @@ export type StartCapacityEnvelopeResult =
   | Readonly<{
       kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded;
       failure: StartCapacityEffectFailure;
+    }>
+  | Readonly<{
+      kind: StartCapacityEnvelopeResultKind.ReservedCompletionsExceeded;
+      failure: Readonly<{ configuredBound: number }>;
     }>;
 
 /** The profiles whose successful path the envelope reserves before Workflow creation. */
@@ -169,6 +175,7 @@ const envelopedProfiles: ReadonlySet<string> = new Set([
   SemanticProfileId.PortableBusinessValuesHandoff,
   SemanticProfileId.PortableBusinessEffectData,
   SemanticProfileId.PortableBusinessMessagePayload,
+  SemanticProfileId.NestedEmbeddedScopeData,
 ]);
 
 export function productionStartCapacityEnvelopeLimits(): StartCapacityEnvelopeLimits {
@@ -204,10 +211,18 @@ export function assessStartCapacityEnvelope(
   // The reserved patch must pass its identity limits before the journey encodes it into a command ID.
   const unsupported = exceededReservedEffectResult(program, configuredEffects);
   if (unsupported !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: unsupported };
-  const journey = runStartCapacityJourney(start, program);
-  const request = exceededEffectRequest(journey, configuredEffects);
-  if (request !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: request };
-  const estimates = estimateStartCapacity(start, program, journey);
+  const journeys = startCapacityJourneys(start, program);
+  if (journeys === null) {
+    return { kind: StartCapacityEnvelopeResultKind.ReservedCompletionsExceeded,
+      failure: { configuredBound: maximumReservedCompletionJourneys } };
+  }
+  for (const journey of journeys) {
+    const request = exceededEffectRequest(journey, configuredEffects);
+    if (request !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: request };
+  }
+  const each = journeys.map((journey) => estimateStartCapacity(start, program, journey));
+  const estimates = Object.fromEntries(startCapacityEnvelopeBudgets.map((budget) =>
+    [budget, largest(each.map((estimate) => estimate[budget]))])) as StartCapacityEstimates;
   const exceeded = startCapacityEnvelopeBudgets.find((budget) => estimates[budget] > configured[budget]);
   return exceeded === undefined
     ? { kind: StartCapacityEnvelopeResultKind.WithinCapacity, estimates }
@@ -220,6 +235,12 @@ export function assessStartCapacityEnvelope(
         },
         estimates,
       };
+}
+
+/** The operator-facing evidence for a Program whose reserved User Task completions are not enumerable. */
+export function startCapacityReservedCompletionsEvidence(failure: Readonly<{ configuredBound: number }>): string {
+  return `The nested User Tasks admit more than ${failure.configuredBound} reserved completion combinations; ` +
+    "no Workflow was started.";
 }
 
 /** The operator-facing evidence naming the exceeded budget, its bound and the estimate. */

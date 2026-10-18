@@ -256,9 +256,8 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
   have equal : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked
   have result : completeSelectedScope? program before definition (some output) = some after := by
-    have raw := firedAgain
-    simp only [fire?, snapshots] at raw
-    exact raw
+    exact selectInternalRegional?_completeScope_fired program before before after id origin definition (some output) _
+      selection snapshots firedAgain
   obtain ⟨withdrawal, kind, census⟩ := regionalSelection_complete_census program before id origin definition (some output)
     prepared.selection selection
   have frame := child_completion_runtime_frame program before after hosting definition output prepared.selection.root running census result

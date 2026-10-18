@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 import BpmnSemantics.SemanticProcess.OccurrenceReservationState
 import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! PMIS-ADMIT-01 binds private command capacity to the original decoded Program and its retained collection. -/
 
@@ -141,5 +142,18 @@ def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : 
   else match state.control, stimulus with
     | .notStarted, .startProcess _ _ _ bindings => (programStartCapacity program bindings).map (·.closureBound)
     | _, _ => (programStateCapacity program state).map (·.closureBound)
+
+/-- A PMIS-admitted Program is not of the nested scope-data profile, so its scope entries and
+completions are exactly the undeclared ones. -/
+theorem analyzed_not_nested (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis) : nestedScopeDataProgram program = false := by
+  cases selected : programSelected program with
+  | false => simp [analyzeProgram, selected] at admitted
+  | true =>
+      simp only [programSelected, beq_iff_eq] at selected
+      simp only [nestedScopeDataProgram, beq_eq_false_iff_ne, ne_eq]
+      intro same
+      rw [same] at selected
+      exact absurd selected (by decide +kernel)
 
 end BpmnSemantics.SemanticProcess.ParallelScopeStart

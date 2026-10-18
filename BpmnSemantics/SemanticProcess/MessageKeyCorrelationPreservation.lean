@@ -233,7 +233,7 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
         rw [profile]; decide +kernel
       simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
-      have parallelFamily := capabilities.2.1.2
+      have parallelFamily := capabilities.2.2.1.2
       simp [programParallelMultiInstanceProfileMatches, profile, messageKeyCorrelationProfileId,
         parallelMultiInstanceUserTaskProfileId] at parallelFamily
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1

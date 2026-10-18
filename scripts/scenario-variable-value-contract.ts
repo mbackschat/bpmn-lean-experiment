@@ -12,11 +12,13 @@ const portableHandoffProfile =
   "bpmn-2.0.2-portable-business-values-handoff-draft";
 const portableEffectDataProfile =
   "cibseven-2.2.0-portable-business-effect-data-draft";
+const nestedScopeDataProfile =
+  "cibseven-2.2.0-nested-embedded-scope-data-draft";
 const portableMessagePayloadProfile =
   "bpmn-2.0.2-portable-business-message-payload-draft";
 // SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion, which the
 // effect-data profile also applies to its String/Null Process Start and its effect results, and the Message-payload
-// profile to its payload.
+// profile to its payload. The nested scope-data profile applies it to Start, User Task completion and effect results.
 const portableHandoffRootStringBytes = 1_024;
 
 export type ScenarioVariableValueContractInput = Readonly<{
@@ -224,7 +226,7 @@ function verifyProfileValue(
     return;
   }
   const portableHandoffSurface = (profile === portableHandoffProfile && (surface === "start" || surface === "completion")) ||
-    (profile === portableEffectDataProfile && surface === "effect");
+    (profile === portableEffectDataProfile && surface === "effect") || profile === nestedScopeDataProfile;
   const boundedRootString = portableHandoffSurface || (profile === portableEffectDataProfile && surface === "start");
   switch (tagged.kind) {
     case "integer":

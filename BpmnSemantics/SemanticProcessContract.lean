@@ -591,6 +591,7 @@ structure Program where
     Option CompensationEventSubProcessSnapshotDeclaration := none
   compensationExecution : Option CompensationExecutionDeclaration := none
   interruptingMessageEventSubProcesses : List InterruptingMessageEventSubProcessDeclaration := []
+  scopeLocalData : List ScopeLocalData := []
   deriving Repr, DecidableEq
 
 namespace Obligations

@@ -48,6 +48,7 @@ import type {
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import { evaluateInputMappingsUnder } from "./semantic-process-data.js";
 import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { evaluateNestedEffectInputs, nestedScopeDataProgram } from "./nested-scope-data.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
 import { hasSequentialScopeDefinition, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
@@ -401,6 +402,8 @@ export function deriveInternalTransitionFootprint(
       if (repeated && binding === undefined) return null;
       const arguments_ = repeated
         ? evaluateSequentialScopeInputs(program, state, owner, operation.effect.inputMappings)
+        : nestedScopeDataProgram(program)
+        ? evaluateNestedEffectInputs(program, state, owner, operation.effect.inputMappings)
         : evaluateInputMappingsUnder(
           effectMappingValuePolicyForProfile(program.identity.semanticProfile),
           operation.effect.inputMappings,
@@ -442,7 +445,10 @@ export function deriveInternalTransitionFootprint(
         owner.processInstanceId,
         inputNames,
         [...new Set(processNames)],
-        binding === undefined ? [] : [
+        binding === undefined
+          // NSD-READ-01 reads scope frames that no atom names individually, so it claims the Activity population.
+          ? nestedScopeDataProgram(program) ? [{ kind: InternalTransitionStateAtomKind.ActivityPopulation }] : []
+          : [
           // SMIS-IDENTITY-01 selects a unique declaration record across the Activity population.
           { kind: InternalTransitionStateAtomKind.ActivityPopulation },
           { kind: InternalTransitionStateAtomKind.ActivityAssociation, record: binding.activity },

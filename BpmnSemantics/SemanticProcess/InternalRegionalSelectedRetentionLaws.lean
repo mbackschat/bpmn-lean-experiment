@@ -30,6 +30,7 @@ theorem regionalSelection_retention_fields (program : Program) (before after : R
       after.variables.activities = before.variables.activities.filter
         (regionalSelectionLocalDataRetention before selected) := by
   obtain ⟨hosting, running⟩ := regionalSelection_running program before operation selected found
+  have foundSelected := found
   unfold selectInternalRegional? at found
   obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
   unfold fire? at result
@@ -50,7 +51,9 @@ theorem regionalSelection_retention_fields (program : Program) (before after : R
             exact ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl⟩, rfl⟩
   | completeScope id origin definition output =>
       dsimp only at found
-      change completeSelectedScope? program before definition output = some after at result
+      change completeDeclaredScope? program before definition output = some after at result
+      rw [selectInternalRegional?_completeScope_fires_selected program before id origin definition output selected
+        foundSelected] at result
       have localFields := congrArg ScopedVariables.activities
         (regionalLocalData_selected_completion_variables program before after definition output result)
       split at found

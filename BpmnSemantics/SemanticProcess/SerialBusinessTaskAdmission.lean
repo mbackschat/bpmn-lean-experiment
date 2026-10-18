@@ -47,11 +47,19 @@ private def edgeWhitespace (c : Char) : Bool :=
   [9, 10, 11, 12, 13, 32, 160, 5760, 8192, 8193, 8194, 8195, 8196, 8197,
    8198, 8199, 8200, 8201, 8202, 8232, 8233, 8239, 8287, 12288, 65279].contains c.toNat
 
-/-- SBT source text excludes ECMAScript edge whitespace while preserving interior literal bytes. -/
+/-- Whether `marker` is immediately followed by `{`. Structural over the characters, because
+`String.splitOn` recurses well-foundedly over positions and the kernel cannot decide it, which left
+every literal-input admission outside `decide +kernel`. -/
+private def opensExpression (marker : Char) : List Char → Bool
+  | first :: second :: rest => (first == marker && second == '{') || opensExpression marker (second :: rest)
+  | _ => false
+
+/-- SBT source text excludes ECMAScript edge whitespace and `${`/`#{` expression openers while
+preserving interior literal bytes. -/
 def literalValid (value : String) : Bool :=
   !value.isEmpty && !(value.toList.head?.any edgeWhitespace) &&
     !(value.toList.getLast?.any edgeWhitespace) &&
-    (value.splitOn "${").length == 1 && (value.splitOn "#{").length == 1
+    !opensExpression '$' value.toList && !opensExpression '#' value.toList
 
 def mappingsValid (handlers : List String) (inputs outputs : List VariableMapping) : Bool :=
   strictlySortedStrings (inputs.map (·.target)) &&

@@ -77,13 +77,14 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
         · contradiction
         · obtain ⟨choice, chosen, found⟩ := Option.bind_eq_some_iff.mp found
           have afterChoice := withdrawal definition output choice chosen
+          -- Restated with the selection's own `==`, so `simp_all` can discharge the parent-liveness premise.
+          have liveParent : ∀ parent, (before.scopeOccurrences.any fun candidate => candidate.id == parent) = true →
+              (after.scopeOccurrences.any fun candidate => candidate.id == parent) = true :=
+            fun parent present => by simpa using live parent (by simpa using present)
           repeat' first | (solve | simp at found) | split at found
           all_goals cases found
-          all_goals first
-            | (rename_i parent output parentEq outputEq present
-               have parentAfter := live parent (by simpa using present)
-               simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some])
-            | simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
+          all_goals simp_all only [Bool.and_eq_true, Bool.and_self, and_self, Bool.false_eq_true, ↓reduceIte,
+            Option.bind_eq_bind, Option.bind_some]
       · contradiction
   | throwError id origin input error handler =>
       dsimp only at found ⊢

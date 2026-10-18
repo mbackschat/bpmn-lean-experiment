@@ -87,7 +87,7 @@ private inductive ProcessDataValueDomain where
 @[simp] private abbrev profileValueDomain (profile : ProfileId) :
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
-      if profile = portableHandoffProfileId then
+      if profile = portableHandoffProfileId ∨ profile = nestedScopeDataProfileId then
         .singletonBusinessItem
       else if profile.value = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
         .stringNullBooleanList
@@ -123,7 +123,7 @@ private inductive ProcessDataValueDomain where
       else
         .empty
   | .userTaskCompletion =>
-      if profile = portableHandoffProfileId then
+      if profile = portableHandoffProfileId ∨ profile = nestedScopeDataProfileId then
         .singletonBusinessItem
       else if profileIsOneOf profile
           [ "cibseven-2.2.0-user-task-process-data-draft"
@@ -195,15 +195,15 @@ def processDataBindingsAdmitted (profile : ProfileId)
 
 /-- Each surface's chain is a separate lemma so that a new profile row costs one chain's elaboration, not three. -/
 private theorem processStart_domain_ne_singleton (profile : ProfileId)
-    (other : profile ≠ portableHandoffProfileId) :
+    (other : profile ≠ portableHandoffProfileId) (otherNested : profile ≠ nestedScopeDataProfileId) :
     profileValueDomain profile .processStart ≠ .singletonBusinessItem := by
-  simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
+  simp only [profileValueDomain, other, otherNested, or_self, ↓reduceIte] <;> repeat' split
   all_goals exact fun same => by cases same
 
 private theorem userTaskCompletion_domain_ne_singleton (profile : ProfileId)
-    (other : profile ≠ portableHandoffProfileId) :
+    (other : profile ≠ portableHandoffProfileId) (otherNested : profile ≠ nestedScopeDataProfileId) :
     profileValueDomain profile .userTaskCompletion ≠ .singletonBusinessItem := by
-  simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
+  simp only [profileValueDomain, other, otherNested, or_self, ↓reduceIte] <;> repeat' split
   all_goals exact fun same => by cases same
 
 private theorem messagePayload_domain_ne_singleton (profile : ProfileId)
@@ -212,11 +212,13 @@ private theorem messagePayload_domain_ne_singleton (profile : ProfileId)
   simp only [profileValueDomain, other, ↓reduceIte] <;> repeat' split
   all_goals exact fun same => by cases same
 
-/-- PBV-INGRESS-01: no profile domain other than the portable handoff's and the structured
-Message-payload profile's admits a portable Decimal, List or Map at any surface, so schema
-recognition alone cannot widen an existing profile. -/
+/-- PBV-INGRESS-01: no profile domain other than the portable handoff's, the nested scope-data
+profile's and the structured Message-payload profile's admits a portable Decimal, List or Map at any
+Process-data ingress surface, so schema recognition alone cannot widen an existing profile. Effect
+results are outside `ProcessDataIngress` and governed by `EffectMappingValuePolicy`. -/
 theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
     (other : profile ≠ portableHandoffProfileId)
+    (otherNested : profile ≠ nestedScopeDataProfileId)
     (otherPayload : profile ≠ portableMessagePayloadProfileId)
     (surface : ProcessDataIngress) (coefficient : Int) (scale : Nat)
     (members : List BusinessValue) (entries : List (String × BusinessValue)) :
@@ -225,8 +227,8 @@ theorem portable_arms_not_admitted_by_current_profiles (profile : ProfileId)
       variableValueAdmitted profile surface (.map entries) = false := by
   have selected : profileValueDomain profile surface ≠ .singletonBusinessItem := by
     cases surface
-    · exact processStart_domain_ne_singleton profile other
-    · exact userTaskCompletion_domain_ne_singleton profile other
+    · exact processStart_domain_ne_singleton profile other otherNested
+    · exact userTaskCompletion_domain_ne_singleton profile other otherNested
     · exact messagePayload_domain_ne_singleton profile otherPayload
   unfold variableValueAdmitted
   -- `profileValueDomain` is a simp abbreviation, so it is abstracted before simp can expand every row.
@@ -259,7 +261,7 @@ theorem portableMessagePayload_value_domain (value : VariableValue) :
       variableValueAdmitted portableMessagePayloadProfileId .processStart value = false ∧
       variableValueAdmitted portableMessagePayloadProfileId .userTaskCompletion value = false := by
   unfold variableValueAdmitted
-  refine ⟨?_, ?_, ?_⟩ <;> simp [profileValueDomain, portableHandoffProfileId,
-    messageKeyCorrelationProfileId, portableMessagePayloadProfileId]
+  refine ⟨?_, ?_, ?_⟩ <;> simp [profileValueDomain, portableHandoffProfileId, nestedScopeDataProfileId,
+    portableMessagePayloadProfileId]
 
 end BpmnSemantics.SemanticProcess
