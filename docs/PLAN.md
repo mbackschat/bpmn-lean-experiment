@@ -77,17 +77,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches), proposed as an amendment to the [nested scope-data capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md), whose serial batch is closed. `PC-SCOPE-02`/`04` follow. Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches), proposed by the [nested scope-control capsule](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#status), which grows the embedded completion profile; the serial scope-data batch is closed. `PC-SCOPE-02`/`04` follow. Multi-Instance closure stays held at qualification.
 
-Deliverable: nested ordinary embedded scopes containing mixed activities and selected gateways that complete at exact owned quiescence, with separate child Ends and outside parent work preserved, through Lean, core, hosting and public registration.
+Deliverable: ordinary embedded scopes nested to depth three, composing User Tasks through Parallel blocks and separate child Ends, that complete at exact owned quiescence with outside parent work preserved, through Lean, core, hosting and public registration. Mixed activities and Exclusive decisions stay later increments.
 
-Acceptance blockers: the amendment and its proposal review, which must settle the concurrent-wait Start capacity account and concurrent-effect hosting that host admission refuses today.
+Acceptance blockers: the proposal's correction audit, then implementation, gates and checkpoint review.
 
-Current result: no amendment drafted; nesting is admitted only serially, and concurrent bodies only one level deep.
+Current result: proposal corrected after its cold review; nesting is admitted only serially, and concurrent bodies only one level deep.
 
 Effort budget: 120 minutes wall from 2026-10-18 19:45 UTC for the amendment and its proposal review. At the limit, stop and record before renewal.
 
-Next action: inventory the existing nesting, quiescence, Parallel-region and host-admission owners, then draft the amendment.
+Next action: obtain the correction audit, then implement the composition owner red/green.
 
 Oracle: a first child End or a wrong-parent completion completes a nested scope early; today nesting beyond the serial scope-data account is unsupported.
 
