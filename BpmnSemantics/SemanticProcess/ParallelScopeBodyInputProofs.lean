@@ -268,7 +268,7 @@ theorem parallelScopeBinding_empty_inputs (program : Program) (analysis : Parall
   obtain ⟨iteration, frame, chosen, _⟩ := selected_body_data analysis.entry state owner binding bound
   simp only [evaluateParallelScopeInputs?, entries, List.filter_cons, List.filter_nil, child,
     beq_self_eq_true, ↓reduceIte, bound, chosen, bind, Option.bind_some]
-  simp [evaluateInputMappings?, canonicalInputMappings?, evaluateInputMappingsInOrder]
+  simp [evaluateInputMappings?, canonicalInputMappings?, sortByTarget, evaluateInputMappingsInOrder]
 
 namespace ParallelScopeLocalData
 
