@@ -18,7 +18,10 @@ import type {
   ScenarioResult,
   Scenario,
 } from "@bpmn-lean/semantic-core";
-import { TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
+import {
+  requiresHostProgressBeforeCompletion,
+  TemporalExecutionSchedule,
+} from "@bpmn-lean/temporal-testkit";
 
 export type HostInteractionExpectations = Readonly<{
   completionOutcomes: ReadonlyArray<CommandOutcome>;
@@ -29,9 +32,10 @@ export type HostInteractionExpectations = Readonly<{
 /**
  * @param dropFinalCompletionOutcome drops the last completion's outcome, for a post-terminal
  * schedule whose final command is refused by a closed Process rather than answered semantically.
- * @param executionSchedule selects where the host takes its first-completion wait: a stimulus-order
- * host queries at the initial wait, before delivering any stimulus, so an effect awaited first leaves
- * that wait without the User Task; other schedules wait until the first completed task opens.
+ * @param executionSchedule with the scenario, selects where the host takes its first-completion wait,
+ * by the runner's own rule: it waits for the first completed task to open only outside stimulus order
+ * and only when host progress precedes that completion; otherwise it queries at the initial wait, so a
+ * stimulus-order journey that first awaits an effect has no User Task there.
  * @param waitTraceLength the initial-wait trace length the host awaits before that query.
  */
 export function hostInteractionExpectations(
@@ -60,12 +64,14 @@ export function hostInteractionExpectations(
       .slice(0, -1)
       .map(({ commandId }) => openUserTasksAfter(semanticCoreResult, commandId)),
     openUserTasksAtFirstCompletionWait:
-      executionSchedule === TemporalExecutionSchedule.StimulusOrder
-        ? openUserTasksAtInitialWait(semanticCoreResult, waitTraceLength)
-        : openUserTasksWhenElementOpens(
+      executionSchedule !== TemporalExecutionSchedule.StimulusOrder &&
+        completions[0] !== undefined &&
+        requiresHostProgressBeforeCompletion(scenario, completions[0])
+        ? openUserTasksWhenElementOpens(
           semanticCoreResult,
-          completions[0]?.taskId.elementId,
-        ),
+          completions[0].taskId.elementId,
+        )
+        : openUserTasksAtInitialWait(semanticCoreResult, waitTraceLength),
   };
 }
 
@@ -112,7 +118,7 @@ function openUserTasksAtInitialWait(
 
 function openUserTasksWhenElementOpens(
   semanticCoreResult: ScenarioResult,
-  elementId: string | undefined,
+  elementId: string,
 ): ReadonlyArray<OpenUserTask> {
   const state = semanticCoreResult.trace.find(
     (observation) =>

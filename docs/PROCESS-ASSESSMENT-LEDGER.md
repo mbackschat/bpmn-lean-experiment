@@ -249,15 +249,17 @@ Evidence
 A shared harness assertion compared a proxy for a fact only one component observes — the state the host actually paused at — so each new evidence shape adds another scenario-name exception rather than correcting the proxy; that assertion now carries five
 
 Instances
-: 1
+: 2
 
 Disposition
-: `review question`
+: `executable guard`
 
 Evidence
-: [question 1](#self-assessment-questions)
+: [first-completion wait witness](../packages/differential/test/nested-scope-data-pipeline-cases.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
+
+Second instance, nested embedded scope data on 2026-10-18: the pipeline expected the open User Tasks of the state in which the first completed task opens, while a stimulus-order host queries at the initial wait; the purchase-order journeys, which first await an effect, were the first to separate the two, and the complete pipeline failed. The expectation now selects its wait through the runner's own exported `requiresHostProgressBeforeCompletion` rule, so the proxy cannot diverge from the host per schedule; across all 120 registered cases only the two purchase-order expectations changed.
 
 ### Finding 12
 
