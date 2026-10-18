@@ -1,0 +1,99 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/nested-embedded-scope-data/expense-claim.bpmn",
+    "sourceId": "expense-claim",
+    "semanticProfile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/nested-embedded-scope-data/expense-claim-overlay.json",
+      "id": "expense-claim-handlers",
+      "sha256": "b835229ab56834b6bd8ababbfac48c1d24eba8277623d84265671b7b2b88106d"
+    },
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_nested_embedded_scope_data_1",
+    "initialVariables": [
+      {
+        "name": "claim",
+        "value": {
+          "kind": "map",
+          "value": [
+            {
+              "name": "amount",
+              "value": {
+                "kind": "decimal",
+                "coefficient": "4255",
+                "scale": 2
+              }
+            },
+            {
+              "name": "memo",
+              "value": {
+                "kind": "string",
+                "value": "taxi"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "ReviewClaim",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "notes",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "string",
+                      "value": "receipt attached"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "recordClaim",
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "recordRef",
+            "value": {
+              "kind": "string",
+              "value": "R-1"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -175,7 +175,7 @@ Retained recurrence evidence: [Finding 06](process-assessment/PLANNING-AND-OWNER
 A registered profile was landed without the live example its oracle requires, turning the complete gate red after the focused gates passed.
 
 Instances
-: 4
+: 6
 
 Disposition
 : `executable guard`
@@ -188,6 +188,8 @@ Evidence
 The second instance was the interchange composition profile: its source, Lean, CIB, differential, and Temporal evidence existed, but the Product 1 example catalog remained incomplete until the complete gate reached it. The correction replaces profile-by-profile recollection with exact registered-profile coverage, so any future profile without an example fails the focused port-free catalog gate
 
 The third and fourth instances are the public subscription registration and bounded Transaction registration. Both omitted enrollment needed by existing public inventories; Transaction also omitted its runnable example. The existing catalog and example guards exposed the gaps. Their [closure cost records](capsule-costs/TRANSACTION-OUTCOME-LEDGER.md#transaction-closure-correction-and-cost-2026-09-26) retain failures; registration is complete only when those existing consumers agree.
+
+The fifth and sixth instances are the structured Message-payload profile (`310cb4cd`) and the nested scope-data profile, both committed without a runnable example although `node scripts/what-binds.ts` on each `profile.json` names this guard; the port-free test was not run before either commit, and the closure `test:temporal` gate failed on both. The guard held and its focused lane is named, so the failure was skipping a named guard rather than a missing one.
 
 ### Finding 08
 

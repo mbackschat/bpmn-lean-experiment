@@ -1,0 +1,148 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/portable-business-message-payload/process.bpmn",
+    "sourceId": "shipment-manifest-intake",
+    "semanticProfile": "bpmn-2.0.2-portable-business-message-payload-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_portable_business_message_payload_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "deliverPayloadMessage",
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "Interface_Carrier",
+        "interfaceOperationId": "Operation_SubmitManifest",
+        "messageId": "Message_ManifestReceived"
+      },
+      "payload": {
+        "kind": "map",
+        "value": [
+          {
+            "name": "consignee",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "line1",
+                  "value": {
+                    "kind": "string",
+                    "value": "Harbour Road 4"
+                  }
+                },
+                {
+                  "name": "line2",
+                  "value": {
+                    "kind": "null"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "declaredValue",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "-123455",
+              "scale": 2
+            }
+          },
+          {
+            "name": "hazardous",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "reference",
+                      "value": {
+                        "kind": "string",
+                        "value": "P-1"
+                      }
+                    },
+                    {
+                      "name": "weightKg",
+                      "value": {
+                        "kind": "integer",
+                        "value": 12
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "reference",
+                      "value": {
+                        "kind": "string",
+                        "value": "P-1"
+                      }
+                    },
+                    {
+                      "name": "weightKg",
+                      "value": {
+                        "kind": "integer",
+                        "value": 12
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "reference",
+                      "value": {
+                        "kind": "string",
+                        "value": "P-2"
+                      }
+                    },
+                    {
+                      "name": "weightKg",
+                      "value": {
+                        "kind": "integer",
+                        "value": 3
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "delayMs": 250
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewManifest",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}
