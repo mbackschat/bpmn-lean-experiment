@@ -81,13 +81,13 @@ Current task: nested embedded scope data, first batch of the embedded and called
 
 Deliverable: serial nested embedded scopes whose locals shadow by present null, take writes at the nearest declaring owner, carry portable structured values and retire with their owner, through Lean, core, hosting and public registration.
 
-Acceptance blockers: the complete pipeline, Temporal and model-corpus gates once each (also covering `310cb4cd`). The full Lean gate builds all but the `890b010f` placeholder `SequentialScopeCommandResumptionProofs`, failing until its Multi-Instance owner closes or removes it.
+Acceptance blockers: the closure review. The pipeline, Temporal and model-corpus gates are green (also covering `310cb4cd`); the full Lean gate builds all but the `890b010f` placeholder `SequentialScopeCommandResumptionProofs`, failing until its Multi-Instance owner closes or removes it.
 
 Current result: the batch implements the IL table, frame chain, source reader, profile, three retained models and the Start capacity reservation, with frame validity enforced at every committed state and continuation. Core, source, contracts, differential and capacity tests pass; fixture builds are bounded and recorded.
 
 Effort budget: 240 minutes wall from 2026-10-18 16:00 UTC, renewed by owner direction, through checkpoint review and commit. At the limit, stop and record before renewal.
 
-Next action: run those gates one at a time, then the closure reflection and review the [capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#status) governs.
+Next action: the warm closure review the [capsule](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#status) governs, then propose `PC-SCOPE-01`.
 
 Oracle: a present-null local in an inner scope hides a Process namesake and a write updates the nearest existing owner only; today each is refused or flattened.
 
