@@ -18,7 +18,7 @@ private theorem replayed_root_completion_scopes_empty
     (replayed : replayInternalOperationOccurrence? program before record = some after) :
     after.scopeOccurrences = [] := by
   obtain ⟨scopeId, output, _, member, _, _, completed⟩ :=
-    replayed_scope_completion_execution program before after record kind replayed (analyzed_not_nested program analysis admitted)
+    replayed_scope_completion_execution program before after record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
   have allowed := analyzeProgram_operation_allowed program analysis admitted _ member
   have noOutput : output = none := by
     cases output <;> simp [SequentialScopeProgram.operationAllowed] at allowed ⊢

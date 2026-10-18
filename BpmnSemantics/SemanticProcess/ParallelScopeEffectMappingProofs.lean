@@ -259,7 +259,7 @@ private theorem phase_outputs (program : Program) (analysis : ParallelScopeStart
     rcases later with history | ⟨terminalPrefix, record, middle, _, history, kind, replayed, _, _⟩
     · exact history_outputs program analysis analyzed selected owner issued current suffix history initialValid
     · have middleValid := history_outputs program analysis analyzed selected owner issued middle terminalPrefix history initialValid
-      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed (analyzed_not_nested program analysis analyzed)
+      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -423,7 +423,7 @@ private theorem singleton_process_frame (program : Program) (analysis : Parallel
       obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record rfl replay
       exact completeParallelScope_preserves_process completed
     case completeScope =>
-      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (analyzed_not_nested program analysis analyzed)
+      obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed

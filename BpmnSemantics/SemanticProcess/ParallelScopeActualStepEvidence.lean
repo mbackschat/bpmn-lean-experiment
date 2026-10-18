@@ -96,7 +96,7 @@ theorem parallelScope_singleton_execution_cases (program : Program) (analysis : 
       obtain ⟨_, instanceId, _, _, _, completed, _⟩ :=
         replayed_final_root_completion program analysis admitted before after record rfl replay
       obtain ⟨scopeId, output, _, _, _, _, completion⟩ :=
-        replayed_scope_completion_execution program before after record rfl replay (analyzed_not_nested program analysis admitted)
+        replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis admitted)
       exact .rootCompletion scopeId output instanceId rfl completion completed
     all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied <;> contradiction
 

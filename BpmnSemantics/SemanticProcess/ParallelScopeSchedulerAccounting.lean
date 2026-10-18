@@ -218,7 +218,7 @@ theorem ParallelScopeSchedulerPhase.wait_declarations (program : Program)
     · have middleValid := history.wait_declarations program parent.processInstanceId owner selected wellFormed
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
-        replayed_scope_completion_execution program middle current record kind replayed (analyzed_not_nested program analysis admitted)
+        replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -258,7 +258,7 @@ theorem ParallelScopeSchedulerPhase.activity_frame_absent (program : Program)
     · have middleValid := history.activity_frame_absent program query owner selected
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
-        replayed_scope_completion_execution program middle current record kind replayed (analyzed_not_nested program analysis admitted)
+        replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -295,7 +295,7 @@ theorem ParallelScopeSchedulerPhase.logical_time (program : Program)
     · have middleValid := history.logical_time program 0 owner selected
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
-        replayed_scope_completion_execution program middle current record kind replayed (analyzed_not_nested program analysis admitted)
+        replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
