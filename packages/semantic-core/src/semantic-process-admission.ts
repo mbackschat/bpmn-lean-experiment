@@ -94,6 +94,18 @@ export function repeatableSubscriptionPreparationAdmitted(program: SemanticProce
     isWellFormedSemanticProcessProgram(program);
 }
 
+/**
+ * The embedded completion profile admits its exact multiset class or the nested scope-control class (NSC-ADMIT-01).
+ * This is a profile capability, as in Lean's `programProfileCapabilitiesValid`, checked beside the exact shape rather
+ * than inside structural well-formedness.
+ */
+function embeddedCompletionProgramAdmitted(program: SemanticProcessProgram): boolean {
+  const { semanticProfile } = program.identity;
+  return semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion ||
+    requiredProgramShapeAllows(semanticProfile, program.operations, program.definitionScopes.length) ||
+    nestedScopeControlProgramAnalysis(program) !== null;
+}
+
 export function supportsSemanticProcessScenario(
   scenario: Scenario,
   program: SemanticProcessProgram,
@@ -109,6 +121,7 @@ export function supportsSemanticProcessScenario(
       program.operations,
       program.definitionScopes.length,
     ) &&
+    embeddedCompletionProgramAdmitted(program) &&
     program.identity.semanticProfile === scenario.profile &&
     scenario.stimuli.every((stimulus) =>
       profileAllowsStimulusValueDomain(scenario.profile, stimulus)
@@ -144,6 +157,7 @@ export function supportsSemanticProcessExecution(
       program.operations,
       program.definitionScopes.length,
     ) &&
+    embeddedCompletionProgramAdmitted(program) &&
     profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
@@ -310,9 +324,6 @@ export function isWellFormedSemanticProcessProgram(
   if (isSerialChainProfile(identity.semanticProfile) && !serialBusinessProgramGraph(program)) return false;
   if (identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData &&
       nestedScopeProgramAnalysis(program) === null) return false;
-  if (identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
-      !requiredProgramShapeAllows(identity.semanticProfile, checkedOperations, program.definitionScopes.length) &&
-      nestedScopeControlProgramAnalysis(program) === null) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;

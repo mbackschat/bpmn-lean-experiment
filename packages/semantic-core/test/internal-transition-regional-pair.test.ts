@@ -34,11 +34,17 @@ function valid(program: SemanticProcessProgram, state: RuntimeState, instanceId:
   assert.notEqual(projectCurrentControlPositions(program, state), null);
 }
 
+// The cumulative embedded profile admits plain nested Sub-Process trees (NSC-ADMIT-01), so a fixture Program is admitted
+// exactly when every branch enters and completes an unbounded scope ordinarily; its intermediate state is still built by
+// firing operations by hand, outside any admitted closure.
+const plainScopeTree = (branches: readonly { kind: string; bounded: boolean }[]) =>
+  branches.every(({ kind, bounded }) => kind === Kind.CompleteScope && !bounded);
+
 function assertPair(fixture: ReturnType<typeof regionalPairFixture>) {
   const { program, state, start, branches } = fixture;
   valid(program, state, start.instanceId);
-  assert.equal(supportsSemanticProcessExecution(start, program), false,
-    "constructed intermediate-state evidence admits no source/profile topology");
+  assert.equal(supportsSemanticProcessExecution(start, program), plainScopeTree(branches),
+    "only a plain nested Sub-Process tree is a source/profile topology");
   const prepared = branches.map(({ selected, scopeId }) => {
     const member = prepare(program, state, selected);
     assert.ok(member !== null);
@@ -140,8 +146,9 @@ for (const bounded of kind === Kind.CompleteScope ? [false, true] : [false]) {
         { name: "details", value: { kind: VariableValueKind.String, value: "Review details" } },
       ] } } };
     valid(program, state, start.instanceId);
-    assert.equal(supportsSemanticProcessExecution(start, program), false,
-      "constructed mixed frontier establishes no source/profile admission");
+    assert.equal(supportsSemanticProcessExecution(start, program),
+      plainScopeTree(branches) && armingKind === Kind.AwaitUserTask,
+      "only a plain nested Sub-Process tree beside a User Task is a source/profile topology");
     const regional = prepare(program, state, branches[0]!.selected);
     const candidate = { operation: arming, owner: state.controlTokens.find(({ placeId }) => placeId === side.input)!.owner };
     const ordinary = prepareOrdinary(program, state, candidate);

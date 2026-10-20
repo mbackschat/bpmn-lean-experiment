@@ -71,8 +71,10 @@ for (const multiplicity of creationKind === Kind.EnterScope ? [1, 3] : [1]) {
     const state: RuntimeState = { ...fixture.state, controlTokens: fixture.state.controlTokens.map((token) =>
       token.placeId === creation.input ? { ...token, multiplicity } : token) };
     valid(program, state, start.instanceId);
-    assert.equal(supportsSemanticProcessExecution(start, program), false,
-      "constructed pair evidence establishes no source/profile reachability");
+    // The cumulative embedded profile admits a plain nested Sub-Process tree (NSC-ADMIT-01); the state stays hand-built.
+    assert.equal(supportsSemanticProcessExecution(start, program),
+      regionalKind === Kind.CompleteScope && creationKind === Kind.EnterScope && !bounded,
+      "only a plain nested Sub-Process tree is a source/profile topology");
     const removal = prepareRegional(program, state, regional);
     const insertion = prepareCreation(program, state, creation);
     assert.ok(removal !== null && insertion !== null);
