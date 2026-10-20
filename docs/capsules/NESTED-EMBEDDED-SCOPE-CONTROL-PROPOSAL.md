@@ -143,5 +143,5 @@ After growth, this capsule owns the profile's admission account, and the embedde
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `c83ee6ff` | `fork-turns-none` | `approve-with-required-edits` | `4de33975, 255026a2, bc6e6564, owner-authorized` |
-| Semantic checkpoint | `7f9a4cc7` | `fork-turns-none` | `approve-with-required-edits` | `ef54af62` |
+| Semantic checkpoint | `7f9a4cc7` | `fork-turns-none` | `approve-with-required-edits` | `ef54af62, 4a8bdb3b` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

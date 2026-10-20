@@ -86,7 +86,7 @@ for (const kind of regionalKinds) for (const bounded of kind === Kind.CompleteSc
   test(`${kind}${bounded ? "/bounded" : ""}: three regional members preserve complete preparations, state and publication in all six orders`, () => {
     const { program, state: prefix, start, side } = regionalFrontierFixture([kind, kind, kind], bounded);
     assert.equal(supportsSemanticProcessExecution(start, program), false,
-      "constructed runtime witnesses widen no registered profile");
+      "a three-branch frontier leaves the nested scope-control alphabet or exceeds the closure limit at entry");
     const armed = applyInternalOperationStep(program, side, prefix);
     assert.ok(armed !== null);
     const candidates = frontier(program, armed.successor);
