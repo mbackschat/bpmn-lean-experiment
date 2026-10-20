@@ -1489,17 +1489,19 @@ The brake closes host exhaustion for every Lean tree; it does not explain why th
 A new guard in a shared command dispatcher pushed near-limit proofs over their per-declaration heartbeat budget, and the delegated fix threaded a profile premise into each failing proof site instead of discharging the guard once for the whole proof family.
 
 Instances
-: 1
+: 2
 
 Disposition
-: `review question`
+: `executable guard`
 
 Evidence
-: [class `simp` lemma](../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [root-only Lean delegation](../CLAUDE.md#delegated-implementation)
+: [class `simp` lemma](../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [root-only Lean delegation](../CLAUDE.md#delegated-implementation), [single dispatch rewrite point](../scripts/lean-profile-capability-dispatch.test.ts)
 
 **First observed:** `PC-DATA-03` effect-data shared batch on 2026-10-14.
 
 The worker added `EffectData.commandAdmitted` to `admitStimulusWithoutCompensationSnapshots` and patched six parallel-scope modules with a `notEffectData` premise; an unpatched seventh, `ParallelScopeProgress`, then timed out. A scratch reproduction showed `simp` itself was cheap per goal: the theorem's four cases × ten goals shared one 200,000-heartbeat budget, and the extra unresolved `if` tipped it. One `@[simp]` lemma discharging the guard from `ParallelScopeStart.programSelected`, which every such proof already passes to `simp`, replaced all six patches. Review question: when a shared definition change breaks a second proof file, does the correction discharge it at the family's existing selection fact rather than per site?
+
+Second instance, `PC-SCOPE-01` on 2026-10-20: growing the embedded completion profile added one branch to `programProfileCapabilitiesValid`, and the root repair extended each of eleven proof sites in eight modules that unfolded the dispatch with a refutation of the new branch, the per-site pattern every earlier branch had also grown. `programProfileCapabilitiesValid_of_undispatched` in [`ProfileAdmission`](../BpmnSemantics/SemanticProcess/ProfileAdmission.lean) now rewrites the dispatch to its shared tail for every profile without a branch, each consumer proves one `programCapabilityDispatched … = false` fact, and the guard rejects unfolding the dispatch anywhere else, so the next branch changes one lemma.
 
 ### Finding 80
 

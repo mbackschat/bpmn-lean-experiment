@@ -472,22 +472,10 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
         rw [profile]
         simp [activityDataInputOutputUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
-      have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-        rw [profile]
-        decide +kernel
-      have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-        rw [profile]
-        decide +kernel
-      have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-        rw [profile]
-        decide +kernel
-      have repeatedScope : (program.identity.semanticProfile.value ==
-          "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
+      have undispatched : programCapabilityDispatched program.identity.semanticProfile = false := by
         rw [profile]; decide +kernel
-      have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
-        rw [profile]; decide +kernel
-      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
-        ↓reduceIte, Bool.and_eq_true] at admitted
+      rw [programProfileCapabilitiesValid_of_undispatched program undispatched] at admitted
+      simp only [programUndispatchedCapabilities, Bool.and_eq_true] at admitted
       have noSequential := admitted.2.2.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
         activityDataInputOutputUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId]

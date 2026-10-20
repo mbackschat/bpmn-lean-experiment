@@ -8,15 +8,25 @@ retains the stable theorem surface consumed by runtime-preservation proofs.
 
 namespace BpmnSemantics.SemanticProcess
 
+/-- A profile without its own dispatch branch reaches the shared undispatched checks. -/
+theorem programProfileCapabilitiesValid_of_undispatched (program : Program)
+    (undispatched : programCapabilityDispatched program.identity.semanticProfile = false) :
+    programProfileCapabilitiesValid program =
+      ((program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId) &&
+        (program.interruptingMessageEventSubProcesses.isEmpty && programUndispatchedCapabilities program)) := by
+  simp only [programCapabilityDispatched, Bool.or_eq_false_iff, decide_eq_false_iff_not] at undispatched
+  obtain ⟨⟨⟨⟨⟨repeatedScope, messageHandler⟩, callData⟩, transaction⟩, subscription⟩, embedded⟩ := undispatched
+  simp only [programProfileCapabilitiesValid, repeatedScope, messageHandler, callData, transaction, subscription,
+    embedded, Bool.false_eq_true, ↓reduceIte]
+
 /-- The Parallel Multi-Instance profile's exact Program shape contains one definition scope. -/
 theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program)
     (profile : program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId)
     (capabilities : programProfileCapabilitiesValid program = true) :
     program.definitionScopes.length = 1 := by
-  simp only [programProfileCapabilitiesValid] at capabilities
-  rw [profile] at capabilities
-  simp [programShape?, parallelMultiInstanceUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId, embeddedCompletionProfile, programExactShape] at capabilities
+  rw [programProfileCapabilitiesValid_of_undispatched program (by rw [profile]; decide +kernel)] at capabilities
+  simp [programUndispatchedCapabilities, profile, programShape?, parallelMultiInstanceUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId, programExactShape] at capabilities
   grind
 
 /-- The Parallel Multi-Instance profile admits no Event-Based Gateway race operation. -/
@@ -27,10 +37,9 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
       match operation with
       | .awaitEventRace .. => False
       | _ => True := by
-  simp only [programProfileCapabilitiesValid] at capabilities
-  rw [profile] at capabilities
-  simp [programShape?, parallelMultiInstanceUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId, embeddedCompletionProfile, programExactShape] at capabilities
+  rw [programProfileCapabilitiesValid_of_undispatched program (by rw [profile]; decide +kernel)] at capabilities
+  simp [programUndispatchedCapabilities, profile, programShape?, parallelMultiInstanceUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId, programExactShape] at capabilities
   have shape : operationCardinalities program.operations =
       withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 } := by
     grind
@@ -61,11 +70,9 @@ theorem activityDataInputOutputProfile_property_endpoints (program : Program)
       taskName directInput directOutput ∈ program.operations) :
     (∃ propertyId, directInput.source = .property propertyId) ∧
       ∃ propertyId, directOutput.target = .property propertyId := by
-  simp only [programProfileCapabilitiesValid] at capabilities
-  rw [profile] at capabilities
-  simp [programShape?, activityDataInputOutputUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId, embeddedCompletionProfile,
-    programExactShape] at capabilities
+  rw [programProfileCapabilitiesValid_of_undispatched program (by rw [profile]; decide +kernel)] at capabilities
+  simp [programUndispatchedCapabilities, profile, programShape?, activityDataInputOutputUserTaskProfileId,
+    sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId, programExactShape] at capabilities
   obtain ⟨_, _, capabilities⟩ := capabilities
   have selected := capabilities.2.1.1.1.1.1.1.1.2
   have endpoint := selected _ member

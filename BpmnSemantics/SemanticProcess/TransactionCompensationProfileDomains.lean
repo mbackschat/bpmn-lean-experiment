@@ -69,10 +69,11 @@ theorem profile_operationCardinality_zero (program : Program) (field : ShapeCard
     rw [same] at zero
     change (none : Option Nat) = some 0 at zero
     contradiction
-  have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false :=
-    beq_eq_false_iff_ne.mpr notEmbedded
-  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
-    ↓reduceIte, Bool.and_eq_true] at capabilities
+  have undispatched : programCapabilityDispatched program.identity.semanticProfile = false := by
+    simp only [programCapabilityDispatched, Bool.or_eq_false_iff, decide_eq_false_iff_not]
+    exact ⟨⟨⟨⟨⟨repeatedScope, messageHandler⟩, callData⟩, transaction⟩, legacy⟩, beq_eq_false_iff_ne.mpr notEmbedded⟩
+  rw [programProfileCapabilitiesValid_of_undispatched program undispatched] at capabilities
+  simp only [programUndispatchedCapabilities, Bool.and_eq_true] at capabilities
   cases shape : programShape? program.identity.semanticProfile.value with
   | none => simp [shape] at zero
   | some entry =>

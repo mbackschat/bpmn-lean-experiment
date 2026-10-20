@@ -108,27 +108,18 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
       have execution := wellFormed.2.1.2
       have repeated := wellFormed.2.2
       have capabilities := _capabilities
-      have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
-        rcases profile with same | same <;> rw [same] <;>
-          simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
-            repeatableSubscriptionCheckpointProfileId]
-      have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-        rcases profile with same | same <;> rw [same] <;> decide +kernel
-      have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-        rcases profile with same | same <;> rw [same] <;> decide +kernel
-      have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-        rcases profile with same | same <;> rw [same] <;> decide +kernel
-      have repeatedScope : (program.identity.semanticProfile.value ==
-          "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
-        rcases profile with same | same <;> rw [same] <;> decide +kernel
       have notParallel : program.identity.semanticProfile ≠ parallelMultiInstanceUserTaskProfileId := by
         rcases profile with same | same <;> rw [same] <;>
           simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
             parallelMultiInstanceUserTaskProfileId]
-      have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+      have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
+        rcases profile with same | same <;> rw [same] <;>
+          simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
+            repeatableSubscriptionCheckpointProfileId]
+      have undispatched : programCapabilityDispatched program.identity.semanticProfile = false := by
         rcases profile with same | same <;> rw [same] <;> decide +kernel
-      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
-        ↓reduceIte, Bool.and_eq_true] at capabilities
+      rw [programProfileCapabilitiesValid_of_undispatched program undispatched] at capabilities
+      simp only [programUndispatchedCapabilities, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.2.2.1.2
       simp [programParallelMultiInstanceProfileMatches, notParallel] at parallelFamily
       obtain ⟨aggregate, lifecycle⟩ := wellFormed.1

@@ -361,25 +361,10 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
         parallelMultiInstanceOperationsPair entryOperation completionOperation = true ∧
         parallelMultiInstanceCompletionForEntry? program.operations entryOperation =
           some completionOperation := by
-  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
-    rw [profile]
-    simp [parallelMultiInstanceUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
-  have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-    rw [profile]
-    decide +kernel
-  have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-    rw [profile]
-    decide +kernel
-  have messageHandler :
-      (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-    rw [profile]
-    rfl
-  have repeatedScope : (program.identity.semanticProfile.value ==
-      "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [profile]; rfl
-  have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
-    rw [profile]; rfl
-  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded,
-    Bool.false_eq_true, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
+  have undispatched : programCapabilityDispatched program.identity.semanticProfile = false := by
+    rw [profile]; decide +kernel
+  rw [programProfileCapabilitiesValid_of_undispatched program undispatched] at capabilities
+  simp only [programUndispatchedCapabilities, Bool.and_eq_true] at capabilities
   obtain ⟨_, _, capabilities⟩ := capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
     programParallelMultiInstanceProfile_pair_census program profile capabilities.1.2
@@ -466,13 +451,11 @@ theorem SharedParallelProgramAccount.repeatedScopeEntries_absent {program : Prog
     (account : SharedParallelProgramAccount program arm owner) :
     program.operations.filterMap sequentialScopeEntry? = [] := by
   have capabilities := account.capabilities
-  simp only [programProfileCapabilitiesValid, account.profile, parallelMultiInstanceUserTaskProfileId,
-    interruptingMessageEventSubProcessProfileId, callDataCheckpointProfileId,
-    transactionCancellationCheckpointProfileId, repeatableSubscriptionCheckpointProfileId,
-    ProfileId.mk.injEq] at capabilities
+  rw [programProfileCapabilitiesValid_of_undispatched program (by rw [account.profile]; decide +kernel)]
+    at capabilities
   have cardinality : (operationCardinalities program.operations).sequentialScopeEntries = 0 := by
-    simp [programShape?, sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId,
-      embeddedCompletionProfile, programExactShape] at capabilities
+    simp [programUndispatchedCapabilities, account.profile, programShape?, sequentialMultiInstanceUserTaskProfileId,
+      parallelMultiInstanceUserTaskProfileId, programExactShape] at capabilities
     have counts : operationCardinalities program.operations =
         withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 } := by grind
     rw [counts]

@@ -698,6 +698,37 @@ def programExactShapeValid (program : Program) : Bool :=
     | some (scopeCount, shape) => programExactShape program scopeCount shape
     | none => false
 
+/-- The capability checks of every profile without its own branch in `programProfileCapabilitiesValid`:
+the Multi-Instance family matches, then the selected exact shape or the profile's structural analysis. -/
+def programUndispatchedCapabilities (program : Program) : Bool :=
+  programSequentialMultiInstanceProfileMatches program &&
+    programParallelMultiInstanceProfileMatches program &&
+    match programShape? program.identity.semanticProfile.value with
+    | some (scopeCount, shape) => programExactShape program scopeCount shape
+    | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
+        (MixedTaskControlFlow.programAnalysis program).isSome
+      else if program.identity.semanticProfile == serialBusinessTaskProfileId then
+        (SerialBusinessTask.programAnalysis program).isSome
+      else if program.identity.semanticProfile == portableEffectDataProfileId then
+        (EffectData.programAnalysis program).isSome
+      else if program.identity.semanticProfile == nestedScopeDataProfileId then
+        (NestedScopeData.programAnalysis program).isSome
+      else if program.identity.semanticProfile == portableHandoffProfileId then
+        portableHandoffProgramGraph program
+      else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
+        structuredCompositionProgramGraph program
+
+/-- The profiles with their own branch in `programProfileCapabilitiesValid`. Proofs about any other
+profile rewrite the dispatch with `programProfileCapabilitiesValid_of_undispatched` instead of walking
+its branches, so a new branch changes that lemma rather than every consumer. -/
+def programCapabilityDispatched (profile : ProfileId) : Bool :=
+  profile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
+    profile == interruptingMessageEventSubProcessProfileId ||
+    profile == callDataCheckpointProfileId ||
+    profile == transactionCancellationCheckpointProfileId ||
+    decide (profile = repeatableSubscriptionCheckpointProfileId) ||
+    profile.value == embeddedCompletionProfile
+
 /-- Exact operation and definition-scope cardinalities selected by the profile. Only the nested
 scope-data profile may declare scope locals. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
@@ -715,22 +746,6 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
     repeatableSubscriptionProgramGraph program
   else if program.identity.semanticProfile.value == embeddedCompletionProfile then
     programExactShapeValid program || (NestedScopeControl.programAnalysis program).isSome
-  else
-  programSequentialMultiInstanceProfileMatches program &&
-    programParallelMultiInstanceProfileMatches program &&
-    match programShape? program.identity.semanticProfile.value with
-    | some (scopeCount, shape) => programExactShape program scopeCount shape
-    | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
-        (MixedTaskControlFlow.programAnalysis program).isSome
-      else if program.identity.semanticProfile == serialBusinessTaskProfileId then
-        (SerialBusinessTask.programAnalysis program).isSome
-      else if program.identity.semanticProfile == portableEffectDataProfileId then
-        (EffectData.programAnalysis program).isSome
-      else if program.identity.semanticProfile == nestedScopeDataProfileId then
-        (NestedScopeData.programAnalysis program).isSome
-      else if program.identity.semanticProfile == portableHandoffProfileId then
-        portableHandoffProgramGraph program
-      else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&
-        structuredCompositionProgramGraph program
+  else programUndispatchedCapabilities program
 
 end BpmnSemantics.SemanticProcess

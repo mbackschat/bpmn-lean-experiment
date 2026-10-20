@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
@@ -194,12 +195,15 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
   by_cases embedded : profile = ⟨embeddedCompletionProfile⟩
   · subst profile
     decide +kernel
+  by_cases repeatedScope : profile.value = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft"
+  · obtain ⟨value⟩ := profile
+    simp only at repeatedScope
+    subst value
+    decide +kernel
   have operationPresent : program.operations.any (fun
       | .awaitSequentialMultiInstanceUserTask .. => true
       | _ => false) = true := by
     decide +kernel
-  have notScopeProgram : SequentialScopeProgram.admitted (programForProfile profile) = false := by
-    rfl
   have mismatched :
       programSequentialMultiInstanceProfileMatches (programForProfile profile) = false := by
     unfold programSequentialMultiInstanceProfileMatches programForProfile
@@ -208,27 +212,12 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
       | _ => false)) == decide (profile = sequentialMultiInstanceUserTaskProfileId)) = false
     rw [operationPresent]
     simp only [different, decide_false, Bool.true_beq]
-  unfold programProfileCapabilitiesValid
-  have notMessageHandlerProfile :
-      ((programForProfile profile).identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-    simpa only [programForProfile, beq_eq_false_iff_ne] using messageHandler
-  rw [notMessageHandlerProfile, if_neg Bool.false_ne_true]
-  have notCallDataProfile :
-      ((programForProfile profile).identity.semanticProfile == callDataCheckpointProfileId) = false := by
-    simpa only [programForProfile, beq_eq_false_iff_ne] using callData
-  rw [notCallDataProfile, if_neg Bool.false_ne_true]
-  rw [if_neg (show (programForProfile profile).identity.semanticProfile ≠
-    repeatableSubscriptionCheckpointProfileId from subscription)]
-  have notTransactionProfile :
-      ((programForProfile profile).identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-    simpa only [programForProfile, beq_eq_false_iff_ne] using transaction
-  have notEmbeddedProfile :
-      ((programForProfile profile).identity.semanticProfile.value == embeddedCompletionProfile) = false := by
-    apply beq_eq_false_iff_ne.mpr
-    intro same
-    exact embedded (by cases profile; simp_all [programForProfile])
-  rw [notTransactionProfile, if_neg Bool.false_ne_true, notEmbeddedProfile, if_neg Bool.false_ne_true, mismatched]
-  simp only [notScopeProgram, Bool.false_and, Bool.and_false, ite_self]
+  have undispatched : programCapabilityDispatched (programForProfile profile).identity.semanticProfile = false := by
+    simp only [programForProfile, programCapabilityDispatched, Bool.or_eq_false_iff, beq_eq_false_iff_ne, ne_eq]
+    exact ⟨⟨⟨⟨⟨repeatedScope, messageHandler⟩, callData⟩, transaction⟩, decide_eq_false subscription⟩,
+      fun same => embedded (by cases profile; simp_all)⟩
+  rw [programProfileCapabilitiesValid_of_undispatched _ undispatched, programUndispatchedCapabilities, mismatched]
+  simp only [Bool.false_and, Bool.and_false]
 
 theorem profile_admission_refuses_omitted_duplicated_and_substituted_programs :
     (

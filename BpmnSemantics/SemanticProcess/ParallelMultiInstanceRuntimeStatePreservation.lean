@@ -553,24 +553,10 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
       | .awaitSequentialMultiInstanceUserTask .. => False
       | _ => True := by
   have capabilities := account.capabilities
-  have legacy : program.identity.semanticProfile ≠ repeatableSubscriptionCheckpointProfileId := by
-    rw [account.profile]
-    simp [parallelMultiInstanceUserTaskProfileId, repeatableSubscriptionCheckpointProfileId]
-  have transaction : (program.identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
-    rw [account.profile]
-    decide +kernel
-  have callData : (program.identity.semanticProfile == callDataCheckpointProfileId) = false := by
-    rw [account.profile]
-    decide +kernel
-  have messageHandler : (program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId) = false := by
-    rw [account.profile]
-    rfl
-  have repeatedScope : (program.identity.semanticProfile.value ==
-      "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [account.profile]; rfl
-  have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
-    rw [account.profile]; rfl
-  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
-    ↓reduceIte, Bool.and_eq_true] at capabilities
+  have undispatched : programCapabilityDispatched program.identity.semanticProfile = false := by
+    rw [account.profile]; decide +kernel
+  rw [programProfileCapabilitiesValid_of_undispatched program undispatched] at capabilities
+  simp only [programUndispatchedCapabilities, Bool.and_eq_true] at capabilities
   have selected := capabilities.2.2.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,
     parallelMultiInstanceUserTaskProfileId, sequentialMultiInstanceUserTaskProfileId] at selected
