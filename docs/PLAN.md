@@ -81,14 +81,14 @@ Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope f
 
 Deliverable: ordinary embedded scopes nested to depth three, composing User Tasks through Parallel blocks and separate child Ends, that complete at exact owned quiescence with outside parent work preserved, through Lean, core, hosting and public registration. Mixed activities and Exclusive decisions stay later increments.
 
-Acceptance blockers: the pipeline ceiling for three new cases (owner decision), gates and checkpoint review.
+Acceptance blockers: the pipeline ceiling for three new cases (owner decision) and the gates.
 
 Current result: review edits and Lean-gate proof repairs are done; the [cost record](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#nested-scope-control-fixtures-2026-10-20) fits 3 GiB; pipeline-ceiling guards fail at 123 × 1,300 ms over 156,000 ms.
 
 Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
 
-Next action: commit corrections; rerun the semantic gate beside the correction audit; after the ceiling decision, run remaining gates once.
+Next action: finish the semantic gate on the corrected commit; after the ceiling decision, run the remaining gates once.
 
-Oracle: a first child End or a wrong-parent completion completes a nested scope early; today nesting beyond the serial scope-data account is unsupported.
+Oracle: a first child End or a wrong-parent completion completes a nested scope early.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
