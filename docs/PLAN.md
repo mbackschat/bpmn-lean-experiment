@@ -83,7 +83,7 @@ Deliverable: ordinary embedded scopes nested to depth three, composing User Task
 
 Acceptance blockers: the pipeline ceiling for three new cases (owner decision) and the gates.
 
-Current result: the checkpoint is approved and the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records the gates; the remaining guards fail at 123 × 1,300 ms over the 156,000 ms ceiling.
+Current result: the checkpoint is approved, the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records the gates and the Finding 79 repair passed the Lean gate; the remaining guards fail at 123 × 1,300 ms over the 156,000 ms ceiling.
 
 Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
 
