@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_EmployeeOnboarding" targetNamespace="https://bpmn-lean.local/scenarios/nested-embedded-scope-control">
+  <bpmn:process id="Process_EmployeeOnboarding" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Hired" name="Employee hired">
+      <bpmn:outgoing>Flow_HiredToPrepareFork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_PrepareFork" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_HiredToPrepareFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_PrepareForkToOrderEquipment</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PrepareForkToConfirmStartDate</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="UserTask_OrderEquipment" name="Order equipment">
+      <bpmn:incoming>Flow_PrepareForkToOrderEquipment</bpmn:incoming>
+      <bpmn:outgoing>Flow_OrderEquipmentToPrepareJoin</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_ConfirmStartDate" name="Confirm start date">
+      <bpmn:incoming>Flow_PrepareForkToConfirmStartDate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ConfirmStartDateToWorkplaceSetup</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:subProcess id="SubProcess_WorkplaceSetup" name="Workplace setup">
+      <bpmn:incoming>Flow_ConfirmStartDateToWorkplaceSetup</bpmn:incoming>
+      <bpmn:outgoing>Flow_WorkplaceSetupToPrepareJoin</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Setup">
+        <bpmn:outgoing>Flow_SetupToSetupFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_SetupFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_SetupToSetupFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_SetupForkToAssignDesk</bpmn:outgoing>
+        <bpmn:outgoing>Flow_SetupForkToAccounts</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_AssignDesk" name="Assign desk">
+        <bpmn:incoming>Flow_SetupForkToAssignDesk</bpmn:incoming>
+        <bpmn:outgoing>Flow_AssignDeskToDeskAssigned</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_DeskAssigned">
+        <bpmn:incoming>Flow_AssignDeskToDeskAssigned</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:subProcess id="SubProcess_Accounts" name="Accounts">
+        <bpmn:incoming>Flow_SetupForkToAccounts</bpmn:incoming>
+        <bpmn:outgoing>Flow_AccountsToAccountsReady</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_Accounts">
+          <bpmn:outgoing>Flow_AccountsToAccountsFork</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:parallelGateway id="Gateway_AccountsFork" gatewayDirection="Diverging">
+          <bpmn:incoming>Flow_AccountsToAccountsFork</bpmn:incoming>
+          <bpmn:outgoing>Flow_AccountsForkToCreateMailbox</bpmn:outgoing>
+          <bpmn:outgoing>Flow_AccountsForkToGrantVpn</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:userTask id="UserTask_CreateMailbox" name="Create mailbox">
+          <bpmn:incoming>Flow_AccountsForkToCreateMailbox</bpmn:incoming>
+          <bpmn:outgoing>Flow_CreateMailboxToMailboxCreated</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:userTask id="UserTask_GrantVpn" name="Grant VPN">
+          <bpmn:incoming>Flow_AccountsForkToGrantVpn</bpmn:incoming>
+          <bpmn:outgoing>Flow_GrantVpnToVpnGranted</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="EndEvent_MailboxCreated">
+          <bpmn:incoming>Flow_CreateMailboxToMailboxCreated</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="EndEvent_VpnGranted">
+          <bpmn:incoming>Flow_GrantVpnToVpnGranted</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_AccountsToAccountsFork" sourceRef="StartEvent_Accounts" targetRef="Gateway_AccountsFork"/>
+        <bpmn:sequenceFlow id="Flow_AccountsForkToCreateMailbox" sourceRef="Gateway_AccountsFork" targetRef="UserTask_CreateMailbox"/>
+        <bpmn:sequenceFlow id="Flow_AccountsForkToGrantVpn" sourceRef="Gateway_AccountsFork" targetRef="UserTask_GrantVpn"/>
+        <bpmn:sequenceFlow id="Flow_CreateMailboxToMailboxCreated" sourceRef="UserTask_CreateMailbox" targetRef="EndEvent_MailboxCreated"/>
+        <bpmn:sequenceFlow id="Flow_GrantVpnToVpnGranted" sourceRef="UserTask_GrantVpn" targetRef="EndEvent_VpnGranted"/>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_AccountsReady">
+        <bpmn:incoming>Flow_AccountsToAccountsReady</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_SetupToSetupFork" sourceRef="StartEvent_Setup" targetRef="Gateway_SetupFork"/>
+      <bpmn:sequenceFlow id="Flow_SetupForkToAssignDesk" sourceRef="Gateway_SetupFork" targetRef="UserTask_AssignDesk"/>
+      <bpmn:sequenceFlow id="Flow_SetupForkToAccounts" sourceRef="Gateway_SetupFork" targetRef="SubProcess_Accounts"/>
+      <bpmn:sequenceFlow id="Flow_AssignDeskToDeskAssigned" sourceRef="UserTask_AssignDesk" targetRef="EndEvent_DeskAssigned"/>
+      <bpmn:sequenceFlow id="Flow_AccountsToAccountsReady" sourceRef="SubProcess_Accounts" targetRef="EndEvent_AccountsReady"/>
+    </bpmn:subProcess>
+    <bpmn:parallelGateway id="Gateway_PrepareJoin" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_OrderEquipmentToPrepareJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_WorkplaceSetupToPrepareJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_PrepareJoinToWelcomeMeeting</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="UserTask_WelcomeMeeting" name="Welcome meeting">
+      <bpmn:incoming>Flow_PrepareJoinToWelcomeMeeting</bpmn:incoming>
+      <bpmn:outgoing>Flow_WelcomeMeetingToOnboarded</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Onboarded" name="Employee onboarded">
+      <bpmn:incoming>Flow_WelcomeMeetingToOnboarded</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_HiredToPrepareFork" sourceRef="StartEvent_Hired" targetRef="Gateway_PrepareFork"/>
+    <bpmn:sequenceFlow id="Flow_PrepareForkToOrderEquipment" sourceRef="Gateway_PrepareFork" targetRef="UserTask_OrderEquipment"/>
+    <bpmn:sequenceFlow id="Flow_PrepareForkToConfirmStartDate" sourceRef="Gateway_PrepareFork" targetRef="UserTask_ConfirmStartDate"/>
+    <bpmn:sequenceFlow id="Flow_ConfirmStartDateToWorkplaceSetup" sourceRef="UserTask_ConfirmStartDate" targetRef="SubProcess_WorkplaceSetup"/>
+    <bpmn:sequenceFlow id="Flow_OrderEquipmentToPrepareJoin" sourceRef="UserTask_OrderEquipment" targetRef="Gateway_PrepareJoin"/>
+    <bpmn:sequenceFlow id="Flow_WorkplaceSetupToPrepareJoin" sourceRef="SubProcess_WorkplaceSetup" targetRef="Gateway_PrepareJoin"/>
+    <bpmn:sequenceFlow id="Flow_PrepareJoinToWelcomeMeeting" sourceRef="Gateway_PrepareJoin" targetRef="UserTask_WelcomeMeeting"/>
+    <bpmn:sequenceFlow id="Flow_WelcomeMeetingToOnboarded" sourceRef="UserTask_WelcomeMeeting" targetRef="EndEvent_Onboarded"/>
+  </bpmn:process>
+</bpmn:definitions>

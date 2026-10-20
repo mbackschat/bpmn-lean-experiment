@@ -15,6 +15,7 @@ import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAd
 import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Semantic profile shape catalog
 
@@ -559,6 +560,28 @@ private def operationPropertyEndpoints : SemanticOperation → Bool
   | .awaitDataInputOutputUserTask _ _ _ _ _ _ input output => propertyInput input && propertyOutput output
   | _ => true
 
+/-- The embedded completion profile keeps its exact-multiset class and adds the nested scope-control
+class of NSC-ADMIT-01, so growth admits every previously admitted model unchanged. -/
+def embeddedCompletionProfile : String := "cibseven-2.2.0-embedded-subprocess-completion-draft"
+
+/-- The exact checked node multiset and topology a profile selects, when it selects one. -/
+def checkedExactShapeValid (source : CheckedProcess) : Bool :=
+  checkedSequentialMultiInstanceProfileMatches source &&
+    checkedParallelMultiInstanceProfileMatches source &&
+    match checkedShape? source.identity.semanticProfile.value with
+    | some (scopeCount, shape) =>
+        source.definitionScopes.length = scopeCount &&
+          nodeCardinalities source.nodes = shape &&
+          source.nodes.all checkedPropertyEndpoints &&
+          checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
+          checkedParallelTopologyValid source &&
+          checkedActivityBoundaryMessageTopologyValid source &&
+          structuredHumanWorkCheckedTopologyValid source &&
+          configuredTaskCheckedPayloadValid source
+          && messageKeyCorrelationCheckedPayloadValid source &&
+          compensationSourceCheckedProfileValid source
+    | none => false
+
 /-- Exact checked node and definition-scope cardinalities selected by the profile. Only the nested
 scope-data profile may declare scope locals. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
@@ -587,22 +610,9 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   else transactionSourceAbsent source &&
   if source.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionCheckedGraph source
-  else
-  checkedSequentialMultiInstanceProfileMatches source &&
-    checkedParallelMultiInstanceProfileMatches source &&
-    match checkedShape? source.identity.semanticProfile.value with
-    | some (scopeCount, shape) =>
-        source.definitionScopes.length = scopeCount &&
-          nodeCardinalities source.nodes = shape &&
-          source.nodes.all checkedPropertyEndpoints &&
-          checkedUserTaskMetadataValid source.identity.semanticProfile source.nodes &&
-          checkedParallelTopologyValid source &&
-          checkedActivityBoundaryMessageTopologyValid source &&
-          structuredHumanWorkCheckedTopologyValid source &&
-          configuredTaskCheckedPayloadValid source
-          && messageKeyCorrelationCheckedPayloadValid source &&
-          compensationSourceCheckedProfileValid source
-    | none => false
+  else if source.identity.semanticProfile.value == embeddedCompletionProfile then
+    checkedExactShapeValid source || (NestedScopeControl.checkedAnalysis source).isSome
+  else checkedExactShapeValid source
 
 private def operationPayloadCapabilitiesValid (profile : String)
     (operations : List SemanticOperation) : Bool :=
@@ -665,6 +675,28 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | _ => true
   else true
 
+private def programExactShape (program : Program) (scopeCount : Nat) (shape : ShapeCardinalities) : Bool :=
+  program.definitionScopes.length = scopeCount &&
+          operationCardinalities program.operations = shape &&
+          program.operations.all operationPropertyEndpoints &&
+          programUserTaskMetadataValid program.identity.semanticProfile
+            program.operations &&
+          programParallelTopologyValid program &&
+          programActivityBoundaryMessageTopologyValid program &&
+          structuredHumanWorkProgramTopologyValid program &&
+          operationPayloadCapabilitiesValid
+            program.identity.semanticProfile.value program.operations
+          && messageKeyCorrelationProgramPayloadValid program &&
+          compensationSourceProgramProfileValid program
+
+/-- The exact operation multiset and topology a profile selects, when it selects one. -/
+def programExactShapeValid (program : Program) : Bool :=
+  programSequentialMultiInstanceProfileMatches program &&
+    programParallelMultiInstanceProfileMatches program &&
+    match programShape? program.identity.semanticProfile.value with
+    | some (scopeCount, shape) => programExactShape program scopeCount shape
+    | none => false
+
 /-- Exact operation and definition-scope cardinalities selected by the profile. Only the nested
 scope-data profile may declare scope locals. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
@@ -680,23 +712,13 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
     transactionCancellationProgramGraph program
   else if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionProgramGraph program
+  else if program.identity.semanticProfile.value == embeddedCompletionProfile then
+    programExactShapeValid program || (NestedScopeControl.programAnalysis program).isSome
   else
   programSequentialMultiInstanceProfileMatches program &&
     programParallelMultiInstanceProfileMatches program &&
     match programShape? program.identity.semanticProfile.value with
-    | some (scopeCount, shape) =>
-        program.definitionScopes.length = scopeCount &&
-          operationCardinalities program.operations = shape &&
-          program.operations.all operationPropertyEndpoints &&
-          programUserTaskMetadataValid program.identity.semanticProfile
-            program.operations &&
-          programParallelTopologyValid program &&
-          programActivityBoundaryMessageTopologyValid program &&
-          structuredHumanWorkProgramTopologyValid program &&
-          operationPayloadCapabilitiesValid
-            program.identity.semanticProfile.value program.operations
-          && messageKeyCorrelationProgramPayloadValid program &&
-          compensationSourceProgramProfileValid program
+    | some (scopeCount, shape) => programExactShape program scopeCount shape
     | none => if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then
         (MixedTaskControlFlow.programAnalysis program).isSome
       else if program.identity.semanticProfile == serialBusinessTaskProfileId then

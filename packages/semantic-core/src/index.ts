@@ -142,6 +142,7 @@ export * from "./serial-business-task-policy.js";
 export * from "./serial-business-task-admission.js";
 export * from "./nested-scope-data.js";
 export * from "./nested-scope-data-admission.js";
+export * from "./nested-scope-control-admission.js";
 
 export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admission.js";
 

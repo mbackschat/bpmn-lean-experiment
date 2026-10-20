@@ -1,0 +1,123 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-control-audit-early-and-stale",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "internal-audit",
+    "relativePath": "scenarios/nested-embedded-scope-control/internal-audit.bpmn",
+    "sha256": "ab025f93451d12b196e88e916fac9c8c72e524bc268651340ccba5d261c55d16",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_InternalAudit",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-plan-fieldwork",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_PlanFieldwork",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-draw-sample",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_DrawSample",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-findings-early",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReviewFindings",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-draw-sample-again",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_DrawSample",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-interview-staff",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_InterviewStaff",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-findings",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReviewFindings",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-sign-off",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_SignOff",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-close-audit",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CloseAudit",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.6.4",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

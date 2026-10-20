@@ -2,6 +2,7 @@ import { mixedTaskControlProgramShape, mixedTaskControlCheckedShape } from "./mi
 import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
 import { isSerialChainProfile, serialChainRulesForProfile } from "./serial-business-task-policy.js";
 import { nestedScopeCheckedShape, nestedScopeProgramShape } from "./nested-scope-data-admission.js";
+import { nestedScopeControlCheckedShape, nestedScopeControlProgramShape } from "./nested-scope-control-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { sequentialScopeProgramShape } from "./sequential-scope-program-admission.js";
 import { transactionCancellationProgramShape } from "./transaction-cancellation-admission.js";
@@ -61,6 +62,11 @@ export function profileAllowsProgramShape(
   if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return sequentialScopeProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlProgramShape(actualOperations, definitionScopeCount, semanticProfile);
   if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeProgramShape(actualOperations, definitionScopeCount);
+  // The cumulative profile keeps its exact-multiset class and adds the nested scope-control class (NSC-ADMIT-01).
+  if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
+    return requiredProgramShapeAllows(semanticProfile, actualOperations, definitionScopeCount) ||
+      nestedScopeControlProgramShape(actualOperations, definitionScopeCount);
+  }
   if (isSerialChainProfile(semanticProfile)) return serialBusinessProgramShape(actualOperations, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionProgramShape(actualOperations, definitionScopeCount);
@@ -74,6 +80,15 @@ export function profileAllowsProgramShape(
   if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     return repeatableSubscriptionProgramShape(actualOperations, definitionScopeCount);
   }
+  return requiredProgramShapeAllows(semanticProfile, actualOperations, definitionScopeCount);
+}
+
+/** The exact operation multiset a profile selects, when it selects one. */
+export function requiredProgramShapeAllows(
+  semanticProfile: string,
+  actualOperations: ReadonlyArray<SemanticOperation>,
+  definitionScopeCount: number,
+): boolean {
   const required = requiredProgramShape(semanticProfile);
   const scalarCalls = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
   return required !== undefined &&
@@ -188,6 +203,10 @@ export function profileAllowsCheckedProcessShape(
 ): boolean {
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlCheckedShape(nodes, definitionScopeCount, semanticProfile);
   if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeCheckedShape(nodes, definitionScopeCount);
+  if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
+    return requiredCheckedShapeAllows(semanticProfile, nodes, definitionScopeCount) ||
+      nestedScopeControlCheckedShape(nodes, definitionScopeCount);
+  }
   if (isSerialChainProfile(semanticProfile)) return serialBusinessCheckedShape(nodes, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
     return structuredCompositionCheckedShape(nodes, definitionScopeCount);
@@ -198,6 +217,15 @@ export function profileAllowsCheckedProcessShape(
   if (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID) {
     return repeatableSubscriptionCheckedShape(nodes, definitionScopeCount);
   }
+  return requiredCheckedShapeAllows(semanticProfile, nodes, definitionScopeCount);
+}
+
+/** The exact checked node multiset a profile selects, when it selects one. */
+export function requiredCheckedShapeAllows(
+  semanticProfile: string,
+  nodes: ReadonlyArray<CheckedNode>,
+  definitionScopeCount: number,
+): boolean {
   const required = requiredCheckedProcessShape(semanticProfile);
   const scalarCalls = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
   return required !== undefined &&

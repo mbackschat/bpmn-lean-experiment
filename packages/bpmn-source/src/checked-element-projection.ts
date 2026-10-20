@@ -18,6 +18,7 @@ import {
   EffectProtocol,
   GatewayDirection,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -367,11 +368,13 @@ function classifyGateway(
   }
   const incoming = flows.filter(({ targetId }) => targetId === id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === id).length;
+  // NSC-ADMIT-01 admits paired Parallel blocks of two or more branches in the embedded completion profile.
+  const wide = semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion;
   const direction =
-    incoming === 1 && (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID
+    incoming === 1 && (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID || wide
       ? outgoing >= 2 : outgoing === 2)
       ? GatewayDirection.Diverging
-      : incoming === 2 && outgoing === 1
+      : (wide ? incoming >= 2 : incoming === 2) && outgoing === 1
         ? GatewayDirection.Converging
         : undefined;
   if (direction === undefined) {

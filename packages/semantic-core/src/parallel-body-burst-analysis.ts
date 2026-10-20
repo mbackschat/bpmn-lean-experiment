@@ -7,8 +7,20 @@ export type ParallelBodyBursts = Readonly<{
   maximumTerminalBurst: number;
 }>;
 
-/** SMIS-ADMIT-01 counts body operations; lowering elides the child Start, and MI boundary operations are separate. */
-export function analyzeParallelBodyBursts(nodes: readonly ParallelBodyNode[]): ParallelBodyBursts | undefined {
+/** One closure scan: its operation steps and the task vertices it armed, in scan order; `waits` counts them. */
+export type ParallelBodyScan = Readonly<{ steps: number; waits: number; armed: readonly string[] }>;
+
+export type ParallelBodyScans = Readonly<{
+  entry: ParallelBodyScan;
+  /** The scan after each task vertex completes, assuming every causally independent join input already arrived. */
+  resumptions: ReadonlyMap<string, ParallelBodyScan>;
+}>;
+
+/**
+ * The entry and per-task closure scans of one structured body. A task vertex stops its branch with one step, so a
+ * caller that projects a Sub-Process as a task vertex adds that child's own entry scan to the armed vertex.
+ */
+export function parallelBodyScans(nodes: readonly ParallelBodyNode[]): ParallelBodyScans | undefined {
   if (!isStructuredParallelBody(nodes)) return undefined;
   const byId = new Map(nodes.map((node, index) => [node.id, index]));
   const outputs = nodes.map(node => node.outputs.map(id => byId.get(id)!));
@@ -17,15 +29,15 @@ export function analyzeParallelBodyBursts(nodes: readonly ParallelBodyNode[]): P
   const tasks = nodes.flatMap((node, index) => node.kind === Kind.Task ? [index] : []);
   if (tasks.length === 0) return undefined;
 
-  function close(ready: number[], arrived: number[]): { steps: number; waits: number } {
+  function close(ready: number[], arrived: number[]): ParallelBodyScan {
     let steps = 0;
-    let waits = 0;
+    const armed: string[] = [];
     for (let cursor = 0; cursor < ready.length; cursor++) {
       const index = ready[cursor]!;
       switch (nodes[index]!.kind) {
         case Kind.Task:
           steps++;
-          waits++;
+          armed.push(nodes[index]!.id);
           continue;
         case Kind.Start:
           break;
@@ -40,13 +52,12 @@ export function analyzeParallelBodyBursts(nodes: readonly ParallelBodyNode[]): P
         if (arrived[target] === inputs[target]!.length) ready.push(target);
       }
     }
-    return { steps, waits };
+    return { steps, waits: armed.length, armed };
   }
 
   const start = nodes.findIndex(node => node.kind === Kind.Start);
-  const entryBurst = close([start], nodes.map(() => 0)).steps;
-  let maximumResumptionBurst = 0;
-  let maximumTerminalBurst = 0;
+  const entry = close([start], nodes.map(() => 0));
+  const resumptions = new Map<string, ParallelBodyScan>();
   for (const task of tasks) {
     const descendants = new Set<number>([task]);
     const pending = [task];
@@ -63,9 +74,20 @@ export function analyzeParallelBodyBursts(nodes: readonly ParallelBodyNode[]): P
       arrived[target] = arrived[target]! + 1;
       if (arrived[target] === inputs[target]!.length) ready.push(target);
     }
-    const burst = close(ready, arrived);
+    resumptions.set(nodes[task]!.id, close(ready, arrived));
+  }
+  return { entry, resumptions };
+}
+
+/** SMIS-ADMIT-01 counts body operations; lowering elides the child Start, and MI boundary operations are separate. */
+export function analyzeParallelBodyBursts(nodes: readonly ParallelBodyNode[]): ParallelBodyBursts | undefined {
+  const scans = parallelBodyScans(nodes);
+  if (scans === undefined) return undefined;
+  let maximumResumptionBurst = 0;
+  let maximumTerminalBurst = 0;
+  for (const burst of scans.resumptions.values()) {
     maximumResumptionBurst = Math.max(maximumResumptionBurst, burst.steps);
     if (burst.waits === 0) maximumTerminalBurst = Math.max(maximumTerminalBurst, burst.steps);
   }
-  return { entryBurst, maximumResumptionBurst, maximumTerminalBurst };
+  return { entryBurst: scans.entry.steps, maximumResumptionBurst, maximumTerminalBurst };
 }

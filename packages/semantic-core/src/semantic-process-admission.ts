@@ -1,5 +1,6 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
 import { isScopeLocalDataTable, nestedScopeProgramAnalysis, nestedScopeStimulusDataAdmitted } from "./nested-scope-data-admission.js";
+import { nestedScopeControlProgramAnalysis } from "./nested-scope-control-admission.js";
 import { sequentialScopeProgramAdmitted } from "./sequential-scope-program-admission.js";
 import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
 import { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
@@ -49,6 +50,7 @@ import {
 import { inclusiveOperationsArePaired } from "./inclusive-gateway-admission.js";
 import {
   profileAllowsProgramShape,
+  requiredProgramShapeAllows,
 } from "./semantic-process-profile.js";
 import {
   isWellFormedStimulus,
@@ -308,6 +310,9 @@ export function isWellFormedSemanticProcessProgram(
   if (isSerialChainProfile(identity.semanticProfile) && !serialBusinessProgramGraph(program)) return false;
   if (identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData &&
       nestedScopeProgramAnalysis(program) === null) return false;
+  if (identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
+      !requiredProgramShapeAllows(identity.semanticProfile, checkedOperations, program.definitionScopes.length) &&
+      nestedScopeControlProgramAnalysis(program) === null) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;

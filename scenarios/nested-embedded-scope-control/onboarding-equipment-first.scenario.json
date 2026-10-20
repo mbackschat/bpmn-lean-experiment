@@ -1,0 +1,103 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-control-onboarding-equipment-first",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "employee-onboarding",
+    "relativePath": "scenarios/nested-embedded-scope-control/employee-onboarding.bpmn",
+    "sha256": "0fd8682823a72163737dcf7ad791e02a3c4e047e888bf042302e5e41dea4cf07",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EmployeeOnboarding",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-order-equipment",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_OrderEquipment",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-start-date",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ConfirmStartDate",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-grant-vpn",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_GrantVpn",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-create-mailbox",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CreateMailbox",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assign-desk",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AssignDesk",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-welcome-meeting",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_WelcomeMeeting",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.6.4",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 Table 13.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

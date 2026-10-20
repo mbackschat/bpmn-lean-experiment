@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_InternalAudit" targetNamespace="https://bpmn-lean.local/scenarios/nested-embedded-scope-control">
+  <bpmn:process id="Process_InternalAudit" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AuditScheduled" name="Audit scheduled">
+      <bpmn:outgoing>Flow_AuditScheduledToAudit</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Audit" name="Audit">
+      <bpmn:incoming>Flow_AuditScheduledToAudit</bpmn:incoming>
+      <bpmn:outgoing>Flow_AuditToCloseAudit</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Audit">
+        <bpmn:outgoing>Flow_AuditToFieldwork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:subProcess id="SubProcess_Fieldwork" name="Fieldwork">
+        <bpmn:incoming>Flow_AuditToFieldwork</bpmn:incoming>
+        <bpmn:outgoing>Flow_FieldworkToSignOff</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_Fieldwork">
+          <bpmn:outgoing>Flow_FieldworkToPlanFieldwork</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_PlanFieldwork" name="Plan fieldwork">
+          <bpmn:incoming>Flow_FieldworkToPlanFieldwork</bpmn:incoming>
+          <bpmn:outgoing>Flow_PlanFieldworkToEvidenceFork</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:parallelGateway id="Gateway_EvidenceFork" gatewayDirection="Diverging">
+          <bpmn:incoming>Flow_PlanFieldworkToEvidenceFork</bpmn:incoming>
+          <bpmn:outgoing>Flow_EvidenceForkToSampling</bpmn:outgoing>
+          <bpmn:outgoing>Flow_EvidenceForkToInterviews</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:subProcess id="SubProcess_Sampling" name="Sampling">
+          <bpmn:incoming>Flow_EvidenceForkToSampling</bpmn:incoming>
+          <bpmn:outgoing>Flow_SamplingToEvidenceJoin</bpmn:outgoing>
+          <bpmn:startEvent id="StartEvent_Sampling">
+            <bpmn:outgoing>Flow_SamplingToDrawSample</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:userTask id="UserTask_DrawSample" name="Draw sample">
+            <bpmn:incoming>Flow_SamplingToDrawSample</bpmn:incoming>
+            <bpmn:outgoing>Flow_DrawSampleToSampleDrawn</bpmn:outgoing>
+          </bpmn:userTask>
+          <bpmn:endEvent id="EndEvent_SampleDrawn">
+            <bpmn:incoming>Flow_DrawSampleToSampleDrawn</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_SamplingToDrawSample" sourceRef="StartEvent_Sampling" targetRef="UserTask_DrawSample"/>
+          <bpmn:sequenceFlow id="Flow_DrawSampleToSampleDrawn" sourceRef="UserTask_DrawSample" targetRef="EndEvent_SampleDrawn"/>
+        </bpmn:subProcess>
+        <bpmn:subProcess id="SubProcess_Interviews" name="Interviews">
+          <bpmn:incoming>Flow_EvidenceForkToInterviews</bpmn:incoming>
+          <bpmn:outgoing>Flow_InterviewsToEvidenceJoin</bpmn:outgoing>
+          <bpmn:startEvent id="StartEvent_Interviews">
+            <bpmn:outgoing>Flow_InterviewsToInterviewStaff</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:userTask id="UserTask_InterviewStaff" name="Interview staff">
+            <bpmn:incoming>Flow_InterviewsToInterviewStaff</bpmn:incoming>
+            <bpmn:outgoing>Flow_InterviewStaffToStaffInterviewed</bpmn:outgoing>
+          </bpmn:userTask>
+          <bpmn:endEvent id="EndEvent_StaffInterviewed">
+            <bpmn:incoming>Flow_InterviewStaffToStaffInterviewed</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_InterviewsToInterviewStaff" sourceRef="StartEvent_Interviews" targetRef="UserTask_InterviewStaff"/>
+          <bpmn:sequenceFlow id="Flow_InterviewStaffToStaffInterviewed" sourceRef="UserTask_InterviewStaff" targetRef="EndEvent_StaffInterviewed"/>
+        </bpmn:subProcess>
+        <bpmn:parallelGateway id="Gateway_EvidenceJoin" gatewayDirection="Converging">
+          <bpmn:incoming>Flow_SamplingToEvidenceJoin</bpmn:incoming>
+          <bpmn:incoming>Flow_InterviewsToEvidenceJoin</bpmn:incoming>
+          <bpmn:outgoing>Flow_EvidenceJoinToReviewFindings</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:userTask id="UserTask_ReviewFindings" name="Review findings">
+          <bpmn:incoming>Flow_EvidenceJoinToReviewFindings</bpmn:incoming>
+          <bpmn:outgoing>Flow_ReviewFindingsToFieldworkDone</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="EndEvent_FieldworkDone">
+          <bpmn:incoming>Flow_ReviewFindingsToFieldworkDone</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_FieldworkToPlanFieldwork" sourceRef="StartEvent_Fieldwork" targetRef="UserTask_PlanFieldwork"/>
+        <bpmn:sequenceFlow id="Flow_PlanFieldworkToEvidenceFork" sourceRef="UserTask_PlanFieldwork" targetRef="Gateway_EvidenceFork"/>
+        <bpmn:sequenceFlow id="Flow_EvidenceForkToSampling" sourceRef="Gateway_EvidenceFork" targetRef="SubProcess_Sampling"/>
+        <bpmn:sequenceFlow id="Flow_EvidenceForkToInterviews" sourceRef="Gateway_EvidenceFork" targetRef="SubProcess_Interviews"/>
+        <bpmn:sequenceFlow id="Flow_SamplingToEvidenceJoin" sourceRef="SubProcess_Sampling" targetRef="Gateway_EvidenceJoin"/>
+        <bpmn:sequenceFlow id="Flow_InterviewsToEvidenceJoin" sourceRef="SubProcess_Interviews" targetRef="Gateway_EvidenceJoin"/>
+        <bpmn:sequenceFlow id="Flow_EvidenceJoinToReviewFindings" sourceRef="Gateway_EvidenceJoin" targetRef="UserTask_ReviewFindings"/>
+        <bpmn:sequenceFlow id="Flow_ReviewFindingsToFieldworkDone" sourceRef="UserTask_ReviewFindings" targetRef="EndEvent_FieldworkDone"/>
+      </bpmn:subProcess>
+      <bpmn:userTask id="UserTask_SignOff" name="Sign off">
+        <bpmn:incoming>Flow_FieldworkToSignOff</bpmn:incoming>
+        <bpmn:outgoing>Flow_SignOffToAuditDone</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_AuditDone">
+        <bpmn:incoming>Flow_SignOffToAuditDone</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_AuditToFieldwork" sourceRef="StartEvent_Audit" targetRef="SubProcess_Fieldwork"/>
+      <bpmn:sequenceFlow id="Flow_FieldworkToSignOff" sourceRef="SubProcess_Fieldwork" targetRef="UserTask_SignOff"/>
+      <bpmn:sequenceFlow id="Flow_SignOffToAuditDone" sourceRef="UserTask_SignOff" targetRef="EndEvent_AuditDone"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_CloseAudit" name="Close audit">
+      <bpmn:incoming>Flow_AuditToCloseAudit</bpmn:incoming>
+      <bpmn:outgoing>Flow_CloseAuditToAuditClosed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_AuditClosed" name="Audit closed">
+      <bpmn:incoming>Flow_CloseAuditToAuditClosed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_AuditScheduledToAudit" sourceRef="StartEvent_AuditScheduled" targetRef="SubProcess_Audit"/>
+    <bpmn:sequenceFlow id="Flow_AuditToCloseAudit" sourceRef="SubProcess_Audit" targetRef="UserTask_CloseAudit"/>
+    <bpmn:sequenceFlow id="Flow_CloseAuditToAuditClosed" sourceRef="UserTask_CloseAudit" targetRef="EndEvent_AuditClosed"/>
+  </bpmn:process>
+</bpmn:definitions>

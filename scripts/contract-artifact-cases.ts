@@ -155,6 +155,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["order-approved", "order-null-risk", "claim-limits", "quote-signed"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/nested-embedded-scope-data/${name}.scenario.json`,
   })),
+  ...["onboarding-setup-first", "onboarding-equipment-first", "audit-early-and-stale"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/nested-embedded-scope-control/${name}.scenario.json`,
+  })),
   ...["manifest-delivered", "manifest-payload-free-refused"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/portable-business-message-payload/${name}.scenario.json`,
   })),

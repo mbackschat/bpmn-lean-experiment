@@ -631,6 +631,80 @@
       }
     },
     {
+      "id": "employee-onboarding-nested-setup",
+      "title": "Onboard a new employee",
+      "businessPurpose": "Order equipment while the start date is confirmed and a workplace setup runs, where the setup assigns a desk beside an accounts scope that creates the mailbox and grants VPN access, and schedule the welcome meeting only when equipment and the whole setup are done.",
+      "cloneFamily": "employee-onboarding-nested-setup",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/nested-embedded-scope-control/employee-onboarding.bpmn",
+        "sha256": "0fd8682823a72163737dcf7ad791e02a3c4e047e888bf042302e5e41dea4cf07",
+        "scenarioRelativePath": "scenarios/nested-embedded-scope-control/onboarding-setup-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "nested-scope-control-onboarding-setup-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The nested parallel scopes are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
+      "id": "internal-audit-nested-fieldwork",
+      "title": "Conduct an internal audit",
+      "businessPurpose": "Run an internal audit whose fieldwork plans, then samples and interviews in two parallel scopes three levels deep before reviewing findings, and close the audit only after sign-off, refusing a review or a repeated sampling command that arrives out of turn.",
+      "cloneFamily": "internal-audit-nested-fieldwork",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplitJoin",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/nested-embedded-scope-control/internal-audit.bpmn",
+        "sha256": "ab025f93451d12b196e88e916fac9c8c72e524bc268651340ccba5d261c55d16",
+        "scenarioRelativePath": "scenarios/nested-embedded-scope-control/audit-early-and-stale.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "nested-scope-control-audit-early-and-stale",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The nested parallel scopes are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
       "id": "scoped-business-error-recovery",
       "title": "Recover scoped work after a business error",
       "businessPurpose": "Route a failed scoped operation to its declared recovery work while cancelling its live sibling.",

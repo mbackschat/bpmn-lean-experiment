@@ -10,7 +10,7 @@ This specification owns the first normal nested-execution-scope capsule: one ord
 
 May the project implement the smallest reusable execution-scope foundation in which entering one ordinary embedded Sub-Process creates a child scope, two child User Tasks remain owned by it, completing only one branch cannot exit it, completing both branches removes the child occurrence and activates exactly one outer User Task, and Temporal preserves that lifecycle through Worker replacement and replay?
 
-The implemented boundary includes only the source profile, semantic rules, atomic representation replacement, bounded CIB agreement evidence, and evidence boundary below. It does not include arbitrary nesting, Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task simulated actor in the engine runner.
+The implemented boundary includes only the source profile, semantic rules, atomic representation replacement, bounded CIB agreement evidence, and evidence boundary below. It does not include nesting beyond the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#required-optional-and-excluded-scope), Event Sub-Processes, boundary handling, Error propagation, multi-instance, Call Activity, transactions, compensation, child-local data, public scope-tree projection, or a multi-task simulated actor in the engine runner.
 
 ## Product claim
 
@@ -59,15 +59,15 @@ outer None Start Event
   -> outer None End Event
 ```
 
-The document contains exactly one executable private Process, one ordinary embedded Sub-Process whose `triggeredByEvent` is absent or false, one outer and one inner None Start Event, one diverging Parallel Gateway, two child User Tasks with distinct document-unique identifiers, two child None End Events, one outer User Task, one outer None End Event, and the exact Sequence Flows shown above.
+The profile has since grown in place to nested structured Parallel bodies; the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#admission) owns that class, and this section describes the retained one-level fixture. The fixture document contains exactly one executable private Process, one ordinary embedded Sub-Process whose `triggeredByEvent` is absent or false, one outer and one inner None Start Event, one diverging Parallel Gateway, two child User Tasks with distinct document-unique identifiers, two child None End Events, one outer User Task, one outer None End Event, and the exact Sequence Flows shown above.
 
-The profile rejects a Sub-Process without one normal outgoing Sequence Flow, Event Sub-Processes, more than one Sub-Process, nesting below the selected child, boundary Events, Error or other EventDefinitions, child joins, additional starts, implicit or absent child Ends, Terminate End Events, data, variables, expressions, extension elements, parser warnings, Call Activities, transactions, compensation, loops, multi-instance, ad-hoc behavior, conditional flow, and repeated element identifiers.
+For this fixture the profile rejects a Sub-Process without one normal outgoing Sequence Flow, Event Sub-Processes, boundary Events, Error or other EventDefinitions, additional starts, implicit or absent child Ends, Terminate End Events, data, variables, expressions, extension elements, parser warnings, Call Activities, transactions, compensation, loops, multi-instance, ad-hoc behavior, conditional flow, and repeated element identifiers.
 
 ## Admission account
 
 Admission extends the implemented profile-parameterized gate. It must not add a named whole-topology predicate or another production disjunct.
 
-The profile capability owns the exact source-node and Semantic Process operation multisets and a maximum definition-scope depth of one child below the root. Generic scoped-graph validation owns distinct identity, legal containment, same-scope Sequence Flow endpoints, exact scope references, source entry, reachability, co-reachability, acyclicity, producer/consumer discipline, and the parent input/output relation of the embedded Sub-Process.
+The profile capability admits the retained fixture through its exact source-node and Semantic Process operation multisets with one child below the root, or a nested structural class through the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#admission), which owns the profile's admission account after growth. Generic scoped-graph validation owns distinct identity, legal containment, same-scope Sequence Flow endpoints, exact scope references, source entry, reachability, co-reachability, acyclicity, producer/consumer discipline, and the parent input/output relation of the embedded Sub-Process.
 
 The profile requires both child branches to be structurally capable of reaching their own None End Event. That fact is not sufficient for runtime progress; the capsule-local preservation gate separately enumerates reachable stable states and rejects any nonterminal quiescent state with retained runtime ownership.
 
@@ -122,7 +122,7 @@ The child occurrence owns Child A, Child B, all child tokens, and all internal c
 
 Activity-local variable scopes remain distinct from execution-scope occurrences. This capsule adds no child-local variable binding, input/output mapping, or public nested data projection.
 
-Public User Task occurrence identity remains unchanged because the profile admits one occurrence of one Sub-Process and document-unique User Task elements. Repeated or concurrent activation of the same child element, loops, multi-instance, and arbitrary nesting reopen the public identity contract.
+Public User Task occurrence identity remains unchanged because the profile admits at most one occurrence of each Sub-Process element and document-unique User Task elements. Repeated or concurrent activation of the same child element, loops, multi-instance, and nesting beyond the selected depth reopen the public identity contract.
 
 ## Stable semantic rules
 
@@ -188,7 +188,7 @@ The history-shape assertion observes zero Signals, Timers, Activities, Child Wor
 
 ## Targeted preservation gate
 
-The admission widening executes the selected reachable completion prefixes in both child-completion orders and establishes:
+For the retained one-level fixture, the admission widening executes the selected reachable completion prefixes in both child-completion orders and establishes the facts below; the nested class has its own [targeted preservation gate](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#targeted-preservation-gate).
 
 - every stable running state exposes at least one User Task interaction;
 - no nonterminal quiescent state retains a token or active scope occurrence;
@@ -248,4 +248,4 @@ The exact implementation boundary is `5b34977..a59f8a3`. Hand-written code adds 
 
 ## Re-open conditions
 
-Re-open the semantic boundary for arbitrary nesting, multiple concurrent occurrences, loops or multi-instance, child-local variables and mappings, implicit child completion without explicit End Events, Terminate End, boundary Events, Error or escalation propagation, Event Sub-Processes, Call Activities, transactions, compensation, public scope-tree observation, or multi-caller fairness.
+Re-open the semantic boundary for nesting beyond the nested scope-control account, multiple concurrent occurrences, loops or multi-instance, child-local variables and mappings, implicit child completion without explicit End Events, Terminate End, boundary Events, Error or escalation propagation, Event Sub-Processes, Call Activities, transactions, compensation, public scope-tree observation, or multi-caller fairness.

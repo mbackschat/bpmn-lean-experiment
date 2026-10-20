@@ -17,6 +17,8 @@ import {
   SimpleBooleanExpressionKind,
   SimpleBooleanExpressionLanguage,
   hasExactBalancedTwoBranchControlTopology,
+  nestedScopeControlCheckedAnalysis,
+  requiredCheckedShapeAllows,
   profileAllowsCheckedProcessShape,
   repeatableSubscriptionCheckedGraph,
 } from "@bpmn-lean/semantic-core";
@@ -81,6 +83,9 @@ export function isAdmittedCheckedProcess(
       structuredCompositionCheckedGraph(graph)) &&
     (semanticProfile !== SemanticProfileId.PortableBusinessValuesHandoff || portableHandoffCheckedGraph(graph)) &&
     (!isSerialChainProfile(semanticProfile) || serialBusinessCheckedGraph(graph, serialChainRulesForProfile(semanticProfile))) &&
+    (semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion ||
+      requiredCheckedShapeAllows(semanticProfile, graph.nodes, graph.definitionScopes.length) ||
+      nestedScopeControlCheckedAnalysis(graph) !== null) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&
     hasSelectedCyclicTopology(semanticProfile, graph) &&

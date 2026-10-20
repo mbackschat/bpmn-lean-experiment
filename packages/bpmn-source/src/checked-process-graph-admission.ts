@@ -208,10 +208,10 @@ function hasSelectedArity(
       switch (node.direction) {
         case GatewayDirection.Diverging:
           return incoming === 1 &&
-            (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID || (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID)
+            (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID || wideParallelGateways(semanticProfile)
               ? outgoing >= 2 : outgoing === 2);
         case GatewayDirection.Converging:
-          return ((semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) ? incoming >= 2 : incoming === 2) && outgoing === 1;
+          return (wideParallelGateways(semanticProfile) ? incoming >= 2 : incoming === 2) && outgoing === 1;
       }
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
@@ -419,4 +419,11 @@ function isAcyclic(
     }
   }
   return visited === nodeIds.length;
+}
+
+/** Profiles whose structured-body admission, not graph arity, bounds Parallel branch counts. */
+function wideParallelGateways(semanticProfile: string): boolean {
+  return semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
+    semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
+    semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion;
 }

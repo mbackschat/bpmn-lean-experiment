@@ -107,6 +107,11 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.notEqual(subProcessRowStart, -1);
   const subProcessRow = html.slice(subProcessRowStart, html.indexOf("</tr>", subProcessRowStart));
   for (const disclosed of [
+    "The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks",
+    "a Sub-Process completes exactly when it owns no token, User Task or child scope",
+    "continues once at its own parent without touching concurrent work outside it",
+    "a Start or completion closure of more than eight steps is refused before Workflow start",
+    "CIB agreement is retained only for the one-level fixture",
     "The nested scope-data profile instead admits ordinary Sub-Processes nested to depth three in one serial path",
     "a read resolves to the nearest enclosing declaring frame, otherwise the Process",
     "a write updates that owner and never creates a local",
@@ -114,6 +119,13 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "A User Task completion may name only declared locals, within 16,384 canonical bytes",
     "a hosted Start whose structured values cannot fit the capacity envelope is refused",
   ]) assert.ok(subProcessRow.includes(disclosed), `Embedded Sub-Process row must disclose: ${disclosed}`);
+  const parallelGatewayRowStart = html.indexOf('data-capability-id="parallelGateway"');
+  assert.notEqual(parallelGatewayRowStart, -1);
+  const parallelGatewayRow = html.slice(parallelGatewayRowStart, html.indexOf("</tr>", parallelGatewayRowStart));
+  assert.ok(
+    parallelGatewayRow.includes("paired forks and joins of two or more branches inside Sub-Process bodies"),
+    "Parallel Gateway row must disclose nested paired blocks",
+  );
   const payloadRowStart = html.indexOf('data-capability-id="messagePayloadCatchEvent"');
   assert.notEqual(payloadRowStart, -1);
   const payloadRow = html.slice(payloadRowStart, html.indexOf("</tr>", payloadRowStart));
