@@ -567,7 +567,9 @@ theorem admitted_parallel_has_no_sequential_operation (program : Program)
     rfl
   have repeatedScope : (program.identity.semanticProfile.value ==
       "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [account.profile]; rfl
-  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+  have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+    rw [account.profile]; rfl
+  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
     ↓reduceIte, Bool.and_eq_true] at capabilities
   have selected := capabilities.2.2.1.1
   simp [programSequentialMultiInstanceProfileMatches, account.profile,

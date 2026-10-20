@@ -65,9 +65,9 @@ For this fixture the profile rejects a Sub-Process without one normal outgoing S
 
 ## Admission account
 
-Admission extends the implemented profile-parameterized gate. It must not add a named whole-topology predicate or another production disjunct.
+Admission extends the implemented profile-parameterized gate. It must not add a named whole-topology predicate or another production disjunct. The exact multiset class below is this profile's pre-existing capability, kept by the cumulative profile rule, not a new topology predicate.
 
-The profile capability admits the retained fixture through its exact source-node and Semantic Process operation multisets with one child below the root, or a nested structural class through the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#admission), which owns the profile's admission account after growth. Generic scoped-graph validation owns distinct identity, legal containment, same-scope Sequence Flow endpoints, exact scope references, source entry, reachability, co-reachability, acyclicity, producer/consumer discipline, and the parent input/output relation of the embedded Sub-Process.
+The profile capability admits the exact multiset class, every topology matching its source-node and Semantic Process operation multisets with one child below the root under generic validation, or a nested structural class through the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#admission), which owns the profile's admission account after growth. Generic scoped-graph validation owns distinct identity, legal containment, same-scope Sequence Flow endpoints, exact scope references, source entry, reachability, co-reachability, acyclicity, producer/consumer discipline, and the parent input/output relation of the embedded Sub-Process.
 
 The profile requires both child branches to be structurally capable of reaching their own None End Event. That fact is not sufficient for runtime progress; the capsule-local preservation gate separately enumerates reachable stable states and rejects any nonterminal quiescent state with retained runtime ownership.
 

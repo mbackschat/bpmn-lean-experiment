@@ -125,7 +125,9 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
         rcases profile with same | same <;> rw [same] <;>
           simp [messagePayloadCatchProfileId, portableMessagePayloadProfileId,
             parallelMultiInstanceUserTaskProfileId]
-      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+      have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+        rcases profile with same | same <;> rw [same] <;> decide +kernel
+      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.2.2.1.2
       simp [programParallelMultiInstanceProfileMatches, notParallel] at parallelFamily
@@ -297,11 +299,14 @@ theorem deliverPayloadMessage_preserves_runtimeStateWellFormed
           program expectedInstanceId before wait.owner position ownerLive
         rw [compensationExecutionStateValid_running_frame program
           (RootCompensationExecutionDomain.of_zero_profile program
-            (by rcases profile with same | same <;> rw [same] <;> decide +kernel) (by rcases profile with same | same <;> rw [same] <;> rfl) _capabilities) before settled instanceId
+            (by rcases profile with same | same <;> rw [same] <;> decide +kernel)
+            (by rcases profile with same | same <;> rw [same] <;> decide +kernel)
+            (by rcases profile with same | same <;> rw [same] <;> rfl) _capabilities) before settled instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       have repeatedAfter : sequentialScopeStateValid program settled = true :=
         sequentialScopeStateValid_zero_profile_frame program before settled legacy
+          (by rcases profile with same | same <;> rw [same] <;> decide +kernel)
           (by rcases profile with same | same <;> rw [same] <;> rfl) _capabilities rfl repeated
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       refine ⟨?_, ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩, repeatedAfter⟩⟩

@@ -191,6 +191,9 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
   by_cases transaction : profile = transactionCancellationCheckpointProfileId
   · subst profile
     decide +kernel
+  by_cases embedded : profile = ⟨embeddedCompletionProfile⟩
+  · subst profile
+    decide +kernel
   have operationPresent : program.operations.any (fun
       | .awaitSequentialMultiInstanceUserTask .. => true
       | _ => false) = true := by
@@ -219,7 +222,12 @@ theorem every_other_profile_refuses_the_distinct_sequential_multi_instance_opera
   have notTransactionProfile :
       ((programForProfile profile).identity.semanticProfile == transactionCancellationCheckpointProfileId) = false := by
     simpa only [programForProfile, beq_eq_false_iff_ne] using transaction
-  rw [notTransactionProfile, if_neg Bool.false_ne_true, mismatched]
+  have notEmbeddedProfile :
+      ((programForProfile profile).identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+    apply beq_eq_false_iff_ne.mpr
+    intro same
+    exact embedded (by cases profile; simp_all [programForProfile])
+  rw [notTransactionProfile, if_neg Bool.false_ne_true, notEmbeddedProfile, if_neg Bool.false_ne_true, mismatched]
   simp only [notScopeProgram, Bool.false_and, Bool.and_false, ite_self]
 
 theorem profile_admission_refuses_omitted_duplicated_and_substituted_programs :

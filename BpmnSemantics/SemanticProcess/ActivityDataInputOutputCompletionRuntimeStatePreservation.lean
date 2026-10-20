@@ -484,7 +484,9 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have repeatedScope : (program.identity.semanticProfile.value ==
           "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
         rw [profile]; decide +kernel
-      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+      have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+        rw [profile]; decide +kernel
+      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at admitted
       have noSequential := admitted.2.2.1.1
       simp [programSequentialMultiInstanceProfileMatches, profile,
@@ -526,12 +528,12 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       have executionAfter : compensationExecutionStateValid program successor = true := by
         rw [compensationExecutionStateValid_running_frame program
           (RootCompensationExecutionDomain.of_zero_profile program
-            (by rw [profile]; decide +kernel) (by rw [profile]; rfl) capabilities) before successor instanceId
+            (by rw [profile]; decide +kernel) (by rw [profile]; decide +kernel) (by rw [profile]; rfl) capabilities) before successor instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       have repeatedAfter : sequentialScopeStateValid program successor = true :=
         sequentialScopeStateValid_zero_profile_frame program before successor legacy
-          (by rw [profile]; rfl) capabilities rfl repeated
+          (by rw [profile]; decide +kernel) (by rw [profile]; rfl) capabilities rfl repeated
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨positionAfter, racesAfter⟩,
         incidentsAfter⟩, ownersAfter⟩, identitiesAfter⟩, boundsAfter⟩, declarationsAfter⟩,

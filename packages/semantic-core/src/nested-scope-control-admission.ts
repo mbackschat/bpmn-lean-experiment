@@ -49,7 +49,8 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
 function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>):
   Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans> }> | null {
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  if (roots.length !== 1 || bodies.size !== scopes.length) return null;
+  // Equal sizes alone admit a body in an undeclared scope beside a declared scope without one.
+  if (roots.length !== 1 || bodies.size !== scopes.length || !scopes.every(({ id }) => bodies.has(id))) return null;
   const root = roots[0]!.id;
   const parent = new Map<string, Readonly<{ scope: string; vertex: string }>>();
   for (const body of bodies.values()) {
@@ -60,8 +61,18 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
     }
   }
   if (parent.size !== scopes.length - 1 || parent.size === 0) return null;
-  const depth = (scope: string): number => scope === root ? 0 : 1 + depth(parent.get(scope)!.scope);
-  if (scopes.some(({ id }) => id !== root && (!parent.has(id) || depth(id) > depthLimit))) return null;
+  // Climbs at most `depthLimit` levels, so a parent cycle that never reaches the root is refused rather than recursed.
+  const withinDepth = (scope: string): boolean => {
+    let current = scope;
+    for (let level = 0; level < depthLimit; level += 1) {
+      const owner = parent.get(current);
+      if (owner === undefined) return false;
+      if (owner.scope === root) return true;
+      current = owner.scope;
+    }
+    return false;
+  };
+  if (scopes.some(({ id }) => id !== root && !withinDepth(id))) return null;
   const rootBody = bodies.get(root);
   // A terminal fork is admitted only in a child body; the root keeps its single End.
   if (rootBody === undefined || rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1) return null;

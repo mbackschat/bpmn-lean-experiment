@@ -83,11 +83,11 @@ Deliverable: ordinary embedded scopes nested to depth three, composing User Task
 
 Acceptance blockers: the pipeline ceiling for three new cases (owner decision), gates and checkpoint review.
 
-Current result: admission, conformance and registration are green; the [cost record](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#nested-scope-control-fixtures-2026-10-20) fits 3 GiB; the pipeline-ceiling guards fail at 123 cases × 1,300 ms over 156,000 ms.
+Current result: review edits and Lean-gate proof repairs are done; the [cost record](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#nested-scope-control-fixtures-2026-10-20) fits 3 GiB; pipeline-ceiling guards fail at 123 × 1,300 ms over 156,000 ms.
 
 Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
 
-Next action: commit the batch, then run the semantic gate beside the cold checkpoint review; after the ceiling decision, run the remaining gates once.
+Next action: commit corrections; rerun the semantic gate beside the correction audit; after the ceiling decision, run remaining gates once.
 
 Oracle: a first child End or a wrong-parent completion completes a nested scope early; today nesting beyond the serial scope-data account is unsupported.
 

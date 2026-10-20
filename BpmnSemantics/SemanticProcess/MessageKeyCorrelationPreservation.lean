@@ -231,7 +231,9 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
       have repeatedScope : (program.identity.semanticProfile.value ==
           "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by
         rw [profile]; decide +kernel
-      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, Bool.false_eq_true, legacy,
+      have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+        rw [profile]; decide +kernel
+      simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded, Bool.false_eq_true, legacy,
         ↓reduceIte, Bool.and_eq_true] at capabilities
       have parallelFamily := capabilities.2.2.1.2
       simp [programParallelMultiInstanceProfileMatches, profile, messageKeyCorrelationProfileId,
@@ -404,12 +406,12 @@ theorem deliverCorrelatedPayloadMessage_preserves_runtimeStateWellFormed
           program expectedInstanceId before wait.owner position ownerLive
         rw [compensationExecutionStateValid_running_frame program
           (RootCompensationExecutionDomain.of_zero_profile program
-            (by rw [profile]; decide +kernel) (by rw [profile]; rfl) _capabilities) before settled instanceId
+            (by rw [profile]; decide +kernel) (by rw [profile]; decide +kernel) (by rw [profile]; rfl) _capabilities) before settled instanceId
           running rfl rfl rfl rfl rfl rfl]
         exact execution
       have repeatedAfter : sequentialScopeStateValid program settled = true :=
         sequentialScopeStateValid_zero_profile_frame program before settled legacy
-          (by rw [profile]; rfl) _capabilities rfl repeated
+          (by rw [profile]; decide +kernel) (by rw [profile]; rfl) _capabilities rfl repeated
       simp only [runtimeStateWellFormed, Bool.and_eq_true]
       refine ⟨?_, ⟨⟨⟨⟨claimsAfter, retentionAfter⟩, snapshotsAfter⟩, executionAfter⟩, repeatedAfter⟩⟩
       refine ⟨?_, lifecycleAfter⟩

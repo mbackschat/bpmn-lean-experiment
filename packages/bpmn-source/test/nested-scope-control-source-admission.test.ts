@@ -10,7 +10,8 @@ import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind, CommandOutcome, ObservationRequestKind, ProcessStatus, ScenarioDocumentKind, StimulusKind,
-  nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis, runScenario, supportsSemanticProcessScenario,
+  applyStimulusWithTrace, initialState, nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis, runScenario,
+  semanticProcessClosureLimit, supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 
@@ -221,6 +222,44 @@ test("NSC-ADMIT-01 composes the retained models' largest closures in both langua
     assert.equal(nestedScopeControlProgramAnalysis(compiled.semanticProcess), bound, name);
     const { checkedProcess } = compiled;
     assert.equal(nestedScopeControlCheckedAnalysis({ ...checkedProcess, flows: checkedProcess.sequenceFlows }), bound, name);
+  }
+});
+
+// The composed bound is computed from the topology alone; this compares it with the closures the core actually runs.
+// Equal results at the bound show it is sufficient; an internal closure of exactly that length, and a changed result one
+// step below it, show it is not loose. The first traced record is the command's own transition, not a closure step.
+test("NSC-ADMIT-01: every retained journey runs each closure within its computed bound and reaches it", async () => {
+  const journeys = [
+    ["employee-onboarding", ["UserTask_ConfirmStartDate", "UserTask_CreateMailbox", "UserTask_GrantVpn",
+      "UserTask_AssignDesk", "UserTask_OrderEquipment", "UserTask_WelcomeMeeting"]],
+    ["employee-onboarding", ["UserTask_OrderEquipment", "UserTask_ConfirmStartDate", "UserTask_AssignDesk",
+      "UserTask_GrantVpn", "UserTask_CreateMailbox", "UserTask_WelcomeMeeting"]],
+    ["internal-audit", ["UserTask_PlanFieldwork", "UserTask_DrawSample", "UserTask_InterviewStaff",
+      "UserTask_ReviewFindings", "UserTask_SignOff", "UserTask_CloseAudit"]],
+    ["internal-audit", ["UserTask_PlanFieldwork", "UserTask_ReviewFindings", "UserTask_InterviewStaff",
+      "UserTask_InterviewStaff", "UserTask_DrawSample", "UserTask_ReviewFindings", "UserTask_SignOff", "UserTask_CloseAudit"]],
+  ] as const;
+  for (const [name, completions] of journeys) {
+    const program = await admitted(await model(name));
+    const bound = nestedScopeControlProgramAnalysis(program);
+    assert.ok(bound !== null && bound <= semanticProcessClosureLimit, name);
+    const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId,
+      instanceId, initialVariables: [] };
+    let state = initialState;
+    let longest = 0;
+    let shortBoundDiffers = false;
+    for (const stimulus of [start, ...completions.map(complete)]) {
+      const atLimit = applyStimulusWithTrace(program, state, stimulus, semanticProcessClosureLimit);
+      const atBound = applyStimulusWithTrace(program, state, stimulus, bound);
+      const belowBound = applyStimulusWithTrace(program, state, stimulus, bound - 1);
+      assert.deepEqual(atBound.result, atLimit.result, `${name} ${stimulus.commandId}`);
+      assert.equal(atLimit.result.ambiguousInternalChoice, false, `${name} ${stimulus.commandId}`);
+      shortBoundDiffers ||= belowBound.result.outcome !== atLimit.result.outcome;
+      longest = Math.max(longest, atLimit.committedTransitions.length - 1);
+      if (atLimit.result.outcome === CommandOutcome.Committed) state = atLimit.result.state;
+    }
+    assert.equal(longest, bound, name);
+    assert.ok(shortBoundDiffers, name);
   }
 });
 

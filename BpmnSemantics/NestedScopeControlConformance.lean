@@ -7,8 +7,9 @@ import BpmnSemantics.SemanticProcess.Scenario
 Finite checked witnesses of nested embedded scope control under the cumulative embedded completion
 profile. Employee onboarding nests a Parallel block three scopes deep, and the internal audit puts a Parallel
 block of two Sub-Processes inside a third-level scope. Each journey step is one dispatcher evaluation, and the
-theorems only read its result. The refusals exercise depth, closure, structure and End-placement limits
-through both the checked and the Program analysis. They do not discharge a quantified law; see the
+theorems only read its result. The depth refusal and the admitted fan-out bound agree across the checked
+and Program analyses; the structural and over-limit refusals use the checked analysis. They do not
+discharge a quantified law; see the
 [nested scope-control proposal](../docs/capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#separating-witnesses).
 -/
 

@@ -675,7 +675,8 @@ private def operationPayloadCapabilitiesValid (profile : String)
       | _ => true
   else true
 
-private def programExactShape (program : Program) (scopeCount : Nat) (shape : ShapeCardinalities) : Bool :=
+/-- The exact operation multiset and topology checks for one selected shape; profile-consequence proofs unfold it. -/
+def programExactShape (program : Program) (scopeCount : Nat) (shape : ShapeCardinalities) : Bool :=
   program.definitionScopes.length = scopeCount &&
           operationCardinalities program.operations = shape &&
           program.operations.all operationPropertyEndpoints &&

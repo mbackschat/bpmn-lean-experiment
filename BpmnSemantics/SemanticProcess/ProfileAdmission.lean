@@ -16,7 +16,7 @@ theorem parallelMultiInstanceProfile_has_one_definition_scope (program : Program
   simp only [programProfileCapabilitiesValid] at capabilities
   rw [profile] at capabilities
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId] at capabilities
+    sequentialMultiInstanceUserTaskProfileId, embeddedCompletionProfile, programExactShape] at capabilities
   grind
 
 /-- The Parallel Multi-Instance profile admits no Event-Based Gateway race operation. -/
@@ -30,7 +30,7 @@ theorem parallelMultiInstanceProfile_has_no_event_race_operation (program : Prog
   simp only [programProfileCapabilitiesValid] at capabilities
   rw [profile] at capabilities
   simp [programShape?, parallelMultiInstanceUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId] at capabilities
+    sequentialMultiInstanceUserTaskProfileId, embeddedCompletionProfile, programExactShape] at capabilities
   have shape : operationCardinalities program.operations =
       withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 } := by
     grind
@@ -64,7 +64,8 @@ theorem activityDataInputOutputProfile_property_endpoints (program : Program)
   simp only [programProfileCapabilitiesValid] at capabilities
   rw [profile] at capabilities
   simp [programShape?, activityDataInputOutputUserTaskProfileId,
-    sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId] at capabilities
+    sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId, embeddedCompletionProfile,
+    programExactShape] at capabilities
   obtain ⟨_, _, capabilities⟩ := capabilities
   have selected := capabilities.2.1.1.1.1.1.1.1.2
   have endpoint := selected _ member

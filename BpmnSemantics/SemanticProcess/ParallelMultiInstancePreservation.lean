@@ -376,7 +376,9 @@ private theorem admittedSharedParallelEntryAccount (program : Program)
     rfl
   have repeatedScope : (program.identity.semanticProfile.value ==
       "cibseven-2.2.0-sequential-multi-instance-subprocess-draft") = false := by rw [profile]; rfl
-  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler,
+  have embedded : (program.identity.semanticProfile.value == embeddedCompletionProfile) = false := by
+    rw [profile]; rfl
+  simp only [programProfileCapabilitiesValid, repeatedScope, callData, transaction, messageHandler, embedded,
     Bool.false_eq_true, legacy, ↓reduceIte, Bool.and_eq_true] at capabilities
   obtain ⟨_, _, capabilities⟩ := capabilities
   obtain ⟨profileEntry, completionOperation, entries, completions, paired, completionLookup⟩ :=
@@ -469,7 +471,8 @@ theorem SharedParallelProgramAccount.repeatedScopeEntries_absent {program : Prog
     transactionCancellationCheckpointProfileId, repeatableSubscriptionCheckpointProfileId,
     ProfileId.mk.injEq] at capabilities
   have cardinality : (operationCardinalities program.operations).sequentialScopeEntries = 0 := by
-    simp [programShape?, sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId] at capabilities
+    simp [programShape?, sequentialMultiInstanceUserTaskProfileId, parallelMultiInstanceUserTaskProfileId,
+      embeddedCompletionProfile, programExactShape] at capabilities
     have counts : operationCardinalities program.operations =
         withScopeCompletions 1 { initiates := 1, userTasks := 1, ends := 2 } := by grind
     rw [counts]
