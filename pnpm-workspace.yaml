@@ -9,8 +9,6 @@ packages:
   - showcase/*
 enableGlobalVirtualStore: false
 minimumReleaseAge: 20160
-minimumReleaseAgeExclude:
-  - source-map-js@1.2.2
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 trustLockfile: false
