@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: rejected
 
 ## Question and delivery boundary
 
@@ -136,6 +136,6 @@ Growth makes these passages false, and the implementation corrects them in the s
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `34721c6a` | `fork-turns-none` | `reject` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

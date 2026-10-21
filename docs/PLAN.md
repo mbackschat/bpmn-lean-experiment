@@ -83,12 +83,12 @@ Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-E
 
 Acceptance blockers: the proposal, its Temporal preflight and its cold review.
 
-Current result: the proposal is drafted.
+Current result: the cold review rejected the draft `34721c6a`: the BPMN account holds, but join ownership under concurrent occurrences, the synthetic merge's public projections, the reused admission owner's single-input task arity and the shared selections' consumers were unaccounted, so a redesign needs a new cold review.
 
 Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review.
 
-Next action: commit the proposal and run its cold proposal review.
+Next action: redesign without joins inside merge-target bodies, with stated projections, named consumers and occurrence-addressed variants beside the existing selections, then request a new cold review.
 
-Oracle: a later activation or re-entry that reads another occurrence's locals or consumes its completion.
+Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

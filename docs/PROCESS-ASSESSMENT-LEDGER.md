@@ -88,7 +88,7 @@ Twenty-fourth instance, nested scope-control closure on 2026-10-21: the registra
 Which module or conjunct enforced a behavior was asserted without opening or probing it, and the claim was wrong.
 
 Instances
-: 11
+: 12
 
 Disposition
 : `unguardable`
@@ -101,6 +101,8 @@ Evidence
 A prose attribution to a module, conjunct or theorem is not executable evidence. Probe the claimed boundary, read theorem premises, and seed the deciding conjunct where possible; arbitrary claim-to-source judgments remain unguardable under question 2.
 
 Retained recurrence evidence: [Finding 02](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-02).
+
+Twelfth instance, concurrent embedded activations proposal on 2026-10-21: the draft asserted that join counting, control-position and flow-node projections and the reused structured-body owner needed no change for two live occurrences of one definition without opening them, and the cold proposal review refuted all three from the code.
 
 ### Finding 03
 
