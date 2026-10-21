@@ -83,11 +83,11 @@ Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-E
 
 Acceptance blockers: the proposal, its Temporal preflight and its cold review.
 
-Current result: after the cold review rejected `34721c6a`, the redesign uses the real `mergeExclusive`, excludes joins inside merge-target bodies, adds occurrence-addressed variants beside the existing selections and names their consumers; it awaits a new cold review.
+Current result: the cold review of the redesign `ee316777` returned approve-with-required-edits; audits of `d48061da` and `1b40e87c` closed all but one required finding, an unprovable equality law for the shared completion arm, now corrected by confining the lookup-by-id arm to merge targets. The two-audit bound is reached.
 
-Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review.
+Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review; reached at the second audit, with a third audit round the only remaining step.
 
-Next action: run the new cold proposal review of the redesign and apply its verdict.
+Next action: on owner authorization of a third audit round, have the same reviewer audit the merge-target confinement and record the receipt; otherwise redesign or defer.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 
