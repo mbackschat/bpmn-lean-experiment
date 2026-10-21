@@ -81,13 +81,13 @@ Current task: `PC-SCOPE-02`, the third batch of the embedded and called scope fa
 
 Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through an explicit converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences, serving the concurrent clause of `PC-SCOPE-02`; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
 
-Acceptance blockers: the proposal, its Temporal preflight and its cold review.
+Acceptance blockers: implementation in both languages, the semantic checkpoint review, then the complete pipeline and closure.
 
-Current result: the cold review of the redesign `ee316777` returned approve-with-required-edits; audits of `d48061da` and `1b40e87c` closed all but one required finding, an unprovable equality law for the shared completion arm, now corrected by confining the lookup-by-id arm to merge targets. The two-audit bound is reached.
+Current result: the proposal is approved: cold review of `ee316777` with required edits, closed by three correction audits, the third owner-authorized; see its [receipt](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt).
 
-Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review; reached at the second audit, with a third audit round the only remaining step.
+Effort budget: 8 hours wall from 2026-10-21 for implementation to the semantic checkpoint, reassessed at the limit; the proposal stage used about 3 hours against its 2.
 
-Next action: on owner authorization of a third audit round, have the same reviewer audit the merge-target confinement and record the receipt; otherwise redesign or defer.
+Next action: red/green the TypeScript merge-region admission and the occurrence-addressed merge-target operations on the audit and intake models, then Lean, then registration and the semantic checkpoint review.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

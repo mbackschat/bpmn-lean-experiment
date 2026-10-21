@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and delivery boundary
 
@@ -84,7 +84,7 @@ The existing functions stay unchanged, together with every consumer:
 
 A **merge-target operation** is the `enterScope` whose input place is the output of a `mergeExclusive`, together with the `completeScope` of that `enterScope`'s child definition; the Program determines both. Only merge-target operations change path. This profile offers them as the existing occurrence-addressed alternative `operationOccurrence(operationId, owner)` ([`InternalTransitionAlternative`](../../BpmnSemantics/SemanticProcess/InternalTransitionAlternative.lean), [`internal-transition-alternative.ts`](../../packages/semantic-core/src/internal-transition-alternative.ts)). Every other operation, including every other `enterScope` and `completeScope`, keeps its present `operation` or `mergeInput` alternative and its existing preparation, so the profile's prepared ScopeCreation batches are untouched. Occurrence offers carry no preparation and the occurrence batch certificate stays parallel Multi-Instance only, so a merge-target offer is publishable only as a singleton frontier. The branch condition guarantees that: a merge-target `enterScope` is reached only from one branch task's completion through the merge, and a merge-target `completeScope` only from one target task's completion through the target's None End, each a chain in which it is the only enabled operation. A merge-target offer in a frontier of several offers rolls the closure back as ambiguous and fails acceptance. Mixed frontiers are already ordered by `internalAlternativeBefore`.
 
-A merge-target singleton publishes through the exact-owner path, `singletonOccurrencePublication?` with `replayInternalOperationOccurrence?` and the owned-operation lifecycle in Lean, and the singleton publication check and `replayInternalTransitionRecord` in TypeScript. Their parallel Multi-Instance profile gates widen to this profile's merge-target operations only. The completion lifecycle arm becomes owner-addressed, so the record carries the owner explicitly and neither the record, the lifecycle nor replay re-derives it by definition. The occurrence-addressed resolution and application in both languages ([`InternalOperationOccurrence`](../../BpmnSemantics/SemanticProcess/InternalOperationOccurrence.lean), [`internal-operation-occurrence.ts`](../../packages/semantic-core/src/internal-operation-occurrence.ts)) gain an `enterScope` arm and, for merge-target `completeScope` only, the lookup-by-id composition below. Every other `completeScope` candidate keeps the present arm, which wraps the declared-scope completion with its data-output writes and deadline withdrawal, so the parallel Multi-Instance profile's use of that arm cannot change:
+A merge-target singleton publishes through the exact-owner path, `singletonOccurrencePublication?` with `replayInternalOperationOccurrence?` and the owned-operation lifecycle in Lean, and the singleton publication check and `replayInternalTransitionRecord` in TypeScript. Their parallel Multi-Instance profile gates widen to this profile's merge-target operations only. The completion lifecycle arm becomes owner-addressed, so the record carries the owner explicitly and neither the record, the lifecycle nor replay re-derives it by definition. The occurrence-addressed resolution and application in both languages ([`InternalOperationOccurrence`](../../BpmnSemantics/SemanticProcess/InternalOperationOccurrence.lean), [`internal-operation-occurrence.ts`](../../packages/semantic-core/src/internal-operation-occurrence.ts)) gain an `enterScope` arm and, for merge-target `completeScope` only, the lookup-by-id composition below. Every other `completeScope` candidate keeps the present declared-scope wrapper, which in Lean also writes data outputs and withdraws bounded deadlines, so the parallel Multi-Instance profile's use of that arm cannot change:
 
 - entry issues a fresh activation of the child definition from the monotone counter, parented by the alternative's owner, even while another occurrence is live;
 - completion is offered per live occurrence and enabled exactly for the quiescent ones. In Lean it is lookup by occurrence id, then `scopeQuiescent`, then the existing `completeQuiescentScope?`;
@@ -264,6 +264,6 @@ Growth makes the following passages false, and the implementation corrects them 
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ee316777` | `fork-turns-none` | `approve-with-required-edits` | `d48061da, 1b40e87c, 65e7bc85, owner-authorized` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
