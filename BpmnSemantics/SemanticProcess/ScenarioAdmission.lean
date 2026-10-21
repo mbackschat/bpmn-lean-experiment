@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 import BpmnSemantics.SemanticProcess.ValueDomain
+import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
 
@@ -67,6 +68,14 @@ private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : Lis
           else SerialBusinessTask.startBindingsAdmitted program bindings
     | _ => false
 
+/-- NSD-AVAILABLE-01: a supported scenario starts with a Process Start carrying every scope-chain-required
+name, as TypeScript scenario support requires; any other first stimulus is unsupported under the profile. -/
+private def nestedScopeScenarioStartAdmitted (program : Program) : Stimulus → Bool
+  | .startProcess _ _ instanceId bindings =>
+      !nestedScopeDataProgram program ||
+        (!instanceId.value.isEmpty && NestedScopeData.startBindingsAdmitted program bindings)
+  | _ => !nestedScopeDataProgram program
+
 /-- CDATA-RESUME-01 and COMPSTART-DATA-01 require the selected initializing data before a supported scenario can enter its first Process. -/
 private def scenarioStartDataAdmitted (program : Program) : Stimulus → Bool
   | .startProcess _ _ instanceId bindings =>
@@ -123,6 +132,7 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
     programProfileCapabilitiesValid program &&
     scenario.stimuli.all (scenarioStimulusDomainSupported program) &&
     (scenario.stimuli.head?.all (scenarioStartDataAdmitted program)) &&
+    (scenario.stimuli.head?.all (nestedScopeScenarioStartAdmitted program)) &&
     (scenario.stimuli.head?.all (SequentialScopeData.stimulusAdmitted program)) &&
     structuredCompositionScenarioStartAdmitted program scenario.stimuli &&
     portableHandoffScenarioStartAdmitted program scenario.stimuli &&
