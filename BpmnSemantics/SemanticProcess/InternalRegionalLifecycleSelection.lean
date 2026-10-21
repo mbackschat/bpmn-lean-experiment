@@ -131,6 +131,20 @@ theorem regionalSelection_lifecycle_facts (program : Program) (state : RuntimeSt
       · contradiction
   | _ => simp at found
 
+/-- CEA-QUIESCE-01's owner-addressed completion record agrees with the definition-addressed selection: when the
+definition has exactly one live occurrence, addressing it also by its own identity selects the same one. -/
+private theorem unique_definition_occurrence_by_owner (occurrences : List RuntimeScopeOccurrence)
+    (definition : DefinitionScopeId) (selected : RuntimeScopeOccurrence)
+    (unique : occurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition)) = [selected]) :
+    occurrences.filter (fun scope => decide (scope.id.definitionScopeId = definition && scope.id = selected.id)) =
+      [selected] := by
+  have split : (fun scope : RuntimeScopeOccurrence =>
+      decide (scope.id.definitionScopeId = definition && scope.id = selected.id)) =
+      fun scope => decide (scope.id = selected.id) && decide (scope.id.definitionScopeId = definition) := by
+    funext scope; simp [Bool.and_comm]
+  rw [split, ← List.filter_filter, unique]
+  simp
+
 theorem regionalLifecycleTemplate_candidate (program : Program) (before after : RuntimeState)
     (hosting commandId : SemanticId) (transitionIndex : Nat)
     (operation : SemanticOperation) (selected : InternalRegionalSelection) (region : InternalOccurrenceRegion)
@@ -169,13 +183,17 @@ theorem regionalLifecycleTemplate_candidate (program : Program) (before after : 
           | none =>
               simp only [rootEq] at lifecycle
               cases lifecycle
-              simp only [facts, rootEq]
+              have byOwner := unique_definition_occurrence_by_owner _ _ _ facts
+              simp only [rootEq] at byOwner
+              simp only [byOwner]
               rfl
           | some parent =>
               simp only [rootEq] at lifecycle
               split at lifecycle
               · cases lifecycle
-                simp only [facts, rootEq]
+                have byOwner := unique_definition_occurrence_by_owner _ _ _ facts
+                simp only [rootEq] at byOwner
+                simp only [byOwner]
                 rfl
               · contradiction
   | throwError id origin input error handler =>

@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Laws of the occurrence-addressed merge-target scope operations: the entry and completion frames of CEA-ISOLATE-01 and
 the evaluator-to-relation bridge into `OperationStep`. The bridge is a dispatcher and constructor-selection
@@ -11,7 +12,7 @@ namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics
 
 /-- CEA-ISOLATE-01 for entry: every live occurrence stays live, waits and variables are untouched, and
-tokens change only by consuming one `input` token of `parent` and starting the child. -/
+tokens change only by consuming exactly one arriving `input` token of `parent` and starting the child. -/
 theorem enterConcurrentScopeState_frame (state after : RuntimeState) (parent : ScopeOccurrenceId)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
     (entered : enterConcurrentScopeState? state parent input childEntry childScopeId = some after) :
@@ -19,11 +20,14 @@ theorem enterConcurrentScopeState_frame (state after : RuntimeState) (parent : S
       after.waits = state.waits ∧ after.messageWaits = state.messageWaits ∧
       after.timerWaits = state.timerWaits ∧ after.effectWaits = state.effectWaits ∧
       after.variables = state.variables ∧
+      (removeToken state.tokens input parent).length + 1 = state.tokens.length ∧
       ∃ child, after.tokens = addToken (removeToken state.tokens input parent) childEntry child := by
-  obtain ⟨instanceId, _, _, rfl⟩ := enterConcurrentScopeState_update state after parent input childEntry
-    childScopeId entered
-  refine ⟨fun occurrence member => ?_, rfl, rfl, rfl, rfl, rfl, _, rfl⟩
-  exact (mem_canonicalInsertBy _ _ _ _).mpr (Or.inr member)
+  obtain ⟨instanceId, _, _, arriving, rfl⟩ := enterConcurrentScopeState_update state after parent input
+    childEntry childScopeId entered
+  refine ⟨fun occurrence member => ?_, rfl, rfl, rfl, rfl, rfl, ?_, _, rfl⟩
+  · exact (mem_canonicalInsertBy _ _ _ _).mpr (Or.inr member)
+  · rw [removeToken_eq_erase, List.length_erase_of_mem arriving]
+    exact Nat.sub_add_cancel (List.length_pos_of_mem arriving)
 
 /-- CEA-ISOLATE-01 for completion: completing the child occurrence `owner` adds exactly one token for its
 parent, removes only `owner` from the live occurrences and only its variable scopes, and leaves every wait
@@ -42,19 +46,7 @@ theorem completeScopeOccurrenceState_frame (state completed : RuntimeState) (own
     completeScopeOccurrenceState_selected state completed owner scopeId (some output) completion
   have parentOf := child occurrence member same
   subst same
-  obtain ⟨tokens, occurrences, waits, messageWaits, timerWaits, effectWaits, control⟩ :=
-    completeQuiescentScope_child_frame state completed occurrence parent output parentOf applied
-  refine ⟨tokens, occurrences, ?_, waits, messageWaits, timerWaits, effectWaits, control⟩
-  unfold completeQuiescentScope? at applied
-  rw [parentOf] at applied
-  cases running : state.control <;> simp only [running] at applied
-  all_goals first
-    | contradiction
-    | (split at applied
-       · simp only [Option.some.injEq] at applied
-         subst applied
-         rfl
-       · contradiction)
+  exact completeQuiescentScope_child_frame state completed occurrence parent output parentOf applied
 
 namespace InternalCommutation
 
@@ -80,9 +72,12 @@ theorem applyInternalOperationOccurrence_mergeTarget_sound (program : Program) (
         target applied
     · contradiction
   case completeScope id origin scopeId parentOutput =>
-    simp only [applyInternalOperationOccurrence?, control, resolved, Option.bind_eq_bind, Option.bind_some,
-      target, ite_true] at applied
-    exact .completeScopeOccurrence id origin scopeId parentOutput candidate.owner before after target applied
+    cases parentOutput with
+    | none => simp [isMergeTargetOperation] at target
+    | some output =>
+        simp only [applyInternalOperationOccurrence?, control, resolved, Option.bind_eq_bind, Option.bind_some,
+          target, ite_true] at applied
+        exact .completeScopeOccurrence id origin scopeId output candidate.owner before after target applied
 
 end InternalCommutation
 

@@ -196,9 +196,11 @@ theorem reachable_singleton_reservation_valid (program : Program)
       exact (completeParallelScope_reservation_valid entry before after candidate.owner completed valid absent).1
     case completeScope =>
       obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+          (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       exact (completeSelectedScope_reservation_valid program analysis admitted before after scopeId output completed valid absent).1
     all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some,
+        isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
 
 private theorem committed_ingress_reservation_valid (program : Program)
     (analysis : ParallelScopeStart.ProgramAnalysis) (admitted : ParallelScopeStart.analyzeProgram program = some analysis)

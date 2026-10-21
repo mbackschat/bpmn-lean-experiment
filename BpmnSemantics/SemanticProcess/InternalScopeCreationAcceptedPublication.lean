@@ -237,6 +237,14 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
             have permutation := filter_canonicalInsertBy_perm scopeOccurrenceBefore keep created
               state.scopeOccurrences (by simp [keep, created])
             simpa only [insertScopeOccurrence, absent] using permutation
+          let keepFresh := fun scope : RuntimeScopeOccurrence =>
+            decide (scope.id.definitionScopeId = childScope && scope.parent = some owner) &&
+              !state.scopeOccurrences.any (·.id == scope.id)
+          have singletonFresh :
+              (insertScopeOccurrence created state.scopeOccurrences).filter keepFresh = [created] := by
+            rw [← singleton]
+            exact filter_fresh_inserted _ created childScope (some owner) rfl fun old present same =>
+              fresh (by simp only [Bool.or_eq_true]; right; exact List.any_eq_true.mpr ⟨old, present, by simp [same]⟩)
           simp only [internalScopeCreationStart?] at startFound
           change candidateFlowNodeOccurrenceDeltaForOperation? program state
             (_ : RuntimeState) (.enterScope id selectedOrigin input entry childScope) commandId transitionIndex =
@@ -244,11 +252,11 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
           simp only [candidateFlowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOwnedOperation?, flowNodeSelectedOperationOwner?, owned,
             bind, Option.bind, InternalScopeCreationSelection.apply]
           change (do
-            let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keep with
+            let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keepFresh with
               | [scope] => some scope | _ => none
             pure (canonicalFlowNodeOccurrenceDelta
               [← candidateScopeStart? program (.enterScope id selectedOrigin input entry childScope) owner scope] [])) = _
-          rw [singleton]
+          rw [singletonFresh]
           simp only [bind, Option.bind, created, startFound, pure, Pure.pure]
           rfl
   | invokeProcess id selectedOrigin input process root entry returned data =>

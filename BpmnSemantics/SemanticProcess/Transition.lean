@@ -374,12 +374,12 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
   /-- CEA-QUIESCE-01: a merge target's named occurrence completes, whatever siblings are live. -/
-  | completeScopeOccurrence (id origin scopeId parentOutput) (owner : ScopeOccurrenceId)
+  | completeScopeOccurrence (id origin scopeId output) (owner : ScopeOccurrenceId)
       (before after : RuntimeState)
-      (target : isMergeTargetOperation program (.completeScope id origin scopeId parentOutput) = true)
-      (transition : completeScopeOccurrenceState? before owner scopeId parentOutput = some after) :
+      (target : isMergeTargetOperation program (.completeScope id origin scopeId (some output)) = true)
+      (transition : completeScopeOccurrenceState? before owner scopeId (some output) = some after) :
       OperationStep program
-        (.completeScope id origin scopeId parentOutput) before after
+        (.completeScope id origin scopeId (some output)) before after
 
   | completeEventSubProcess (id : OperationId) (origin : BpmnElementOrigin)
       (scopeId : DefinitionScopeId) (before after : RuntimeState)

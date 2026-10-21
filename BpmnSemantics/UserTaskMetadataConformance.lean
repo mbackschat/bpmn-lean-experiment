@@ -357,7 +357,8 @@ private theorem completionDiscovery (before after : RuntimeState) (operation : S
       { offers := [completionOffer before after operation] } := by
   have ordinary : ((programFor exactMetadata).identity.semanticProfile.value ==
       "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") = false := by decide +kernel
-  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, fired, completionOffer]
+  have merge := isMergeTargetOperation_eq_false_of_profile (programFor exactMetadata) operation (by decide +kernel)
+  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, fired, completionOffer, merge]
   exact selected
 
 private theorem completionRefusedDiscovery (before : RuntimeState) (operation : SemanticOperation)
@@ -365,7 +366,8 @@ private theorem completionRefusedDiscovery (before : RuntimeState) (operation : 
     InternalCommutation.ordinaryExecutionFrontier (programFor exactMetadata) before operation = {} := by
   have ordinary : ((programFor exactMetadata).identity.semanticProfile.value ==
       "cibseven-2.2.0-parallel-multi-instance-subprocess-draft") = false := by decide +kernel
-  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, refused]
+  have merge := isMergeTargetOperation_eq_false_of_profile (programFor exactMetadata) operation (by decide +kernel)
+  simp [InternalCommutation.ordinaryExecutionFrontier, ordinary, refused, merge]
 
 private theorem completionReadyFrontier (bindings : List VariableBinding) :
     InternalCommutation.deriveInternalExecutionFrontier (programFor exactMetadata) (completionReady bindings) =

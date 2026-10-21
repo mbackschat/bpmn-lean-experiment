@@ -231,4 +231,29 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
           all_goals simp_all [InternalScopeCreationSelection.apply]
   | _ => simp at found
 
+/-- CEA-OCCUR-01's entry record also excludes occurrences live before entry. When no occurrence of the entered
+definition was live, as definition-addressed selection requires, that conjunct keeps exactly the created child,
+so the record agrees with the definition-and-parent filter. -/
+theorem filter_fresh_inserted (occurrences : List RuntimeScopeOccurrence) (created : RuntimeScopeOccurrence)
+    (definition : DefinitionScopeId) (parent : Option ScopeOccurrenceId)
+    (createdDefinition : created.id.definitionScopeId = definition)
+    (noLive : ∀ old ∈ occurrences, old.id.definitionScopeId ≠ definition) :
+    (insertScopeOccurrence created occurrences).filter (fun scope =>
+        decide (scope.id.definitionScopeId = definition && scope.parent = parent) &&
+          !occurrences.any (·.id == scope.id)) =
+      (insertScopeOccurrence created occurrences).filter (fun scope =>
+        decide (scope.id.definitionScopeId = definition && scope.parent = parent)) := by
+  apply List.filter_congr
+  intro scope member
+  rcases (mem_canonicalInsertBy _ _ _ _).mp (by simpa only [insertScopeOccurrence] using member) with same | old
+  · subst same
+    have notOld : occurrences.any (·.id == scope.id) = false := by
+      apply Bool.eq_false_iff.mpr
+      intro found
+      obtain ⟨old, present, sameId⟩ := List.any_eq_true.mp found
+      simp only [beq_iff_eq] at sameId
+      exact noLive old present (by rw [sameId, createdDefinition])
+    simp only [notOld, Bool.not_false, Bool.and_true]
+  · simp [noLive scope old]
+
 end BpmnSemantics.SemanticProcess.InternalCommutation

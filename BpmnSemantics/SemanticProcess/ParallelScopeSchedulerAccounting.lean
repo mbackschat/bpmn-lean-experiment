@@ -219,6 +219,7 @@ theorem ParallelScopeSchedulerPhase.wait_declarations (program : Program)
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
         replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+            (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -259,6 +260,7 @@ theorem ParallelScopeSchedulerPhase.activity_frame_absent (program : Program)
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
         replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+            (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -296,6 +298,7 @@ theorem ParallelScopeSchedulerPhase.logical_time (program : Program)
         issued middle terminalPrefix issuedValid
       obtain ⟨scopeId, output, root, _, _, _, completed⟩ :=
         replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+            (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed

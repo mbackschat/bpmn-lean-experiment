@@ -163,11 +163,13 @@ theorem applyInternalOperationOccurrence_parallelScope_excluded_waits
       exact completeParallelScope_excluded_waits entry candidate.owner before after prior completed
     case completeScope =>
       obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+          (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis admitted scopeId
       rw [completeSelectedScope?, unmonitored, completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed
       exact completeScopeState_excluded_waits before after scopeId output prior completed
     all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some,
+        isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
 
 /-- Frozen Human, Service and token patches preserve absence at every actual batch successor. -/
 theorem applyInternalOccurrenceBatch_excluded_waits

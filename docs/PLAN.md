@@ -53,7 +53,8 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| At qualification | Repair Verify and push qualified work. | Owner authorized the fix on 2026-10-21, to start after the [concurrent-activations](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md) semantic checkpoint is green; push still needs an explicit request. `PC-MI-05` must open legitimate production admission and qualify PMIS recovery; [failed scheduled run](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) remains reproducible. Preserve the security fix and SDK hold; qualify clean HEAD before push, then resume delivery. |
+| At qualification | Repair Verify and push qualified work. | Owner authorized the fix and the push on 2026-10-21. The full Lean library must build again after the `890b010f` placeholder; the PMIS Temporal recovery witness reports as `todo` until `PC-MI-05` opens production admission. Preserve the security fix and SDK hold; qualify clean HEAD with the pre-push gate, then push. |
+| After push | Move example journeys out of the routine Lean build. | Owner-approved enabling task (2026-10-21): finite `*Conformance` journeys build in a separate `BpmnConformance` Lake library, run at family closure and in CI; new finite examples run as executable checks instead of kernel decisions. Exit: the routine library imports no moved module, a guard assigns every module to exactly one root, Verify and CI build both roots, the owning testing and setup documents describe the split, and the routine full-build time is measured before and after. Then `what-binds` lists a Lean definition's unfolding sites ([Finding 75](PROCESS-ASSESSMENT-LEDGER.md#finding-75)). |
 | At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. The [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns the complete work partition; this tracker counts only its selected exact-bound cohort. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
@@ -63,7 +64,7 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 | 6 | Extend Compensation/Transactions. | Targeting, repeated/MI retention, handler outcomes and Cancel propagation through shared retention/cancellation. |
 | 7 | Qualify the integrated target. | Cross-family journeys, disclosures, production browser and distribution gates; owner acceptance. Release/version/scale decisions remain separate. |
 
-Within each delivery batch, select bounded outcomes by shared mechanism, contract and affected consumers. Name the participating checklist IDs in the exact resume point, retaining one primary task and each ID's separate acceptance criteria. Reuse the same MEDIUM worker through related implementation, focused testing and corrections while its assumptions remain valid; a checklist row or helper completion alone does not require a new agent, commit or broad gate. Share applicable validation across the coherent change and reuse unchanged evidence under [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Preserve [cold-review boundaries and permitted reviewer continuity](REVIEW-POLICY.md#independent-cold-review-gate); batching cannot advance a dependent lane past an unreviewed checkpoint.
+Within each delivery batch, select bounded outcomes by shared mechanism, contract and affected consumers. Name the participating checklist IDs in the exact resume point, retaining one primary task and each ID's separate acceptance criteria. Reuse the same MEDIUM worker through related implementation, focused testing and corrections while its assumptions remain valid; a checklist row or helper completion alone does not require a new agent, commit or broad gate. Share applicable validation across the coherent change and reuse unchanged evidence under [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Under the owner direction of 2026-10-21 in [CLAUDE.md](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery), each checklist family takes one cold design review and one cold code review at closure plus correction audits, under the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate); failing tests may be repaired in batches inside the family before its closure review.
 
 Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements, HIGH accepts. Report progression only when requested.
 
@@ -77,17 +78,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-02`, the third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); the scope-control batch closed on 2026-10-21 with its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#independent-cold-review-receipt), while `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes. `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes, and `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
 
-Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through an explicit converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences, serving the concurrent clause of `PC-SCOPE-02`; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
+Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through a converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
 
-Acceptance blockers: implementation in both languages, the semantic checkpoint review, then the complete pipeline and closure.
+Acceptance blockers: checkpoint corrections and their audit, push qualification, then the complete pipeline and family closure.
 
-Current result: proposal approved ([receipt](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt)); core committed at `598e532a`; Lean lane and registration in the worktree. The single conformance module exceeded the 3 GiB container bound and was split; the [resource ledger](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md) owns the runs.
+Current result: core at `598e532a`, Lean and registration at `8e7d80b2`; the checkpoint corrections are implemented and their consumer modules build.
 
-Effort budget: 8 hours wall from 2026-10-21 for implementation to the semantic checkpoint, reassessed at the limit; the proposal stage used about 3 hours against its 2.
+Effort budget: 8 hours wall from 2026-10-21 to the semantic checkpoint, reassessed at the limit.
 
-Next action: record the split measurements, commit, run the complete pipeline once, then request the semantic checkpoint review.
+Next action: finish the full library build, commit the corrections with the placeholder removal, request the same reviewer's correction audit, run the pre-push gate on the clean HEAD and push; then the [example-journey move](#scheduled-delivery-batches), then family closure.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

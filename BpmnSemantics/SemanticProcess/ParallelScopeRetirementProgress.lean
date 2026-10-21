@@ -613,7 +613,9 @@ theorem ParallelScopeRemainingFrame.nonretirement_exit_refused (program : Progra
     have output : parentOutput = none := by
       cases parentOutput <;> simp [SequentialScopeProgram.operationAllowed] at allowed ⊢
     subst parentOutput
-    simp only [applyInternalOperationOccurrence?, running, control, resolved, original, bind, Option.bind_some] at applied refused
+    simp only [applyInternalOperationOccurrence?, running, control, resolved, original, bind, Option.bind_some,
+      isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true,
+      ↓reduceIte] at applied refused
     split at applied <;> try contradiction
     rename_i root unique
     split at applied <;> try contradiction

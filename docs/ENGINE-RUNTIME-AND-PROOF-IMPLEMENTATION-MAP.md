@@ -189,7 +189,7 @@ Registered [composition](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md#lea
 
 Two profiles preserve one internal standard-notation capability without execution. The BPMN data family is rejected. Cycles require bounded User Task or mixed-task profiles. Value domains: [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md#semantic-profile); Product 1 owns no form semantics. The closure-reviewed [Service Task incident and retry specification](capsules/SERVICE-TASK-INCIDENT-RETRY-SPEC.md) owns one literal-generation-1 incident and exact retry. Its successor adds exact incident-gated hosting-root cancellation only; it excludes general BPMN/operator or native Temporal cancellation, compensation, other incident generation, and Product 2 action state.
 
-The identity bound excludes Message, Effect, Event race, Call, ordinary Scope, and called roots. Only Activity issuing is checkpoint-approved; other issuing disciplines and general preservation remain absent.
+The identity bound excludes Message, Effect, Event race, Call, and called roots; Lean's Scope branch: `scopeIdentityBound`. Only Activity issuing is checkpoint-approved; other issuing and general preservation remain absent.
 
 The composed Activity-data profile carries both direct directions on one User Task occurrence. Additional or paired sets, optional or while-executing data, other Task hosts, collections, transformations, expressions and later ingress remain absent. Missing input may remain durably Running. Forms remain excluded; the [claim-assessment RC simulation](BPM-PLATFORM-BROWSER-WALKTHROUGH.md#rc-process-showcase-catalog) has a guided browser journey.
 

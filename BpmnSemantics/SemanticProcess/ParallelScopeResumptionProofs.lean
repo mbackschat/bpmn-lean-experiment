@@ -456,7 +456,8 @@ theorem ParallelScopeOwnerFrame.nonretirement_exit_refused (program : Program)
     have output : parentOutput = none := by
       cases parentOutput <;> simp [SequentialScopeProgram.operationAllowed] at allowed ⊢
     subst parentOutput
-    simp only [applyInternalOperationOccurrence?, running, frame.control, resolved, stableResolved, bind, Option.bind_some] at applied refused
+    simp only [applyInternalOperationOccurrence?, running, frame.control, resolved, stableResolved, bind, Option.bind_some,
+      isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true, ↓reduceIte] at applied refused
     rw [frame.scopes] at applied
     split at applied <;> try contradiction
     rename_i root unique
@@ -578,7 +579,8 @@ theorem closeScheduledTraced_owner_frame_or_exit (program : Program) (stable cur
                 .completeParallelMultiInstanceScope, .completeScope] := by
               cases operation <;> simp [SemanticOperation.kind] at body ⊢
               all_goals cases control : before.control <;>
-                simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+                simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some,
+                  isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
             obtain ⟨rfl, rfl⟩ := List.cons.inj shape
             exact Or.inr ⟨{
               fuel := nextFuel, index := position, ordinal := nextOrdinal

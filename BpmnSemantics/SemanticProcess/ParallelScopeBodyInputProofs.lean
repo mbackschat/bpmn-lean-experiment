@@ -524,6 +524,7 @@ private theorem phase_locals (program : Program) (analysis : ParallelScopeStart.
     · exact history_locals program selected owner issued current suffix history initialValid
     · have middleValid := history_locals program selected owner issued middle terminalPrefix history initialValid
       obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis analyzed)
+          (ParallelScopeStart.analyzed_not_embedded_completion program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed

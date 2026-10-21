@@ -465,8 +465,10 @@ theorem refused_operation_has_empty_discovery
     (match operation, state.control with
       | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
       | _, _ => ordinaryExecutionFrontier program state operation) = {} := by
+  have merge := isMergeTargetOperation_eq_false_of_profile program operation
+    (by simp [profile, structuredCompositionCheckpointProfileId])
   have ordinary : ordinaryExecutionFrontier program state operation = {} := by
-    simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, refused]
+    simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, refused, merge]
   cases operation <;> try exact ordinary
   case mergeExclusive id origin inputs output =>
     cases control : state.control <;> try exact ordinary
@@ -499,6 +501,8 @@ theorem enabled_operation_has_singleton_discovery
         | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
         | _, _ => ordinaryExecutionFrontier program state operation) = { offers := [offer] } := by
   have phase := admitted_enabled_operation_has_phase program analysis state after operation owner analyzed member bounded owned fired
+  have merge := isMergeTargetOperation_eq_false_of_profile program operation
+    (by simp [profile, structuredCompositionCheckpointProfileId])
   have ordinary (selected : (match operation with | .reachNoneEnd .. => (selectInternalEnd? state operation).isSome | _ => true) = true) :
       ∃ offer : InternalExecutionOffer, offer.operation = operation ∧ offer.successor = after ∧
         (∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) ∧
@@ -506,7 +510,7 @@ theorem enabled_operation_has_singleton_discovery
     ⟨{ alternative := .operation operation.id, operation, successor := after,
        preparation := prepareInternalTransition? program state operation }, rfl, rfl,
       fun prepared found => prepareInternalTransition_alternative program state operation prepared found,
-      by simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, fired]; cases operation <;> exact selected⟩
+      by simp [ordinaryExecutionFrontier, profile, structuredCompositionCheckpointProfileId, fired, merge]; cases operation <;> exact selected⟩
   cases operation
   all_goals try exact ordinary rfl
   case reachNoneEnd id origin input =>

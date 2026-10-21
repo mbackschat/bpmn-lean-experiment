@@ -477,6 +477,8 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
     deriveInternalExecutionFrontier program state = { offers := [offer] } ∧
       (∀ prepared, offer.preparation = some prepared → prepared.alternative = offer.alternative) := by
   have scalar := programEffectMappingValuePolicy_eq_scalar_of_profile profile (by decide +kernel)
+  have merge (operation : SemanticOperation) : isMergeTargetOperation program operation = false :=
+    isMergeTargetOperation_eq_false_of_profile program operation (by rw [profile]; decide +kernel)
   dsimp only
   constructor
   · apply deriveInternalExecutionFrontier_singleton program state operation
@@ -488,12 +490,12 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
     · have allowed := program_analysis_operations_allowed program analysis analyzed operation member
       cases operation <;> simp only [OperationAllowed] at allowed
       all_goals try contradiction
-      all_goals try (simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired]; done)
+      all_goals try (simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired, merge]; done)
       case reachNoneEnd id origin input =>
         obtain ⟨token, single, port⟩ : ∃ token, state.tokens = [token] ∧ token.placeId = input := by
           simpa [SerialFirePhase, operationInputs, StructuredComposition.isScopeCompletion] using serial_fire_phase program analysis
             state after (.reachNoneEnd id origin input) owner wellFormed analyzed scalar declared framed indexed member fired
-        simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired, selectInternalEnd?, single, port]
+        simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, fired, selectInternalEnd?, single, port, merge]
     · intro candidate included different
       have refused : fire? program candidate state = none := by
         cases selected : fire? program candidate state with
@@ -503,7 +505,7 @@ theorem serial_frontier_of_firing (program : Program) (analysis : Analysis) (sta
       have allowed := program_analysis_operations_allowed program analysis analyzed candidate included
       cases candidate <;> simp only [OperationAllowed] at allowed
       all_goals try contradiction
-      all_goals simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, refused]
+      all_goals simp [ordinaryExecutionFrontier, profile, serialBusinessTaskProfileId, refused, merge]
   · exact fun prepared selected => prepareInternalTransition_alternative program state operation prepared selected
 
 /-- Every indexed position either exposes its live external interaction, has completed, or enables a real declared operation. -/

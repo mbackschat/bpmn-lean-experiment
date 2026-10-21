@@ -51,21 +51,28 @@ theorem prepared_bounded_scope_candidate
         have permutation := filter_canonicalInsertBy_perm scopeOccurrenceBefore keep created
           state.scopeOccurrences (by simp [keep, created])
         simpa only [insertScopeOccurrence, absent] using permutation
-      have singletonExpanded := singleton
-      dsimp only [keep, created] at singletonExpanded
+      let keepFresh := fun scope : RuntimeScopeOccurrence =>
+        decide (scope.id.definitionScopeId = contract.definition && scope.parent = some owner) &&
+          !state.scopeOccurrences.any (·.id == scope.id)
+      have singletonFresh : (insertScopeOccurrence created state.scopeOccurrences).filter keepFresh = [created] := by
+        rw [← singleton]
+        exact filter_fresh_inserted _ created contract.definition (some owner) rfl fun old present same =>
+          fresh (by simp only [Bool.or_eq_true]; right; exact List.any_eq_true.mpr ⟨old, present, by simp [same]⟩)
+      have singletonExpanded := singletonFresh
+      dsimp only [keepFresh, created] at singletonExpanded
       suffices candidate : (do
-        let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keep with
+        let scope ← match (insertScopeOccurrence created state.scopeOccurrences).filter keepFresh with
           | [scope] => some scope | _ => none
         pure (canonicalFlowNodeOccurrenceDelta
           [← candidateScopeStart? program contract.operation owner scope] [])) =
         some { started := [start], ended := [] } by
         cases disposition : contract.disposition <;>
-          simpa only [keep, created, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
+          simpa only [keepFresh, created, makeInternalBoundedScopePreparation, InternalBoundedScopeSelection.apply,
             makeInternalBoundedScopeSelection, InternalScopeCreationSelection.apply,
             InternalBoundedScopeContract.operation, disposition, candidateFlowNodeOccurrenceDeltaForOperation?,
             candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
             flowNodeSelectedOperationOwner?, owned, bind, Option.bind, singletonExpanded] using candidate
-      rw [singleton]
+      rw [singletonFresh]
       change candidateScopeStart? program contract.operation owner created = some start at startFound
       simp only [bind, Option.bind, startFound, pure, Pure.pure]
       rfl

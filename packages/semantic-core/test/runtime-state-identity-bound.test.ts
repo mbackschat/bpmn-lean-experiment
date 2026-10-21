@@ -27,6 +27,7 @@ const counterFamilies = [
   ["User Task", "taskActivations"],
   ["Timer", "timerActivations"],
   ["Activity", "activityActivations"],
+  ["Scope", "scopeActivations"],
 ] as const;
 
 for (const [family, counterField] of counterFamilies) {

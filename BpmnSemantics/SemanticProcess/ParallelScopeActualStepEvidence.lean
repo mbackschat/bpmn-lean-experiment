@@ -97,8 +97,12 @@ theorem parallelScope_singleton_execution_cases (program : Program) (analysis : 
         replayed_final_root_completion program analysis admitted before after record rfl replay
       obtain ⟨scopeId, output, _, _, _, _, completion⟩ :=
         replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+            (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
       exact .rootCompletion scopeId output instanceId rfl completion completed
-    all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied <;> contradiction
+    all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some,
+      isMergeTargetOperation_eq_false_of_profile program _
+        (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted),
+      Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
 
 /-- Actual boundary reachability makes every committed Start originate at the initial state with its admitted identity. -/
 theorem ParallelScopeCommandBoundaryReachable.committed_start_from_initial

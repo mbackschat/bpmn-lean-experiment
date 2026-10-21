@@ -143,6 +143,18 @@ def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : 
     | .notStarted, .startProcess _ _ _ bindings => (programStartCapacity program bindings).map (·.closureBound)
     | _, _ => (programStateCapacity program state).map (·.closureBound)
 
+/-- An admitted parallel Multi-Instance Program has no merge target, so its scope completion stays
+definition-addressed. -/
+theorem analyzed_not_embedded_completion (program : Program) (analysis : ProgramAnalysis)
+    (admitted : analyzeProgram program = some analysis) :
+    program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft" := by
+  cases selected : programSelected program with
+  | false => simp [analyzeProgram, selected] at admitted
+  | true =>
+      simp only [programSelected, beq_iff_eq] at selected
+      rw [selected]
+      decide +kernel
+
 /-- A PMIS-admitted Program is not of the nested scope-data profile, so its scope entries and
 completions are exactly the undeclared ones. -/
 theorem analyzed_not_nested (program : Program) (analysis : ProgramAnalysis)

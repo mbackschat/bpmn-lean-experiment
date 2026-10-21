@@ -107,7 +107,13 @@ export function deriveInternalExecutionFrontier<Refusal>(
     // CEA-OCCUR-01 and CEA-QUIESCE-01: merge-target scope operations are offered per owning occurrence, unprepared, so
     // they publish only as singleton frontiers; the definition-addressed attempt would refuse a second live occurrence.
     if (isMergeTargetOperation(program, operation)) {
-      for (const candidate of internalOperationOccurrences(program, state, operation.id) ?? []) {
+      const candidates = internalOperationOccurrences(program, state, operation.id);
+      // Discovery fails only on a malformed Program binding; fail closed as the Multi-Instance branch does.
+      if (candidates === null) {
+        preparationFailed = true;
+        continue;
+      }
+      for (const candidate of candidates) {
         const successor = applyInternalOperationOccurrence(program, state, candidate);
         if (successor !== null) offers.push({ alternative: internalOperationOccurrenceAlternative(operation.id, candidate.owner),
           step: { operation, owner: candidate.owner, successor }, preparation: null });

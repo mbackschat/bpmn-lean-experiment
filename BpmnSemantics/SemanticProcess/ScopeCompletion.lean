@@ -173,8 +173,8 @@ theorem completeScopeOccurrenceState_selected (state completed : RuntimeState)
         same ▸ (by simpa using ready.2), completion⟩
 
 /-- CEA-ISOLATE-01 for a child's completion: tokens gain only the parent's continuation, only the completed
-occurrence leaves, and no wait changes, so every other occurrence of the same definition keeps its tasks,
-tokens and parent. -/
+occurrence and its variable scopes leave, and no wait changes, so every other occurrence of the same
+definition keeps its tasks, tokens, variables and parent. -/
 theorem completeQuiescentScope_child_frame (state completed : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId) (output : ControlPlaceId)
     (child : occurrence.parent = some parent)
@@ -182,6 +182,8 @@ theorem completeQuiescentScope_child_frame (state completed : RuntimeState)
     completed.tokens = addToken state.tokens output parent ∧
       completed.scopeOccurrences = state.scopeOccurrences.filter (fun candidate =>
         decide (candidate.id ≠ occurrence.id)) ∧
+      completed.variables.scopes = state.variables.scopes.filter (fun scope =>
+        decide (scope.owner ≠ occurrence.id)) ∧
       completed.waits = state.waits ∧ completed.messageWaits = state.messageWaits ∧
       completed.timerWaits = state.timerWaits ∧ completed.effectWaits = state.effectWaits ∧
       completed.control = state.control := by
@@ -193,7 +195,7 @@ theorem completeQuiescentScope_child_frame (state completed : RuntimeState)
     | (split at completion
        · simp only [Option.some.injEq] at completion
          subst completion
-         exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, by simp [control]⟩
+         exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
        · contradiction)
 
 /-- Successful completion exposes its exact selected rewrite so downstream preservation proofs

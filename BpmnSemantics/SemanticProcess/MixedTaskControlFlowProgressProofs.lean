@@ -451,7 +451,8 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
 open InternalCommutation in
 theorem refused_operation_has_empty_discovery
     (program : Program) (analysis : Analysis) (state : RuntimeState) (operation : SemanticOperation)
-    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (analyzed : programAnalysis program = some analysis) (indexed : AtPosition program analysis state)
     (refused : fire? program operation state = none) :
     (match operation, state.control with
@@ -483,7 +484,8 @@ open InternalCommutation in
 theorem enabled_operation_has_singleton_discovery
     (program : Program) (analysis : Analysis) (state after : RuntimeState) (operation : SemanticOperation)
     (owner : ScopeOccurrenceId)
-    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (declared : SerialBusinessTask.DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
@@ -560,7 +562,8 @@ open InternalCommutation in
 /-- Discovery preserves the actual Merge alternative and preparation, as well as ordinary operation offers. -/
 theorem frontier_of_firing (program : Program) (analysis : Analysis) (state after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
-    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (declared : SerialBusinessTask.DeclaredRoot program owner) (framed : RootFrame owner state)
     (indexed : AtPosition program analysis state) (member : operation ∈ program.operations)
@@ -609,7 +612,8 @@ theorem settled_position_depth_zero (program : Program) (analysis : Analysis) (s
 
 open InternalCommutation in
 theorem settled_frontier (program : Program) (analysis : Analysis) (state : RuntimeState)
-    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (owner : ScopeOccurrenceId) (wellFormed : programWellFormed program = true)
     (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar) (declared : SerialBusinessTask.DeclaredRoot program owner)
     (framed : RootFrame owner state) (indexed : AtPosition program analysis state)
@@ -631,7 +635,8 @@ open InternalCommutation in
 /-- The actual singleton scheduler drains the indexed depth, preserving actual reachability independently of optional publication records. -/
 theorem scheduled_closure (program : Program) (analysis : Analysis) (baseline state : RuntimeState)
     (owner : ScopeOccurrenceId) (commandId : SemanticId) (fuel index ordinal : Nat) (frontier : Option Vertex)
-    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
+    (ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (wellFormed : programWellFormed program = true) (analyzed : programAnalysis program = some analysis) (scalar : programEffectMappingValuePolicy program = .scalar)
     (declared : SerialBusinessTask.DeclaredRoot program owner) (framed : RootFrame owner state)
     (position : Position program analysis state frontier)
@@ -690,7 +695,8 @@ theorem committed_start_scheduled_closure (program : Program) (analysis : Analys
     closed.failed = false ∧ AtPosition program analysis closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed instanceId) := by
   have scalar := mixedProfile_effectMapping_scalar program profile
-  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft" := by
     rcases profile with profile | profile <;> simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
   dsimp only
   obtain ⟨owner, instanceEq, declared, framed, frontier, position, available, canonical⟩ :=
@@ -768,7 +774,8 @@ theorem reached_scheduled_closure_is_bounded (program : Program) (analysis : Ana
       (admitStimulus program initialState (.startProcess startCommandId processId instanceId bindings)).state closed.state ∧
       (closed.state.waits ≠ [] ∨ closed.state.effectWaits ≠ [] ∨ closed.state.control = .completed instanceId) := by
   have scalar := mixedProfile_effectMapping_scalar program profile
-  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
+  have ordinaryProfile : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+      program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft" := by
     rcases profile with profile | profile <;> simp [profile, mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId]
   obtain ⟨owner, instanceEq, _, declared, framed, indexed, _⟩ :=
     reached_invariant program analysis startCommandId processId instanceId bindings state profile analyzed committed reachable

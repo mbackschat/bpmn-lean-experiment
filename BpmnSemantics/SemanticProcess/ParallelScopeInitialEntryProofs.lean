@@ -588,6 +588,7 @@ private theorem initial_root_completion_refused (program : Program)
     · exact owned
   obtain ⟨scopeId, output, root, declared, unique, owner, completed⟩ :=
     replayed_scope_completion_execution program current after record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+        (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
   obtain ⟨terminalRoot, _, rootOwned, rootParent, rootMember, _, _⟩ :=
     replayed_final_root_completion program analysis admitted current after record kind replayed
   have rootIdentity : terminalRoot.id = parent := by

@@ -195,9 +195,9 @@ The preserved state relation is the nested scope-control relation extended to se
 - command classification;
 - the canonical trace, including the corrected entry start.
 
-Workflow, Run, Update and history identities stay host facts. Per-task-occurrence Update identity decides the ordering and deduplication of concurrent completions, and it distinguishes same-element tasks by activation. The checkpoint must show that a completion addressed to one activation is never applied to another after recovery.
+Workflow, Run, Update and history identities stay host facts. Per-task-occurrence Update identity decides the ordering and deduplication of concurrent completions, and it distinguishes same-element tasks by activation. Closure must show that a completion addressed to one activation is never applied to another after Worker replacement or accepted-result recovery; the checkpoint pipeline covers the primary run, the isolation run and history replay only.
 
-The multiplicity-weighted bound keeps every reachable open-task set within the concurrent-wait ceiling that hosting already carries. The profile admits no values, so publication bytes are fixed by the definition and its weighted task count. The checkpoint measures the largest retained model against the 192 KiB query and terminal ceilings of the [lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
+The multiplicity-weighted bound keeps every reachable open-task set within the concurrent-wait ceiling that hosting already carries. The profile admits no values, so publication bytes are fixed by the definition and its weighted task count. Closure measures the largest retained model against the 192 KiB query and terminal ceilings of the [lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md).
 
 ## Evidence and acceptance
 
@@ -258,7 +258,8 @@ Growth makes the following passages false, and the implementation corrects them 
 
 - in the nested scope-control capsule, its single-occurrence statement and its reopen condition on a second live occurrence;
 - in the [embedded owner](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md), its exclusion of repeated or concurrent activation;
-- in the [runtime-state invariant specification](../RUNTIME-STATE-INVARIANT-SPEC.md), `RSI-BOUND-01`'s statement that ordinary Scope remains unstated.
+- in the [runtime-state invariant specification](../RUNTIME-STATE-INVARIANT-SPEC.md), `RSI-BOUND-01`'s statement that ordinary Scope remains unstated;
+- in the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md#definition-scope-entry-and-completion), `completeScope`'s refusal of duplicate occurrences, which merge-target completion in this profile no longer applies.
 
 ## Independent cold-review receipt
 

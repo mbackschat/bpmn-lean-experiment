@@ -50,7 +50,7 @@ Dispositions are a closed set:
 |---|---|---|
 | Plan scope, bounds and required consumers | [01](#finding-01), [05](#finding-05), [07](#finding-07), [16](#finding-16), [17](#finding-17), [26](#finding-26), [27](#finding-27), [52](#finding-52), [58](#finding-58), [77](#finding-77) | [01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01), [17](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-17), [58](process-assessment/VERIFICATION-LEDGER.md#finding-58) |
 | Establish claims and independent semantic evidence | [02](#finding-02), [11](#finding-11), [12](#finding-12), [41](#finding-41), [42](#finding-42), [43](#finding-43), [44](#finding-44), [46](#finding-46), [47](#finding-47), [48](#finding-48), [51](#finding-51), [54](#finding-54), [62](#finding-62) | [02](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-02), [12](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-12), [46](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-46), [47](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-47), [54](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-54) |
-| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
+| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78), [82](#finding-82) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
 | Maintain owned facts and complete correction sweeps | [06](#finding-06), [10](#finding-10), [14](#finding-14), [15](#finding-15), [37](#finding-37), [45](#finding-45), [55](#finding-55), [59](#finding-59) | [06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06), [14](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-14), [15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15), [45](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-45) |
 | Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
@@ -1421,7 +1421,7 @@ The owner answered four recommendations with "take all steps with your recommend
 A complete Lean gate was started as a consumer-discovery tool before the batch it should qualify was final, so it could not serve as that batch's acceptance gate and a second complete run became necessary.
 
 Instances
-: 3
+: 4
 
 Disposition
 : `executable guard`
@@ -1434,6 +1434,8 @@ Evidence
 After threading the Property-path policy through widely imported owners, the agent ran the full `./scripts/lake.sh build` to find remaining consumers while the new conformance module was still uncompiled and one proof owner was edited mid-run. The capsule and testing policy select focused owner/consumer builds while stabilizing and one complete gate for the coherent batch. Lake reuses unchanged artifacts, which limits the waste, but the run still competed for the host and cannot be cited as acceptance. The same session then edited only a docstring in `CanonicalBusinessValue.lean`, which Lake keys by content and 835 modules import; it was reverted before the next gate. In the same session, the complete gate then ran while the known `890b010f` replay failure still blocked 63 dependents, and its approved alias fix was applied only afterwards; the next run found a second site of the same alias class by compilation instead of by static enumeration. Applying the fix first and enumerating the seven sites statically would have needed one incremental run instead of three. No repository fact observes the class: the build target is chosen in the session before any tracked artifact changes, so question 14 remains the control.
 
 Instance 3, 2026-10-14: the root ran the full `./scripts/lake.sh build` as "dependency warming" before delegating `PC-DATA-03` effect-data work, although only documentation had changed since the last build and `890b010f` was known red. Warm outputs made it a two-second no-op, but a recurrence refutes the `unguardable` disposition: the wrapper can observe the class. It now refuses `build` without a narrow target, any package, facet or umbrella spelling, and every `test`, unless `LEAN_FULL_GATE` names the owning gate or Lean batch; `verify.sh` and `test:semantic` declare theirs. The guard makes a full build deliberate; whether the named batch is final remains question 14.
+
+Instance 4, 2026-10-21: the concurrent-activations checkpoint corrections added a merge-target branch to `applyInternalOperationOccurrence?`, and five labelled complete builds then surfaced the proof modules that unfold it one layer at a time, because Lake skips every dependent of a failed module. Each run named its gate, so the wrapper guard could not distinguish discovery from qualification. A static pass over the changed definition's unfolding sites, done only in the last round, found every remaining site before one green dependent build. That pass is the missing executable step: `what-binds` should list a Lean definition's unfolding sites before the first build.
 
 ### Finding 76
 
@@ -1542,6 +1544,23 @@ Evidence
 **First observed:** `PC-DATA-03` effect-data hosting lane on 2026-10-14.
 
 An escaped `&&` after the receipt wrapper's `--` reached pnpm as two literal arguments, so the build failed and the receipt recorded a command nobody meant to run. A direct `mvnw` call passed the CIB build directory relative to the project root while Maven resolved it against the runner's `pom.xml`, so test output landed in an untracked `runners/cibseven/runners/` tree that had to be moved aside. Both were typed interactively, and the repository's own [CIB test runner](../scripts/run-cibseven-tests.ts) already resolves the directory absolutely, so no tracked fact observes the class. Reusable question: before replacing a repository wrapper with a hand-built command, does every operator stay outside the wrapped argument list and every path stay absolute?
+
+### Finding 82
+
+A complete gate already known red for an unrelated reason was skipped instead of run and compared, so new failures in the same gate went undetected.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [concurrent embedded activations checkpoint corrections](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt)
+
+**First observed:** `PC-SCOPE-02` semantic checkpoint review on 2026-10-21.
+
+The full Lean library was red at the `890b010f` placeholder, so the checkpoint built only the closures of its own conformance modules while it edited shared owners: the frontier, occurrence application, replay, the relation and the lifecycle record. The reviewer found the gap; the corrections' full builds then exposed 24 consumer modules in other profiles that needed repair, and a latent umbrella import collision from the placeholder commit itself. Lake keeps building independent targets past a failed module, so the gate could have been run and its failing set compared with the known one. Review question: when a complete gate is known red, was it still run after shared-owner edits, and does its failing-module set equal the known baseline?
 
 ## Update rule
 

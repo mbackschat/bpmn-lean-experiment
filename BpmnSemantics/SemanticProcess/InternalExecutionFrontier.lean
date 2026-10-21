@@ -32,7 +32,7 @@ def ordinaryExecutionFrontier (program : Program) (state : RuntimeState)
   -- so they publish only as singleton frontiers; the definition-addressed path refuses a second live occurrence.
   else if isMergeTargetOperation program operation then
     match internalOperationOccurrences? program state operation.id with
-    | none => {}
+    | none => { preparationFailed := true }
     | some candidates => { offers := candidates.filterMap fun candidate =>
         (applyInternalOperationOccurrence? program state candidate).map fun successor =>
           { alternative := .operationOccurrence candidate.operationId candidate.owner,

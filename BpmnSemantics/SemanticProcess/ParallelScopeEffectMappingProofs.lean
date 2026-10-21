@@ -260,6 +260,7 @@ private theorem phase_outputs (program : Program) (analysis : ParallelScopeStart
     · exact history_outputs program analysis analyzed selected owner issued current suffix history initialValid
     · have middleValid := history_outputs program analysis analyzed selected owner issued middle terminalPrefix history initialValid
       obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program middle current record kind replayed (ParallelScopeStart.analyzed_not_nested program analysis analyzed)
+          (ParallelScopeStart.analyzed_not_embedded_completion program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program middle scopeId output unbounded] at completed
@@ -424,6 +425,7 @@ private theorem singleton_process_frame (program : Program) (analysis : Parallel
       exact completeParallelScope_preserves_process completed
     case completeScope =>
       obtain ⟨scopeId, output, _, _, _, _, completed⟩ := replayed_scope_completion_execution program before after record rfl replay (ParallelScopeStart.analyzed_not_nested program analysis analyzed)
+          (ParallelScopeStart.analyzed_not_embedded_completion program analysis analyzed)
       obtain ⟨unmonitored, unbounded⟩ := admitted_completion_unwrapped program analysis analyzed scopeId
       rw [completeSelectedScope?, unmonitored,
         completeBoundedScope_eq_completeScope_of_unbounded program before scopeId output unbounded] at completed
@@ -434,7 +436,8 @@ private theorem singleton_process_frame (program : Program) (analysis : Parallel
       all_goals repeat' (split at completed <;> try contradiction)
       all_goals cases Option.some.inj completed; rfl
     all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some,
+        isMergeTargetOperation_eq_false_of_profile program _ (by rw [profile]; decide +kernel), Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
 
 /-- Required scalar reads remain available at every actual command prefix.
 Admission supplies the checked predecessor data; actual writes preserve lookup,

@@ -54,6 +54,7 @@ private theorem native_root_completion_facts (program : Program) (analysis : Pro
     simpa only [metadata] using kind
   obtain ⟨scopeId, output, root, member, unique, owner, completed⟩ :=
     replayed_scope_completion_execution program state after record recordKind replayed (ParallelScopeStart.analyzed_not_nested program analysis admitted)
+        (ParallelScopeStart.analyzed_not_embedded_completion program analysis admitted)
   have allowed := analyzeProgram_operation_allowed program analysis admitted _ member
   have noOutput : output = none := by
     cases output <;> simp [SequentialScopeProgram.operationAllowed] at allowed ⊢

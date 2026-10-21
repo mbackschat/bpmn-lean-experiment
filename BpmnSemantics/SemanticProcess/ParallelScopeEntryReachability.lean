@@ -398,6 +398,8 @@ theorem applyInternalOperationOccurrence_admitted_phases (program : Program)
     cases selected : ParallelScopeStart.programSelected program with
     | false => simp [ParallelScopeStart.analyzeProgram, selected] at admitted
     | true => simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
+  have merge (operation : SemanticOperation) : isMergeTargetOperation program operation = false :=
+    isMergeTargetOperation_eq_false_of_profile program operation (by rw [profile]; decide +kernel)
   obtain ⟨operation, resolved, identity, replayed⟩ := applyInternalOperationOccurrence_replay_record
     program before after candidate profile applied
   let record : InternalTransitionRecord := {
@@ -417,7 +419,8 @@ theorem applyInternalOperationOccurrence_admitted_phases (program : Program)
     case completeScope =>
       exact Or.inr (Or.inr (Or.inr ⟨rfl, replayed_final_root_completion program analysis admitted before after record rfl replay⟩))
     all_goals cases control : before.control <;>
-      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied <;> contradiction
+      simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some, merge,
+        Bool.false_eq_true, Bool.false_and, ↓reduceIte] at applied <;> contradiction
 
 
 theorem replayed_scope_sublist (program : Program) (before after : RuntimeState)

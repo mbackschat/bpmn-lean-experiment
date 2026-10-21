@@ -85,6 +85,8 @@ export function enterConcurrentChildScope(
   entry: ChildScopeEntry,
 ): RuntimeState | null {
   if (state.control.kind !== ControlStateKind.Running) return null;
+  // Without the arriving token, removeToken would consume nothing while the child is still issued.
+  if (!tokenOwners(state.controlTokens, entry.input).some((owner) => sameScopeOccurrence(owner, parent))) return null;
   const issued = insertChildScope(state, parent, entry, freshChildScope(state, parent, entry.childScopeId));
   return { ...issued, controlTokens: removeToken(issued.controlTokens, entry.input, parent) };
 }
