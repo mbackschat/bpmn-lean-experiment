@@ -65,7 +65,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 23
+: 24
 
 Disposition
 : `executable guard`
@@ -80,6 +80,8 @@ The enumerator reports constraints only when invoked on every actual added/grown
 Retained recurrence evidence: [Finding 01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01).
 
 Twenty-third instance, nested scope-data closure on 2026-10-18: a new cost-ledger row shifted the rank and row-count claims that `scripts/capsule-cost-comparison.test.ts` checks, and only `capsule-cost.test.ts` was run before commit; the warm closure review found it.
+
+Twenty-fourth instance, nested scope-control closure on 2026-10-21: the registration commit grew the pipeline catalog, the evidence-free registry and the differential tests without running the guards that bind them, so the warm-ceiling guard, the profile-authority guard and the gate-reachability guard first failed in the closure infrastructure gate. The guards held before acceptance; the cost was a closure delay, so the disposition stands and the registration step must run the infrastructure guards `what-binds` names for the registry paths.
 
 ### Finding 02
 

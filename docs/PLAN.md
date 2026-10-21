@@ -81,13 +81,13 @@ Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope f
 
 Deliverable: ordinary embedded scopes nested to depth three, composing User Tasks through Parallel blocks and separate child Ends, that complete at exact owned quiescence with outside parent work preserved, through Lean, core, hosting and public registration. Mixed activities and Exclusive decisions stay later increments.
 
-Acceptance blockers: the pipeline ceiling for three new cases (owner decision) and the gates.
+Acceptance blockers: the closure review.
 
-Current result: the checkpoint is approved, the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records the gates and the Finding 79 repair passed the Lean gate; the remaining guards fail at 123 × 1,300 ms over the 156,000 ms ceiling.
+Current result: the checkpoint is approved and every closure gate passes; the owner-directed ceiling of 130 cases and two registration repairs made the infrastructure and differential gates green at `2a235683`, and the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records the gates, cost and self-assessment.
 
 Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
 
-Next action: after the owner raises the ceiling and its hosted allowance, run the infrastructure guards once, record the cost row and request the warm closure review.
+Next action: run the warm closure review on the closure record, then set the lifecycle, maps and checklist status and select `PC-SCOPE-02`.
 
 Oracle: a first child End or a wrong-parent completion completes a nested scope early.
 
