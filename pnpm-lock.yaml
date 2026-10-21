@@ -331,8 +331,8 @@ importers:
         specifier: 19.2.4
         version: 19.2.4(@types/react@19.2.18)
       vite:
-        specifier: 7.3.6
-        version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
+        specifier: 7.3.7
+        version: 7.3.7(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
 
   platform/contracts:
     dependencies:
@@ -486,8 +486,8 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
       vite:
-        specifier: 7.3.6
-        version: 7.3.6(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
+        specifier: 7.3.7
+        version: 7.3.7(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0)
 
   showcase/m1-definition-deployment:
     devDependencies:
@@ -2195,8 +2195,8 @@ packages:
     resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
 
-  vite@7.3.6:
-    resolution: {integrity: sha512-4XP60spRGjSZFf1qYH+dJIkK2znL3zQfl9KkOV9MkkRR/3Dls0dxaBsQPTloEc5BLXWPL9vsOxopxyKoMmDueg==}
+  vite@7.3.7:
+    resolution: {integrity: sha512-AHEzTORMbi7/7aXp7w7KZ5+DCUdSeLsJz0grY8xHpc9DHdYb0vQu6DqJfm2tOw3gDExNgPgnJTXxM6syYFHaCA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -3691,7 +3691,7 @@ snapshots:
 
   uuid@11.1.1: {}
 
-  vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0):
+  vite@7.3.7(@types/node@24.13.3)(jiti@2.7.0)(terser@5.49.0):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.5)
