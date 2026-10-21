@@ -79,15 +79,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: `PC-SCOPE-02`, the third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); the scope-control batch closed on 2026-10-21 with its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#independent-cold-review-receipt), while `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes. `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
 
-Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), uncontrolled merge into User Tasks and embedded Sub-Processes with independent concurrent occurrences, serving the concurrent clause of `PC-SCOPE-02` and the merge clause of `PC-CF-07`; re-entry waits for the scope extension of `PC-CF-06`.
+Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through an explicit converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences, serving the concurrent clause of `PC-SCOPE-02`; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
 
 Acceptance blockers: the proposal, its Temporal preflight and its cold review.
 
-Current result: the cold review rejected the draft `34721c6a`: the BPMN account holds, but join ownership under concurrent occurrences, the synthetic merge's public projections, the reused admission owner's single-input task arity and the shared selections' consumers were unaccounted, so a redesign needs a new cold review.
+Current result: after the cold review rejected `34721c6a`, the redesign uses the real `mergeExclusive`, excludes joins inside merge-target bodies, adds occurrence-addressed variants beside the existing selections and names their consumers; it awaits a new cold review.
 
 Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review.
 
-Next action: redesign without joins inside merge-target bodies, with stated projections, named consumers and occurrence-addressed variants beside the existing selections, then request a new cold review.
+Next action: run the new cold proposal review of the redesign and apply its verdict.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 
