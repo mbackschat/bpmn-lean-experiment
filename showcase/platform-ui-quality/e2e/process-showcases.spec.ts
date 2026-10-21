@@ -3,6 +3,15 @@ import { installPublicApiFixtures } from "./fixtures.ts";
 import { fileURLToPath } from "node:url";
 import { buildProcessShowcaseCatalog } from "../../../scripts/rc-showcase-catalog.ts";
 
+/**
+ * Catalog sizes as the web build injects them (platform/apps/web/vite.config.ts): the model corpus grows with every
+ * retained model, so a literal count goes stale and fails on unrelated corpus additions.
+ */
+async function catalogCounts(): Promise<{ all: number; human: number }> {
+  const entries = await buildProcessShowcaseCatalog(fileURLToPath(new URL("../../../", import.meta.url)));
+  return { all: entries.length, human: entries.filter((entry) => entry.showcase?.mode === "human").length };
+}
+
 test("showcase descriptions identify their BPMN processes before preparation @responsive", async ({ page }) => {
   await installPublicApiFixtures(page);
   await page.goto("/#/definitions?process=Unrelated_Process&version=1&view=showcases&model=claim-assessment-with-input-and-decision");
@@ -148,6 +157,7 @@ test("showcase disclosures use explicit Show and Hide buttons and expand inline 
 });
 
 test("showcases distinguish manual work, simulated participants and retained engine evidence @responsive", async ({ page }) => {
+  const counts = await catalogCounts();
   await installPublicApiFixtures(page);
   await page.route("**/rc-showcase-runtime.json", (route) => route.fulfill({ status: 404 }));
   await page.goto("/");
@@ -157,7 +167,7 @@ test("showcases distinguish manual work, simulated participants and retained eng
   await page.keyboard.press("Enter");
   const catalog = page.getByRole("region", { name: "Process showcases" });
   await expect(catalog.getByRole("heading", { name: "Explore process showcases", exact: true })).toBeFocused();
-  await expect(catalog.locator("[data-model-id]")).toHaveCount(3);
+  await expect(catalog.locator("[data-model-id]")).toHaveCount(counts.human);
   await catalog.getByLabel("Include automated examples and engine models").check();
   await catalog.getByLabel("Find a process or BPMN element").fill("Transaction");
   await expect(catalog.locator("[data-model-id]")).toHaveCount(1);
@@ -173,7 +183,7 @@ test("showcases distinguish manual work, simulated participants and retained eng
   await expect(catalog.getByRole("button", { name: "Explore Withdraw a resource reservation", exact: true })).toBeFocused();
   await catalog.getByLabel("Find a process or BPMN element").fill("");
   await catalog.getByLabel("Include automated examples and engine models").check();
-  await expect(catalog.locator("[data-model-id]")).toHaveCount(45);
+  await expect(catalog.locator("[data-model-id]")).toHaveCount(counts.all);
   await catalog.getByRole("button", { name: "Explore Prepare two work items in parallel", exact: true }).click();
   await expect(catalog).toContainText("metadata-free");
   await expect(catalog.getByRole("button", { name: "Prepare this showcase" })).toHaveCount(0);
@@ -211,7 +221,7 @@ for (const marker of [null, { kind: "rcShowcaseRuntime", version: 1 }, { kind: "
       ? route.fulfill({ status: 404 }) : route.fulfill({ json: marker }));
     await page.goto("/#/definitions?view=showcases");
     const catalog = page.getByRole("region", { name: "Process showcases" });
-    await expect(catalog.locator("[data-model-id]")).toHaveCount(3);
+    await expect(catalog.locator("[data-model-id]")).toHaveCount((await catalogCounts()).human);
     await expect(catalog).toContainText("Tasks wait for you");
     await page.goto("/#/definitions?view=showcases&model=claim-assessment-with-input-and-decision");
     await expect(catalog.getByRole("button", { name: "Prepare this showcase" })).toBeDisabled();
