@@ -1,0 +1,94 @@
+# locmetry project policy: `locmetry --schema config` owns the contract.
+version = 1
+
+[categories]
+historical = "Frozen copies kept as evidence, not maintained source"
+experiment = "Provisional, separately gated Lean experiments"
+proof = "Lean laws and preservation theorems behind the assurance claim"
+lean-witness = "Finite Lean conformance witnesses and their fixtures"
+test-harness = "Reusable test and calibration infrastructure"
+test-support = "Browser-journey helpers and Playwright configuration"
+tooling = "Repository gates, guards and generators"
+deployment = "Container and evaluation-distribution deployment"
+
+[[languages.mappings]]
+id = "bpmn-xml"
+match = ["**/*.bpmn"]
+language = "XML"
+
+# An override, because the frozen tree contains conventional test directories.
+[[overrides]]
+id = "frozen-a12-adoption"
+match = ["adoption/a12/legacy/source-tree/**"]
+purpose = "other"
+category = "historical"
+reason = "adoption/a12/legacy/README.md: frozen copy, not a source root or build input"
+
+[[rules]]
+id = "project-test-suffixes"
+match = ["**/*.{integration,platform,temporal,temporal-serial,type}-test.ts"]
+purpose = "test"
+category = "test"
+reason = "Project test-lane suffixes beside the conventional .test.ts"
+
+[[rules]]
+id = "showcase-test-support"
+match = ["showcase/*/e2e/**", "showcase/*/playwright*.config.ts"]
+purpose = "test"
+category = "test-support"
+reason = "Support for the showcase Playwright acceptance lanes"
+
+[[rules]]
+id = "test-harness"
+match = ["packages/temporal-adapter/testkit/**", "packages/bpmn-source/calibration/**"]
+purpose = "test"
+category = "test-harness"
+reason = "Temporal refinement testkit and optional calibration lanes"
+
+[[rules]]
+id = "lean-experiments"
+match = ["BpmnSemantics/Experiments/**"]
+purpose = "production"
+category = "experiment"
+reason = "CLAUDE.md: provisional and separately gated"
+
+[[rules]]
+id = "lean-witnesses"
+match = ["BpmnSemantics/**/*Conformance.lean", "BpmnSemantics/**/*Fixture.lean", "BpmnSemantics/**/*Fixtures.lean"]
+purpose = "test"
+category = "lean-witness"
+reason = "Conformance modules own finite witnesses, not quantified laws"
+
+[[rules]]
+id = "lean-proofs"
+match = ["BpmnSemantics/**/*{Proof,Proofs,Law,Laws,Preservation,Soundness}.lean"]
+purpose = "production"
+category = "proof"
+reason = "Quantified laws and preservation theorems"
+
+[[rules]]
+id = "product-outside-src"
+match = [
+  "packages/temporal-adapter/runner/{cli,examples}/**",
+  "model-corpus/*.ts",
+  "platform/**/migrations/*.sql",
+  "platform/**/vite.config.ts",
+  "platform/apps/web/index.html",
+]
+purpose = "production"
+category = "implementation"
+reason = "Maintained product source outside the conventional src layouts"
+
+[[rules]]
+id = "deployment"
+match = ["Dockerfile", ".dockerignore", "compose.yaml", "deploy/**"]
+purpose = "production"
+category = "deployment"
+reason = "Container image and evaluation distribution"
+
+[[rules]]
+id = "repository-tooling"
+match = ["scripts/**"]
+purpose = "production"
+category = "tooling"
+reason = "Maintained gates, guards and generators; conventional tests inside stay tests"

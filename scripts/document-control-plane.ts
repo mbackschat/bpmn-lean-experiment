@@ -365,6 +365,7 @@ function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
     case "compose.yaml":
       return [AreaId.TemporalHosting, AreaId.BpmPlatform];
     case ".gitignore":
+    case ".locmetryrc":
     case ".node-version":
     case ".nvmrc":
     case "LICENSE":
