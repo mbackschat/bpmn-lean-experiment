@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved-with-required-edits
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and delivery boundary
 
@@ -160,4 +160,4 @@ Closure cost: `5740dc39..2a235683` measures code `+1640/-194` and documentation 
 |---|---|---|---|---|
 | Proposal | `c83ee6ff` | `fork-turns-none` | `approve-with-required-edits` | `4de33975, 255026a2, bc6e6564, owner-authorized` |
 | Semantic checkpoint | `7f9a4cc7` | `fork-turns-none` | `approve-with-required-edits` | `ef54af62, 4a8bdb3b` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `6ca6c760` | `fork-turns-none` | `approve-with-required-edits` | `b83c24e7` |

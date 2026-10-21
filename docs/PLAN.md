@@ -77,18 +77,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-01`, the second batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches), proposed by the [nested scope-control capsule](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#status), which grows the embedded completion profile; the serial scope-data batch is closed. `PC-SCOPE-02`/`04` follow. Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-02`, the third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); the scope-control batch closed on 2026-10-21 with its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#independent-cold-review-receipt), while `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes. `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
 
-Deliverable: ordinary embedded scopes nested to depth three, composing User Tasks through Parallel blocks and separate child Ends, that complete at exact owned quiescence with outside parent work preserved, through Lean, core, hosting and public registration. Mixed activities and Exclusive decisions stay later increments.
+Deliverable: a reviewed proposal for repeated and concurrent activations of one embedded definition with distinct scope, data and task lifetimes, growing the embedded completion profile.
 
-Acceptance blockers: the closure review.
+Acceptance blockers: the proposal, its Temporal preflight and its cold review.
 
-Current result: the checkpoint is approved and the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records each gate exactly: Lean fails only on the inherited placeholder, Temporal only on a deadline margin whose isolated rerun passes, and the rest pass.
+Current result: not started.
 
-Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
+Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review.
 
-Next action: obtain the closure reviewer's correction audit, then set the lifecycle, maps and checklist status and select `PC-SCOPE-02`.
+Next action: read the `PC-SCOPE-02` row, its embedded and Multi-Instance owners and the CIB re-entry evidence, then draft the proposal.
 
-Oracle: a first child End or a wrong-parent completion completes a nested scope early.
+Oracle: a later activation or re-entry that reads another occurrence's locals or consumes its completion.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
