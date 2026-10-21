@@ -142,6 +142,10 @@ export const artifactCases = Object.freeze([
   ...parallelUserTaskMetadataArtifactCases,
 ]);
 
+/**
+ * Scenarios without retained CIB evidence. Most bind a normative profile; a cumulative CIB profile
+ * grown with standards-only schedules also appears here, provided `artifactCases` still binds it.
+ */
 export const normativeArtifactCases = Object.freeze([
   ...["invoice-approve", "invoice-reject", "invoice-manual", "serial-string", "serial-null"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/structured-process-composition/${name}.scenario.json`,

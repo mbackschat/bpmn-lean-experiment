@@ -126,7 +126,9 @@ export type NormativeArtifactSet =
   NormativeArtifactCase & Readonly<{
     validator: Ajv2020;
     registeredRelationshipIds: ReadonlySet<string>;
-    profile: NormativeSemanticProfile;
+    // A cumulative CIB profile grown with standards-only schedules binds evidence-free scenarios too,
+    // so evidence absence does not imply normative authority (contracts/README.md, cumulative profiles).
+    profile: SemanticProfile;
     scenario: Scenario;
     scenarioBytes: Buffer;
     bpmnBytes: Buffer;
@@ -517,7 +519,7 @@ async function readNormativeArtifactSet(
     scenarioDocument.value.bpmn.relativePath,
   );
   const [profileDocument, bpmnBytes] = await Promise.all([
-    readJsonDocument<NormativeSemanticProfile>(profilePath),
+    readJsonDocument<SemanticProfile>(profilePath),
     readFile(bpmnPath),
   ]);
   return verifyNormativeArtifactSet({

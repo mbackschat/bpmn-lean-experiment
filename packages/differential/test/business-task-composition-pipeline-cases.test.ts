@@ -40,6 +40,7 @@ test("registered business journeys bind normative profiles, exact overlays and e
     const artifact = artifacts.find(({ scenario }) => scenario.id === candidate.id);
     assert.ok(artifact !== undefined, `missing normative business artifact ${candidate.id}`);
     assert.equal(artifact.profile.id, artifact.scenario.profile);
+    assert.ok("normativeAuthority" in artifact.profile, `${candidate.id} must bind a normative profile`);
     assert.equal(artifact.profile.normativeAuthority.version, "2.0.2");
     assert.equal("oracle" in artifact.profile, false);
     assert.equal("environment" in artifact.profile, false);

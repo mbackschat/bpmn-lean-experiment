@@ -40,10 +40,24 @@ import type {
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 test("separates normative profile authority from executable CIB oracle authority", async () => {
-  const artifactSets =
-    await readAndVerifyNormativeArtifactSets(projectRoot);
+  const [artifactSets, evidenceSets] = await Promise.all([
+    readAndVerifyNormativeArtifactSets(projectRoot),
+    readAndVerifyArtifactSets(projectRoot),
+  ]);
   assert.equal(artifactSets.length, normativeArtifactCases.length);
+  const evidenceBoundProfiles = new Set(evidenceSets.map(({ profile }) => profile.id));
   for (const artifactSet of artifactSets) {
+    assert.equal("calibration" in artifactSet.scenario, false);
+    if (!("normativeAuthority" in artifactSet.profile)) {
+      // An evidence-free scenario may grow a cumulative CIB profile only while retained evidence
+      // elsewhere still binds that profile's oracle claim; a CIB profile with no evidence at all
+      // would assert an oracle nobody observed.
+      assert.ok(
+        evidenceBoundProfiles.has(artifactSet.profile.id),
+        `${artifactSet.scenarioRelativePath} binds CIB profile ${artifactSet.profile.id} without retained evidence`,
+      );
+      continue;
+    }
     assert.equal(
       artifactSet.profile.normativeAuthority.name,
       "OMG Business Process Model and Notation",
@@ -56,11 +70,10 @@ test("separates normative profile authority from executable CIB oracle authority
       "environment" in artifactSet.profile,
       false,
     );
-    assert.equal("calibration" in artifactSet.scenario, false);
   }
 
   const artifactSet = requiredAt(
-    artifactSets,
+    artifactSets.filter(({ profile }) => "normativeAuthority" in profile),
     0,
     "normative artifact sets",
   );
