@@ -74,14 +74,30 @@ export function enterChildScope(
     controlTokens: removeToken(issued.controlTokens, entry.input, parent) };
 }
 
+/**
+ * CEA-OCCUR-01: enters a merge target's child even while other occurrences of its definition are live. The fresh
+ * activation exceeds every issued one, so it never reuses a live identity; equal to {@link enterChildScope} whenever no
+ * occurrence of the definition is live.
+ */
+export function enterConcurrentChildScope(
+  state: RuntimeState,
+  parent: ScopeOccurrenceId,
+  entry: ChildScopeEntry,
+): RuntimeState | null {
+  if (state.control.kind !== ControlStateKind.Running) return null;
+  const issued = insertChildScope(state, parent, entry, freshChildScope(state, parent, entry.childScopeId));
+  return { ...issued, controlTokens: removeToken(issued.controlTokens, entry.input, parent) };
+}
+
 /** SMIS-END-01 reuses fresh scope issuance on turnover without consuming another parent token. */
 export function issueChildScope(state: RuntimeState, parent: ScopeOccurrenceId,
   entry: Pick<ChildScopeEntry, "childEntry" | "childScopeId">): RuntimeState | null {
   const selected = selectChildScopeEntry(state, parent, entry);
-  if (selected === null) {
-    return null;
-  }
-  const child = selected.child;
+  return selected === null ? null : insertChildScope(state, parent, entry, selected.child);
+}
+
+function insertChildScope(state: RuntimeState, parent: ScopeOccurrenceId,
+  entry: Pick<ChildScopeEntry, "childEntry" | "childScopeId">, child: ScopeOccurrenceId): RuntimeState {
   return {
     ...state,
     controlTokens: addToken(
@@ -121,16 +137,19 @@ export function selectChildScopeEntry(
   ) {
     return null;
   }
+  return { child: freshChildScope(state, parent, entry.childScopeId) };
+}
+
+function freshChildScope(state: RuntimeState, parent: ScopeOccurrenceId, childScopeId: string): ScopeOccurrenceId {
   const activation =
     (state.scopeActivations.find(
-      ({ elementId }) => elementId === entry.childScopeId,
+      ({ elementId }) => elementId === childScopeId,
     )?.count ?? 0) + 1;
-  const child = {
+  return {
     processInstanceId: parent.processInstanceId,
-    definitionScopeId: entry.childScopeId,
+    definitionScopeId: childScopeId,
     activation,
   };
-  return { child };
 }
 
 export function completeScope(
@@ -141,9 +160,22 @@ export function completeScope(
   state: RuntimeState,
 ): RuntimeState | null {
   const selected = selectScopeCompletion(operation, state);
-  if (selected === null) {
-    return null;
-  }
+  return selected === null ? null : applyScopeCompletion(state, selected);
+}
+
+/** CEA-QUIESCE-01: completes the named occurrence when it is quiescent, whatever other occurrences of its definition live. */
+export function completeScopeOccurrence(
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.CompleteScope }>,
+  state: RuntimeState,
+  owner: ScopeOccurrenceId,
+): RuntimeState | null {
+  const occurrence = state.scopeOccurrences.find(({ id }) => sameScopeOccurrence(id, owner));
+  const selected = occurrence === undefined || occurrence.id.definitionScopeId !== operation.scopeId ? null
+    : selectQuiescentScopeCompletion(operation, state, occurrence);
+  return selected === null ? null : applyScopeCompletion(state, selected);
+}
+
+function applyScopeCompletion(state: RuntimeState, selected: SelectedScopeCompletion): RuntimeState {
   switch (selected.kind) {
     case ScopeCompletionSelectionKind.Root:
       return {
@@ -227,11 +259,17 @@ export function selectScopeCompletion(
     ({ id }) => id.definitionScopeId === operation.scopeId,
   );
   const occurrence = occurrences[0];
-  if (
-    occurrences.length !== 1 ||
-    occurrence === undefined ||
-    !isScopeOccurrenceQuiescent(state, occurrence)
-  ) {
+  return occurrences.length === 1 && occurrence !== undefined
+    ? selectQuiescentScopeCompletion(operation, state, occurrence) : null;
+}
+
+/** The completion facts of one already-selected occurrence; shared by definition- and occurrence-addressed completion. */
+function selectQuiescentScopeCompletion(
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.CompleteScope }>,
+  state: RuntimeState,
+  occurrence: RuntimeScopeOccurrence,
+): SelectedScopeCompletion | null {
+  if (state.control.kind !== ControlStateKind.Running || !isScopeOccurrenceQuiescent(state, occurrence)) {
     return null;
   }
   if (occurrence.parent === null) {

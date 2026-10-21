@@ -154,10 +154,13 @@ export function candidateLongLivedStarts(
       const definition = only(program.definitionScopes.filter(({ id, originElementId }) =>
         id === operation.childScopeId && originElementId === operation.origin.elementId
       ));
+      // CEA-OCCUR-01: the entered child is the one absent before, so a live sibling of its definition under the same
+      // parent cannot make the selection ambiguous; without a sibling this is the unique child, as before.
       const child = only(after.scopeOccurrences.filter(({ id, parent }) =>
         id.definitionScopeId === operation.childScopeId &&
         parent !== null &&
-        sameScopeOccurrence(parent, owner)
+        sameScopeOccurrence(parent, owner) &&
+        !before.scopeOccurrences.some((existing) => sameScopeOccurrence(existing.id, id))
       ));
       return definition === undefined || child === undefined ||
           child.id.processInstanceId !== owner.processInstanceId || !validScopeId(child.id) ? null : [{

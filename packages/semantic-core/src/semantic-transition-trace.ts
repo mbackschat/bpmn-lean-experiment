@@ -1,3 +1,4 @@
+import { isMergeTargetOperation } from "./merge-target-operations.js";
 import { CommandOutcome } from "./contract.js";
 import type {
   StateObservation,
@@ -215,8 +216,10 @@ export function projectInternalExecutionBatch(
     if (batch.length !== 1) return null;
     const step = batch[0]!;
     const unit = internalPublicationUnit(program, before, step);
-    // PMIS-SELECT-01 binds unpublished controller/data state as well as the visible lifecycle.
-    if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID &&
+    // PMIS-SELECT-01 binds unpublished controller/data state as well as the visible lifecycle; CEA merge targets bind
+    // the recorded occurrence the same way.
+    if ((program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
+        isMergeTargetOperation(program, step.operation)) &&
         (unit === null || !isWellFormedSemanticProcessProgram(program) ||
           !sameJson(replayInternalTransitionRecord(program, before, unit.record), step.successor))) return null;
     const lifecycle = unit?.lifecycleAt(commandId, first);
@@ -376,7 +379,9 @@ export function replayInternalTransitionRecord(
     return null;
   }
   if (operation.kind !== transition.operationKind || !sameOrigin(operation.origin, transition.origin)) return null;
-  if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+  // A merge-target record names one of several live occurrences, so it replays by that owner (CEA-QUIESCE-01).
+  if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
+      isMergeTargetOperation(program, operation)) {
     const next = applyInternalOperationOccurrence(program, current,
       { operationId: operation.id, owner: transition.owner });
     return next !== null && recordBoundaryMatches(program, current, next, record) ? next : null;

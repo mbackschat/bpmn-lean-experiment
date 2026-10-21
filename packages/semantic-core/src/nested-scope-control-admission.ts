@@ -7,13 +7,16 @@ import type { SemanticOperation, SemanticProcessProgram } from "./semantic-proce
 import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { ParallelBodyNodeKind as Kind } from "./structured-parallel-body-analysis.js";
 import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
+import { contractMergeRegions, mergeVertexKind, multiplicityWeightedExtra } from "./merge-region-admission.js";
+import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 
 /**
  * NSC-ADMIT-01 for the embedded completion profile, an independent transcription of the Lean `NestedScopeControl`
  * admission. Each definition scope's body is projected to the reviewed structured-body analysis, a Sub-Process
  * appearing in its parent as a task vertex, so contraction, pairing and separate Ends are that owner's. This module
- * adds only the scope tree, the branch condition and the nested burst composition.
+ * adds only the scope tree, the branch condition and the nested burst composition. CEA-ADMIT-01 merge regions are
+ * contracted first by the merge-region owner; their target bodies stay in the tree and their bursts are composed here.
  */
 
 /** Definition depth of the deepest admitted Sub-Process body below the root. */
@@ -21,13 +24,33 @@ const depthLimit = 3;
 /** Concurrent-wait ceiling shared with the parallel Multi-Instance capacity account. */
 const userTaskLimit = 128;
 
-type Body = Readonly<{
+type RawBody = Readonly<{
   scope: string;
-  nodes: readonly ParallelBodyNode[];
-  /** The child scope of every Sub-Process vertex of this body. */
+  nodes: readonly RawBodyNode[];
+  /** The child scope of every Sub-Process vertex of this body, merge targets included. */
   children: ReadonlyMap<string, string>;
   userTasks: readonly string[];
 }>;
+
+type Body = Omit<RawBody, "nodes"> & Readonly<{ nodes: readonly ParallelBodyNode[]; regions: readonly MergeRegion[] }>;
+
+function contractBodies(raw: ReadonlyMap<string, RawBody> | null): Map<string, Body> | null {
+  if (raw === null) return null;
+  const bodies = new Map<string, Body>();
+  for (const [scope, body] of raw) {
+    const contracted = contractMergeRegions(body.nodes, body.children);
+    if (contracted === null) return null;
+    bodies.set(scope, { ...body, ...contracted });
+  }
+  return bodies;
+}
+
+/** A merge target's body is a serial chain of User Tasks; it owns no Sub-Process, gateway or region. */
+function serialTargetBody(body: Body | undefined): body is Body {
+  return body !== undefined && body.children.size === 0 && body.regions.length === 0 && body.userTasks.length > 0 &&
+    body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task) &&
+    body.nodes.filter(({ kind }) => kind === Kind.Task).length === body.userTasks.length;
+}
 
 type Tree = Readonly<{ root: string; bodies: ReadonlyMap<string, Body>; parent: ReadonlyMap<string, Readonly<{ scope: string; vertex: string }>> }>;
 
@@ -75,8 +98,14 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
   if (scopes.some(({ id }) => id !== root && !withinDepth(id))) return null;
   const rootBody = bodies.get(root);
   // A terminal fork is admitted only in a child body; the root keeps its single End.
-  if (rootBody === undefined || rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1) return null;
-  if ([...bodies.values()].reduce((count, body) => count + body.userTasks.length, 0) > userTaskLimit) return null;
+  if (rootBody === undefined || rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1 ||
+      rootBody.regions.length > 0) return null;
+  const regions = [...bodies.values()].flatMap(({ regions }) => regions);
+  if (!regions.every(({ targetScope }) => serialTargetBody(bodies.get(targetScope)))) return null;
+  // CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output.
+  const weighted = [...bodies.values()].reduce((count, body) => count + body.userTasks.length, 0) +
+    regions.reduce((extra, region) => extra + multiplicityWeightedExtra(region, bodies.get(region.targetScope)!.userTasks.length), 0);
+  if (weighted > userTaskLimit) return null;
   const scans = new Map<string, ParallelBodyScans>();
   for (const body of bodies.values()) {
     const scan = parallelBodyScans(body.nodes);
@@ -91,10 +120,18 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
  * is `enterScope`; its child's entry scan runs in the same closure. A resumption that leaves its body without a wait
  * may have completed that body, which charges `completeScope` and continues in the parent. Under a terminal fork the
  * body may still be live, so this over-approximates and stays sound without tracking exact quiescence.
+ *
+ * A merge region's vertex arms like a task, but arming it runs the fork and one arming per branch, so it adds one step
+ * per branch. Region tasks resume by CEA-ADMIT-01's per-arrival charges, never summed across arrivals; a resumption
+ * that reaches the region's End continues as the region vertex's own resumption, with its completion cascade.
  */
 function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>): number {
+  const regionAt = (scope: string, vertex: string): MergeRegion | undefined =>
+    tree.bodies.get(scope)!.regions.find(region => region.vertex === vertex);
   const childEntries = (scope: string, armed: readonly string[]): number =>
     armed.reduce((total, vertex) => {
+      const region = regionAt(scope, vertex);
+      if (region !== undefined) return total + region.branches.length;
       const child = tree.bodies.get(scope)!.children.get(vertex);
       return child === undefined ? total : total + entry(child);
     }, 0);
@@ -111,15 +148,32 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
     }
     return steps;
   };
+  // After a region's last target task: its End, `completeScope`, then the first task after the target or the region End.
+  const leaveTarget = (scope: string, region: MergeRegion): number =>
+    2 + (region.after.length > 0 ? 1 : resume(scope, region.vertex));
+  const regionTasks = (scope: string, region: MergeRegion): readonly number[] => {
+    const targetTasks = tree.bodies.get(region.targetScope)!.userTasks;
+    return [
+      ...region.branches.flatMap(branch => branch.map((_, index) => index + 1 < branch.length ? 1 : 3)),
+      ...targetTasks.map((_, index) => index + 1 < targetTasks.length ? 1 : leaveTarget(scope, region)),
+      ...region.after.map((_, index) => index + 1 < region.after.length ? 1 : resume(scope, region.vertex)),
+    ];
+  };
+  const targets = new Set([...tree.bodies.values()].flatMap(({ regions }) => regions.map(({ targetScope }) => targetScope)));
   // Start applies `initiate` as the closure's first step; a child body's elided Start costs nothing.
   let maximum = 1 + entry(tree.root);
   for (const body of tree.bodies.values()) {
-    for (const task of body.userTasks) maximum = Math.max(maximum, resume(body.scope, task));
+    const inRegion = new Set(body.regions.flatMap(({ branches, after }) => [...branches.flat(), ...after]));
+    if (!targets.has(body.scope)) {
+      for (const task of body.userTasks) if (!inRegion.has(task)) maximum = Math.max(maximum, resume(body.scope, task));
+    }
+    for (const region of body.regions) maximum = Math.max(maximum, ...regionTasks(body.scope, region));
   }
   return maximum;
 }
 
-function admittedBurst(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body> | null): number | null {
+function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null): number | null {
+  const bodies = contractBodies(raw);
   if (bodies === null) return null;
   const analyzed = analyzeTree(scopes, bodies);
   if (analyzed === null) return null;
@@ -144,12 +198,13 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   flows: readonly CheckedSequenceFlow[];
 }>;
 
-function checkedKind(node: CheckedNode): Kind | null {
+function checkedKind(node: CheckedNode): RawBodyNode["kind"] | null {
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return Kind.Start;
     case CheckedNodeKind.NoneEndEvent: return Kind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? Kind.Task : null;
     case CheckedNodeKind.EmbeddedSubProcess: return Kind.Task;
+    case CheckedNodeKind.ExclusiveMerge: return mergeVertexKind;
     case CheckedNodeKind.ParallelGateway:
       return node.direction === GatewayDirection.Diverging ? Kind.Fork
         : node.direction === GatewayDirection.Converging ? Kind.Join : null;
@@ -157,15 +212,15 @@ function checkedKind(node: CheckedNode): Kind | null {
   }
 }
 
-function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, Body> | null {
+function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, RawBody> | null {
   const scopeOf = new Map(graph.nodeScopes.map(({ nodeId, scopeId }) => [nodeId, scopeId]));
   if (scopeOf.size !== graph.nodes.length || graph.flows.some(flow => flow.condition !== null ||
       scopeOf.get(flow.sourceId) === undefined || scopeOf.get(flow.sourceId) !== scopeOf.get(flow.targetId))) return null;
   const grouped = group(graph.nodes, node => scopeOf.get(node.id));
   if (grouped === null) return null;
-  const bodies = new Map<string, Body>();
+  const bodies = new Map<string, RawBody>();
   for (const [scope, nodes] of grouped) {
-    const vertices: ParallelBodyNode[] = [];
+    const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     for (const node of nodes) {
       const kind = checkedKind(node);
@@ -192,6 +247,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
     case SemanticOperationKind.Synchronize:
+    case SemanticOperationKind.MergeExclusive:
       return operation.inputs;
     default:
       return [];
@@ -201,7 +257,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
 /** The lowered child Start is elided; this synthetic vertex stands for the child's entry place. */
 const childStart = (scope: string): string => `start:${scope}`;
 
-function programBodies(program: SemanticProcessProgram): Map<string, Body> | null {
+function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | null {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
   const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
   const operations = program.operations.filter(({ kind }) => kind !== SemanticOperationKind.CompleteScope);
@@ -218,16 +274,16 @@ function programBodies(program: SemanticProcessProgram): Map<string, Body> | nul
   };
   const grouped = group(operations, operation => scopeOf.get(operation.id));
   if (grouped === null) return null;
-  const bodies = new Map<string, Body>();
+  const bodies = new Map<string, RawBody>();
   for (const [scope, members] of grouped) {
-    const vertices: ParallelBodyNode[] = [];
+    const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     const follow = (places: readonly string[]): string[] | null => {
       const targets = places.map(place => consumer(scope, place));
       return targets.every(target => target !== undefined) ? targets as string[] : null;
     };
     for (const operation of members) {
-      let kind: Kind;
+      let kind: RawBodyNode["kind"];
       let outputs: string[] | null;
       switch (operation.kind) {
         case SemanticOperationKind.Initiate: kind = Kind.Start; outputs = follow([operation.output]); break;
@@ -235,6 +291,7 @@ function programBodies(program: SemanticProcessProgram): Map<string, Body> | nul
           kind = Kind.Task; outputs = operation.task.metadata === undefined ? follow([operation.output]) : null; break;
         case SemanticOperationKind.Duplicate: kind = Kind.Fork; outputs = follow(operation.outputs); break;
         case SemanticOperationKind.Synchronize: kind = Kind.Join; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.MergeExclusive: kind = mergeVertexKind; outputs = follow([operation.output]); break;
         case SemanticOperationKind.ReachNoneEnd: kind = Kind.End; outputs = []; break;
         case SemanticOperationKind.EnterScope: {
           const output = parentOutput(operation.childScopeId);
@@ -282,12 +339,12 @@ export function nestedScopeControlProgramAnalysis(program: SemanticProcessProgra
 const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
   SemanticOperationKind.Initiate, SemanticOperationKind.EnterScope, SemanticOperationKind.AwaitUserTask,
   SemanticOperationKind.Duplicate, SemanticOperationKind.Synchronize, SemanticOperationKind.ReachNoneEnd,
-  SemanticOperationKind.CompleteScope,
+  SemanticOperationKind.CompleteScope, SemanticOperationKind.MergeExclusive,
 ]);
 
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
-  CheckedNodeKind.ParallelGateway, CheckedNodeKind.NoneEndEvent,
+  CheckedNodeKind.ParallelGateway, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.ExclusiveMerge,
 ]);
 
 /** The operation alphabet and the lower scope bound; the analyses above bound depth, tasks and bursts. */

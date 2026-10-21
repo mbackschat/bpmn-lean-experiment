@@ -589,7 +589,8 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
     eventRaceActivations: [{ elementId: "race", count: 6 }],
     callActivations: [{ elementId: "call", count: 5 }],
     effectActivations: [{ elementId: "effect", count: 4 }],
-    scopeActivations: [{ elementId: "scope", count: 3 }],
+    // The live root keeps its own counter (RSI-BOUND-01); the extra key sorts before every `scope:` id.
+    scopeActivations: [{ elementId: "scope", count: 3 }, ...incident.scopeActivations],
     endOccurrences: 2,
     logicalTimeMs: 42,
   };

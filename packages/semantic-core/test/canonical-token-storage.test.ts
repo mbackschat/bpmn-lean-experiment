@@ -18,7 +18,7 @@ import {
   startStimulus,
 } from "./parallel-fork-join-fixture.ts";
 
-const { addToken, removeToken } = await import(
+const { addToken, removeToken, setActivationCount } = await import(
   new URL("../dist/semantic-process-state.js", import.meta.url).href
 ) as typeof import("../src/semantic-process-state.ts");
 
@@ -51,6 +51,7 @@ test("same-place token owners require numeric activation order beside a position
     ...frontier,
     scopeOccurrences: [{ id: child2, parent: owner }, { id: child10, parent: owner },
       ...frontier.scopeOccurrences],
+    scopeActivations: setActivationCount(frontier.scopeActivations, scopeId, 10),
     controlTokens: [
       { placeId, owner: child2, multiplicity: 1 },
       { placeId, owner: child10, multiplicity: 1 },

@@ -1,4 +1,5 @@
-import { deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
+import { applyInternalOperationOccurrence, deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
+import { isMergeTargetOperation } from "./merge-target-operations.js";
 export { applyInternalOperationOccurrence, deriveInternalOccurrenceFrontier } from "./internal-operation-occurrence.js";
 export type { InternalOccurrenceOffer } from "./internal-operation-occurrence.js";
 import { internalOccurrenceReservationStateIsValid, prepareInternalOccurrenceBatch } from "./internal-occurrence-batch.js";
@@ -10,6 +11,7 @@ import {
   internalOperationAlternative,
   resolveInternalOperationOccurrence,
   internalOperationOccurrenceAlternative,
+  internalOperationOccurrences,
 } from "./internal-transition-alternative.js";
 import type { InternalAlternative } from "./internal-transition-alternative.js";
 import {
@@ -100,6 +102,16 @@ export function deriveInternalExecutionFrontier<Refusal>(
         }
       }
       preparationFailed = true;
+      continue;
+    }
+    // CEA-OCCUR-01 and CEA-QUIESCE-01: merge-target scope operations are offered per owning occurrence, unprepared, so
+    // they publish only as singleton frontiers; the definition-addressed attempt would refuse a second live occurrence.
+    if (isMergeTargetOperation(program, operation)) {
+      for (const candidate of internalOperationOccurrences(program, state, operation.id) ?? []) {
+        const successor = applyInternalOperationOccurrence(program, state, candidate);
+        if (successor !== null) offers.push({ alternative: internalOperationOccurrenceAlternative(operation.id, candidate.owner),
+          step: { operation, owner: candidate.owner, successor }, preparation: null });
+      }
       continue;
     }
     const result = attempt(operation);

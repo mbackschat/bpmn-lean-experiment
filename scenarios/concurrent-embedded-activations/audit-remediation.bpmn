@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_AuditRemediation" targetNamespace="https://bpmn-lean.local/scenarios/concurrent-embedded-activations">
+  <bpmn:process id="Process_AuditRemediation" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AuditStarted" name="Audit started">
+      <bpmn:outgoing>Flow_AuditStartedToAudit</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Audit" name="Audit">
+      <bpmn:incoming>Flow_AuditStartedToAudit</bpmn:incoming>
+      <bpmn:outgoing>Flow_AuditToCloseAudit</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Audit">
+        <bpmn:outgoing>Flow_AuditToReviewFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_ReviewFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_AuditToReviewFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReviewForkToReviewControls</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ReviewForkToReviewPayments</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_ReviewControls" name="Review controls">
+        <bpmn:incoming>Flow_ReviewForkToReviewControls</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReviewControlsToFindingMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_ReviewPayments" name="Review payments">
+        <bpmn:incoming>Flow_ReviewForkToReviewPayments</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReviewPaymentsToFindingMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:exclusiveGateway id="Gateway_FindingMerge" gatewayDirection="Converging">
+        <bpmn:incoming>Flow_ReviewControlsToFindingMerge</bpmn:incoming>
+        <bpmn:incoming>Flow_ReviewPaymentsToFindingMerge</bpmn:incoming>
+        <bpmn:outgoing>Flow_FindingMergeToRemediation</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:subProcess id="SubProcess_Remediation" name="Remediation">
+        <bpmn:incoming>Flow_FindingMergeToRemediation</bpmn:incoming>
+        <bpmn:outgoing>Flow_RemediationToReportFinding</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_Remediation">
+          <bpmn:outgoing>Flow_RemediationToFixFinding</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_FixFinding" name="Fix finding">
+          <bpmn:incoming>Flow_RemediationToFixFinding</bpmn:incoming>
+          <bpmn:outgoing>Flow_FixFindingToVerifyFix</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:userTask id="UserTask_VerifyFix" name="Verify fix">
+          <bpmn:incoming>Flow_FixFindingToVerifyFix</bpmn:incoming>
+          <bpmn:outgoing>Flow_VerifyFixToFindingFixed</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="EndEvent_FindingFixed">
+          <bpmn:incoming>Flow_VerifyFixToFindingFixed</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_RemediationToFixFinding" sourceRef="StartEvent_Remediation" targetRef="UserTask_FixFinding"/>
+        <bpmn:sequenceFlow id="Flow_FixFindingToVerifyFix" sourceRef="UserTask_FixFinding" targetRef="UserTask_VerifyFix"/>
+        <bpmn:sequenceFlow id="Flow_VerifyFixToFindingFixed" sourceRef="UserTask_VerifyFix" targetRef="EndEvent_FindingFixed"/>
+      </bpmn:subProcess>
+      <bpmn:userTask id="UserTask_ReportFinding" name="Report finding">
+        <bpmn:incoming>Flow_RemediationToReportFinding</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReportFindingToFindingReported</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_FindingReported">
+        <bpmn:incoming>Flow_ReportFindingToFindingReported</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_AuditToReviewFork" sourceRef="StartEvent_Audit" targetRef="Gateway_ReviewFork"/>
+      <bpmn:sequenceFlow id="Flow_ReviewForkToReviewControls" sourceRef="Gateway_ReviewFork" targetRef="UserTask_ReviewControls"/>
+      <bpmn:sequenceFlow id="Flow_ReviewControlsToFindingMerge" sourceRef="UserTask_ReviewControls" targetRef="Gateway_FindingMerge"/>
+      <bpmn:sequenceFlow id="Flow_ReviewForkToReviewPayments" sourceRef="Gateway_ReviewFork" targetRef="UserTask_ReviewPayments"/>
+      <bpmn:sequenceFlow id="Flow_ReviewPaymentsToFindingMerge" sourceRef="UserTask_ReviewPayments" targetRef="Gateway_FindingMerge"/>
+      <bpmn:sequenceFlow id="Flow_FindingMergeToRemediation" sourceRef="Gateway_FindingMerge" targetRef="SubProcess_Remediation"/>
+      <bpmn:sequenceFlow id="Flow_RemediationToReportFinding" sourceRef="SubProcess_Remediation" targetRef="UserTask_ReportFinding"/>
+      <bpmn:sequenceFlow id="Flow_ReportFindingToFindingReported" sourceRef="UserTask_ReportFinding" targetRef="EndEvent_FindingReported"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_CloseAudit" name="Close audit">
+      <bpmn:incoming>Flow_AuditToCloseAudit</bpmn:incoming>
+      <bpmn:outgoing>Flow_CloseAuditToAuditClosed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_AuditClosed" name="Audit closed">
+      <bpmn:incoming>Flow_CloseAuditToAuditClosed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_AuditStartedToAudit" sourceRef="StartEvent_AuditStarted" targetRef="SubProcess_Audit"/>
+    <bpmn:sequenceFlow id="Flow_AuditToCloseAudit" sourceRef="SubProcess_Audit" targetRef="UserTask_CloseAudit"/>
+    <bpmn:sequenceFlow id="Flow_CloseAuditToAuditClosed" sourceRef="UserTask_CloseAudit" targetRef="EndEvent_AuditClosed"/>
+  </bpmn:process>
+</bpmn:definitions>

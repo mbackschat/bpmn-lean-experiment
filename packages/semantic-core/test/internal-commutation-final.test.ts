@@ -91,6 +91,7 @@ const threeTaskFrontier: RuntimeState = {
     instanceId: owner.processInstanceId,
   },
   scopeOccurrences: [{ id: owner, parent: null }],
+  scopeActivations: [{ elementId: owner.definitionScopeId, count: 1 }],
   controlTokens: ["A", "B", "C"].map((arm) => ({
     placeId: `place:Flow_${arm}_Input`,
     owner,
@@ -189,7 +190,7 @@ const mergeChoiceState: RuntimeState = {
   ...initialState,
   control: { kind: ControlStateKind.Running, instanceId: mergeChoiceOwner.processInstanceId },
   scopeOccurrences: [{ id: mergeChoiceOwner, parent: null }],
-  scopeActivations: [{ elementId: mergeChoiceProgram.processId, count: 1 }],
+  scopeActivations: [{ elementId: mergeChoiceOwner.definitionScopeId, count: 1 }],
   controlTokens: ["place:A", "place:B"].map((placeId) =>
     ({ placeId, owner: mergeChoiceOwner, multiplicity: 1 })),
 };

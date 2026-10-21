@@ -83,7 +83,9 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [mixed-task-control-flow-analysis.ts](src/mixed-task-control-flow-analysis.ts) | All-continuation task-cut ranks and writer-barrier initial-input analysis for single-control graphs |
 | [structured-parallel-body-analysis.ts](src/structured-parallel-body-analysis.ts) | Private linear-time serial/paired-parallel topology check, including separate branch Ends; [discriminators](test/structured-parallel-body-analysis.test.ts) preserve multiplicity and reject crossing/incomplete regions |
 | [parallel-body-burst-analysis.ts](src/parallel-body-burst-analysis.ts) | Entry and per-task closure scans and the derived entry, resumption and terminal body-operation bounds, checked against [independent reachable-frontier execution](test/parallel-body-burst-analysis.test.ts); MI entry/completion costs remain separate |
-| [nested-scope-control-admission.ts](src/nested-scope-control-admission.ts) | Nested scope-control checked-graph and Program admission: per-scope structured Parallel bodies within the depth and task bounds, and the burst bound composed over the scope tree; transcribed independently from the Lean account |
+| [nested-scope-control-admission.ts](src/nested-scope-control-admission.ts) | Nested scope-control checked-graph and Program admission: per-scope structured Parallel bodies within the depth and task bounds, merge regions in depth-1 and depth-2 bodies, the multiplicity-weighted task bound, and the burst bound composed over the scope tree; transcribed independently from the Lean account |
+| [merge-region-admission.ts](src/merge-region-admission.ts) | Concurrent-activation merge-region recognition: a Parallel fork whose User Task branches meet at an identity-only Exclusive merge feeding an embedded Sub-Process target, contracted to one task vertex before the structured-body analysis |
+| [merge-target-operations.ts](src/merge-target-operations.ts) | The profile-gated merge-target predicate: the scope entry fed by an Exclusive merge and that child scope's completion, the only operations addressed by owning occurrence outside the parallel Multi-Instance profile |
 | [mixed-task-control-flow-admission.ts](src/mixed-task-control-flow-admission.ts) | Private checked/IL graph and command admission, including attached [business Error routes](../../docs/capsules/MIXED-TASK-BUSINESS-ERROR-PROPOSAL.md#implementation-progress) |
 | [process-interface-data.ts](src/process-interface-data.ts) | Private scalar Process-interface selection, snapshot insertion and isolated output replacement by complete scope occurrence |
 | [scope-variable-data.ts](src/scope-variable-data.ts) | Unique complete-owner selection, pre-entry initialization, null shadowing, nearest enclosing writes and exact disposal for private body declarations |
@@ -100,7 +102,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-monitored-scope-runtime.ts](src/semantic-process-monitored-scope-runtime.ts) | Child-scope entry with a non-interrupting boundary Timer |
 | [semantic-process-control-flow-runtime.ts](src/semantic-process-control-flow-runtime.ts) | Control-flow token transitions owning no wait, occurrence, or scope lifecycle |
 | [semantic-process-cyclic-control-flow-runtime.ts](src/semantic-process-cyclic-control-flow-runtime.ts) | Exclusive Merge token movement for the resumption-bounded cyclic capsule |
-| [semantic-process-scope-runtime.ts](src/semantic-process-scope-runtime.ts) | Token consumption at a scope-hosting Activity |
+| [semantic-process-scope-runtime.ts](src/semantic-process-scope-runtime.ts) | Token consumption at a scope-hosting Activity, fresh child-scope entry including concurrent merge-target activations, and quiescent scope completion by definition or by exact occurrence |
 | [semantic-process-wait-runtime.ts](src/semantic-process-wait-runtime.ts) | Ordinary User Task, Timer, and Effect arming entry points over the shared exact local-edit patch |
 | [bounded-wait-admission.ts](src/bounded-wait-admission.ts) | Well-formedness of the three boundary-deadline operations and their shared deadline arm |
 | [semantic-process-user-task-runtime.ts](src/semantic-process-user-task-runtime.ts) | The ordinary non-specialized User Task completion arm |
@@ -134,7 +136,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-triggered-start.ts](src/semantic-process-triggered-start.ts) | Shared triggered-start occurrence and token mechanics |
 | [semantic-process-message-start.ts](src/semantic-process-message-start.ts) | Message-start admission and initiation |
 | [semantic-process-timer-start.ts](src/semantic-process-timer-start.ts) | Timer-start admission and initiation |
-| [runtime-state-identity-bound.ts](src/runtime-state-identity-bound.ts) | User Task, Timer, and Activity live-identity bounds against matching activation counters |
+| [runtime-state-identity-bound.ts](src/runtime-state-identity-bound.ts) | User Task, Timer, Activity, and non-called-root Scope live-identity bounds against matching activation counters |
 | [runtime-state-well-formedness.ts](src/runtime-state-well-formedness.ts) | Aggregate runtime-state invariant validation, monotone-regression detection, and the gated defect set |
 | [activity-occurrence.ts](src/activity-occurrence.ts) | Activity occurrence identity, complete task/scope ownership claims and attached-handler lookup |
 | [activity-body-turnover.ts](src/activity-body-turnover.ts) | Replacing what an Activity occurrence owns without replacing the occurrence |
@@ -143,7 +145,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [internal-commutation-census.ts](src/internal-commutation-census.ts) | Exhaustive operation-family and cross-language RuntimeState atom-domain classification without enabling a transition |
 | [internal-transition-alternative.ts](src/internal-transition-alternative.ts) | Exact operation and Exclusive Gateway merge-input alternative keys with canonical discriminator-first ordering |
 | [internal-choice-schedule.ts](src/internal-choice-schedule.ts) | Universal independent normalization, exact directive consumption and failure precedence, whole-command rollback, and retained prepared publication; [schedule tests](test/internal-choice-schedule.test.ts) cover both Merge choices and late failure |
-| [internal-operation-occurrence.ts](src/internal-operation-occurrence.ts) | Private parallel Sub-Process complete operation/owner discovery and exact-owner execution |
+| [internal-operation-occurrence.ts](src/internal-operation-occurrence.ts) | Private parallel Sub-Process and merge-target complete operation/owner discovery and exact-owner execution |
 | [internal-occurrence-batch.ts](src/internal-occurrence-batch.ts) | Private complete wait/token-control frontier certificates, frozen wait slots, disjoint owner/place edits, publication templates and atomic prefix application |
 | [internal-transition-attempt.ts](src/internal-transition-attempt.ts) | Pre-mutation Compensation Event Sub-Process reservation and promotion staging for the evaluator's private three-arm attempt |
 | [internal-transition-activity-association.ts](src/internal-transition-activity-association.ts) | Private conflict predicate over Activity identity, body-member ownership, and attached-Timer ownership |

@@ -216,7 +216,8 @@ function hasSelectedArity(
     case CheckedNodeKind.ExclusiveGateway:
       return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
     case CheckedNodeKind.ExclusiveMerge:
-      return (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? incoming >= 2 : incoming === 3) && outgoing === 1;
+      return (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ||
+        semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ? incoming >= 2 : incoming === 3) && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:

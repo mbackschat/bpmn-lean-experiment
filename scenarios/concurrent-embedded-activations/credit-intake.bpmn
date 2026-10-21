@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_CreditIntake" targetNamespace="https://bpmn-lean.local/scenarios/concurrent-embedded-activations">
+  <bpmn:process id="Process_CreditIntake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ApplicationReceived" name="Application received">
+      <bpmn:outgoing>Flow_ApplicationReceivedToIntake</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Intake" name="Intake">
+      <bpmn:incoming>Flow_ApplicationReceivedToIntake</bpmn:incoming>
+      <bpmn:outgoing>Flow_IntakeToDecide</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Intake">
+        <bpmn:outgoing>Flow_IntakeToOpenApplication</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="UserTask_OpenApplication" name="Open application">
+        <bpmn:incoming>Flow_IntakeToOpenApplication</bpmn:incoming>
+        <bpmn:outgoing>Flow_OpenApplicationToCheckFork</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:parallelGateway id="Gateway_CheckFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_OpenApplicationToCheckFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_CheckForkToCheckIdentity</bpmn:outgoing>
+        <bpmn:outgoing>Flow_CheckForkToCheckAddress</bpmn:outgoing>
+        <bpmn:outgoing>Flow_CheckForkToCheckIncome</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_CheckIdentity" name="Check identity">
+        <bpmn:incoming>Flow_CheckForkToCheckIdentity</bpmn:incoming>
+        <bpmn:outgoing>Flow_CheckIdentityToCheckMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_CheckAddress" name="Check address">
+        <bpmn:incoming>Flow_CheckForkToCheckAddress</bpmn:incoming>
+        <bpmn:outgoing>Flow_CheckAddressToCheckMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_CheckIncome" name="Check income">
+        <bpmn:incoming>Flow_CheckForkToCheckIncome</bpmn:incoming>
+        <bpmn:outgoing>Flow_CheckIncomeToCheckMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:exclusiveGateway id="Gateway_CheckMerge" gatewayDirection="Converging">
+        <bpmn:incoming>Flow_CheckIdentityToCheckMerge</bpmn:incoming>
+        <bpmn:incoming>Flow_CheckAddressToCheckMerge</bpmn:incoming>
+        <bpmn:incoming>Flow_CheckIncomeToCheckMerge</bpmn:incoming>
+        <bpmn:outgoing>Flow_CheckMergeToAssess</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:subProcess id="SubProcess_Assess" name="Assess">
+        <bpmn:incoming>Flow_CheckMergeToAssess</bpmn:incoming>
+        <bpmn:outgoing>Flow_AssessToIntakeDone</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_Assess">
+          <bpmn:outgoing>Flow_AssessToScoreApplicant</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_ScoreApplicant" name="Score applicant">
+          <bpmn:incoming>Flow_AssessToScoreApplicant</bpmn:incoming>
+          <bpmn:outgoing>Flow_ScoreApplicantToScored</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="EndEvent_Scored">
+          <bpmn:incoming>Flow_ScoreApplicantToScored</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_AssessToScoreApplicant" sourceRef="StartEvent_Assess" targetRef="UserTask_ScoreApplicant"/>
+        <bpmn:sequenceFlow id="Flow_ScoreApplicantToScored" sourceRef="UserTask_ScoreApplicant" targetRef="EndEvent_Scored"/>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_IntakeDone">
+        <bpmn:incoming>Flow_AssessToIntakeDone</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_IntakeToOpenApplication" sourceRef="StartEvent_Intake" targetRef="UserTask_OpenApplication"/>
+      <bpmn:sequenceFlow id="Flow_OpenApplicationToCheckFork" sourceRef="UserTask_OpenApplication" targetRef="Gateway_CheckFork"/>
+      <bpmn:sequenceFlow id="Flow_CheckForkToCheckIdentity" sourceRef="Gateway_CheckFork" targetRef="UserTask_CheckIdentity"/>
+      <bpmn:sequenceFlow id="Flow_CheckIdentityToCheckMerge" sourceRef="UserTask_CheckIdentity" targetRef="Gateway_CheckMerge"/>
+      <bpmn:sequenceFlow id="Flow_CheckForkToCheckAddress" sourceRef="Gateway_CheckFork" targetRef="UserTask_CheckAddress"/>
+      <bpmn:sequenceFlow id="Flow_CheckAddressToCheckMerge" sourceRef="UserTask_CheckAddress" targetRef="Gateway_CheckMerge"/>
+      <bpmn:sequenceFlow id="Flow_CheckForkToCheckIncome" sourceRef="Gateway_CheckFork" targetRef="UserTask_CheckIncome"/>
+      <bpmn:sequenceFlow id="Flow_CheckIncomeToCheckMerge" sourceRef="UserTask_CheckIncome" targetRef="Gateway_CheckMerge"/>
+      <bpmn:sequenceFlow id="Flow_CheckMergeToAssess" sourceRef="Gateway_CheckMerge" targetRef="SubProcess_Assess"/>
+      <bpmn:sequenceFlow id="Flow_AssessToIntakeDone" sourceRef="SubProcess_Assess" targetRef="EndEvent_IntakeDone"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Decide" name="Decide">
+      <bpmn:incoming>Flow_IntakeToDecide</bpmn:incoming>
+      <bpmn:outgoing>Flow_DecideToDecided</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Decided" name="Decided">
+      <bpmn:incoming>Flow_DecideToDecided</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ApplicationReceivedToIntake" sourceRef="StartEvent_ApplicationReceived" targetRef="SubProcess_Intake"/>
+    <bpmn:sequenceFlow id="Flow_IntakeToDecide" sourceRef="SubProcess_Intake" targetRef="UserTask_Decide"/>
+    <bpmn:sequenceFlow id="Flow_DecideToDecided" sourceRef="UserTask_Decide" targetRef="EndEvent_Decided"/>
+  </bpmn:process>
+</bpmn:definitions>

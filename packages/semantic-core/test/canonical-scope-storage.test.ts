@@ -24,6 +24,10 @@ import {
   terminateStartStimulus,
 } from "./terminate-end-event-fixture.ts";
 
+const { setActivationCount } = await import(
+  new URL("../dist/semantic-process-state.js", import.meta.url).href
+) as typeof import("../src/semantic-process-state.ts");
+
 test("reversing only admitted scope storage fails order and preserves the rejected input", () => {
   const started = applyStimulus(terminateProgram, initialState, terminateStartStimulus());
   assert.equal(started.outcome, CommandOutcome.Committed);
@@ -64,6 +68,11 @@ for (const [name, first, second] of orderedPairs) {
       ...initialState,
       control: { kind: ControlStateKind.Running, instanceId: first.processInstanceId },
       scopeOccurrences: [{ id: first, parent: null }, { id: second, parent: null }],
+      // RSI-BOUND-01 numbers every live scope occurrence at or below its definition's counter.
+      scopeActivations: [first, second].reduce((counters, { definitionScopeId, activation }) =>
+        setActivationCount(counters, definitionScopeId,
+          Math.max(activation, counters.find(({ elementId }) => elementId === definitionScopeId)?.count ?? 0)),
+      initialState.scopeActivations),
     };
     assert.deepEqual(runtimeStateDefects(eventRaceProgram, first.processInstanceId, canonical), []);
     const reversed = { ...canonical, scopeOccurrences: [...canonical.scopeOccurrences].reverse() };

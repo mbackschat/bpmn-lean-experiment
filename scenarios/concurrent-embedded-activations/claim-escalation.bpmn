@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_ClaimEscalation" targetNamespace="https://bpmn-lean.local/scenarios/concurrent-embedded-activations">
+  <bpmn:process id="Process_ClaimEscalation" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimReceived" name="Claim received">
+      <bpmn:outgoing>Flow_ClaimReceivedToCase</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Case" name="Case">
+      <bpmn:incoming>Flow_ClaimReceivedToCase</bpmn:incoming>
+      <bpmn:outgoing>Flow_CaseToCloseClaim</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Case">
+        <bpmn:outgoing>Flow_CaseToReview</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:subProcess id="SubProcess_Review" name="Review">
+        <bpmn:incoming>Flow_CaseToReview</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReviewToFileCase</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_Review">
+          <bpmn:outgoing>Flow_ReviewToOpinionFork</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:parallelGateway id="Gateway_OpinionFork" gatewayDirection="Diverging">
+          <bpmn:incoming>Flow_ReviewToOpinionFork</bpmn:incoming>
+          <bpmn:outgoing>Flow_OpinionForkToLegalOpinion</bpmn:outgoing>
+          <bpmn:outgoing>Flow_OpinionForkToRiskOpinion</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:userTask id="UserTask_LegalOpinion" name="Legal opinion">
+          <bpmn:incoming>Flow_OpinionForkToLegalOpinion</bpmn:incoming>
+          <bpmn:outgoing>Flow_LegalOpinionToOpinionMerge</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:userTask id="UserTask_RiskOpinion" name="Risk opinion">
+          <bpmn:incoming>Flow_OpinionForkToRiskOpinion</bpmn:incoming>
+          <bpmn:outgoing>Flow_RiskOpinionToOpinionMerge</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:exclusiveGateway id="Gateway_OpinionMerge" gatewayDirection="Converging">
+          <bpmn:incoming>Flow_LegalOpinionToOpinionMerge</bpmn:incoming>
+          <bpmn:incoming>Flow_RiskOpinionToOpinionMerge</bpmn:incoming>
+          <bpmn:outgoing>Flow_OpinionMergeToEscalation</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:subProcess id="SubProcess_Escalation" name="Escalation">
+          <bpmn:incoming>Flow_OpinionMergeToEscalation</bpmn:incoming>
+          <bpmn:outgoing>Flow_EscalationToReviewDone</bpmn:outgoing>
+          <bpmn:startEvent id="StartEvent_Escalation">
+            <bpmn:outgoing>Flow_EscalationToResolveEscalation</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:userTask id="UserTask_ResolveEscalation" name="Resolve escalation">
+            <bpmn:incoming>Flow_EscalationToResolveEscalation</bpmn:incoming>
+            <bpmn:outgoing>Flow_ResolveEscalationToEscalationResolved</bpmn:outgoing>
+          </bpmn:userTask>
+          <bpmn:endEvent id="EndEvent_EscalationResolved">
+            <bpmn:incoming>Flow_ResolveEscalationToEscalationResolved</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_EscalationToResolveEscalation" sourceRef="StartEvent_Escalation" targetRef="UserTask_ResolveEscalation"/>
+          <bpmn:sequenceFlow id="Flow_ResolveEscalationToEscalationResolved" sourceRef="UserTask_ResolveEscalation" targetRef="EndEvent_EscalationResolved"/>
+        </bpmn:subProcess>
+        <bpmn:endEvent id="EndEvent_ReviewDone">
+          <bpmn:incoming>Flow_EscalationToReviewDone</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_ReviewToOpinionFork" sourceRef="StartEvent_Review" targetRef="Gateway_OpinionFork"/>
+        <bpmn:sequenceFlow id="Flow_OpinionForkToLegalOpinion" sourceRef="Gateway_OpinionFork" targetRef="UserTask_LegalOpinion"/>
+        <bpmn:sequenceFlow id="Flow_LegalOpinionToOpinionMerge" sourceRef="UserTask_LegalOpinion" targetRef="Gateway_OpinionMerge"/>
+        <bpmn:sequenceFlow id="Flow_OpinionForkToRiskOpinion" sourceRef="Gateway_OpinionFork" targetRef="UserTask_RiskOpinion"/>
+        <bpmn:sequenceFlow id="Flow_RiskOpinionToOpinionMerge" sourceRef="UserTask_RiskOpinion" targetRef="Gateway_OpinionMerge"/>
+        <bpmn:sequenceFlow id="Flow_OpinionMergeToEscalation" sourceRef="Gateway_OpinionMerge" targetRef="SubProcess_Escalation"/>
+        <bpmn:sequenceFlow id="Flow_EscalationToReviewDone" sourceRef="SubProcess_Escalation" targetRef="EndEvent_ReviewDone"/>
+      </bpmn:subProcess>
+      <bpmn:userTask id="UserTask_FileCase" name="File case">
+        <bpmn:incoming>Flow_ReviewToFileCase</bpmn:incoming>
+        <bpmn:outgoing>Flow_FileCaseToCaseFiled</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_CaseFiled">
+        <bpmn:incoming>Flow_FileCaseToCaseFiled</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_CaseToReview" sourceRef="StartEvent_Case" targetRef="SubProcess_Review"/>
+      <bpmn:sequenceFlow id="Flow_ReviewToFileCase" sourceRef="SubProcess_Review" targetRef="UserTask_FileCase"/>
+      <bpmn:sequenceFlow id="Flow_FileCaseToCaseFiled" sourceRef="UserTask_FileCase" targetRef="EndEvent_CaseFiled"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_CloseClaim" name="Close claim">
+      <bpmn:incoming>Flow_CaseToCloseClaim</bpmn:incoming>
+      <bpmn:outgoing>Flow_CloseClaimToClaimClosed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_ClaimClosed" name="Claim closed">
+      <bpmn:incoming>Flow_CloseClaimToClaimClosed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ClaimReceivedToCase" sourceRef="StartEvent_ClaimReceived" targetRef="SubProcess_Case"/>
+    <bpmn:sequenceFlow id="Flow_CaseToCloseClaim" sourceRef="SubProcess_Case" targetRef="UserTask_CloseClaim"/>
+    <bpmn:sequenceFlow id="Flow_CloseClaimToClaimClosed" sourceRef="UserTask_CloseClaim" targetRef="EndEvent_ClaimClosed"/>
+  </bpmn:process>
+</bpmn:definitions>

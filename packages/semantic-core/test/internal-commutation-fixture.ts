@@ -106,6 +106,7 @@ export const frontier: RuntimeState = {
     instanceId: owner.processInstanceId,
   },
   scopeOccurrences: [{ id: owner, parent: null }],
+  scopeActivations: [{ elementId: owner.definitionScopeId, count: 1 }],
   controlTokens: [
     { placeId: "place:Flow_TaskInput", owner, multiplicity: 1 },
     { placeId: "place:Flow_TimerInput", owner, multiplicity: 1 },
@@ -151,6 +152,7 @@ export const effectFrontier: RuntimeState = {
     instanceId: effectOwner.processInstanceId,
   },
   scopeOccurrences: [{ id: effectOwner, parent: null }],
+  scopeActivations: [{ elementId: effectOwner.definitionScopeId, count: 1 }],
   controlTokens: [
     {
       placeId: "place:Flow_EffectLeftInput",
@@ -208,6 +210,7 @@ export const unsupportedFrontier: RuntimeState = {
     instanceId: unsupportedOwner.processInstanceId,
   },
   scopeOccurrences: [{ id: unsupportedOwner, parent: null }],
+  scopeActivations: [{ elementId: unsupportedOwner.definitionScopeId, count: 1 }],
   controlTokens: [
     {
       placeId: "place:Flow_DuplicateInput",

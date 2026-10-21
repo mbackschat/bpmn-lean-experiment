@@ -210,7 +210,8 @@ export function projectCheckedNodes(
             };
       }
       case bpmnTypes.exclusiveGatewayType:
-        return projectExclusiveMerge(element, id, flows) ??
+        // CEA-ADMIT-01 merges any fork width; other profiles keep their exact-three arity.
+        return projectExclusiveMerge(element, id, flows, semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) ??
           projectExclusiveGateway(element, id, flows);
       case bpmnTypes.inclusiveGatewayType:
         return projectInclusiveGateway(element, id, flows, elements);

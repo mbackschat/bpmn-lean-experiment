@@ -199,6 +199,8 @@ for (const error of [false, true]) {
     const before: RuntimeState = {
       ...ready,
       scopeOccurrences: [...ready.scopeOccurrences, { id: descendant, parent: regionOwner }, { id: calledRoot, parent: null }],
+      scopeActivations: [...ready.scopeActivations, { elementId: descendant.definitionScopeId, count: descendant.activation }]
+        .sort((left, right) => left.elementId < right.elementId ? -1 : 1),
       calledProcessOccurrences: [...ready.calledProcessOccurrences, {
         id: { processInstanceId: regionOwner.processInstanceId, elementId: "Call", activation: 1 },
         caller: descendant, calledRoot, calledProcessId: "Process_Called", returnOperationId: "operation:Return",
@@ -242,7 +244,7 @@ function state(tokens: RuntimeState["controlTokens"], records: RuntimeState["sel
     ...initialState,
     control: { kind: ControlStateKind.Running, instanceId },
     scopeOccurrences: [{ id: first, parent: root }, { id: second, parent: root }, { id: root, parent: null }],
-    scopeActivations: [{ elementId: childScope, count: 2 }],
+    scopeActivations: [{ elementId: childScope, count: 2 }, { elementId: rootScope, count: 1 }],
     variables: { scopes: [], processInterfaces: [], process: { bindings: [{ name: "takeB", value: { kind: VariableValueKind.Null } }] }, activities: [] },
     controlTokens: [...tokens].sort(compareTokenPlaces),
     selectedBranchSets: [...records].sort(compareSelectedBranchSets),
