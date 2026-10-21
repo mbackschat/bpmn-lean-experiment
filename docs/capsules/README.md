@@ -39,6 +39,20 @@ Editorial clarification and evidence-link maintenance retain the identifier. A m
 
 Start with a Markdown evidence matrix inside the owning capsule. Do not introduce a manifest, generator, or universal semantic language without named consumers and evidence that the boundary replaces repeated semantic structure. The bounded [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md) is justified by the sequential and parallel topologies and remains governed by its stop criteria.
 
+## Capsule claim lanes and transition-family rules
+
+Close each approved semantic capsule across distinct claim lanes: normative or profile clause, separating witness, executable Lean definition, useful law with exact hypotheses, nearest non-law as a checked theorem or an executable negative witness, retained CIB observation at an explicit fidelity, independent TypeScript behavior, Temporal refinement/replay evidence, and exact status in every applicable detail map routed by [`implementation-status-router`](../IMPLEMENTATION-MAP.md). These dimensions may complete independently; never summarize them with one undifferentiated “supported” claim. [SEMANTIC-VERIFICATION-POLICY.md](../SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes) owns the per-claim independence test and disclosure of shared failure modes.
+
+Give every material semantic rule a stable capsule-owned identifier and a rule-to-evidence row. An editorial correction may retain an identifier; a materially different proposition requires a new identifier and, when already used by evidence or running instances, the applicable profile or artifact version change. Rule identifiers are traceability labels and do not enter runtime wire contracts without a concrete consumer and versioning decision.
+
+For each new runtime-transition family, keep a declarative Lean relation distinct from the executable evaluator and prove that every evaluator-produced transition is permitted by the relation. That bridge counts as a dispatcher and constructor-selection check, and as an independent semantic evidence lane only where the relation arm states premises the evaluator does not supply; an arm whose premise is the evaluator's own result cannot fail apart from it, so cite runtime-state well-formedness preservation and monotonicity for those instead. Where that Lean preservation is an open lane, cite the executable core-side lane and say which it is; do not cite a quantified result that does not exist. Claim completeness, determinism, or equivalence only with exact checked hypotheses; nondeterministic semantics must receive an explicit semantic choice rather than inherit evaluator order. Keep the TypeScript semantic core independently implemented.
+
+Each capsule must inventory runtime-only and synthetic constructs, their source or derivation, why they are necessary, which public projections may expose them, and their creation, ownership, and removal invariants. Keep neutral target scenarios answer-free; expected outcomes and portable assertions remain verifier-only artifacts bound to exact scenario and profile identity.
+
+Adding a profile, scenario, or retained-evidence artifact follows the [artifact registry roundtrip](../SEMANTIC-VERIFICATION-POLICY.md#current-contract-and-artifact-gate) in the same change. Derive aggregate counts from these catalogs instead of maintaining a second manual list.
+
+Name a concrete adapter consumer or refinement risk before generalizing a representation or semantic mechanism. Preserve content-bound CIB observations as immutable evidence and require a meaningful seeded mutation for every new evidence projection. During pre-release, capture and replay Temporal histories within one disposable gate; retain histories only after an explicit durable baseline is approved. Investigate a mismatch at the semantic or projection boundary; never refresh expected evidence merely to make a gate green.
+
 ## Registry
 
 | Capsule | Status and scope |

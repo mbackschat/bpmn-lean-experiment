@@ -590,7 +590,7 @@ test("maintained Lean equalities do not compare an expression with its own expec
  * A `native_decide` proof compiles the decision procedure and trusts the result, so it adds a
  * `native_decide` axiom to its theorem's footprint; `#print axioms` on
  * `string_equals_expression_parses_exactly` reports one beside `propext`, `Classical.choice`, and
- * `Quot.sound`. The kernel-decide policy in [CLAUDE.md](../CLAUDE.md) prefers `decide +kernel`,
+ * `Quot.sound`. The kernel-decide policy in [CODE-STYLE-GUIDE.md](../docs/CODE-STYLE-GUIDE.md) prefers `decide +kernel`,
  * which adds no axiom.
  *
  * This inventory is a ratchet rather than a permission: a new site, or any new module, fails here

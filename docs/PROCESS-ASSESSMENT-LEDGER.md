@@ -4,7 +4,7 @@
 
 ## Purpose and denominator
 
-This ledger records escaped weaknesses in how work was carried out, making recurrence visible instead of answering each repeat with fresh prose. It supports [capsule reflection](../CLAUDE.md#milestone-and-capsule-reflection) and [closure review](REVIEW-POLICY.md#capsule-closure-review), which require a reusable review question or executable guard for each escaped issue.
+This ledger records escaped weaknesses in how work was carried out, making recurrence visible instead of answering each repeat with fresh prose. It supports [capsule reflection](REVIEW-POLICY.md#milestone-and-capsule-reflection) and [closure review](REVIEW-POLICY.md#capsule-closure-review), which require a reusable review question or executable guard for each escaped issue.
 
 The denominator is process findings, not defects. A finding belongs here when it cost real work or produced a wrong intermediate result **and** an existing guard did not catch it. A defect that a gate rejected is not a finding: the guard already worked. Semantic claims, evidence strength, and common-mode risks stay with [the owning capsule](capsules/README.md); reproducible cost stays in [the capsule cost ledger](CAPSULE-COST-LEDGER.md); implementation status stays in the applicable detail map routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md).
 
@@ -1520,7 +1520,7 @@ Disposition
 : `review question`
 
 Evidence
-: [effect-data checkpoint evidence](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses), [same-change registry rule](../CLAUDE.md#code-hygiene-and-module-boundaries)
+: [effect-data checkpoint evidence](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses), [same-change registry rule](SEMANTIC-VERIFICATION-POLICY.md#current-contract-and-artifact-gate)
 
 **First observed:** `PC-DATA-03` effect-data checkpoint review on 2026-10-14.
 

@@ -14,7 +14,7 @@ BPMN XML validation uses [validate-bpmn-xml.sh](../scripts/validate-bpmn-xml.sh)
 
 [Documentation discipline](DOC-DISCIPLINE.md) owns registry membership, roles, status, receipt requirements, map atoms, reviewability budgets and maintained PLAN shape. The infrastructure gate checks those contracts and local Markdown file/anchor resolution over tracked and pending maintained material. It derives capability/profile completeness and canonical capsule assurance lanes from their typed sources; prose is not a second implementation inventory. The [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions: every closed slice's cited requirement must be decided, and every capsule-cited requirement must exist. A new proposal records an unimplemented requirement as unsupported until closure; a CIB extension or representation capsule need not manufacture a BPMN requirement. Neither check requires every supported row to be cited back from a map.
 
-[Contributor code hygiene](../CLAUDE.md#code-hygiene-and-module-boundaries) owns module cohesion and approved size limits. Source guards include pending files, keep Lean umbrellas import-only, reject handwritten JavaScript and project build-output imports in source-mapped harnesses, and derive every public package export's source mapping. `SOURCE_HEADROOM` is a planning warning, not a failure or a substitute for responsibility review; agents cannot create their own size exceptions.
+[Code hygiene](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries) owns module cohesion; [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries) owns the approved size limits. Source guards include pending files, keep Lean umbrellas import-only, reject handwritten JavaScript and project build-output imports in source-mapped harnesses, and derive every public package export's source mapping. `SOURCE_HEADROOM` is a planning warning, not a failure or a substitute for responsibility review; agents cannot create their own size exceptions.
 
 The [Lean source contracts](../scripts/lean-source-contracts.test.ts) require module documentation after imports and before declarations, named maintained conformance theorems instead of anonymous top-level examples, independent declarative transition relations, and safe occurrence construction. Shared literal-aware analysis distinguishes comments, strings, characters and identifier primes; no comment-density or prose-quality quota applies. [Lean import boundaries](../scripts/lean-import-boundaries.test.ts) reject aggregate SemanticProcess imports from leaves so unrelated proof owners do not force broad rebuilds. Source contracts and their adversarial fixtures, not a prose file inventory, own exact checks.
 
@@ -132,3 +132,23 @@ Keep compilation separate from setup/recovery headroom. The two-hour allowance i
 - Temporal Workflow patch branches other than the exact `bpmn-workflow-chain-v1` enrollment.
 
 The general representation checks apply to current source and executable tests. The retired-operation check additionally scans maintained Markdown under `docs/`, excludes `docs/archived/`, and permits only the exact current removal-history contexts owned by the implementation map and profile-parameterized admission specification.
+
+## Project tag procedure
+
+The published `M1` through `M6` and `MVP` names are the closed functional-MVP history. For non-release completion points, use annotated `phase/<kebab-case>` tags with descriptive names. Preserve the published MUE Preview Alpha and Preview Beta phase tags at their original targets; do not retrospectively create `v0.2.0-alpha.*` or `v0.2.0-beta.*` aliases for distributions that were never released. For an actually qualified evaluation distribution, use an annotated `vMAJOR.MINOR.PATCH[-prerelease]` tag following Semantic Versioning. The version must equal the committed root `package.json` and browser `platform/apps/web/package.json` versions, and build metadata is excluded from tag names. The first selected MUE distribution version is `v0.2.0-rc.1`. The owner has explicitly directed RC phase-tag realignments, including the current review corrections; [the historical RC boundary](PROJECT-DESIGN.md#historical-rc-content-boundary) owns their qualification limits. Before each authorized move, record the former target and verify the exact remote tag object before using a compare-and-swap forced update. Each direction authorizes only its named RC correction, never another tag or an ongoing moving alias. Neither tag closes final MUE acceptance. `engine/v0.2` records that separate owner-accepted maturity boundary; a final `v0.2.0` software release remains a separate decision.
+
+Create tags only at a clean, completely verified committed `HEAD`. Pass one `--receipt <absolute-receipt-directory>` for every applicable gate named by the owning checkpoint or release specification, and require each receipt to name the exact target commit; creation refuses an empty receipt set or any failed, malformed, or wrong-commit receipt. Never force or move a published tag except for an explicitly owner-directed RC realignment above; never reuse the historical milestone namespace, and push only the exact intended tag rather than every local tag. Before first publication only, an owner-directed correction may replace a local tag after verifying that the exact remote reference is absent and rerunning every applicable gate into exact-HEAD receipts; this is a one-time evidence correction, never a moving alias for a branch.
+
+Create a local tag, optionally pushing it in the same invocation:
+
+```sh
+node scripts/project-tags.ts create phase shared-persistence --message "Shared persistence phase complete" --receipt <absolute-receipt-directory>
+node scripts/project-tags.ts create release 0.2.0-rc.1 --message "Release 0.2.0-rc.1" --receipt <absolute-pre-push-receipt-directory> --receipt <absolute-release-receipt-directory> --push
+```
+
+If creation succeeded but the push did not, retry only that exact tag:
+
+```sh
+node scripts/project-tags.ts push phase shared-persistence
+node scripts/project-tags.ts push release 0.2.0-rc.1
+```

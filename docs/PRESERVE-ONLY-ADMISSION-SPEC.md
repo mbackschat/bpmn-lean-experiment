@@ -233,7 +233,7 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 - [the frozen A12 CreateDocument reader at the implementation baseline](../adoption/a12/legacy/source-tree/packages/bpmn-source/src/a12-create-document-source.ts)
 - [the Call Activity reader](../packages/bpmn-source/src/call-activity-source.ts)
 
-The compiler's 82 lines will not hold the classification calls, the partition assembly, and the diagnostic list. **A behavior-preserving extraction precedes any semantics**, under [the code-hygiene rule](../CLAUDE.md#code-hygiene-and-module-boundaries); [commit boundaries](REVIEW-POLICY.md#commit-boundaries) decide whether it is a separate commit.
+The compiler's 82 lines will not hold the classification calls, the partition assembly, and the diagnostic list. **A behavior-preserving extraction precedes any semantics**, under [the code-hygiene rule](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries); [commit boundaries](REVIEW-POLICY.md#commit-boundaries) decide whether it is a separate commit.
 
 The natural seam is the preserved-set classifier, and an earlier draft of this proposal called it *a pure function of a parsed element that needs nothing from compilation*. D2 refutes that: it needs the profile, the containment path, the descendant classification, and reference resolution. It is still a clean owner, because all four are inputs rather than compiler state, but it is not the trivial extraction that phrasing implied and should not be scheduled as one.
 

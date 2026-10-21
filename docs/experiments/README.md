@@ -21,6 +21,16 @@ An experiment ends in one of three states:
 
 Keep experiments out of the default semantic authority until they are adopted. Prefer data-only candidates, deliberate countermodels, tiny witnesses, and dedicated gates. Do not add a dependency merely to make an experiment convenient.
 
+## Architecture experiment admission
+
+The three end states above also govern architecture spikes, which require competing accounts and a witness capable of separating them.
+
+An architecture experiment may measure an implementation choice only after a named consumer or standing proof/refinement obligation forces that choice. The existence of a product consumer is an input to the experiment, not an outcome that implementation can discover. Do not interpose a speculative architecture experiment ahead of approved capsule work when its deciding fact is an unmade product decision.
+
+Do not generalize after one consumer.
+
+Before measuring a staged line ceiling, anchor the preceding stage to a commit or record a reproducible baseline of exact files and nonblank counts. Do not publish an exact per-stage delta that can be reconstructed only from prose or an uncommitted mixed-stage tree.
+
 ## Registry
 
 | Experiment | State | Focused gate |

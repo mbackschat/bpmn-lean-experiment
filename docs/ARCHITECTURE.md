@@ -205,6 +205,16 @@ The documentation screenshot project is separate from browser acceptance. It dri
 
 Shared PostgreSQL correctness is a fifth independent Product 2 lane. It builds the union API, recovery-worker, and migration graph once, type-checks a source-mapped harness, then runs only nested real-database tests against isolated PostgreSQL 18 databases. Its separate workflow never adds PostgreSQL to ordinary package tests, the platform checkpoint, `verify.sh`, showcase compatibility, or browser quality.
 
+### Frontend recommendation preflight
+
+Consult the existing decisions before recommending a frontend library, routing approach, state owner, component system, or application structure. This applies to discussion and review as well as implementation. Read these owners in order:
+
+1. [Platform stack research](research/BPM-PLATFORM-STACK-RESEARCH.md): owner requirements, coherent-stack rationale, alternatives, recorded decisions, and open choices.
+2. [Architecture](#user-interface): implemented ownership and the [decision register](#architecture-decision-register), especially ARC-010, ARC-012, and ARC-015 and their reopen conditions.
+3. [Information architecture](BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md) and [UI design](BPM-PLATFORM-UI-DESIGN-SPEC.md): user-facing terminology, navigation, draft and uncertain-command continuity, component ownership, and acceptance boundaries.
+
+Explain which existing decision the recommendation preserves or reopens and why the current requirement meets its reopen condition. Distinguish adopted choices, research candidates, deferred scope, and new recommendations; mentioning a library in research does not authorize its adoption. Prefer the established coherent stack and maintained ecosystem mechanisms. Keep these owners authoritative rather than duplicating their decisions here; the source preflight below additionally applies before material UI implementation.
+
 ## Showcases
 
 `showcase/` contains executable acceptance gates organized as registered milestone and preview packages, beginning with `showcase/m1-definition-deployment/` and including `showcase/mue-preview-alpha/`. The workspace manifests and root release graph own the live package set. MUE Preview Beta is a release composition over existing packages rather than a package of its own. A showcase may configure and drive exact public production-package entry points, and may use private development-only test infrastructure when the milestone requires real hosting. It may not deep-import production internals, enter a production dependency graph, contain reusable production behavior, or expose a private alternative API.

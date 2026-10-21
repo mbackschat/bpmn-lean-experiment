@@ -30,7 +30,7 @@ Before proof-task expansion, record guarantee, next deliverable, separating evid
 
 ## Delegated implementation protocol
 
-Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; no delegated lane edits Lean or runs a Lean command. Apply [tier/reuse/concurrency rules](../CLAUDE.md#delegated-implementation) and separate [reviewer continuity](#when-a-warm-review-is-valid).
+Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; no delegated lane edits Lean or runs a Lean command. Apply [tier rules](../CLAUDE.md#delegated-implementation) and [reuse/concurrency rules](#delegation-lifecycle) and separate [reviewer continuity](#when-a-warm-review-is-valid).
 
 The root retains shared integration points, lifecycle/status docs, commits and complete verification. Give new agents task-shaped names and reused agents explicit replacement assignments. Before work, define:
 
@@ -57,6 +57,16 @@ Each nontrivial implementation agent sends exactly three concise safe-boundary r
 Do not poll/interrupt long builds between boundaries unless a missed promised boundary suggests a stall. Agents never run the complete wrapper. The root inspects diffs, resolves cross-target alignment and runs complete affected-package gates. Run the repository-wide full gate exactly once at meaningful integration/RC qualification, earlier only for concrete cross-package failure, never review frequency, hours or commits. Reuse unchanged-input evidence.
 
 A disposable reviewer worktree needs worktree-local dependency projection: install with `env CI=true pnpm install --frozen-lockfile` when needed and run JS/TS gates with `CI=true`. Share the pnpm store, never another checkout's `node_modules`, which would let review alter main dependencies.
+
+### Delegation lifecycle
+
+Keep one active deliverable. Sub-agents may own bounded parts of that deliverable, but do not open independent workstreams that leave unfinished code behind. Integrate, verify and commit the selected outcome before selecting another; when blocked, record and replan instead of accumulating unrelated implementation. An owner-directed checkpoint may preserve unfinished work with its remaining verification and acceptance explicitly open.
+
+Prefer reusing a completed MEDIUM or LOW agent for related follow-ups while its assumptions remain valid. Keep the same agent through implementation, assigned testing and corrections with explicit file ownership. Confirm its prior work has stopped and replace its assignment explicitly. Use fresh context for unrelated work, changed assumptions or required independence.
+
+Give each new agent a task-shaped name and a concise brief covering one complete bounded outcome, affected consumers and proofs, constraints, owned paths and validation. Batch related work through implementation, tests and corrections into one handback; avoid helper-sized assignments, repeated polling and idle waiting updates. Reserve cleanup within the timebox. Run focused checks during development and broader affected-consumer gates after related changes stabilize, preserving required acceptance gates. Start with one MEDIUM worker; add concurrency only for independent subtasks of the selected deliverable with disjoint file ownership/build outputs and review capacity. A LOW agent may run beside it when read-only or on disjoint paths. Sub-agents never edit Lean or run a Lean command. HIGH takes over after repeated failure; do not delegate another equivalent attempt.
+
+HIGH checks handbacks and owns integration, [commit boundaries](REVIEW-POLICY.md#commit-boundaries) and acceptance; inspect evidence without duplicating the worker's investigation. Follow the [delegation protocol](REVIEW-POLICY.md#delegated-implementation-protocol) for limits and [independent-review rules](../CLAUDE.md#independent-cold-review); implementers cannot review their own work. At each bounded outcome, assess accepted results against rework, context/handoff, polling and validation cost, using measured usage when available; self-correct task size, reuse, concurrency and gate cadence. Failed attempts count as rework. Do not claim unmeasured token savings. Report assessments only when asked.
 
 ### CIB BPMN fixture construction
 
@@ -240,3 +250,17 @@ After the full gate is green, independently review:
 Run `node scripts/capsule-cost.ts <baseline-commit> <closure-commit>` for nonblank code (hand-written Lean/TS/Java/JS) and Markdown `+added/-removed` measures; the dependency-free parser/blank exclusions are infrastructure-tested. Elapsed time requires retained start/closure timestamps, otherwise unknown, never inferred from commit dates. Mixed uncommitted worktrees cannot supply reproducible closure cost.
 
 Answer [the self-assessment questions](PROCESS-ASSESSMENT-LEDGER.md#self-assessment-questions), then inspect matching complete findings through the [finding index](PROCESS-ASSESSMENT-LEDGER.md#finding-index). Record every escape under its mechanism, retaining the cumulative count and compact relevant provenance instead of another incident narrative. Its guard forbids `review question`/`accepted risk` at two or more instances: recurrence shows prose failed to bind.
+
+### Milestone and capsule reflection
+
+This epistemic-closure review runs separately after the technical gate is green and before a milestone or semantic capsule is marked complete. Under the 2026-10-21 owner direction in [CLAUDE.md](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) it applies at family closure, not per slice. In addition to the closure-review items above:
+
+1. identify the nearest realistic counterexample and require either a checked non-law or an executable negative witness;
+2. confirm every claimed separating witness differs at the approved public observation boundary; a hidden microstep, storage order, or evaluator choice is not a discriminator unless the contract exposes it;
+3. when the comparison shows the measured cost did not fall, remove one identified process weight before starting the next capsule. The removed weight must bear on the measure that rose, or the row states why no such weight exists; a removal on an axis that already improved leaves the growing cost unaddressed and satisfies the only subtractive rule in this process without subtracting anything;
+4. decide whether the result changes the next best step;
+5. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review-gate) before crossing their stage boundaries.
+
+Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: recurrence requires an executable guard or an explicit explanation that the class is unguardable under the ledger’s closed dispositions. Assume your own fresh prose does not bind you.
+
+Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](ARCHITECTURE.md), evidence and guards in the focused owner selected by [TESTING-SPEC.md](TESTING-SPEC.md#select-the-task-owner), implementation status in the applicable detail map routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.

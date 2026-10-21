@@ -88,6 +88,8 @@ Lead with purpose and practical benefit, then explain the approach and evidence.
 
 Explain the assurance boundary once in accessible language: Lean proves selected properties of the execution model, while separate tests check the TypeScript implementation and Temporal hosting. Neither proves that the entire engine conforms to BPMN. Link to exact evidence and restrictions rather than repeatedly qualifying every sentence or treating proof counts as a measure of conformance. Apply this audience contract to the explanatory copy of the README's [infographics](INFOGRAPHICS.md) as well.
 
+Keep the top-level `README.md` as a durable project front door. Do not put live status, evidence counts, current support inventories, or next-work narration there; link to the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md) and to [PLAN.md](PLAN.md) instead. The sole non-semantic exception is governed by [the publication-statistics contract](TESTING-SPEC.md#default-verification); follow that owner rather than restating its generated blocks or maintainer requirements here.
+
 ## Status is separate from role
 
 Every maintained proposal, spec, research result, experiment, decision, policy, target, and handoff must contain an exact `## Status` section within its first 15 nonblank lines. Archived and locally ingested reference documents are outside this current-status rule.
@@ -177,6 +179,12 @@ On 2026-10-18 the family map reached 3,998 words when the nested embedded scope-
 | Retained process findings, their instance counts, and dispositions | `PROCESS-ASSESSMENT-LEDGER.md` |
 | Test method and gates | `TESTING-SPEC.md` |
 | External revisions and licenses | `SOURCES.md` |
+| Infographic creation, revision, AVIF publication, and ignored local PNG masters | `INFOGRAPHICS.md`, using its linked infographic skill |
+| Downstream A12 model, delegate, façade, blueprint, and migration-adoption denominator | `research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md` |
+| Review, delegation, and proof-design assessment | `REVIEW-POLICY.md` |
+| Source responsibility, size limits, module boundaries, language idioms, and comments | `CODE-STYLE-GUIDE.md` |
+| Domain evidence and execution procedure | The task-selected owner routed by `TESTING-SPEC.md` |
+| Clean-machine and coding-agent setup | `CONTRIBUTOR-SETUP-GUIDE.md` |
 
 ## Same-change triggers
 
