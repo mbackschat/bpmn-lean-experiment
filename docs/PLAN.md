@@ -79,15 +79,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: `PC-SCOPE-02`, the third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); the scope-control batch closed on 2026-10-21 with its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#independent-cold-review-receipt), while `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes. `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
 
-Deliverable: a reviewed proposal for repeated and concurrent activations of one embedded definition with distinct scope, data and task lifetimes, growing the embedded completion profile.
+Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), uncontrolled merge into User Tasks and embedded Sub-Processes with independent concurrent occurrences, serving the concurrent clause of `PC-SCOPE-02` and the merge clause of `PC-CF-07`; re-entry waits for the scope extension of `PC-CF-06`.
 
 Acceptance blockers: the proposal, its Temporal preflight and its cold review.
 
-Current result: not started.
+Current result: the proposal is drafted.
 
 Effort budget: 2 hours wall from 2026-10-21 for the proposal and its review.
 
-Next action: read the `PC-SCOPE-02` row, its embedded and Multi-Instance owners and the CIB re-entry evidence, then draft the proposal.
+Next action: commit the proposal and run its cold proposal review.
 
 Oracle: a later activation or re-entry that reads another occurrence's locals or consumes its completion.
 
