@@ -51,6 +51,36 @@ export async function startBpmnTestWorker(
   activities?: EffectActivityImplementations,
   activityOverrides: TestActivityOverrides = {},
 ): Promise<WorkerLease> {
+  const lease = await startUnverifiedBpmnTestWorker(
+    environment, workflowBundle, identity, activities, activityOverrides,
+  );
+  try {
+    await verifyBpmnTestWorkerDeployment(environment, workflowBundle);
+  } catch (error: unknown) {
+    lease.worker.shutdown();
+    await lease.completion;
+    throw error;
+  }
+  return lease;
+}
+
+/**
+ * Starts a polling Worker whose Worker Deployment routing the caller verifies later with
+ * {@link verifyBpmnTestWorkerDeployment}; the caller owns both that call and the lease's shutdown.
+ *
+ * It exists for a replacement Worker inside a witness that races a host-armed deadline. Verification
+ * goes through the Worker Deployment control plane, whose describe and registration reads took
+ * 0.5–2.3 s on the local test server (measured 2026-10-22) and pushed the PMI natural path to 58% of
+ * its 5 s deadline on hosted and local runs. A replacement with the same Build ID cannot change the
+ * routing being verified, so verifying after the race keeps the evidence without racing it.
+ */
+export async function startUnverifiedBpmnTestWorker(
+  environment: TestWorkflowEnvironment,
+  workflowBundle: WorkflowBundleWithSourceMap,
+  identity: string,
+  activities?: EffectActivityImplementations,
+  activityOverrides: TestActivityOverrides = {},
+): Promise<WorkerLease> {
   const worker = await withDeadline(
     Worker.create({
       connection: environment.nativeConnection,
@@ -84,18 +114,19 @@ export async function startBpmnTestWorker(
   if (failure !== undefined) {
     throw failure;
   }
-  try {
-    await initializeTestOwnedDeployment(environment, bpmnSemanticTaskQueue, workflowBundle);
-  } catch (error: unknown) {
-    worker.shutdown();
-    await completion;
-    throw error;
-  }
   return {
     worker,
     completion,
     failure: () => failure,
   };
+}
+
+/** Requires the bundle's version to be the registered, enrolled Current of the BPMN task queue. */
+export async function verifyBpmnTestWorkerDeployment(
+  environment: TestWorkflowEnvironment,
+  workflowBundle: WorkflowBundleWithSourceMap,
+): Promise<void> {
+  await initializeTestOwnedDeployment(environment, bpmnSemanticTaskQueue, workflowBundle);
 }
 
 export async function stopBpmnTestWorker(

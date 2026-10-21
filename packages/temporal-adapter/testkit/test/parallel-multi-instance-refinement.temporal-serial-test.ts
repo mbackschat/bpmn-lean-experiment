@@ -44,8 +44,8 @@ import {
   compileExecutionInput, loadJson, temporalCacheDirectory, withDeadline,
 } from "./temporal-test-support.ts";
 import {
-  replayBpmnHistory, startBpmnTestWorker, stopBpmnTestWorker,
-  waitForOpenUserTaskIds,
+  replayBpmnHistory, startBpmnTestWorker, startUnverifiedBpmnTestWorker, stopBpmnTestWorker,
+  verifyBpmnTestWorkerDeployment, waitForOpenUserTaskIds,
 } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
 import {
@@ -159,6 +159,8 @@ async function runNaturalRecovery(
     elapsedMs: Date.now() - armedAtMs,
     remainingMs: lifetimeTimer.deadlineMs - armed.logicalTimeMs,
   };
+  // The replacement Worker's deployment verification runs here, after the race it must not spend.
+  await verifyBpmnTestWorkerDeployment(environment, bundle);
   await context.test("performance: natural PMI deadline headroom", () => {
     assertHostClockDeadlineMargin(deadlineMeasurement);
   });
@@ -527,7 +529,7 @@ async function replaceWorker(
   assert.ok(current !== undefined);
   delete worker.lease;
   await stopBpmnTestWorker(current);
-  worker.lease = await startBpmnTestWorker(
+  worker.lease = await startUnverifiedBpmnTestWorker(
     environment, bundle, "parallel-multi-instance-refinement-replacement",
   );
 }

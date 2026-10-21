@@ -30,8 +30,8 @@ import {
   compileExecutionInput, loadJson, temporalCacheDirectory, withDeadline,
 } from "./temporal-test-support.ts";
 import {
-  startBpmnTestWorker, stopBpmnTestWorker,
-  waitForOpenUserTaskIds, type WorkerLease,
+  startBpmnTestWorker, startUnverifiedBpmnTestWorker, stopBpmnTestWorker,
+  verifyBpmnTestWorkerDeployment, waitForOpenUserTaskIds, type WorkerLease,
 } from "./temporal-worker-test-support.ts";
 import {
   waitForPublishedWorkflowChainState, waitForWorkflowChainRunCount,
@@ -199,6 +199,8 @@ async function runNaturalRefinement(
     elapsedMs: Date.now() - armedAtMs,
     remainingMs: lifetimeTimer.deadlineMs - firstState.logicalTimeMs,
   };
+  // The replacement Worker's deployment verification runs here, after the race it must not spend.
+  await verifyBpmnTestWorkerDeployment(environment, bundle);
   await context.test("performance: natural SMI deadline headroom", () => {
     assertHostClockDeadlineMargin(deadlineMeasurement);
   });
@@ -483,7 +485,7 @@ async function replaceWorker(
   assert.ok(current !== undefined);
   delete worker.lease;
   await stopBpmnTestWorker(current);
-  worker.lease = await startBpmnTestWorker(
+  worker.lease = await startUnverifiedBpmnTestWorker(
     environment,
     bundle,
     "sequential-multi-instance-refinement-replacement",
