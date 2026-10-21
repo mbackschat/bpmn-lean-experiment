@@ -100,4 +100,17 @@ def runtimeStateIdentityBound (state : RuntimeState) : Bool :=
     decide (record.activation ≤ activityActivationCount state
       { value := record.activityElementId.value }))
 
+/-- `RSI-BOUND-01`'s Scope branch: no live scope occurrence other than a called root is numbered above its
+definition's recorded count. Called roots stay outside it, because the call record rather than the scope
+counter issues them.
+
+It is a separate predicate rather than a fourth conjunct of `runtimeStateIdentityBound`, because that
+aggregate's existing transition proofs would otherwise each owe its preservation, which stays in the
+deliberately open lane (`RSI-OBL-03` to `RSI-OBL-06`). Its consumer is CEA-OCCUR-01's freshness law; the
+TypeScript core decides the same branch inside `runtimeStateDefects` on every gate prefix. -/
+def scopeIdentityBound (state : RuntimeState) : Bool :=
+  state.scopeOccurrences.all fun occurrence =>
+    state.calledProcessOccurrences.any (·.calledRoot == occurrence.id) ||
+      decide (occurrence.id.activation ≤ scopeActivationCount state occurrence.id.definitionScopeId)
+
 end BpmnSemantics.SemanticProcess

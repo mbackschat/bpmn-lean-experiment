@@ -639,8 +639,11 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
       pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
   | .enterScope _ _ _ _ childScopeId | .enterBoundedScope _ _ _ _ childScopeId _
   | .enterMonitoredScope _ _ _ _ childScopeId _ =>
+      -- CEA-OCCUR-01: the entered child is the one absent before, so a live sibling of its definition under the
+      -- same owner cannot make the selection ambiguous; without one this is the unique child, as before.
       let child ← match after.scopeOccurrences.filter fun occurrence =>
-          decide (occurrence.id.definitionScopeId = childScopeId && occurrence.parent = some owner) with
+          decide (occurrence.id.definitionScopeId = childScopeId && occurrence.parent = some owner) &&
+            !before.scopeOccurrences.any (·.id == occurrence.id) with
         | [child] => some child
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [← candidateScopeStart? program operation owner child] [])
@@ -802,9 +805,10 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
       let branch ← terminateScopeCancellationDelta? program before operation commandId
         transitionIndex owner origin
       pure branch.2
+  -- CEA-QUIESCE-01: completion is addressed by its owner, so the record never re-derives it by definition.
   | .completeScope _ _ scopeId _ =>
       match before.scopeOccurrences.filter fun occurrence =>
-          decide (occurrence.id.definitionScopeId = scopeId) with
+          decide (occurrence.id.definitionScopeId = scopeId && occurrence.id = owner) with
       | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])
       | [{ parent := none, .. }] => pure (canonicalFlowNodeOccurrenceDelta [] [])
       | _ => none

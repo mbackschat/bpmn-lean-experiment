@@ -83,11 +83,11 @@ Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-E
 
 Acceptance blockers: implementation in both languages, the semantic checkpoint review, then the complete pipeline and closure.
 
-Current result: the proposal is approved: cold review of `ee316777` with required edits, closed by three correction audits, the third owner-authorized; see its [receipt](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt).
+Current result: proposal approved ([receipt](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt)); core committed at `598e532a`; Lean lane and registration in the worktree. The single conformance module exceeded the 3 GiB container bound and was split; the [resource ledger](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md) owns the runs.
 
 Effort budget: 8 hours wall from 2026-10-21 for implementation to the semantic checkpoint, reassessed at the limit; the proposal stage used about 3 hours against its 2.
 
-Next action: red/green the TypeScript merge-region admission and the occurrence-addressed merge-target operations on the audit and intake models, then Lean, then registration and the semantic checkpoint review.
+Next action: record the split measurements, commit, run the complete pipeline once, then request the semantic checkpoint review.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

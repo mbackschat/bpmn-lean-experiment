@@ -100,6 +100,102 @@ def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)
       else completeQuiescentScope? state occurrence parentOutput
   | _ => none
 
+/-- CEA-QUIESCE-01: completion of the named occurrence, whatever other occurrences of its definition are
+live. It looks the occurrence up by id, requires its quiescence, and then applies the shared rewrite. -/
+def completeScopeOccurrenceState? (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId) : Option RuntimeState := do
+  let occurrence ← state.scopeOccurrences.find? (·.id == owner)
+  if occurrence.id.definitionScopeId ≠ scopeId || !scopeQuiescent state occurrence.id then none
+  else completeQuiescentScope? state occurrence parentOutput
+
+private theorem find_unique_definition (values : List RuntimeScopeOccurrence)
+    (scopeId : DefinitionScopeId) (occurrence : RuntimeScopeOccurrence)
+    (unique : values.filter (fun candidate => decide (candidate.id.definitionScopeId = scopeId)) = [occurrence]) :
+    occurrence.id.definitionScopeId = scopeId ∧ values.find? (·.id == occurrence.id) = some occurrence := by
+  have inFilter : occurrence ∈ values.filter
+      (fun candidate => decide (candidate.id.definitionScopeId = scopeId)) := by
+    rw [unique]; simp
+  obtain ⟨member, defined⟩ := List.mem_filter.mp inFilter
+  have defined : occurrence.id.definitionScopeId = scopeId := by simpa using defined
+  refine ⟨defined, ?_⟩
+  cases found : values.find? (·.id == occurrence.id) with
+  | none =>
+      have absent := List.find?_eq_none.mp found occurrence member
+      simp at absent
+  | some selected =>
+      have selectedMember := List.mem_of_find?_eq_some found
+      have selectedId : selected.id = occurrence.id := by simpa using List.find?_some found
+      have selectedIn : selected ∈ values.filter
+          (fun candidate => decide (candidate.id.definitionScopeId = scopeId)) :=
+        List.mem_filter.mpr ⟨selectedMember, by simp [selectedId, defined]⟩
+      rw [unique] at selectedIn
+      simp at selectedIn
+      simp [selectedIn]
+
+/-- Under a unique live occurrence of the definition, definition-addressed completion factors through
+lookup by id, so the occurrence-addressed variant changes nothing where the existing one succeeds. -/
+theorem completeScopeState_factors (state : RuntimeState) (scopeId : DefinitionScopeId)
+    (parentOutput : Option ControlPlaceId) (occurrence : RuntimeScopeOccurrence)
+    (unique : state.scopeOccurrences.filter (fun candidate =>
+      decide (candidate.id.definitionScopeId = scopeId)) = [occurrence]) :
+    completeScopeState? state scopeId parentOutput =
+      completeScopeOccurrenceState? state occurrence.id scopeId parentOutput := by
+  obtain ⟨defined, found⟩ := find_unique_definition state.scopeOccurrences scopeId occurrence unique
+  simp [completeScopeState?, completeScopeOccurrenceState?, unique, found, defined]
+
+/-- CEA-QUIESCE-01: an occurrence that still owns work does not complete. -/
+theorem completeScopeOccurrenceState_refuses_nonquiescent (state : RuntimeState)
+    (owner : ScopeOccurrenceId) (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (busy : scopeQuiescent state owner = false) :
+    completeScopeOccurrenceState? state owner scopeId parentOutput = none := by
+  unfold completeScopeOccurrenceState?
+  cases found : state.scopeOccurrences.find? (·.id == owner) with
+  | none => rfl
+  | some occurrence =>
+      have same : occurrence.id = owner := by simpa using List.find?_some found
+      simp [same, busy]
+
+/-- CEA-QUIESCE-01: a completion selects exactly the named live, quiescent occurrence of the definition. -/
+theorem completeScopeOccurrenceState_selected (state completed : RuntimeState)
+    (owner : ScopeOccurrenceId) (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
+    (completion : completeScopeOccurrenceState? state owner scopeId parentOutput = some completed) :
+    ∃ occurrence ∈ state.scopeOccurrences, occurrence.id = owner ∧
+      occurrence.id.definitionScopeId = scopeId ∧ scopeQuiescent state owner = true ∧
+      completeQuiescentScope? state occurrence parentOutput = some completed := by
+  unfold completeScopeOccurrenceState? at completion
+  obtain ⟨occurrence, found, completion⟩ := Option.bind_eq_some_iff.mp completion
+  have same : occurrence.id = owner := by simpa using List.find?_some found
+  split at completion
+  · contradiction
+  · next ready =>
+      simp only [Bool.or_eq_true, decide_eq_true_eq, Bool.not_eq_true', not_or] at ready
+      exact ⟨occurrence, List.mem_of_find?_eq_some found, same, Decidable.of_not_not ready.1,
+        same ▸ (by simpa using ready.2), completion⟩
+
+/-- CEA-ISOLATE-01 for a child's completion: tokens gain only the parent's continuation, only the completed
+occurrence leaves, and no wait changes, so every other occurrence of the same definition keeps its tasks,
+tokens and parent. -/
+theorem completeQuiescentScope_child_frame (state completed : RuntimeState)
+    (occurrence : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId) (output : ControlPlaceId)
+    (child : occurrence.parent = some parent)
+    (completion : completeQuiescentScope? state occurrence (some output) = some completed) :
+    completed.tokens = addToken state.tokens output parent ∧
+      completed.scopeOccurrences = state.scopeOccurrences.filter (fun candidate =>
+        decide (candidate.id ≠ occurrence.id)) ∧
+      completed.waits = state.waits ∧ completed.messageWaits = state.messageWaits ∧
+      completed.timerWaits = state.timerWaits ∧ completed.effectWaits = state.effectWaits ∧
+      completed.control = state.control := by
+  unfold completeQuiescentScope? at completion
+  rw [child] at completion
+  cases control : state.control <;> simp only [control] at completion
+  all_goals first
+    | contradiction
+    | (split at completion
+       · simp only [Option.some.injEq] at completion
+         subst completion
+         exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, by simp [control]⟩
+       · contradiction)
+
 /-- Successful completion exposes its exact selected rewrite so downstream preservation proofs
 need not unfold the private completion implementation or assume its resulting field values. -/
 theorem completeScopeState_selected_update (state completed : RuntimeState)

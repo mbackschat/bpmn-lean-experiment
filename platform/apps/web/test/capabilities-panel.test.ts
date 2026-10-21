@@ -112,6 +112,8 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "continues once at its own parent without touching concurrent work outside it",
     "a Start or completion closure of more than eight steps is refused before Workflow start",
     "CIB agreement is retained only for the one-level fixture",
+    "every arriving branch starts its own concurrent activation of that Sub-Process, which completes alone and continues once",
+    "counting such a target and its successors once per branch",
     "The nested scope-data profile instead admits ordinary Sub-Processes nested to depth three in one serial path",
     "a read resolves to the nearest enclosing declaring frame, otherwise the Process",
     "a write updates that owner and never creates a local",
@@ -125,6 +127,17 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.ok(
     parallelGatewayRow.includes("paired forks and joins of two or more branches inside Sub-Process bodies"),
     "Parallel Gateway row must disclose nested paired blocks",
+  );
+  assert.ok(
+    parallelGatewayRow.includes("a fork whose User Task branches all end at one Exclusive merge into a Sub-Process"),
+    "Parallel Gateway row must disclose the merge region",
+  );
+  const exclusiveGatewayRowStart = html.indexOf('data-capability-id="exclusiveGateway"');
+  assert.notEqual(exclusiveGatewayRowStart, -1);
+  const exclusiveGatewayRow = html.slice(exclusiveGatewayRowStart, html.indexOf("</tr>", exclusiveGatewayRowStart));
+  assert.ok(
+    exclusiveGatewayRow.includes("which passes each arriving token on its own"),
+    "Exclusive Gateway row must disclose the uncontrolled merge into a Sub-Process",
   );
   const payloadRowStart = html.indexOf('data-capability-id="messagePayloadCatchEvent"');
   assert.notEqual(payloadRowStart, -1);

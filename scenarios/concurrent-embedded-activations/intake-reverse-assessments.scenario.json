@@ -1,0 +1,123 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-activations-intake-reverse-assessments",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "credit-intake",
+    "relativePath": "scenarios/concurrent-embedded-activations/credit-intake.bpmn",
+    "sha256": "fda0bb25db5f7db272bbf0142fcc0ca2770e06aeed4baba7c0e4489b46af56c1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_CreditIntake",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-open-application",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_OpenApplication",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-check-identity",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CheckIdentity",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-check-address",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CheckAddress",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-check-income",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CheckIncome",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-score-applicant-3",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ScoreApplicant",
+        "activation": 3
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-score-applicant-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ScoreApplicant",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-score-applicant",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ScoreApplicant",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-decide",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 §13.4.2",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

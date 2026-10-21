@@ -1,0 +1,143 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-activations-audit-interleaved-and-stale",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "audit-remediation",
+    "relativePath": "scenarios/concurrent-embedded-activations/audit-remediation.bpmn",
+    "sha256": "80c9ed0b594e6fd6eaf5bd0cc01d81fb8a3eab5bbce5417a28d6e1db0f7da7af",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_AuditRemediation",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-controls",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReviewControls",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-payments",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReviewPayments",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-fix-finding-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_FixFinding",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-verify-fix",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_VerifyFix",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-fix-finding-2-again",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_FixFinding",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-report-finding",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReportFinding",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-fix-finding",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_FixFinding",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-verify-fix-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_VerifyFix",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-report-finding-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReportFinding",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-close-audit",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CloseAudit",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 §13.4.2",
+      "BPMN 2.0.2 Table 13.1",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

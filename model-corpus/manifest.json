@@ -705,6 +705,82 @@
       }
     },
     {
+      "id": "audit-remediation-concurrent-findings",
+      "title": "Remediate audit findings",
+      "businessPurpose": "Review controls and payments in parallel, open a separate remediation for each finding as soon as its review finishes so two fixes can run side by side, report each finding when its own remediation ends, and close the audit only after every remediation has reported, refusing a repeated fix of a remediation that already finished.",
+      "cloneFamily": "audit-remediation-concurrent-findings",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-embedded-activations/audit-remediation.bpmn",
+        "sha256": "80c9ed0b594e6fd6eaf5bd0cc01d81fb8a3eab5bbce5417a28d6e1db0f7da7af",
+        "scenarioRelativePath": "scenarios/concurrent-embedded-activations/audit-interleaved-and-stale.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-activations-audit-interleaved-and-stale",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The concurrent remediations are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
+      "id": "credit-intake-concurrent-assessments",
+      "title": "Assess a credit application",
+      "businessPurpose": "Open a credit application, check identity, address and income in parallel, score the applicant in a separate assessment for every finished check, and decide only after all three assessments have finished in any order.",
+      "cloneFamily": "credit-intake-concurrent-assessments",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-embedded-activations/credit-intake.bpmn",
+        "sha256": "fda0bb25db5f7db272bbf0142fcc0ca2770e06aeed4baba7c0e4489b46af56c1",
+        "scenarioRelativePath": "scenarios/concurrent-embedded-activations/intake-reverse-assessments.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-activations-intake-reverse-assessments",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The concurrent assessments are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
       "id": "scoped-business-error-recovery",
       "title": "Recover scoped work after a business error",
       "businessPurpose": "Route a failed scoped operation to its declared recovery work while cancelling its live sibling.",

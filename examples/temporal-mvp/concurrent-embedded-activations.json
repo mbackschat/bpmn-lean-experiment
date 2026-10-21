@@ -1,0 +1,88 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/concurrent-embedded-activations/audit-remediation.bpmn",
+    "sourceId": "audit-remediation",
+    "semanticProfile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "limits": {
+      "maxBytes": 1048576,
+      "parserDeadlineMs": 1000
+    }
+  },
+  "process": {
+    "instanceId": "MvpExample_concurrent_embedded_activations_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewControls",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_FixFinding",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_VerifyFix",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReportFinding",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewPayments",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_FixFinding",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_VerifyFix",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReportFinding",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_CloseAudit",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": []
+}

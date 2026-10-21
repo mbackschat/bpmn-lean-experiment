@@ -28,6 +28,8 @@ import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransiti
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
 import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import BpmnSemantics.SemanticProcess.MergeTargetOperations
+import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
 
 /-! # Semantic Process internal transitions
 
@@ -167,6 +169,13 @@ inductive OperationStep (program : Program) :
       (before after : RuntimeState)
       (transition :
         enterDeclaredScope? program before input childEntry childScopeId = some after) :
+      OperationStep program
+        (.enterScope id origin input childEntry childScopeId) before after
+  /-- CEA-OCCUR-01: a merge target is entered by the arriving token's owner, beside live siblings. -/
+  | enterConcurrentScope (id origin input childEntry childScopeId) (owner : ScopeOccurrenceId)
+      (before after : RuntimeState)
+      (target : isMergeTargetOperation program (.enterScope id origin input childEntry childScopeId) = true)
+      (transition : enterConcurrentScopeState? before owner input childEntry childScopeId = some after) :
       OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
   | enterSequentialScope (id origin input childEntry childScopeId output collection item inputs condition)
@@ -362,6 +371,13 @@ inductive OperationStep (program : Program) :
       (before after : RuntimeState)
       (transition :
         completeDeclaredScope? program before scopeId parentOutput = some after) :
+      OperationStep program
+        (.completeScope id origin scopeId parentOutput) before after
+  /-- CEA-QUIESCE-01: a merge target's named occurrence completes, whatever siblings are live. -/
+  | completeScopeOccurrence (id origin scopeId parentOutput) (owner : ScopeOccurrenceId)
+      (before after : RuntimeState)
+      (target : isMergeTargetOperation program (.completeScope id origin scopeId parentOutput) = true)
+      (transition : completeScopeOccurrenceState? before owner scopeId parentOutput = some after) :
       OperationStep program
         (.completeScope id origin scopeId parentOutput) before after
 

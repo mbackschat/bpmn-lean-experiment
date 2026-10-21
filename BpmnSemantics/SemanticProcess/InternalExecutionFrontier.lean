@@ -28,6 +28,15 @@ def ordinaryExecutionFrontier (program : Program) (state : RuntimeState)
     | some candidates => { offers := candidates.map fun (candidate, successor) =>
         { alternative := .operationOccurrence candidate.operationId candidate.owner,
           operation, successor, preparation := none } }
+  -- CEA-OCCUR-01 and CEA-QUIESCE-01: merge-target operations are offered per owning occurrence and unprepared,
+  -- so they publish only as singleton frontiers; the definition-addressed path refuses a second live occurrence.
+  else if isMergeTargetOperation program operation then
+    match internalOperationOccurrences? program state operation.id with
+    | none => {}
+    | some candidates => { offers := candidates.filterMap fun candidate =>
+        (applyInternalOperationOccurrence? program state candidate).map fun successor =>
+          { alternative := .operationOccurrence candidate.operationId candidate.owner,
+            operation, successor, preparation := none } }
   else
   -- The approved ordinary-End account retains the single-unit selector. Its broader raw
   -- relation must not bypass that executable restriction when preparation is unavailable.

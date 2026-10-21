@@ -199,7 +199,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (serial repeatable mixed businessError : Bool) (dormantHandlers : List NodeId)
+private def checkedNodeArityValid (serial repeatable mixed businessError variableMerge : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -364,7 +364,9 @@ private def checkedNodeArityValid (serial repeatable mixed businessError : Bool)
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
   | .exclusiveMerge id =>
-      (if mixed then incomingCount flows id ≥ 2 else incomingCount flows id = 3) && outgoingCount flows id = 1
+      -- CEA-ADMIT-01 merges any fork width; profiles without a variable merge keep exact-three arity.
+      (if mixed || variableMerge then incomingCount flows id ≥ 2 else incomingCount flows id = 3) &&
+        outgoingCount flows id = 1
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
         outgoingCount flows id = candidateFlowIds.length + 1 &&
@@ -470,6 +472,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
+      (source.identity.semanticProfile.value == embeddedCompletionProfile)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&

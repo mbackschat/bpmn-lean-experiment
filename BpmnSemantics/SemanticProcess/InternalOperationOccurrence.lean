@@ -1,50 +1,18 @@
 import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import BpmnSemantics.SemanticProcess.MergeTargetOperations
 import BpmnSemantics.SemanticProcess.OccurrenceReservationState
 import BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
 import BpmnSemantics.SemanticProcess.TransitionRecord
 
-/-! PMIS-SELECT-01: complete operation/owner discovery and exact occurrence execution.
-This changing execution boundary stays separate from the established alternative-order proof closure.
+/-! PMIS-SELECT-01: exact occurrence execution over the discovery in `InternalOperationOccurrenceDiscovery`,
+which CEA-OCCUR-01 and CEA-QUIESCE-01 reuse for merge-target scope operations. This changing execution
+boundary stays separate from the established alternative-order proof closure.
 -/
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
-
-/-- PMIS-SELECT-01 keeps operation identity paired with its complete scope occurrence. -/
-structure InternalOperationOccurrence where
-  operationId : OperationId
-  owner : ScopeOccurrenceId
-  deriving Repr, DecidableEq
-
-/-- Owner discovery is independent of token/data readiness, which belongs to the evaluator. -/
-def internalOperationOccurrences? (program : Program) (state : RuntimeState) (id : OperationId) :
-    Option (List InternalOperationOccurrence) := do
-  let [_] := program.operations.filter (·.id == id) | none
-  let [binding] := program.operationScopes.filter (·.operationId == id) | none
-  let owners := sortBy scopeBefore
-    ((state.scopeOccurrences.map (·.id)).filter (·.definitionScopeId == binding.scopeId))
-  if owners.Nodup then some (owners.map fun owner => ⟨id, owner⟩) else none
-
-/-- A removed owner never rebinds to a remaining occurrence of the same definition. -/
-def resolveInternalOperationOccurrence? (program : Program) (state : RuntimeState)
-    (candidate : InternalOperationOccurrence) : Option SemanticOperation := do
-  let candidates ← internalOperationOccurrences? program state candidate.operationId
-  if candidates.contains candidate then program.operations.find? (·.id == candidate.operationId) else none
-
-/-- Revalidation cannot succeed without the exact candidate in current discovery. -/
-theorem resolveInternalOperationOccurrence_requires_exact_candidate (program : Program) (state : RuntimeState)
-    (candidate : InternalOperationOccurrence) (operation : SemanticOperation)
-    (resolved : resolveInternalOperationOccurrence? program state candidate = some operation) :
-    ∃ candidates, internalOperationOccurrences? program state candidate.operationId = some candidates ∧
-      candidate ∈ candidates := by
-  unfold resolveInternalOperationOccurrence? at resolved
-  cases discovered : internalOperationOccurrences? program state candidate.operationId with
-  | none => simp [discovered] at resolved
-  | some candidates =>
-      refine ⟨candidates, rfl, ?_⟩
-      by_cases present : candidate ∈ candidates
-      · exact present
-      · simp [discovered, present] at resolved
 
 /-- PMIS-SELECT-01 revalidates the exact occurrence and each consumed token before an internal step. -/
 def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
@@ -57,9 +25,19 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
   | .initiate _ _ output => do
       let [root] := state.scopeOccurrences.filter (·.parent.isNone) | none
       if root.id == owner then initiateState? state output else none
-  | .completeScope _ _ scopeId parentOutput => do
-      let [selected] := state.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) | none
-      if selected.id == owner then completeDeclaredScope? program state scopeId parentOutput else none
+  | .enterScope _ _ input childEntry childScopeId =>
+      -- CEA-OCCUR-01: only a merge target is entered by owning occurrence.
+      if isMergeTargetOperation program operation && unit input then
+        enterConcurrentScopeState? state owner input childEntry childScopeId
+      else none
+  | .completeScope _ _ scopeId parentOutput =>
+      -- CEA-QUIESCE-01 confines lookup by occurrence to merge targets; every other completion keeps the
+      -- declared-scope wrapper, which also writes data outputs and withdraws bounded deadlines.
+      if isMergeTargetOperation program operation then
+        completeScopeOccurrenceState? state owner scopeId parentOutput
+      else do
+        let [selected] := state.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) | none
+        if selected.id == owner then completeDeclaredScope? program state scopeId parentOutput else none
   | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope .. =>
       applyParallelScopeOperation? program operation.id state owner
   | .awaitEffect _ _ input output effect route => do
@@ -109,11 +87,13 @@ theorem applyInternalOperationOccurrence_token_offer_read_frame
   all_goals simp [selected, resolved, counts]
   all_goals split <;> simp_all
 
-/-- PMIS-SELECT-01 replays the recorded owner rather than selecting a unique owner across all bodies. -/
+/-- PMIS-SELECT-01 replays the recorded owner rather than selecting a unique owner across all bodies; a
+merge-target operation replays its owner the same way, since several occurrences of its definition live. -/
 def replayInternalOperationOccurrence? (program : Program) (state : RuntimeState)
     (record : InternalTransitionRecord) : Option RuntimeState := do
   let operation ← resolveInternalOperationOccurrence? program state ⟨record.operationId, record.owner⟩
-  if program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∧
+  if (program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ∨
+        isMergeTargetOperation program operation = true) ∧
       operation.kind = record.operationKind ∧ operation.origin = record.origin ∧ record.mergeInput = none then
     applyInternalOperationOccurrence? program state ⟨record.operationId, record.owner⟩
   else none
@@ -150,17 +130,6 @@ def internalOperationOccurrenceOffers? (program : Program) (state : RuntimeState
         | none => if enabledWait then none else some []
       pure steps.flatten
   | _ => none
-
-/-- Exact resolution supplies both the declaration and its discovery key. -/
-theorem resolveInternalOperationOccurrence_declaration (program : Program) (state : RuntimeState)
-    (candidate : InternalOperationOccurrence) (operation : SemanticOperation)
-    (resolved : resolveInternalOperationOccurrence? program state candidate = some operation) :
-    operation ∈ program.operations ∧ operation.id = candidate.operationId := by
-  unfold resolveInternalOperationOccurrence? at resolved
-  obtain ⟨candidates, _, resolved⟩ := Option.bind_eq_some_iff.mp resolved
-  split at resolved
-  · exact ⟨List.mem_of_find?_eq_some resolved, by simpa using List.find?_some resolved⟩
-  · contradiction
 
 /-- Discovery retains all enabled exact candidates and refuses operation kinds outside this dispatcher. -/
 def deriveInternalOccurrenceFrontier? (program : Program) (state : RuntimeState) :

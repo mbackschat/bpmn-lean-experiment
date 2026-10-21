@@ -1,11 +1,14 @@
 import BpmnSemantics.CheckedProcessContract
+import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! NSC-ADMIT-01 for the embedded completion profile. Each definition scope's body is projected to the
 reviewed structured-body analysis, a Sub-Process appearing in its parent as a task vertex, so
 contraction, pairing and separate Ends stay that owner's. This module adds only the scope tree, the
-branch condition and the nested burst composition; it carries no runtime or serialized authority. -/
+branch condition and the nested burst composition; it carries no runtime or serialized authority.
+CEA-ADMIT-01 merge regions are contracted first by `MergeRegion`; their target bodies stay in the tree
+and their per-arrival bursts are composed here. -/
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeControl
 
@@ -20,10 +23,28 @@ def userTaskLimit : Nat := 128
 structure Body where
   scope : String
   vertices : List Vertex
-  /-- The child scope of every Sub-Process vertex of this body. -/
+  /-- The child scope of every Sub-Process vertex of this body, merge targets included. -/
   children : List (String × String)
   userTasks : List String
+  regions : List MergeRegion.Region := []
   deriving Repr, DecidableEq
+
+/-- A body before merge-region contraction. -/
+structure RawBody where
+  scope : String
+  vertices : List MergeRegion.RawVertex
+  children : List (String × String)
+  userTasks : List String
+
+def contractBody (raw : RawBody) : Option Body := do
+  let (vertices, regions) ← MergeRegion.contract raw.vertices raw.children
+  return { scope := raw.scope, vertices, children := raw.children, userTasks := raw.userTasks, regions }
+
+/-- A merge target's body is a serial chain of User Tasks; it owns no Sub-Process, gateway or region. -/
+def serialTargetBody (body : Body) : Bool :=
+  body.children.isEmpty && body.regions.isEmpty && !body.userTasks.isEmpty &&
+    body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task) &&
+    (body.vertices.filter (·.kind == .task)).length == body.userTasks.length
 
 /-- BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End consumes it. -/
 def reachesWork (vertices : List Vertex) : Nat → String → Bool
@@ -59,15 +80,23 @@ def scanBody (body : Body) : Option BodyScan := do
              resumptions := (body.vertices.filter (·.kind == .task)).map fun task =>
                (task.id, afterTask body.vertices ordered task) }
 
+/-- What arming charges beyond the vertex's own step: a Sub-Process vertex's child entry, and for a
+region vertex, whose fork runs in the same closure, one arming per branch. -/
+def armedCost (scan : BodyScan) (closure : Closure) (enter : String → Nat) : Nat :=
+  (armed scan.body.vertices closure).foldl (fun total vertex =>
+    match scan.body.regions.find? (·.vertex == vertex) with
+    | some region => total + region.branches.length
+    | none => match List.lookup vertex scan.body.children with
+      | some child => total + enter child
+      | none => total) 0
+
 /-- A Sub-Process vertex's own step is `enterScope`; its child's entry scan runs in the same closure. -/
 def entryBurst (scans : List BodyScan) : Nat → String → Nat
   | 0, _ => 0
   | fuel + 1, scope =>
       match scans.find? (·.body.scope == scope) with
       | none => 0
-      | some scan =>
-          scan.entry.steps + ((armed scan.body.vertices scan.entry).filterMap (fun vertex => List.lookup vertex scan.body.children)).foldl
-            (fun total child => total + entryBurst scans fuel child) 0
+      | some scan => scan.entry.steps + armedCost scan scan.entry (fun child => entryBurst scans fuel child)
 
 /-- A resumption leaving its body without a wait may have completed it, which charges `completeScope` and
 continues in the parent. Under a terminal fork the body may still be live, so this over-approximates. -/
@@ -81,12 +110,22 @@ def resumeBurst (scans : List BodyScan) (parents : List (String × (String × St
           match List.lookup vertex scan.resumptions with
           | none => 0
           | some closure =>
-              let children := ((armed scan.body.vertices closure).filterMap (fun vertex => List.lookup vertex scan.body.children)).foldl
-                (fun total child => total + entryBurst scans fuel child) 0
-              closure.steps + children + if closure.waits != 0 then 0 else
+              closure.steps + armedCost scan closure (entryBurst scans fuel) + if closure.waits != 0 then 0 else
                 1 + match List.lookup scope parents with
                   | some (owner, ownerVertex) => resumeBurst scans parents fuel up owner ownerVertex
                   | none => 0
+
+/-- CEA-ADMIT-01 per-arrival charges of a region's tasks, never summed across arrivals. A branch's last
+task charges the merge pass, `enterScope` and the target's first arming; the target's last task charges
+its End and `completeScope`, then the first task after the target or the region End's resumption. -/
+def regionTasks (bodies : List Body) (resume : String → String → Nat) (scope : String)
+    (region : MergeRegion.Region) : List Nat :=
+  let targetTasks := ((bodies.find? (·.scope == region.targetScope)).map (·.userTasks.length)).getD 0
+  let last := fun (count index final : Nat) => if index + 1 < count then 1 else final
+  let leave := 2 + if region.after.isEmpty then resume scope region.vertex else 1
+  region.branches.flatMap (fun branch => (List.range branch.length).map fun index => last branch.length index 3) ++
+    (List.range targetTasks).map (fun index => last targetTasks index leave) ++
+    (List.range region.after.length).map fun index => last region.after.length index (resume scope region.vertex)
 
 def depthOf (parents : List (String × (String × String))) : Nat → String → Option Nat
   | 0, _ => none
@@ -104,6 +143,7 @@ def analyze (scopes : List DefinitionScope) (bodies : List Body) : Option Nat :=
     (scopes.filter (·.id.value == child)).map (·.parentScopeId.map (·.value)) == [some parent]
   let fuel := scopes.length + 1
   let rootBody ← bodies.find? (·.scope == root.id.value)
+  let regions := bodies.flatMap (·.regions)
   if !((bodies.map (·.scope)).eraseDups.length == bodies.length && bodies.length == scopes.length &&
       bodies.all (fun body => scopes.any (·.id.value == body.scope)) &&
       parents.all (fun (child, (parent, _)) => declared child parent) &&
@@ -113,36 +153,46 @@ def analyze (scopes : List DefinitionScope) (bodies : List Body) : Option Nat :=
       scopes.all (fun scope => match depthOf parents fuel scope.id.value with
         | some depth => depth ≤ depthLimit
         | none => false) &&
-      (rootBody.vertices.filter (·.kind == .finish)).length == 1 &&
-      (bodies.map (·.userTasks.length)).sum ≤ userTaskLimit) then none
+      (rootBody.vertices.filter (·.kind == .finish)).length == 1 && rootBody.regions.isEmpty &&
+      regions.all (fun region => (bodies.find? (·.scope == region.targetScope)).any serialTargetBody) &&
+      -- CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output.
+      (bodies.map (·.userTasks.length)).sum + (regions.map fun region => MergeRegion.multiplicityWeightedExtra region
+        (((bodies.find? (·.scope == region.targetScope)).map (·.userTasks.length)).getD 0)).sum ≤ userTaskLimit) then none
   else do
     let scans ← bodies.mapM scanBody
+    let resume := resumeBurst scans parents fuel fuel
+    let targets := regions.map (·.targetScope)
     let resumed := bodies.flatMap fun body =>
-      body.userTasks.map (resumeBurst scans parents fuel fuel body.scope)
-    let maximum := resumed.foldl max (1 + entryBurst scans fuel root.id.value)
+      let inRegion := body.regions.flatMap fun region => region.branches.flatten ++ region.after
+      if targets.contains body.scope then []
+      else (body.userTasks.filter fun task => !inRegion.contains task).map (resume body.scope)
+    let regional := bodies.flatMap fun body => body.regions.flatMap (regionTasks bodies resume body.scope)
+    let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans fuel root.id.value)
     if maximum ≤ scenarioClosureLimit then some maximum else none
 
 private def checkedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId.value
 
-def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option (Vertex × Option String) := do
+def checkedVertex? (source : CheckedProcess) (node : CheckedNode) :
+    Option (MergeRegion.RawVertex × Option String) := do
   let id := node.id.value
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
   let kind ← match node with
-    | .noneStartEvent _ => some Kind.start
-    | .noneEndEvent _ => some .finish
-    | .userTask _ _ none => some .task
-    | .embeddedSubProcess _ _ => some .task
-    | .parallelGateway _ .diverging => some .fork
-    | .parallelGateway _ .converging => some .join
+    | .noneStartEvent _ => some (MergeRegion.RawKind.vertex .start)
+    | .noneEndEvent _ => some (.vertex .finish)
+    | .userTask _ _ none => some (.vertex .task)
+    | .embeddedSubProcess _ _ => some (.vertex .task)
+    | .parallelGateway _ .diverging => some (.vertex .fork)
+    | .parallelGateway _ .converging => some (.vertex .join)
+    | .exclusiveMerge _ => some .merge
     | _ => none
   let child := match node with
     | .embeddedSubProcess _ child => some child.value
     | _ => none
   return (⟨id, kind, outputs⟩, child)
 
-def checkedBodies (source : CheckedProcess) : Option (List Body) := do
+def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
   if !(source.sequenceFlows.all fun flow => flow.condition.isNone &&
       (checkedScope? source flow.sourceId).isSome && checkedScope? source flow.sourceId == checkedScope? source flow.targetId)
   then none
@@ -158,7 +208,7 @@ def checkedBodies (source : CheckedProcess) : Option (List Body) := do
 /-- NSC-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted largest closure. -/
 def checkedAnalysis (source : CheckedProcess) : Option Nat := do
   if !(source.nodes.all fun node => (checkedScope? source node.id).isSome) then none
-  else analyze source.definitionScopes (← checkedBodies source)
+  else analyze source.definitionScopes (← (← checkedBodies source).mapM contractBody)
 
 private def operationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique? (program.operationScopes.filter (·.operationId == operation.id))
@@ -167,7 +217,7 @@ private def operationScope? (program : Program) (operation : SemanticOperation) 
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .duplicate _ _ input _
   | .reachNoneEnd _ _ input => [input]
-  | .synchronize _ _ inputs _ => inputs
+  | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ => inputs
   | _ => []
 
 /-- The unique same-scope operation consuming `place`. -/
@@ -188,21 +238,22 @@ private def parentOutput? (program : Program) (child : DefinitionScopeId) : Opti
 def childStart (scope : String) : String := "start:" ++ scope
 
 def operationVertex? (program : Program) (scope : String) (operation : SemanticOperation) :
-    Option (Vertex × Option String) := do
+    Option (MergeRegion.RawVertex × Option String) := do
   let id := operation.id.value
   let follow := fun (places : List ControlPlaceId) => places.mapM (consumer? program scope)
   match operation with
-  | .initiate _ _ output => return (⟨id, .start, ← follow [output]⟩, none)
+  | .initiate _ _ output => return (⟨id, .vertex .start, ← follow [output]⟩, none)
   | .awaitUserTask _ _ _ output task =>
-      if task.metadata.isSome then none else return (⟨id, .task, ← follow [output]⟩, none)
-  | .duplicate _ _ _ outputs => return (⟨id, .fork, ← follow outputs⟩, none)
-  | .synchronize _ _ _ output => return (⟨id, .join, ← follow [output]⟩, none)
-  | .reachNoneEnd .. => return (⟨id, .finish, []⟩, none)
+      if task.metadata.isSome then none else return (⟨id, .vertex .task, ← follow [output]⟩, none)
+  | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
+  | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
+  | .mergeExclusive _ _ _ output => return (⟨id, .merge, ← follow [output]⟩, none)
+  | .reachNoneEnd .. => return (⟨id, .vertex .finish, []⟩, none)
   | .enterScope _ _ _ _ child =>
-      return (⟨id, .task, ← follow [← parentOutput? program child]⟩, some child.value)
+      return (⟨id, .vertex .task, ← follow [← parentOutput? program child]⟩, some child.value)
   | _ => none
 
-def programBodies (program : Program) : Option (List Body) := do
+def programBodies (program : Program) : Option (List RawBody) := do
   let operations := program.operations.filter fun op => !StructuredComposition.isScopeCompletion op
   program.definitionScopes.mapM fun scope => do
     let members ← (operations.filterM fun op => do
@@ -213,7 +264,7 @@ def programBodies (program : Program) : Option (List Body) := do
           if child == scope.id then (consumer? program scope.id.value childEntry).map some else some none
       | _ => some none
     let start := match entries with
-      | [entry] => [⟨childStart scope.id.value, Kind.start, [entry]⟩]
+      | [entry] => [⟨childStart scope.id.value, .vertex .start, [entry]⟩]
       | _ => []
     return { scope := scope.id.value, vertices := start ++ projected.map (·.1)
              children := projected.filterMap fun (vertex, child) => child.map (vertex.id, ·)
@@ -234,6 +285,6 @@ def programAnalysis (program : Program) : Option Nat := do
       program.scopeLocalData.isEmpty && rootCompleted.length == 1 &&
       completions.length == program.definitionScopes.length &&
       program.operations.all fun op => (operationScope? program op).isSome) then none
-  else analyze program.definitionScopes (← programBodies program)
+  else analyze program.definitionScopes (← (← programBodies program).mapM contractBody)
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl
