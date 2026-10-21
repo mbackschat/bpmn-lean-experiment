@@ -680,6 +680,14 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
       compensationEventSubProcessSnapshotStateValid program state &&
       compensationExecutionStateValid program state && sequentialScopeStateValid program state)
 
+/-- Realizes the match congruence equation of `runtimeStateWellFormed` here, in its owner, so importers reuse
+it. Lean v4.34.1 deduplicates a realized `congr_eq_1` across imports but not its `_sparseCasesOn_1`
+auxiliary: two unrelated modules that each realized it through `simp only [runtimeStateWellFormed, …]` made
+the umbrella import fail with "environment already contains". Remove once Lean deduplicates the auxiliary. -/
+private theorem runtimeStateWellFormed_match_congruence_realized : True := by
+  have := @runtimeStateWellFormed.match_1.congr_eq_1.{0}
+  trivial
+
 theorem runtimeStateWellFormed_canonicalCollectionOrder (program : Program)
     (instanceId : SemanticId) (state : RuntimeState)
     (wellFormed : runtimeStateWellFormed program instanceId state = true) :
