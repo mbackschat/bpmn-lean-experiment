@@ -83,11 +83,11 @@ Deliverable: ordinary embedded scopes nested to depth three, composing User Task
 
 Acceptance blockers: the closure review.
 
-Current result: the checkpoint is approved and every closure gate passes; the owner-directed ceiling of 130 cases and two registration repairs made the infrastructure and differential gates green at `2a235683`, and the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records the gates, cost and self-assessment.
+Current result: the checkpoint is approved and the [closure reflection](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#epistemic-closure) records each gate exactly: Lean fails only on the inherited placeholder, Temporal only on a deadline margin whose isolated rerun passes, and the rest pass.
 
 Effort budget: 6 hours wall from 2026-10-18 20:25 UTC for implementation through checkpoint review; the proposal and its review used 40 of their 120 minutes. Reassessed 2026-10-20 19:35 UTC: the window elapsed across owner pauses with implementation complete; only gate allowances and one review remain.
 
-Next action: run the warm closure review on the closure record, then set the lifecycle, maps and checklist status and select `PC-SCOPE-02`.
+Next action: obtain the closure reviewer's correction audit, then set the lifecycle, maps and checklist status and select `PC-SCOPE-02`.
 
 Oracle: a first child End or a wrong-parent completion completes a nested scope early.
 

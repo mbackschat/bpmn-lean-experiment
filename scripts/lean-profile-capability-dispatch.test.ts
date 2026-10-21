@@ -14,11 +14,14 @@ import { readWorktreeSources } from "./worktree-source-read.ts";
 
 const dispatchOwner = "BpmnSemantics/SemanticProcess/ProfileAdmission.lean";
 
-const dispatchName = String.raw`\bprogramProfileCapabilitiesValid(?![\w.'])`;
-// A bracketed tactic list may span lines; `[^\]]` lets the match continue across them.
+// The generated equation lemmas (`.eq_1`, `.eq_def`) unfold the dispatch as surely as its name.
+const dispatchName = String.raw`\bprogramProfileCapabilitiesValid(?:\.eq_(?:def|\d+))?(?![\w.'])`;
+// A bracketed tactic list may span lines; `[^\]]` lets the match continue across them. Aesop takes
+// its unfolding rules in a parenthesised clause rather than a list.
 const unfoldingTactic = new RegExp(
   String.raw`\b(?:unfold|delta)\b[^\n]*${dispatchName}|` +
-    String.raw`\b(?:simp|simp_all|simpa|dsimp|simp_rw|rw|rewrite|erw)\b[^\[\n]*\[[^\]]*${dispatchName}`,
+    String.raw`\baesop\b[^\n]*${dispatchName}|` +
+    String.raw`\b(?:simp|simp_all|simpa|dsimp|simp_rw|rw|rewrite|erw|grind|norm_num)\b[^\[\n]*\[[^\]]*${dispatchName}`,
   "gu",
 );
 
@@ -44,4 +47,18 @@ test("the dispatch scan finds tactic unfoldings and ignores the lemma, prose and
   assert.deepEqual(dispatchUnfoldingLines("  rw [programProfileCapabilitiesValid_of_undispatched p u] at h"), []);
   assert.deepEqual(dispatchUnfoldingLines("/-- Never unfold programProfileCapabilitiesValid. -/"), []);
   assert.deepEqual(dispatchUnfoldingLines("    (capabilities : programProfileCapabilitiesValid program = true) :"), []);
+});
+
+test("the dispatch scan covers equation lemmas and the automation tactics that take unfolding lemmas", () => {
+  for (const tactic of [
+    "  rw [programProfileCapabilitiesValid.eq_1] at h",
+    "  simp only [programProfileCapabilitiesValid.eq_def] at h",
+    "  grind [programProfileCapabilitiesValid]",
+    "  norm_num [programProfileCapabilitiesValid] at h",
+    "  aesop (add norm programProfileCapabilitiesValid)",
+  ]) {
+    assert.deepEqual(dispatchUnfoldingLines(tactic), [1], tactic);
+  }
+  assert.deepEqual(dispatchUnfoldingLines("  grind [programProfileCapabilitiesValid_of_undispatched]"), []);
+  assert.deepEqual(dispatchUnfoldingLines("  aesop"), []);
 });
