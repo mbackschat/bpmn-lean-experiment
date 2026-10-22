@@ -11,13 +11,14 @@ import {
   reportCibSevenMavenElapsed,
   resolveCibSevenMavenTimeoutMs,
 } from "../../../scripts/cibseven-maven-budget.ts";
+import { resolveJavaHome } from "../../../scripts/java-home.ts";
+import { runCommand } from "../../../scripts/run-command.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 import {
   elapsedMs,
   indexExactRecords,
   projectRoot,
-  runProcess,
 } from "./pipeline-target-support.ts";
 import type {
   CibPipelineResult,
@@ -47,7 +48,7 @@ export async function runCibTargets(
     "utf8",
   );
   const mavenStartedMs = Date.now();
-  await runProcess(
+  await runCommand(
     "runners/cibseven/mvnw",
     [
       "-s",
@@ -65,7 +66,11 @@ export async function runCibTargets(
       `-Dbpmn.build.directory=${buildDirectory}`,
       "test",
     ],
-    resolveCibSevenMavenTimeoutMs(process.env),
+    {
+      cwd: projectRoot,
+      env: { ...process.env, JAVA_HOME: resolveJavaHome() },
+      timeoutMs: resolveCibSevenMavenTimeoutMs(process.env),
+    },
   );
   reportCibSevenMavenElapsed(engineVersion, Date.now() - mavenStartedMs);
   const records = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await readFile(outputPath))
