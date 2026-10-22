@@ -704,9 +704,9 @@ theorem parent_predecessor_rank (ordered : List OperationId) (unique : ordered.N
   have middleAbsent : consumer ∉ middle := by
     intro present
     exact middleUnique.2.2 consumer present consumer (by simp) rfl
-  simp only [List.idxOf_append, producerAbsent, consumerAbsent, if_false,
+  simp only [List.idxOf_append, producerAbsent, consumerAbsent, ite_false,
     List.idxOf_cons_self, Nat.zero_add, List.idxOf_cons, cond_eq_ite, beq_iff_eq,
-    different, if_false, middleAbsent]
+    different, ite_false, middleAbsent]
   omega
 
 theorem admitted_start_unique (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)

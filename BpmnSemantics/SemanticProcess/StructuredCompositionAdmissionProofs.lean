@@ -64,7 +64,7 @@ theorem remove_selected_vertex_preserves_other_vertices
           exact uniqueParts.1 (List.mem_map.mpr ⟨selected, later, equal.symm⟩)
         simp only [List.filter_cons]
         simp only [bne_iff_ne]
-        rw [if_pos different]
+        rw [ite_eq_left different]
         exact (List.Perm.swap first selected _).trans (List.Perm.cons first (ih uniqueParts.2 later))
 
 theorem topological_order_preserves_vertices

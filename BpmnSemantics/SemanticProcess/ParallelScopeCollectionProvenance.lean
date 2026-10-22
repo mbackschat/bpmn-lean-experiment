@@ -87,7 +87,7 @@ theorem ContinuationCommandHistory.stringList_provenance (program : Program) (ow
     rwa [replayed_process_frame program before after record kind replayed] at member
   | @command before after earlier rest stimulus history replayed completion kinds outside ih =>
     intro member
-    simp only [committedTransitions?, selected, Bool.not_true, Bool.false_eq_true, if_false] at replayed
+    simp only [committedTransitions?, selected, Bool.not_true, Bool.false_eq_true, ite_false] at replayed
     cases snapshot : program.compensationEventSubProcessSnapshots with
     | some value => simp [snapshot] at replayed
     | none =>

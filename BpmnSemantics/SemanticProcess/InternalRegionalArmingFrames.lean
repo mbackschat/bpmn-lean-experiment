@@ -366,7 +366,7 @@ theorem prepareInternalArm_retirement_frame (program : Program) (before after : 
   split at found
   · simp at found
   · rename_i selected
-    rw [if_neg selected]
+    rw [ite_eq_right selected]
     obtain ⟨inputOrigin, originFound, found⟩ := Option.bind_eq_some_iff.mp found
     rw [originFound]
     dsimp only [Option.bind_some]
@@ -419,7 +419,7 @@ theorem prepareInternalDataArm_retirement_frame (program : Program) (before afte
   simp only [prepareInternalDataArmingContract?, owner, dataArmingHostValid_frame before after selectedOwner contract.data control, running, selected, live,
     originFound, sourceFrame, patchFrame, unique, retirement.anchor_absent _ anchorAbsent,
     scopeFrame, recordFrame, bind, Option.bind, Bool.not_true, Bool.false_or,
-    Bool.or_false, Bool.false_eq_true, if_false]
+    Bool.or_false, Bool.false_eq_true, ite_false]
 
 theorem prepareInternalArm_running_binding (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch)

@@ -144,7 +144,7 @@ theorem prepareInternalRegional_after_independent_end (program : Program) (state
     · rename_i valid
       cases closed
       rw [selectionAfter]
-      exact if_pos valid
+      exact ite_eq_left valid
     · contradiction
   have tokenFrame : (ending.apply state).tokens.filter (fun token => regional.region.contains token.owner) =
       state.tokens.filter (fun token => regional.region.contains token.owner) :=

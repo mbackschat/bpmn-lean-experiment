@@ -197,7 +197,7 @@ theorem prepareInternalDataArm_after_scope_creation (program : Program) (state :
     cases kind : selected.kind <;> simpa only [InternalScopeCreationSelection.apply, kind] using bodyFresh
   simp only [prepareInternalDataArmingContract?, ownerAfter, hostFrame, programSelection,
     liveAfter, origin, sourceFrame, patchFrame, declarer, anchorFrame, scopeFrame, recordFrame,
-    bind, Option.bind, Bool.not_true, Bool.false_or, Bool.or_false, Bool.false_eq_true, if_false]
+    bind, Option.bind, Bool.not_true, Bool.false_or, Bool.or_false, Bool.false_eq_true, ite_false]
 
 theorem scopeArming_bucket_frame (state : RuntimeState)
     (selected : InternalScopeCreationSelection) (instanceId : SemanticId)

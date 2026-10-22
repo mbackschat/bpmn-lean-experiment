@@ -134,7 +134,7 @@ theorem internalTokenPatch_position_delta (program : Program) (before after : Ru
   have differences := internalLocalControlPositionDelta?_token_differences program before patch delta found available
   obtain ⟨_, _, _, _, entered, exited⟩ := internalLocalControlPositionDelta?_strict program patch delta found
   simp only [controlPositionDelta?, projectControlPosition?, beforePosition, afterPosition,
-    if_true, Option.bind_eq_bind, Option.bind_some, tokens, scopes, differences.1, differences.2,
+    ite_true, Option.bind_eq_bind, Option.bind_some, tokens, scopes, differences.1, differences.2,
     localControl_scope_difference_self]
   cases delta
   simp_all

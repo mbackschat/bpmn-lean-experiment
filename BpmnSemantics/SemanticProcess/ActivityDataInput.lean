@@ -569,12 +569,12 @@ private theorem mem_insertActivityVariableScope
   | cons head tail ih =>
       simp only [insertActivityVariableScope] at present
       by_cases first : activityVariableScopeBefore inserted head = true
-      · rw [if_pos first] at present
+      · rw [ite_eq_left first] at present
         simp only [List.mem_cons] at present
         rcases present with same | rest
         · exact Or.inl same
         · exact Or.inr (List.mem_cons.mpr rest)
-      · rw [if_neg first] at present
+      · rw [ite_eq_right first] at present
         simp only [List.mem_cons] at present
         rcases present with same | rest
         · exact Or.inr (by simp [same])

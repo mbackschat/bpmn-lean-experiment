@@ -53,10 +53,10 @@ theorem resolveOwner?_frame_nearest (variables : ScopedVariables) (instanceId : 
           cases tail with
           | nil =>
               by_cases declared : frame.bindings.any (·.name == name) = true
-              · simp only [resolveOwner?, frames, declared, if_true, Option.some.injEq,
+              · simp only [resolveOwner?, frames, declared, ite_true, Option.some.injEq,
                   Owner.frame.injEq] at resolved
                 exact ⟨[], scopeId, rest, frame, rfl, frames, resolved, declared, by simp⟩
-              · simp only [resolveOwner?, frames, declared, Bool.false_eq_true, if_false] at resolved
+              · simp only [resolveOwner?, frames, declared, Bool.false_eq_true, ite_false] at resolved
                 exact later owner resolved (by simpa [declares, frames] using declared)
           | cons _ _ => simp [resolveOwner?, frames] at resolved
 
@@ -80,7 +80,7 @@ theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (instance
           | nil =>
               by_cases declared : frame.bindings.any (·.name == name) = true
               · simp [resolveOwner?, frames, declared] at resolved
-              · simp only [resolveOwner?, frames, declared, Bool.false_eq_true, if_false] at resolved
+              · simp only [resolveOwner?, frames, declared, Bool.false_eq_true, ite_false] at resolved
                 intro candidate member
                 rcases List.mem_cons.mp member with same | member
                 · simpa [same, declares, frames] using declared

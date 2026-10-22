@@ -53,15 +53,15 @@ theorem transaction_taskChain_sound_and_length (program : Program) (child : Defi
   | succ fuel ih =>
       rw [taskChain_succ] at selected
       by_cases placeOwned : controlPlaceOwner? program place = some child
-      · rw [if_neg (by simp [placeOwned])] at selected
+      · rw [ite_eq_right (by simp [placeOwned])] at selected
         obtain ⟨operation, consumer, selected⟩ := Option.bind_eq_some_iff.mp selected
         by_cases operationOwned : operationOwner? program operation.id = some child
-        · rw [if_neg (by simp [operationOwned])] at selected
+        · rw [ite_eq_right (by simp [operationOwned])] at selected
           cases operation <;> try contradiction
           case awaitUserTask id origin input output task =>
             dsimp only at selected
             by_cases metadataAbsent : task.metadata = none
-            · rw [if_neg (by simp [metadataAbsent])] at selected
+            · rw [ite_eq_right (by simp [metadataAbsent])] at selected
               obtain ⟨⟨tailOperations, tailPlaces⟩, tailSelected, result⟩ :=
                 Option.bind_eq_some_iff.mp selected
               have equal :

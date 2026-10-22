@@ -784,7 +784,7 @@ theorem executeSelectedFrontier_parallel_scope_steps (program : Program) (comman
       have unprepared : frontier.offers.mapM (·.preparation) = none := by
         simp [discovered, List.mapM_cons, preparation]
       simp only [selectInternalExecutionFrontier, batch, Option.isSome_none, Bool.false_eq_true,
-        if_false] at selected
+        ite_false] at selected
       rw [unprepared, discovered] at selected
       split at selected <;> try contradiction
       cases rest with

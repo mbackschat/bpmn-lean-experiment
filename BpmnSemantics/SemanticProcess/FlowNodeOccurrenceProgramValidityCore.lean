@@ -232,12 +232,12 @@ theorem flowNodeOccurrenceStructuralProgramValidity_live_owner_process_binding (
           cases runtimeParentEq : occurrence.parent <;>
           simp [staticParentEq, runtimeParentEq, running] at occurrenceValid
         · by_cases hosting : occurrence.id.processInstanceId = instanceId
-          · simp only [if_pos hosting] at occurrenceValid
+          · simp only [ite_eq_left hosting] at occurrenceValid
             refine Or.inr (Or.inl ⟨occurrenceEq ▸ hosting, definition, definitionMember,
               ?_, staticParentEq, occurrenceValid.2⟩)
             simpa [occurrenceEq] using definitionId
           · refine Or.inr (Or.inr ?_)
-            simp only [if_neg hosting] at occurrenceValid
+            simp only [ite_eq_right hosting] at occurrenceValid
             obtain ⟨record, singleton⟩ := List.length_eq_one_iff.mp occurrenceValid.2
             have member : record ∈ state.calledProcessOccurrences.filter fun current =>
                 decide (current.calledRoot = occurrence.id) &&

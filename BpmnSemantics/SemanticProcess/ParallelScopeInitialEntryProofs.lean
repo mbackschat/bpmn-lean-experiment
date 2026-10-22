@@ -319,8 +319,8 @@ private theorem predecessor_rank (ordered : List String) (unique : ordered.Nodup
   have different : producer ≠ consumer := fun same => absent (by simp [same])
   obtain ⟨_, _, middleDisjoint⟩ := List.nodup_append.mp restUnique
   have middleAbsent : consumer ∉ middle := fun member => middleDisjoint _ member _ (by simp) rfl
-  simp only [List.idxOf_append, producerAbsent, consumerAbsent, if_false, List.idxOf_cons_self,
-    Nat.zero_add, List.idxOf_cons, cond_eq_ite, beq_iff_eq, different, if_false, middleAbsent]
+  simp only [List.idxOf_append, producerAbsent, consumerAbsent, ite_false, List.idxOf_cons_self,
+    Nat.zero_add, List.idxOf_cons, cond_eq_ite, beq_iff_eq, different, ite_false, middleAbsent]
   omega
 
 private theorem entered_live_credit (program : Program) (entry : ParallelScopeEntry)

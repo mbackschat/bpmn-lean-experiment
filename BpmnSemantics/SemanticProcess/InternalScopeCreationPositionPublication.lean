@@ -31,7 +31,7 @@ private theorem patched_untouched (program : Program) (tokens : List ControlToke
       tokenMultiplicityAt (projectTokens program tokens) target := by
   simp only [projectTokens_multiplicity, List.countP_eq_length_filter]
   rw [addToken_filter_length, entryMiss]
-  simp only [Bool.false_eq_true, if_false, Nat.add_zero]
+  simp only [Bool.false_eq_true, ite_false, Nat.add_zero]
   congr 1
   exact filter_removeToken_of_rejected tokens input owner
     (fun token => sameTokenPosition target
@@ -78,8 +78,8 @@ private theorem selected_token_differences (program : Program) (state : RuntimeS
       simp only [atInput]
       have afterCount := patched_count state.tokens selected.input selected.entry selected.owner
         selected.created.id { placeId := selected.input, owner := selected.owner }
-      simp only [beq_self_eq_true, if_true, beq_eq_false_iff_ne.mpr (Ne.symm tokenDifferent),
-        Bool.false_eq_true, if_false, Nat.add_zero] at afterCount
+      simp only [beq_self_eq_true, ite_true, beq_eq_false_iff_ne.mpr (Ne.symm tokenDifferent),
+        Bool.false_eq_true, ite_false, Nat.add_zero] at afterCount
       have beforeCount := internalLocalControlPlaceOrigin?_projected_count program selected.input
         selected.owner consumed inputOrigin state.tokens selected.owner
       have projectedAfter := internalLocalControlPlaceOrigin?_projected_count program selected.input
@@ -97,8 +97,8 @@ private theorem selected_token_differences (program : Program) (state : RuntimeS
         simp only [atEntry]
         have afterCount := patched_count state.tokens selected.input selected.entry selected.owner
           selected.created.id { placeId := selected.entry, owner := selected.created.id }
-        simp only [beq_self_eq_true, if_true, beq_eq_false_iff_ne.mpr tokenDifferent,
-          Bool.false_eq_true, if_false, Nat.sub_zero] at afterCount
+        simp only [beq_self_eq_true, ite_true, beq_eq_false_iff_ne.mpr tokenDifferent,
+          Bool.false_eq_true, ite_false, Nat.sub_zero] at afterCount
         have beforeCount := internalLocalControlPlaceOrigin?_projected_count program selected.entry
           selected.created.id produced entryOrigin state.tokens selected.created.id
         have projectedAfter := internalLocalControlPlaceOrigin?_projected_count program selected.entry
@@ -167,7 +167,7 @@ theorem scopeCreationPositionDelta_of_components (program : Program) (instanceId
   have scopeDifferences := projectScopes_insert_differences program state.scopeOccurrences
     selected.created createdDefinition uniqueBinding fresh
   simp only [controlPositionDelta?, projectControlPosition?, beforePosition, afterPosition,
-    if_true, Option.bind_eq_bind, Option.bind_some, tokens, scopes,
+    ite_true, Option.bind_eq_bind, Option.bind_some, tokens, scopes,
     tokenDifferences.1, tokenDifferences.2, scopeDifferences.1, scopeDifferences.2]
   rfl
 

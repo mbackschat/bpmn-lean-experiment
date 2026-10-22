@@ -96,7 +96,7 @@ theorem programParallelMultiInstanceProfile_pair_census (program : Program)
       program.operations.filter parallelMultiInstanceCompletionOperation = [completion] ∧
       parallelMultiInstanceOperationsPair entry completion = true ∧
       parallelMultiInstanceCompletionForEntry? program.operations entry = some completion := by
-  simp only [programParallelMultiInstanceProfileMatches, profile, decide_true, if_true,
+  simp only [programParallelMultiInstanceProfileMatches, profile, decide_true, ite_true,
     Bool.and_eq_true] at valid
   have pairMatch := valid.2
   generalize entriesEq : program.operations.filter parallelMultiInstanceExactEntry = entries

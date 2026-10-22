@@ -143,7 +143,7 @@ private theorem credited_records_count (population : List RuntimeScopeOccurrence
         have outer := member_le_sum population (fun occurrence => ((declarations occurrence).map
           (fun operation => declarationFiringCharge occurrence.id operation.id head)).sum) occurrence live
         have unit : declarationFiringCharge occurrence.id operation.id head = 1 := by
-          simp only [identity, declarationFiringCharge, owned, key, BEq.rfl, Bool.true_and, if_true]
+          simp only [identity, declarationFiringCharge, owned, key, BEq.rfl, Bool.true_and, ite_true]
         omega
     simp only [List.length_cons, List.map_cons, List.sum_cons]
     simp only [declarationFiringCount, List.map_cons, List.sum_cons] at rest ⊢
@@ -334,7 +334,7 @@ private theorem filter_partition_length {α : Type} (values : List α) (predicat
   | nil => simp
   | cons head tail ih =>
     cases selected : predicate head <;>
-      simp only [List.filter_cons, selected, Bool.not_true, Bool.not_false, Bool.false_eq_true, if_true, if_false, List.length_cons] <;> omega
+      simp only [List.filter_cons, selected, Bool.not_true, Bool.not_false, Bool.false_eq_true, ite_true, ite_false, List.length_cons] <;> omega
 
 private theorem sum_map_le_population_mul {α : Type} (values : List α) (charge : α → Nat)
     (bound : Nat) (bounded : ∀ value ∈ values, charge value ≤ bound) :
@@ -598,7 +598,7 @@ private theorem sum_filter_partition {α : Type} (values : List α) (predicate :
   | cons head tail ih =>
     cases selected : predicate head <;>
       simp only [List.filter_cons, selected, Bool.not_true, Bool.not_false, Bool.false_eq_true,
-        if_true, if_false, List.map_cons, List.sum_cons] <;> omega
+        ite_true, ite_false, List.map_cons, List.sum_cons] <;> omega
 
 theorem start_initiation_scope_and_process (program : Program) (instanceId : SemanticId)
     (values : List VariableBinding) (root : DefinitionScope) (parent : ScopeOccurrenceId)

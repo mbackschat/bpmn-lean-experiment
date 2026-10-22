@@ -318,9 +318,9 @@ private theorem replaceParallelRecordBody_identity_witness (records : List Activ
       obtain ⟨predecessor, predecessorPresent, rfl⟩ := present
       refine ⟨predecessor, predecessorPresent, ?_⟩
       by_cases same : sameActivityOccurrence predecessor record = true
-      · rw [if_pos same]
+      · rw [ite_eq_left same]
         simp [sameActivityOccurrence]
-      · rw [if_neg same]
+      · rw [ite_eq_right same]
         simp [sameActivityOccurrence]
 
 private theorem replaceParallelRecordBody_activity_identity_discipline (state : RuntimeState)

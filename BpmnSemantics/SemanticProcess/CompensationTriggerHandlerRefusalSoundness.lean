@@ -41,7 +41,7 @@ theorem attemptCompensationTrigger_disabled_sound (program : Program)
               exact .nonrunning declaration operationId definitionScopeId input output
                 programReady (by simp [controlEq])
             case running instanceId =>
-              simp only [Bool.false_eq_true, if_false] at selected
+              simp only [Bool.false_eq_true, ite_false] at selected
               cases ownerEq : onlyTokenOwner? before input with
               | none =>
                   exact .missingOwner declaration operationId definitionScopeId input output
@@ -159,7 +159,7 @@ theorem attemptCompensationTrigger_refusal_sound (program : Program)
               simp only [programRejectedEq, controlEq] at selected
             all_goals try { cases selected }
             case running instanceId =>
-              simp only [Bool.false_eq_true, if_false] at selected
+              simp only [Bool.false_eq_true, ite_false] at selected
               cases ownerEq : onlyTokenOwner? before input with
               | none => simp [ownerEq] at selected
               | some owner =>

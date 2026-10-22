@@ -38,7 +38,7 @@ private theorem positionMass_insert (position target : PublicControlTokenPositio
         have updated : sameTokenPosition target
             { current with multiplicity := current.multiplicity + position.multiplicity } =
             sameTokenPosition target current := rfl
-        simp only [insertTokenPosition, same, if_true, positionMass_cons, updated, matching]
+        simp only [insertTokenPosition, same, ite_true, positionMass_cons, updated, matching]
         split <;> omega
       · by_cases before : tokenPositionBefore position current = true
         · simp [insertTokenPosition, same, before, positionMass_cons]

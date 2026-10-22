@@ -160,7 +160,7 @@ theorem prepareInternalArm_attempt_applies (program : Program) (state : RuntimeS
     cases executionEq : program.compensationExecution <;>
       cases snapshotsEq : program.compensationEventSubProcessSnapshots <;>
       simp only [attemptInternalOperation, executionEq, snapshotsEq,
-        Option.isSome_none, Option.isSome_some, Bool.false_eq_true, if_false, if_true] <;> rfl
+        Option.isSome_none, Option.isSome_some, Bool.false_eq_true, ite_false, ite_true] <;> rfl
 
 end InternalCommutation
 

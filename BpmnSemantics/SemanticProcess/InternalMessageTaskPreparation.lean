@@ -180,7 +180,7 @@ theorem prepareInternalMessageTaskContract_facts
   | none =>
       refine ⟨rfl, ?_⟩
       simp only [prepareInternalMessageTaskContract?, snapshots, Option.isSome_none,
-        Bool.false_eq_true, if_false] at prepared
+        Bool.false_eq_true, ite_false] at prepared
       dsimp only [Pure.pure, Bind.bind, Option.bind] at prepared
       obtain ⟨owner, owned, prepared⟩ := Option.bind_eq_some_iff.mp prepared
       obtain ⟨instanceId, running, prepared⟩ := Option.bind_eq_some_iff.mp prepared

@@ -53,7 +53,7 @@ theorem committedTransitions_ordered_steps (program : Program)
         ∃ record, pair.1 = .internalOperation record ∧
           InternalCommutation.replayInternalOperationOccurrence? program pair.2.1 record = some pair.2.2 := by
   unfold committedTransitions? at success
-  simp only [selected, Bool.not_true, Bool.false_eq_true, if_false] at success
+  simp only [selected, Bool.not_true, Bool.false_eq_true, ite_false] at success
   cases snapshot : program.compensationEventSubProcessSnapshots with
   | some value => simp [snapshot] at success
   | none =>
@@ -235,7 +235,7 @@ theorem committedTransitions_body_continuation_balance (program : Program)
     continuationMarking after owner place + (rest.map (transitionPortCharge program bodyConsumedPorts owner place)).sum =
       continuationMarking before owner place + (rest.map (transitionPortCharge program bodyProducedPorts owner place)).sum := by
   unfold committedTransitions? at replayed
-  simp only [selected, Bool.not_true, Bool.false_eq_true, if_false] at replayed
+  simp only [selected, Bool.not_true, Bool.false_eq_true, ite_false] at replayed
   cases snapshot : program.compensationEventSubProcessSnapshots with
   | some value => simp [snapshot] at replayed
   | none =>
@@ -424,7 +424,7 @@ private theorem ContinuationCommandHistory.record_replayed
     rcases List.mem_append.mp member with old | later
     · exact ih old
     · unfold committedTransitions? at replayed
-      simp only [selected, Bool.not_true, Bool.false_eq_true, if_false] at replayed
+      simp only [selected, Bool.not_true, Bool.false_eq_true, ite_false] at replayed
       cases snapshot : program.compensationEventSubProcessSnapshots with
       | some value => simp [snapshot] at replayed
       | none =>
@@ -492,7 +492,7 @@ theorem ContinuationCommandHistory.continuation_budget (program : Program) (owne
     omega
   | @command before after earlier rest stimulus history replayed completion kinds outside ih =>
     unfold committedTransitions? at replayed
-    simp only [selected, Bool.not_true, Bool.false_eq_true, if_false] at replayed
+    simp only [selected, Bool.not_true, Bool.false_eq_true, ite_false] at replayed
     cases snapshot : program.compensationEventSubProcessSnapshots with
     | some value => simp [snapshot] at replayed
     | none =>

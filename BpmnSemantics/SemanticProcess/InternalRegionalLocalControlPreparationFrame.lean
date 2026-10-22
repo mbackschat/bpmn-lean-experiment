@@ -27,7 +27,7 @@ private theorem regional_ownership_localControl_frame (program : Program) (state
           (regionalSelectionLocalDataRetention state selected) &&
         regionalActivityOwnersClosed state (regionalSelectionReferenceRetention state selected) then
       some selected else none) = some selected
-    exact if_pos valid
+    exact ite_eq_left valid
   · contradiction
 
 private theorem regional_footprint_localControl_frame (state : RuntimeState)

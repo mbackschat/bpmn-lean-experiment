@@ -258,7 +258,7 @@ theorem prepareOccurrenceTokenPatch_read_frame (program : Program) (before after
       Option.pure_def, selectedOperation, exactLiveOccurrence, scopes, time, ancestry]
     simp only [exactLiveOccurrence] at accepted
     simp_all only [Bool.or_eq_true, Bool.not_eq_true, not_or, Bool.false_eq_true,
-      if_false, bind, Option.bind_some, Option.pure_def, consumed, produced]
+      ite_false, bind, Option.bind_some, Option.pure_def, consumed, produced]
     all_goals simp_all
 
 private theorem prepared_token_owner (program : Program) (state : RuntimeState)

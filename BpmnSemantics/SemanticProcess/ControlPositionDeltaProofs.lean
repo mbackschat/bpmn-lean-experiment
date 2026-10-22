@@ -498,13 +498,13 @@ private theorem tokenDifference_insert_one (position : PublicControlTokenPositio
           · rw [tokenDifference_cons]
             rw [tokenMultiplicityAt_of_mem (current :: rest) current
               ⟨currentBefore, restStrict⟩ (by simp)]
-            simp only [Nat.sub_self, if_true]
+            simp only [Nat.sub_self, ite_true]
             rw [tokenDifference_right_cons_frame _ rest current insertedDifferent]
             exact (ih restStrict).1
           · rw [tokenDifference_cons]
             rw [tokenMultiplicityAt_of_mem (current :: insertTokenPosition position rest) current
               ⟨currentBeforeInserted, tokenPositionsStrict_insert _ _ restStrict⟩ (by simp)]
-            simp only [Nat.sub_self, if_true]
+            simp only [Nat.sub_self, ite_true]
             rw [tokenDifference_right_cons_frame _ _ current restDifferent]
             exact (ih restStrict).2
 
@@ -549,7 +549,7 @@ theorem controlPositionDelta_consumed_token (program : Program)
   have afterPosition := runtimePositionValid_removeToken_frame program expectedInstanceId
     state after patch.input patch.owner position selected controlEq scopesEq callsEq tokensEq
   unfold controlPositionDelta?
-  simp only [projectControlPosition?, position, afterPosition, if_true]
+  simp only [projectControlPosition?, position, afterPosition, ite_true]
   simp only [tokensEq, scopesEq]
   rw [projectionEq]
   dsimp [consumed] at differences

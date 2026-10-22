@@ -41,7 +41,7 @@ theorem filter_sortCallRecords (records : List CalledProcessOccurrence)
       cases retained : keep record with
       | false =>
           rw [filter_canonicalInsertBy_rejected _ _ _ _ retained, ih]
-          simp only [List.filter_cons, retained, Bool.false_eq_true, if_false]
+          simp only [List.filter_cons, retained, Bool.false_eq_true, ite_false]
       | true =>
           rw [filter_canonicalInsertBy_retained callRecordBefore callRecordBefore_compose keep _ _
             (orderedBy_sortCallRecords rest) retained, ih]

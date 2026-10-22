@@ -39,7 +39,7 @@ theorem filter_canonicalInsertBy_retained (before : α → α → Bool)
         simp only [canonicalInsertBy, first, ↓reduceIte, List.filter_cons, kept]
         by_cases currentKept : keep current = true
         · simp [currentKept, canonicalInsertBy, first]
-        · simp only [currentKept, Bool.false_eq_true, if_false]
+        · simp only [currentKept, Bool.false_eq_true, ite_false]
           cases filtered : rest.filter keep with
           | nil => rfl
           | cons next more =>

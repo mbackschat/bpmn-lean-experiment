@@ -90,7 +90,7 @@ theorem regionalSelection_error_execution (program : Program) (before after : Ru
             have identity := scope_identity_of_census before owner root census
             refine ⟨parent, rfl, parentEq, ?_⟩
             unfold throwErrorState? at result
-            simp only [owned, running, Option.bind_eq_bind, Option.bind_some, if_neg matching,
+            simp only [owned, running, Option.bind_eq_bind, Option.bind_some, ite_eq_right matching,
               census, parentEq] at result
             split at result
             · simpa only [Option.some.injEq, identity] using result.symm

@@ -39,7 +39,7 @@ theorem applyStimulus_equal_of_same_admitted_successor
   split at committed
   · simp at committed
   · rename_i successful
-    simp only [if_neg successful]
+    simp only [ite_eq_right successful]
     unfold StimulusResult.ofClosure at committed ⊢
     split at committed <;> simp_all
 
@@ -51,7 +51,7 @@ private theorem committedScheduledClosureFacts (before : RuntimeState)
   split at committed
   · simp at committed
   · rename_i scheduleAccepted
-    simp only [if_neg scheduleAccepted]
+    simp only [ite_eq_right scheduleAccepted]
     unfold StimulusResult.ofClosure at committed ⊢
     split at committed
     · simp at committed

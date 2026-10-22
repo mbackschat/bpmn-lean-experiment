@@ -450,7 +450,7 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
   · -- The wait just armed. Its key is fresh, so nothing surviving the withdrawal shares it.
     have self : userTaskWaitKeyMatches candidate (turnoverWait state wait) = true := by
       rw [heq]; simp [userTaskWaitKeyMatches]
-    rw [if_pos self]
+    rw [ite_eq_left self]
     have zero : (state.waits.filter fun other => !taskIdNamesWait body other).countP
         (userTaskWaitKeyMatches candidate) = 0 := by
       refine List.countP_eq_zero.mpr (fun other memOther => ?_)
@@ -464,7 +464,7 @@ theorem waitIdentitiesUnique_replacedState (state : RuntimeState) (record : Acti
     have notFresh : userTaskWaitKeyMatches candidate (turnoverWait state wait) = false := by
       rw [symm]
       exact fresh candidate inState
-    rw [if_neg (by simp [notFresh])]
+    rw [ite_eq_right (by simp [notFresh])]
     have counted := waits candidate inState
     have mono : state.waits.countP (fun other =>
         userTaskWaitKeyMatches candidate other && !taskIdNamesWait body other) ≤
@@ -638,7 +638,7 @@ private theorem taskBodyLive_replacedState (state : RuntimeState)
       have keyed := turnoverWait_hit_transfers state wait task hit witness witNames
       rw [fresh witness witMem] at keyed
       exact Bool.noConfusion keyed
-  rw [if_neg (by simp [notArmed])]
+  rw [ite_eq_right (by simp [notArmed])]
   have keep : ∀ candidate ∈ state.waits,
       ((taskIdNamesWait task candidate && !taskIdNamesWait body candidate) = true ↔
         taskIdNamesWait task candidate = true) := by
@@ -691,7 +691,7 @@ theorem activityRecordsOwnLiveWork_replacedState (state : RuntimeState)
       rw [activityBodyLive_userTask _ _ _ shape]
       simp only [replacedState, decide_eq_true_eq, ← List.countP_eq_length_filter,
         countP_insertUserTaskWait]
-      rw [if_pos (turnoverBodyId_names_turnoverWait state wait body namesWait)]
+      rw [ite_eq_left (turnoverBodyId_names_turnoverWait state wait body namesWait)]
       have zero : (state.waits.filter fun other => !taskIdNamesWait body other).countP
           (taskIdNamesWait (turnoverBodyId state wait body)) = 0 := by
         refine List.countP_eq_zero.mpr (fun other memOther => ?_)

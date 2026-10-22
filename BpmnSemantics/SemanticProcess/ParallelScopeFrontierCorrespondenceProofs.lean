@@ -79,13 +79,13 @@ private theorem insert_alternatives_strict (value : InternalAlternative) (values
   | cons head tail ih =>
       obtain ⟨before, tailOrder⟩ := List.pairwise_cons.mp ordered
       by_cases lt : internalAlternativeBefore value head = true
-      · simp only [sortInsertBy, lt, if_true, List.pairwise_cons]
+      · simp only [sortInsertBy, lt, ite_true, List.pairwise_cons]
         refine ⟨?_, before, tailOrder⟩
         intro other member
         rcases List.mem_cons.mp member with rfl | member
         · exact lt
         · exact internalAlternativeBefore_trans value head other lt (before other member)
-      · simp only [sortInsertBy, lt, Bool.false_eq_true, if_false, List.pairwise_cons]
+      · simp only [sortInsertBy, lt, Bool.false_eq_true, ite_false, List.pairwise_cons]
         refine ⟨?_, ih tailOrder (fun member => fresh (by simp [member]))⟩
         intro other member
         rcases (mem_sortInsertBy _ _ _ _).mp member with same | member

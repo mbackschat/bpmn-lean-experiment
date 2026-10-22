@@ -139,7 +139,7 @@ private theorem rank_numbering (commandId : SemanticId) (first : Nat)
   | nil => rfl
   | cons current rest ih =>
       obtain ⟨headDistinct, tailDistinct⟩ := List.pairwise_cons.mp distinct
-      simp only [List.map_cons, List.findIdx_cons, beq_self_eq_true, cond_true, Nat.add_zero,
+      simp only [List.map_cons, List.findIdx_cons, beq_self_eq_true, Nat.add_zero,
         numberTransitionPublicationTemplates]
       congr 1
       rw [← ih (first + 1) tailDistinct]

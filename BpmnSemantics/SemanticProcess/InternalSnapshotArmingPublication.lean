@@ -16,7 +16,7 @@ theorem compensation_open_projection_frame (program : Program)
     projectOpenCompensationFlowNodeOccurrences? program after =
       projectOpenCompensationFlowNodeOccurrences? program before := by
   simp only [projectOpenCompensationFlowNodeOccurrences?, beforeValid, afterValid,
-    Bool.not_true, Bool.false_eq_true, if_false, controlFrame, triggersFrame]
+    Bool.not_true, Bool.false_eq_true, ite_false, controlFrame, triggersFrame]
 
 /-- Program validity removes only the manual checkpoint projector's omitted admission check. -/
 theorem focused_open_projection_eq (program : Program) (state : RuntimeState)
@@ -94,7 +94,7 @@ theorem focused_open_projection_insert (program : Program) (before after : Runti
   by_cases combinedNodup :
       ((sortFlowNodeOccurrenceStarts (ordinaryBefore ++ compensation)).map (·.anchor)).Nodup
   · have currentEq : sortFlowNodeOccurrenceStarts (ordinaryBefore ++ compensation) = current := by
-      simpa only [combinedNodup, if_true, Option.some.injEq] using beforeFocused
+      simpa only [combinedNodup, ite_true, Option.some.injEq] using beforeFocused
     have currentPerm : current.Perm (ordinaryBefore ++ compensation) := by
       rw [← currentEq]
       exact sortFlowNodeOccurrenceStarts_perm _
@@ -126,8 +126,8 @@ theorem focused_open_projection_insert (program : Program) (before after : Runti
     rw [focused_open_projection_eq program after programValid, afterOrdinary,
       compensationFrame, beforeCompensation]
     simp only [Option.bind_eq_bind, Option.bind_some]
-    rw [if_pos afterNodup, sortedEq]
-  · simp only [combinedNodup, if_false, reduceCtorEq] at beforeFocused
+    rw [ite_eq_left afterNodup, sortedEq]
+  · simp only [combinedNodup, ite_false, reduceCtorEq] at beforeFocused
 
 theorem prepared_arm_focused_open_projection_exact (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (patch : InternalArmingPatch) (instanceId : SemanticId)

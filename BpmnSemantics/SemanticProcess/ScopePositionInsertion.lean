@@ -68,7 +68,7 @@ private theorem difference_of_fresh_perm (before after : List PublicScopePositio
   · have filtered := permutation.filter (fun position => !(before.any fun candidate => candidate == position))
     have simplified : scopeDifference (inserted :: before) before = [inserted] := by
       simp only [scopeDifference, List.filter_cons, insertedMissing, Bool.not_false,
-        if_true]
+        ite_true]
       change inserted :: scopeDifference before before = [inserted]
       rw [oldRemoved]
     change (scopeDifference after before).Perm (scopeDifference (inserted :: before) before) at filtered

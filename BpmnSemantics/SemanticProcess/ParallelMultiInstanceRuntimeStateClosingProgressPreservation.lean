@@ -37,7 +37,7 @@ private theorem pending_after_progress_subset_and_ne
             have tail := ih task member
             exact ⟨List.mem_cons_of_mem target tail.1, tail.2⟩
           · simp only [replacePendingParallelSlot, List.map_cons, completeParallelSlot,
-              if_neg hit, pendingParallelTaskIds, List.mem_cons] at member
+              ite_eq_right hit, pendingParallelTaskIds, List.mem_cons] at member
             rcases member with rfl | tail
             · exact ⟨List.mem_cons_self, hit⟩
             · have tailFacts := ih task tail

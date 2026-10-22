@@ -99,13 +99,13 @@ private theorem terminalLexStep_compose [DecidableEq α] (less : α → α → B
     by_cases caEq : c = a
     · subst c
       simp_all
-    · simp only [caEq, if_false] at second ⊢
+    · simp only [caEq, ite_false] at second ⊢
       exact second
-  · simp only [baEq, if_false] at first
+  · simp only [baEq, ite_false] at first
     by_cases cbEq : c = b
     · subst c
       simp_all
-    · simp only [cbEq, if_false] at second
+    · simp only [cbEq, ite_false] at second
       by_cases caEq : c = a
       · subst c
         exfalso
@@ -114,7 +114,7 @@ private theorem terminalLexStep_compose [DecidableEq α] (less : α → α → B
           contradiction
         · rw [first] at backward
           contradiction
-      · simp only [caEq, if_false]
+      · simp only [caEq, ite_false]
         have ab : less a b = true := by
           rcases total a b (fun same => baEq same.symm) with forward | backward
           · exact forward
@@ -173,22 +173,22 @@ private theorem terminalLexStep_trans [DecidableEq α] (less : α → α → Boo
       have middleRight' : mr = true := by simpa using middleRight
       have result := fall leftMiddle' middleRight'
       simpa using result
-    · simp only [lrEq, if_false]
+    · simp only [lrEq, ite_false]
       intro middleRight
       exact middleRight
-  · simp only [lmEq, if_false]
+  · simp only [lmEq, ite_false]
     intro leftMiddle
     by_cases mrEq : middle = right
     · subst right
       simp_all
-    · simp only [mrEq, if_false]
+    · simp only [mrEq, ite_false]
       intro middleRight
       by_cases lrEq : left = right
       · subst right
         have reverse := asymm left middle leftMiddle
         rw [reverse] at middleRight
         contradiction
-      · simp only [lrEq, if_false]
+      · simp only [lrEq, ite_false]
         exact trans left middle right leftMiddle middleRight
 
 private def terminalStringBefore (left right : String) : Bool := decide (left < right)

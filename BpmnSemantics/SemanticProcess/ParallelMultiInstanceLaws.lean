@@ -172,9 +172,9 @@ private theorem remove_inserted_parallel_controller
   | cons current rest ih =>
       unfold insertParallelMultiInstanceController
       by_cases before : parallelMultiInstanceControllerBefore inserted current
-      · rw [if_pos before]
+      · rw [ite_eq_left before]
         simp [removeParallelController]
-      · rw [if_neg before]
+      · rw [ite_eq_right before]
         unfold removeParallelController at ih ⊢
         simp only [List.filter_cons]
         rw [ih]

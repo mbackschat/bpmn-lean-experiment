@@ -87,14 +87,14 @@ theorem prepareInternalArming_sound (program : Program) (state : RuntimeState)
       cases decoded : dataArmingContract? operation with
       | none =>
           simp only [prepareInternalArming?, snapshots, Option.isSome_none, Bool.false_eq_true,
-            if_false, decoded] at selected
+            ite_false, decoded] at selected
           dsimp only [Pure.pure, Bind.bind, Option.bind] at selected
           obtain ⟨patch, found, selected⟩ := Option.bind_eq_some_iff.mp selected
           cases selected
           exact ⟨found, rfl, rfl⟩
       | some contract =>
           simp only [prepareInternalArming?, snapshots, Option.isSome_none, Bool.false_eq_true,
-            if_false, decoded] at selected
+            ite_false, decoded] at selected
           dsimp only [Pure.pure, Bind.bind, Option.bind] at selected
           obtain ⟨patch, found, selected⟩ := Option.bind_eq_some_iff.mp selected
           cases selected

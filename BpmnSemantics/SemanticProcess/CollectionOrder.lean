@@ -84,7 +84,7 @@ theorem orderedBy_filter {α : Type} {before : α → α → Bool}
         exact ordered.2
     have inner := ih tail
     by_cases hleft : p left = true
-    · simp only [List.filter_cons, hleft, if_true]
+    · simp only [List.filter_cons, hleft, ite_true]
       cases hfiltered : rest.filter p with
       | nil => simp [orderedBy]
       | cons next more =>
@@ -139,7 +139,7 @@ private theorem lexStep_asymm {α : Type} [DecidableEq α] [LT α] [DecidableLT 
   by_cases h : left = right
   · subst h; simpa using fall
   · have h' : right ≠ left := fun eq => h eq.symm
-    simp only [h, h', if_neg, not_false_eq_true]
+    simp only [h, h', ite_eq_right, not_false_eq_true]
     exact asymm left right
 
 private theorem lexStep_compose {α : Type} [DecidableEq α] [LT α] [DecidableLT α]
@@ -154,15 +154,15 @@ private theorem lexStep_compose {α : Type} [DecidableEq α] [LT α] [DecidableL
     by_cases hcb : c = b
     · subst hcb; simp_all
     · simp_all
-  · simp only [hba, if_neg, not_false_eq_true] at h1
+  · simp only [hba, ite_eq_right, not_false_eq_true] at h1
     by_cases hcb : c = b
-    · subst hcb; simp only [hba, if_neg, not_false_eq_true]; exact h1
-    · simp only [hcb, if_neg, not_false_eq_true] at h2
+    · subst hcb; simp only [hba, ite_eq_right, not_false_eq_true]; exact h1
+    · simp only [hcb, ite_eq_right, not_false_eq_true] at h2
       by_cases hca : c = a
       · subst hca
         -- `a < b` and `b < a` are both refused while `a ≠ b`, which totality forbids.
         exact absurd ((total _ _ (fun eq => hba eq.symm)).resolve_right h1) h2
-      · simp only [hca, if_neg, not_false_eq_true]
+      · simp only [hca, ite_eq_right, not_false_eq_true]
         have hab : a < b := (total _ _ (fun eq => hba eq.symm)).resolve_right h1
         have hbc : b < c := (total _ _ (fun eq => hcb eq.symm)).resolve_right h2
         exact asymm a c (trans _ _ _ hab hbc)
@@ -274,11 +274,11 @@ theorem orderedBy_insertUserTaskWait (wait : UserTaskWait) :
         exact ordered.2
     unfold insertUserTaskWait
     by_cases h : userTaskWaitBefore wait current = true
-    · simp only [h, if_pos]
+    · simp only [h, ite_eq_left]
       simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true']
       exact ⟨userTaskWaitBefore_asymm wait current h, ordered⟩
     · simp only [Bool.not_eq_true] at h
-      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true]
+      simp only [h, Bool.false_eq_true, ite_eq_right, not_false_eq_true]
       have inner := ih tail
       cases rest with
       | nil => simp [orderedBy, insertUserTaskWait, h]
@@ -471,10 +471,10 @@ theorem orderedBy_insertTaskActivation (activation : TaskActivation) :
         exact ordered.2
     unfold insertTaskActivation
     by_cases h : activation.taskId.value < current.taskId.value
-    · simp only [h, if_pos]
+    · simp only [h, ite_eq_left]
       simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true']
       exact ⟨activationBefore_asymm _ _ (by simpa [activationBefore] using h), ordered⟩
-    · simp only [h, if_neg, not_false_eq_true]
+    · simp only [h, ite_eq_right, not_false_eq_true]
       have inner := ih tail
       cases rest with
       | nil =>
@@ -484,10 +484,10 @@ theorem orderedBy_insertTaskActivation (activation : TaskActivation) :
         simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
         unfold insertTaskActivation
         by_cases h2 : activation.taskId.value < second.taskId.value
-        · simp only [h2, if_pos, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+        · simp only [h2, ite_eq_left, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
           refine ⟨by simpa [activationBefore] using h, ?_, tail⟩
           exact activationBefore_asymm _ _ (by simpa [activationBefore] using h2)
-        · simp only [h2, if_neg, not_false_eq_true, orderedBy, Bool.and_eq_true,
+        · simp only [h2, ite_eq_right, not_false_eq_true, orderedBy, Bool.and_eq_true,
             Bool.not_eq_true']
           refine ⟨ordered.1, ?_⟩
           have := ih tail
@@ -509,7 +509,7 @@ theorem mem_insertUserTaskWait (wait candidate : UserTaskWait) :
     by_cases h : userTaskWaitBefore wait current = true
     · simp [h]
     · simp only [Bool.not_eq_true] at h
-      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.mem_cons, ih]
+      simp only [h, Bool.false_eq_true, ite_eq_right, not_false_eq_true, List.mem_cons, ih]
       exact or_left_comm
 
 /-- Canonical insertion adds exactly one occurrence to any count. -/
@@ -525,7 +525,7 @@ theorem countP_insertUserTaskWait (p : UserTaskWait → Bool) (wait : UserTaskWa
     by_cases h : userTaskWaitBefore wait current = true
     · cases hp : p wait <;> simp [h, List.countP_cons, hp] <;> omega
     · simp only [Bool.not_eq_true] at h
-      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, List.countP_cons, ih]
+      simp only [h, Bool.false_eq_true, ite_eq_right, not_false_eq_true, List.countP_cons, ih]
       cases hp : p wait <;> cases hq : p current <;> simp <;> omega
 
 /-- Mapping a canonical insertion succeeds by inserting exactly the mapped value, up to order. -/
@@ -568,7 +568,7 @@ theorem filter_canonicalInsertBy_perm (before : α → α → Bool) (p : α → 
       split
       · simp [kept]
       · by_cases currentKept : p current = true
-        · simp only [List.filter_cons, currentKept, if_true]
+        · simp only [List.filter_cons, currentKept, ite_true]
           exact (List.Perm.cons current ih).trans (List.Perm.swap value current _)
         · simp [currentKept, ih]
 
@@ -732,7 +732,7 @@ theorem countP_pos_exists {α : Type} (p : α → Bool) (values : List α)
     by_cases h : p current = true
     · exact ⟨current, List.mem_cons_self, h⟩
     · simp only [Bool.not_eq_true] at h
-      simp only [h, Bool.false_eq_true, if_neg, not_false_eq_true, Nat.add_zero] at positive
+      simp only [h, Bool.false_eq_true, ite_eq_right, not_false_eq_true, Nat.add_zero] at positive
       obtain ⟨value, mem, hv⟩ := ih positive
       exact ⟨value, List.mem_cons_of_mem _ mem, hv⟩
 

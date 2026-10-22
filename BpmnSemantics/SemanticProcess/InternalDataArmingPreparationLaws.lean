@@ -26,7 +26,7 @@ theorem makeInternalDataArmingPatch_refines_activation
         simpa [dataArmingHostValid, hosted, dataEq, dataArmingEndpointKindsValid] using running
       have permitted : dataArmingEndpointKindsValid (.output directOutput) = true := rfl
       have ownRunning : state.control = .running owner.processInstanceId := by simpa [sameOwner] using hosted
-      simp only [dataArmingBindings?, dataEq, permitted, if_true,
+      simp only [dataArmingBindings?, dataEq, permitted, ite_true,
         InternalDataArmingData.inputAssociation?, Option.some.injEq] at available
       subst bindings
       simp only [InternalDataArmingContract.activate?, dataEq, activateDataOutputUserTask?,
@@ -36,7 +36,7 @@ theorem makeInternalDataArmingPatch_refines_activation
       have facts : dataArmingEndpointKindsValid (.input directInput) = true ∧ owner.processInstanceId = host := by
         simpa [dataArmingHostValid, hosted, dataEq] using running
       have ownRunning : state.control = .running owner.processInstanceId := by simpa [facts.2] using hosted
-      simp only [dataArmingBindings?, dataEq, facts.1, if_true,
+      simp only [dataArmingBindings?, dataEq, facts.1, ite_true,
         InternalDataArmingData.inputAssociation?] at available
       obtain ⟨source, sourceFound, bindingsEq⟩ := Option.bind_eq_some_iff.mp available
       simp only [pure, Option.some.injEq] at bindingsEq
@@ -46,7 +46,7 @@ theorem makeInternalDataArmingPatch_refines_activation
         | processDataInput port => simp [dataArmingEndpointKindsValid, endpoint] at facts
         | property propertyId =>
             simp only [dataInputOutputSourceBinding?, readActivityDataInput?, endpoint,
-              activityDataPropertyOwner, ownRunning, decide_true, if_true] at sourceFound
+              activityDataPropertyOwner, ownRunning, decide_true, ite_true] at sourceFound
             unfold dataInputSourceBinding?
             simp only [endpoint]
             split at sourceFound
@@ -59,7 +59,7 @@ theorem makeInternalDataArmingPatch_refines_activation
         Option.bind_eq_bind, Option.bind_some]
       rfl
   | inputOutput directInput directOutput =>
-      simp only [dataArmingBindings?, dataEq, dataArmingEndpointKindsValid, if_true,
+      simp only [dataArmingBindings?, dataEq, dataArmingEndpointKindsValid, ite_true,
         InternalDataArmingData.inputAssociation?] at available
       obtain ⟨source, sourceFound, bindingsEq⟩ := Option.bind_eq_some_iff.mp available
       simp only [pure, Option.some.injEq] at bindingsEq

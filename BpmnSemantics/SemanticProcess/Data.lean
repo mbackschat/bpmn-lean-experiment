@@ -118,14 +118,14 @@ private theorem insertVariableBinding_strictOrder (binding : VariableBinding) (b
     have different : binding.name ≠ first.name := fun same => fresh (by simp [same])
     have tailFresh : binding.name ∉ rest.map (·.name) := fun member => fresh (List.mem_cons_of_mem _ member)
     by_cases before : binding.name < first.name
-    · rw [insertVariableBinding, if_pos before]
+    · rw [insertVariableBinding, ite_eq_left before]
       apply List.pairwise_cons.mpr
       refine ⟨?_, ordered⟩
       intro value member
       rcases List.mem_cons.mp member with rfl | later
       · exact before
       · exact String.lt_trans before (headOrder value later)
-    · rw [insertVariableBinding, if_neg before]
+    · rw [insertVariableBinding, ite_eq_right before]
       apply List.pairwise_cons.mpr
       refine ⟨?_, ih tailOrder tailFresh⟩
       intro value member

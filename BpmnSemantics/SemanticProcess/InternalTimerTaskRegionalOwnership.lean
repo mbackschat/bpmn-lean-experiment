@@ -106,7 +106,7 @@ theorem regionalLocalDataClosed_insertActivity (state after : RuntimeState) (ins
         (regionalLocalScopeNamesActivity scope) with
       | [record] => keepActivity record | _ => false) = true
   by_cases kept : keepLocal scope = true
-  · simp only [kept, Bool.not_true, Bool.false_eq_true, if_false] at previous ⊢
+  · simp only [kept, Bool.not_true, Bool.false_eq_true, ite_false] at previous ⊢
     cases kind : scope.owner with
     | effectOccurrence _ => rfl
     | activityOccurrence id =>

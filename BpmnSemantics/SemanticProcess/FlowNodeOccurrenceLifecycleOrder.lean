@@ -25,7 +25,7 @@ theorem lifecycleLexStep_asymm [DecidableEq α] (before : α → α → Bool)
   · subst right
     simpa using fall
   · have reverse : right ≠ left := fun equal => same equal.symm
-    rw [if_pos same, if_pos reverse]
+    rw [ite_eq_left same, ite_eq_left reverse]
     exact asymm left right
 
 theorem lifecycleLexStep_trans [DecidableEq α] (before : α → α → Bool)

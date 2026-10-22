@@ -436,7 +436,7 @@ theorem invokeProcessState_sound (before after : RuntimeState)
           by_cases associations : calledProcessAssociationsValid before = true
           · by_cases callerIsRoot : caller.processInstanceId = rootInstance
             · subst rootInstance
-              simp only [associations, if_true] at result
+              simp only [associations, ite_true] at result
               by_cases oneInput : (before.tokens.filter fun token =>
                 decide (token.placeId = input && token.owner = caller)).length = 1
               · by_cases freshCall : (before.calledProcessOccurrences.filter fun record =>
@@ -519,7 +519,7 @@ theorem returnProcessState_sound (before after : RuntimeState)
       callerOutput after := by
   unfold returnProcessState? at result
   by_cases associations : calledProcessAssociationsValid before = true
-  · simp only [associations, if_true] at result
+  · simp only [associations, ite_true] at result
     generalize recordsEq : before.calledProcessOccurrences.filter (fun record =>
         decide (record.returnOperationId = id &&
           record.id.elementId.value = origin.elementId.value)) = records at result

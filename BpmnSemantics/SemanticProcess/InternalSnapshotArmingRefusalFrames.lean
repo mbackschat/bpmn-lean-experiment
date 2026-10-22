@@ -249,7 +249,7 @@ theorem prepared_arm_compensationTrigger_stays_disabled (program : Program) (sta
             | true => rfl
             | false =>
               simp only [attemptCompensationTrigger, declarationEq, rejected, running,
-                beforeOwner, ownerRejected, Bool.false_eq_true, if_false] at disabled
+                beforeOwner, ownerRejected, Bool.false_eq_true, ite_false] at disabled
               repeat' first | contradiction | split at disabled
           have afterInvalid : compensationTriggerOwnerRejected (applyInternalArmingPatch state patch)
               owner scope = true := by

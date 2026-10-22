@@ -46,13 +46,13 @@ private theorem completionLexStep_compose [DecidableEq α] (less : α → α →
     by_cases caEq : c = a
     · subst c
       simp_all
-    · simp only [caEq, if_false] at second ⊢
+    · simp only [caEq, ite_false] at second ⊢
       exact second
-  · simp only [baEq, if_false] at first
+  · simp only [baEq, ite_false] at first
     by_cases cbEq : c = b
     · subst c
       simp_all
-    · simp only [cbEq, if_false] at second
+    · simp only [cbEq, ite_false] at second
       by_cases caEq : c = a
       · subst c
         exfalso
@@ -61,7 +61,7 @@ private theorem completionLexStep_compose [DecidableEq α] (less : α → α →
           contradiction
         · rw [first] at backward
           contradiction
-      · simp only [caEq, if_false]
+      · simp only [caEq, ite_false]
         have ab : less a b = true := by
           rcases total a b (fun same => baEq same.symm) with forward | backward
           · exact forward

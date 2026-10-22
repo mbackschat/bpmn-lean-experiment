@@ -35,6 +35,6 @@ def serialBusinessCommandAdmitted (program : Program) (state : RuntimeState)
     serialBusinessCommandAdmitted program state stimulus = true := by
   unfold serialBusinessCommandAdmitted
   simp only [Bool.and_eq_true, bne_iff_ne]
-  exact if_pos ⟨⟨unselected, unselectedMixed⟩, unselectedError⟩
+  exact ite_eq_left ⟨⟨unselected, unselectedMixed⟩, unselectedError⟩
 
 end BpmnSemantics.SemanticProcess

@@ -251,7 +251,7 @@ private theorem evaluateStimulusScheduled_failure_is_atomic
     simp only [outcomeEq] at failed ⊢
     by_cases forbidden : program.internalSchedulingMode = .rejectObservableChoice ∧ schedule ≠ []
     · simp [forbidden]
-    · simp only [if_neg forbidden] at failed ⊢
+    · simp only [ite_eq_right forbidden] at failed ⊢
       generalize closureEq : InternalCommutation.closeScheduledTraced closureLimit program
         (stimulusCommandId stimulus) 1 0 schedule admission.state = closure at failed ⊢
       cases closure with

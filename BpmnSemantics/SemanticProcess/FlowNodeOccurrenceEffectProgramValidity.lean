@@ -216,7 +216,7 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
         · simp only [decide_eq_true_eq]
           rw [List.filter_append, List.length_append,
             length_filter_insertEffectWait]
-          simp only [decide_true, if_true, Nat.one_add]
+          simp only [decide_true, ite_true, Nat.one_add]
           rw [Nat.succ_add]
           have noPriorLength := congrArg List.length noPriorMatch
           simp only [beforeWaits, List.filter_append, List.length_append,
@@ -262,7 +262,7 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
       simp only [List.length_nil] at noPriorActivityLength
       rw [List.filter_append, List.length_append, length_filter_insertEffectWait]
       rw [selfMatch]
-      simp only [if_true, Nat.one_add]
+      simp only [ite_true, Nat.one_add]
       rw [Nat.succ_add]
       simpa [beforeWaits, List.filter_append] using noPriorActivityLength
     · rw [List.all_eq_true]

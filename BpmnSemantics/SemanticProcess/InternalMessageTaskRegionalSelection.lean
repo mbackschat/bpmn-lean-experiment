@@ -152,7 +152,7 @@ theorem messageTask_subscribed_completion_withdrawal (program : Program) (state 
   unfold selectSubscribedCompletionWithdrawal? at selected ⊢
   split at selected
   · next monitored =>
-    rw [if_pos monitored]
+    rw [ite_eq_left monitored]
     obtain ⟨pair, _, selected⟩ := Option.bind_eq_some_iff.mp selected
     split at selected
     · next addressed =>
@@ -161,10 +161,10 @@ theorem messageTask_subscribed_completion_withdrawal (program : Program) (state 
       have rebuilt := monitoredScopePairForChild_complete program (applyInternalMessageTaskPatch state patch) pair.val bound
       rw [addressed.1] at rebuilt
       simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
-      rw [if_pos addressed]
+      rw [ite_eq_left addressed]
     · contradiction
   · next unmonitored =>
-    rw [if_neg unmonitored]
+    rw [ite_eq_right unmonitored]
     exact messageTask_completion_withdrawal program state contract patch prepared definition choice selected
 
 theorem messageTask_regional_input_distinct (footprint : InternalRegionalStateFootprint)

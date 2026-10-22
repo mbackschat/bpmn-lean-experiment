@@ -35,9 +35,9 @@ private theorem predecessor_rank (ordered : List String) (unique : ordered.Nodup
   have middleAbsent : consumer ∉ middle := by
     intro present
     exact middleUnique.2.2 consumer present consumer (by simp) rfl
-  simp only [List.idxOf_append, producerAbsent, consumerAbsent, if_false,
+  simp only [List.idxOf_append, producerAbsent, consumerAbsent, ite_false,
     List.idxOf_cons_self, Nat.zero_add, List.idxOf_cons, cond_eq_ite, beq_iff_eq,
-    different, if_false, middleAbsent]
+    different, ite_false, middleAbsent]
   omega
 
 theorem nonentry_output_not_entry (program : Program) (analysis : ParallelScopeStart.ProgramAnalysis)
@@ -141,7 +141,7 @@ theorem ContinuationCommandHistory.body_firing_le_one_from_issuance
     rw [issueParallelBodies_continuation_balance analysis.entry parent items index before initial iterations issued owner port,
       fresh]
     simp only [ownedPortCount, List.filter_cons, Bool.and_eq_true, beq_iff_eq, Ne.symm different,
-      and_false, if_false, List.filter_nil, List.length_nil, Nat.zero_add]
+      and_false, ite_false, List.filter_nil, List.length_nil, Nat.zero_add]
     clear issued
     induction iterations with
     | nil => rfl

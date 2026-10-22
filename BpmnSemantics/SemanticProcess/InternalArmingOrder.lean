@@ -60,7 +60,7 @@ theorem orderedBy_canonicalInsertBy (before : α → α → Bool) (asymmetric : 
       by_cases first : before inserted current = true
       · simp [first, orderedBy, asymmetric inserted current first, ordered]
       · simp only [Bool.not_eq_true] at first
-        simp only [first, Bool.false_eq_true, if_neg, not_false_eq_true]
+        simp only [first, Bool.false_eq_true, ite_eq_right, not_false_eq_true]
         have inner := ih tail
         cases rest with
         | nil => simpa [canonicalInsertBy, orderedBy] using first
@@ -68,10 +68,10 @@ theorem orderedBy_canonicalInsertBy (before : α → α → Bool) (asymmetric : 
             simp only [orderedBy, Bool.and_eq_true, Bool.not_eq_true'] at ordered
             simp only [canonicalInsertBy]
             by_cases next : before inserted second = true
-            · simp only [next, if_pos, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
+            · simp only [next, ite_eq_left, orderedBy, Bool.and_eq_true, Bool.not_eq_true']
               exact ⟨first, asymmetric inserted second next, ordered.2⟩
             · simp only [Bool.not_eq_true] at next
-              simp only [next, Bool.false_eq_true, if_neg, not_false_eq_true,
+              simp only [next, Bool.false_eq_true, ite_eq_right, not_false_eq_true,
                 orderedBy, Bool.and_eq_true, Bool.not_eq_true']
               exact ⟨ordered.1, by simpa [canonicalInsertBy, next] using inner⟩
 
@@ -98,7 +98,7 @@ theorem armingLexStep_asymm {key : Type} [DecidableEq key] [LT key] [DecidableLT
   by_cases same : left = right
   · subst same; simpa using fall
   · have reverse : right ≠ left := fun equal => same equal.symm
-    simp only [same, reverse, if_false]
+    simp only [same, reverse, ite_false]
     exact asymm left right
 
 theorem armingLexStep_trans {key : Type} [DecidableEq key] [LT key] [DecidableLT key] (asymm : ∀ x y : key, x < y → ¬ y < x) (trans : ∀ x y z : key, x < y → y < z → x < z)
@@ -463,7 +463,7 @@ private theorem filterIdentifierNe_eq_filterValueNe [DecidableEq β]
         rw [show decide (identifier current ≠ target) = true by simp [same],
           show decide (value (identifier current) ≠ value target) = true by
             simp [valueDifferent]]
-        simp only [if_true, List.cons.injEq, true_and]
+        simp only [ite_true, List.cons.injEq, true_and]
         exact ih
 
 private theorem setActivationCount_eq_replace (values : List TaskActivation)

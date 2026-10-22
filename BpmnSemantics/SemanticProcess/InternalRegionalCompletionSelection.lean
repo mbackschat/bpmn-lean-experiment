@@ -306,7 +306,7 @@ theorem subscribedWithdrawal_monitored_refines (program : Program) (before compl
     subscribedWithdrawal_monitored_facts program before scopeId output record timer selected
   simp only [completeSelectedScope?, monitored, ↓reduceIte, completeMonitoredScope?,
     found, Option.bind_eq_bind, Option.bind_some]
-  rw [if_pos ⟨scope, route⟩, ordinary]
+  rw [ite_eq_left ⟨scope, route⟩, ordinary]
   simp only [Option.bind_some, recordEq, timerEq]
 
 /-- Complete preparation composes exact predecessor withdrawal with primitive quiescent

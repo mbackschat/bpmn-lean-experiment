@@ -130,7 +130,7 @@ theorem tokenPositionKey_mem_insert (key : SequenceFlowId × ScopeOccurrenceId)
   | cons current rest ih =>
       by_cases same : sameTokenPosition position current = true
       · have keyEq := (sameTokenPosition_iff_key_eq position current).mp same
-        simp only [insertTokenPosition, same, if_pos, List.map_cons, List.mem_cons]
+        simp only [insertTokenPosition, same, ite_eq_left, List.map_cons, List.mem_cons]
         simp only [tokenPositionKey] at keyEq ⊢
         rw [keyEq]
         simp
@@ -180,12 +180,12 @@ theorem tokenPositionsStrict_insert (position : PublicControlTokenPosition) :
       intro strict
       obtain ⟨currentBefore, restStrict⟩ := strict
       by_cases same : sameTokenPosition position current = true
-      · simp only [insertTokenPosition, same, if_pos, tokenPositionsStrict]
+      · simp only [insertTokenPosition, same, ite_eq_left, tokenPositionsStrict]
         exact ⟨by
           intro candidate member
           simpa [tokenPositionBefore] using currentBefore candidate member, restStrict⟩
       · by_cases before : tokenPositionBefore position current = true
-        · simp only [insertTokenPosition, same, before, if_true]
+        · simp only [insertTokenPosition, same, before, ite_true]
           exact ⟨by
             intro candidate member
             rcases List.mem_cons.mp member with rfl | member

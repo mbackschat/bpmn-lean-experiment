@@ -132,7 +132,7 @@ theorem regional_pair_subscribed_completion_withdrawal (program : Program) (befo
   unfold selectSubscribedCompletionWithdrawal? at chosen ⊢
   split at chosen
   · next monitored =>
-    rw [if_pos monitored]
+    rw [ite_eq_left monitored]
     obtain ⟨pair, _, chosen⟩ := Option.bind_eq_some_iff.mp chosen
     split at chosen
     · next addressed =>
@@ -207,10 +207,10 @@ theorem regional_pair_subscribed_completion_withdrawal (program : Program) (befo
       have rebuilt := monitoredScopePairForChild_complete program after pair.val afterBound
       rw [addressed.1] at rebuilt
       simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
-      rw [if_pos addressed]
+      rw [ite_eq_left addressed]
     · contradiction
   · next unmonitored =>
-    rw [if_neg unmonitored]
+    rw [ite_eq_right unmonitored]
     exact regional_pair_completion_withdrawal program before after hosting leftOperation left right definition choice
       valid leftFound rightFootprint rightKind independent applied children chosen
 

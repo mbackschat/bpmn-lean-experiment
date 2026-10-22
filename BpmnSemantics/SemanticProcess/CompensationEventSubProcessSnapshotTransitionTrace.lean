@@ -401,7 +401,7 @@ theorem applyStimulusWithCompensationSnapshots_preserves_phase
     (closureLimit : Nat) :
     phase (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state := by
   simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
-    Bool.or_true, if_true]
+    Bool.or_true, ite_true]
   unfold evaluateStimulusWithCompensationSnapshots
   dsimp only
   split
@@ -428,7 +428,7 @@ theorem applyStimulusWithCompensationSnapshots_committed_is_stable
     (snapshotInternalTransitionFrontier program final).transitions = [] ∧
       (snapshotInternalTransitionFrontier program final).refusal = none := by
   simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
-    Bool.or_true, if_true] at committed ⊢
+    Bool.or_true, ite_true] at committed ⊢
   unfold evaluateStimulusWithCompensationSnapshots at committed ⊢
   generalize admissionEq : admitStimulusWithCompensationSnapshots program state stimulus =
     admission at committed ⊢
@@ -456,7 +456,7 @@ theorem applyStimulusWithCompensationSnapshots_commits_or_preserves_state
       (admitStimulusWithCompensationSnapshots program before stimulus).state = before) :
     (applyStimulusWithCompensationSnapshots closureLimit program before stimulus).outcome = .committed ∨
       (applyStimulusWithCompensationSnapshots closureLimit program before stimulus).state = before := by
-  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some, Bool.or_true, if_true]
+  simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some, Bool.or_true, ite_true]
   unfold evaluateStimulusWithCompensationSnapshots
   generalize admissionEq : admitStimulusWithCompensationSnapshots program before stimulus = admitted at admission ⊢
   cases outcome : admitted.outcome
@@ -493,7 +493,7 @@ theorem applyStimulusWithCompensationSnapshots_closure_failure_rolls_back
       (applyStimulusWithCompensationSnapshots closureLimit program state stimulus).state = state := by
   by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
       program.compensationExecution.isSome
-  · simp only [applyStimulusWithCompensationSnapshots, focused, if_true] at failed ⊢
+  · simp only [applyStimulusWithCompensationSnapshots, focused, ite_true] at failed ⊢
     exact evaluateStimulusWithCompensationSnapshots_failure_rolls_back _ _ _ _ failed
   · simp only [applyStimulusWithCompensationSnapshots, focused] at failed ⊢
     exact applyStimulus_closure_failure_rolls_back _ _ _ _ failed
@@ -533,7 +533,7 @@ theorem applyStimulusTracedWithCompensationSnapshots_emitted_trace_replays
   by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
       program.compensationExecution.isSome
   · simp only [applyStimulusTracedWithCompensationSnapshots,
-      applyStimulusWithCompensationSnapshots, focused, if_true] at published ⊢
+      applyStimulusWithCompensationSnapshots, focused, ite_true] at published ⊢
     unfold publishSnapshotTransitions at published ⊢
     split at *
     · exact replayCheckedSnapshotTransitions_sound program state
@@ -559,7 +559,7 @@ theorem applyStimulusTracedWithCompensationSnapshots_noncommitted_has_no_trace
   by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
       program.compensationExecution.isSome
   · simp only [applyStimulusTracedWithCompensationSnapshots,
-      applyStimulusWithCompensationSnapshots, focused, if_true] at notCommitted ⊢
+      applyStimulusWithCompensationSnapshots, focused, ite_true] at notCommitted ⊢
     unfold publishSnapshotTransitions
     split <;> simp_all
   · simpa [applyStimulusTracedWithCompensationSnapshots, focused] using
@@ -576,7 +576,7 @@ theorem applyStimulusTracedWithCompensationSnapshots_no_trace_has_no_lifecycle
       stimulus).flowNodeOccurrenceLifecycles = [] := by
   by_cases focused : program.compensationEventSubProcessSnapshots.isSome ||
       program.compensationExecution.isSome
-  · simp only [applyStimulusTracedWithCompensationSnapshots, focused, if_true] at noTrace ⊢
+  · simp only [applyStimulusTracedWithCompensationSnapshots, focused, ite_true] at noTrace ⊢
     unfold publishSnapshotLifecycles
     simp only [noTrace, List.length_nil]
     generalize candidateEq :
@@ -628,7 +628,7 @@ theorem applyStimulusWithCompensationSnapshots_closure_refusal_rejects_atomicall
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
-    Bool.true_or, if_true]
+    Bool.true_or, ite_true]
   unfold evaluateStimulusWithCompensationSnapshots
   rw [admitted]
   simp only
@@ -650,7 +650,7 @@ theorem applyStimulusWithCompensationSnapshots_execution_refusal_rejects_atomica
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   simp only [applyStimulusWithCompensationSnapshots, declared, Option.isSome_some,
-    Bool.or_true, if_true]
+    Bool.or_true, ite_true]
   unfold evaluateStimulusWithCompensationSnapshots
   rw [admitted]
   simp only

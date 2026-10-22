@@ -58,13 +58,13 @@ private theorem sortInsert_flow_strict (key : α → String) (value : α) (value
   | cons head tail ih =>
       obtain ⟨before, tailOrder⟩ := List.pairwise_cons.mp ordered
       by_cases lt : key value < key head
-      · simp only [sortInsertBy, lt, decide_true, if_true, List.pairwise_cons]
+      · simp only [sortInsertBy, lt, decide_true, ite_true, List.pairwise_cons]
         refine ⟨?_, before, tailOrder⟩
         intro other member
         rcases List.mem_cons.mp member with rfl | member
         · exact lt
         · exact String.lt_trans lt (before other member)
-      · simp only [sortInsertBy, lt, decide_false, Bool.false_eq_true, if_false, List.pairwise_cons]
+      · simp only [sortInsertBy, lt, decide_false, Bool.false_eq_true, ite_false, List.pairwise_cons]
         refine ⟨?_, ih tailOrder (fun other member => fresh other (by simp [member]))⟩
         intro other member
         rcases (mem_sortInsertBy _ _ _ _).mp member with rfl | member

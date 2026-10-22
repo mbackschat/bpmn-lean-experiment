@@ -199,7 +199,7 @@ private theorem admitted_human_collection (program : Program) (analysis : Parall
     cases choice : ParallelScopeStart.programSelected program with
     | false => simp [ParallelScopeStart.analyzeProgram, choice] at analyzed
     | true => rfl
-  simp only [stimulusAdmitted, selected, Bool.not_true, Bool.false_eq_true, if_false, analyzed] at admitted
+  simp only [stimulusAdmitted, selected, Bool.not_true, Bool.false_eq_true, ite_false, analyzed] at admitted
   split at admitted <;> try contradiction
   rename_i valid
   simp only [Bool.and_eq_true] at admitted
@@ -237,7 +237,7 @@ theorem completeTask_ordinary_preserves_admitted_collection
       before.variables.process.bindings.filter (·.name == analysis.entry.collectionName) := by
   obtain ⟨⟨binding, unique⟩, untouched⟩ := admitted_human_collection program analysis analyzed before commandId id values admitted
   have merged := conditionMerge_untouched before.variables.process.bindings values analysis.entry.collectionName binding unique untouched
-  simp only [completeTask?, selected, ordinary, Bool.false_eq_true, if_false] at completed
+  simp only [completeTask?, selected, ordinary, Bool.false_eq_true, ite_false] at completed
   obtain ⟨next, applied, completed⟩ := Option.bind_eq_some_iff.mp completed
   unfold completeUserTask at applied
   split at applied <;> try contradiction
@@ -260,7 +260,7 @@ theorem completeTask_scoped_preserves_admitted_collection
     after.variables.process.bindings.filter (·.name == analysis.entry.collectionName) =
       before.variables.process.bindings.filter (·.name == analysis.entry.collectionName) := by
   obtain ⟨⟨binding, unique⟩, _⟩ := admitted_human_collection program analysis analyzed before commandId id values admitted
-  simp only [completeTask?, selectedWait, parallel, if_true] at completed
+  simp only [completeTask?, selectedWait, parallel, ite_true] at completed
   have preserved := completeParallelScopeUserTask_preserves_collection wait analysis.entry binding selectedWait selectedEntry unique completed
   simpa only [unique] using preserved
 
@@ -336,7 +336,7 @@ theorem completeEffect_ordinary_stringList_provenance (program : Program) (befor
     (name : String) (items : List String)
     (member : ({ name, value := .stringList items } : VariableBinding) ∈ after.variables.process.bindings) :
     ({ name, value := .stringList items } : VariableBinding) ∈ before.variables.process.bindings := by
-  simp only [completeEffect?, selected, ordinary, Bool.false_eq_true, if_false] at completed
+  simp only [completeEffect?, selected, ordinary, Bool.false_eq_true, ite_false] at completed
   exact completeSerialEffect_stringList_provenance program before after id result completed name items member
 
 /-- Actual selected Human admission forbids stringList patch values on the ordinary route; the scoped route derives the same ancestry from its writer. -/
@@ -349,7 +349,7 @@ theorem completeTask_stringList_provenance (program : Program) (before after : R
     (member : ({ name, value := .stringList items } : VariableBinding) ∈ after.variables.process.bindings) :
     ({ name, value := .stringList items } : VariableBinding) ∈ before.variables.process.bindings := by
   have absent : ∀ binding ∈ values, binding.value ≠ .stringList items := by
-    simp only [stimulusAdmitted, selected, Bool.not_true, Bool.false_eq_true, if_false] at admitted
+    simp only [stimulusAdmitted, selected, Bool.not_true, Bool.false_eq_true, ite_false] at admitted
     split at admitted <;> try contradiction
     split at admitted <;> try contradiction
     simp only [humanValuesAdmitted, Bool.and_eq_true] at admitted

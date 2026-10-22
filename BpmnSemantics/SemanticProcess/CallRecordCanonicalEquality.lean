@@ -52,18 +52,18 @@ private theorem lexStep_compose {key : Type} [DecidableEq key] [LT key]
   · by_cases bc : b = c
     · subst c
       simp only [armingLexStep, Ne.symm ab, ne_eq, not_false_eq_true,
-        if_true, not_true_eq_false, if_false, decide_eq_false_iff_not]
+        ite_true, not_true_eq_false, ite_false, decide_eq_false_iff_not]
       exact fun first _ => first
     · by_cases ac : a = c
       · subst c
         simp only [armingLexStep, ab, Ne.symm ab, ne_eq, not_false_eq_true,
-          if_true, not_true_eq_false, if_false, decide_eq_false_iff_not]
+          ite_true, not_true_eq_false, ite_false, decide_eq_false_iff_not]
         intro first second
         rcases total a b ab with forward | backward
         · exact False.elim (second forward)
         · exact False.elim (first backward)
       · simp only [armingLexStep, Ne.symm ab, Ne.symm bc, Ne.symm ac,
-          ne_eq, not_false_eq_true, if_true, decide_eq_false_iff_not]
+          ne_eq, not_false_eq_true, ite_true, decide_eq_false_iff_not]
         intro first second reverse
         rcases total a b ab with forward | backward
         · exact second (trans _ _ _ reverse forward)

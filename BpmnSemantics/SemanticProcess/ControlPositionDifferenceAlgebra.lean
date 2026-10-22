@@ -109,7 +109,7 @@ theorem tokenMultiplicityAt_difference (left right : List PublicControlTokenPosi
         have differenceZero : tokenMultiplicityAt (tokenDifference rest right) target = 0 := by
           rw [tail, zero]
           exact Nat.zero_sub _
-        simp only [matched, if_true]
+        simp only [matched, ite_true]
         split
         · rename_i removed
           rw [differenceZero, rightSame, removed]
@@ -117,16 +117,16 @@ theorem tokenMultiplicityAt_difference (left right : List PublicControlTokenPosi
           have updated : sameTokenPosition target
               { current with multiplicity := current.multiplicity - tokenMultiplicityAt right current } =
               sameTokenPosition target current := rfl
-          simp only [updated, matched, if_true, rightSame]
+          simp only [updated, matched, ite_true, rightSame]
       · have notMatched : sameTokenPosition target current = false := Bool.eq_false_iff.mpr matched
-        simp only [notMatched, Bool.false_eq_true, if_false]
+        simp only [notMatched, Bool.false_eq_true, ite_false]
         split
         · exact tail
         · rw [tokenMultiplicityAt_cons]
           have updated : sameTokenPosition target
               { current with multiplicity := current.multiplicity - tokenMultiplicityAt right current } =
               sameTokenPosition target current := rfl
-          simpa only [updated, notMatched, Bool.false_eq_true, if_false] using tail
+          simpa only [updated, notMatched, Bool.false_eq_true, ite_false] using tail
 
 private theorem tokenMultiplicityAt_positive_member (positions : List PublicControlTokenPosition)
     (target : PublicControlTokenPosition) (positive : 0 < tokenMultiplicityAt positions target) :

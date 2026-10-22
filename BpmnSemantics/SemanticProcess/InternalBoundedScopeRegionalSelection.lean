@@ -248,7 +248,7 @@ theorem boundedScope_subscribed_completion_supplement_frame
   unfold selectSubscribedCompletionWithdrawal? at chosen ⊢
   split at chosen
   · next monitored =>
-    rw [if_pos monitored]
+    rw [ite_eq_left monitored]
     obtain ⟨pair, _, chosen⟩ := Option.bind_eq_some_iff.mp chosen
     split at chosen
     · next addressed =>
@@ -257,10 +257,10 @@ theorem boundedScope_subscribed_completion_supplement_frame
       have rebuilt := monitoredScopePairForChild_complete program (bounded.selection.apply state) pair.val bound
       rw [addressed.1] at rebuilt
       simp only [rebuilt, Option.bind_eq_bind, Option.bind_some]
-      rw [if_pos addressed]
+      rw [ite_eq_left addressed]
     · contradiction
   · next unmonitored =>
-    rw [if_neg unmonitored]
+    rw [ite_eq_right unmonitored]
     exact boundedScope_completion_supplement_frame program state contract bounded found definition choice chosen
 
 theorem selectInternalRegional_after_independent_bounded_scope

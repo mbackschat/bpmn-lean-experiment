@@ -177,7 +177,7 @@ private theorem replayed_scope_budget (program : Program) (before after : Runtim
     simp [retirementCharge, different, frame]
   · obtain ⟨entry, _, completed⟩ := replayed_retirement_execution program before after record retirement replayed
     have smaller := completeParallelScope_scope_count_lt entry before after record.owner completed
-    simp only [retirementCharge, retirement, beq_self_eq_true, if_true]
+    simp only [retirementCharge, retirement, beq_self_eq_true, ite_true]
     omega
 
 private theorem ordered_scope_budget (program : Program) (initial final : RuntimeState)

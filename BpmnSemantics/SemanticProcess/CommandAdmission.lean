@@ -592,7 +592,7 @@ theorem admitStimulusWithCompensationSnapshots_committed_stateValid
   cases beforeValid : compensationEventSubProcessSnapshotStateValid program state with
   | false => simp [beforeValid] at committed
   | true =>
-    simp only [beforeValid, Bool.not_true, Bool.false_eq_true, if_false] at committed ⊢
+    simp only [beforeValid, Bool.not_true, Bool.false_eq_true, ite_false] at committed ⊢
     generalize preparedEq : (let admission :=
           admitStimulusWithoutCompensationSnapshots program state stimulus
         match stimulus with
@@ -607,9 +607,9 @@ theorem admitStimulusWithCompensationSnapshots_committed_stateValid
         simp only [retainValidSnapshotAdmission, outcome] at committed ⊢
         by_cases afterValid :
             compensationEventSubProcessSnapshotStateValid program prepared.state = true
-        · simp only [if_pos afterValid]
+        · simp only [ite_eq_left afterValid]
           exact afterValid
-        · simp [if_neg afterValid] at committed
+        · simp [ite_eq_right afterValid] at committed
     | rolledBack | rejected | semanticFailure | unsupported =>
         simp [retainValidSnapshotAdmission, outcome] at committed
 
@@ -803,7 +803,7 @@ theorem admitStimulusWithCompensationSnapshots_committed_start_shape
         split at committed
         · contradiction
         · rename_i beforeValid
-          simp only [if_neg beforeValid]
+          simp only [ite_eq_right beforeValid]
           have retained := retainedCommitted_eq program initialState _ committed
           rw [retained] at committed ⊢
           obtain ⟨rawCommitted, retentions, same⟩ :=

@@ -75,7 +75,7 @@ theorem regionalSelection_retention_fields (program : Program) (before after : R
             · next addressed =>
                 cases withdrawn
                 simp only [completeSelectedScope?, monitored, ↓reduceIte, completeMonitoredScope?,
-                  pairFound, Option.bind_eq_bind, Option.bind_some, if_pos addressed] at result
+                  pairFound, Option.bind_eq_bind, Option.bind_some, ite_eq_left addressed] at result
                 obtain ⟨completed, ordinary, update⟩ := Option.bind_eq_some_iff.mp result
                 cases update
                 refine ⟨monitoredCompletionReferenceRetention_matches_completion program before completed

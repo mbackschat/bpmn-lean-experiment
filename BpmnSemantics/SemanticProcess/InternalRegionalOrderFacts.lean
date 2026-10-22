@@ -30,18 +30,18 @@ theorem regionalLexStep_compose {α : Type} [DecidableEq α]
     · subst c; simpa using fall
     · simp [Ne.symm ac]
   · by_cases bc : b = c
-    · subst c; simp only [Ne.symm ab, ne_eq, not_false_eq_true, if_true,
-        not_true_eq_false, if_false]; exact fun first _ => first
+    · subst c; simp only [Ne.symm ab, ne_eq, not_false_eq_true, ite_true,
+        not_true_eq_false, ite_false]; exact fun first _ => first
     · by_cases ac : a = c
       · subst c
-        simp only [Ne.symm ab, ab, ne_eq, not_false_eq_true, if_true,
-          not_true_eq_false, if_false]
+        simp only [Ne.symm ab, ab, ne_eq, not_false_eq_true, ite_true,
+          not_true_eq_false, ite_false]
         intro first second
         rcases total a b ab with forward | backward
         · simp [forward] at second
         · simp [backward] at first
       · simpa only [Ne.symm ab, Ne.symm bc, Ne.symm ac, ne_eq,
-          not_false_eq_true, if_true] using compose a b c
+          not_false_eq_true, ite_true] using compose a b c
 
 private theorem string_total (a b : String) (different : a ≠ b) :
     decide (a < b) = true ∨ decide (b < a) = true := by

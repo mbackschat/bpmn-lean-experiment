@@ -172,7 +172,7 @@ theorem attemptTransactionCancellation_sound (program : Program) (operation : Se
                                 (selectedHandlers before owner (first :: rest)) }
                           have selectedFrontier : activateCompensationFrontier program before pending = some activated := by
                             simp only [constructCompensationTriggerFrontier, declarationEq, operationMatches,
-                              bne_self_eq_false, Bool.false_eq_true, if_false] at frontierEq
+                              bne_self_eq_false, Bool.false_eq_true, ite_false] at frontierEq
                             split at frontierEq
                             · contradiction
                             · exact frontierEq
@@ -269,10 +269,10 @@ private theorem cleared_records_empty (owner : ScopeOccurrenceId)
       simp only [clearClaimedActivityRecords, List.mem_cons] at member
       rcases member with same | tail
       · by_cases owns : head.owner = owner
-        · simp only [owns, if_true] at same
+        · simp only [owns, ite_true] at same
           subst record
           rfl
-        · simp only [owns, if_false] at same
+        · simp only [owns, ite_false] at same
           subst record
           exact False.elim (owns selected)
       · exact ih record tail selected

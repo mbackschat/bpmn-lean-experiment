@@ -80,13 +80,13 @@ private theorem filter_ne_eq_erase_of_nodup [BEq α] [LawfulBEq α] [DecidableEq
             simpa [equal] using member
           simp [different]
         rw [List.filter_cons]
-        simp only [ne_eq, not_true_eq_false, decide_false, Bool.false_eq_true, if_false,
+        simp only [ne_eq, not_true_eq_false, decide_false, Bool.false_eq_true, ite_false,
           List.erase_cons_head]
         exact unchanged
       · rw [List.filter_cons]
         have keep : decide (head ≠ target) = true := decide_eq_true_eq.mpr same
         rw [keep]
-        simp only [if_true]
+        simp only [ite_true]
         rw [ih restNodup]
         simp [same]
 
@@ -181,9 +181,9 @@ private theorem filter_replaceParallelRecordBody_commutes
         parallelControllerNamesIdentity_progressedParallelRecord]
       by_cases included : parallelControllerNamesIdentity controller candidate.processInstanceId
           ⟨candidate.activityElementId.value⟩ candidate.activation = true
-      · rw [if_pos included, if_pos included, ih]
+      · rw [ite_eq_left included, ite_eq_left included, ih]
         rfl
-      · rw [if_neg included, if_neg included, ih]
+      · rw [ite_eq_right included, ite_eq_right included, ih]
 
 /-- Completing one child while pending siblings remain preserves the exact Program binding. -/
 theorem parallelMultiInstanceProgramBindingsValid_progress
