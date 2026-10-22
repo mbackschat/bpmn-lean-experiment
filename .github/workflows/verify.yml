@@ -384,6 +384,87 @@ jobs:
           BPMN_PIPELINE_WARM_BUDGET_MS: "253500"
         run: ./scripts/verify.sh pipeline
 
+  verify_composition_parity:
+    name: verify composition parity
+    needs:
+      - changes
+      - verify_lean_checks
+      - verify_runtime
+    if: needs.changes.outputs.product1 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve pinned toolchain versions
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: runners/cibseven/pom.xml
+
+      - name: Set up Lean
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          use-mathlib-cache: false
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Lean output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake
+          key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Restore runtime output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            packages/*/dist
+            packages/temporal-adapter/*/dist
+            runners/cibseven/target
+            .cache/temporal-cli
+            .cache/temporal-test-server
+          key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify scope and composition parity
+        env:
+          CI: "true"
+        run: ./scripts/verify.sh composition-parity
+
   # One stable check name for branch protection. `always()` is required:
   # without it a failed verification leaves this job skipped, and a skipped
   # check can satisfy a required-check rule instead of blocking it.
@@ -395,6 +476,7 @@ jobs:
       - verify_lean_checks
       - verify_runtime
       - verify_pipeline
+      - verify_composition_parity
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -406,9 +488,11 @@ jobs:
           echo "Lean executable checks result: ${{ needs.verify_lean_checks.result }}"
           echo "runtime verification result: ${{ needs.verify_runtime.result }}"
           echo "integration verification result: ${{ needs.verify_pipeline.result }}"
+          echo "composition parity result: ${{ needs.verify_composition_parity.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || {
             test "${{ needs.verify_lean.result }}" = "success"
             test "${{ needs.verify_lean_checks.result }}" = "success"
             test "${{ needs.verify_runtime.result }}" = "success"
             test "${{ needs.verify_pipeline.result }}" = "success"
+            test "${{ needs.verify_composition_parity.result }}" = "success"
           }

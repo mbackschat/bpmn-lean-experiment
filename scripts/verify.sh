@@ -50,16 +50,21 @@ verify_pipeline() {
   node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/transaction-pipeline-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/repeatable-subscriptions-lean-core.integration-test.ts
+  node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
+  env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
+  git diff --check
+}
+
+# Scope and composition parity runs as its own hosted job: with the catalog half it exceeded one
+# 10-minute runner job (hosted 2026-10-21: 9.4 minutes before the warm catalog pipeline started).
+verify_composition_parity() {
   node --test --test-concurrency=1 packages/differential/test/structured-composition-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/interrupting-message-event-subprocess-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/serial-business-task-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/mixed-task-control-flow-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/mixed-task-business-error-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/sequential-scope-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts
-  env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
-  git diff --check
 }
 
 case "${1:-all}" in
@@ -69,10 +74,12 @@ case "${1:-all}" in
     verify_lean_checks
     verify_runtime
     verify_pipeline
+    verify_composition_parity
     ;;
   lean-library) verify_lean_library ;;
   lean-checks) verify_lean_checks ;;
   runtime) verify_common; verify_runtime ;;
   pipeline) verify_pipeline ;;
-  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|pipeline]" >&2; exit 2 ;;
+  composition-parity) verify_composition_parity ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|pipeline|composition-parity]" >&2; exit 2 ;;
 esac

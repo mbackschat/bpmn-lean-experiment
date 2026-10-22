@@ -90,7 +90,7 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
   );
   assert.equal(
     verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,
-    4,
+    5,
     "every hosted Product 1 slice must bind itself to the exact checkout",
   );
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-library/u);
