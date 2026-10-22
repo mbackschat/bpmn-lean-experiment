@@ -29,8 +29,9 @@ for (const kind of [Kind.ReturnProcess, Kind.CompleteScope] as const) {
     const operation = branches[0]!.selected;
     assert.ok(operation.kind === Kind.ReturnProcess || operation.kind === Kind.CompleteScope);
     assert.equal(isWellFormedSemanticProcessProgram(program), true);
-    // Two ordinary Sub-Processes beside a User Task form a plain nested tree the cumulative embedded profile admits.
-    assert.equal(supportsSemanticProcessExecution(start, program), kind === Kind.CompleteScope);
+    // Ordinary Sub-Processes and Process-root Calls of distinct definitions beside a User Task form a tree the cumulative
+    // embedded profile admits (NSC-ADMIT-01, CALLN-ADMIT-01).
+    assert.equal(supportsSemanticProcessExecution(start, program), true);
     assert.deepEqual(runtimeStateDefects(program, start.instanceId, state), []);
     const before = structuredClone(state);
     const evaluate = (output: string) => operation.kind === Kind.ReturnProcess

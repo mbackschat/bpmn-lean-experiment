@@ -56,7 +56,10 @@ export function isWellFormedReturnProcessOperation(
     hasOwnedCallData(value);
 }
 
-/** Requires each invocation to cross from the entry root into one exact called-root return pair. */
+/**
+ * Requires each invocation to cross from the Process root that holds it into one exact called-root return pair, the
+ * called root never the entry root nor the caller's own root (CALLN-ADMIT-01).
+ */
 export function callOperationsArePaired(
   processId: string,
   definitionScopes: ReadonlyArray<DefinitionScope>,
@@ -88,17 +91,19 @@ export function callOperationsArePaired(
           originElementId === invoke.calledProcessId,
       );
       const calledRoot = calledRoots[0];
+      const callerRoot = operationScope.get(invoke.id);
       return matching.length === 1 &&
         returned !== undefined &&
         calledRoots.length === 1 &&
         calledRoot !== undefined &&
         calledRoot.id === invoke.calledRootScopeId &&
         calledRoot.id !== entryRoot.id &&
-        operationScope.get(invoke.id) === entryRoot.id &&
+        callerRoot !== undefined && callerRoot !== calledRoot.id &&
+        definitionScopes.some(({ id, parentScopeId }) => id === callerRoot && parentScopeId === null) &&
         operationScope.get(returned.id) === calledRoot.id &&
-        placeScope.get(invoke.input) === entryRoot.id &&
+        placeScope.get(invoke.input) === callerRoot &&
         placeScope.get(invoke.calledEntry) === calledRoot.id &&
-        placeScope.get(returned.callerOutput) === entryRoot.id &&
+        placeScope.get(returned.callerOutput) === callerRoot &&
         returned.origin.kind === SemanticOriginKind.BpmnElement &&
         returned.origin.elementId === invoke.origin.elementId &&
         returned.calledProcessId === invoke.calledProcessId &&
@@ -125,6 +130,22 @@ export function callCompletionEdges(
         ? [{ source: ends[0].id, target: returned.id }]
         : [];
     });
+}
+
+/**
+ * The edges that stand for each call in the caller's control order: invocation straight to its paired return. A body
+ * called from two sites joins both sites' paths, so acyclicity is judged on these edges instead of the edges through
+ * the called body, which `callCompletionEdges` and the entry places still supply for reachability (CALLN-ADMIT-01).
+ */
+export function callSummaryEdges(operations: ReadonlyArray<SemanticOperation>): ReadonlyArray<OperationEdge> {
+  return operationsOfKind(operations, SemanticOperationKind.InvokeProcess)
+    .map(({ id, returnOperationId }) => ({ source: id, target: returnOperationId }));
+}
+
+/** A called root's entry place is produced by every invocation of that root (CALLN-ADMIT-01). */
+export function invocationsProducing(operations: ReadonlyArray<SemanticOperation>, placeId: string): number {
+  return operationsOfKind(operations, SemanticOperationKind.InvokeProcess)
+    .filter(({ calledEntry }) => calledEntry === placeId).length;
 }
 
 function operationsOfKind<Kind extends SemanticOperationKind>(

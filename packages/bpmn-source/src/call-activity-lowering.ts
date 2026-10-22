@@ -47,10 +47,14 @@ export function lowerCallActivityInvoke(
   };
 }
 
-export function lowerCalledProcessReturn(
+/**
+ * Lowers a called root's completion: one `returnProcess` per Call naming it, each continuing that Call's output
+ * (CALLN-RETURN-01). `undefined` marks a scope that is not a called root.
+ */
+export function lowerCalledProcessReturns(
   scope: DefinitionScope,
   source: CheckedProcess,
-): ScopedCallOperation | undefined {
+): ReadonlyArray<ScopedCallOperation> | undefined {
   if (scope.parentScopeId !== null || scope.originElementId === source.processId) {
     return undefined;
   }
@@ -59,11 +63,10 @@ export function lowerCalledProcessReturn(
       node.kind === CheckedNodeKind.CallActivity &&
       node.calledProcessId === scope.originElementId,
   );
-  const call = calls[0];
-  if (calls.length !== 1 || call === undefined) {
+  if (calls.length === 0) {
     return undefined;
   }
-  return {
+  return calls.map((call) => ({
     scopeId: scope.id,
     operation: {
       id: returnOperationId(call.id),
@@ -74,11 +77,23 @@ export function lowerCalledProcessReturn(
       callerOutput: requireOnlyFlowPlace(source, call.id, "outgoing"),
       data: call.data,
     },
-  };
+  }));
 }
 
-/** Checks Call-specific source-to-IL identity, entry, return, and ownership binding. */
+/** Checks Call-specific source-to-IL identity, entry, return, and ownership binding of the one Call. */
 export function callActivityDefinitionBindingValid(
+  source: CheckedProcess,
+  program: SemanticProcessProgram,
+): boolean {
+  return source.nodes.filter(({ kind }) => kind === CheckedNodeKind.CallActivity).length === 1 &&
+    callForestDefinitionBindingValid(source, program);
+}
+
+/**
+ * Checks that every Call lowers to exactly its own invocation and return, bound to its called root, and that the
+ * Program's one `initiate` starts the entry Process (CALLN-ADMIT-01).
+ */
+export function callForestDefinitionBindingValid(
   source: CheckedProcess,
   program: SemanticProcessProgram,
 ): boolean {
@@ -94,22 +109,50 @@ export function callActivityDefinitionBindingValid(
     (operation): operation is ReturnProcessOperation =>
       operation.kind === SemanticOperationKind.ReturnProcess,
   );
-  const call = calls[0];
-  const invoke = invokes[0];
-  const returned = returns[0];
+  const entryRoots = source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
+    parentScopeId === null && originElementId === source.processId);
+  const entryRoot = entryRoots[0];
+  const initiates = program.operations.filter(
+    (operation) => operation.kind === SemanticOperationKind.Initiate,
+  );
+  const initiate = initiates[0];
   if (
     source.processId !== program.processId ||
     !sameDefinitionScopes(source.definitionScopes, program.definitionScopes) ||
-    calls.length !== 1 ||
-    call === undefined ||
-    invokes.length !== 1 ||
-    invoke === undefined ||
-    returns.length !== 1 ||
-    returned === undefined
+    calls.length === 0 || invokes.length !== calls.length || returns.length !== calls.length ||
+    entryRoots.length !== 1 || entryRoot === undefined ||
+    initiates.length !== 1 || initiate === undefined
   ) {
     return false;
   }
-  const callerScopeId = requireNodeScope(source, call.id);
+  const operationOwner = (operationId: string): string | undefined =>
+    program.operationScopes.find((entry) => entry.operationId === operationId)
+      ?.scopeId;
+  const entryStarts = source.nodes.filter(
+    (node) =>
+      node.kind === CheckedNodeKind.NoneStartEvent &&
+      requireNodeScope(source, node.id) === entryRoot.id,
+  );
+  const entryStart = entryStarts[0];
+  return entryStarts.length === 1 && entryStart !== undefined &&
+    initiate.id === operationId(entryStart.id) &&
+    initiate.origin.elementId === entryStart.id &&
+    initiate.output === requireOnlyFlowPlace(source, entryStart.id, "outgoing") &&
+    operationOwner(initiate.id) === entryRoot.id &&
+    calls.every((call) => callBindingValid(source, call, invokes, returns, operationOwner));
+}
+
+function callBindingValid(
+  source: CheckedProcess,
+  call: Extract<CheckedNode, { kind: CheckedNodeKind.CallActivity }>,
+  invokes: ReadonlyArray<InvokeProcessOperation>,
+  returns: ReadonlyArray<ReturnProcessOperation>,
+  operationOwner: (operationId: string) => string | undefined,
+): boolean {
+  const ownInvokes = invokes.filter(({ origin }) => origin.elementId === call.id);
+  const ownReturns = returns.filter(({ origin }) => origin.elementId === call.id);
+  const invoke = ownInvokes[0];
+  const returned = ownReturns[0];
   const calledRoots = source.definitionScopes.filter(
     ({ parentScopeId, originElementId }) =>
       parentScopeId === null && originElementId === call.calledProcessId,
@@ -124,35 +167,14 @@ export function callActivityDefinitionBindingValid(
       );
   const calledStart = calledStarts[0];
   if (
-    calledRoots.length !== 1 ||
-    calledRoot === undefined ||
-    calledStarts.length !== 1 ||
-    calledStart === undefined
+    ownInvokes.length !== 1 || invoke === undefined ||
+    ownReturns.length !== 1 || returned === undefined ||
+    calledRoots.length !== 1 || calledRoot === undefined ||
+    calledStarts.length !== 1 || calledStart === undefined
   ) {
     return false;
   }
-  const operationOwner = (operationId: string): string | undefined =>
-    program.operationScopes.find((entry) => entry.operationId === operationId)
-      ?.scopeId;
-  const callerStarts = source.nodes.filter(
-    (node) =>
-      node.kind === CheckedNodeKind.NoneStartEvent &&
-      requireNodeScope(source, node.id) === callerScopeId,
-  );
-  const callerStart = callerStarts[0];
-  const initiates = program.operations.filter(
-    (operation) => operation.kind === SemanticOperationKind.Initiate,
-  );
-  const initiate = initiates[0];
-  if (
-    callerStarts.length !== 1 ||
-    callerStart === undefined ||
-    initiates.length !== 1 ||
-    initiate === undefined
-  ) {
-    return false;
-  }
-  return invoke.origin.elementId === call.id &&
+  return invoke.id === operationId(call.id) &&
     sameCallDataInterface(invoke.data, call.data) && sameCallDataInterface(returned.data, call.data) &&
     invoke.input === requireOnlyFlowPlace(source, call.id, "incoming") &&
     invoke.calledProcessId === call.calledProcessId &&
@@ -160,16 +182,11 @@ export function callActivityDefinitionBindingValid(
     invoke.calledEntry === requireOnlyFlowPlace(source, calledStart.id, "outgoing") &&
     invoke.returnOperationId === returned.id &&
     returned.id === returnOperationId(call.id) &&
-    returned.origin.elementId === call.id &&
     returned.calledProcessId === call.calledProcessId &&
     returned.calledRootScopeId === calledRoot.id &&
     returned.callerOutput === requireOnlyFlowPlace(source, call.id, "outgoing") &&
-    operationOwner(invoke.id) === callerScopeId &&
-    operationOwner(returned.id) === calledRoot.id &&
-    initiate.id === operationId(callerStart.id) &&
-    initiate.origin.elementId === callerStart.id &&
-    initiate.output === requireOnlyFlowPlace(source, callerStart.id, "outgoing") &&
-    operationOwner(initiate.id) === callerScopeId;
+    operationOwner(invoke.id) === requireNodeScope(source, call.id) &&
+    operationOwner(returned.id) === calledRoot.id;
 }
 
 function requireCalledRoot(

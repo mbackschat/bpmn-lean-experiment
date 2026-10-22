@@ -13,6 +13,7 @@ import { isInterruptingMessageHandlerStart } from "./interrupting-message-event-
  * because the compiler requires every scoped element to be a projectable node or a Sequence Flow.
  */
 import {
+  CallDataKind,
   CheckedNodeKind,
   EffectOperation,
   EffectProtocol,
@@ -217,6 +218,10 @@ export function projectCheckedNodes(
         return projectInclusiveGateway(element, id, flows, elements);
       case bpmnTypes.eventBasedGatewayType:
         return projectEventBasedGateway(element, id, flows);
+      case bpmnTypes.callActivityType:
+        return semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion
+          ? projectKeyedCall(element, id)
+          : undefined;
       case bpmnTypes.endEventType:
         return isPlainFlowNode(element)
           ? { kind: CheckedNodeKind.NoneEndEvent, id }
@@ -335,9 +340,11 @@ export function projectCheckedSequenceFlows(
 export function isProjectableNodeType(
   type: unknown,
   configuredTaskPolicy?: ConfiguredTaskProjectionPolicy,
+  semanticProfile?: string,
 ): boolean {
   return (configuredTaskPolicy !== undefined &&
-      type === configuredTaskPolicy.taskType) || [
+      type === configuredTaskPolicy.taskType) ||
+    (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion && type === bpmnTypes.callActivityType) || [
     bpmnTypes.startEventType,
     bpmnTypes.subProcessType,
     bpmnTypes.boundaryEventType,
@@ -351,6 +358,19 @@ export function isProjectableNodeType(
     bpmnTypes.eventBasedGatewayType,
     bpmnTypes.endEventType,
   ].includes(String(type));
+}
+
+/**
+ * CALLN-ADMIT-01: a data-free Call whose `calledElement` is read as CIB's raw definition key (`CIB-EXT-0021`,
+ * BpmnParse.java:3934, tag v2.2.0). Whether the key names another Process of the document is a forest fact the
+ * checked admission decides; any other attribute or extension refuses here.
+ */
+function projectKeyedCall(element: ElementRecord, id: string): CheckedNode | undefined {
+  const name = readOptionalName(element);
+  return name !== undefined && typeof element.calledElement === "string" && element.calledElement.length > 0 &&
+      hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.CallActivity)
+    ? { kind: CheckedNodeKind.CallActivity, id, calledProcessId: element.calledElement, data: { kind: CallDataKind.Empty } }
+    : undefined;
 }
 
 function classifyGateway(

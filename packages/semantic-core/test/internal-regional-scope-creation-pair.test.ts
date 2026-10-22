@@ -71,9 +71,10 @@ for (const multiplicity of creationKind === Kind.EnterScope ? [1, 3] : [1]) {
     const state: RuntimeState = { ...fixture.state, controlTokens: fixture.state.controlTokens.map((token) =>
       token.placeId === creation.input ? { ...token, multiplicity } : token) };
     valid(program, state, start.instanceId);
-    // The cumulative embedded profile admits a plain nested Sub-Process tree (NSC-ADMIT-01); the state stays hand-built.
+    // The cumulative embedded profile admits a plain nested Sub-Process tree with Process-root Calls of distinct
+    // definitions (NSC-ADMIT-01, CALLN-ADMIT-01); the state stays hand-built.
     assert.equal(supportsSemanticProcessExecution(start, program),
-      regionalKind === Kind.CompleteScope && creationKind === Kind.EnterScope && !bounded,
+      regionalKind === Kind.ReturnProcess || regionalKind === Kind.CompleteScope && !bounded,
       "only a plain nested Sub-Process tree is a source/profile topology");
     const removal = prepareRegional(program, state, regional);
     const insertion = prepareCreation(program, state, creation);

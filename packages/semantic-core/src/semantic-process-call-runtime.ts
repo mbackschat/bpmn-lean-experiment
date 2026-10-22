@@ -72,7 +72,11 @@ export type SelectedCalledProcessInvocation = Readonly<{
   record: CalledProcessOccurrence;
 }>;
 
-/** Selects the exact fresh called root and association without applying them. */
+/**
+ * Selects the exact fresh called root and association without applying them. The caller is a parentless root of the
+ * hosting instance or of a live called instance, so a called body's Call invokes from its own called root
+ * (CALLN-INVOKE-01).
+ */
 export function selectCalledProcessInvocation(
   operation: Extract<
     SemanticOperation,
@@ -84,7 +88,8 @@ export function selectCalledProcessInvocation(
   if (
     state.control.kind !== ControlStateKind.Running ||
     !calledProcessAssociationsAreValid(state) ||
-    caller.processInstanceId !== state.control.instanceId ||
+    (caller.processInstanceId !== state.control.instanceId &&
+      !state.calledProcessOccurrences.some(({ calledRoot }) => sameScopeOccurrence(calledRoot, caller))) ||
     ownedTokenMultiplicity(state.controlTokens, operation.input, caller) !== 1 ||
     state.calledProcessOccurrences.some(
       (record) =>

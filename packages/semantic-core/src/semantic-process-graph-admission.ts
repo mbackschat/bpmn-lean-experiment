@@ -9,6 +9,8 @@ import type {
 } from "./semantic-process-contract.js";
 import {
   callCompletionEdges,
+  callSummaryEdges,
+  invocationsProducing,
   callOperationsArePaired,
 } from "./call-activity-admission.js";
 import {
@@ -133,11 +135,14 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
       consumers.get(input)?.push(operation.id);
     }
   }
+  const producedOnce = (placeId: string): boolean => {
+    const count = producers.get(placeId)?.length ?? 0;
+    return count + messageHandlers.filter(({ childEntry }) => childEntry === placeId).length === 1 ||
+      (count > 1 && count === invocationsProducing(graph.operations, placeId));
+  };
   if (
     graph.controlPlaceIds.some(
-      (placeId) =>
-        (producers.get(placeId)?.length ?? 0) + messageHandlers.filter(({ childEntry }) => childEntry === placeId).length !== 1 ||
-        consumers.get(placeId)?.length !== 1,
+      (placeId) => !producedOnce(placeId) || consumers.get(placeId)?.length !== 1,
     )
   ) {
     return false;
@@ -172,11 +177,10 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
   }
 
   const placeEdges = graph.controlPlaceIds.flatMap((placeId) => {
-    const source = producers.get(placeId)?.[0];
     const target = consumers.get(placeId)?.[0];
-    return source === undefined || target === undefined
+    return target === undefined
       ? []
-      : [{ source, target }];
+      : (producers.get(placeId) ?? []).map((source) => ({ source, target }));
   });
   const completionEdges = [
     ...operationsOfKind(graph, SemanticOperationKind.ReachNoneEnd),
@@ -208,6 +212,14 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
     ...callCompletionEdges(graph.operations, operationScope),
     ...parallelMultiInstanceCompletionEdges(graph.operations),
   ];
+  const invocationIds = new Set(operationsOfKind(graph, SemanticOperationKind.InvokeProcess).map(({ id }) => id));
+  const orderEdges = [
+    ...handlerEdges,
+    ...placeEdges.filter(({ source }) => !invocationIds.has(source)),
+    ...completionEdges,
+    ...callSummaryEdges(graph.operations),
+    ...parallelMultiInstanceCompletionEdges(graph.operations),
+  ];
   const operationIds = graph.operations.map(({ id }) => id);
   const reached = reachableFrom([start.id], edges);
   const canReachEnd = reachableFrom(
@@ -233,7 +245,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
   }
   switch (graphPolicy.kind) {
     case SemanticGraphPolicyKind.Acyclic:
-      return isAcyclic(operationIds, edges);
+      return isAcyclic(operationIds, orderEdges);
     case SemanticGraphPolicyKind.ResumptionBounded: {
       const resumptionKinds = new Set<SemanticOperationKind>(
         graphPolicy.semanticResumptionOperationKinds,
@@ -243,7 +255,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
       );
       return isAcyclic(
         operationIds,
-        edges.filter(({ source }) => {
+        orderEdges.filter(({ source }) => {
           const kind = operationKinds.get(source);
           return kind === undefined || !resumptionKinds.has(kind);
         }),
@@ -344,12 +356,17 @@ function operationRespectsScopes(
           [operation.calledEntry],
           operation.calledRootScopeId,
         );
-    case SemanticOperationKind.ReturnProcess:
-      return operation.calledRootScopeId === owner &&
-        graph.definitionScopes.some(
-          ({ id, parentScopeId }) => id === owner && parentScopeId === null,
-        ) &&
-        referencesOwnedBy([operation.callerOutput], entryRootId);
+    case SemanticOperationKind.ReturnProcess: {
+      // CALLN-ADMIT-01: the caller output lies in the Process root that holds the paired invocation.
+      const paired = graph.operations.filter((candidate) =>
+        candidate.kind === SemanticOperationKind.InvokeProcess && candidate.returnOperationId === operation.id);
+      const caller = paired.length === 1 ? operationScope.get(paired[0]!.id) : undefined;
+      const isRoot = (scopeId: string | undefined) => graph.definitionScopes.some(
+        ({ id, parentScopeId }) => id === scopeId && parentScopeId === null,
+      );
+      return operation.calledRootScopeId === owner && isRoot(owner) && caller !== undefined && isRoot(caller) &&
+        referencesOwnedBy([operation.callerOutput], caller);
+    }
     case SemanticOperationKind.ThrowError: {
       const attached = graph.definitionScopes.find(
         ({ id }) => id === operation.handler.attachedScopeId,
@@ -447,10 +464,11 @@ function hasOneCompletionStrategyPerScope(
           returns.every(({ id: operationId }) =>
             operationScope.get(operationId) !== id
           )
+        // One return per paired invocation, at least one per called root (CALLN-ADMIT-01).
         : completions.every(({ scopeId }) => scopeId !== id) &&
-          returns.filter(({ id: operationId }) =>
+          returns.some(({ id: operationId }) =>
             operationScope.get(operationId) === id
-          ).length === 1
+          )
       : completions.filter(({ scopeId }) => scopeId === id).length === 1) &&
     (parentScopeId === null
       ? entries.every(({ childScopeId }) => childScopeId !== id)

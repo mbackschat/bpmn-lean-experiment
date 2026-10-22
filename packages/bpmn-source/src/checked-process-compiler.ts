@@ -3,10 +3,14 @@ import { scalarProcessProperties } from "./activity-data-input-output-projection
 import { declaresExactPropertyCount, selectsStructuredCompositionSource } from "./structured-source-profile.js";
 import {
   INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  CheckedNodeKind,
   CheckedProcessKind,
+  SemanticProfileId,
   compareCanonicalStrings,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CheckedNode,
+  CheckedSequenceFlow,
   CheckedProcess,
   SourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
@@ -63,6 +67,7 @@ import {
   selectRootDefinitions,
 } from "./root-definition-selection.js";
 import type {
+  RootDefinitionSelection,
   RootDefinitionSelectionResult,
 } from "./root-definition-selection.js";
 import {
@@ -116,7 +121,6 @@ export function compileCheckedProcess(
   classifyForeignAttributes: ForeignAttributeClassification,
   sourceOverlay: SourceOverlayIdentity | null,
 ): CheckedCompilationProjection {
-  const structuredComposition = selectsStructuredCompositionSource(semanticProfile);
   const capability = preservationCapability(semanticProfile);
   const configuredTaskPolicy =
     configuredTaskProjectionPolicyForProfile(semanticProfile);
@@ -151,6 +155,11 @@ export function compileCheckedProcess(
 
   const rootElementsLocus = containedLocus(definitionsLocus, "rootElements");
   const rootElements = asElementArray(definitions.rootElements);
+  if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion && rootElements !== undefined &&
+      rootElements.length > 1) {
+    return compileProcessForest(definitions, rootElements, rootElementsLocus, classification, source,
+      semanticProfile, capability, configuredTaskPolicy, sourceOverlay);
+  }
   const rootSelection: RootDefinitionSelectionResult = rootElements === undefined
     ? { selection: undefined, rejections: [] }
     : selectRootDefinitions(rootElements, semanticProfile, rootElementsLocus);
@@ -164,121 +173,36 @@ export function compileCheckedProcess(
   }
 
   const process = selection.process;
-  const processLocus = containedLocus(
-    rootElementsLocus,
-    rootElements?.indexOf(process) ?? 0,
-  );
-  classification.push(
-    ...unadmittedKeyRejections(
-      process,
-      processLocus,
-      ["$type", "id", "name", "isExecutable", "flowElements",
-        ...(structuredComposition ? ["properties"] : [])],
-      capability?.processKeys ?? new Set(),
-      capability,
-    ),
-  );
-  const declaredProperties = structuredComposition ? scalarProcessProperties(process) : undefined;
-  if (process.isExecutable !== true ||
-      (structuredComposition && (declaredProperties === undefined ||
-        !declaresExactPropertyCount(semanticProfile, declaredProperties)))) {
-    return unsupported(
-      classification,
-      "The bounded compiler requires an explicitly executable Process and the selected Process-property shape.",
-    );
-  }
-
-  const processId = readId(process);
-  if (processId === undefined) {
-    return unsupported(
-      classification,
-      "The Process and every compiled element require an ID.",
-    );
-  }
-  const scoped = collectScopedFlowElements(
-    process,
-    processId,
-    bpmnTypes.subProcessType,
-    processLocus,
-    semanticProfile,
-  );
-  if (scoped === undefined) {
-    return unsupported(
-      classification,
-      "Every embedded SubProcess must have an admitted trigger, an ID, and a FlowElements graph.",
-    );
-  }
-  if (!terminateEndSourcePropertiesValid(scoped.elements, semanticProfile)) {
-    return unsupported(
-      classification,
-      "The Terminate End profile requires one ordinary embedded Sub-Process whose triggeredByEvent value resolves to false.",
-    );
-  }
-
-  const { nodes: sourceNodes, flows: sourceFlows, unexecuted } =
-    partitionScopedElements(scoped.elements, configuredTaskPolicy);
-  classification.push(...unexecutedFlowElementRejections(unexecuted));
-  const flowKeyRejections = projectedFlowElementKeyRejections(
+  const classified = classifyProcess(
     definitions,
-    [...sourceNodes, ...sourceFlows].map(({ element }) => element),
-    structuredComposition ? FlowElementProjectionProfile.StructuredComposition :
-    isUserTaskMetadataProfile(semanticProfile)
-      ? FlowElementProjectionProfile.UserTaskMetadata
-      : FlowElementProjectionProfile.Generic,
+    process,
+    containedLocus(rootElementsLocus, rootElements?.indexOf(process) ?? 0),
+    semanticProfile,
     capability,
+    configuredTaskPolicy,
   );
-  if (flowKeyRejections === undefined) {
-    return unsupported(
-      classification,
-      "Every selected flow element requires an exact key inventory entry.",
-    );
+  classification.push(...classified.classification);
+  if (classified.kind === ProcessProjectionKind.Refused) {
+    return unsupported(classification, classified.evidence);
   }
-  classification.push(...flowKeyRejections);
   if (classification.length > 0) {
     return {
       checkedProcess: undefined,
       diagnostics: orderedElementDiagnostics(classification),
     };
   }
-
-  const sequenceFlows = projectCheckedSequenceFlows(
-    sourceFlows.map(({ element }) => element),
-    definitions.expressionLanguage,
-    capability,
-  );
-  if (sequenceFlows === undefined) {
-    return unsupported(
-      [],
-      "Every Sequence Flow requires a distinct ID and resolved source and target references.",
-    );
-  }
-  const nodes = projectCheckedNodes(
-    sourceNodes.map(({ element }) => element),
-    sequenceFlows,
+  const projected = projectClassifiedProcess(
+    classified,
     definitions,
     selection,
     capability,
     configuredTaskPolicy,
     semanticProfile,
   );
-  const nodeScopes = projectOwnership(
-    sourceNodes,
-    (nodeId, scopeId) => ({ nodeId, scopeId }),
-  );
-  const sequenceFlowScopes = projectOwnership(
-    sourceFlows,
-    (sequenceFlowId, scopeId) => ({ sequenceFlowId, scopeId }),
-  );
-  if (
-    nodes === undefined ||
-    nodeScopes === undefined ||
-    sequenceFlowScopes === undefined
-  ) {
-    return unsupported(
-      [],
-      "Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.",
-    );
+  if (projected.kind === ProcessProjectionKind.Refused) {
+    return unsupported([], projected.evidence);
   }
+  const { processId, scoped, nodes, sequenceFlows, nodeScopes, sequenceFlowScopes } = projected;
 
   const messageHandlers = semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID
     ? projectInterruptingMessageEventSubProcesses(process, scoped.elements, nodes, sequenceFlows) : undefined;
@@ -347,6 +271,235 @@ export function compileCheckedProcess(
   };
 }
 
+/** CALLN-ADMIT-01 bounds a Call forest to the caller and seven called Processes. */
+const processForestRootLimit = 8;
+
+/**
+ * CALLN-ADMIT-01's reader for a `SCOPE` document of several Process roots: each root is classified and projected
+ * exactly as a single Process is, and the merged forest's entry is the one Process no Call names. Whether every Call
+ * names another root, the call graph's shape and every body rule are checked admission's, not this reader's.
+ */
+function compileProcessForest(
+  definitions: ElementRecord,
+  rootElements: ReadonlyArray<ElementRecord>,
+  rootElementsLocus: ElementLocus,
+  documentClassification: ReadonlyArray<ElementRejection>,
+  source: BpmnSourceIdentity,
+  semanticProfile: string,
+  capability: ReturnType<typeof preservationCapability>,
+  configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
+  sourceOverlay: SourceOverlayIdentity | null,
+): CheckedCompilationProjection {
+  const classification: ElementRejection[] = [...documentClassification];
+  if (rootElements.length > processForestRootLimit ||
+      !rootElements.every(({ $type }) => $type === bpmnTypes.processType)) {
+    return unsupported(classification, "A Call forest admits two to eight Process roots and no other root element.");
+  }
+  const classified: ClassifiedProcess[] = [];
+  for (const [index, process] of rootElements.entries()) {
+    const result = classifyProcess(definitions, process, containedLocus(rootElementsLocus, index), semanticProfile,
+      capability, configuredTaskPolicy);
+    classification.push(...result.classification);
+    if (result.kind === ProcessProjectionKind.Refused) return unsupported(classification, result.evidence);
+    classified.push(result);
+  }
+  if (classification.length > 0) {
+    return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(classification) };
+  }
+  const projected: ProjectedProcess[] = [];
+  for (const [index, entry] of classified.entries()) {
+    const process = rootElements[index]!;
+    const result = projectClassifiedProcess(entry, definitions,
+      { process, messageArtifacts: undefined, errorArtifact: undefined }, capability, configuredTaskPolicy, semanticProfile);
+    if (result.kind === ProcessProjectionKind.Refused) return unsupported([], result.evidence);
+    projected.push(result);
+  }
+  const nodes = projected.flatMap(({ nodes }) => nodes);
+  const sequenceFlows = projected.flatMap(({ sequenceFlows }) => sequenceFlows);
+  const called = new Set(nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node.calledProcessId] : []));
+  const entries = projected.filter(({ processId }) => !called.has(processId));
+  const allIds = [...projected.map(({ processId }) => processId), ...nodes.map(({ id }) => id),
+    ...sequenceFlows.map(({ id }) => id)];
+  if (entries.length !== 1 || new Set(allIds).size !== allIds.length) {
+    return unsupported([], "A Call forest requires one entry Process that no Call names and distinct Process, node, and Sequence Flow IDs.");
+  }
+  const processId = entries[0]!.processId;
+  const definitionScopes = projected.flatMap(({ scoped }) => scoped.definitionScopes);
+  const nodeScopes = projected.flatMap(({ nodeScopes }) => nodeScopes);
+  const sequenceFlowScopes = projected.flatMap(({ sequenceFlowScopes }) => sequenceFlowScopes);
+  if (!isAdmittedCheckedProcess({ processId, definitionScopes, nodeScopes, sequenceFlowScopes, nodes,
+    flows: sequenceFlows }, definitions.expressionLanguage, semanticProfile)) {
+    return unsupported([], "The checked Call forest is outside the selected profile's mechanism, cardinality, graph, or expression capabilities.");
+  }
+  return {
+    checkedProcess: {
+      kind: CheckedProcessKind.CheckedProcess,
+      identity: { semanticProfile, sourceId: source.id, sourceSha256: source.sha256, sourceOverlay },
+      processId,
+      definitionScopes: [...definitionScopes].sort(compareIds),
+      nodeScopes: [...nodeScopes].sort((left, right) => compareCanonicalStrings(left.nodeId, right.nodeId)),
+      sequenceFlowScopes: [...sequenceFlowScopes].sort((left, right) =>
+        compareCanonicalStrings(left.sequenceFlowId, right.sequenceFlowId)),
+      nodes: [...nodes].sort(compareIds),
+      sequenceFlows: [...sequenceFlows].sort(compareIds),
+    },
+    diagnostics: [],
+  };
+}
+
+export const ProcessProjectionKind = Object.freeze({
+  Classified: "classified",
+  Projected: "projected",
+  Refused: "refused",
+} as const);
+
+type ProcessRefusal = Readonly<{
+  kind: typeof ProcessProjectionKind.Refused;
+  classification: ReadonlyArray<ElementRejection>;
+  evidence: string;
+}>;
+
+export type ClassifiedProcess = Readonly<{
+  kind: typeof ProcessProjectionKind.Classified;
+  classification: ReadonlyArray<ElementRejection>;
+  processId: string;
+  scoped: NonNullable<ReturnType<typeof collectScopedFlowElements>>;
+  sourceNodes: ReadonlyArray<ScopedSourceElement>;
+  sourceFlows: ReadonlyArray<ScopedSourceElement>;
+}>;
+
+export type ProjectedProcess = Readonly<{
+  kind: typeof ProcessProjectionKind.Projected;
+  processId: string;
+  scoped: ClassifiedProcess["scoped"];
+  nodes: ReadonlyArray<CheckedNode>;
+  sequenceFlows: ReadonlyArray<CheckedSequenceFlow>;
+  nodeScopes: ReadonlyArray<Readonly<{ nodeId: string; scopeId: string }>>;
+  sequenceFlowScopes: ReadonlyArray<Readonly<{ sequenceFlowId: string; scopeId: string }>>;
+}>;
+
+/**
+ * One Process root's classification: its keys, executability, scoped elements and the flow elements the profile
+ * does not execute. Element-level refusals are returned for the caller to merge with document-level ones, so a
+ * Process forest reports every locus as a single Process does.
+ */
+export function classifyProcess(
+  definitions: ElementRecord,
+  process: ElementRecord,
+  processLocus: ElementLocus,
+  semanticProfile: string,
+  capability: ReturnType<typeof preservationCapability>,
+  configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
+): ClassifiedProcess | ProcessRefusal {
+  const structuredComposition = selectsStructuredCompositionSource(semanticProfile);
+  const classification: ElementRejection[] = [
+    ...unadmittedKeyRejections(
+      process,
+      processLocus,
+      ["$type", "id", "name", "isExecutable", "flowElements",
+        ...(structuredComposition ? ["properties"] : [])],
+      capability?.processKeys ?? new Set(),
+      capability,
+    ),
+  ];
+  const refused = (evidence: string): ProcessRefusal =>
+    ({ kind: ProcessProjectionKind.Refused, classification, evidence });
+  const declaredProperties = structuredComposition ? scalarProcessProperties(process) : undefined;
+  if (process.isExecutable !== true ||
+      (structuredComposition && (declaredProperties === undefined ||
+        !declaresExactPropertyCount(semanticProfile, declaredProperties)))) {
+    return refused("The bounded compiler requires an explicitly executable Process and the selected Process-property shape.");
+  }
+  const processId = readId(process);
+  if (processId === undefined) {
+    return refused("The Process and every compiled element require an ID.");
+  }
+  const scoped = collectScopedFlowElements(
+    process,
+    processId,
+    bpmnTypes.subProcessType,
+    processLocus,
+    semanticProfile,
+  );
+  if (scoped === undefined) {
+    return refused("Every embedded SubProcess must have an admitted trigger, an ID, and a FlowElements graph.");
+  }
+  if (!terminateEndSourcePropertiesValid(scoped.elements, semanticProfile)) {
+    return refused("The Terminate End profile requires one ordinary embedded Sub-Process whose triggeredByEvent value resolves to false.");
+  }
+  const { nodes: sourceNodes, flows: sourceFlows, unexecuted } =
+    partitionScopedElements(scoped.elements, configuredTaskPolicy, semanticProfile);
+  classification.push(...unexecutedFlowElementRejections(unexecuted));
+  const flowKeyRejections = projectedFlowElementKeyRejections(
+    definitions,
+    [...sourceNodes, ...sourceFlows].map(({ element }) => element),
+    structuredComposition ? FlowElementProjectionProfile.StructuredComposition :
+    isUserTaskMetadataProfile(semanticProfile)
+      ? FlowElementProjectionProfile.UserTaskMetadata
+      : FlowElementProjectionProfile.Generic,
+    capability,
+  );
+  if (flowKeyRejections === undefined) {
+    return refused("Every selected flow element requires an exact key inventory entry.");
+  }
+  classification.push(...flowKeyRejections);
+  return { kind: ProcessProjectionKind.Classified, classification, processId, scoped, sourceNodes, sourceFlows };
+}
+
+/** Projects a classified Process root free of element-level refusals into its checked nodes, flows and ownership. */
+export function projectClassifiedProcess(
+  classified: ClassifiedProcess,
+  definitions: ElementRecord,
+  selection: RootDefinitionSelection,
+  capability: ReturnType<typeof preservationCapability>,
+  configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
+  semanticProfile: string,
+): ProjectedProcess | ProcessRefusal {
+  const refused = (evidence: string): ProcessRefusal =>
+    ({ kind: ProcessProjectionKind.Refused, classification: [], evidence });
+  const sequenceFlows = projectCheckedSequenceFlows(
+    classified.sourceFlows.map(({ element }) => element),
+    definitions.expressionLanguage,
+    capability,
+  );
+  if (sequenceFlows === undefined) {
+    return refused("Every Sequence Flow requires a distinct ID and resolved source and target references.");
+  }
+  const nodes = projectCheckedNodes(
+    classified.sourceNodes.map(({ element }) => element),
+    sequenceFlows,
+    definitions,
+    selection,
+    capability,
+    configuredTaskPolicy,
+    semanticProfile,
+  );
+  const nodeScopes = projectOwnership(
+    classified.sourceNodes,
+    (nodeId, scopeId) => ({ nodeId, scopeId }),
+  );
+  const sequenceFlowScopes = projectOwnership(
+    classified.sourceFlows,
+    (sequenceFlowId, scopeId) => ({ sequenceFlowId, scopeId }),
+  );
+  if (
+    nodes === undefined ||
+    nodeScopes === undefined ||
+    sequenceFlowScopes === undefined
+  ) {
+    return refused("Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.");
+  }
+  return {
+    kind: ProcessProjectionKind.Projected,
+    processId: classified.processId,
+    scoped: classified.scoped,
+    nodes,
+    sequenceFlows,
+    nodeScopes,
+    sequenceFlowScopes,
+  };
+}
+
 /**
  * The scoped flow elements split into the two the projectors take and the remainder.
  *
@@ -357,6 +510,7 @@ export function compileCheckedProcess(
 function partitionScopedElements(
   elements: ReadonlyArray<ScopedSourceElement>,
   configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
+  semanticProfile: string,
 ): Readonly<{
   nodes: ReadonlyArray<ScopedSourceElement>;
   flows: ReadonlyArray<ScopedSourceElement>;
@@ -366,7 +520,7 @@ function partitionScopedElements(
   const flows: ScopedSourceElement[] = [];
   const unexecuted: ScopedSourceElement[] = [];
   for (const scoped of elements) {
-    if (isProjectableNodeType(scoped.element.$type, configuredTaskPolicy)) {
+    if (isProjectableNodeType(scoped.element.$type, configuredTaskPolicy, semanticProfile)) {
       nodes.push(scoped);
     } else if (scoped.element.$type === bpmnTypes.sequenceFlowType) {
       flows.push(scoped);

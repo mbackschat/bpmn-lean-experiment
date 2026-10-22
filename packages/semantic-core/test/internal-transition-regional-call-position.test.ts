@@ -41,7 +41,9 @@ for (const selectedIndex of [0, 1]) {
       assert.notEqual(projectCurrentControlPositions(program, candidate), null);
     };
     assert.equal(isWellFormedSemanticProcessProgram(program), true);
-    assert.equal(supportsSemanticProcessExecution(start, program), false);
+    // The Program is an admitted fork into two Calls (CALLN-ADMIT-01); the nested records are hand-built, since no
+    // admitted journey nests them through these serial bodies.
+    assert.equal(supportsSemanticProcessExecution(start, program), true);
     valid(before);
     const selectedCaller = originals[selectedIndex]!.calledRoot;
     const after = removeCalledProcessSubtreesForCallers(before, [selectedCaller]);

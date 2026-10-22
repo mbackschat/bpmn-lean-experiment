@@ -325,6 +325,8 @@ function genericShapes(
       return [ProjectedFlowElementShape.ReceiveTask];
     case bpmnTypes.boundaryEventType:
       return [ProjectedFlowElementShape.BoundaryEvent];
+    case bpmnTypes.callActivityType:
+      return [ProjectedFlowElementShape.CallActivity];
     default:
       return undefined;
   }

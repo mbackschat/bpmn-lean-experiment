@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_SupplierOnboarding" targetNamespace="https://bpmn-lean.local/scenarios/repeated-nested-concurrent-calls">
+  <bpmn:process id="Process_SupplierOnboarding" name="Supplier onboarding" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SupplierProposed" name="Supplier proposed">
+      <bpmn:outgoing>Flow_SupplierProposedToRegisterSupplier</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_RegisterSupplier" name="Register supplier">
+      <bpmn:incoming>Flow_SupplierProposedToRegisterSupplier</bpmn:incoming>
+      <bpmn:outgoing>Flow_RegisterSupplierToApprovalFork</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Gateway_ApprovalFork" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_RegisterSupplierToApprovalFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovalForkToCollectTaxDocuments</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ApprovalForkToCollectBankDetails</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="UserTask_CollectTaxDocuments" name="Collect tax documents">
+      <bpmn:incoming>Flow_ApprovalForkToCollectTaxDocuments</bpmn:incoming>
+      <bpmn:outgoing>Flow_CollectTaxDocumentsToTaxApproval</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="CallActivity_TaxApproval" name="Tax approval" calledElement="Process_FourEyesApproval">
+      <bpmn:incoming>Flow_CollectTaxDocumentsToTaxApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaxApprovalToApprovalJoin</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:userTask id="UserTask_CollectBankDetails" name="Collect bank details">
+      <bpmn:incoming>Flow_ApprovalForkToCollectBankDetails</bpmn:incoming>
+      <bpmn:outgoing>Flow_CollectBankDetailsToBankApproval</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="CallActivity_BankApproval" name="Bank approval" calledElement="Process_FourEyesApproval">
+      <bpmn:incoming>Flow_CollectBankDetailsToBankApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_BankApprovalToApprovalJoin</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:parallelGateway id="Gateway_ApprovalJoin" gatewayDirection="Converging">
+      <bpmn:incoming>Flow_TaxApprovalToApprovalJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_BankApprovalToApprovalJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovalJoinToReviewRisk</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:callActivity id="CallActivity_ReviewRisk" name="Review risk" calledElement="Process_SupplierRiskReview">
+      <bpmn:incoming>Flow_ApprovalJoinToReviewRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewRiskToFinalApproval</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="CallActivity_FinalApproval" name="Final approval" calledElement="Process_FourEyesApproval">
+      <bpmn:incoming>Flow_ReviewRiskToFinalApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_FinalApprovalToSupplierActive</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_SupplierActive" name="Supplier active">
+      <bpmn:incoming>Flow_FinalApprovalToSupplierActive</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_SupplierProposedToRegisterSupplier" sourceRef="StartEvent_SupplierProposed" targetRef="UserTask_RegisterSupplier" />
+    <bpmn:sequenceFlow id="Flow_RegisterSupplierToApprovalFork" sourceRef="UserTask_RegisterSupplier" targetRef="Gateway_ApprovalFork" />
+    <bpmn:sequenceFlow id="Flow_ApprovalForkToCollectTaxDocuments" sourceRef="Gateway_ApprovalFork" targetRef="UserTask_CollectTaxDocuments" />
+    <bpmn:sequenceFlow id="Flow_CollectTaxDocumentsToTaxApproval" sourceRef="UserTask_CollectTaxDocuments" targetRef="CallActivity_TaxApproval" />
+    <bpmn:sequenceFlow id="Flow_TaxApprovalToApprovalJoin" sourceRef="CallActivity_TaxApproval" targetRef="Gateway_ApprovalJoin" />
+    <bpmn:sequenceFlow id="Flow_ApprovalForkToCollectBankDetails" sourceRef="Gateway_ApprovalFork" targetRef="UserTask_CollectBankDetails" />
+    <bpmn:sequenceFlow id="Flow_CollectBankDetailsToBankApproval" sourceRef="UserTask_CollectBankDetails" targetRef="CallActivity_BankApproval" />
+    <bpmn:sequenceFlow id="Flow_BankApprovalToApprovalJoin" sourceRef="CallActivity_BankApproval" targetRef="Gateway_ApprovalJoin" />
+    <bpmn:sequenceFlow id="Flow_ApprovalJoinToReviewRisk" sourceRef="Gateway_ApprovalJoin" targetRef="CallActivity_ReviewRisk" />
+    <bpmn:sequenceFlow id="Flow_ReviewRiskToFinalApproval" sourceRef="CallActivity_ReviewRisk" targetRef="CallActivity_FinalApproval" />
+    <bpmn:sequenceFlow id="Flow_FinalApprovalToSupplierActive" sourceRef="CallActivity_FinalApproval" targetRef="EndEvent_SupplierActive" />
+  </bpmn:process>
+  <bpmn:process id="Process_FourEyesApproval" name="Four-eyes approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ApprovalRequested" name="Approval requested">
+      <bpmn:outgoing>Flow_ApprovalRequestedToPrepareApproval</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_PrepareApproval" name="Prepare approval">
+      <bpmn:incoming>Flow_ApprovalRequestedToPrepareApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_PrepareApprovalToApprove</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_Approve" name="Approve">
+      <bpmn:incoming>Flow_PrepareApprovalToApprove</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApproveToApproved</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Approved" name="Approved">
+      <bpmn:incoming>Flow_ApproveToApproved</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ApprovalRequestedToPrepareApproval" sourceRef="StartEvent_ApprovalRequested" targetRef="UserTask_PrepareApproval" />
+    <bpmn:sequenceFlow id="Flow_PrepareApprovalToApprove" sourceRef="UserTask_PrepareApproval" targetRef="UserTask_Approve" />
+    <bpmn:sequenceFlow id="Flow_ApproveToApproved" sourceRef="UserTask_Approve" targetRef="EndEvent_Approved" />
+  </bpmn:process>
+  <bpmn:process id="Process_SupplierRiskReview" name="Supplier risk review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RiskReviewRequested" name="Risk review requested">
+      <bpmn:outgoing>Flow_RiskReviewRequestedToAssessRisk</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_AssessRisk" name="Assess risk">
+      <bpmn:incoming>Flow_RiskReviewRequestedToAssessRisk</bpmn:incoming>
+      <bpmn:outgoing>Flow_AssessRiskToCheckCompliance</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:callActivity id="CallActivity_CheckCompliance" name="Check compliance" calledElement="Process_ComplianceCheck">
+      <bpmn:incoming>Flow_AssessRiskToCheckCompliance</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckComplianceToRiskReviewed</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_RiskReviewed" name="Risk reviewed">
+      <bpmn:incoming>Flow_CheckComplianceToRiskReviewed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_RiskReviewRequestedToAssessRisk" sourceRef="StartEvent_RiskReviewRequested" targetRef="UserTask_AssessRisk" />
+    <bpmn:sequenceFlow id="Flow_AssessRiskToCheckCompliance" sourceRef="UserTask_AssessRisk" targetRef="CallActivity_CheckCompliance" />
+    <bpmn:sequenceFlow id="Flow_CheckComplianceToRiskReviewed" sourceRef="CallActivity_CheckCompliance" targetRef="EndEvent_RiskReviewed" />
+  </bpmn:process>
+  <bpmn:process id="Process_ComplianceCheck" name="Compliance check" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ComplianceCheckRequested" name="Compliance check requested">
+      <bpmn:outgoing>Flow_ComplianceCheckRequestedToScreenSanctions</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_ScreenSanctions" name="Screen sanctions">
+      <bpmn:incoming>Flow_ComplianceCheckRequestedToScreenSanctions</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScreenSanctionsToComplianceChecked</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_ComplianceChecked" name="Compliance checked">
+      <bpmn:incoming>Flow_ScreenSanctionsToComplianceChecked</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ComplianceCheckRequestedToScreenSanctions" sourceRef="StartEvent_ComplianceCheckRequested" targetRef="UserTask_ScreenSanctions" />
+    <bpmn:sequenceFlow id="Flow_ScreenSanctionsToComplianceChecked" sourceRef="UserTask_ScreenSanctions" targetRef="EndEvent_ComplianceChecked" />
+  </bpmn:process>
+</bpmn:definitions>

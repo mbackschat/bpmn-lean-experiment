@@ -27,7 +27,7 @@ import {
 } from "./event-based-gateway-lowering.js";
 import {
   lowerCallActivityInvoke,
-  lowerCalledProcessReturn,
+  lowerCalledProcessReturns,
 } from "./call-activity-lowering.js";
 import { lowerMessageStartEvent } from "./message-start-event-lowering.js";
 import { lowerTimerStartEvent } from "./timer-start-event-lowering.js";
@@ -66,10 +66,11 @@ export function lowerCheckedProcess(
   const nodeOperations = source.nodes.flatMap((node) =>
     lowerNode(node, source)
   );
-  const completionOperations = source.definitionScopes.flatMap((scope) =>
+  const completionOperations = source.definitionScopes.flatMap((scope): ReadonlyArray<ScopedOperation> =>
     isDormantCompensationScope(source, scope.id)
       ? []
-      : [lowerMessageEventSubProcessCompletion(scope, source) ?? lowerCalledProcessReturn(scope, source) ?? lowerScopeCompletion(scope, source)]
+      // A Message Event Sub-Process scope has a parent, so it is never a called root.
+      : lowerCalledProcessReturns(scope, source) ?? [lowerMessageEventSubProcessCompletion(scope, source) ?? lowerScopeCompletion(scope, source)]
   );
   const scopedOperations = [...nodeOperations, ...completionOperations];
   const configurationFlows = eventRaceConfigurationFlowIds(source);

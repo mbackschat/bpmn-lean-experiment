@@ -31,11 +31,13 @@ import {
 } from "./semantic-process-lowering.js";
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+  CheckedNodeKind,
   SemanticProfileId,
   isWellFormedSemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 import {
   callActivityDefinitionBindingValid,
+  callForestDefinitionBindingValid,
 } from "./call-activity-lowering.js";
 import {
   admitSourceOverlay,
@@ -283,6 +285,19 @@ export async function compileBpmnToSemanticProcess(
       diagnostic(
         BpmnSourceDiagnosticCode.UnsupportedModel,
         "The lowered Call Activity definition forest is not structurally bound to its checked source.",
+      ),
+    ]);
+  }
+  if (
+    request.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
+    projection.checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.CallActivity) &&
+    (!isWellFormedSemanticProcessProgram(semanticProcess) ||
+      !callForestDefinitionBindingValid(projection.checkedProcess, semanticProcess))
+  ) {
+    return reject([
+      diagnostic(
+        BpmnSourceDiagnosticCode.UnsupportedModel,
+        "The lowered Call forest is not structurally bound to its checked source.",
       ),
     ]);
   }

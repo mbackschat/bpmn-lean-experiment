@@ -34,11 +34,12 @@ function valid(program: SemanticProcessProgram, state: RuntimeState, instanceId:
   assert.notEqual(projectCurrentControlPositions(program, state), null);
 }
 
-// The cumulative embedded profile admits plain nested Sub-Process trees (NSC-ADMIT-01), so a fixture Program is admitted
-// exactly when every branch enters and completes an unbounded scope ordinarily; its intermediate state is still built by
-// firing operations by hand, outside any admitted closure.
+// The cumulative embedded profile admits plain nested Sub-Process trees (NSC-ADMIT-01) and Process-root Calls of
+// distinct definitions (CALLN-ADMIT-01), so a fixture Program is admitted exactly when every branch enters an unbounded
+// scope or calls a Process and completes it ordinarily; its intermediate state is still built by firing operations by
+// hand, outside any admitted closure.
 const plainScopeTree = (branches: readonly { kind: string; bounded: boolean }[]) =>
-  branches.every(({ kind, bounded }) => kind === Kind.CompleteScope && !bounded);
+  branches.every(({ kind, bounded }) => kind === Kind.ReturnProcess || kind === Kind.CompleteScope && !bounded);
 
 function assertPair(fixture: ReturnType<typeof regionalPairFixture>) {
   const { program, state, start, branches } = fixture;

@@ -22,7 +22,7 @@ import type {
 } from "@bpmn-lean/semantic-core";
 
 const profile = "bpmn-2.0.2-called-process-call-activity-draft";
-const { lowerCallActivityInvoke, lowerCalledProcessReturn } = await import(
+const { lowerCallActivityInvoke, lowerCalledProcessReturns } = await import(
   new URL("../dist/call-activity-lowering.js", import.meta.url).href
 ) as typeof import("../src/call-activity-lowering.ts");
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
@@ -172,7 +172,7 @@ test("Call lowering retains scalar declarations and independently binds both ope
   const root = checked.definitionScopes.find((scope) => scope.originElementId === call.calledProcessId);
   assert.ok(root);
   const invoke = lowerCallActivityInvoke(checkedCall, checked).operation;
-  const returned = lowerCalledProcessReturn(root, checked)?.operation;
+  const returned = lowerCalledProcessReturns(root, checked)?.[0]?.operation;
   assert.ok(returned);
   assert.deepEqual(invoke.data, data);
   assert.deepEqual(returned.data, data);
