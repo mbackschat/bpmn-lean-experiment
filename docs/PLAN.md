@@ -78,7 +78,7 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: a proposal for `PC-SCOPE-05` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-04` closed on 2026-10-23 under its [closure receipt](capsules/CALL-VARIABLE-MAPPING-SPEC.md#independent-cold-review-receipt), `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification. No sibling joins: `PC-SCOPE-03` needs a governed version decision, `PC-SCOPE-06` needs `PC-SCOPE-07` and Error/Escalation contracts, and `PC-SCOPE-07` needs a Call trigger that host admission refuses beside a token split.
 
-Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls in the `SCOPE` profile, staged so root-path callers precede the Call inside an embedded Sub-Process, whose Lean premise lift (`calledInstanceClosure_child_empty` and its five consumers) carries its own effort bound.
+Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls, with Process-root callers in the `SCOPE` profile before the mapped Call inside an embedded Sub-Process in the `DATA` profile; each stage's Lean lift carries its own effort bound.
 
 Acceptance blockers: the proposal's cold review.
 
