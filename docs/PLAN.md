@@ -76,18 +76,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: a family proposal for `PC-SCOPE-05` with `PC-SCOPE-06` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-04` closed on 2026-10-23 under its [closure receipt](capsules/CALL-VARIABLE-MAPPING-SPEC.md#independent-cold-review-receipt), `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
+Current task: a proposal for `PC-SCOPE-05` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-04` closed on 2026-10-23 under its [closure receipt](capsules/CALL-VARIABLE-MAPPING-SPEC.md#independent-cold-review-receipt), `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification. No sibling joins: `PC-SCOPE-03` needs a governed version decision, `PC-SCOPE-06` needs `PC-SCOPE-07` and Error/Escalation contracts, and `PC-SCOPE-07` needs a Call trigger that host admission refuses beside a token split.
 
-Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls, including the mapped Call inside an embedded Sub-Process, and of exceptional return with propagated cancellation, which share called-instance association, return ownership and the Lean premises that bind Call callers to Process roots.
+Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls in the `SCOPE` profile, staged so root-path callers precede the Call inside an embedded Sub-Process, whose Lean premise lift (`calledInstanceClosure_child_empty` and its five consumers) carries its own effort bound.
 
-Acceptance blockers: the proposal's cold review; whether the `PC-SCOPE-03` resolution contract joins the batch, decided from the rows' dependency entries before drafting.
+Acceptance blockers: the proposal's cold review.
 
-Current result: none yet for this family.
+Current result: the call record, transitive called-subtree removal and `calledProcessAssociationsValid` already admit root-caller call graphs; admission limits Calls to two Processes and one Call.
 
 Effort budget: 6 hours wall from 2026-10-23 through proposal approval, reassessed at the limit.
 
-Next action: read the three rows, the pinned CIB Call sources they cite and the consumers of `calledProcessAssociationsValid`, then draft the proposal. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: read the structured-body admission, closure burst bound, Call pairing and host admission for the `SCOPE` profile, then draft the proposal. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
-Oracle: a return, output or cancellation delivered to the wrong caller occurrence, or a proof that still assumes a Process-root caller for an admitted nested Call.
+Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
