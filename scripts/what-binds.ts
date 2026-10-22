@@ -11,7 +11,8 @@
  * enumerates a file set containing the path), or only counted as an unbound mention; the tier
  * decisions live in {@link classifyGuard}. A registry is reported for the tree it indexes.
  *
- * Usage: `node scripts/what-binds.ts [--mentions] <path>...`
+ * Usage: `node scripts/what-binds.ts [--mentions] <path>...`, or `node scripts/what-binds.ts --unfolds
+ * <Lean declaration>` for the definition's static unfolding sites ({@link leanUnfoldingSites}).
  */
 
 import { execFile } from "node:child_process";
@@ -32,6 +33,9 @@ import {
   searchTerms,
   targetProfile,
 } from "./what-binds-classification.ts";
+import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
+import { leanUnfoldingSites } from "./lean-unfolding-sites.ts";
+import { readWorktreeSources } from "./worktree-source-read.ts";
 import {
   type CorpusFile,
   indexCorpus,
@@ -303,10 +307,20 @@ async function loadDocumentRouting(
 }
 
 async function main(args: ReadonlyArray<string>): Promise<void> {
+  if (args[0] === "--unfolds") {
+    if (args.length !== 2) {
+      process.stderr.write("usage: node scripts/what-binds.ts --unfolds <Lean declaration>\n");
+      process.exitCode = 2;
+      return;
+    }
+    const sites = leanUnfoldingSites(readWorktreeSources(worktreeLeanSourceFiles()), args[1]!);
+    process.stdout.write(sites.map((site) => `UNFOLDS ${site}\n`).join(""));
+    return;
+  }
   const listMentions = args.includes("--mentions");
   const targets = args.filter((arg) => arg !== "--mentions");
   if (targets.length === 0) {
-    process.stderr.write("usage: node scripts/what-binds.ts [--mentions] <path>...\n");
+    process.stderr.write("usage: node scripts/what-binds.ts [--mentions] <path>... | --unfolds <Lean declaration>\n");
     process.exitCode = 2;
     return;
   }

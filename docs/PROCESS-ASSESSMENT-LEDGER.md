@@ -1427,7 +1427,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [declared full-gate wrapper check](../scripts/lake.sh), [its fail-closed witness](../scripts/lean-full-gate.test.ts), [self-assessment question 14](#self-assessment-questions)
+: [declared full-gate wrapper check](../scripts/lake.sh), [its fail-closed witness](../scripts/lean-full-gate.test.ts), [unfolding-site report](../scripts/lean-unfolding-sites.ts) and [its witness](../scripts/lean-unfolding-sites.test.ts), [self-assessment question 14](#self-assessment-questions)
 
 **First observed:** `PC-DATA-03` Property-path runtime on 2026-10-13.
 
@@ -1435,7 +1435,7 @@ After threading the Property-path policy through widely imported owners, the age
 
 Instance 3, 2026-10-14: the root ran the full `./scripts/lake.sh build` as "dependency warming" before delegating `PC-DATA-03` effect-data work, although only documentation had changed since the last build and `890b010f` was known red. Warm outputs made it a two-second no-op, but a recurrence refutes the `unguardable` disposition: the wrapper can observe the class. It now refuses `build` without a narrow target, any package, facet or umbrella spelling, and every `test`, unless `LEAN_FULL_GATE` names the owning gate or Lean batch; `verify.sh` and `test:semantic` declare theirs. The guard makes a full build deliberate; whether the named batch is final remains question 14.
 
-Instance 4, 2026-10-21: the concurrent-activations checkpoint corrections added a merge-target branch to `applyInternalOperationOccurrence?`, and five labelled complete builds then surfaced the proof modules that unfold it one layer at a time, because Lake skips every dependent of a failed module. Each run named its gate, so the wrapper guard could not distinguish discovery from qualification. A static pass over the changed definition's unfolding sites, done only in the last round, found every remaining site before one green dependent build. That pass is the missing executable step: `what-binds` should list a Lean definition's unfolding sites before the first build.
+Instance 4, 2026-10-21: the concurrent-activations checkpoint corrections added a merge-target branch to `applyInternalOperationOccurrence?`, and five labelled complete builds then surfaced the proof modules that unfold it one layer at a time, because Lake skips every dependent of a failed module. Each run named its gate, so the wrapper guard could not distinguish discovery from qualification. A static pass over the changed definition's unfolding sites, done only in the last round, found every remaining site before one green dependent build. That pass is now executable: `node scripts/what-binds.ts --unfolds <declaration>` lists the proof sites that unfold the definition or a direct caller, and run against `applyInternalOperationOccurrence?` on 2026-10-22 it listed 111 sites in 41 files, including the four proof owners the first static pass had missed; the [Lean testing row](TESTING-SPEC.md#focused-gate-matrix) requires the repair before the first dependent build.
 
 ### Finding 76
 
