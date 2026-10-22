@@ -3273,6 +3273,35 @@
               "$ref": "#/$defs/directActivityDataOutput"
             }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "inputs",
+            "outputs"
+          ],
+          "properties": {
+            "kind": {
+              "const": "variableMappings"
+            },
+            "inputs": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/variableMapping"
+              }
+            },
+            "outputs": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/variableMapping"
+              }
+            }
+          }
         }
       ]
     },

@@ -26,6 +26,7 @@ export function hasSelectedCallActivityDefinitions(
   nodeScopes: ReadonlyMap<string, string>,
 ): boolean {
   const scalarData = semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID;
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return hasMappedCallRoots(graph);
   if (semanticProfile !== SemanticProfileId.CalledProcessCallActivity && !scalarData) {
     return graph.definitionScopes.filter(({ parentScopeId }) =>
       parentScopeId === null
@@ -59,6 +60,20 @@ export function hasSelectedCallActivityDefinitions(
     calledRoot.id !== entryRoot.id &&
     nodeScopes.get(call.id) === entryRoot.id &&
     (!scalarData || hasScalarDataTopology(graph, nodeScopes, entryRoot.id, calledRoot.id, call));
+}
+
+/**
+ * CVM-ADMIT-01's root census: one called root per Call, at most one Call, the caller root naming the checked Process.
+ * The Call may sit in an embedded Sub-Process; the nested scope-data analysis owns placement and the called path.
+ */
+function hasMappedCallRoots(graph: CallActivityCheckedGraph): boolean {
+  const roots = graph.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);
+  const calls = graph.nodes.filter((node): node is Extract<CheckedNode, { kind: CheckedNodeKind.CallActivity }> =>
+    node.kind === CheckedNodeKind.CallActivity);
+  return calls.length <= 1 && roots.length === calls.length + 1 &&
+    roots.filter(({ originElementId }) => originElementId === graph.processId).length === 1 &&
+    calls.every((call) => call.data.kind === CallDataKind.VariableMappings && call.calledProcessId !== graph.processId &&
+      roots.filter(({ originElementId }) => originElementId === call.calledProcessId).length === 1);
 }
 
 /** CDATA-MATCH-01 binds task endpoints and the exact serial topology to the retained Call declaration. */

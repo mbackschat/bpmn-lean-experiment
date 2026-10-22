@@ -1,3 +1,6 @@
+import { sameCallDataInterface } from "./call-data-admission.js";
+import { CallDataKind } from "./call-data-contract.js";
+import type { VariableMappingCallData } from "./call-data-contract.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedProcess } from "./checked-process-contract.js";
 import { EffectExecutionResultKind, StimulusKind } from "./contract.js";
@@ -28,7 +31,11 @@ const depthLimit = 3;
 const declarationLimit = 8;
 const rules = serialChainRulesForProfile(SemanticProfileId.NestedEmbeddedScopeData);
 
-const VertexKind = { Start: "start", Human: "human", Service: "service", SubProcess: "subProcess", Finish: "finish" } as const;
+const VertexKind = {
+  Start: "start", Human: "human", Service: "service", SubProcess: "subProcess", Call: "call", Finish: "finish",
+} as const;
+/** CVM-ADMIT-01: the called Process is one serial path through one to three User Tasks. */
+const calledTaskLimit = 3;
 type VertexKind = typeof VertexKind[keyof typeof VertexKind];
 
 type Vertex = Readonly<{
@@ -37,12 +44,19 @@ type Vertex = Readonly<{
   kind: VertexKind;
   /** Set only for a Sub-Process: its child scope, the child's first vertex and the Sub-Process element. */
   child?: Readonly<{ scope: string; entry: string; origin: string }>;
+  /** Set only for a Call: the called root scope, its first vertex, the called Process and the mappings. */
+  call?: Readonly<{ scope: string; entry: string; calledProcessId: string; data: VariableMappingCallData }>;
   outputs: readonly string[];
   reads: readonly string[];
   writes: readonly string[];
 }>;
 
-type Access = Readonly<{ kind: "read" | "write"; name: string; frames: readonly (readonly string[])[] }>;
+/**
+ * `callInput` is a Call input source, read without making Start bind it because an absent source becomes a present
+ * null (CVM-IN-01); `callOutput` is a Call output target, a definite write because return always writes (CVM-AVAILABLE-01).
+ */
+type AccessKind = "read" | "write" | "callInput" | "callOutput";
+type Access = Readonly<{ kind: AccessKind; name: string; frames: readonly (readonly string[])[] }>;
 
 function readNames(mappings: readonly VariableMapping[]): string[] {
   return mappings.flatMap(({ expression }) =>
@@ -62,6 +76,18 @@ function recordValid(handlers: ReadonlySet<string>, record: ScopeLocalData): boo
     record.localOutputs.every(({ target, expression }) =>
       isSerialBusinessIdentifier(target) && !handlers.has(target) &&
       expression.kind === MappingExpressionKind.LocalVariable && inputs.has(expression.name));
+}
+
+function calledScopeValid(scopes: readonly DefinitionScope[], scope: string, calledProcessId: string): boolean {
+  const matching = scopes.filter(({ id }) => id === scope);
+  return matching.length === 1 && matching[0]!.parentScopeId === null && matching[0]!.originElementId === calledProcessId;
+}
+
+/** CVM-ADMIT-01 names: every source and target an admitted identifier that no handler uses, as for every other name. */
+function callMappingsAdmitted(data: VariableMappingCallData, handlers: ReadonlySet<string>): boolean {
+  return [...data.inputs, ...data.outputs].every(({ target, expression }) =>
+    isSerialBusinessIdentifier(target) && !handlers.has(target) && expression.kind !== MappingExpressionKind.StringLiteral &&
+    isSerialBusinessIdentifier(expression.name) && !handlers.has(expression.name));
 }
 
 function childScopeValid(scopes: readonly DefinitionScope[], parent: string, child: string, origin: string): boolean {
@@ -112,7 +138,32 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
         visited: [vertex.id, ...inner.visited, ...rest.visited],
       };
     }
+    case VertexKind.Call: {
+      const call = vertex.call;
+      if (call === undefined || !calledScopeValid(scopes, call.scope, call.calledProcessId)) return null;
+      // The called instance has no parent scope, so its walk starts with no enclosing frame (CVM-ISOLATE-01).
+      const inner = walk(vertices, records, scopes, fuel - 1, depth, [], call.scope, call.entry);
+      const rest = inner === null ? null : walk(vertices, records, scopes, fuel - 1, depth, frames, scope, next);
+      if (inner === null || rest === null || !calledPathValid(vertices, inner.visited)) return null;
+      return {
+        accesses: [
+          ...call.data.inputs.flatMap(({ expression }) => expression.kind === MappingExpressionKind.EnclosingVariable
+            ? [{ kind: "callInput" as const, name: expression.name, frames }] : []),
+          ...call.data.outputs.map(({ target }) => ({ kind: "callOutput" as const, name: target, frames })),
+          ...rest.accesses,
+        ],
+        visited: [vertex.id, ...inner.visited, ...rest.visited],
+      };
+    }
   }
+}
+
+/** The called path: an optional Start (absent from the Program, which enters at the first task), tasks, then End. */
+function calledPathValid(vertices: readonly Vertex[], visited: readonly string[]): boolean {
+  const kinds = visited.map(id => vertices.find(vertex => vertex.id === id)?.kind);
+  const tasks = kinds.filter(kind => kind === VertexKind.Human).length;
+  return tasks >= 1 && tasks <= calledTaskLimit && kinds.every(kind =>
+    kind === VertexKind.Start || kind === VertexKind.Human || kind === VertexKind.Finish);
 }
 
 /**
@@ -124,26 +175,49 @@ function requiredReads(accesses: readonly Access[]): readonly string[] {
   const required: string[] = [];
   for (const { kind, name, frames } of accesses) {
     const declared = frames.some(frame => frame.includes(name));
-    if (kind === "write") {
+    if (kind === "write" || kind === "callOutput") {
       if (!declared) produced.add(name);
-    } else if (!declared && !produced.has(name) && !required.includes(name)) {
+    } else if (kind === "read" && !declared && !produced.has(name) && !required.includes(name)) {
       required.push(name);
     }
   }
   return required;
 }
 
+/**
+ * CVM-START-01: the Call input sources and output targets a Start binding would supply, those landing at the Process
+ * because no enclosing frame of the Call declares them and no earlier step definitely produces them.
+ */
+function optionalCallNames(accesses: readonly Access[]): readonly string[] {
+  const produced = new Set<string>();
+  const optional: string[] = [];
+  for (const { kind, name, frames } of accesses) {
+    const declared = frames.some(frame => frame.includes(name));
+    if ((kind === "callInput" || kind === "callOutput") && !declared && !produced.has(name) && !optional.includes(name)) {
+      optional.push(name);
+    }
+    if ((kind === "write" || kind === "callOutput") && !declared) produced.add(name);
+  }
+  return optional;
+}
+
+/** NSD-AVAILABLE-01's required Start names; `optional` is `null` without a Call, where any admitted name may be bound. */
+export type NestedScopeStartNames = Readonly<{ required: readonly string[]; optional: readonly string[] | null }>;
+
 function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[], scopes: readonly DefinitionScope[],
-  root: string, entry: string, handlers: ReadonlySet<string>): readonly string[] | null {
+  root: string, entry: string, handlers: ReadonlySet<string>): NestedScopeStartNames | null {
   const children = vertices.flatMap(vertex => vertex.child === undefined ? [] : [vertex.child.scope]);
+  const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  if (scopes.length !== children.length + 1 || children.length === 0 || roots.length !== 1 || roots[0]!.id !== root ||
+  if (scopes.length !== children.length + calls.length + 1 || children.length === 0 || calls.length > 1 ||
+      roots.length !== calls.length + 1 || !roots.some(({ id }) => id === root) ||
+      !calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
       !records.every(record => children.includes(record.scopeId) && recordValid(handlers, record))) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);
   if (walked === null || walked.visited.length !== vertices.length ||
       new Set(walked.visited).size !== walked.visited.length) return null;
-  return requiredReads(walked.accesses);
+  return { required: requiredReads(walked.accesses), optional: calls.length === 0 ? null : optionalCallNames(walked.accesses) };
 }
 
 /** NSD-ADMIT-01 admits no form: the patch names come from the scope chain, not from a declared form field. */
@@ -175,6 +249,14 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
       return entry === undefined ? null
         : { ...base, kind: VertexKind.SubProcess, child: { scope: node.childScopeId, entry, origin: node.id } };
     }
+    case CheckedNodeKind.CallActivity: {
+      const calledRoot = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
+        parentScopeId === null && originElementId === node.calledProcessId));
+      const entry = calledRoot === undefined ? undefined : checkedStart(source, calledRoot.id);
+      return calledRoot === undefined || entry === undefined || node.data.kind !== CallDataKind.VariableMappings ? null
+        : { ...base, kind: VertexKind.Call,
+          call: { scope: calledRoot.id, entry, calledProcessId: node.calledProcessId, data: node.data } };
+    }
     default: return null;
   }
 }
@@ -200,13 +282,19 @@ function isEffectDescriptor(value: unknown): boolean {
 
 /** NSD-ADMIT-01 over the checked graph; `null` refuses the definition. */
 export function nestedScopeCheckedAnalysis(source: CheckedProcess): readonly string[] | null {
+  return nestedScopeCheckedStartNames(source)?.required ?? null;
+}
+
+/** NSD-ADMIT-01 and CVM-START-01 over the checked graph; `null` refuses the definition. */
+export function nestedScopeCheckedStartNames(source: CheckedProcess): NestedScopeStartNames | null {
   const identities = [source.processId, ...source.nodes.map(({ id }) => id), ...source.sequenceFlows.map(({ id }) => id)];
   if (source.identity.sourceOverlay === null || source.compensation !== undefined ||
       source.transactionCancellation !== undefined || source.interruptingMessageEventSubProcesses !== undefined ||
       new Set(identities).size !== identities.length || source.sequenceFlows.some(({ condition }) => condition !== null)) {
     return null;
   }
-  const root = unique(source.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null));
+  const root = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
+    parentScopeId === null && originElementId === source.processId));
   const entry = root === undefined ? undefined : checkedStart(source, root.id);
   if (root === undefined || entry === undefined) return null;
   const handlers = new Set(source.nodes.flatMap(node =>
@@ -223,6 +311,7 @@ export function nestedScopeCheckedAnalysis(source: CheckedProcess): readonly str
 function operationInputs(operation: SemanticOperation): readonly string[] {
   switch (operation.kind) {
     case SemanticOperationKind.EnterScope:
+    case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.ReachNoneEnd:
@@ -266,6 +355,18 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
         : { ...base, kind: VertexKind.Service, outputs, reads: readNames(operation.effect.inputMappings),
           writes: operation.effect.outputMappings.map(({ target }) => target) };
     }
+    case SemanticOperationKind.InvokeProcess: {
+      const returns = program.operations.filter(candidate => candidate.id === operation.returnOperationId);
+      const returned = unique(returns);
+      const entry = consumer(operation.calledEntry);
+      const outputs = returned?.kind === SemanticOperationKind.ReturnProcess ? following(returned.callerOutput) : null;
+      return returned?.kind !== SemanticOperationKind.ReturnProcess || entry === undefined || outputs === null ||
+          operation.data.kind !== CallDataKind.VariableMappings || !sameCallDataInterface(operation.data, returned.data) ||
+          returned.calledRootScopeId !== operation.calledRootScopeId ? null : {
+        ...base, kind: VertexKind.Call, outputs,
+        call: { scope: operation.calledRootScopeId, entry, calledProcessId: operation.calledProcessId, data: operation.data },
+      };
+    }
     case SemanticOperationKind.EnterScope: {
       const completions = program.operations.filter(candidate =>
         candidate.kind === SemanticOperationKind.CompleteScope && candidate.scopeId === operation.childScopeId);
@@ -284,14 +385,25 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
 
 /** NSD-ADMIT-01 over the Program, independent of the checked graph; `null` refuses the Program. */
 export function nestedScopeProgramAnalysis(program: SemanticProcessProgram): readonly string[] | null {
+  return nestedScopeProgramStartNames(program)?.required ?? null;
+}
+
+/**
+ * NSD-ADMIT-01 and CVM-START-01 over the Program. A Call's return is no vertex: it shares the Call's element identity
+ * and continues the caller, so the walk reaches the caller's successor from the invocation, as a Sub-Process does.
+ */
+export function nestedScopeProgramStartNames(program: SemanticProcessProgram): NestedScopeStartNames | null {
   if (program.identity.sourceOverlay === null ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
       program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined) return null;
-  const root = unique(program.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null));
+  const root = unique(program.definitionScopes.filter(({ parentScopeId, originElementId }) =>
+    parentScopeId === null && originElementId === program.processId));
   if (root === undefined) return null;
+  const calledRoots = program.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null).length - 1;
   const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
-  const operations = program.operations.filter(({ kind }) => kind !== SemanticOperationKind.CompleteScope);
+  const operations = program.operations.filter(({ kind }) =>
+    kind !== SemanticOperationKind.CompleteScope && kind !== SemanticOperationKind.ReturnProcess);
   const rootCompleted = completions.some(operation =>
     operation.kind === SemanticOperationKind.CompleteScope && operation.parentOutput === null && operation.scopeId === root.id);
   const identities: string[] = [program.processId];
@@ -300,7 +412,7 @@ export function nestedScopeProgramAnalysis(program: SemanticProcessProgram): rea
     identities.push(operation.origin.elementId);
   }
   identities.push(...program.controlPlaces.map(({ origin }) => origin.elementId));
-  if (!rootCompleted || completions.length !== program.definitionScopes.length ||
+  if (!rootCompleted || completions.length !== program.definitionScopes.length - calledRoots ||
       new Set(identities).size !== identities.length) return null;
   const start = unique(operations.filter(({ kind }) => kind === SemanticOperationKind.Initiate));
   if (start === undefined) return null;
@@ -325,14 +437,17 @@ const itemValue = (binding: VariableBinding["value"]): boolean =>
 export function nestedScopeStimulusDataAdmitted(program: SemanticProcessProgram, stimulus: Stimulus): boolean {
   if (!nestedScopeDataProgram(program)) return true;
   // Every command re-checks Program admission, as the Lean completions do, so a refused Program commits nothing.
-  const required = nestedScopeProgramAnalysis(program);
-  if (required === null) return false;
+  const names = nestedScopeProgramStartNames(program);
+  if (names === null) return false;
+  const { required, optional } = names;
   const handlers = programHandlers(program);
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
+      // CVM-START-01 restricts Start names only in Programs with a Call, keeping every earlier admission unchanged.
       return stimulus.instanceId.length > 0 &&
         serialBusinessBindingsAdmitted(stimulus.initialVariables, handlers, itemValue) &&
-        required.every(name => stimulus.initialVariables.some(binding => binding.name === name));
+        required.every(name => stimulus.initialVariables.some(binding => binding.name === name)) &&
+        (optional === null || stimulus.initialVariables.every(({ name }) => required.includes(name) || optional.includes(name)));
     case StimulusKind.CompleteUserTaskInstance:
       return serialBusinessBindingsAdmitted(stimulus.submittedValues, handlers, itemValue);
     case StimulusKind.CompleteEffect:
@@ -358,11 +473,12 @@ export function isScopeLocalDataTable(value: unknown): value is readonly ScopeLo
 const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
   SemanticOperationKind.Initiate, SemanticOperationKind.EnterScope, SemanticOperationKind.AwaitUserTask,
   SemanticOperationKind.AwaitEffect, SemanticOperationKind.CompleteScope, SemanticOperationKind.ReachNoneEnd,
+  SemanticOperationKind.InvokeProcess, SemanticOperationKind.ReturnProcess,
 ]);
 
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
-  CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent,
+  CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.CallActivity,
 ]);
 
 /**

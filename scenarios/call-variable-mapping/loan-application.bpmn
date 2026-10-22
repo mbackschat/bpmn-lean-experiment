@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LoanApplication" targetNamespace="urn:bpmn-lean:loan-application">
+  <process id="Process_LoanApplication" name="Decide a loan application" isExecutable="true">
+    <startEvent id="ApplicationReceived" name="Application received" />
+    <serviceTask id="ScoreApplication" name="Score application"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${scoreApplication}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amount">${amount}</camunda:inputParameter>
+          <camunda:outputParameter name="riskScore">${riskScore}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <subProcess id="ReviewApplication" name="Review application">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
+          <camunda:inputParameter name="secret">internal-note</camunda:inputParameter>
+          <camunda:outputParameter name="finalDecision">${decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ReviewOpened" name="Review opened" />
+      <callActivity id="VerifyIdentity" name="Verify identity" calledElement="Process_IdentityVerification">
+        <extensionElements>
+          <camunda:in source="applicant" target="customer" />
+          <camunda:in source="amount" target="amount" />
+          <camunda:out source="verdict" target="decision" />
+          <camunda:out source="customer" target="echoedCustomer" />
+        </extensionElements>
+      </callActivity>
+      <endEvent id="ReviewClosed" name="Review closed" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="VerifyIdentity" />
+      <sequenceFlow id="Flow_Verified" sourceRef="VerifyIdentity" targetRef="ReviewClosed" />
+    </subProcess>
+    <userTask id="ConfirmDecision" name="Confirm decision" />
+    <endEvent id="ApplicationDecided" name="Application decided" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="ScoreApplication" />
+    <sequenceFlow id="Flow_Scored" sourceRef="ScoreApplication" targetRef="ReviewApplication" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewApplication" targetRef="ConfirmDecision" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmDecision" targetRef="ApplicationDecided" />
+  </process>
+  <process id="Process_IdentityVerification" name="Verify an applicant's identity" isExecutable="true">
+    <startEvent id="VerificationRequested" name="Verification requested" />
+    <userTask id="CollectDocument" name="Collect identity document" />
+    <userTask id="RecordVerdict" name="Record verdict" />
+    <endEvent id="VerificationCompleted" name="Verification completed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="VerificationRequested" targetRef="CollectDocument" />
+    <sequenceFlow id="Flow_Collected" sourceRef="CollectDocument" targetRef="RecordVerdict" />
+    <sequenceFlow id="Flow_Recorded" sourceRef="RecordVerdict" targetRef="VerificationCompleted" />
+  </process>
+</definitions>

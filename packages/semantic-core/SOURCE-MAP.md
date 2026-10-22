@@ -20,7 +20,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-state.ts](src/semantic-process-state.ts) | Committed runtime-state shape: control tokens, scopes, waits, and occurrence records |
 | [pristine-runtime-state.ts](src/pristine-runtime-state.ts) | Exhaustive field comparison with the initial state for capsules requiring pristine starts |
 | [checked-process-contract.ts](src/checked-process-contract.ts) | Project-owned checked BPMN graph contract |
-| [call-data-contract.ts](src/call-data-contract.ts) | Empty or scalar Call interfaces with exact owned port/set declarations and caller associations |
+| [call-data-contract.ts](src/call-data-contract.ts) | Empty, scalar or variable-mapping Call interfaces with exact owned port/set declarations, caller associations and ordered copies |
 | [call-data-command-admission.ts](src/call-data-command-admission.ts) | Required mapped request, declared caller start names and exact Task-output command fields |
 | [call-data-state-validation.ts](src/call-data-state-validation.ts) | Private Call root/interface bijection, declared scalar ports, completion lifetime and Task/local-scope joins |
 | [call-data-program-admission.ts](src/call-data-program-admission.ts) | Standalone scalar Call Program topology, endpoint ownership and retained identity closure |
@@ -93,6 +93,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [call-activity-admission.ts](src/call-activity-admission.ts) | Cross-definition invocation and return pairing |
 | [semantic-process-call-runtime.ts](src/semantic-process-call-runtime.ts) | Called-instance lifecycle and subtree cleanup |
 | [semantic-process-call-data-runtime.ts](src/semantic-process-call-data-runtime.ts) | Atomic scalar Call input snapshot and required-output copy-back over the control primitives |
+| [call-variable-mapping-runtime.ts](src/call-variable-mapping-runtime.ts) | CIB `camunda:in`/`camunda:out` copies: absent-as-null input snapshot into the called-root frame and nearest-owner output write-back at return |
 | [internal-transition-call-data-preparation.ts](src/internal-transition-call-data-preparation.ts) | Retained scalar Call transfer, data dependencies and atomic prepared execution |
 | [effect-transport-material.ts](src/effect-transport-material.ts) | Definition fields stable across compiler-only changes, deliberately distinct from semantic identity |
 | [semantic-process-error-runtime.ts](src/semantic-process-error-runtime.ts) | Error propagation and handler selection |
@@ -208,8 +209,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [sequential-scope-binding.ts](src/sequential-scope-binding.ts) | Exact current body, outer Activity, controller and local-frame binding shared by lifecycle and data access |
 | [sequential-scope-state-validation.ts](src/sequential-scope-state-validation.ts) | Bidirectional controller, Activity and body ownership with exact immutable collection index and item validation |
 | [sequential-scope-observation.ts](src/sequential-scope-observation.ts) | Private repeated-body progress, captured item, local bindings and exact current inner-work occurrence projection |
-| [nested-scope-data.ts](src/nested-scope-data.ts) | Nested scope-data frames: chain reads, innermost-declaring writes, entry initialization, completion outputs and frame disposal |
-| [nested-scope-data-admission.ts](src/nested-scope-data-admission.ts) | Nested scope-data checked-graph and Program admission, including required Start bindings, transcribed independently from the Lean account |
+| [nested-scope-data.ts](src/nested-scope-data.ts) | Nested scope-data frames: chain reads with three outcomes, innermost-declaring writes, called-root isolation, entry initialization, completion outputs and frame disposal |
+| [nested-scope-data-admission.ts](src/nested-scope-data-admission.ts) | Nested scope-data checked-graph and Program admission, including required and Call-optional Start bindings, transcribed independently from the Lean account |
 | [repeated-scope-control-analysis.ts](src/repeated-scope-control-analysis.ts) | Shared repeated-scope topology projection with exact mode, child ownership and serial parent checks; execution capacity remains mode-specific |
 | [sequential-scope-control-analysis.ts](src/sequential-scope-control-analysis.ts) | Sequential turnover and automatic-burst admission over the shared repeated-scope topology |
 | [sequential-scope-data.ts](src/sequential-scope-data.ts) | Repeated-body input resolution, explicit Service result mapping, nearest-enclosing writes, protected names and Boolean User Task condition policy |

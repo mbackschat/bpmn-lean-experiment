@@ -7,11 +7,13 @@ import {
   selectCalledProcessInvocation, selectReturnCalledProcess,
 } from "./semantic-process-call-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { SemanticOperation } from "./semantic-process-contract.js";
+import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
+import { invokeCalledProcessWithMappings, returnCalledProcessWithMappings } from "./call-variable-mapping-runtime.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 
 /** CDATA-INPUT-01 commits the fresh called root and its isolated input snapshot together. */
 export function invokeCalledProcessWithData(
+  program: SemanticProcessProgram,
   operation: Extract<SemanticOperation, { kind: SemanticOperationKind.InvokeProcess }>,
   state: RuntimeState,
   caller: ScopeOccurrenceId,
@@ -32,11 +34,15 @@ export function invokeCalledProcessWithData(
       const invoked = invokeCalledProcess(operation, state, caller);
       return invoked === null ? null : { ...invoked, variables };
     }
+    case CallDataKind.VariableMappings:
+      return callDataInterfaceValid(data, operation.origin.elementId, operation.calledProcessId)
+        ? invokeCalledProcessWithMappings(program, operation, data, state, caller) : null;
   }
 }
 
 /** CDATA-OUTPUT-01/RETURN-01 captures the required output before disposing its called owner. */
 export function returnCalledProcessWithData(
+  program: SemanticProcessProgram,
   operation: Extract<SemanticOperation, { kind: SemanticOperationKind.ReturnProcess }>,
   state: RuntimeState,
 ): RuntimeState | null {
@@ -55,5 +61,8 @@ export function returnCalledProcessWithData(
       const variables = writeActivityDataOutputTarget(returned, selected.record.caller, data.directOutput.target, output);
       return variables === null ? null : { ...returned, variables };
     }
+    case CallDataKind.VariableMappings:
+      return callDataInterfaceValid(data, operation.origin.elementId, operation.calledProcessId)
+        ? returnCalledProcessWithMappings(program, operation, data, state) : null;
   }
 }

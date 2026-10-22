@@ -1,6 +1,9 @@
 import type { EffectOccurrenceId, VariableBinding, VariableValue } from "./contract.js";
 import { EffectMappingValuePolicy, effectMappingAcceptsValue } from "./effect-mapping-value-policy.js";
+import { CallDataKind } from "./call-data-contract.js";
+import type { VariableMappingCallData } from "./call-data-contract.js";
 import { mergeProcessVariableBindings, projectActivityVariableScopeResultUnder } from "./semantic-process-data.js";
+import { SemanticOperationKind as SemanticOperationKindValue } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticOperationKind, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { compareScopeOccurrenceIds, sameScopeOccurrence } from "./semantic-process-state.js";
@@ -53,11 +56,31 @@ function framesOf(variables: ScopedVariables, instanceId: string, scopeId: strin
     frame.owner.processInstanceId === instanceId && frame.owner.definitionScopeId === scopeId);
 }
 
-type Owner = Readonly<{ kind: "frame"; owner: ScopeOccurrenceId }> | Readonly<{ kind: "process" }>;
+/**
+ * The Call data of the invocation whose called root is `scopeId`, when that root is a variable-mapping called Process.
+ * Its frame is the called instance's Process store (CVM-ISOLATE-01), so resolution ends there instead of at the caller.
+ */
+export function calledRootMappings(program: SemanticProcessProgram, scopeId: string): VariableMappingCallData | undefined {
+  if (!nestedScopeDataProgram(program)) return undefined;
+  const invocations = program.operations.filter(operation =>
+    operation.kind === SemanticOperationKindValue.InvokeProcess && operation.calledRootScopeId === scopeId);
+  const data = invocations.length === 1 && invocations[0]!.kind === SemanticOperationKindValue.InvokeProcess
+    ? invocations[0]!.data : undefined;
+  return data?.kind === CallDataKind.VariableMappings ? data : undefined;
+}
+
+/**
+ * `calledRoot` is the called-root frame reached without a declaring frame: a read there is absent and a write creates
+ * the binding, as CIB's `setVariable` does on a process instance, never the caller's Process binding.
+ */
+type Owner =
+  | Readonly<{ kind: "frame"; owner: ScopeOccurrenceId }>
+  | Readonly<{ kind: "calledRoot"; owner: ScopeOccurrenceId }>
+  | Readonly<{ kind: "process" }>;
 
 /** NSD-READ-01 and NSD-WRITE-01: the nearest chain scope whose frame declares `name`, a present null included. */
-function resolveOwner(variables: ScopedVariables, instanceId: string, chain: readonly string[],
-  name: string): Owner | null {
+function resolveOwner(program: SemanticProcessProgram, variables: ScopedVariables, instanceId: string,
+  chain: readonly string[], name: string): Owner | null {
   for (const scopeId of chain) {
     const frames = framesOf(variables, instanceId, scopeId);
     if (frames.length > 1) return null;
@@ -66,7 +89,10 @@ function resolveOwner(variables: ScopedVariables, instanceId: string, chain: rea
       return { kind: "frame", owner: frame.owner };
     }
   }
-  return { kind: "process" };
+  const last = chain[chain.length - 1];
+  if (last === undefined || calledRootMappings(program, last) === undefined) return { kind: "process" };
+  const roots = framesOf(variables, instanceId, last);
+  return roots.length === 1 ? { kind: "calledRoot", owner: roots[0]!.owner } : null;
 }
 
 function uniqueValue(bindings: readonly VariableBinding[], name: string): VariableValue | undefined {
@@ -80,20 +106,60 @@ function selectFrame(variables: ScopedVariables, owner: ScopeOccurrenceId): Scop
   return matching.length === 1 ? matching[0] : undefined;
 }
 
+export enum NestedScopeReadKind {
+  Present = "present",
+  Absent = "absent",
+  Refused = "refused",
+}
+
+/**
+ * The three outcomes a Call mapping distinguishes: an absent name becomes a present null (CVM-IN-01, CVM-OUT-01), while a
+ * refused resolution (two live frames of one definition, a repeated binding, a value outside the domain) disables the
+ * step rather than fabricating a null.
+ */
+export type NestedScopeRead =
+  | Readonly<{ kind: NestedScopeReadKind.Present; value: VariableValue }>
+  | Readonly<{ kind: NestedScopeReadKind.Absent }>
+  | Readonly<{ kind: NestedScopeReadKind.Refused }>;
+
+const absent = { kind: NestedScopeReadKind.Absent } as const;
+const refused = { kind: NestedScopeReadKind.Refused } as const;
+
+/** One name of one binding list: absent when unbound, refused when repeated or outside the item domain. */
+export function readBindingOutcome(bindings: readonly VariableBinding[], name: string): NestedScopeRead {
+  const matching = bindings.filter(binding => binding.name === name);
+  if (matching.length === 0) return absent;
+  const value = matching.length === 1 ? matching[0]!.value : undefined;
+  return value !== undefined && effectMappingAcceptsValue(itemPolicy, value, true)
+    ? { kind: NestedScopeReadKind.Present, value } : refused;
+}
+
+/** NSD-READ-01 with its three outcomes; a called-root chain ends at its own frame (CVM-RESOLVE-01's isolation). */
+export function resolveNestedScopeRead(program: SemanticProcessProgram, variables: ScopedVariables,
+  instanceId: string, scopeId: string, name: string): NestedScopeRead {
+  const owner = resolveOwner(program, variables, instanceId, nestedDefinitionChain(program, scopeId), name);
+  if (owner === null) return refused;
+  switch (owner.kind) {
+    case "process": return readBindingOutcome(variables.process.bindings, name);
+    case "calledRoot": return absent;
+    case "frame": {
+      const frame = selectFrame(variables, owner.owner);
+      return frame === undefined ? refused : readBindingOutcome(frame.bindings, name);
+    }
+  }
+}
+
 /** NSD-READ-01; every value is re-validated as a `SingletonBusinessItem`, never trusted for an earlier write. */
 export function readNestedScopeVariable(program: SemanticProcessProgram, variables: ScopedVariables,
   instanceId: string, scopeId: string, name: string): VariableValue | undefined {
-  const owner = resolveOwner(variables, instanceId, nestedDefinitionChain(program, scopeId), name);
-  if (owner === null) return undefined;
-  if (owner.kind === "process") return uniqueValue(variables.process.bindings, name);
-  const frame = selectFrame(variables, owner.owner);
-  return frame === undefined ? undefined : uniqueValue(frame.bindings, name);
+  const read = resolveNestedScopeRead(program, variables, instanceId, scopeId, name);
+  return read.kind === NestedScopeReadKind.Present ? read.value : undefined;
 }
 
-/** NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process binding. */
+/** NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process or called-root binding. */
 function writeOne(program: SemanticProcessProgram, variables: ScopedVariables, instanceId: string,
   scopeId: string, binding: VariableBinding): ScopedVariables | null {
-  const owner = resolveOwner(variables, instanceId, nestedDefinitionChain(program, scopeId), binding.name);
+  const owner = resolveOwner(program, variables, instanceId, nestedDefinitionChain(program, scopeId), binding.name);
   if (owner === null) return null;
   if (owner.kind === "process") {
     return { ...variables, process: { bindings: mergeProcessVariableBindings(variables.process.bindings, [binding]) } };
@@ -205,7 +271,10 @@ export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: 
 export function nestedScopeFramesValid(program: SemanticProcessProgram, state: RuntimeState): boolean {
   if (!nestedScopeDataProgram(program)) return state.variables.scopes.length === 0;
   const declaredOccurrences = state.scopeOccurrences.filter(({ id }) => nestedScopeRecord(program, id.definitionScopeId));
-  return state.variables.scopes.length === declaredOccurrences.length &&
+  const calledRoots = state.scopeOccurrences.filter(({ id, parent }) =>
+    parent === null && calledRootMappings(program, id.definitionScopeId) !== undefined);
+  return state.variables.scopes.length === declaredOccurrences.length + calledRoots.length &&
+    calledRoots.every(({ id }) => calledRootFrameValid(program, state, id)) &&
     declaredOccurrences.every(({ id }) => {
       const frames = state.variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, id));
       const record = nestedScopeRecord(program, id.definitionScopeId);
@@ -216,6 +285,28 @@ export function nestedScopeFramesValid(program: SemanticProcessProgram, state: R
         record.localInputs.every(input => names.includes(input.target)) &&
         frame.bindings.every(binding => effectMappingAcceptsValue(itemPolicy, binding.value, true));
     });
+}
+
+/**
+ * The called-root arm of frame validity (the proposal's runtime-only invariant): exactly one frame, distinct names with
+ * input targets ⊆ names ⊆ input targets ∪ output sources, every value in the item domain.
+ */
+function calledRootFrameValid(program: SemanticProcessProgram, state: RuntimeState, root: ScopeOccurrenceId): boolean {
+  const data = calledRootMappings(program, root.definitionScopeId);
+  const frames = state.variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, root));
+  const frame = frames[0];
+  if (data === undefined || frames.length !== 1 || frame === undefined) return false;
+  const names = frame.bindings.map(binding => binding.name);
+  const allowed = calledRootPatchNames(data);
+  return new Set(names).size === names.length && data.inputs.every(({ target }) => names.includes(target)) &&
+    names.every(name => allowed.has(name)) &&
+    frame.bindings.every(binding => effectMappingAcceptsValue(itemPolicy, binding.value, true));
+}
+
+/** CVM-TASK-01: the names a called-root frame may hold, the input targets and the output sources. */
+export function calledRootPatchNames(data: VariableMappingCallData): ReadonlySet<string> {
+  return new Set([...data.inputs.map(({ target }) => target),
+    ...data.outputs.flatMap(({ expression }) => expression.kind === MappingExpressionKind.LocalVariable ? [expression.name] : [])]);
 }
 
 /** NSD-INIT-01 around an entry rewrite; an undeclared child keeps exactly `enter`. */
@@ -248,7 +339,10 @@ export function nestedScopeDeclaredNames(program: SemanticProcessProgram, variab
  */
 export function nestedScopePatchAdmitted(program: SemanticProcessProgram, variables: ScopedVariables,
   owner: ScopeOccurrenceId, patch: readonly VariableBinding[]): boolean {
-  const declared = nestedScopeDeclaredNames(program, variables, owner);
+  const chain = nestedDefinitionChain(program, owner.definitionScopeId);
+  const called = calledRootMappings(program, chain[chain.length - 1] ?? owner.definitionScopeId);
+  // CVM-TASK-01 replaces the declared-name rule inside a called instance, whose root frame grows by output sources.
+  const declared = called === undefined ? nestedScopeDeclaredNames(program, variables, owner) : calledRootPatchNames(called);
   if (!patch.every((binding, index) => index === 0 || compareCanonicalStrings(patch[index - 1]!.name, binding.name) < 0) ||
       !patch.every(binding => declared.has(binding.name) && effectMappingAcceptsValue(itemPolicy, binding.value, true))) {
     return false;

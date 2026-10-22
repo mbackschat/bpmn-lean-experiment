@@ -1,5 +1,7 @@
 import { CallDataKind } from "./call-data-contract.js";
-import type { CallDataInterface, ScalarIoSpecification } from "./call-data-contract.js";
+import type { CallDataInterface, ScalarIoSpecification, VariableMappingCallData } from "./call-data-contract.js";
+import { MappingExpressionKind } from "./semantic-value-contract.js";
+import type { VariableMapping } from "./semantic-value-contract.js";
 import { activityDataInputSourceId, activityDataOutputTargetId, isActivityDataInputSource, isActivityDataOutputTarget } from "./activity-data-endpoint.js";
 import { isWellFormedWireString } from "./wire.js";
 
@@ -19,6 +21,8 @@ export function isCallDataInterface(value: unknown): value is CallDataInterface 
           ["associationId", "sourceDataOutputId", "sourceDataOutputName", "target"]) &&
         identity(value.directOutput.associationId) && identity(value.directOutput.sourceDataOutputId) &&
         name(value.directOutput.sourceDataOutputName) && isActivityDataOutputTarget(value.directOutput.target);
+    case CallDataKind.VariableMappings:
+      return keys(value, ["kind", "inputs", "outputs"]) && mappingList(value.inputs) && mappingList(value.outputs);
     default: return false;
   }
 }
@@ -40,6 +44,9 @@ export function sameCallDataInterface(left: CallDataInterface, right: CallDataIn
         left.directOutput.sourceDataOutputName === right.directOutput.sourceDataOutputName &&
         left.directOutput.target.kind === right.directOutput.target.kind &&
         activityDataOutputTargetId(left.directOutput.target) === activityDataOutputTargetId(right.directOutput.target);
+    case CallDataKind.VariableMappings:
+      return right.kind === CallDataKind.VariableMappings &&
+        sameMappings(left.inputs, right.inputs) && sameMappings(left.outputs, right.outputs);
   }
 }
 
@@ -67,6 +74,47 @@ export function callDataInterfaceValid(
         data.directOutput.sourceDataOutputId === data.call.output.id &&
         ids.every((id) => id.length > 0) && new Set(ids).size === ids.length;
     }
+    case CallDataKind.VariableMappings:
+      return variableMappingsValid(data);
+  }
+}
+
+/** CIB's `filterVariables` drops these Call outputs, so admitting one would promise a write CIB never makes. */
+const reservedOutputTargets: ReadonlySet<string> =
+  new Set(["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]);
+const mappingLimit = 8;
+
+/** CVM-ADMIT-01's structural part; name syntax and resolution belong to the hosting profile's admission. */
+function variableMappingsValid(data: VariableMappingCallData): boolean {
+  const inputTargets = data.inputs.map(({ target }) => target);
+  const outputTargets = data.outputs.map(({ target }) => target);
+  return data.inputs.length > 0 && data.inputs.length <= mappingLimit && data.outputs.length <= mappingLimit &&
+    data.inputs.every(({ target, expression }) => target.length > 0 &&
+      expression.kind === MappingExpressionKind.EnclosingVariable && expression.name.length > 0) &&
+    data.outputs.every(({ target, expression }) => target.length > 0 && !reservedOutputTargets.has(target) &&
+      expression.kind === MappingExpressionKind.LocalVariable && expression.name.length > 0) &&
+    new Set(inputTargets).size === inputTargets.length && new Set(outputTargets).size === outputTargets.length;
+}
+
+function sameMappings(left: ReadonlyArray<VariableMapping>, right: ReadonlyArray<VariableMapping>): boolean {
+  return left.length === right.length && left.every((mapping, index) => {
+    const other = right[index];
+    return other !== undefined && mapping.target === other.target && mapping.expression.kind === other.expression.kind &&
+      JSON.stringify(mapping.expression) === JSON.stringify(other.expression);
+  });
+}
+
+function mappingList(value: unknown): value is ReadonlyArray<VariableMapping> {
+  return Array.isArray(value) && value.every((mapping) => record(mapping) && keys(mapping, ["target", "expression"]) &&
+    identity(mapping.target) && record(mapping.expression) && mappingExpression(mapping.expression));
+}
+
+function mappingExpression(value: Record<string, unknown>): boolean {
+  switch (value.kind) {
+    case MappingExpressionKind.StringLiteral: return keys(value, ["kind", "value"]) && isWellFormedWireString(value.value);
+    case MappingExpressionKind.LocalVariable:
+    case MappingExpressionKind.EnclosingVariable: return keys(value, ["kind", "name"]) && isWellFormedWireString(value.name);
+    default: return false;
   }
 }
 

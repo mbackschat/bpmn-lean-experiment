@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { CallDataKind, callDataInterfaceValid, CheckedNodeKind, isCallDataInterface, profileAllowsCheckedProcessShape, profileAllowsProgramShape, SemanticOperationKind } from "@bpmn-lean/semantic-core";
-import type { ScalarCallData, ScalarIoSpecification } from "@bpmn-lean/semantic-core";
+import { CallDataKind, callDataInterfaceValid, CheckedNodeKind, isCallDataInterface, MappingExpressionKind, profileAllowsCheckedProcessShape, profileAllowsProgramShape, sameCallDataInterface, SemanticOperationKind } from "@bpmn-lean/semantic-core";
+import type { ScalarCallData, ScalarIoSpecification, VariableMappingCallData } from "@bpmn-lean/semantic-core";
 import { callActivityProgram } from "./call-activity-fixture.ts";
 
 function specification(ownerId: string): ScalarIoSpecification {
@@ -128,4 +128,57 @@ test("global identity separation includes unused Properties and all retained dat
   assert.equal(valid({ ...data, called: { ...data.called, id: data.call.id } }), false);
   assert.equal(valid({ ...data, called: { ...data.called,
     outputSet: { ...data.called.outputSet, id: "" } } }), false);
+});
+
+const mappings: VariableMappingCallData = {
+  kind: CallDataKind.VariableMappings,
+  inputs: [
+    { target: "customer", expression: { kind: MappingExpressionKind.EnclosingVariable, name: "applicant" } },
+    { target: "amount", expression: { kind: MappingExpressionKind.EnclosingVariable, name: "amount" } },
+  ],
+  outputs: [{ target: "decision", expression: { kind: MappingExpressionKind.LocalVariable, name: "verdict" } }],
+};
+
+test("the variable-mapping arm retains both lists in document order", () => {
+  assert.equal(isCallDataInterface(mappings), true);
+  assert.equal(callDataInterfaceValid(mappings, "Call", "Process"), true);
+  assert.equal(callDataInterfaceValid({ ...mappings, outputs: [] }, "Call", "Process"), true);
+  assert.equal(sameCallDataInterface(mappings, { ...mappings, inputs: [...mappings.inputs].reverse() }), false);
+  assert.equal(sameCallDataInterface(mappings, structuredClone(mappings)), true);
+  assert.equal(sameCallDataInterface(mappings, { kind: CallDataKind.Empty }), false);
+});
+
+test("the variable-mapping wire shape rejects absent, extra and mistyped members", () => {
+  for (const value of [
+    { ...mappings, inputs: null }, { ...mappings, outputs: undefined }, { ...mappings, local: false },
+    { ...mappings, inputs: [{ target: "customer" }] },
+    { ...mappings, inputs: [{ ...mappings.inputs[0], businessKey: true }] },
+  ]) assert.equal(isCallDataInterface(value), false);
+});
+
+// CVM-ADMIT-01: CIB evaluates inputs from the caller and outputs from the called instance, so each
+// direction has exactly one expression arm; duplicate targets and reserved Multi-Instance outputs are refused.
+test("variable mappings need one to eight inputs, at most eight outputs and distinct unreserved targets", () => {
+  const input = (index: number) => ({ target: `t${index}`,
+    expression: { kind: MappingExpressionKind.EnclosingVariable, name: "applicant" } }) as const;
+  const output = (target: string) => ({ target,
+    expression: { kind: MappingExpressionKind.LocalVariable, name: "verdict" } }) as const;
+  const accepts = (candidate: VariableMappingCallData) => callDataInterfaceValid(candidate, "Call", "Process");
+  assert.equal(accepts({ ...mappings, inputs: [] }), false);
+  assert.equal(accepts({ ...mappings, inputs: Array.from({ length: 8 }, (_, index) => input(index)) }), true);
+  assert.equal(accepts({ ...mappings, inputs: Array.from({ length: 9 }, (_, index) => input(index)) }), false);
+  assert.equal(accepts({ ...mappings, outputs: Array.from({ length: 9 }, (_, index) => output(`o${index}`)) }), false);
+  assert.equal(accepts({ ...mappings, inputs: [input(1), input(1)] }), false);
+  assert.equal(accepts({ ...mappings, outputs: [output("decision"), output("decision")] }), false);
+  for (const reserved of ["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]) {
+    assert.equal(accepts({ ...mappings, outputs: [output(reserved)] }), false, reserved);
+  }
+  assert.equal(accepts({ ...mappings, inputs: [{ target: "customer",
+    expression: { kind: MappingExpressionKind.LocalVariable, name: "applicant" } }] }), false);
+  assert.equal(accepts({ ...mappings, outputs: [{ target: "decision",
+    expression: { kind: MappingExpressionKind.EnclosingVariable, name: "verdict" } }] }), false);
+  assert.equal(accepts({ ...mappings, inputs: [{ target: "customer",
+    expression: { kind: MappingExpressionKind.StringLiteral, value: "x" } }] }), false);
+  assert.equal(accepts({ ...mappings, inputs: [{ target: "customer",
+    expression: { kind: MappingExpressionKind.EnclosingVariable, name: "" } }] }), false);
 });

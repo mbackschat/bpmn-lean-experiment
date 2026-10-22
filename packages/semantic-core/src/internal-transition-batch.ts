@@ -89,6 +89,9 @@ export function deriveInternalTransitionPreparation(
         return prepared === null || candidate.owner === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
           ? null : { family: PreparedInternalTransitionFamily.CallData, ...prepared };
       }
+      // Called-root frames stay on the singleton path, like the declared-scope frames of NSD-INIT-01.
+      case CallDataKind.VariableMappings:
+        return null;
       case CallDataKind.Empty:
         break;
     }

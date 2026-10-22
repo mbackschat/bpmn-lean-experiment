@@ -1,10 +1,11 @@
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import { projectUserTaskMetadata } from "./checked-element-projection.js";
 import {
-  CheckedNodeKind, CheckedProcessKind, SemanticProfileId, compareCanonicalStrings, nestedScopeCheckedAnalysis,
+  CallDataKind, CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SemanticProfileId, callDataInterfaceValid,
+  compareCanonicalStrings, isWellFormedWireString, nestedScopeCheckedAnalysis,
 } from "@bpmn-lean/semantic-core";
 import type {
-  CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData,
+  CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
 } from "@bpmn-lean/semantic-core";
 import { isAdmittedCheckedProcess } from "./checked-process-admission.js";
 import { locateContainedElements, orderedElementDiagnostics } from "./admission-diagnostics.js";
@@ -53,22 +54,28 @@ export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceId
     (type, namespace, name) =>
       type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
-  const roots = asElementArray(definitions.rootElements);
-  const process = roots?.[0];
-  if (roots?.length !== 1 || process?.$type !== "bpmn:Process" || process.isExecutable !== true ||
-      !hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"])) {
-    return unsupported("Expected one executable root Process.");
+  const processes = asElementArray(definitions.rootElements);
+  if (processes === undefined || processes.length < 1 || processes.length > 2 || !processes.every(process =>
+    process.$type === "bpmn:Process" && process.isExecutable === true &&
+    hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]))) {
+    return unsupported("Expected one executable root Process, or a caller and one called Process.");
   }
-  const processId = readId(process);
-  const elements = asElementArray(process.flowElements);
-  if (processId === undefined || elements === undefined) return unsupported("Process and flow elements require IDs.");
-  const rootScope = definitionScopeId(processId);
-  const collected: Collected = {
-    nodes: [], flows: [], scopes: [{ id: rootScope, parentScopeId: null, originElementId: processId }],
-    nodeScopes: [], flowScopes: [], records: [], ids: [processId],
-  };
-  const failure = readScope(elements, rootScope, 0, definitions, selection.policy, collected);
-  if (failure !== null) return unsupported(failure);
+  const collected: Collected = { nodes: [], flows: [], scopes: [], nodeScopes: [], flowScopes: [], records: [], ids: [] };
+  const roots: { processId: string; scopeId: string }[] = [];
+  for (const process of processes) {
+    const processId = readId(process);
+    const elements = asElementArray(process.flowElements);
+    if (processId === undefined || elements === undefined) return unsupported("Process and flow elements require IDs.");
+    const scopeId = definitionScopeId(processId);
+    roots.push({ processId, scopeId });
+    collected.scopes.push({ id: scopeId, parentScopeId: null, originElementId: processId });
+    collected.ids.push(processId);
+    const failure = readScope(elements, scopeId, 0, definitions, selection.policy, collected);
+    if (failure !== null) return unsupported(failure);
+  }
+  const caller = callerProcess(roots, collected);
+  if (caller === undefined) return unsupported("A second Process must be the called Process of the one Call Activity.");
+  const processId = caller;
   if (new Set(collected.ids).size !== collected.ids.length) return unsupported("Flow element IDs must be unique.");
   const byId = <T extends { id: string }>(values: readonly T[]) =>
     [...values].sort((a, b) => compareCanonicalStrings(a.id, b.id));
@@ -135,6 +142,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         node = { kind: CheckedNodeKind.EmbeddedSubProcess, id, childScopeId };
         break;
       }
+      case "bpmn:CallActivity": node = projectMappedCall(element); break;
       default: return "The flow element is outside the nested scope-data contract.";
     }
     if (node === undefined) return "A flow element exceeds the nested scope-data contract.";
@@ -142,6 +150,69 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
     collected.nodeScopes.push({ nodeId: node.id, scopeId });
   }
   return null;
+}
+
+/**
+ * CVM-RESOLVE-01: CIB reads `calledElement` as a raw definition key (BpmnParse.java:3934, tag v2.2.0), so the caller is
+ * the Process holding the one Call and the Call must name the other Process by exact identifier; a lone Process keeps
+ * the profile's single-Process account.
+ */
+function callerProcess(roots: readonly { processId: string; scopeId: string }[], collected: Collected): string | undefined {
+  const calls = collected.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []);
+  if (roots.length === 1) return calls.length === 0 ? roots[0]!.processId : undefined;
+  const call = calls.length === 1 ? calls[0]! : undefined;
+  const owner = call === undefined ? undefined : collected.nodeScopes.find(({ nodeId }) => nodeId === call.id)?.scopeId;
+  const chainRoot = (scopeId: string | undefined): string | undefined => {
+    for (let fuel = collected.scopes.length, current = scopeId; fuel > 0 && current !== undefined; fuel -= 1) {
+      const scope = collected.scopes.find(({ id }) => id === current);
+      if (scope?.parentScopeId === null) return scope.originElementId;
+      current = scope?.parentScopeId ?? undefined;
+    }
+    return undefined;
+  };
+  const callerId = chainRoot(owner);
+  const called = roots.find(({ processId }) => processId !== callerId);
+  return call !== undefined && callerId !== undefined && called !== undefined && call.calledProcessId === called.processId
+    ? callerId : undefined;
+}
+
+/**
+ * CVM-ADMIT-01's reader: `calledElement` and an extension list of `camunda:in` and `camunda:out`, each with exactly a
+ * nonempty `source` and `target`. Any other attribute (`sourceExpression`, `variables`, `local`, `businessKey`) or
+ * extension refuses rather than falling back to a narrower reading. Document order is kept because CIB evaluates in it.
+ */
+function projectMappedCall(element: ElementRecord): CheckedNode | undefined {
+  const id = readId(element);
+  if (id === undefined || typeof element.calledElement !== "string" || element.calledElement.length === 0 ||
+      !hasOnlyModelledKeys(element, ["$type", "id", "name", "calledElement", "extensionElements"]) ||
+      (element.name !== undefined && typeof element.name !== "string")) return undefined;
+  const extension = asElement(element.extensionElements);
+  const values = asElementArray(extension?.values);
+  if (extension?.$type !== "bpmn:ExtensionElements" || !hasOnlyModelledKeys(extension, ["$type", "values"]) ||
+      values === undefined) return undefined;
+  const inputs: VariableMapping[] = [];
+  const outputs: VariableMapping[] = [];
+  for (const value of values) {
+    if (!hasOnlyModelledKeys(value, ["$type", "source", "target"]) || !nonempty(value.source) || !nonempty(value.target)) {
+      return undefined;
+    }
+    switch (value.$type) {
+      case "camunda:in":
+        inputs.push({ target: value.target, expression: { kind: MappingExpressionKind.EnclosingVariable, name: value.source } });
+        break;
+      case "camunda:out":
+        outputs.push({ target: value.target, expression: { kind: MappingExpressionKind.LocalVariable, name: value.source } });
+        break;
+      default: return undefined;
+    }
+  }
+  const data = { kind: CallDataKind.VariableMappings, inputs, outputs } as const;
+  return callDataInterfaceValid(data, id, element.calledElement)
+    ? { kind: CheckedNodeKind.CallActivity, id, calledProcessId: element.calledElement, data } : undefined;
+}
+
+function nonempty(value: unknown): value is string {
+  return isWellFormedWireString(value) && value.length > 0;
 }
 
 function unsupported(evidence: string): CheckedCompilationProjection {

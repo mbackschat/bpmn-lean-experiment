@@ -1,6 +1,7 @@
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
+import type { VariableMapping } from "./semantic-value-contract.js";
 
 /** The required singleton interface admitted by CDATA-MATCH-01.
  *
@@ -20,6 +21,7 @@ export type ScalarIoSpecification = DeepReadonly<{
 export enum CallDataKind {
   Empty = "empty",
   Scalar = "scalar",
+  VariableMappings = "variableMappings",
 }
 
 /** Correspondence joins separately owned declarations, never shared XML IDs (BPMN 10.3.6). */
@@ -32,4 +34,14 @@ export type ScalarCallData = DeepReadonly<{
   directOutput: DirectActivityDataOutput;
 }>;
 
-export type CallDataInterface = Readonly<{ kind: CallDataKind.Empty }> | ScalarCallData;
+/**
+ * CIB `camunda:in`/`camunda:out` copies, in document order because CIB evaluates them in that order
+ * (CVM-IN-01, CVM-OUT-01). Inputs read the Call's enclosing chain, outputs the called-root frame.
+ */
+export type VariableMappingCallData = DeepReadonly<{
+  kind: CallDataKind.VariableMappings;
+  inputs: VariableMapping[];
+  outputs: VariableMapping[];
+}>;
+
+export type CallDataInterface = Readonly<{ kind: CallDataKind.Empty }> | ScalarCallData | VariableMappingCallData;

@@ -1,6 +1,7 @@
 import { validParallelScopeIterations } from "./parallel-scope-population.js";
 import { sequentialScopeStateValid } from "./sequential-scope-state-validation.js";
 import { nestedScopeDataProgram, nestedScopeFramesValid } from "./nested-scope-data.js";
+import { callRecordCallerScopeMatches } from "./semantic-process-call-runtime.js";
 import {
   SemanticOperationKind,
   type SemanticProcessProgram,
@@ -351,6 +352,9 @@ export function runtimeStateDefects(
     state.activityOccurrences.every(({ owner }) => owned(owner));
   if (!ownersLive) {
     defects.push(RuntimeStateDefect.DanglingWaitOwner);
+  }
+  if (!state.calledProcessOccurrences.every((record) => callRecordCallerScopeMatches(program, expectedInstanceId, record))) {
+    defects.push(RuntimeStateDefect.CallerScopeMismatch);
   }
 
   const duplicated =

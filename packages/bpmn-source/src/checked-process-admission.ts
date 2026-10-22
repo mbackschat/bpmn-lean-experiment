@@ -517,9 +517,13 @@ function embeddedNodesOwnChildScopes(
   const roots = graph.definitionScopes.filter(
     ({ parentScopeId }) => parentScopeId === null,
   );
+  // The nested scope-data profile adds a called root only with its one mapped Call (CVM-ADMIT-01).
   const expectedRootCount =
     semanticProfile === SemanticProfileId.CalledProcessCallActivity ||
-      semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID ? 2 : 1;
+      semanticProfile === CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID ? 2
+    : semanticProfile === SemanticProfileId.NestedEmbeddedScopeData
+      ? 1 + graph.nodes.filter(({ kind }) => kind === CheckedNodeKind.CallActivity).length
+      : 1;
   const compensationHandlers = semanticProfile ===
       COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID
     ? graph.compensation?.subjects.flatMap((subject) =>
