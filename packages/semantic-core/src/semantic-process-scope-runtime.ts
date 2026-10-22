@@ -76,7 +76,8 @@ export function enterChildScope(
 
 /**
  * CEA-OCCUR-01: enters a merge target's child even while other occurrences of its definition are live. The fresh
- * activation exceeds every issued one, so it never reuses a live identity; equal to {@link enterChildScope} whenever no
+ * activation exceeds the definition's recorded count, so it reuses no live identity while the Scope branch of
+ * RSI-BOUND-01 holds; equal to {@link enterChildScope} whenever no
  * occurrence of the definition is live.
  */
 export function enterConcurrentChildScope(

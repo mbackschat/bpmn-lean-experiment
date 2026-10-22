@@ -22,7 +22,8 @@ function countFor(
  * The approved account also identifies Message, Effect, event-race and Call families, but the
  * pre-existing aggregate fixture target already exhausted the required 3 GiB Lean bound before this
  * rule was added. Those consumer-free branches remain explicit open work rather than being claimed
- * here. The Scope branch is consumed by CEA-OCCUR-01's freshness law.
+ * here. The Scope branch checks, on executed states, the premise of CEA-OCCUR-01's freshness law, which Lean
+ * states as the separate predicate `scopeIdentityBound`.
  */
 export function runtimeStateIdentityBound(state: RuntimeState): boolean {
   const calledRoots = state.calledProcessOccurrences.map(({ calledRoot }) => calledRoot);

@@ -89,6 +89,10 @@ test("a completion reaches only its own activation through Worker replacement, a
         await oracle.assertPublications();
         return state;
       };
+      // One read of the current publication, so the isolation assertions below compare it with a recorded state
+      // instead of waiting until it matches the oracle.
+      const current = (): Promise<StateObservation> =>
+        waitForPublishedWorkflowChainState(environment, workflowId, program, instanceId, () => true);
 
       let isolatedCompletions = 0;
       const committedCommandIds: string[] = [];
@@ -102,7 +106,7 @@ test("a completion reaches only its own activation through Worker replacement, a
           await stopBpmnTestWorker(worker!);
           worker = undefined;
           worker = await startBpmnTestWorker(environment, bundle, `concurrent-activations-replacement-${scenarioId}-${command.commandId}`);
-          assert.deepEqual(await published(), before);
+          assert.deepEqual(await current(), before);
         }
         assert.deepEqual(await submitUserTaskCompletion(environment.client.workflow, instanceId, command),
           { kind: "semantic", commandId: command.commandId, outcome });
@@ -120,7 +124,7 @@ test("a completion reaches only its own activation through Worker replacement, a
         // Accepted-result recovery: the repeated Update returns the recorded result and leaves every sibling open.
         assert.deepEqual(await submitUserTaskCompletion(environment.client.workflow, instanceId, command),
           { kind: "semantic", commandId: command.commandId, outcome: CommandOutcome.Committed });
-        const recovered = await published();
+        const recovered = await current();
         assert.deepEqual(recovered, after);
         for (const sibling of siblings) {
           assert.ok(recovered.openUserTasks.some(({ id }) => isDeepStrictEqual(id, sibling.id)),
