@@ -1,5 +1,5 @@
 import { SemanticOperationKind } from "./semantic-process-contract.js";
-import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
+import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   isScopeOccurrenceQuiescent,
 } from "./semantic-process-scope-runtime.js";
@@ -20,31 +20,6 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import { localDataOwnerProcessInstanceId } from "./local-data-owner.js";
-
-/**
- * A Call record's caller is an occurrence of the scope owning its invocation: the root, or an embedded Sub-Process
- * since a Call may sit there. Without the Program this is undecidable, so association validity alone cannot state it.
- * Only a caller in the hosting instance is decided: a caller inside a called instance may run a definition the Program
- * does not carry, the same bound the hosted-wait declaration check observes.
- */
-export function callRecordCallerScopeMatches(
-  program: SemanticProcessProgram,
-  hostingInstanceId: string,
-  record: CalledProcessOccurrence,
-): boolean {
-  if (record.caller.processInstanceId !== hostingInstanceId) return true;
-  const invocations = program.operations.filter((operation) =>
-    operation.kind === SemanticOperationKind.InvokeProcess &&
-    operation.returnOperationId === record.returnOperationId &&
-    operation.origin.elementId === record.id.elementId
-  );
-  const invocation = invocations[0];
-  const owners = invocation === undefined
-    ? []
-    : program.operationScopes.filter(({ operationId }) => operationId === invocation.id);
-  return invocations.length === 1 && owners.length === 1 &&
-    owners[0]?.scopeId === record.caller.definitionScopeId;
-}
 
 /** Encodes the caller, Call Activity, and activation with decimal UTF-8 byte lengths. */
 export function deriveCalledProcessInstanceId(
@@ -119,12 +94,13 @@ export function selectCalledProcessInvocation(
   ) {
     return null;
   }
-  // The caller is the live occurrence owning the Call's input token, a root or an embedded Sub-Process; scope
-  // quiescence counts its Call records, so that occurrence cannot complete while the call is live.
   const callerOccurrences = state.scopeOccurrences.filter(({ id }) =>
     sameScopeOccurrence(id, caller)
   );
-  if (callerOccurrences.length !== 1) {
+  if (
+    callerOccurrences.length !== 1 ||
+    callerOccurrences[0]?.parent !== null
+  ) {
     return null;
   }
 
@@ -268,8 +244,8 @@ export function calledProcessAssociationsAreValid(state: RuntimeState): boolean 
   );
   const recordsValid = state.calledProcessOccurrences.every(
     (record, index, records) => {
-      const callers = state.scopeOccurrences.filter(({ id }) =>
-        sameScopeOccurrence(id, record.caller)
+      const callers = state.scopeOccurrences.filter(({ id, parent }) =>
+        parent === null && sameScopeOccurrence(id, record.caller)
       );
       return record.id.processInstanceId === record.caller.processInstanceId &&
         record.id.activation > 0 &&

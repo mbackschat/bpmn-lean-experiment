@@ -140,7 +140,9 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
     }
     case VertexKind.Call: {
       const call = vertex.call;
-      if (call === undefined || !calledScopeValid(scopes, call.scope, call.calledProcessId)) return null;
+      // CVM-ADMIT-01 keeps the Call on the root path: the Lean batch and cancellation proofs rest on Call callers being
+      // Process roots, and lifting that premise belongs to PC-SCOPE-05.
+      if (call === undefined || depth !== 0 || !calledScopeValid(scopes, call.scope, call.calledProcessId)) return null;
       // The called instance has no parent scope, so its walk starts with no enclosing frame (CVM-ISOLATE-01).
       const inner = walk(vertices, records, scopes, fuel - 1, depth, [], call.scope, call.entry);
       const rest = inner === null ? null : walk(vertices, records, scopes, fuel - 1, depth, frames, scope, next);

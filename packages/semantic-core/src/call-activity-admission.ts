@@ -94,11 +94,11 @@ export function callOperationsArePaired(
         calledRoot !== undefined &&
         calledRoot.id === invoke.calledRootScopeId &&
         calledRoot.id !== entryRoot.id &&
-        callerScopeOf(definitionScopes, operationScope.get(invoke.id), entryRoot.id) &&
+        operationScope.get(invoke.id) === entryRoot.id &&
         operationScope.get(returned.id) === calledRoot.id &&
-        placeScope.get(invoke.input) === operationScope.get(invoke.id) &&
+        placeScope.get(invoke.input) === entryRoot.id &&
         placeScope.get(invoke.calledEntry) === calledRoot.id &&
-        placeScope.get(returned.callerOutput) === operationScope.get(invoke.id) &&
+        placeScope.get(returned.callerOutput) === entryRoot.id &&
         returned.origin.kind === SemanticOriginKind.BpmnElement &&
         returned.origin.elementId === invoke.origin.elementId &&
         returned.calledProcessId === invoke.calledProcessId &&
@@ -109,24 +109,6 @@ export function callOperationsArePaired(
       invokes.filter(({ returnOperationId }) => returnOperationId === returned.id)
         .length === 1
     );
-}
-
-/**
- * A Call sits in the entry root or in an embedded scope below it, never in a called root: the Call record, not a parent
- * pointer, links the called root to that occurrence, and the scope count bounds a cyclic parent relation.
- */
-function callerScopeOf(
-  definitionScopes: ReadonlyArray<DefinitionScope>,
-  scopeId: string | undefined,
-  entryRootId: string,
-): boolean {
-  let current = scopeId;
-  for (let fuel = definitionScopes.length; fuel > 0 && current !== undefined; fuel -= 1) {
-    if (current === entryRootId) return true;
-    const matching = definitionScopes.filter(({ id }) => id === current);
-    current = matching.length === 1 ? matching[0]?.parentScopeId ?? undefined : undefined;
-  }
-  return false;
 }
 
 /** Supplies the virtual called-End-to-return edge erased from control places. */

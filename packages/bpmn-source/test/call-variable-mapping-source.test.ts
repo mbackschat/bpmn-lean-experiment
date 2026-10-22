@@ -41,7 +41,7 @@ const expectedData = {
   outputs: [{ target: "decision", expression: local("verdict") }, { target: "echoedCustomer", expression: local("customer") }],
 };
 
-test("CVM-ADMIT-01 admits the loan application with its Call in the review Sub-Process and both lists in document order", async () => {
+test("CVM-ADMIT-01 admits the loan application with its Call on the root path and both lists in document order", async () => {
   const result = await compile(await loanXml());
   assert.ok(result.status === BpmnCompilationStatus.Accepted, JSON.stringify(result.diagnostics));
   const call = result.checkedProcess.nodes.find(({ id }) => id === "VerifyIdentity");
@@ -76,7 +76,7 @@ test("CVM-ADMIT-01 refuses each excluded Call attribute and mapping form", async
       '<camunda:out source="verdict" target="decision" /><camunda:out source="customer" target="decision" />'],
     ["reserved output", '<camunda:out source="verdict" target="decision" />',
       '<camunda:out source="verdict" target="nrOfInstances" />'],
-    ["no input", firstIn + '\n          <camunda:in source="amount" target="amount" />', ""],
+    ["no input", firstIn + '\n        <camunda:in source="amount" target="amount" />', ""],
     ["prefixed calledElement", callElement, callElement.replace('"Process_IdentityVerification"', '"lv:Process_IdentityVerification"')],
     ["calledElement naming the caller", callElement, callElement.replace('"Process_IdentityVerification"', '"Process_LoanApplication"')],
     ["absent calledElement", callElement, callElement.replace('"Process_IdentityVerification"', '"Process_Missing"')],
@@ -91,4 +91,21 @@ test("CVM-ADMIT-01 refuses each excluded Call attribute and mapping form", async
     const result = await compile(xml.replace(from, to));
     assert.equal(result.status, BpmnCompilationStatus.Rejected, label);
   }
+});
+
+// The Call and the review task trade places, so the Call sits inside the review Sub-Process; the Lean account still
+// binds Call callers to Process roots, so CVM-ADMIT-01 leaves that placement to PC-SCOPE-05.
+test("CVM-ADMIT-01 refuses a Call inside an embedded Sub-Process", async () => {
+  const xml = await loanXml();
+  const callStart = xml.indexOf(callElement);
+  const callEnd = xml.indexOf("</callActivity>", callStart) + "</callActivity>".length;
+  const call = xml.slice(callStart, callEnd);
+  const task = '<userTask id="ConfirmDecision" name="Confirm or override the verdict" />';
+  assert.ok(callStart >= 0 && xml.includes(task));
+  const moved = xml.slice(0, callStart) + '<userTask id="VerifyIdentity" name="Verify identity" />' + xml.slice(callEnd);
+  const nested = moved.replace(task, call.replace('id="VerifyIdentity"', 'id="ConfirmDecision"'));
+  const control = await compile(xml);
+  assert.equal(control.status, BpmnCompilationStatus.Accepted);
+  const result = await compile(nested);
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
 });

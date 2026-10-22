@@ -12,8 +12,6 @@ import {
   deriveCalledProcessInstanceId,
   initialState,
   isStableStateResumable,
-  RuntimeStateDefect,
-  runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type {
   RuntimeState,
@@ -160,9 +158,7 @@ test("rejects malformed call records and called roots", () => {
   }
 });
 
-// A Call may sit in an embedded Sub-Process (CVM-ADMIT-01), so the caller is no longer bound to the root. What stays
-// locked is that the caller is an occurrence of the scope owning the invocation, which only the Program can decide.
-test("binds a call record caller to an occurrence of the scope owning its invocation", () => {
+test("binds a call record caller to the exact hosting root occurrence", () => {
   const { activeWait, beforeReturn, hostingRoot, record, returnOperation } =
     returnReadyContext();
   const childCaller = {
@@ -180,8 +176,7 @@ test("binds a call record caller to an occurrence of the scope owning its invoca
     calledProcessOccurrences: [{ ...record, caller: childCaller }],
   };
   assert.equal(applyInternalOperation(program, returnOperation, childCallerState), null);
-  assert.ok(runtimeStateDefects(program, instanceId, childCallerState).includes(RuntimeStateDefect.CallerScopeMismatch));
-  assert.ok(!runtimeStateDefects(program, instanceId, beforeReturn).includes(RuntimeStateDefect.CallerScopeMismatch));
+  assert.equal(isStableStateResumable(childCallerState), false);
 });
 
 test("requires exactly one parentless hosting root occurrence", () => {

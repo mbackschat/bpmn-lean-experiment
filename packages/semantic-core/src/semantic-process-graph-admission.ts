@@ -344,19 +344,12 @@ function operationRespectsScopes(
           [operation.calledEntry],
           operation.calledRootScopeId,
         );
-    case SemanticOperationKind.ReturnProcess: {
-      // The caller continues in the scope that owns the invocation, the entry root or an embedded scope below it.
-      const invocations = graph.operations.filter((candidate) =>
-        candidate.kind === SemanticOperationKind.InvokeProcess && candidate.returnOperationId === operation.id);
-      const callerScope = invocations.length === 1 && invocations[0] !== undefined
-        ? operationScope.get(invocations[0].id) : undefined;
+    case SemanticOperationKind.ReturnProcess:
       return operation.calledRootScopeId === owner &&
         graph.definitionScopes.some(
           ({ id, parentScopeId }) => id === owner && parentScopeId === null,
         ) &&
-        callerScope !== undefined &&
-        referencesOwnedBy([operation.callerOutput], callerScope);
-    }
+        referencesOwnedBy([operation.callerOutput], entryRootId);
     case SemanticOperationKind.ThrowError: {
       const attached = graph.definitionScopes.find(
         ({ id }) => id === operation.handler.attachedScopeId,

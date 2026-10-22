@@ -14,7 +14,6 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import {
   calledProcessAssociationsAreValid,
-  callRecordCallerScopeMatches,
 } from "./semantic-process-call-runtime.js";
 import { invokeCalledProcessWithData, returnCalledProcessWithData } from "./semantic-process-call-data-runtime.js";
 import {
@@ -445,13 +444,7 @@ function applyInternalOperationState(
       const owner = returnProcessOwner(operation, state);
       return applyOwnedOperation(
         owner,
-        () => {
-          const control = state.control;
-          return control.kind === ControlStateKind.Running && state.calledProcessOccurrences.every((record) =>
-            record.returnOperationId !== operation.id ||
-            callRecordCallerScopeMatches(program, control.instanceId, record))
-            ? returnCalledProcessWithData(program, operation, state) : null;
-        },
+        () => returnCalledProcessWithData(program, operation, state),
         captureOwner,
       );
     }

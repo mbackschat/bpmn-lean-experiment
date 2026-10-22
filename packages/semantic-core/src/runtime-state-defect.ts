@@ -9,7 +9,6 @@ export const RuntimeStateDefect = {
   ForeignInstance: "foreignInstance",
   NotStartedWithWork: "notStartedWithWork",
   DanglingWaitOwner: "danglingWaitOwner",
-  CallerScopeMismatch: "callerScopeMismatch",
   DuplicateWaitIdentity: "duplicateWaitIdentity",
   LiveIdentityAboveCounter: "liveIdentityAboveCounter",
   UndeclaredWaitIdentity: "undeclaredWaitIdentity",

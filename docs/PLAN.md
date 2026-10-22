@@ -78,15 +78,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: `PC-SCOPE-04` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: the approved [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one serial Call, growing the `DATA` profile. It proceeds ahead of `PC-SCOPE-03` with in-document key equality, an obligation the checklist records on that row.
+Deliverable: the approved [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one root-path Call, growing the `DATA` profile, ahead of `PC-SCOPE-03` with in-document key equality; Sub-Process placement moved to `PC-SCOPE-05`, whose Lean proofs must drop the Process-root caller premise.
 
-Acceptance blockers: Lean/core implementation, the CIB probe, hosting and registration, then family closure; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
+Acceptance blockers: the placement correction's audit, the Lean evaluators and laws, the CIB probe, hosting and registration, then family closure; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
 
-Current result: proposal approved; review of `9358fb36` required ten edits, audited at `aeaf5512`.
+Current result: the core runs the root-path loan journey; Lean has the contract arm, decoder and called-root read/write rules.
 
 Effort budget: 12 hours wall from 2026-10-22 through the semantic checkpoint, reassessed at the limit.
 
-Next action: `node scripts/what-binds.ts` on the grown paths, then red/green from the TypeScript Call arm and source admission, then the Lean evaluators and laws. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: the correction audit; then Lean evaluators, `OperationStep` arms, frame validity and CVM laws; then the second model, scenarios and CIB probe. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
 

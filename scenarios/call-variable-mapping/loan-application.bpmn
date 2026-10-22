@@ -14,33 +14,32 @@
         </camunda:inputOutput>
       </extensionElements>
     </serviceTask>
+    <callActivity id="VerifyIdentity" name="Verify identity" calledElement="Process_IdentityVerification">
+      <extensionElements>
+        <camunda:in source="applicant" target="customer" />
+        <camunda:in source="amount" target="amount" />
+        <camunda:out source="verdict" target="decision" />
+        <camunda:out source="customer" target="echoedCustomer" />
+      </extensionElements>
+    </callActivity>
     <subProcess id="ReviewApplication" name="Review application">
       <extensionElements>
         <camunda:inputOutput>
-          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
-          <camunda:inputParameter name="secret">internal-note</camunda:inputParameter>
+          <camunda:inputParameter name="decision">${decision}</camunda:inputParameter>
           <camunda:outputParameter name="finalDecision">${decision}</camunda:outputParameter>
         </camunda:inputOutput>
       </extensionElements>
       <startEvent id="ReviewOpened" name="Review opened" />
-      <callActivity id="VerifyIdentity" name="Verify identity" calledElement="Process_IdentityVerification">
-        <extensionElements>
-          <camunda:in source="applicant" target="customer" />
-          <camunda:in source="amount" target="amount" />
-          <camunda:out source="verdict" target="decision" />
-          <camunda:out source="customer" target="echoedCustomer" />
-        </extensionElements>
-      </callActivity>
+      <userTask id="ConfirmDecision" name="Confirm or override the verdict" />
       <endEvent id="ReviewClosed" name="Review closed" />
-      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="VerifyIdentity" />
-      <sequenceFlow id="Flow_Verified" sourceRef="VerifyIdentity" targetRef="ReviewClosed" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="ConfirmDecision" />
+      <sequenceFlow id="Flow_ReviewConfirmed" sourceRef="ConfirmDecision" targetRef="ReviewClosed" />
     </subProcess>
-    <userTask id="ConfirmDecision" name="Confirm decision" />
     <endEvent id="ApplicationDecided" name="Application decided" />
     <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="ScoreApplication" />
-    <sequenceFlow id="Flow_Scored" sourceRef="ScoreApplication" targetRef="ReviewApplication" />
-    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewApplication" targetRef="ConfirmDecision" />
-    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmDecision" targetRef="ApplicationDecided" />
+    <sequenceFlow id="Flow_Scored" sourceRef="ScoreApplication" targetRef="VerifyIdentity" />
+    <sequenceFlow id="Flow_Verified" sourceRef="VerifyIdentity" targetRef="ReviewApplication" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewApplication" targetRef="ApplicationDecided" />
   </process>
   <process id="Process_IdentityVerification" name="Verify an applicant's identity" isExecutable="true">
     <startEvent id="VerificationRequested" name="Verification requested" />

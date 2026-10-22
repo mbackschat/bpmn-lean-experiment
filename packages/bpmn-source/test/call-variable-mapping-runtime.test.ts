@@ -71,7 +71,7 @@ test("the loan application copies inputs by value, isolates called writes and la
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", text("Ada"))]);
   // CVM-TASK-01 and CVM-REFUSE-01: caller-only names, a caller-addressed completion and an unknown name are rejected.
   rejected(program, state, complete("CollectDocument", [bind("riskScore", text("high"))]), "caller-only name");
-  rejected(program, state, complete("CollectDocument", [bind("secret", text("leak"))]), "caller frame name");
+  rejected(program, state, complete("CollectDocument", [bind("applicant", text("Eve"))]), "unmapped caller source");
   rejected(program, state, complete("CollectDocument", [], instanceId), "caller-addressed completion");
   rejected(program, state, complete("CollectDocument", [bind("unrelated", text("x"))]), "undeclared name");
   // CVM-ISOLATE-01: the namesake `amount` written by the called task stays in the called frame.
@@ -80,33 +80,37 @@ test("the loan application copies inputs by value, isolates called writes and la
   assert.deepEqual(processBindings(state).find(({ name }) => name === "amount"), bind("amount", text("25000")));
   // An output source grows the frame inside its allowed names.
   state = commit(program, state, complete("RecordVerdict", [bind("verdict", text("approved"))]));
-  // CVM-OUT-01 and CVM-RETIRE-01: `decision` landed in the review frame and left as `finalDecision`; no frame remains.
+  // CVM-OUT-01 and CVM-RETIRE-01: no enclosing frame declares the targets, so they land at the Process; the called
+  // frame is gone and only the review frame, initialized from the returned `decision`, remains.
   assert.equal(calledFrame(state), undefined);
-  assert.equal(state.variables.scopes.length, 0);
+  assert.deepEqual(state.variables.scopes.map(({ bindings }) => bindings), [[bind("decision", text("approved"))]]);
   assert.deepEqual(processBindings(state), [
-    bind("amount", text("25000")), bind("applicant", text("Ada")), bind("echoedCustomer", text("Ada")),
-    bind("finalDecision", text("approved")), bind("riskScore", text("low")),
+    bind("amount", text("25000")), bind("applicant", text("Ada")), bind("decision", text("approved")),
+    bind("echoedCustomer", text("Ada")), bind("riskScore", text("low")),
   ]);
   rejected(program, state, complete("RecordVerdict", [bind("verdict", text("late"))]), "stale called completion");
-  state = commit(program, state, complete("ConfirmDecision", [], instanceId));
+  // The reviewer overrides the verdict inside the review frame, which outputs it as `finalDecision`.
+  state = commit(program, state, complete("ConfirmDecision", [bind("decision", text("referred"))], instanceId));
   assert.equal(state.control.kind, "completed");
+  assert.deepEqual(processBindings(state).filter(({ name }) => name === "decision" || name === "finalDecision"),
+    [bind("decision", text("approved")), bind("finalDecision", text("referred"))]);
 });
 
 test("an absent input source copies a present null and an output source the callee never sets overwrites with null", async () => {
   const program = await loanProgram();
-  let state = commit(program, initialState, start([bind("amount", text("25000")), bind("echoedCustomer", text("old"))]));
+  let state = commit(program, initialState, start([bind("amount", text("25000")), bind("decision", text("old"))]));
   state = commit(program, state, score);
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", nullValue)]);
   state = commit(program, state, complete("CollectDocument", []));
   state = commit(program, state, complete("RecordVerdict", []));
-  assert.deepEqual(processBindings(state).filter(({ name }) => name === "echoedCustomer" || name === "finalDecision"),
-    [bind("echoedCustomer", nullValue), bind("finalDecision", nullValue)]);
+  assert.deepEqual(processBindings(state).filter(({ name }) => name === "decision" || name === "echoedCustomer"),
+    [bind("decision", nullValue), bind("echoedCustomer", nullValue)]);
 });
 
 test("CVM-START-01 admits Call sources and Process-level output targets and rejects a called-only name", async () => {
   const program = await loanProgram();
-  commit(program, initialState, start([bind("amount", text("1")), bind("applicant", nullValue), bind("echoedCustomer", text("x"))]));
+  commit(program, initialState, start([bind("amount", text("1")), bind("applicant", nullValue), bind("decision", text("x"))]));
   rejected(program, initialState, start([bind("amount", text("1")), bind("customer", text("Ada"))]), "called-only name");
-  rejected(program, initialState, start([bind("amount", text("1")), bind("decision", text("old"))]), "frame-declared target");
+  rejected(program, initialState, start([bind("amount", text("1")), bind("verdict", text("old"))]), "called output source");
   rejected(program, initialState, start([bind("applicant", text("Ada"))]), "missing required amount");
 });
