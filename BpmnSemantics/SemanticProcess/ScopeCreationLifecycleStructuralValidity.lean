@@ -131,6 +131,7 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
   | invokeProcess selectedId selectedOrigin selectedInput process scope entry returned data =>
       cases data with
       | scalar => simp at selection
+      | variableMappings => simp at selection
       | empty =>
           obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
           dsimp only at selection
@@ -401,6 +402,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
   | invokeProcess id selectedOrigin input process root entry returned data =>
       cases data with
       | scalar => simp at selection
+      | variableMappings => simp at selection
       | empty =>
           obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
           try dsimp only at selection

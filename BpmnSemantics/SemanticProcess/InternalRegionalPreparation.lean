@@ -60,7 +60,7 @@ theorem prepareInternalRegional_facts (program : Program) (state : RuntimeState)
         cases found
         simp_all
 
-/-- CDATA's scalar copy-back obligation excludes it from control-only regional preparation. -/
+/-- CDATA's scalar copy-back and CVM-OUT-01's mapped writes exclude them from control-only regional preparation. -/
 theorem prepareInternalRegional_return_data_empty (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (process : ProcessId)
     (definition : DefinitionScopeId) (output : ControlPlaceId) (data : CallDataInterface)
@@ -73,6 +73,9 @@ theorem prepareInternalRegional_return_data_empty (program : Program) (state : R
   | empty => rfl
   | scalar =>
       rw [regionalSelection_scalar_return_refused] at selected
+      contradiction
+  | variableMappings =>
+      rw [regionalSelection_mapped_return_refused] at selected
       contradiction
 
 theorem prepareInternalRegional_of_components (program : Program) (state : RuntimeState)

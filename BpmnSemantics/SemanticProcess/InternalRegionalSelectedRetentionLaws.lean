@@ -39,6 +39,7 @@ theorem regionalSelection_retention_fields (program : Program) (before after : R
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           change returnProcessState? before id origin process definition output = some after at result

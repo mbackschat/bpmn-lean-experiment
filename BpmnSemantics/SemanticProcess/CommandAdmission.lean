@@ -240,7 +240,8 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
           else if nestedScopeDataProgram program then
             match NestedScopeData.completeUserTask? program state taskId submittedValues with
             | some successor =>
-                if taskId.processInstanceId = instanceId then { outcome := .committed, state := successor }
+                if taskId.processInstanceId = instanceId || NestedScopeData.calledTaskOfHost state instanceId taskId then
+                  { outcome := .committed, state := successor }
                 else { outcome := .rejected, state }
             | none => { outcome := .rejected, state }
           else

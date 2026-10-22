@@ -41,15 +41,15 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 68);
-  assert.equal(report.retainedModels, 61);
+  assert.equal(report.models.length, 69);
+  assert.equal(report.retainedModels, 62);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 61);
+  assert.equal(report.acceptedModels, 62);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 12);
   assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
   assert.equal(report.models.filter(({ product2 }) => product2 === "guidedJourneyBacked").length, 9);
-  assert.equal(report.mvpCapabilities.length, 47);
+  assert.equal(report.mvpCapabilities.length, 48);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -70,6 +70,7 @@ test("binds every retained and external model to exact local evidence", async ()
       "nested-scope-data-order-approved",
       "nested-scope-data-claim-limits",
       "nested-scope-data-quote-signed",
+      "call-variable-mapping-loan-approved",
       "service-task-effect-success",
       "embedded-subprocess-completion-a-then-b",
       "nested-scope-control-onboarding-setup-first",
@@ -539,7 +540,7 @@ test("corpus compilation preserves exact scenario overlays and rejects incomplet
       await t.test(`${caseId}: exact identity and bytes reach the production compiler`, async () => {
         await writeFile(scenarioPath, JSON.stringify(scenario));
         const report = await inspect(selectedCases, true);
-        assert.equal(report.acceptedModels, 61);
+        assert.equal(report.acceptedModels, 62);
       });
       await t.test(`${caseId}: declared identity requires its selected path`, async () => {
         await assert.rejects(inspect(pipelineCases), /source overlay.*path/i);

@@ -111,6 +111,16 @@ theorem scopeCreationSelection_scalar_refused (state : RuntimeState)
       (.invokeProcess id origin input process definition entry returned (.scalar data)) = none := by
   cases control : state.control <;> simp [selectInternalScopeCreation?, control]
 
+/-- CVM-IN-01 installs the called-root frame with the Call record, so a mapped Call stays on the
+singleton path rather than control-only scope creation. -/
+theorem scopeCreationSelection_mapped_refused (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
+    (process : ProcessId) (definition : DefinitionScopeId) (returned : OperationId)
+    (inputs outputs : List VariableMapping) :
+    selectInternalScopeCreation? state
+      (.invokeProcess id origin input process definition entry returned (.variableMappings inputs outputs)) = none := by
+  cases control : state.control <;> simp [selectInternalScopeCreation?, control]
+
 /-- Child occurrence identity advances the predecessor's retained issuance high-water mark. -/
 theorem scopeCreationSelection_child_issued_activation (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
@@ -202,6 +212,7 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
   | invokeProcess id origin input process definition entry returnOperation data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
           change invokeProcessState? state origin input process definition entry returnOperation = _

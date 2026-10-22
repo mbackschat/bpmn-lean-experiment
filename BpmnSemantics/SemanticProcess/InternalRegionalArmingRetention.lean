@@ -72,6 +72,7 @@ theorem regionalSelection_return_root (program : Program) (state : RuntimeState)
   | returnProcess _ _ _ _ _ data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           repeat' first
@@ -109,6 +110,7 @@ private theorem completing_withdrawal (program : Program) (state : RuntimeState)
   | returnProcess _ _ _ _ _ data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           repeat' first

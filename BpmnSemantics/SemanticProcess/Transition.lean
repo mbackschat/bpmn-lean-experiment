@@ -15,6 +15,7 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 import BpmnSemantics.SemanticProcess.ActivityDataOutput
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CallDataTransfer
+import BpmnSemantics.SemanticProcess.CallVariableMapping
 import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 import BpmnSemantics.SemanticProcess.ScopeCancellation
@@ -30,6 +31,7 @@ import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletio
 import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 import BpmnSemantics.SemanticProcess.MergeTargetOperations
 import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
+import BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! # Semantic Process internal transitions
 
@@ -39,95 +41,6 @@ This module owns the declarative internal-operation relation, the executable eva
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-def runningInstance? (state : RuntimeState) : Option SemanticId :=
-  match state.control with
-  | .running instanceId => some instanceId
-  | _ => none
-
-def awaitUserTaskState? (state : RuntimeState) (input output : ControlPlaceId)
-    (task : UserTaskDefinition) : Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  pure (activateUserTask state owner.processInstanceId owner input output task)
-
-def awaitTimerState? (state : RuntimeState) (input output : ControlPlaceId)
-    (timer : TimerDefinition) : Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  pure (activateTimer state owner.processInstanceId owner input output timer)
-
-def awaitMessageState? (state : RuntimeState) (input output : ControlPlaceId)
-    (message : MessageDefinition) : Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  pure (activateMessage state owner.processInstanceId owner input output message)
-
-def awaitPayloadMessageState? (state : RuntimeState) (input output : ControlPlaceId)
-    (message : MessageDefinition) : Option RuntimeState :=
-  awaitMessageState? state input output message
-
-def awaitCorrelatedPayloadMessageState? (state : RuntimeState)
-    (input output : ControlPlaceId) (message : MessageDefinition) : Option RuntimeState :=
-  awaitMessageState? state input output message
-
-def awaitEventRaceState? (state : RuntimeState) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (message : EventRaceMessageArm)
-    (timer : EventRaceTimerArm) : Option RuntimeState :=
-  armEventRaceState? state origin input message timer
-
-def awaitEffectState? (program : Program) (state : RuntimeState) (input output : ControlPlaceId)
-    (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
-    Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  let arguments ← evaluateEffectInputs? program state owner effect.inputMappings
-  let effectOwner : EffectOccurrenceId :=
-    ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩
-  if state.variables.activities.any (activityScopeMatches effectOwner) then none
-  else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)
-
-def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
-    (outputs : List ControlPlaceId) : Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  pure (duplicateToken state owner input outputs)
-
-def synchronizeState? (state : RuntimeState) (inputs : List ControlPlaceId)
-    (output : ControlPlaceId) : Option RuntimeState := do
-  let owner ← commonTokenOwner? state inputs
-  pure (synchronizeTokens state owner inputs output)
-
-def chooseState? (state : RuntimeState) (input : ControlPlaceId)
-    (candidates : List ConditionalCandidate) (defaultOutput : ControlPlaceId) :
-    Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let output ← selectConditionalOutput candidates defaultOutput
-    state.variables.process.bindings
-  pure (chooseToken state owner input output)
-
-def reachNoneEndState? (state : RuntimeState) (input : ControlPlaceId) :
-    Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  pure (reachNoneEndToken state owner input)
-
-def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
-    (error : ErrorReference) (handler : InterruptingErrorHandler) :
-    Option RuntimeState := do
-  let owner ← onlyTokenOwner? state input
-  let _ ← runningInstance? state
-  if owner.definitionScopeId ≠ handler.attachedScopeId ||
-      error.code ≠ handler.code ||
-      error.errorElementId ≠ handler.origin.errorElementId then none
-  else
-    let occurrence ← match state.scopeOccurrences.filter fun candidate =>
-        decide (candidate.id = owner) with
-      | [candidate] => some candidate
-      | _ => none
-    let parent ← occurrence.parent
-    if state.scopeOccurrences.any fun candidate => candidate.id == parent then
-      some (interruptScope state owner parent handler.output)
-    else none
 
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
@@ -229,6 +142,18 @@ inductive OperationStep (program : Program) :
       OperationStep program
         (.returnProcess id origin calledProcessId calledRootScopeId callerOutput (.scalar data))
         before after
+  | invokeMappedProcess (id origin input calledProcessId calledRootScopeId calledEntry returnOperationId inputs outputs)
+      (before after : RuntimeState)
+      (transition : CallVariableMapping.invokeState? program before origin input calledProcessId calledRootScopeId
+        calledEntry returnOperationId inputs outputs = some after) :
+      OperationStep program (.invokeProcess id origin input calledProcessId calledRootScopeId calledEntry
+        returnOperationId (.variableMappings inputs outputs)) before after
+  | returnMappedProcess (id origin calledProcessId calledRootScopeId callerOutput inputs outputs)
+      (before after : RuntimeState)
+      (transition : CallVariableMapping.returnState? program before id origin calledProcessId calledRootScopeId
+        callerOutput inputs outputs = some after) :
+      OperationStep program (.returnProcess id origin calledProcessId calledRootScopeId callerOutput
+        (.variableMappings inputs outputs)) before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
@@ -417,6 +342,13 @@ private def fireWithoutCompensationSnapshots? (program : Program)
   | .returnProcess id origin calledProcessId calledRootScopeId callerOutput (.scalar data) =>
       returnProcessWithDataState? state id origin calledProcessId calledRootScopeId
         callerOutput (.scalar data)
+  | .invokeProcess _ origin input calledProcessId calledRootScopeId calledEntry returnOperationId
+      (.variableMappings inputs outputs) =>
+      CallVariableMapping.invokeState? program state origin input calledProcessId calledRootScopeId
+        calledEntry returnOperationId inputs outputs
+  | .returnProcess id origin calledProcessId calledRootScopeId callerOutput (.variableMappings inputs outputs) =>
+      CallVariableMapping.returnState? program state id origin calledProcessId calledRootScopeId
+        callerOutput inputs outputs
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
@@ -515,6 +447,8 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
       | scalar data =>
           exact .invokeScalarProcess id origin input process root entry returned data before after
             (invokeProcessWithDataState_sound _ _ _ _ _ _ _ _ _ result)
+      | variableMappings inputs outputs =>
+          exact .invokeMappedProcess id origin input process root entry returned inputs outputs before after result
     | rename_i id origin process root output data
       cases data with
       | empty =>
@@ -523,6 +457,8 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
       | scalar data =>
           exact .returnScalarProcess id origin process root output data before after
             (returnProcessWithDataState_sound _ _ _ _ _ _ _ _ result)
+      | variableMappings inputs outputs =>
+          exact .returnMappedProcess id origin process root output inputs outputs before after result
     | exact .awaitUserTask _ _ _ _ _ before after result
     | exact .awaitDataInputUserTask _ _ _ _ _ _ _ before after result
     | exact .awaitDataInputOutputUserTask _ _ _ _ _ _ _ _ before after result

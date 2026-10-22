@@ -83,6 +83,14 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
               root.originElementId.value = calledProcessId.value).length = 1 &&
             calledProcessId.value ≠ source.processId.value
       | _, _ => false
+    -- CVM-ADMIT-01: beside the entry root, a nested scope-data source holds the called root of each
+    -- of its Calls; the profile's analysis bounds the Calls and their placement.
+    else if source.identity.semanticProfile == nestedScopeDataProfileId then
+      entryRoots.length = 1 && roots.all fun root =>
+        root.originElementId.value = source.processId.value ||
+          source.nodes.any fun
+            | .callActivity _ calledProcessId _ => calledProcessId.value = root.originElementId.value
+            | _ => false
     else
       match roots with
       | [root] => root.originElementId.value = source.processId.value

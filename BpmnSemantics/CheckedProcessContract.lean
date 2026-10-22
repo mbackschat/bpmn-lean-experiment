@@ -50,17 +50,6 @@ inductive GatewayDirection where
   | converging
   deriving Repr, DecidableEq
 
-inductive MappingExpression where
-  | stringLiteral (value : String)
-  | localVariable (name : String)
-  | enclosingVariable (name : String)
-  deriving Repr, DecidableEq
-
-structure VariableMapping where
-  target : String
-  expression : MappingExpression
-  deriving Repr, DecidableEq
-
 inductive SimpleBooleanExpression where
   | literal (value : Bool)
   | isPresent (name : String)

@@ -65,6 +65,7 @@ theorem regionalSelection_filter_frame (program : Program) (before after : Runti
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found ⊢
           repeat' first | (solve | simp at found) | split at found

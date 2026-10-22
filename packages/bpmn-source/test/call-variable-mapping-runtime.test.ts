@@ -37,10 +37,10 @@ const bind = (name: string, value: VariableBinding["value"]): VariableBinding =>
 const start = (initialVariables: readonly VariableBinding[]): Stimulus => ({
   kind: StimulusKind.StartProcess, commandId: "start", processId: "Process_LoanApplication", instanceId, initialVariables,
 });
-const score: Stimulus = {
-  kind: StimulusKind.CompleteEffect, commandId: "score",
-  effectId: { processInstanceId: instanceId, elementId: "ScoreApplication", activation: 1 },
-  result: { kind: EffectExecutionResultKind.Success, localPatch: [bind("riskScore", text("low"))] },
+const acknowledge: Stimulus = {
+  kind: StimulusKind.CompleteEffect, commandId: "acknowledge",
+  effectId: { processInstanceId: instanceId, elementId: "AcknowledgeApplication", activation: 1 },
+  result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
 };
 const complete = (elementId: string, submittedValues: readonly VariableBinding[], processInstanceId = calledInstanceId):
   Stimulus => ({ kind: StimulusKind.CompleteUserTaskInstance, commandId: `complete-${elementId}`,
@@ -66,12 +66,11 @@ const processBindings = (state: RuntimeState) => state.variables.process.binding
 test("the loan application copies inputs by value, isolates called writes and lands outputs at the nearest owner", async () => {
   const program = await loanProgram();
   let state = commit(program, initialState, start([bind("amount", text("25000")), bind("applicant", text("Ada"))]));
-  state = commit(program, state, score);
+  state = commit(program, state, acknowledge);
   // CVM-IN-01: the called-root frame holds exactly the input targets, copied before the called instance exists.
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", text("Ada"))]);
   // CVM-TASK-01 and CVM-REFUSE-01: caller-only names, a caller-addressed completion and an unknown name are rejected.
-  rejected(program, state, complete("CollectDocument", [bind("riskScore", text("high"))]), "caller-only name");
-  rejected(program, state, complete("CollectDocument", [bind("applicant", text("Eve"))]), "unmapped caller source");
+  rejected(program, state, complete("CollectDocument", [bind("applicant", text("Eve"))]), "caller-only name");
   rejected(program, state, complete("CollectDocument", [], instanceId), "caller-addressed completion");
   rejected(program, state, complete("CollectDocument", [bind("unrelated", text("x"))]), "undeclared name");
   // CVM-ISOLATE-01: the namesake `amount` written by the called task stays in the called frame.
@@ -86,20 +85,19 @@ test("the loan application copies inputs by value, isolates called writes and la
   assert.deepEqual(state.variables.scopes.map(({ bindings }) => bindings), [[bind("decision", text("approved"))]]);
   assert.deepEqual(processBindings(state), [
     bind("amount", text("25000")), bind("applicant", text("Ada")), bind("decision", text("approved")),
-    bind("echoedCustomer", text("Ada")), bind("riskScore", text("low")),
+    bind("echoedCustomer", text("Ada")),
   ]);
   rejected(program, state, complete("RecordVerdict", [bind("verdict", text("late"))]), "stale called completion");
-  // The reviewer overrides the verdict inside the review frame, which outputs it as `finalDecision`.
+  // The reviewer overrides the verdict inside the review frame, which publishes it back to the Process `decision`.
   state = commit(program, state, complete("ConfirmDecision", [bind("decision", text("referred"))], instanceId));
   assert.equal(state.control.kind, "completed");
-  assert.deepEqual(processBindings(state).filter(({ name }) => name === "decision" || name === "finalDecision"),
-    [bind("decision", text("approved")), bind("finalDecision", text("referred"))]);
+  assert.deepEqual(processBindings(state).find(({ name }) => name === "decision"), bind("decision", text("referred")));
 });
 
 test("an absent input source copies a present null and an output source the callee never sets overwrites with null", async () => {
   const program = await loanProgram();
   let state = commit(program, initialState, start([bind("amount", text("25000")), bind("decision", text("old"))]));
-  state = commit(program, state, score);
+  state = commit(program, state, acknowledge);
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", nullValue)]);
   state = commit(program, state, complete("CollectDocument", []));
   state = commit(program, state, complete("RecordVerdict", []));

@@ -121,6 +121,16 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "A User Task completion may name only declared locals, within 16,384 canonical bytes",
     "a hosted Start whose structured values cannot fit the capacity envelope is refused",
   ]) assert.ok(subProcessRow.includes(disclosed), `Embedded Sub-Process row must disclose: ${disclosed}`);
+  const mappedCallRowStart = html.indexOf('data-capability-id="callActivityVariableMappings"');
+  assert.notEqual(mappedCallRowStart, -1);
+  const mappedCallRow = html.slice(mappedCallRowStart, html.indexOf("</tr>", mappedCallRowStart));
+  for (const disclosed of [
+    "root serial path to an in-document Process of one to three serial User Tasks",
+    "an absent source becoming a present null",
+    "called tasks read and write only the copied names and never reach caller data",
+    "a Call inside a Sub-Process, more than one Call",
+    "a hosted Start whose copied values cannot fit the capacity envelope is refused",
+  ]) assert.ok(mappedCallRow.includes(disclosed), `Call variable mapping row must disclose: ${disclosed}`);
   const parallelGatewayRowStart = html.indexOf('data-capability-id="parallelGateway"');
   assert.notEqual(parallelGatewayRowStart, -1);
   const parallelGatewayRow = html.slice(parallelGatewayRowStart, html.indexOf("</tr>", parallelGatewayRowStart));

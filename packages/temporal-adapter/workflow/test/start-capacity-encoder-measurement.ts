@@ -2,7 +2,7 @@
  * Drives one capacity journey through the real Workflow encoders and reports the worst bytes each Start envelope
  * budget measured, so the envelope's estimates can be checked against owners it never sees.
  *
- * Shared by the portable-handoff, effect-data and Message-payload envelope tests. Only stimuli the Workflow records
+ * Shared by the portable-handoff, effect-data, Message-payload, nested scope-data and Call variable mapping envelope tests. Only stimuli the Workflow records
  * for external recovery enter the ledger; a host-derived `CompleteEffect` does not, which the envelope's estimate
  * over-counts. Each committed payload delivery becomes the completed delivery record a successor's host input carries.
  */
@@ -14,10 +14,12 @@ import {
   StimulusKind,
   VariableValueKind,
   advanceScenario,
+  canonicalNamedValueArrayUtf8ByteLength,
   canonicalValueUtf8ByteLength,
   initialState,
   isSingletonBusinessItem,
   maximumCanonicalValueBytes,
+  nestedScopePatchByteLimit,
 } from "@bpmn-lean/semantic-core";
 import type {
   BusinessValue,
@@ -26,6 +28,7 @@ import type {
   SemanticProcessProgram,
   StartProcessStimulus,
   Stimulus,
+  VariableBinding,
 } from "@bpmn-lean/semantic-core";
 import {
   MessageDeliveryResolutionKind,
@@ -56,6 +59,22 @@ import {
   queryWorkflowPublicationSegment,
   selectWorkflowPublication,
 } from "../dist/workflow-publication-segments.js";
+
+/** A Map of 1,000-character Strings whose patch under `name` measures exactly the allowance. */
+export function fillingPatch(name: string): VariableBinding[] {
+  const text = (length: number): BusinessValue => ({ kind: VariableValueKind.String, value: "p".repeat(length) });
+  const value = (lengths: number[]): BusinessValue => ({ kind: VariableValueKind.Map,
+    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text(length) })) });
+  const lengths = Array.from({ length: 17 }, () => 1_000);
+  for (let index = lengths.length - 1; index >= 0; index -= 1) {
+    const excess = canonicalNamedValueArrayUtf8ByteLength([{ name, value: value(lengths) }]) - nestedScopePatchByteLimit;
+    if (excess <= 0) break;
+    lengths[index] = Math.max(0, lengths[index]! - excess);
+  }
+  const patch = [{ name, value: value(lengths) }];
+  assert.equal(canonicalNamedValueArrayUtf8ByteLength(patch), nestedScopePatchByteLimit);
+  return patch;
+}
 
 export type MeasuredStartCapacity = Readonly<Record<StartCapacityEnvelopeBudget, number>>;
 

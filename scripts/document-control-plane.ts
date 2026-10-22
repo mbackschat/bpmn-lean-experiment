@@ -392,8 +392,8 @@ function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
  */
 function withNestedScopeDataOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
   const nestedScopeData =
-    /^BpmnSemantics\/(?:SemanticProcess\/NestedScopeData[^/]*|NestedScopeDataConformance)\.lean$/u.test(file) ||
-    file.startsWith("scenarios/nested-embedded-scope-data/") ||
+    /^BpmnSemantics\/(?:SemanticProcess\/(?:NestedScopeData|CallVariableMapping)[^/]*|(?:NestedScopeData|CallVariableMapping)Conformance)\.lean$/u.test(file) ||
+    file.startsWith("scenarios/nested-embedded-scope-data/") || file.startsWith("scenarios/call-variable-mapping/") ||
     file.startsWith("profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/");
   return nestedScopeData ? [...routes, AreaId.EngineDataFamily] : routes;
 }

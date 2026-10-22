@@ -560,6 +560,49 @@
       }
     },
     {
+      "id": "loan-application-identity-check",
+      "title": "Check a loan applicant's identity through a called Process",
+      "businessPurpose": "Acknowledge a loan application, let a reusable identity-check Process collect a document and record a verdict on copied applicant data, then review and confirm the returned decision.",
+      "cloneFamily": "loan-application-identity-check",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/call-variable-mapping/loan-application.bpmn",
+        "sha256": "05fdf3ac371230c8deaee5ff0c6d62b904af9c11e866c2936a04170480f2844f",
+        "scenarioRelativePath": "scenarios/call-variable-mapping/loan-approved.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "call-variable-mapping-loan-approved",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected, no Product 2 handler registration exists for the acknowledgement and the browser does not yet present called-instance tasks of a mapped Call; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "external-service-recording",
       "title": "Record an external service effect",
       "businessPurpose": "Invoke an external service and finish the case only after its effect is recorded.",

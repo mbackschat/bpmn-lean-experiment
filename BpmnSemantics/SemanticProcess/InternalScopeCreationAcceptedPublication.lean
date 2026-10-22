@@ -262,6 +262,7 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
   | invokeProcess id selectedOrigin input process root entry returned data =>
       cases data with
       | scalar => simp at selection
+      | variableMappings => simp at selection
       | empty =>
           obtain ⟨owner, owned, selection⟩ := Option.bind_eq_some_iff.mp selection
           try dsimp only at selection

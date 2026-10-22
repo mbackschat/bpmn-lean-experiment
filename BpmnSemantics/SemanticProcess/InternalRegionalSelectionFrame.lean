@@ -37,6 +37,7 @@ theorem regionalSelection_read_frame (program : Program) (before after : Runtime
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found ⊢
           rw [associations, calls, scopes]

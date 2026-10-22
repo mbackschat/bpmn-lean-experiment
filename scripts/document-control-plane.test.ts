@@ -332,6 +332,9 @@ test("routes the nested scope-data artifacts to the data-flow family map beside 
     ["BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean", AreaId.EngineRuntimeProof],
     ["BpmnSemantics/NestedScopeDataConformance.lean", AreaId.EngineRuntimeProof],
     ["scenarios/nested-embedded-scope-data/README.md", AreaId.AssuranceAdoption],
+    ["BpmnSemantics/SemanticProcess/CallVariableMappingLaws.lean", AreaId.EngineRuntimeProof],
+    ["BpmnSemantics/CallVariableMappingConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/call-variable-mapping/README.md", AreaId.AssuranceAdoption],
     ["profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json", AreaId.EngineContractsSource],
   ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineDataFamily], file);
   for (const [file, owner] of [

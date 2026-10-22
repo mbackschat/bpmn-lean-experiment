@@ -1,0 +1,111 @@
+{
+  "kind": "scenario",
+  "id": "call-variable-mapping-loan-null-applicant",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "loan-application",
+    "relativePath": "scenarios/call-variable-mapping/loan-application.bpmn",
+    "sha256": "05fdf3ac371230c8deaee5ff0c6d62b904af9c11e866c2936a04170480f2844f",
+    "sourceOverlay": {
+      "id": "loan-application-handlers",
+      "sha256": "f95f96f2fb0cd324abb17d043f72d3d32a271ec34110e02f246f2a3692c3b3f3"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_LoanApplication",
+      "instanceId": "Loan_null_applicant",
+      "initialVariables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "string",
+            "value": "9000"
+          }
+        },
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:429108a29a81ff761c8d54d64a128ca3507cb8dc2bf7aca193a193a129db5309",
+      "effectId": {
+        "processInstanceId": "Loan_null_applicant",
+        "elementId": "AcknowledgeApplication",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-document",
+      "taskId": {
+        "processInstanceId": "call:19:Loan_null_applicant:14:VerifyIdentity:1",
+        "elementId": "CollectDocument",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-verdict",
+      "taskId": {
+        "processInstanceId": "call:19:Loan_null_applicant:14:VerifyIdentity:1",
+        "elementId": "RecordVerdict",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-decision",
+      "taskId": {
+        "processInstanceId": "Loan_null_applicant",
+        "elementId": "ConfirmDecision",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

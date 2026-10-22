@@ -84,6 +84,7 @@ private theorem scope_creation_selected_owner (state : RuntimeState)
   | invokeProcess _ _ _ _ _ _ _ data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
           dsimp only at found

@@ -325,10 +325,17 @@ export function completeDeclaredScope(program: SemanticProcessProgram,
   return written === null ? null : complete(written);
 }
 
-/** The names a frame on `owner`'s chain declares: exactly the names a NSD-TASK-01 completion patch may carry. */
+/**
+ * Exactly the names a completion patch from `owner` may carry, the single owner for admission and capacity
+ * reservation: NSD-TASK-01's names declared by a frame on the chain, or inside a called instance CVM-TASK-01's
+ * called-root names, since that frame grows by output sources the callee has not yet set.
+ */
 export function nestedScopeDeclaredNames(program: SemanticProcessProgram, variables: ScopedVariables,
   owner: ScopeOccurrenceId): ReadonlySet<string> {
-  return new Set(nestedDefinitionChain(program, owner.definitionScopeId).flatMap(scopeId =>
+  const chain = nestedDefinitionChain(program, owner.definitionScopeId);
+  const called = calledRootMappings(program, chain[chain.length - 1] ?? owner.definitionScopeId);
+  if (called !== undefined) return calledRootPatchNames(called);
+  return new Set(chain.flatMap(scopeId =>
     framesOf(variables, owner.processInstanceId, scopeId).flatMap(frame => frame.bindings.map(({ name }) => name))));
 }
 
@@ -339,10 +346,7 @@ export function nestedScopeDeclaredNames(program: SemanticProcessProgram, variab
  */
 export function nestedScopePatchAdmitted(program: SemanticProcessProgram, variables: ScopedVariables,
   owner: ScopeOccurrenceId, patch: readonly VariableBinding[]): boolean {
-  const chain = nestedDefinitionChain(program, owner.definitionScopeId);
-  const called = calledRootMappings(program, chain[chain.length - 1] ?? owner.definitionScopeId);
-  // CVM-TASK-01 replaces the declared-name rule inside a called instance, whose root frame grows by output sources.
-  const declared = called === undefined ? nestedScopeDeclaredNames(program, variables, owner) : calledRootPatchNames(called);
+  const declared = nestedScopeDeclaredNames(program, variables, owner);
   if (!patch.every((binding, index) => index === 0 || compareCanonicalStrings(patch[index - 1]!.name, binding.name) < 0) ||
       !patch.every(binding => declared.has(binding.name) && effectMappingAcceptsValue(itemPolicy, binding.value, true))) {
     return false;

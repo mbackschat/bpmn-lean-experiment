@@ -29,6 +29,8 @@ The [credit-decision model](../scenarios/portable-business-effect-data/README.md
 
 The [nested scope-data models](../scenarios/nested-embedded-scope-data/README.md) retain a purchase-order approval with three serial nested Sub-Process levels, an expense claim reviewed at the exact completion-patch allowance and a bulk quote that sizes the capacity envelope, under the nested scope-data profile, each bound to its registered pipeline case. They remain `notCatalogReady` because no production browser journey or Product 2 handler registration exists for structured values. The existing capability catalog supplies their About restriction on the Embedded Sub-Process row without a new UI surface.
 
+The [Call variable mapping model](../scenarios/call-variable-mapping/README.md) retains a loan application whose identity check runs in a called Process on copied applicant data and returns its verdict to the caller, under the same profile and bound to its registered pipeline case. It stays `notCatalogReady` for the same reason, and the catalog's Call variable mapping row discloses its restriction.
+
 The [shipment-manifest model](../scenarios/portable-business-message-payload/README.md) retains an Intermediate Catch Message Event whose payload is one structured manifest, recorded on the case and reviewed by a User Task, under the portable Message-payload profile, bound to its registered delivered-manifest pipeline case. It remains `notCatalogReady` because no production browser journey is selected and the Product 2 decoders refuse structured values. The existing capability catalog supplies its About restriction on the Message payload catch row without a new UI surface.
 
 ## Admission and product-readiness gate

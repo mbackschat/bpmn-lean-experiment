@@ -1,5 +1,6 @@
 import BpmnSemantics.SemanticProcess.CallDataContract
 import BpmnSemantics.SemanticProcessJson.ActivityData
+import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! Closed Call data decoding preserves declarations; contextual admission owns correspondence. -/
 
@@ -56,6 +57,10 @@ def decodeCallDataInterface (json : Json) : Except String CallDataInterface := d
           call := ← decodeIo (← field json "call")
           called := ← decodeIo (← field json "called")
           directInput, directOutput })
+  | "variableMappings" =>
+      requireObjectShape json ["kind", "inputs", "outputs"]
+      pure (.variableMappings (← decodeArray decodeVariableMapping (← field json "inputs"))
+        (← decodeArray decodeVariableMapping (← field json "outputs")))
   | kind => throw s!"unsupported Call data interface {kind}"
 
 end BpmnSemantics.SemanticProcessJson

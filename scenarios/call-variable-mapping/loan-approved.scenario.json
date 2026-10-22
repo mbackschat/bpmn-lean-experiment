@@ -1,0 +1,174 @@
+{
+  "kind": "scenario",
+  "id": "call-variable-mapping-loan-approved",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "loan-application",
+    "relativePath": "scenarios/call-variable-mapping/loan-application.bpmn",
+    "sha256": "05fdf3ac371230c8deaee5ff0c6d62b904af9c11e866c2936a04170480f2844f",
+    "sourceOverlay": {
+      "id": "loan-application-handlers",
+      "sha256": "f95f96f2fb0cd324abb17d043f72d3d32a271ec34110e02f246f2a3692c3b3f3"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_LoanApplication",
+      "instanceId": "Loan_approved",
+      "initialVariables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "string",
+            "value": "25000"
+          }
+        },
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "string",
+            "value": "Ada"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:7b74589a7fec68217cac89e014852f23a5522b8b5397bd51380a20886b46415f",
+      "effectId": {
+        "processInstanceId": "Loan_approved",
+        "elementId": "AcknowledgeApplication",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-caller-addressed-completion",
+      "taskId": {
+        "processInstanceId": "Loan_approved",
+        "elementId": "CollectDocument",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-caller-only-name",
+      "taskId": {
+        "processInstanceId": "call:13:Loan_approved:14:VerifyIdentity:1",
+        "elementId": "CollectDocument",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "string",
+            "value": "Eve"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-document",
+      "taskId": {
+        "processInstanceId": "call:13:Loan_approved:14:VerifyIdentity:1",
+        "elementId": "CollectDocument",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "string",
+            "value": "1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-verdict",
+      "taskId": {
+        "processInstanceId": "call:13:Loan_approved:14:VerifyIdentity:1",
+        "elementId": "RecordVerdict",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-stale-record-verdict",
+      "taskId": {
+        "processInstanceId": "call:13:Loan_approved:14:VerifyIdentity:1",
+        "elementId": "RecordVerdict",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "late"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-decision",
+      "taskId": {
+        "processInstanceId": "Loan_approved",
+        "elementId": "ConfirmDecision",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "referred"
+          }
+        }
+      ]
+    }
+  ]
+}

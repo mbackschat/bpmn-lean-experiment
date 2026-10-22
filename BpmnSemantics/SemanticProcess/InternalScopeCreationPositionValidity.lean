@@ -321,6 +321,7 @@ private theorem selection_created_facts (program : Program) (state : RuntimeStat
   | invokeProcess id origin input process scopeId entry returnOperation data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
           repeat first | contradiction | split at found

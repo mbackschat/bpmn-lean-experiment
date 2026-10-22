@@ -19,6 +19,7 @@ theorem regionalSelection_lifecycle_owner (program : Program) (state : RuntimeSt
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           repeat' first
@@ -94,6 +95,7 @@ theorem regionalSelection_lifecycle_facts (program : Program) (state : RuntimeSt
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           repeat' first

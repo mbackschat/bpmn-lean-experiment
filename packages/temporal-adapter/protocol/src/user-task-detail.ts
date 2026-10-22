@@ -31,14 +31,21 @@ export function projectUserTaskDetail(
   }
   const selectedNames = new Set(request.inputVariableNames);
   const waits = state.userTaskWaits.filter(({ id }) => sameOccurrenceId(id, task.id));
+  const owner = waits.length === 1 ? waits[0]?.owner : undefined;
   const callerOwned = state.control.kind === ControlStateKind.Running &&
     task.id.processInstanceId === state.control.instanceId &&
-    waits.length === 1 && waits[0]?.owner.processInstanceId === state.control.instanceId;
+    owner?.processInstanceId === state.control.instanceId;
+  // CVM-OBSERVE-01: a mapped called task sees only its called-root frame, never a caller binding;
+  // a called task without that frame (scalar call data) keeps seeing nothing.
+  const calledFrame = !callerOwned && owner?.processInstanceId === task.id.processInstanceId
+    ? state.variables.scopes.find(({ owner: frameOwner }) =>
+      frameOwner.processInstanceId === owner.processInstanceId &&
+      frameOwner.definitionScopeId === owner.definitionScopeId && frameOwner.activation === owner.activation)
+    : undefined;
+  const visible = callerOwned ? state.variables.process.bindings : calledFrame?.bindings ?? [];
   return {
     task,
-    inputVariables: callerOwned ? state.variables.process.bindings.filter(
-      ({ name }) => selectedNames.has(name),
-    ) : [],
+    inputVariables: visible.filter(({ name }) => selectedNames.has(name)),
   };
 }
 

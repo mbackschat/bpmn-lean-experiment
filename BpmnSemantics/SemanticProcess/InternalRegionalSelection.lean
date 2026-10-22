@@ -99,6 +99,15 @@ theorem regionalSelection_scalar_return_refused (program : Program) (state : Run
       (.returnProcess id origin process definition output (.scalar data)) = none := by
   cases control : state.control <;> simp [selectInternalRegional?, runningInstance?, control]
 
+/-- CVM-OUT-01 writes its outputs through the Program's scope chain, so a mapped return stays on the
+singleton path rather than control-only regional preparation. -/
+theorem regionalSelection_mapped_return_refused (program : Program) (state : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (process : ProcessId)
+    (definition : DefinitionScopeId) (output : ControlPlaceId) (inputs outputs : List VariableMapping) :
+    selectInternalRegional? program state
+      (.returnProcess id origin process definition output (.variableMappings inputs outputs)) = none := by
+  cases control : state.control <;> simp [selectInternalRegional?, runningInstance?, control]
+
 /-- Exact matching Error selection remains available for arbitrary occurrence identities. -/
 theorem regionalSelection_error_of_facts (program : Program) (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
@@ -331,6 +340,7 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found
           change ∃ after, returnProcessState? state id origin process definition output = some after

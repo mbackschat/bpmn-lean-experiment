@@ -134,6 +134,7 @@ theorem scopeCreation_rootCompensationDomain (program : Program) (state : Runtim
               | invokeProcess id callOrigin input process scope entry returnOperation data =>
                   cases data with
                   | scalar => simp [internalScopeCreationDefinitionMatches] at definitionMatches
+                  | variableMappings => simp [internalScopeCreationDefinitionMatches] at definitionMatches
                   | empty =>
                       have member := invocationMember id callOrigin input process scope entry returnOperation rfl
                       simp only [compensationActivityRetentionDeclarationValid, retentionPresent,

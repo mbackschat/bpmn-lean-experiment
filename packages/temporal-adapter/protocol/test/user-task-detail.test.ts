@@ -38,6 +38,15 @@ test("called task detail exposes its copied inputs without selecting caller Prop
   assert.deepEqual(detail.task.inputs, state.variables.activities[0]!.bindings);
 });
 
+test("CVM-OBSERVE-01: a mapped called task reads selected names from its called-root frame only", () => {
+  const state = taskState("Called", "CalledRoot");
+  const frame = { owner: state.userTaskWaits[0]!.owner,
+    bindings: [{ name: "SharedName", value: { kind: VariableValueKind.String, value: "Called copy" } }] };
+  const detail = projectUserTaskDetail({ ...state, variables: { ...state.variables, scopes: [frame] } },
+    { taskId: state.userTaskWaits[0]!.id, inputVariableNames: ["SharedName", "riskScore"] });
+  assert.deepEqual(detail?.inputVariables, frame.bindings);
+});
+
 test("hosting caller tasks retain selected Properties, including tasks in embedded scopes", () => {
   for (const scope of ["CallerRoot", "EmbeddedScope"]) {
     const state = taskState("Caller", scope);

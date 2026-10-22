@@ -3,6 +3,7 @@ import { structuredCompositionPipelineCases } from "./structured-composition-pip
 import { portableHandoffPipelineCases } from "./portable-handoff-pipeline-cases.ts";
 import { effectDataPipelineCases } from "./effect-data-pipeline-cases.ts";
 import { nestedScopeDataPipelineCases } from "./nested-scope-data-pipeline-cases.ts";
+import { callVariableMappingPipelineCases } from "./call-variable-mapping-pipeline-cases.ts";
 import { nestedScopeControlPipelineCases } from "./nested-scope-control-pipeline-cases.ts";
 import { concurrentEmbeddedActivationsPipelineCases } from "./concurrent-embedded-activations-pipeline-cases.ts";
 import { portableMessagePayloadPipelineCases } from "./portable-message-payload-pipeline-cases.ts";
@@ -593,6 +594,7 @@ export const pipelineCases = Object.freeze([
   ...portableHandoffPipelineCases,
   ...effectDataPipelineCases,
   ...nestedScopeDataPipelineCases,
+  ...callVariableMappingPipelineCases,
   ...portableMessagePayloadPipelineCases,
   ...cyclicControlFlowPipelineCases,
   ...messageStartPipelineCases,

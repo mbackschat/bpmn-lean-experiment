@@ -58,6 +58,7 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp at found
+      | variableMappings => simp at found
       | empty =>
           dsimp only at found ⊢
           rw [populations.1]
@@ -375,6 +376,7 @@ theorem scopeCreation_regional_selection
     | returnProcess id returnOrigin process rootDefinition output data =>
         cases data with
         | scalar => simp [regionalSelection_scalar_return_refused] at found
+        | variableMappings => simp [regionalSelection_mapped_return_refused] at found
         | empty =>
             obtain ⟨record, kind, rootId, census⟩ := regionalSelection_return_record program state
               id returnOrigin process rootDefinition output regional.selection found

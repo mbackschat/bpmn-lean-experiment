@@ -64,6 +64,26 @@ def framesOf (scopes : List ScopeVariableScope) (instanceId : SemanticId) (scope
   scopes.filter fun frame =>
     frame.owner.processInstanceId == instanceId && frame.owner.definitionScopeId == scopeId
 
+/-- The `camunda:in`/`camunda:out` copies of the unique invocation creating `scopeId`, when that
+scope is a called root of this profile; the frame such an invocation installs stands in for the
+called instance's Process data (CVM-RESOLVE-01). -/
+def calledRootMappings? (program : Program) (scopeId : DefinitionScopeId) :
+    Option (List VariableMapping × List VariableMapping) :=
+  if nestedScopeDataProgram program then
+    match program.operations.filter (fun
+        | .invokeProcess _ _ _ _ calledRootScopeId .. => calledRootScopeId == scopeId
+        | _ => false) with
+    | [.invokeProcess _ _ _ _ _ _ _ (.variableMappings inputs outputs)] => some (inputs, outputs)
+    | _ => none
+  else none
+
+/-- The called root a definition chain ends at, if any; resolution from it never reaches the hosting
+instance's Process data. -/
+def calledRootOf? (program : Program) (chain : List DefinitionScopeId) : Option DefinitionScopeId :=
+  match chain.getLast? with
+  | some scopeId => if (calledRootMappings? program scopeId).isSome then some scopeId else none
+  | none => none
+
 inductive Owner where
   | frame (owner : ScopeOccurrenceId)
   | process
@@ -87,20 +107,60 @@ def resolveOwner? (scopes : List ScopeVariableScope) (instanceId : SemanticId) :
 `SingletonBusinessItem`, so a stored binding is never trusted for having been written earlier. -/
 def read? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
     (scopeId : DefinitionScopeId) (name : String) : Option VariableValue := do
-  match ← resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) name with
-  | .process => enclosingVariableUnder? .singletonBusinessItem variables.process.bindings name
+  let chain := definitionChain program.definitionScopes scopeId
+  match ← resolveOwner? variables.scopes instanceId chain name with
+  | .process =>
+      match calledRootOf? program chain with
+      | none => enclosingVariableUnder? .singletonBusinessItem variables.process.bindings name
+      | some _ => none
   | .frame owner =>
       let frame ← selectScopeVariables? variables owner
       enclosingVariableUnder? .singletonBusinessItem frame.bindings name
 
-/-- NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process binding;
-never create a local and never touch another frame. -/
+/-- A binding read that keeps absence apart from refusal: `some none` for no binding, `none` for a
+repeated binding or a value outside the item domain. Call mappings copy an absent name as a present
+null (CVM-IN-01, CVM-OUT-01) but never fabricate one for a refused read. -/
+def bindingOutcome? (bindings : List VariableBinding) (name : String) : Option (Option VariableValue) :=
+  match bindings.filter (·.name == name) with
+  | [] => some none
+  | [binding] =>
+      if EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value then some (some binding.value)
+      else none
+  | _ => none
+
+/-- NSD-READ-01 with absence kept apart from refusal; an undeclared name at a called root is absent. -/
+def readOutcome? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
+    (scopeId : DefinitionScopeId) (name : String) : Option (Option VariableValue) := do
+  let chain := definitionChain program.definitionScopes scopeId
+  match ← resolveOwner? variables.scopes instanceId chain name with
+  | .process =>
+      match calledRootOf? program chain with
+      | none => bindingOutcome? variables.process.bindings name
+      | some root =>
+          let [_] := framesOf variables.scopes instanceId root | none
+          some none
+  | .frame owner =>
+      let frame ← selectScopeVariables? variables owner
+      bindingOutcome? frame.bindings name
+
+/-- NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process binding, or
+the called-root frame's binding when the chain ends at a called root (CVM-RESOLVE-01, as CIB's
+`setVariable` creates on the process instance); never create a local and never touch another frame. -/
 def write? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
     (scopeId : DefinitionScopeId) (binding : VariableBinding) : Option ScopedVariables := do
-  match ← resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name with
+  let chain := definitionChain program.definitionScopes scopeId
+  match ← resolveOwner? variables.scopes instanceId chain binding.name with
   | .process =>
-      some { variables with process :=
-        { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } }
+      match calledRootOf? program chain with
+      | none =>
+          some { variables with process :=
+            { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } }
+      | some root =>
+          let [frame] := framesOf variables.scopes instanceId root | none
+          some { variables with scopes := variables.scopes.map fun candidate =>
+            if candidate.owner = frame.owner then
+              { candidate with bindings := mergeProcessVariableBindings candidate.bindings [binding] }
+            else candidate }
   | .frame owner =>
       let _ ← selectScopeVariables? variables owner
       some { variables with scopes := variables.scopes.map fun frame =>

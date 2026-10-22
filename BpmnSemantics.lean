@@ -12,6 +12,7 @@ import BpmnSemantics.SemanticProcess.OpenWaitProjectionLaws
 import BpmnSemantics.SemanticProcess.CallDataTransferLaws
 import BpmnSemantics.SemanticProcess.ErrorPropagation
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
+import BpmnSemantics.SemanticProcess.CallVariableMappingLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeTransition

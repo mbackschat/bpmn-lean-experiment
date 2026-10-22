@@ -281,6 +281,7 @@ private theorem prepared_repeated_scope_separate (program : Program) (state : Ru
   | invokeProcess id origin input process scope childEntry returned data =>
     cases data with
     | scalar => simp at selection
+    | variableMappings => simp at selection
     | empty =>
       obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
       dsimp only at selection

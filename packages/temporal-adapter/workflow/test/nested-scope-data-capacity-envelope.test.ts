@@ -11,8 +11,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { EffectExecutionResultKind, StimulusKind, VariableValueKind, canonicalNamedValueArrayUtf8ByteLength,
-  nestedScopePatchByteLimit } from "@bpmn-lean/semantic-core";
+import { EffectExecutionResultKind, StimulusKind } from "@bpmn-lean/semantic-core";
 import type { BusinessValue, SemanticProcessProgram, StartProcessStimulus, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
 import {
   StartCapacityEnvelopeResultKind,
@@ -27,27 +26,11 @@ import {
 import type { StartCapacityEstimates } from "@bpmn-lean/temporal-protocol";
 
 import { claimStart, claimValue, nestedScopeProgram } from "../../protocol/test/nested-scope-data-capacity-fixture.ts";
-import { escapeHeavyAllowanceValue, measureWithWorkflowEncoders } from "./start-capacity-encoder-measurement.ts";
+import { escapeHeavyAllowanceValue, fillingPatch, measureWithWorkflowEncoders } from "./start-capacity-encoder-measurement.ts";
 import type { MeasuredStartCapacity } from "./start-capacity-encoder-measurement.ts";
 
 const production = productionStartCapacityEnvelopeLimits();
 const reserved = (ordinal: number) => `${"c".repeat(reservedFutureCommandIdBytes - 1)}${ordinal}`;
-
-/** A Map of 1,000-character Strings whose patch under `name` measures exactly the allowance. */
-function fillingPatch(name: string): VariableBinding[] {
-  const text = (length: number): BusinessValue => ({ kind: VariableValueKind.String, value: "p".repeat(length) });
-  const value = (lengths: number[]): BusinessValue => ({ kind: VariableValueKind.Map,
-    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text(length) })) });
-  const lengths = Array.from({ length: 17 }, () => 1_000);
-  for (let index = lengths.length - 1; index >= 0; index -= 1) {
-    const excess = canonicalNamedValueArrayUtf8ByteLength([{ name, value: value(lengths) }]) - nestedScopePatchByteLimit;
-    if (excess <= 0) break;
-    lengths[index] = Math.max(0, lengths[index]! - excess);
-  }
-  const patch = [{ name, value: value(lengths) }];
-  assert.equal(canonicalNamedValueArrayUtf8ByteLength(patch), nestedScopePatchByteLimit);
-  return patch;
-}
 
 function claimCompletions(start: StartProcessStimulus, patch: VariableBinding[], result: BusinessValue = fullAllowanceValue()): Stimulus[] {
   const occurrence = (elementId: string) => ({ processInstanceId: start.instanceId, elementId, activation: 1 });

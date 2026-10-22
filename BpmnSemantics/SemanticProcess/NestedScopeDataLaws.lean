@@ -102,14 +102,16 @@ theorem write?_frame (program : Program) (variables result : ScopedVariables) (i
   cases selected : selectScopeVariables? variables owner <;> simp [selected] at written
   exact written.symm
 
-/-- NSD-WRITE-01, Process case: the write creates or replaces the Process binding and changes no frame. -/
+/-- NSD-WRITE-01, Process case outside a called instance: the write creates or replaces the Process
+binding and changes no frame. -/
 theorem write?_process (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
     (scopeId : DefinitionScopeId) (binding : VariableBinding)
     (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name =
-      some .process) :
+      some .process)
+    (hosted : calledRootOf? program (definitionChain program.definitionScopes scopeId) = none) :
     write? program variables instanceId scopeId binding = some { variables with process :=
       { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } } := by
-  simp [write?, resolved]
+  simp [write?, resolved, hosted]
 
 /-- NSD-INIT-01: a declared scope's frame holds exactly the inputs evaluated against the parent
 occurrence's chain in the predecessor state, and entry initialization changes nothing else. -/

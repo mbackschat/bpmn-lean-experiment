@@ -39,10 +39,19 @@ def patchUtf8Bytes? (patch : List VariableBinding) : Option Nat := do
 /-- One value allowance: the patch limit equals the per-value limit of the portable value contract. -/
 def patchByteLimit : Nat := 16384
 
+/-- The names declared on the owner's chain; at a called root, CVM-TASK-01 adds the output sources,
+which the callee may set before return although no input copied them. -/
 def declaredNames (program : Program) (variables : ScopedVariables) (owner : ScopeOccurrenceId) :
     List String :=
-  (definitionChain program.definitionScopes owner.definitionScopeId).flatMap fun scopeId =>
+  let chain := definitionChain program.definitionScopes owner.definitionScopeId
+  let framed := chain.flatMap fun scopeId =>
     (framesOf variables.scopes owner.processInstanceId scopeId).flatMap fun frame => frame.bindings.map (·.name)
+  let sources := match calledRootOf? program chain >>= calledRootMappings? program with
+    | some (_, outputs) => outputs.filterMap fun mapping => match mapping.expression with
+        | .localVariable name => some name
+        | _ => none
+    | none => []
+  framed ++ sources
 
 /-- NSD-TASK-01: distinct names in canonical order, each declared on the owner's chain, each an
 admitted `SingletonBusinessItem`, and the whole patch within one value allowance. -/
@@ -52,6 +61,12 @@ def patchAdmitted (program : Program) (variables : ScopedVariables) (owner : Sco
     patch.all (fun binding => (declaredNames program variables owner).contains binding.name &&
       EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value) &&
     (patchUtf8Bytes? patch).any (· ≤ patchByteLimit)
+
+/-- CVM-REFUSE-01: besides the running root, a task may belong to a called instance that a live Call
+record of the root created; a task of any other instance is refused. -/
+def calledTaskOfHost (state : RuntimeState) (host : SemanticId) (taskId : UserTaskInstanceId) : Bool :=
+  state.calledProcessOccurrences.any fun record =>
+    record.caller.processInstanceId == host && record.calledRoot.processInstanceId == taskId.processInstanceId
 
 /-- Both completions re-check Program admission, as the parallel Multi-Instance stimulus gate does, so
 a Program of this profile that admission refuses completes no task. -/

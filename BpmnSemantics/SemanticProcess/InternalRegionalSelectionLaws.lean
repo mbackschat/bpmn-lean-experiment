@@ -27,6 +27,7 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp [selectInternalRegional?, runningInstance?, running] at found
+      | variableMappings => simp [selectInternalRegional?, runningInstance?, running] at found
       | empty =>
           exact declaredReturn_preserves_position program state after expectedInstanceId hosting id origin process definition output
             valid structural running declared result

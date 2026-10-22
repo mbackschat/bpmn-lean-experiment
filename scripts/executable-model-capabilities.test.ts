@@ -473,7 +473,7 @@ test("classifies the interrupting Timer by its sequential Multi-Instance host", 
   );
 });
 
-test("Call inventory distinguishes scalar interfaces from the empty-data capability", async () => {
+test("Call inventory distinguishes scalar interfaces and variable mappings from the empty-data capability", async () => {
   assert.match(mvpBpmnCapabilities.find(row => row.id === "directDataInputOutputUserTask")!.restriction, /called Process interface/u);
   const scalar = await readFile(new URL("../packages/bpmn-source/test/fixtures/call-activity-data-boundaries.bpmn", import.meta.url), "utf8");
   const empty = await readFile(new URL("../scenarios/called-process-call-activity/process.bpmn", import.meta.url), "utf8");
@@ -485,4 +485,9 @@ test("Call inventory distinguishes scalar interfaces from the empty-data capabil
   const capabilities = detectExecutableBpmnCapabilities(empty);
   assert.ok(capabilities.includes("callActivity"));
   assert.ok(!capabilities.includes("callActivityScalarData"));
+  assert.ok(!capabilities.includes("callActivityVariableMappings"));
+  const mapped = detectExecutableBpmnCapabilities(
+    await readFile(new URL("../scenarios/call-variable-mapping/loan-application.bpmn", import.meta.url), "utf8"));
+  assert.ok(mapped.includes("callActivityVariableMappings"));
+  assert.ok(!mapped.includes("callActivity"));
 });

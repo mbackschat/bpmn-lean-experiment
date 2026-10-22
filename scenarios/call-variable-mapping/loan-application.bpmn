@@ -4,13 +4,12 @@
              id="Definitions_LoanApplication" targetNamespace="urn:bpmn-lean:loan-application">
   <process id="Process_LoanApplication" name="Decide a loan application" isExecutable="true">
     <startEvent id="ApplicationReceived" name="Application received" />
-    <serviceTask id="ScoreApplication" name="Score application"
+    <serviceTask id="AcknowledgeApplication" name="Acknowledge application"
                  implementation="urn:bpmn-lean:effect-protocol:activity-v1"
-                 camunda:delegateExpression="${scoreApplication}" camunda:asyncBefore="true">
+                 camunda:delegateExpression="${acknowledgeApplication}" camunda:asyncBefore="true">
       <extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="amount">${amount}</camunda:inputParameter>
-          <camunda:outputParameter name="riskScore">${riskScore}</camunda:outputParameter>
         </camunda:inputOutput>
       </extensionElements>
     </serviceTask>
@@ -26,7 +25,7 @@
       <extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="decision">${decision}</camunda:inputParameter>
-          <camunda:outputParameter name="finalDecision">${decision}</camunda:outputParameter>
+          <camunda:outputParameter name="decision">${decision}</camunda:outputParameter>
         </camunda:inputOutput>
       </extensionElements>
       <startEvent id="ReviewOpened" name="Review opened" />
@@ -36,8 +35,8 @@
       <sequenceFlow id="Flow_ReviewConfirmed" sourceRef="ConfirmDecision" targetRef="ReviewClosed" />
     </subProcess>
     <endEvent id="ApplicationDecided" name="Application decided" />
-    <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="ScoreApplication" />
-    <sequenceFlow id="Flow_Scored" sourceRef="ScoreApplication" targetRef="VerifyIdentity" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="AcknowledgeApplication" />
+    <sequenceFlow id="Flow_Acknowledged" sourceRef="AcknowledgeApplication" targetRef="VerifyIdentity" />
     <sequenceFlow id="Flow_Verified" sourceRef="VerifyIdentity" targetRef="ReviewApplication" />
     <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewApplication" targetRef="ApplicationDecided" />
   </process>

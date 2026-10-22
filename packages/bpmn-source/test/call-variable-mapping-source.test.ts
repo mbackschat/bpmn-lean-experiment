@@ -82,7 +82,7 @@ test("CVM-ADMIT-01 refuses each excluded Call attribute and mapping form", async
     ["absent calledElement", callElement, callElement.replace('"Process_IdentityVerification"', '"Process_Missing"')],
     ["calledElementBinding", callElement, callElement.replace(">", ' camunda:calledElementBinding="latest">')],
     ["called Service Task", '<userTask id="RecordVerdict" name="Record verdict" />',
-      '<serviceTask id="RecordVerdict" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${scoreApplication}" camunda:asyncBefore="true"/>'],
+      '<serviceTask id="RecordVerdict" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${acknowledgeApplication}" camunda:asyncBefore="true"/>'],
     ["inputOutput on the Call", firstIn,
       `${firstIn}<camunda:inputOutput><camunda:inputParameter name="x">y</camunda:inputParameter></camunda:inputOutput>`],
   ];

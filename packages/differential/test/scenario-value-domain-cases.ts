@@ -113,6 +113,10 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   addEffectDataCases(selected.get(SemanticProfileId.PortableBusinessEffectData)!, add);
   addMessagePayloadCases(selected.get(SemanticProfileId.PortableBusinessMessagePayload)!, add);
   addNestedScopeDataCases(selected.get(SemanticProfileId.NestedEmbeddedScopeData)!, add);
+  // The Call variable mapping shares the nested profile, so its loan application is not the profile's selected context.
+  const loan = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "call-variable-mapping-loan-approved")))[0];
+  assert.ok(loan !== undefined, "the loan application schedule is registered");
+  addCallVariableMappingCases(loan, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -308,4 +312,27 @@ function addNestedScopeDataCases(context: DomainContext, add: AddCase): void {
       add(context, `${surface}-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
     }
   }
+}
+
+/**
+ * The loan application's Start names are derived from the Call (CVM-START-01): `amount` is read by the caller's effect and
+ * Call input, `applicant` is a Call source whose absence or present null is a valid Start (CVM-IN-01), `decision` is an
+ * output target the Process may already bind, and the called-only `customer` and output source `verdict` exist in no
+ * caller scope. Each case changes one fact of the retained answer-free Start, so only that fact can move the expectation.
+ */
+function addCallVariableMappingCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess);
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+  const without = (name: string) => start.initialVariables.filter(binding => binding.name !== name);
+  // Appended names sort after every retained one, which keeps the canonical name order.
+  const appended = (name: string) => [...start.initialVariables, { name, value: values[0]! }];
+  startWith("invalid-start-data-missing-required", without("amount"), false);
+  startWith("invalid-start-data-called-only-name", appended("customer"), false);
+  startWith("invalid-start-data-output-source-name", appended("verdict"), false);
+  startWith("valid-start-data-absent-call-source", without("applicant"), true);
+  startWith("valid-start-data-present-null-call-source", start.initialVariables.map(binding =>
+    binding.name === "applicant" ? { ...binding, value: { kind: VariableValueKind.Null } } : binding), true);
+  startWith("valid-start-data-output-target", appended("decision"), true);
 }

@@ -22,6 +22,12 @@ const eventDefinitionNames = new Set([
   "timerEventDefinition",
 ]);
 
+/** `camunda:in`/`camunda:out` are classified by local name, as every other marker here. */
+function hasCallVariableMapping(element: XmlElement): boolean {
+  return element.children.some((child) => child.name === "extensionElements" &&
+    child.children.some(({ name }) => name === "in" || name === "out"));
+}
+
 export function detectExecutableBpmnCapabilities(
   xml: string,
 ): ReadonlyArray<MvpBpmnCapabilityId> {
@@ -76,7 +82,8 @@ export function detectExecutableBpmnCapabilities(
         break;
       case "callActivity":
         rejectLoopVariant(element);
-        capabilities.add(hasDirectChild(element, "ioSpecification") ? "callActivityScalarData" : "callActivity");
+        capabilities.add(hasDirectChild(element, "ioSpecification") ? "callActivityScalarData"
+          : hasCallVariableMapping(element) ? "callActivityVariableMappings" : "callActivity");
         break;
       case "subProcess":
         rejectLoopVariant(element);

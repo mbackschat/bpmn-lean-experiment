@@ -17,6 +17,7 @@ theorem returning_record_member (program : Program) (state : RuntimeState)
   | returnProcess id origin process definition output data =>
       cases data with
       | scalar => simp [regionalSelection_scalar_return_refused] at found
+      | variableMappings => simp [regionalSelection_mapped_return_refused] at found
       | empty =>
           obtain ⟨actual, actualKind, _, census⟩ :=
             regionalSelection_return_record program state id origin process definition output selected found

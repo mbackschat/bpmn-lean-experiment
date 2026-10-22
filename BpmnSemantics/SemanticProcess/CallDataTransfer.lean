@@ -40,6 +40,9 @@ def invokeProcessWithDataState? (state : RuntimeState) (origin : BpmnElementOrig
         let invoked ← invokeProcessState? state origin input calledProcessId calledRootScopeId calledEntry returnOperationId
         some { invoked with variables }
       else none
+  -- Mapped copies resolve names through the Program's scope chain, so the dispatcher routes them to
+  -- `CallVariableMapping.invokeState?`; this Program-free transfer refuses them.
+  | .variableMappings .. => none
 
 def returnProcessWithDataState? (state : RuntimeState) (id : OperationId)
     (origin : BpmnElementOrigin) (calledProcessId : ProcessId)
@@ -55,6 +58,7 @@ def returnProcessWithDataState? (state : RuntimeState) (id : OperationId)
         let variables ← writeActivityDataOutput? .scalar returned record.caller returned.variables data.directOutput binding
         some { returned with variables }
       else none
+  | .variableMappings .. => none
 
 /-- Input transfer fixes the exact source, fresh owner, scalar snapshot and complete control step. -/
 inductive InvokeScalarProcessStep : RuntimeState → BpmnElementOrigin → ControlPlaceId →
