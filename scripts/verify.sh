@@ -23,6 +23,7 @@ verify_common() {
 
 verify_lean_library() {
   LEAN_FULL_GATE=verify-lean-library ./scripts/lake.sh test
+  LEAN_FULL_GATE=verify-lean-conformance ./scripts/lake.sh build BpmnConformance
 }
 
 verify_lean_checks() {

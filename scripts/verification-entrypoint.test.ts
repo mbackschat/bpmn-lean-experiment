@@ -242,7 +242,7 @@ test("the semantic package gate uses the library test driver without a duplicate
   ) as { scripts?: Record<string, string> };
   assert.equal(
     manifest.scripts?.["test:semantic"],
-    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && LEAN_FULL_GATE=test-semantic ./scripts/lake.sh build BpmnConformance && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
   );
 });
 
@@ -299,12 +299,16 @@ test("hosted cold Lean builds have recovery headroom instead of a 30-minute cuto
   assert.match(completed, /cache-hit != 'true'/u);
 });
 
-test("the hosted Lean cache identity includes the root import closure and nested sources", async () => {
+test("the hosted Lean cache identity includes every library root and nested sources", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   assert.match(
     workflow,
-    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnSemantics\/\*\*\/\*\.lean'\)/u,
+    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnConformance\.lean', 'BpmnSemantics\/\*\*\/\*\.lean'\)/u,
   );
+  const libraries = [...(await readFile("lakefile.toml", "utf8")).matchAll(/^\[\[lean_lib\]\]\nname = "([^"]+)"$/gmu)]
+    .map((match) => match[1]!);
+  assert.deepEqual(libraries, ["BpmnSemantics", "BpmnConformance"]);
+  for (const library of libraries) assert.match(workflow, new RegExp(`hashFiles\\([^)]*'${library}\\.lean'`, "u"), library);
 });
 
 test("hosted Lean checks consume the completed library output in a separate bounded job", async () => {

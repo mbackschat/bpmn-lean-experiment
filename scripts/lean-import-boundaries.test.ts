@@ -11,6 +11,7 @@ import {
 
 const semanticProcessUmbrella = "BpmnSemantics/SemanticProcess.lean";
 const semanticLibraryRoot = "BpmnSemantics.lean";
+const conformanceLibraryRoot = "BpmnConformance.lean";
 const externalA12ResearchTree = "adoption/a12/legacy/source-tree/";
 const experimentTree = "BpmnSemantics/Experiments/";
 
@@ -204,7 +205,17 @@ function forbiddenImportPaths(
   });
 }
 
-export function unreachableMaintainedAssuranceModules(
+/**
+ * Lean modules the two library roots assign wrongly, as `<module>: <reason>` lines.
+ *
+ * The semantic root builds after every shared change; the conformance root builds only at family
+ * closure and in CI, because its finite journey witnesses dominated full rebuilds (PLAN, example-journey
+ * move, 2026-10-21). So each maintained theorem or conformance owner must be reached by one of them, or
+ * it can stay broken while both builds are green; no `*Conformance` module may be reached from the
+ * semantic root, or it rejoins every routine build; and the conformance root must not import a module the
+ * semantic root already builds, which would assign it to both.
+ */
+export function libraryRootAssignmentFindings(
   sources: ReadonlyArray<Readonly<{ path: string; source: string }>>,
 ): readonly string[] {
   const normalized = sources.map(({ path: sourcePath, source }) => {
@@ -220,25 +231,39 @@ export function unreachableMaintainedAssuranceModules(
   const importsByModule = new Map(
     normalized.map(({ module, imports }) => [module, imports] as const),
   );
-  const reachable = new Set<string>();
-  const pending = [moduleName(semanticLibraryRoot)];
-  while (pending.length > 0) {
-    const module = pending.pop();
-    if (module === undefined || reachable.has(module)) {
-      continue;
+  // Each reached module maps to the root's direct import it was first reached through.
+  const reach = (root: string): ReadonlyMap<string, string> => {
+    const via = new Map<string, string>();
+    const pending = (importsByModule.get(root) ?? []).map((module) => [module, module] as const);
+    while (pending.length > 0) {
+      const [module, entry] = pending.pop()!;
+      if (via.has(module)) continue;
+      via.set(module, entry);
+      pending.push(...(importsByModule.get(module) ?? []).map((imported) => [imported, entry] as const));
     }
-    reachable.add(module);
-    pending.push(...(importsByModule.get(module) ?? []));
-  }
-  return normalized
-    .filter(({ path: sourcePath, hasNamedTheorem }) =>
-      sourcePath.startsWith("BpmnSemantics/") &&
-      !sourcePath.startsWith(experimentTree) &&
-      (path.posix.basename(sourcePath).endsWith("Conformance.lean") || hasNamedTheorem)
-    )
-    .map(({ module }) => module)
-    .filter((module) => !reachable.has(module))
-    .sort();
+    return via;
+  };
+  const semantic = reach(moduleName(semanticLibraryRoot));
+  const conformance = reach(moduleName(conformanceLibraryRoot));
+  const maintained = normalized.filter(({ path: sourcePath }) =>
+    sourcePath.startsWith("BpmnSemantics/") && !sourcePath.startsWith(experimentTree)
+  );
+  return [
+    ...(importsByModule.get(moduleName(conformanceLibraryRoot)) ?? [])
+      .filter((module) => semantic.has(module))
+      .map((module) => `${module}: imported by the conformance root but already built by the semantic root`),
+    ...maintained
+      .filter(({ path: sourcePath, hasNamedTheorem }) =>
+        path.posix.basename(sourcePath).endsWith("Conformance.lean") || hasNamedTheorem
+      )
+      .filter(({ module }) => !semantic.has(module) && !conformance.has(module))
+      .map(({ module }) => `${module}: reached by neither library root`),
+    ...maintained
+      .filter(({ path: sourcePath, module }) =>
+        path.posix.basename(sourcePath).endsWith("Conformance.lean") && semantic.has(module)
+      )
+      .map(({ module }) => `${module}: conformance module built by the semantic root via ${semantic.get(module)}`),
+  ].sort();
 }
 
 test("detects the aggregate import without matching comments or the umbrella owner", () => {
@@ -333,21 +358,21 @@ test("separates a checked-node matcher from a fixture that only builds nodes", (
   );
 });
 
-test("the default semantic library reaches every maintained assurance module", () => {
+test("the two library roots assign every maintained Lean module exactly once", () => {
   assert.deepEqual(
-    unreachableMaintainedAssuranceModules(
+    libraryRootAssignmentFindings(
       readWorktreeSources(worktreeLeanSourceFiles()),
     ),
     [],
-    "a maintained theorem or conformance owner outside the default library can remain broken while the primary Lean build is green",
+    "an unreached owner can stay broken while both builds are green, and a conformance module under the semantic root rejoins every routine build",
   );
 });
 
 test("the maintained-conformance import guard derives omissions instead of trusting a registry", () => {
   assert.deepEqual(
-    unreachableMaintainedAssuranceModules([
+    libraryRootAssignmentFindings([
       {
-        path: "BpmnSemantics.lean",
+        path: "BpmnConformance.lean",
         source: "import BpmnSemantics.Suite\n-- import BpmnSemantics.MissingConformance\n",
       },
       {
@@ -359,7 +384,7 @@ test("the maintained-conformance import guard derives omissions instead of trust
       { path: "BpmnSemantics/Experiments/ExcludedConformance.lean", source: "" },
       { path: "BpmnSemantics/Ordinary.lean", source: "" },
     ]),
-    ["BpmnSemantics.MissingConformance"],
+    ["BpmnSemantics.MissingConformance: reached by neither library root"],
   );
 });
 
@@ -385,18 +410,36 @@ test("the assurance import guard reaches initialization and differently named th
     },
     { path: "BpmnSemantics/Experiments/OpenProof.lean", source: "theorem provisional : True := by trivial\n" },
   ];
-  assert.deepEqual(unreachableMaintainedAssuranceModules(sources), [
-    "BpmnSemantics.Initialization",
-    "BpmnSemantics.Preservation",
+  assert.deepEqual(libraryRootAssignmentFindings(sources), [
+    "BpmnSemantics.Initialization: reached by neither library root",
+    "BpmnSemantics.Preservation: reached by neither library root",
   ]);
   assert.deepEqual(
-    unreachableMaintainedAssuranceModules(sources.map((source) =>
+    libraryRootAssignmentFindings(sources.map((source) =>
       source.path === "BpmnSemantics/Suite.lean"
         ? { ...source, source: `${source.source}import BpmnSemantics.Initialization\nimport BpmnSemantics.Preservation\n` }
         : source,
     )),
     [],
   );
+});
+
+test("each maintained module belongs to exactly one library root", () => {
+  const sources = [
+    { path: "BpmnSemantics.lean", source: "import BpmnSemantics.Law\nimport BpmnSemantics.Footprint\n" },
+    { path: "BpmnConformance.lean", source: "import BpmnSemantics.JourneyConformance\nimport BpmnSemantics.Law\n" },
+    { path: "BpmnSemantics/Law.lean", source: "theorem law : True := by trivial\n" },
+    { path: "BpmnSemantics/Footprint.lean", source: "import BpmnSemantics.PinnedConformance\n" },
+    { path: "BpmnSemantics/PinnedConformance.lean", source: "" },
+    { path: "BpmnSemantics/JourneyConformance.lean", source: "import BpmnSemantics.JourneyFixtures\n" },
+    { path: "BpmnSemantics/JourneyFixtures.lean", source: "def journey := 0\n" },
+    { path: "BpmnSemantics/OrphanConformance.lean", source: "" },
+  ];
+  assert.deepEqual(libraryRootAssignmentFindings(sources), [
+    "BpmnSemantics.Law: imported by the conformance root but already built by the semantic root",
+    "BpmnSemantics.OrphanConformance: reached by neither library root",
+    "BpmnSemantics.PinnedConformance: conformance module built by the semantic root via BpmnSemantics.Footprint",
+  ]);
 });
 
 /**

@@ -56,6 +56,7 @@ const productDecisionRoots = [
 ];
 
 const productDecisionEntryFiles = new Set([
+  "BpmnConformance.lean",
   "BpmnSemantics.lean",
   "scripts/contract-artifacts.ts",
 ]);
@@ -70,6 +71,7 @@ const legacyProductDecisionInventoryPath =
 const legacySourceTarget =
   "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
 const legacyProductRoots = [
+  "BpmnConformance.lean",
   "BpmnSemantics.lean",
   "BpmnSemantics",
   "contracts",

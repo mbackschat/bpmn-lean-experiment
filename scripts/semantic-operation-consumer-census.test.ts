@@ -37,6 +37,7 @@ function productionConsumerSources(): ReadonlyArray<ConsumerSource> {
       "--others",
       "--exclude-standard",
       "--",
+      "BpmnConformance.lean",
       "BpmnSemantics.lean",
       "BpmnSemantics",
       "packages",

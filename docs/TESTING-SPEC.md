@@ -29,7 +29,7 @@ git status --short
 git diff --check
 ```
 
-The default gate covers the MIT engine: prerequisite inventory; contracts and publication schemas before package builds; strict harness types and source/document guards; normative XML; Lean library, checked-source experiment and result emission; source importer and TypeScript core; pinned CIB oracle; infrastructure, differential and Temporal refinement/history/replay; and the complete prepared pipeline. Publication-schema fixtures must remain runtime-free and pass the loader-isolation guard. Private Lean/core parity cannot stand in for registered CIB or Temporal evidence.
+The default gate covers the MIT engine: prerequisite inventory; contracts and publication schemas before package builds; strict harness types and source/document guards; normative XML; Lean semantic and conformance libraries, checked-source experiment and result emission; source importer and TypeScript core; pinned CIB oracle; infrastructure, differential and Temporal refinement/history/replay; and the complete prepared pipeline. Publication-schema fixtures must remain runtime-free and pass the loader-isolation guard. Private Lean/core parity cannot stand in for registered CIB or Temporal evidence.
 
 Product 2 and optional source/adoption lanes are separately selected below. Missing inputs fail the selected lane rather than silently reducing coverage. [Contributor setup](CONTRIBUTOR-SETUP-GUIDE.md) owns provisioning; [infrastructure policy](VERIFICATION-INFRASTRUCTURE-POLICY.md#prerequisites-and-structural-guards) owns reproducibility, structural guards and scope exclusions.
 
@@ -71,7 +71,7 @@ Commands below select the affected boundary; [cadence](#three-level-verification
 | Change | Required focused gate |
 |---|---|
 | Semantic profile, scenario, evidence, or JSON Schema | `./scripts/pnpm.sh run test:contracts` |
-| Lean semantic definition or law | Local: `./scripts/lake.sh build <module target>...` for changed owners and the direct importers of every module whose exported statements change, plus the separating regression. Batch acceptance: `LEAN_FULL_GATE=<batch-id> ./scripts/lake.sh test`. PLAN's effort budget names the Lean batch, whose ID is that label, and its full-build allowance: one at batch close plus at most one after a correction. |
+| Lean semantic definition or law | Local: `./scripts/lake.sh build <module target>...` for changed owners and the direct importers of every module whose exported statements change, plus the separating regression. Batch acceptance: `LEAN_FULL_GATE=<batch-id> ./scripts/lake.sh test`. PLAN's effort budget names the Lean batch, whose ID is that label, and its full-build allowance: one at batch close plus at most one after a correction. The finite `*Conformance` journeys and the axiom footprint form the separate `BpmnConformance` root, which the semantic library never imports: build a changed conformance module by its module target, and the whole root with `LEAN_FULL_GATE=<batch-id> ./scripts/lake.sh build BpmnConformance` at family closure, while Verify builds it on every push. |
 | TypeScript semantic core | `./scripts/pnpm.sh run test:semantic-core` |
 | Lean plus TypeScript semantic loop | `./scripts/pnpm.sh run test:semantic` |
 | TypeScript semantic contract or type abstraction | `./scripts/pnpm.sh run check:semantic-types` plus its owning runtime/package gate. |

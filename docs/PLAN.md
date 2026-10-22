@@ -53,7 +53,6 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| After push | Move example journeys out of the routine Lean build. | Owner-approved enabling task (2026-10-21): finite `*Conformance` journeys build in a separate `BpmnConformance` Lake library, run at family closure and in CI; new finite examples run as executable checks instead of kernel decisions. Exit: the routine library imports no moved module, a guard assigns every module to exactly one root, Verify and CI build both roots, the owning testing and setup documents describe the split, and the routine full-build time is measured before and after. Then `what-binds` lists a Lean definition's unfolding sites ([Finding 75](PROCESS-ASSESSMENT-LEDGER.md#finding-75)). |
 | At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. The [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns the complete work partition; this tracker counts only its selected exact-bound cohort. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
 | 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
@@ -81,13 +80,13 @@ Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family
 
 Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through a converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
 
-Acceptance blockers: the [example-journey move](#scheduled-delivery-batches), then the complete pipeline, the two closure obligations the checkpoint audit assigned (activation-addressed completion after Worker replacement or accepted-result recovery, and the 192 KiB query and terminal measurement), and the family closure reviews.
+Acceptance blockers: the complete pipeline, the audit's two closure obligations (activation-addressed completion after Worker replacement or accepted-result recovery, and the 192 KiB query and terminal measurement), and the family closure reviews.
 
-Current result: core at `598e532a`, Lean and registration at `8e7d80b2`, checkpoint corrections at `42075b5a` and `f7a3e568` with the same reviewer's audit resolved; `main` is at `6d66db5a`, whose hosted checks including `verify-complete` passed after the native Lean drivers and the Temporal job split.
+Current result: Lean and registration at `8e7d80b2`, checkpoint corrections at `f7a3e568` with the audit resolved; `main` at `6d66db5a` passed `verify-complete`. Conformance journeys now build in the separate `BpmnConformance` root, leaving 18–32% of measured full rebuilds routine ([measurement](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#conformance-root-split-2026-10-22)).
 
-Effort budget: 8 hours wall from 2026-10-22 for the example-journey move and family closure, reassessed at the limit.
+Effort budget: 8 hours wall from 2026-10-22 for the journey move (about 2 used) and family closure, reassessed at the limit.
 
-Next action: measure the routine full-library build, move the finite `*Conformance` journeys into `BpmnConformance` with the one-root guard, and measure again; then family closure.
+Next action: land the journey move through the branch flow, then run the closure gates once on the clean head and the cold design and code reviews. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

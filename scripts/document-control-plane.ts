@@ -355,6 +355,7 @@ function rootPathRoutes(file: string): ReadonlyArray<AreaId> {
     case "CLAUDE.md":
     case "README.md":
       return allAreaIds;
+    case "BpmnConformance.lean":
     case "BpmnSemantics.lean":
     case "lake-manifest.json":
     case "lakefile.toml":

@@ -36,6 +36,7 @@ import {
 } from "./harness-source-policy.ts";
 
 const leanUmbrellaModules = [
+  "BpmnConformance.lean",
   "BpmnSemantics.lean",
   "BpmnSemantics/FlowNodeOccurrenceLifecycleConformance.lean",
   "BpmnSemantics/ParallelUserTaskMetadataCompositionConformance.lean",

@@ -8,6 +8,9 @@ leanOptions = { Elab.async = false }
 [[lean_lib]]
 name = "BpmnSemantics"
 
+[[lean_lib]]
+name = "BpmnConformance"
+
 [[lean_exe]]
 name = "checkSemanticRepresentationSpike"
 root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
