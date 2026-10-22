@@ -15,6 +15,7 @@
  * so it stays invisible here; the import graph, not this report, finds those consumers. Names are
  * matched by their last component, so an unrelated declaration with the same name over-reports.
  */
+import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import { analyzeLeanSource } from "./lean-source-analysis.ts";
 
 const identifier = /(?<![\p{L}\p{N}_'?!.])(?:[\p{L}_][\p{L}\p{N}_'?!]*\.)*[\p{L}_][\p{L}\p{N}_'?!]*/gu;
@@ -62,7 +63,7 @@ export function leanUnfoldingSites(
   declaration: string,
 ): ReadonlyArray<string> {
   const analyzed = [...sources]
-    .sort((left, right) => left.path.localeCompare(right.path))
+    .sort((left, right) => compareCanonicalStrings(left.path, right.path))
     .map(({ path, source }) => ({ path, code: analyzeLeanSource(source).code }));
   const names = unfoldingNames(analyzed.map(({ code }) => code), declaration);
   const sites: string[] = [];
