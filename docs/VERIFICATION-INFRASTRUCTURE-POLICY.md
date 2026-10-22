@@ -105,16 +105,17 @@ The Temporal gates start a local server, and the infrastructure gate proves that
 
 ## Continuous integration
 
-The [verification workflow](../.github/workflows/verify.yml) selects Product 1 from the committed diff and runs five guarded Ubuntu stages. [verify.sh](../scripts/verify.sh) defines the partition; bare local execution runs the same union sequentially, and `test:pre-push:verify` is its complete clean-HEAD equivalent.
+The [verification workflow](../.github/workflows/verify.yml) selects Product 1 from the committed diff and runs six guarded Ubuntu jobs. [verify.sh](../scripts/verify.sh) defines the partition; bare local execution runs the same union sequentially, and `test:pre-push:verify` is its complete clean-HEAD equivalent.
 
 | Stage | Required evidence and ordering |
 |---|---|
 | Proof library | Starts with runtime; the library is Lake's test driver. Source-derived reachability includes every maintained non-experimental conformance and named-theorem owner. Compilation has 120 minutes inside a 135-minute job. |
-| Runtime | Prerequisite inventory, infrastructure, XML, TypeScript builds/tests, CIB and Temporal; no Lean-dependent package tests. |
+| Runtime | Prerequisite inventory, infrastructure, XML, TypeScript builds/tests and CIB; no Lean-dependent package tests. |
+| Temporal | After runtime; restore its exact run-attempt outputs and run the complete Temporal suite, split from runtime on 2026-10-22 when runtime reached 16 of its 20 minutes. |
 | Lean checks | After proof library; restore that run's exact output, elaborate checked-source/JSON roots and every Lean source entry a package test interprets, and run no-argument checks through the Lean interpreter within 10 minutes. Programmatic witnesses must not rebuild native executables or bypass the wrapper. |
 | Integration | After runtime and Lean checks; restore exact run-attempt outputs and run the Lean-dependent parity tests, the prepared pipeline and `git diff --check` in two jobs, each within 10 minutes: `pipeline` (catalog, Message, compensation, transaction and value-domain parity plus the prepared pipeline) and `composition-parity` (scope, structured-composition, Event Sub-Process and task parity), split on 2026-10-21 after the single job outgrew its limit. Primary Lean execution and three mutants form one serial resource-exclusive sub-lane; CIB and Temporal remain concurrent. |
 
-`verify-complete` requires all five selected stage jobs and accepts a legitimate Product 2-only skip. Source-derived guards follow package helper imports to prevent parity omissions or accidental runtime assignment. Weekly execution builds Lean from scratch; ordinary execution may restore the exact-source cache with incremental fallback. Lake validates reuse, and cache presence is never qualification evidence.
+`verify-complete` requires all six selected stage jobs and accepts a legitimate Product 2-only skip. Source-derived guards follow package helper imports to prevent parity omissions or accidental runtime assignment. Weekly execution builds Lean from scratch; ordinary execution may restore the exact-source cache with incremental fallback. Lake validates reuse, and cache presence is never qualification evidence.
 
 Keep compilation separate from setup/recovery headroom. The two-hour allowance is conservative recovery space, not a speed claim; do not restore the obsolete 30-minute cold-build limit. Restore/save are separate, and failed or timed-out compilation may save only under a unique partial key, never the immutable completed-source key. Saving is best effort and cannot survive runner loss or forced outer termination.
 

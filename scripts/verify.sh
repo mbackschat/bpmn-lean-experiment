@@ -37,6 +37,11 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:bpmn-source:built
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built
+}
+
+# The Temporal suite runs as its own hosted job after runtime: inside it, runtime reached 16 of its
+# 20 minutes (hosted 2026-10-22).
+verify_temporal() {
   ./scripts/pnpm.sh run test:temporal:built
 }
 
@@ -73,13 +78,15 @@ case "${1:-all}" in
     verify_lean_library
     verify_lean_checks
     verify_runtime
+    verify_temporal
     verify_pipeline
     verify_composition_parity
     ;;
   lean-library) verify_lean_library ;;
   lean-checks) verify_lean_checks ;;
   runtime) verify_common; verify_runtime ;;
+  temporal) verify_temporal ;;
   pipeline) verify_pipeline ;;
   composition-parity) verify_composition_parity ;;
-  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|pipeline|composition-parity]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|pipeline|composition-parity]" >&2; exit 2 ;;
 esac

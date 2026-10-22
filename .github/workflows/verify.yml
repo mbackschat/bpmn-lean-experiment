@@ -302,6 +302,63 @@ jobs:
             .cache/temporal-test-server
           key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
+  verify_temporal:
+    name: verify Temporal
+    needs:
+      - changes
+      - verify_runtime
+    if: needs.changes.outputs.product1 == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve pinned toolchain versions
+        id: pins
+        run: |
+          eval "$(./scripts/pinned-toolchain.sh)"
+          {
+            printf 'node=%s\n' "$required_node_version"
+            printf 'pnpm=%s\n' "$required_pnpm_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: ${{ steps.pins.outputs.pnpm }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore runtime output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            packages/*/dist
+            packages/temporal-adapter/*/dist
+            runners/cibseven/target
+            .cache/temporal-cli
+            .cache/temporal-test-server
+          key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Require clean committed HEAD
+        run: node scripts/clean-committed-head.ts
+
+      - name: Verify Temporal
+        env:
+          CI: "true"
+        run: ./scripts/verify.sh temporal
+
   verify_pipeline:
     name: verify integration pipeline
     needs:
@@ -475,6 +532,7 @@ jobs:
       - verify_lean
       - verify_lean_checks
       - verify_runtime
+      - verify_temporal
       - verify_pipeline
       - verify_composition_parity
     if: always()
@@ -487,12 +545,14 @@ jobs:
           echo "Lean library result: ${{ needs.verify_lean.result }}"
           echo "Lean executable checks result: ${{ needs.verify_lean_checks.result }}"
           echo "runtime verification result: ${{ needs.verify_runtime.result }}"
+          echo "Temporal verification result: ${{ needs.verify_temporal.result }}"
           echo "integration verification result: ${{ needs.verify_pipeline.result }}"
           echo "composition parity result: ${{ needs.verify_composition_parity.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || {
             test "${{ needs.verify_lean.result }}" = "success"
             test "${{ needs.verify_lean_checks.result }}" = "success"
             test "${{ needs.verify_runtime.result }}" = "success"
+            test "${{ needs.verify_temporal.result }}" = "success"
             test "${{ needs.verify_pipeline.result }}" = "success"
             test "${{ needs.verify_composition_parity.result }}" = "success"
           }
