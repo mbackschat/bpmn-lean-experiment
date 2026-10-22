@@ -110,6 +110,13 @@ test("an absent input source copies a present null and an output source the call
     [bind("decision", nullValue), bind("echoedCustomer", nullValue)]);
 });
 
+test("CVM-IN-01 a present-null input source copies its null into the called-root frame", async () => {
+  const program = await loanProgram();
+  let state = commit(program, initialState, start([bind("amount", text("25000")), bind("applicant", nullValue)]));
+  state = commit(program, state, acknowledge);
+  assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", nullValue)]);
+});
+
 /** A one-binding patch of a Map whose canonical size is exactly `bytes`, built from seventeen bounded Strings. */
 function patchOfSize(name: string, bytes: number): VariableBinding[] {
   const lengths = Array.from({ length: 17 }, () => 1_000);

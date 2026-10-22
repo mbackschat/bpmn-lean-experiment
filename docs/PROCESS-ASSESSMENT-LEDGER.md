@@ -339,7 +339,7 @@ Retained recurrence evidence: [Finding 14](process-assessment/PLANNING-AND-OWNER
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 33
+: 34
 
 Disposition
 : `unguardable`
@@ -354,6 +354,8 @@ Collapse duplicated obligations rather than repeatedly synchronizing them. A gat
 Retained recurrence evidence: [Finding 15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15).
 
 Thirty-third instance, Call variable mapping checkpoint on 2026-10-22: the implementation added the mapped Call to the IL arm, the profile and the data family map, while the IL specification, the runtime map, the nested scope-data specification and the source package README kept excluding it; the checkpoint review found all four.
+
+Thirty-fourth instance, Call variable mapping closure on 2026-10-23: the checkpoint correction for witness-table lanes without matching evidence fixed the rows under discussion while three sibling claims survived its audit: a duplicate-name refusal claimed for the core, caller-only hosted detail no test requested, so a caller-fallback mutant passed, and a present-null frame claimed for Lean. Two owner passages, a runtime-map exclusion and the Call specification's data paragraph, also kept excluding the mapped slice. The cold closure review found them; each claim now has its witness or a narrowed lane.
 
 ### Finding 16
 
@@ -1483,7 +1485,7 @@ Commit `2fb8a861` made a refused Start a semantic rejection in `advanceScenario`
 
 Second instance, `PC-DATA-03` effect-data closure on 2026-10-14: `b6a6fe74` widened effect transport to every value arm and was qualified by the component lane, selected hosted files and the pipeline, while a structured-human-work testkit test in `test:temporal:built:concurrent` still pinned the old transport refusal; the closure `test:temporal` gate failed on it and `041ad7f5` moved the lock to the profile policy. The consumer set is computable from imports, but which lanes an author ran before a local commit leaves no tracked fact; the acceptance-boundary complete gate that observed both instances is the designed backstop, so the class is unguardable short of running every complete lane per commit, which the verification cadence rejects. Reusable question: before committing a change to an exported encoder or classifier, have the complete lanes of every package that imports it run, not only the lanes already under attention?
 
-Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) already asks for type checks while coding, so the instance is a lapse in a written step, not a missing control, and the disposition stands.
+Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) already asks for type checks while coding, so the instance is a lapse in a written step, and the disposition stands for the class. This variant alone is cheaply guardable, by a type check before each local commit; that is a cadence change for the owner, not one an agent adds.
 
 ### Finding 78
 

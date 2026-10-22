@@ -42,8 +42,11 @@ test("CVM-OBSERVE-01: a mapped called task reads selected names from its called-
   const state = taskState("Called", "CalledRoot");
   const frame = { owner: state.userTaskWaits[0]!.owner,
     bindings: [{ name: "SharedName", value: { kind: VariableValueKind.String, value: "Called copy" } }] };
-  const detail = projectUserTaskDetail({ ...state, variables: { ...state.variables, scopes: [frame] } },
-    { taskId: state.userTaskWaits[0]!.id, inputVariableNames: ["SharedName", "riskScore"] });
+  // `applicant` is caller-only: a fallback to the hosting Process for names the frame lacks would select it.
+  const process = { bindings: [...state.variables.process.bindings,
+    { name: "applicant", value: { kind: VariableValueKind.String, value: "Caller only" } }] };
+  const detail = projectUserTaskDetail({ ...state, variables: { ...state.variables, process, scopes: [frame] } },
+    { taskId: state.userTaskWaits[0]!.id, inputVariableNames: ["SharedName", "applicant", "riskScore"] });
   assert.deepEqual(detail?.inputVariables, frame.bindings);
 });
 

@@ -1,7 +1,7 @@
 /**
  * Continue-As-New carries the called-root frame (the Call variable mapping proposal's Temporal preflight): every stable
  * checkpoint of the loan application decodes to itself, and a carried frame breaking the called-root arm of frame
- * validity is refused instead of resumed.
+ * validity, owned by the caller or outliving its called root is refused instead of resumed.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -84,6 +84,22 @@ test("a carried called-root frame without an input target, with a caller name or
     withFrame([...others, { ...frame, bindings: frame.bindings.filter(({ name }) => name !== "customer") }]),
     withFrame([...others, { ...frame, bindings: [...frame.bindings, { name: "decision", value: text("forged") }] }]),
     withFrame(others),
+  ]) {
+    assert.throws(() => decode(tampered, program), TypeError);
+  }
+});
+
+test("a carried called-root frame owned by the caller, or outliving its called root, is refused", async () => {
+  const program = await loanProgram();
+  const [, live, , returned] = await checkpoints(program);
+  assert.ok(live !== undefined && returned !== undefined);
+  const frame = live.variables.scopes.find(({ owner }) => owner.processInstanceId === calledInstanceId);
+  assert.ok(frame !== undefined);
+  const others = live.variables.scopes.filter((candidate) => candidate !== frame);
+  const callerOwned = { ...frame, owner: { ...frame.owner, processInstanceId: instanceId } };
+  for (const tampered of [
+    { ...live, variables: { ...live.variables, scopes: [...others, callerOwned] } },
+    { ...returned, variables: { ...returned.variables, scopes: [...returned.variables.scopes, frame] } },
   ]) {
     assert.throws(() => decode(tampered, program), TypeError);
   }

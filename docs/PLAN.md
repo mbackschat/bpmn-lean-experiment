@@ -80,13 +80,13 @@ Current task: `PC-SCOPE-04` in batch 2 of the [batch order](#scheduled-delivery-
 
 Deliverable: the approved [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one root-path Call in the `DATA` profile; Sub-Process placement moved to `PC-SCOPE-05`.
 
-Acceptance blockers: the warm closure review; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) did not reproduce in the hosted lane.
+Acceptance blockers: the cold closure review's audit of its required edits; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) did not reproduce in the hosted lane.
 
 Current result: the semantic checkpoint approved corrections `560ba25c`; Lean laws, fixture, pipeline agreement, Temporal hosting and the CIB `2.2.0` probe are green, recorded in the [epistemic closure](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#epistemic-closure).
 
-Effort budget: 12 hours wall from 2026-10-22 through closure; 5.5 used from the proposal commit `9358fb36` to the gated head.
+Effort budget: 12 hours wall from 2026-10-22 through closure; about 5.5 used, approximated by the commit span from the proposal `9358fb36` to the gated head.
 
-Next action: a fresh cold closure review, since the witness table changed after the checkpoint audit, then graduation and the checklist receipt; then a family proposal for `PC-SCOPE-05` with `PC-SCOPE-06`, which share the called-instance placement mechanism. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: the closure reviewer's correction audit, then graduation and the checklist receipt; then a family proposal for `PC-SCOPE-05` with `PC-SCOPE-06`, which share the called-instance placement mechanism. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
 
