@@ -20,7 +20,7 @@ import type { MutableScenarioResult } from "./pipeline-types.ts";
 import { profile, source, prepareSource, sourceOverlay, parallelBodySource } from "../../bpmn-source/test/sequential-scope-source-fixture.ts";
 import { sequentialOutputMappingSources } from "../../bpmn-source/test/sequential-scope-output-mapping-fixture.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { program as embeddedProgram, startStimulus as embeddedStart } from "../../semantic-core/test/embedded-subprocess-fixture.ts";
 
 const instanceId = "invoices";
@@ -108,30 +108,12 @@ test("sequential MI scenario support checks every write surface and preserves ne
   const inputs = await scenarioAdmissionCases();
   const directory = await mkdtemp(path.join(tmpdir(), "mi-scenario-admission-"));
   try {
-    const driver = path.join(directory, "Admission.lean");
-    await writeFile(driver, `import BpmnSemantics.SemanticProcess.ScenarioAdmission
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcessJson.Scenario
-open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
-def main (paths : List String) : IO Unit := do
-  for path in paths do
-    let contents ← IO.FS.readFile path
-    let decoded := do
-      let json ← parseWireJson contents
-      requireObjectShape json ["program", "scenario"]
-      let program ← decodeProgram (← field json "program")
-      let scenario ← decodeScenario (← field json "scenario")
-      pure (scenario.id.value, supportsScenario program scenario)
-    match decoded with
-    | .error message => throw (IO.userError message)
-    | .ok (id, supported) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported)]).compress
-`);
     const paths = await Promise.all(inputs.map(async ({ program, scenario }) => {
       const file = path.join(directory, `${scenario.id}.json`);
       await writeFile(file, JSON.stringify({ program, scenario }));
       return file;
     }));
-    const execution = await runLeanInterpreter(driver, paths, inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/ScenarioSupportJsonMain.lean", paths, inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ id: string; supported: boolean }>(line, "scenario admission"));
     assert.equal(actual.length, inputs.length);
     for (const [index, input] of inputs.entries()) await t.test(input.scenario.id, () => {
@@ -321,7 +303,7 @@ async function verifyScopeCases(inputs: readonly Awaited<ReturnType<typeof cases
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; definitionBinding: unknown; result: ScenarioResult; commandPublications: unknown;
     }>(line, "MI scope Lean result"));
@@ -492,7 +474,7 @@ test("Lean and TypeScript agree on source-admitted sequential Service output map
         { ...effect, result: { ...effect.result, localPatch } }] };
       const file = path.join(directory, "invalid.json");
       await writeFile(file, JSON.stringify(scenario));
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, file], 1),
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, file], 1),
         /variable bindings must have unique names in canonical order/);
     }
   } finally { await rm(directory, { recursive: true, force: true }); }

@@ -16,6 +16,7 @@ import {
   type LeanProjectionRejections,
   type LeanWellFormednessRejections,
 } from "./publication-parity-negative-class-test-support.ts";
+import { prepareNativeLeanDriver } from "../../../scripts/lean-native-driver.ts";
 import { parseWireJsonBytes } from "../../../scripts/strict-json.ts";
 
 const execFileAsync = promisify(execFile);
@@ -279,11 +280,8 @@ test("Lean and TypeScript publish the exact parallel start trace and current pos
 
 async function runLeanPublicationEmitter(): Promise<PublicationParityEvidence> {
   const result = await execFileAsync(
-    "./scripts/lake.sh",
-    [
-      "run",
-      "BpmnSemantics/CommittedExecutionPublicationJsonMain.lean",
-    ],
+    await prepareNativeLeanDriver("BpmnSemantics/CommittedExecutionPublicationJsonMain.lean"),
+    [],
     {
       cwd: projectRoot,
       encoding: "buffer",

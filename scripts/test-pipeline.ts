@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { runCommand } from "./run-command.ts";
 import { resolveJavaHome } from "./java-home.ts";
+import { nativeLeanDriverBuildTimeoutMs } from "./lean-native-driver.ts";
 import { warmPipelineCommandTimeoutMs } from "./pipeline-budget.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -30,12 +31,8 @@ async function buildPipeline() {
     }),
     runProjectCommand(
       "./scripts/lake.sh",
-      [
-        "build",
-        "BpmnSemantics.SemanticProcessJsonMain",
-        "BpmnSemantics.EnginePopulationScenarioJsonMain",
-      ],
-      { timeoutMs: 120_000 },
+      ["build", "emitSemanticProcessResults", "emitEnginePopulationResults"],
+      { timeoutMs: nativeLeanDriverBuildTimeoutMs },
     ),
     runProjectCommand(
       "runners/cibseven/mvnw",

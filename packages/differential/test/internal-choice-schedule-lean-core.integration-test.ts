@@ -9,7 +9,7 @@ import { initialState, InternalSchedulingMode, isWellFormedSemanticProcessProgra
 import { program, sideProgram, instanceId, start, a, b, end, first, second } from
   "../../semantic-core/test/internal-choice-schedule-fixture.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 const trace = await import(new URL("../../semantic-core/dist/semantic-transition-trace.js", import.meta.url).href) as
   typeof import("../../semantic-core/src/semantic-transition-trace.ts");
@@ -47,7 +47,7 @@ test("Lean and TypeScript agree on exact Merge choice, rollback precedence and r
   try {
     const inputPath = path.join(directory, "inputs.jsonl");
     await writeFile(inputPath, `${inputs.map((input) => JSON.stringify(input)).join("\n")}\n`);
-    const execution = await runLeanInterpreter("BpmnSemantics/InternalChoiceScheduleJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/InternalChoiceScheduleJsonMain.lean",
       [inputPath], inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map((line) => parseWireJson<unknown>(line, "scheduled Lean result"));
     const expected = inputs.map((input) => {

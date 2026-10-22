@@ -209,7 +209,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(pipelineScript, /build:verification-typescript/u);
   assert.match(
     pipelineScript,
-    /BpmnSemantics\.EnginePopulationScenarioJsonMain/u,
+    /"emitEnginePopulationResults"/u,
   );
   assert.match(
     pipelineScript,

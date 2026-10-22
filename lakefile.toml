@@ -27,3 +27,27 @@ root = "BpmnSemantics.EnginePopulationScenarioJsonMain"
 [[lean_exe]]
 name = "emitCommittedExecutionPublication"
 root = "BpmnSemantics.CommittedExecutionPublicationJsonMain"
+
+[[lean_exe]]
+name = "emitInternalChoiceSchedules"
+root = "BpmnSemantics.InternalChoiceScheduleJsonMain"
+
+[[lean_exe]]
+name = "emitDefinitionAdmissions"
+root = "BpmnSemantics.DefinitionAdmissionJsonMain"
+
+[[lean_exe]]
+name = "emitParallelScopeAdmissions"
+root = "BpmnSemantics.ParallelScopeAdmissionMain"
+
+[[lean_exe]]
+name = "emitParallelScopeStartAdmissions"
+root = "BpmnSemantics.ParallelScopeStartAdmissionMain"
+
+[[lean_exe]]
+name = "emitParallelScopeReservations"
+root = "BpmnSemantics.ParallelScopeReservationMain"
+
+[[lean_exe]]
+name = "emitScenarioSupport"
+root = "BpmnSemantics.ScenarioSupportJsonMain"

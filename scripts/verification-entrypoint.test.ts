@@ -532,11 +532,15 @@ test("default verification XSD-validates the Activity boundary Message source", 
   );
 });
 
-test("Lean checks elaborate executable roots and interpret them without native code generation", async () => {
+test("Lean checks interpret their own witnesses and build package drivers natively, outside test deadlines", async () => {
   const source = await readFile(verifyScriptPath, "utf8");
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.SemanticProcessJsonMain BpmnSemantics.EnginePopulationScenarioJsonMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain BpmnSemantics.InternalChoiceScheduleJsonMain BpmnSemantics.DefinitionAdmissionJsonMain BpmnSemantics.ParallelScopeAdmissionMain BpmnSemantics.ParallelScopeStartAdmissionMain BpmnSemantics.ParallelScopeReservationMain",
+    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain",
+  );
+  await assertLineOccursOnce(
+    verifyScriptPath,
+    "./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport",
   );
   await assertLineOccursOnce(
     verifyScriptPath,
@@ -551,7 +555,7 @@ test("Lean checks elaborate executable roots and interpret them without native c
       `./scripts/lake.sh run ${path}`,
     );
   }
-  assert.doesNotMatch(source, /lake\.sh (?:exe|build emitSemanticProcessResults)/u);
+  assert.doesNotMatch(source, /lake\.sh exe/u);
 });
 
 test("the checked-source proof target imports both Stage 3a frontier modules", async () => {

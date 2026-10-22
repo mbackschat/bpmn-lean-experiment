@@ -11,7 +11,7 @@ import { parallelProgramCapacityCases } from "../../bpmn-source/test/parallel-sc
 import { parallelCommandInputs } from "../../bpmn-source/test/parallel-scope-command-fixture.ts";
 import { parallelOutputMappingCommandInputs } from "../../bpmn-source/test/parallel-scope-output-mapping-fixture.ts";
 import { parseLeanOutputLines } from "./pipeline-target-support.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 export const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
 export const prefix = (before: RuntimeState, state: RuntimeState) => ({
@@ -356,7 +356,7 @@ async function compareCommandWitnesses(witnesses: readonly CommandWitness[]): Pr
       await writeFile(stimuliPath, JSON.stringify(witness.stimuli));
       files.push(programPath, stimuliPath);
     }
-    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--commands", ...files],
+    const execution = await runLeanDriver("BpmnSemantics/ParallelScopeReservationMain.lean", ["--commands", ...files],
       witnesses.reduce((count, witness) => count + witness.stimuli.length, 0));
     const actual = parseLeanOutputLines(execution.stdout);
     assert.equal(actual.length, witnesses.length, "exact witness count");
@@ -607,7 +607,7 @@ export async function verifyParallelProgramCapacityParity(group: ProgramCapacity
       files.push(programPath, startPath);
       expected.push(syntaxError ?? capacity);
     }
-    const execution = await runLeanInterpreter("BpmnSemantics/ParallelScopeReservationMain.lean", ["--program-capacity", ...files], expected.length);
+    const execution = await runLeanDriver("BpmnSemantics/ParallelScopeReservationMain.lean", ["--program-capacity", ...files], expected.length);
     const actual = parseLeanOutputLines<Readonly<{ syntaxError?: unknown }>>(execution.stdout);
     assert.equal(actual.length, expected.length);
     for (const [offset, result] of actual.entries()) {

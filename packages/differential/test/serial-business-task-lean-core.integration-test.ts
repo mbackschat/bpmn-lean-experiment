@@ -16,7 +16,7 @@ import type { Scenario, ScenarioResult, Stimulus, VariableBinding } from "@bpmn-
 import { compile, profile, source } from "../../bpmn-source/test/serial-business-task-fixture.ts";
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
 import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -113,7 +113,7 @@ test("serial business lowering, local data, refusals and complete publications a
       if (scenario.id !== refusalScenario.id) await writeFile(path.join(directory, scenario.bpmn.relativePath), xml);
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
     const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "serial business Lean result"));
@@ -180,10 +180,10 @@ test("serial business lowering, local data, refusals and complete publications a
         programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
         programWellFormed: true, programProfileCapabilitiesValid: false });
       await writeFile(definitions, JSON.stringify(invalid) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
       await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
         checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
     }
     assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
   } finally {

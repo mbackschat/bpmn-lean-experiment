@@ -7,11 +7,13 @@ export type CommandSurface = Readonly<{
 
 const directProgrammaticLeanInvocation = /\b(?:execFile(?:Async|Sync)?|spawn(?:Sync)?|runCommand|runProcess)\s*\(\s*["'](?:lake|(?:\.\.\/)*scripts\/lake\.sh|\.\/scripts\/lake\.sh)["']/u;
 const indirectProgrammaticLeanInvocation = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*["'](?:lake|(?:\.\.\/)*scripts\/lake\.sh|\.\/scripts\/lake\.sh)["'];[\s\S]*?\b(?:execFile(?:Async|Sync)?|spawn(?:Sync)?|runCommand|runProcess)\s*\(\s*\1\b/u;
+const nativeLeanDriverInvocation = /\bprepareNativeLeanDriver\s*\(/u;
 const relativeTypescriptImport = /(?:\bfrom\s+|\bimport\s*\()\s*["'](\.\.?\/[^"']+)["']/gu;
 
 function hasProgrammaticLeanInvocation(source: string): boolean {
   return directProgrammaticLeanInvocation.test(source) ||
-    indirectProgrammaticLeanInvocation.test(source);
+    indirectProgrammaticLeanInvocation.test(source) ||
+    nativeLeanDriverInvocation.test(source);
 }
 
 export function programmaticLeanInvocationFindings(
@@ -134,20 +136,35 @@ export function manifestTestEntrypoints(
 }
 
 /**
- * Names the Lean source entries that package code passes to `./scripts/lake.sh run`.
+ * Names the Lean driver sources that package code runs as native executables.
  *
- * The interpreter loads every imported object file but builds none, so an entry whose imports lie
- * outside the library closure fails with a missing `.olean` unless the Lean-checks stage built it
- * before the integration lane restored that output. Discovery is lexical over package source:
- * every `BpmnSemantics/….lean` literal there is a run entry, and a computed path would escape it.
+ * The Lean-checks stage builds each driver's declared executable so that the integration lane, which
+ * restores that output, only performs Lake's up-to-date check instead of a native build inside a test.
+ * Discovery is lexical over package source: every `BpmnSemantics/….lean` literal there is a driver,
+ * and a computed path would escape it.
  */
-export function interpretedLeanEntryModules(
+export function leanDriverEntryModules(
   surfaces: ReadonlyArray<CommandSurface>,
 ): ReadonlyArray<string> {
   return [...new Set(surfaces
     .filter(({ relativePath }) => relativePath.startsWith("packages/"))
     .flatMap(({ source }) => [...source.matchAll(/["'`](BpmnSemantics\/[\w/]+)\.lean["'`]/gu)])
     .flatMap((match) => match[1] === undefined ? [] : [match[1].replaceAll("/", ".")]))].sort();
+}
+
+/**
+ * Names package sources that embed Lean source text.
+ *
+ * A Lean program written to a temporary file at test time has no `[[lean_exe]]`, so it could only run
+ * interpreted and would escape {@link leanDriverEntryModules}; package tests use tracked drivers instead.
+ */
+export function generatedLeanSourceFindings(
+  surfaces: ReadonlyArray<CommandSurface>,
+): ReadonlyArray<string> {
+  return surfaces
+    .filter(({ relativePath, source }) =>
+      relativePath.startsWith("packages/") && /["'`]import BpmnSemantics\./u.test(source))
+    .map(({ relativePath }) => relativePath);
 }
 
 export function leanCheckBuildModules(verifyLeanChecksBody: string): ReadonlyArray<string> {

@@ -4,7 +4,7 @@ import { pipelineCaseIdRegistry } from "../packages/differential/test/pipeline-c
 
 import {
   defaultWarmBudgetMs,
-  leanInterpreterBatchTimeoutMsFor,
+  leanDriverBatchTimeoutMsFor,
   warmBudgetMs,
   warmPipelineCommandTimeoutMs,
   warmPipelineTestTimeoutMs,
@@ -28,13 +28,13 @@ test("keeps the portable budget and both process deadlines ordered", () => {
   );
 });
 
-test("scales the Lean interpreter deadline with its scenario batch", () => {
-  assert.equal(leanInterpreterBatchTimeoutMsFor(1), 10_000);
-  assert.equal(leanInterpreterBatchTimeoutMsFor(8), 10_400);
-  assert.equal(leanInterpreterBatchTimeoutMsFor(72), 93_600);
+test("scales the Lean driver deadline with its scenario batch", () => {
+  assert.equal(leanDriverBatchTimeoutMsFor(1), 10_000);
+  assert.equal(leanDriverBatchTimeoutMsFor(8), 10_400);
+  assert.equal(leanDriverBatchTimeoutMsFor(72), 93_600);
 
   for (const count of [0, -1, 1.5, Number.NaN]) {
-    assert.throws(() => leanInterpreterBatchTimeoutMsFor(count), TypeError);
+    assert.throws(() => leanDriverBatchTimeoutMsFor(count), TypeError);
   }
 });
 

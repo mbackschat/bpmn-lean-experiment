@@ -18,7 +18,8 @@ import {
   requireScenarioBinding,
 } from "@bpmn-lean/differential";
 
-import { leanInterpreterBatchTimeoutMsFor } from "../../../scripts/pipeline-budget.ts";
+import { prepareNativeLeanDriver } from "../../../scripts/lean-native-driver.ts";
+import { leanDriverBatchTimeoutMsFor } from "../../../scripts/pipeline-budget.ts";
 import {
   elapsedMs,
   indexExactRecords,
@@ -35,18 +36,18 @@ import type {
   TargetBatch,
 } from "./pipeline-types.ts";
 
-const leanCommand = "./scripts/lake.sh";
 const leanProgram = "BpmnSemantics/SemanticProcessJsonMain.lean";
 
-export function runLeanInterpreter(
+/** Runs one Lean driver batch natively; the batch deadline covers execution only, never the build. */
+export async function runLeanDriver(
   program: string,
   args: ReadonlyArray<string>,
   caseCount: number,
 ) {
   return runProcess(
-    leanCommand,
-    ["run", program, ...args],
-    leanInterpreterBatchTimeoutMsFor(caseCount),
+    await prepareNativeLeanDriver(program),
+    args,
+    leanDriverBatchTimeoutMsFor(caseCount),
     "utf8Fatal",
   );
 }
@@ -83,7 +84,7 @@ async function writeJsonLines(
 }
 
 /**
- * Runs the Lean interpreter for one compiled differential batch.
+ * Runs the native Lean driver for one compiled differential batch.
  *
  * Before Lean prints any result record,
  * [validateDefinitionInput](../../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean)
@@ -97,7 +98,7 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
 ): Promise<TargetBatch<ScenarioResult>> {
   const started = performance.now();
   await writeJsonLines(inputPath, leanDefinitionRecords(contexts));
-  const execution = await runLeanInterpreter(
+  const execution = await runLeanDriver(
     leanProgram,
     [
       inputPath,
@@ -158,7 +159,7 @@ export async function requireLeanDefinitionMutationRejection(
   firstOperation.origin.elementId = `${firstOperation.origin.elementId}_mutated`;
   await writeJsonLines(inputPath, records);
   try {
-    await runLeanInterpreter(
+    await runLeanDriver(
       leanProgram,
       [
         inputPath,
@@ -204,7 +205,7 @@ export async function requireLeanScenarioMutationRejection(
   const scenarioPaths = leanScenarioPaths(contexts);
   scenarioPaths[0] = scenarioPath;
   try {
-    await runLeanInterpreter(
+    await runLeanDriver(
       leanProgram,
       [inputPath, ...scenarioPaths],
       contexts.length,
@@ -243,7 +244,7 @@ export async function requireLeanProvenanceErasureRejection(
   }
   await writeJsonLines(inputPath, records);
   try {
-    await runLeanInterpreter(
+    await runLeanDriver(
       leanProgram,
       [
         inputPath,

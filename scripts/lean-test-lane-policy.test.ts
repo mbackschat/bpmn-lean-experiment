@@ -4,8 +4,10 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
+import { declaredLeanExecutables } from "./lean-native-driver.ts";
 import {
-  interpretedLeanEntryModules,
+  generatedLeanSourceFindings,
+  leanDriverEntryModules,
   invokedPnpmGates,
   leanCheckBuildModules,
   leanDependentEntrypoints,
@@ -66,7 +68,7 @@ test("the programmatic Lean guard reaches a helper outside the scripts directory
   );
 });
 
-test("programmatic Lean witnesses use the interpreter instead of rebuilding native closures", async () => {
+test("programmatic Lean witnesses never use the `exe` subcommand, which rebuilds native closures per call", async () => {
   const surfaces = (await codeSurfaces(worktreePaths()))
     .filter(({ relativePath }) => !relativePath.endsWith(".test.ts"));
   assert.deepEqual(
@@ -76,7 +78,7 @@ test("programmatic Lean witnesses use the interpreter instead of rebuilding nati
   );
 });
 
-test("differential Lean batches cannot bypass the catalog-scaled interpreter helper", async () => {
+test("differential Lean batches cannot bypass the catalog-scaled driver helper", async () => {
   const surfaces = (await codeSurfaces(worktreePaths()))
     .filter(({ relativePath }) =>
       relativePath.startsWith("packages/differential/test/") &&
@@ -85,15 +87,15 @@ test("differential Lean batches cannot bypass the catalog-scaled interpreter hel
   assert.deepEqual(
     programmaticLeanInvocationFindings(surfaces),
     ["packages/differential/test/semantic-differential-targets.ts"],
-    "all differential Lean batches must pass through the one catalog-scaled interpreter helper",
+    "all differential Lean batches must pass through the one catalog-scaled driver helper",
   );
-  const interpreterTarget = surfaces.find(({ relativePath }) =>
+  const driverTarget = surfaces.find(({ relativePath }) =>
     relativePath === "packages/differential/test/semantic-differential-targets.ts"
   );
   assert.match(
-    interpreterTarget?.source ?? "",
-    /leanInterpreterBatchTimeoutMsFor\(caseCount\)/u,
-    "the shared interpreter helper must derive its timeout from the batch size",
+    driverTarget?.source ?? "",
+    /leanDriverBatchTimeoutMsFor\(caseCount\)/u,
+    "the shared driver helper must derive its timeout from the batch size",
   );
 });
 
@@ -173,25 +175,38 @@ test("the restored-output guard follows a package test's direct helper import", 
   );
 });
 
-test("the Lean-checks stage builds every Lean source entry a package test interprets", async () => {
-  const [verifyScript, surfaces] = await Promise.all([
+test("the Lean-checks stage builds every Lean driver a package test runs", async () => {
+  const [verifyScript, lakefile, surfaces] = await Promise.all([
     readFile("scripts/verify.sh", "utf8"),
+    readFile("lakefile.toml", "utf8"),
     codeSurfaces(worktreePaths()),
   ]);
   const built = new Set(leanCheckBuildModules(verificationFunctionBody(verifyScript, "verify_lean_checks")));
-  const entries = interpretedLeanEntryModules(surfaces);
-  assert.ok(entries.length > 0, "no interpreted Lean entry was discovered");
+  const executables = declaredLeanExecutables(lakefile);
+  const targets = leanDriverEntryModules(surfaces).map((entry) => executables.get(entry) ?? entry);
+  assert.ok(targets.length > 0, "no Lean driver was discovered");
   assert.deepEqual(
-    entries.filter((entry) => !built.has(entry)),
+    targets.filter((target) => !built.has(target)),
     [],
-    "an interpreted entry loads imported object files without building them, so the restored Lean-checks output must contain its whole import closure",
+    "a native driver built outside the Lean-checks stage compiles inside an integration test's deadline, and an interpreted one loads object files it never builds",
   );
 });
 
-test("interpreted entry discovery reads package source paths and the Lean-checks build line", () => {
+test("package tests run tracked Lean drivers rather than generating Lean source", async () => {
+  assert.deepEqual(generatedLeanSourceFindings(await codeSurfaces(worktreePaths())), []);
   assert.deepEqual(
-    interpretedLeanEntryModules([
-      { relativePath: "packages/example/test/targets.ts", source: 'runLeanInterpreter("BpmnSemantics/ExampleMain.lean", [], 1);' },
+    generatedLeanSourceFindings([
+      { relativePath: "packages/example/test/targets.ts", source: "await writeFile(driver, `import BpmnSemantics.Example\ndef main : IO Unit := pure ()`);" },
+      { relativePath: "scripts/example.test.ts", source: "const fixture = `import BpmnSemantics.Example`;" },
+    ]),
+    ["packages/example/test/targets.ts"],
+  );
+});
+
+test("driver entry discovery reads package source paths and the Lean-checks build line", () => {
+  assert.deepEqual(
+    leanDriverEntryModules([
+      { relativePath: "packages/example/test/targets.ts", source: 'runLeanDriver("BpmnSemantics/ExampleMain.lean", [], 1);' },
       { relativePath: "packages/example/test/other.ts", source: "const program = 'BpmnSemantics/Nested/OtherMain.lean';" },
       { relativePath: "scripts/source-analysis.ts", source: 'readFile("BpmnSemantics/NotAnEntry.lean");' },
     ]),

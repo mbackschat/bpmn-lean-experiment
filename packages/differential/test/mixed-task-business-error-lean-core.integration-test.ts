@@ -16,7 +16,7 @@ import type { Scenario, ScenarioResult, SemanticProcessProgram, Stimulus, Variab
 import { compile, profile, source } from "../../bpmn-source/test/mixed-task-business-error-fixture.ts";
 import { semanticProcessTestLimits } from "../../bpmn-source/test/semantic-process-compilation-test-support.ts";
 import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
@@ -126,7 +126,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
       await writeFile(path.join(directory, scenario.bpmn.relativePath), xml);
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
     const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "business Error Lean result"));
@@ -204,7 +204,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
         assert.deepEqual(refused.result.state, before);
         assert.deepEqual(refused.committedTransitions, []);
         await writeFile(paths[0]!, JSON.stringify(invalid));
-        await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /variable bindings must have unique names in canonical order/);
+        await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /variable bindings must have unique names in canonical order/);
       }
     }
     const metadataInput = inputs.find(input => input.id === "string-metadata-error-recovery");
@@ -224,10 +224,10 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
         programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
         programWellFormed: true, programProfileCapabilitiesValid: false });
       await writeFile(definitions, JSON.stringify(invalid) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
       await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
         checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
     }
     assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
     await writeFile(paths[0]!, JSON.stringify(baseline.scenario));
@@ -244,7 +244,7 @@ test("business Error recovery agrees with Lean on exact lowering, repeated owner
     }) };
     assert.equal(isWellFormedSemanticProcessProgram(swapped), true, "the lowering check must reject a structurally valid route swap");
     await writeFile(definitions, JSON.stringify({ scenarioId: baseline.scenario.id, checkedProcess: baseline.checkedProcess, semanticProcess: swapped }) + "\n");
-    await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /Semantic Process does not equal Lean lowering/);
+    await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /Semantic Process does not equal Lean lowering/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

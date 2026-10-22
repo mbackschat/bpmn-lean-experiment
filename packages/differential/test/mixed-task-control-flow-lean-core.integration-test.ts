@@ -15,7 +15,7 @@ import {
 import type { CheckedProcess, SemanticProcessProgram, Scenario, ScenarioResult, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
 import { compile, invoiceWithBurst, profile, source } from "../../bpmn-source/test/mixed-task-control-flow-fixture.ts";
 import { parseWireJson, parseWireJsonBytes } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { readDefinitionAdmissionVectors } from "./definition-admission-target.ts";
 import type { DefinitionAdmissionInput, DefinitionAdmissionResult } from "./definition-admission-target.ts";
 
@@ -182,7 +182,7 @@ test("mixed-task branching, rework, local data and complete publications agree w
       await writeFile(path.join(directory, scenario.bpmn.relativePath), xml);
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
     const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; definitionBinding: unknown; commandPublications: unknown;
     }>(line, "mixed-task Lean result"));
@@ -263,10 +263,10 @@ test("mixed-task branching, rework, local data and complete publications agree w
         programProfileCapabilitiesValid: false }, { scenarioId: `${id}-il-only`, checkedWellFormed: true,
         programWellFormed: true, programProfileCapabilitiesValid: false });
       await writeFile(definitions, JSON.stringify(invalid) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /checked Process is not well formed/);
       await writeFile(definitions, JSON.stringify({ scenarioId: metadataInput.scenario.id,
         checkedProcess: metadataInput.checkedProcess, semanticProcess: mutate(metadataInput.program) }) + "\n");
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, metadataPath], 1), /Semantic Process does not equal Lean lowering/);
     }
     assert.deepEqual(await readDefinitionAdmissionVectors(path.join(directory, "admission.jsonl"), admissionInputs), expectedAdmissions);
     const baseline = inputs[0]!;
@@ -280,7 +280,7 @@ test("mixed-task branching, rework, local data and complete publications agree w
     const internalCycle = lowerCheckedProcess(checkedProcess);
     assert.equal(isWellFormedSemanticProcessProgram(internalCycle), false, "a reachable/coreachable internal-only rework cycle must reject");
     await writeFile(definitions, JSON.stringify({ scenarioId: baseline.scenario.id, checkedProcess, semanticProcess: internalCycle }) + "\n");
-    await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /checked Process is not well formed/);
+    await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, paths[0]!], 1), /checked Process is not well formed/);
     const bounded = inputs.find(input => input.id === "eight-step-resumption")!;
     const choice = bounded.checkedProcess.nodes.find(node => node.id === "Burst1Choice0");
     assert.ok(choice?.kind === CheckedNodeKind.ExclusiveGateway);
@@ -304,7 +304,7 @@ test("mixed-task branching, rework, local data and complete publications agree w
     const boundedPath = path.join(directory, "over-bound-scenario.json");
     await writeFile(boundedPath, JSON.stringify(bounded.scenario));
     await writeFile(definitions, JSON.stringify({ scenarioId: bounded.scenario.id, checkedProcess: tooLong, semanticProcess: tooLongProgram }) + "\n");
-    await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, boundedPath], 1), /checked Process is not well formed/);
+    await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, boundedPath], 1), /checked Process is not well formed/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

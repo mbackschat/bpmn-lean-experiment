@@ -12,7 +12,7 @@ import { parseWireJson } from "../../../scripts/strict-json.ts";
 import { domainCases, selectedProfileContexts, values } from "./scenario-value-domain-cases.ts";
 import type { DomainCase } from "./scenario-value-domain-cases.ts";
 import { assertProfilesEnrolled } from "./scenario-value-domain-expectations.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 test("every registered profile states its expected value domain on every surface", async () => {
   assertProfilesEnrolled((await selectedProfileContexts()).keys());
@@ -126,35 +126,12 @@ test("a Program without exactly one root scope is unsupported by both implementa
 async function leanScenarioSupport(inputs: ReadonlyArray<{ program: unknown; scenario: { id: string } }>) {
   const directory = await mkdtemp(path.join(tmpdir(), "scenario-value-domain-support-"));
   try {
-    const driver = path.join(directory, "Admission.lean");
-    await writeFile(driver, `import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcessJson.Scenario
-open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
-def main (paths : List String) : IO Unit := do
-  for path in paths do
-    let contents ← IO.FS.readFile path
-    let decoded := do
-      let json ← parseWireJson contents
-      requireObjectShape json ["program", "scenario"]
-      let program ← decodeProgram (← field json "program")
-      let scenario ← decodeScenario (← field json "scenario")
-      let supported := supportsScenario program scenario
-      let unsupported : BpmnSemantics.ScenarioResult :=
-        { outcome := .semantic .unsupported, trace := [.deployment .unsupported] }
-      let unsupportedResultExact := supported || decide (BpmnSemantics.SemanticProcess.runScenario program scenario = unsupported)
-      pure (scenario.id.value, supported, unsupportedResultExact)
-    match decoded with
-    | .error message => throw (IO.userError message)
-    | .ok (id, supported, unsupportedResultExact) => IO.println (Json.mkObj [("id", toJson id), ("supported", toJson supported),
-        ("unsupportedResultExact", toJson unsupportedResultExact)]).compress
-`);
     const paths = await Promise.all(inputs.map(async ({ program, scenario }) => {
       const file = path.join(directory, `${scenario.id}.json`);
       await writeFile(file, JSON.stringify({ program, scenario }));
       return file;
     }));
-    const execution = await runLeanInterpreter(driver, paths, inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/ScenarioSupportJsonMain.lean", paths, inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ id: string; supported: boolean;
       unsupportedResultExact: boolean }>(line, "scenario support"));
     assert.equal(actual.length, inputs.length);
@@ -224,7 +201,7 @@ test("every refusal class has complete Lean/core result agreement and unsupporte
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, ...paths], inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{ scenarioId: string; scenario: unknown;
       result: ScenarioResult; commandPublications: unknown }>(line, "scenario results"));
     assert.equal(actual.length, inputs.length);
@@ -253,7 +230,7 @@ test("the emitter rejects definition binding for wrong ordinary, Message and Tim
         semanticProcess: input.context.semanticProcess }) + "\n");
       const file = path.join(directory, "wrong-process.json");
       await writeFile(file, JSON.stringify(input.scenario));
-      await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, file], 1),
+      await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", ["--publications", definitions, file], 1),
         error => error instanceof Error && error.message.split(/\r?\n/u).includes(
           `uncaught exception: definition identity does not match scenario ${input.scenario.id}`));
     }
@@ -287,7 +264,7 @@ test("strict wire decoding rejects non-String correlation and noncanonical patch
         const scenario = { ...input.scenario, stimuli: [...input.scenario.stimuli.slice(0, -1), stimulus] };
         const file = path.join(directory, "invalid.json");
         await writeFile(file, JSON.stringify(scenario));
-        await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, file], 1),
+        await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean", [definitions, file], 1),
           diagnostic);
       }
     }

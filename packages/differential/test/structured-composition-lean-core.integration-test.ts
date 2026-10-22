@@ -14,7 +14,7 @@ import type { Scenario, ScenarioResult, Stimulus } from "@bpmn-lean/semantic-cor
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import type { MutableScenarioResult } from "./pipeline-types.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { binding, complete, eightStepSource, instanceId, invoiceSource, nineStepSource, serialSource, start }
   from "./structured-composition-fixtures.ts";
 
@@ -88,7 +88,7 @@ test("private composition binds independent Lean lowering, invoice execution, pu
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; commandPublications: unknown;
@@ -207,7 +207,7 @@ test("private composition binds independent Lean lowering, invoice execution, pu
     }) };
     await writeFile(definitions, JSON.stringify({ scenarioId: bounded.scenario.id, checkedProcess,
       semanticProcess: lowerCheckedProcess(checkedProcess) }) + "\n");
-    await assert.rejects(runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    await assert.rejects(runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       [definitions, path.join(directory, "eight-step.json")], 1), /checked Process is not well formed/);
   } finally {
     await rm(directory, { recursive: true, force: true });

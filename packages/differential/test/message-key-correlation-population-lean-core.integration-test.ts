@@ -18,7 +18,7 @@ import {
   indexExactRecords,
   projectRoot,
 } from "./pipeline-target-support.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 type LeanPopulationResultRecord = Readonly<{
   scenarioId: string;
@@ -45,7 +45,7 @@ test("compares all Message-correlation population schedules between Lean and the
       ).join("\n")}\n`,
       "utf8",
     );
-    const execution = await runLeanInterpreter(
+    const execution = await runLeanDriver(
       "BpmnSemantics/EnginePopulationScenarioJsonMain.lean",
       [
         definitionsPath,

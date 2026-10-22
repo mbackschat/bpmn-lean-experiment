@@ -10,7 +10,7 @@ import { CommandOutcome, EffectExecutionResultKind, ObservationRequestKind, Scen
   projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario,
   type Scenario, type Stimulus } from "@bpmn-lean/semantic-core";
 import { isDeepStrictEqual } from "node:util";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 const instanceId = "CompensationPipeline_1";
@@ -65,7 +65,7 @@ test("the checked-source Compensation scenarios agree through success and handle
             ObservationRequestKind.OpenTimers, ObservationRequestKind.OpenEffects, ObservationRequestKind.Variables,
             ObservationRequestKind.EnabledInteractions, ObservationRequestKind.LogicalTime],
           // The trigger capsule selects no CIB oracle (Normative authority and interpretation boundary).
-          // These private interpreter inputs therefore carry no CIB source or compatibility claim.
+          // These private Lean inputs therefore carry no CIB source or compatibility claim.
           provenance: { normativeRefs: ["BPMN 2.0.2 Clause 10.7.2", "BPMN 2.0.2 Clause 13.5.5",
             "BPMN 2.0.2 Clause 13.3.2"], cibRevision: "not-applicable", cibRefs: [] },
         });
@@ -83,7 +83,7 @@ test("the checked-source Compensation scenarios agree through success and handle
       await writeFile(scenarioPath, JSON.stringify(scenario));
       return scenarioPath;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...scenarioPaths], scenarios.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map((line) =>
       parseWireJson<{ scenarioId: string; scenario: Scenario; result: unknown; commandPublications: unknown }>(line, "Compensation Lean result"));
@@ -123,7 +123,7 @@ test("the checked-source Compensation scenarios agree through success and handle
     const oneDefinition = path.join(directory, "one-definition.jsonl");
     await writeFile(oneDefinition, JSON.stringify({ scenarioId: first.scenarioId,
       checkedProcess: compilation.checkedProcess, semanticProcess: program }));
-    const ordinary = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const ordinary = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       [oneDefinition, firstScenarioPath], 1);
     const ordinaryRecord = parseWireJson<Record<string, unknown>>(ordinary.stdout, "ordinary scenario result");
     assert.equal("commandPublications" in ordinaryRecord, false);

@@ -11,7 +11,7 @@ import {
   replayCommittedTransitions, runScenario,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario, Stimulus } from "@bpmn-lean/semantic-core";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 const instanceId = "SubscriptionInstance";
@@ -116,7 +116,7 @@ test("source-bound subscriptions agree through command closure, lifetime races, 
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], inputs.length);
     const actual = execution.stdout.split("\n").filter(line => line.length > 0).map((line) =>
       parseWireJson<{ scenarioId: string; scenario: Scenario; result: unknown; commandPublications: unknown }>(line, "subscription Lean result"));

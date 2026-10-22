@@ -12,7 +12,7 @@ import {
 } from "@bpmn-lean/semantic-core";
 import type { Scenario, ScenarioResult, Stimulus } from "@bpmn-lean/semantic-core";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 const profile = "bpmn-2.0.2-interrupting-message-event-subprocess-draft";
 const instanceId = "application-parity";
@@ -72,7 +72,7 @@ test("private Message handler agrees across independent lowering, races and comp
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], inputs.length);
     const records = execution.stdout.split("\n").filter(line => line.length > 0).map(line => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: ScenarioResult; commandPublications: unknown;

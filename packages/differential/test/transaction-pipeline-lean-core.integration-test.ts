@@ -9,7 +9,7 @@ import { CommandOutcome, EffectExecutionResultKind, ObservationRequestKind, Scen
   TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID, applyStimulusWithTrace, initialState,
   isWellFormedRuntimeState, projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario,
   type Scenario, type Stimulus } from "@bpmn-lean/semantic-core";
-import { runLeanInterpreter } from "./semantic-differential-targets.ts";
+import { runLeanDriver } from "./semantic-differential-targets.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 test("Transaction source lowering and paired publications agree in Lean and the core", async () => {
@@ -79,7 +79,7 @@ test("Transaction source lowering and paired publications agree in Lean and the 
       await writeFile(file, JSON.stringify(scenario));
       return file;
     }));
-    const execution = await runLeanInterpreter("BpmnSemantics/SemanticProcessJsonMain.lean",
+    const execution = await runLeanDriver("BpmnSemantics/SemanticProcessJsonMain.lean",
       ["--publications", definitions, ...paths], contexts.length);
     const records = execution.stdout.split("\n").filter(line => line.length > 0).map((line) => parseWireJson<{
       scenarioId: string; scenario: Scenario; result: unknown; commandPublications: unknown;
