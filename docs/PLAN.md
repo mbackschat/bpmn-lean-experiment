@@ -76,19 +76,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-04`, the next increment of the embedded and called scope family in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01` and `PC-SCOPE-02` stay open for their recorded remainders. Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-04` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: the [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one serial Call with caller/callee isolation and outputs at normal return, growing the `DATA` family's cumulative profile.
+Deliverable: the approved [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one serial Call, growing the `DATA` profile. It proceeds ahead of `PC-SCOPE-03` with in-document key equality, an obligation the checklist records on that row.
 
-Decision: proceed ahead of `PC-SCOPE-03` with in-document key equality, the degenerate case that policy must preserve for the CIB overlay; the checklist records that obligation on `PC-SCOPE-03`.
+Acceptance blockers: Lean/core implementation, the CIB probe, hosting and registration, then family closure; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
 
-Acceptance blockers: the correction audit of the cold proposal review; the inherited unattributed public publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
+Current result: proposal approved; review of `9358fb36` required ten edits, audited at `aeaf5512`.
 
-Current result: the cold proposal review of `9358fb36` required ten bounded edits and confirmed the `DATA` profile lane; the corrections are committed for audit.
+Effort budget: 12 hours wall from 2026-10-22 through the semantic checkpoint, reassessed at the limit.
 
-Effort budget: 3 hours wall from 2026-10-22 for the proposal and its review, about 2.5 used, reassessed at the limit.
-
-Next action: run the correction audit with the same reviewer. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: `node scripts/what-binds.ts` on the grown paths, then red/green from the TypeScript Call arm and source admission, then the Lean evaluators and laws. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
 

@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and delivery boundary
 
@@ -84,7 +84,7 @@ Layers: `CVM-ISOLATE-01` and `CVM-RETIRE-01` restate the BPMN instance separatio
 
 ## Separating witnesses
 
-Observation surfaces differ by lane. Lean, the core and the pipeline agree only on what `StateObservation` shows, its Process variables at each stable wait and at completion. Frame contents and disposal rest on Lean laws and core state validity. Called-task detail is hosted evidence only. Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB probe, M seeded mutation.
+Observation surfaces differ by lane. Lean, the core and the pipeline agree only on what `StateObservation` shows, its Process variables at each stable wait and at completion. Frame contents and disposal rest on Lean laws and core state validity. Called-task detail is hosted evidence only. Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB probe, N negative witness, M seeded mutation.
 
 | Rule | Witness | Lanes | Mutant it kills |
 |---|---|---|---|
@@ -159,6 +159,8 @@ The profile lane: this proposal grows the `DATA` family's cumulative profile bec
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `9358fb36` | `fork-turns-none` | `approve-with-required-edits` | `aeaf5512` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The cold proposal review of `9358fb36` (baseline `7e12e6db`, packet `98467f79a1ee2277b5a1303bb15fa451630ba15845050e603d462039ebcee08e`) required ten bounded edits and confirmed the `DATA` profile lane; the same reviewer's first audit approved correction `aeaf5512` on 2026-10-22. Its lane-legend advisory is applied without re-audit, and its evaluator advisory binds implementation: the Call arm needs its own reader with present, absent-to-null and refused outcomes rather than the unchanged nested input evaluator.
