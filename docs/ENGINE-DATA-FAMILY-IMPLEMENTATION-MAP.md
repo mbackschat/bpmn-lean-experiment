@@ -66,4 +66,4 @@ The implemented [nested scope-data account](capsules/NESTED-EMBEDDED-SCOPE-DATA-
 
 The [capsule receipt](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#independent-cold-review-receipt) owns review state, and its [epistemic closure](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#epistemic-closure) records the complete pipeline, Temporal and model-corpus gates and the full Lean gate's inherited placeholder failure.
 
-**Open.** CIB calibration of the third nesting level (`CIB-EXT-0020`); concurrent, repeated-activation and Call scope data (`PC-SCOPE-01`, `02`, `04`).
+**Open.** CIB calibration of the third nesting level (`CIB-EXT-0020`); concurrent, repeated-activation and Call scope data (`PC-SCOPE-01`, `02`, `04`). Defect: [hosted caller User Task detail](../packages/temporal-adapter/protocol/src/user-task-detail.ts) reads Process bindings only, so a frame-shadowed name shows the Process value where CIB's task variable read shows the frame's.

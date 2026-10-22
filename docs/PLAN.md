@@ -80,13 +80,15 @@ Current task: `PC-SCOPE-04`, the next increment of the embedded and called scope
 
 Deliverable: the [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one serial Call with caller/callee isolation and outputs at normal return, growing the `DATA` family's cumulative profile.
 
-Acceptance blockers: the cold proposal review; the inherited unattributed public publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
+Decision: proceed ahead of `PC-SCOPE-03` with in-document key equality, the degenerate case that policy must preserve for the CIB overlay; the checklist records that obligation on `PC-SCOPE-03`.
 
-Current result: the proposal is drafted from a cited extraction of CIB Seven `2.2.0` (tag `v2.2.0`).
+Acceptance blockers: the correction audit of the cold proposal review; the inherited unattributed public publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
 
-Effort budget: 3 hours wall from 2026-10-22 for the proposal and its review, about 1 used, reassessed at the limit.
+Current result: the cold proposal review of `9358fb36` required ten bounded edits and confirmed the `DATA` profile lane; the corrections are committed for audit.
 
-Next action: commit the proposal and run its cold proposal review. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Effort budget: 3 hours wall from 2026-10-22 for the proposal and its review, about 2.5 used, reassessed at the limit.
+
+Next action: run the correction audit with the same reviewer. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
 
