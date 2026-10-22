@@ -327,6 +327,21 @@ test("hosted Lean checks consume the completed library output in a separate boun
   );
 });
 
+// Re-running a failed job raises github.run_attempt while the producing job keeps
+// its earlier key, so an exact-attempt restore misses on every partial rerun. A
+// run builds one commit, so any attempt's staged output is valid input.
+test("staged job handoffs restore an earlier attempt of the same run", async () => {
+  const workflow = await readFile(verificationWorkflowPath, "utf8");
+  const consumers = workflow.split(/\n      - name: /u).filter((step) => /fail-on-cache-miss: true/u.test(step));
+  assert.ok(consumers.length >= 7, "every staged-output consumer is checked");
+  for (const step of consumers) {
+    const stage = step.match(/key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u)?.[1];
+    assert.ok(stage !== undefined, step);
+    assert.match(step, /uses: actions\/cache\/restore@/u, `${stage} consumers never save the handoff again`);
+    assert.ok(step.includes(`restore-keys: ${stage}-\${{ runner.os }}-\${{ github.run_id }}-\n`), stage);
+  }
+});
+
 test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
   const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
     readFile(pipelineTestPath, "utf8"),

@@ -197,10 +197,11 @@ jobs:
           use-mathlib-cache: false
 
       - name: Restore Lean library output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
           key: verify-lean-library-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-lean-library-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Require clean committed HEAD
@@ -340,7 +341,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Restore runtime output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             packages/*/dist
@@ -349,6 +350,7 @@ jobs:
             .cache/temporal-cli
             .cache/temporal-test-server
           key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-runtime-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Require clean committed HEAD
@@ -397,7 +399,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Restore runtime output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             packages/*/dist
@@ -406,6 +408,7 @@ jobs:
             .cache/temporal-cli
             .cache/temporal-test-server
           key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-runtime-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Require clean committed HEAD
@@ -471,14 +474,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Restore Lean output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
           key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Restore runtime output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             packages/*/dist
@@ -487,6 +491,7 @@ jobs:
             .cache/temporal-cli
             .cache/temporal-test-server
           key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-runtime-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Require clean committed HEAD
@@ -553,14 +558,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Restore Lean output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
           key: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-lean-checks-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Restore runtime output
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             packages/*/dist
@@ -569,6 +575,7 @@ jobs:
             .cache/temporal-cli
             .cache/temporal-test-server
           key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: verify-runtime-${{ runner.os }}-${{ github.run_id }}-
           fail-on-cache-miss: true
 
       - name: Require clean committed HEAD
