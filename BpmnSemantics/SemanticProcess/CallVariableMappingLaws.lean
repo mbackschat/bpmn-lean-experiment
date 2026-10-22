@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 
 /-! # Call variable mapping laws
 
-The proved lane of the [Call variable mapping proposal](../../docs/capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#lean-assurance-lane).
+The proved lane of the [Call variable mapping specification](../../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#lean-assurance-lane).
 Isolation is a property of every state reachable while a call is live, which no finite witness
 covers, so it is stated over arbitrary scoped variables: resolution from a called-owned scope never
 reads or writes the hosting Process binding and never selects a frame of another instance.

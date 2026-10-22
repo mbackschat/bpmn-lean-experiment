@@ -1,7 +1,7 @@
 /**
  * The core journey of the retained loan application (CVM-IN-01, CVM-ISOLATE-01, CVM-TASK-01, CVM-OUT-01,
  * CVM-RETIRE-01, CVM-REFUSE-01, CVM-START-01). Frame contents are runtime-only, so this test reads committed state
- * directly; the oracle is the Call variable mapping proposal's stable rules and the CIB extraction they record.
+ * directly; the oracle is the Call variable mapping specification's stable rules and the CIB extraction they record.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";

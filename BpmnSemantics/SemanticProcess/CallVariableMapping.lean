@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.NestedScopeData
 /-! # CIB Call variable mappings
 
 `camunda:in`/`camunda:out` copies across the instance boundary, per the
-[Call variable mapping proposal](../../docs/capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#stable-rules).
+[Call variable mapping specification](../../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#stable-rules).
 Invocation installs the called-root frame, which stands in for the called instance's Process store;
 return reads every output from that frame before the called tree is disposed and writes them by
 NSD-WRITE-01 from the Call's enclosing occurrence. An absent source copies a present null, as CIB's

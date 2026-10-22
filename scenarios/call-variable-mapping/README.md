@@ -1,6 +1,6 @@
 # Call variable mapping scenarios
 
-The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and the [Call variable mapping proposal](../../docs/capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#separating-witnesses) own the bounded account. One retained project-authored model shares the nested scope-data profile, with an exact source overlay that binds the acknowledgement Service Task to a caller-supplied Activity handler. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and the [Call variable mapping specification](../../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#separating-witnesses) own the bounded account. One retained project-authored model shares the nested scope-data profile, with an exact source overlay that binds the acknowledgement Service Task to a caller-supplied Activity handler. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 The [loan application](loan-application.bpmn) with its [handler](loan-application-overlay.json) acknowledges an application, passes the applicant and amount into a reusable identity-verification Process through a Call Activity with mapped inputs and outputs, and lets a review Sub-Process confirm or override the returned verdict before the decision is published.
 

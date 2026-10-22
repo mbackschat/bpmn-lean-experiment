@@ -76,18 +76,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-04` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
+Current task: a family proposal for `PC-SCOPE-05` with `PC-SCOPE-06` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-04` closed on 2026-10-23 under its [closure receipt](capsules/CALL-VARIABLE-MAPPING-SPEC.md#independent-cold-review-receipt), `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: the approved [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one root-path Call in the `DATA` profile; Sub-Process placement moved to `PC-SCOPE-05`.
+Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls, including the mapped Call inside an embedded Sub-Process, and of exceptional return with propagated cancellation, which share called-instance association, return ownership and the Lean premises that bind Call callers to Process roots.
 
-Acceptance blockers: the cold closure review's audit of its required edits; the unattributed publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) did not reproduce in the hosted lane.
+Acceptance blockers: the proposal's cold review; whether the `PC-SCOPE-03` resolution contract joins the batch, decided from the rows' dependency entries before drafting.
 
-Current result: the semantic checkpoint approved corrections `560ba25c`; Lean laws, fixture, pipeline agreement, Temporal hosting and the CIB `2.2.0` probe are green, recorded in the [epistemic closure](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#epistemic-closure).
+Current result: none yet for this family.
 
-Effort budget: 12 hours wall from 2026-10-22 through closure; about 5.5 used, approximated by the commit span from the proposal `9358fb36` to the gated head.
+Effort budget: 6 hours wall from 2026-10-23 through proposal approval, reassessed at the limit.
 
-Next action: the closure reviewer's correction audit, then graduation and the checklist receipt; then a family proposal for `PC-SCOPE-05` with `PC-SCOPE-06`, which share the called-instance placement mechanism. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: read the three rows, the pinned CIB Call sources they cite and the consumers of `calledProcessAssociationsValid`, then draft the proposal. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
-Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
+Oracle: a return, output or cancellation delivered to the wrong caller occurrence, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.

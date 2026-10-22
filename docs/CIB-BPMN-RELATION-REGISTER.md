@@ -561,7 +561,7 @@ CIB Seven `2.2.0` accepts `camunda:inputOutput` on an ordinary embedded `subProc
 
 ### CIB-EXT-0021 — Call variable mappings by name across the instance boundary
 
-**Status:** Selected bounded extension under the [Call variable mapping proposal](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#normative-basis-and-cib-classification), calibrated against CIB Seven `2.2.0`.
+**Status:** Selected bounded extension under the [Call variable mapping specification](capsules/CALL-VARIABLE-MAPPING-SPEC.md#normative-basis-and-cib-classification), calibrated against CIB Seven `2.2.0`.
 
 BPMN 2.0.2 Clause 10.3.6 transfers Call data only through matching Call Activity and CallableElement inputs and outputs, and Clause 13.3.4 gives the called Process its own instance, so name-based transfer is an extension layered on the BPMN Call lifecycle. CIB Seven `2.2.0` reads `camunda:in`/`camunda:out` (`BpmnParse` Call parsing), evaluates every input in document order against the Call Activity's execution before the called instance starts (`CallableElementActivityBehavior`, `CallActivityBehavior`), copies an unset source as a present null (`CallableElementParameter`), gives the called instance no parent variable scope (`PvmExecutionImpl`), reads every output from the called process-instance scope at normal end and writes it with `setVariables` from the Call Activity's execution, so it lands at the nearest existing caller binding or the caller Process (`AbstractVariableScope.setVariable`, see `CIB-EXT-0020`), and silently drops outputs targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances`. It reads `calledElement` as a raw deployment key, although BPMN types it as `xsd:QName`.
 

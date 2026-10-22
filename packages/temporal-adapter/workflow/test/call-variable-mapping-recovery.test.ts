@@ -1,5 +1,5 @@
 /**
- * Continue-As-New carries the called-root frame (the Call variable mapping proposal's Temporal preflight): every stable
+ * Continue-As-New carries the called-root frame (the Call variable mapping specification's Temporal preflight): every stable
  * checkpoint of the loan application decodes to itself, and a carried frame breaking the called-root arm of frame
  * validity, owned by the caller or outliving its called root is refused instead of resumed.
  */

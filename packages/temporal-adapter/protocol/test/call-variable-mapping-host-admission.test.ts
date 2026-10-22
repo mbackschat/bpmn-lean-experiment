@@ -1,5 +1,5 @@
 /**
- * Hosting preflight of the mapped Call (the Call variable mapping proposal's Temporal preflight): the retained loan
+ * Hosting preflight of the mapped Call (the Call variable mapping specification's Temporal preflight): the retained loan
  * application is admitted for hosting, and the Start capacity journeys reserve a full `CVM-TASK-01` patch for each
  * called task under every name it may write, including the output source, as for any nested scope-data task.
  */

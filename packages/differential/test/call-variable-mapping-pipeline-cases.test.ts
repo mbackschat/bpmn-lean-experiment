@@ -1,5 +1,5 @@
 /**
- * Locks the registered loan-application schedules against the Call variable mapping proposal's separating witnesses
+ * Locks the registered loan-application schedules against the Call variable mapping specification's separating witnesses
  * without Lean or Temporal: inputs are copied by value with an absent source becoming a present null (CVM-IN-01), a called
  * write stays in the called frame (CVM-ISOLATE-01), outputs land at the Process and a never-set source overwrites with a
  * present null (CVM-OUT-01), called patches may not name caller names (CVM-TASK-01), a completion addressed to the caller

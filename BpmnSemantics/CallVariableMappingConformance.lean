@@ -11,7 +11,7 @@ into the called-root frame, the called tasks write the namesake `amount` and the
 Sub-Process initializes its frame from `decision`. Each step is one dispatcher evaluation and the
 theorems only read its result; the quantified laws are in
 [CallVariableMappingLaws](SemanticProcess/CallVariableMappingLaws.lean), and the rule-to-witness table
-is the [Call variable mapping proposal](../docs/capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md#separating-witnesses)'s.
+is the [Call variable mapping specification](../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#separating-witnesses)'s.
 -/
 
 namespace BpmnSemantics.CallVariableMappingConformance
