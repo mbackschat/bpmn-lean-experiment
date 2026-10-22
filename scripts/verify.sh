@@ -40,10 +40,17 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:differential:built
 }
 
-# The Temporal suite runs as its own hosted job after runtime: inside it, runtime reached 16 of its
-# 20 minutes (hosted 2026-10-22).
+# The Temporal suite runs as two hosted jobs after runtime: inside runtime it reached 16 of 20
+# minutes, and as one job it needed about 14 of 15, the serial witnesses alone 5.3 minutes (hosted
+# 2026-10-22). Together the two stages run every part of test:temporal:built.
 verify_temporal() {
-  ./scripts/pnpm.sh run test:temporal:built
+  ./scripts/pnpm.sh run test:temporal:built:components
+  ./scripts/pnpm.sh run test:temporal:built:concurrent
+  ./scripts/pnpm.sh run test:temporal:built:hosted
+}
+
+verify_temporal_serial() {
+  ./scripts/pnpm.sh run test:temporal:built:hosted-serial
 }
 
 verify_pipeline() {
@@ -80,6 +87,7 @@ case "${1:-all}" in
     verify_lean_checks
     verify_runtime
     verify_temporal
+    verify_temporal_serial
     verify_pipeline
     verify_composition_parity
     ;;
@@ -87,7 +95,8 @@ case "${1:-all}" in
   lean-checks) verify_lean_checks ;;
   runtime) verify_common; verify_runtime ;;
   temporal) verify_temporal ;;
+  temporal-serial) verify_temporal_serial ;;
   pipeline) verify_pipeline ;;
   composition-parity) verify_composition_parity ;;
-  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|pipeline|composition-parity]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|temporal-serial|pipeline|composition-parity]" >&2; exit 2 ;;
 esac

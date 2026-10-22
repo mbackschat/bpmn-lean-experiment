@@ -214,11 +214,16 @@ async function assertLineOccursOnce(
   );
 }
 
-test("default verification includes the focused Temporal history gate", async () => {
-  await assertLineOccursOnce(
-    verifyScriptPath,
-    "./scripts/pnpm.sh run test:temporal:built",
-  );
+test("default verification runs every part of the focused Temporal gate exactly once", async () => {
+  const manifest = JSON.parse(
+    await readFile(rootPackageManifestPath, "utf8"),
+  ) as { scripts?: Record<string, string> };
+  const parts = (manifest.scripts?.["test:temporal:built"] ?? "").split(" && ")
+    .map((command) => /^pnpm (test:temporal:built:[\w-]+)$/u.exec(command)?.[1]);
+  assert.ok(parts.length > 1 && parts.every((part) => part !== undefined), "test:temporal:built must compose named parts");
+  for (const part of parts) {
+    await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${part}`);
+  }
 });
 
 test("the Temporal source gate typechecks directly executed harnesses first", async () => {
