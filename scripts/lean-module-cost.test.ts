@@ -28,6 +28,7 @@ import {
   leanMemoryAcceptanceViolations,
   type LeanMemoryAcceptanceRecord,
 } from "./lean-memory-acceptance.ts";
+import { leanCodeWithoutComments } from "./lean-source-analysis.ts";
 
 const recordPath = "scripts/lean-module-cost.ts";
 const acceptanceRecordPath = "scripts/lean-memory-acceptance.ts";
@@ -76,7 +77,7 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
     throw new TypeError(`${recordPath} at HEAD carries no readable cost baseline`);
   }
   const defaultMeasuredAtCommit = previous.provenance.measuredAtCommit;
-  const measurements = previous.rows.map((row: unknown): readonly [string, number, string, string] => {
+  const measurements = previous.rows.map((row: unknown): readonly [string, number, string, string?] => {
     if (
       row === null ||
       typeof row !== "object" ||
@@ -93,17 +94,36 @@ function narrowBaseline(loaded: unknown): LeanModuleCostBaseline {
         : defaultMeasuredAtCommit;
     const identity = "measurementReceiptSha256" in row && typeof row.measurementReceiptSha256 === "string"
       ? row.measurementReceiptSha256 : measuredAtCommit;
-    const sourceSha256 = "sourceSha256" in row && typeof row.sourceSha256 === "string"
-      ? row.sourceSha256
-      : createHash("sha256").update(execFileSync("git", ["show",
-        `${measuredAtCommit}:${moduleSourcePath(row.module)}`], { maxBuffer: 8 * 1024 * 1024 })).digest("hex");
-    return [row.module, row.peakResidentKib, identity, sourceSha256];
+    const codeSha256 = committedCodeSha256(row.module);
+    return codeSha256 === undefined ? [row.module, row.peakResidentKib, identity]
+      : [row.module, row.peakResidentKib, identity, codeSha256];
   });
   return { measurements };
 }
 
 function moduleSourcePath(module: string): string {
   return `${module.replaceAll(".", "/")}.lean`;
+}
+
+/** The cost digest of a module: its comment-free code, so a comment repair keeps the measurement bound. */
+function leanCodeSha256(source: Uint8Array): string {
+  return createHash("sha256").update(leanCodeWithoutComments(Buffer.from(source).toString("utf8"))).digest("hex");
+}
+
+/**
+ * The digest of the module's code at `HEAD`, or `undefined` for a module `HEAD` lacks.
+ *
+ * The baseline derives it from committed source rather than reading the
+ * committed row's field, so the ratchet compares like with like even across a
+ * change of what the digest covers.
+ */
+function committedCodeSha256(module: string): string | undefined {
+  try {
+    return leanCodeSha256(execFileSync("git", ["show", `HEAD:${moduleSourcePath(module)}`],
+      { maxBuffer: 8 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] }));
+  } catch {
+    return undefined;
+  }
 }
 
 function measurementSourceMismatches(
@@ -113,16 +133,16 @@ function measurementSourceMismatches(
   return record.rows.flatMap((row) => {
     const sourcePath = moduleSourcePath(row.module);
     const measuredAtCommit = measurementIdentityFor(record, row);
-    if (!/^[0-9a-f]{64}$/u.test(row.sourceSha256)) {
-      return [{ module: row.module, measuredAtCommit, reason: "invalid source digest" }];
+    if (!/^[0-9a-f]{64}$/u.test(row.codeSha256)) {
+      return [{ module: row.module, measuredAtCommit, reason: "invalid code digest" }];
     }
     if (row.measurementReceiptSha256 !== undefined && !/^[0-9a-f]{64}$/u.test(row.measurementReceiptSha256)) {
       return [{ module: row.module, measuredAtCommit, reason: "invalid measurement receipt digest" }];
     }
     try {
-      const actual = createHash("sha256").update(readSource(sourcePath)).digest("hex");
-      return actual === row.sourceSha256 ? []
-        : [{ module: row.module, measuredAtCommit, reason: "source bytes changed" }];
+      const actual = leanCodeSha256(readSource(sourcePath));
+      return actual === row.codeSha256 ? []
+        : [{ module: row.module, measuredAtCommit, reason: `code changed (its digest is now ${actual})` }];
     } catch {
       return [{ module: row.module, measuredAtCommit, reason: "source is unavailable" }];
     }
@@ -292,29 +312,56 @@ test("the declared near-cap disclosure equals the set derived from the recorded 
   );
 });
 
-test("new module measurements bind to archived bytes before the introducing commit exists", () => {
+test("new module measurements bind to archived code before the introducing commit exists", () => {
   const source = Buffer.from("theorem measured : True := True.intro\n");
-  const digest = createHash("sha256").update(source).digest("hex");
+  const digest = leanCodeSha256(source);
   for (const module of ["BpmnSemantics.NewOneConformance", "BpmnSemantics.NewTwoConformance"]) {
     const record: LeanModuleCostRecord = {
       ...leanModuleCostRecord,
       nearCapModules: [],
       rows: [{ module, peakResidentKib: 100, elapsedSeconds: 1,
-        sourceSha256: digest, measurementReceiptSha256: "a".repeat(64) }],
+        codeSha256: digest, measurementReceiptSha256: "a".repeat(64) }],
     };
     assert.deepEqual(measurementSourceMismatches(record, () => source), []);
     assert.equal(measurementSourceMismatches(record, () => Buffer.from("changed\n")).length, 1);
+    assert.deepEqual(measurementSourceMismatches(record, () => Buffer.from(
+      "/-! A repaired link. -/\n\ntheorem measured : True := True.intro -- why\n")), []);
     assert.equal(measurementSourceMismatches(record, () => { throw new Error("missing"); }).length, 1);
     assert.equal(measurementSourceMismatches({ ...record,
-      rows: [{ ...record.rows[0]!, sourceSha256: "" }] }, () => source).length, 1);
+      rows: [{ ...record.rows[0]!, codeSha256: "" }] }, () => source).length, 1);
     assert.equal(measurementSourceMismatches({ ...record,
       rows: [{ ...record.rows[0]!, measurementReceiptSha256: "not-a-receipt" }] }, () => source).length, 1);
   }
 });
 
+test("comment-free Lean code keeps literals and layout while dropping every comment form", () => {
+  const source = String.raw`/-! Module document. -/
+/-- Declaration document /- with a nested block -/. -/
+def marker := "-- kept /- literal -/" -- trailing note
+def apostrophe : Char := '\''
+
+theorem kept : True := by
+  trivial
+`;
+  assert.equal(leanCodeWithoutComments(source), [
+    String.raw`def marker := "-- kept /- literal -/"`,
+    String.raw`def apostrophe : Char := '\''`,
+    "theorem kept : True := by",
+    "  trivial",
+  ].join("\n"));
+});
+
+test("the code digest ignores comments but not code or literals", () => {
+  const digest = (text: string) => leanCodeSha256(Buffer.from(text));
+  const measured = digest('def target := "Task_1"\n');
+  assert.equal(digest('/-- The audited target. -/\ndef target := "Task_1" -- see the capsule\n'), measured);
+  assert.notEqual(digest('def target := "Task_2"\n'), measured);
+  assert.notEqual(digest('def target  := "Task_1"\n'), measured);
+});
+
 test("receipt identity permits a fresh measurement but provenance alone cannot bypass its ratchet", () => {
   const row = { module: "BpmnSemantics.MeasuredConformance", peakResidentKib: 100,
-    elapsedSeconds: 1, sourceSha256: "b".repeat(64) };
+    elapsedSeconds: 1, codeSha256: "b".repeat(64) };
   const measured: LeanModuleCostRecord = { ...leanModuleCostRecord, nearCapModules: [],
     rows: [{ ...row, measurementReceiptSha256: "a".repeat(64) }] };
   const compare = (receipt: string, measuredAtCommit: string) => leanModuleCostViolations({
@@ -325,7 +372,7 @@ test("receipt identity permits a fresh measurement but provenance alone cannot b
   assert.equal(compare("a".repeat(64), "different-provenance").some(
     ({ kind }) => kind === "changed-without-remeasurement"), true);
   assert.deepEqual(compare("b".repeat(64), "same-provenance"), []);
-  const changedSource = { ...measured, rows: [{ ...measured.rows[0]!, sourceSha256: "c".repeat(64) }] };
+  const changedSource = { ...measured, rows: [{ ...measured.rows[0]!, codeSha256: "c".repeat(64) }] };
   assert.equal(leanModuleCostViolations({ record: changedSource,
     baseline: leanModuleCostBaseline(measured), trackedModules: [row.module], measurementSourceMismatches: [],
   }).length, 1, "an unchanged peak does not excuse changed source under the same measurement identity");
@@ -333,7 +380,7 @@ test("receipt identity permits a fresh measurement but provenance alone cannot b
 
 test("new and replacement measurements cannot borrow historical provenance without a receipt", () => {
   const row = { module: "BpmnSemantics.HistoricalConformance", peakResidentKib: 100,
-    elapsedSeconds: 1, sourceSha256: "b".repeat(64), measuredAtCommit: "historical-provenance" };
+    elapsedSeconds: 1, codeSha256: "b".repeat(64), measuredAtCommit: "historical-provenance" };
   const historical: LeanModuleCostRecord = { ...leanModuleCostRecord, nearCapModules: [], rows: [row] };
   for (const replacement of [
     { ...row, module: "BpmnSemantics.UnmeasuredConformance" },

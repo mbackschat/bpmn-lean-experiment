@@ -91,9 +91,9 @@ function ratchetViolations(
     return [];
   }
   const baselineMeasurements = new Map(
-    baseline.measurements.map(([module, kib, measuredAtCommit, sourceSha256]) => [
+    baseline.measurements.map(([module, kib, measuredAtCommit, codeSha256]) => [
       module,
-      { kib, measuredAtCommit, sourceSha256 },
+      { kib, measuredAtCommit, codeSha256 },
     ]),
   );
   const violations: LeanModuleCostViolation[] = [];
@@ -108,7 +108,7 @@ function ratchetViolations(
         reason: "new measurement requires a receipt digest",
       });
     }
-    const sourceChanged = previous?.sourceSha256 !== undefined && previous.sourceSha256 !== row.sourceSha256;
+    const sourceChanged = previous?.codeSha256 !== undefined && previous.codeSha256 !== row.codeSha256;
     if (
       previous !== undefined &&
       previous.measuredAtCommit === measuredAtCommit &&

@@ -11,6 +11,7 @@ export type LeanSourceAnalysis = Readonly<{
   code: string;
   moduleDocuments: ReadonlyArray<LeanModuleDocument>;
   literalRanges: ReadonlyArray<{ start: number; end: number }>;
+  commentRanges: ReadonlyArray<{ start: number; end: number }>;
 }>;
 
 const simpleCharacterEscapes = new Set([
@@ -86,6 +87,7 @@ function masked(text: string): string {
 export function analyzeLeanSource(source: string): LeanSourceAnalysis {
   const moduleDocuments: LeanModuleDocument[] = [];
   const literalRanges: Array<{ start: number; end: number }> = [];
+  const commentRanges: Array<{ start: number; end: number }> = [];
   const chunks: string[] = [];
   let codeStart = 0;
   let index = 0;
@@ -104,7 +106,9 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
     const pair = source.slice(index, index + 2);
     if (pair === "--") {
       const newline = source.indexOf("\n", index + 2);
-      maskThrough(newline === -1 ? source.length : newline);
+      const end = newline === -1 ? source.length : newline;
+      commentRanges.push({ start: index, end });
+      maskThrough(end);
       continue;
     }
     if (pair === "/-") {
@@ -128,6 +132,7 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
       if (depth !== 0) {
         throw new SyntaxError(`unterminated Lean block comment at line ${line}`);
       }
+      commentRanges.push({ start: index, end: cursor });
       maskThrough(cursor);
       continue;
     }
@@ -167,7 +172,26 @@ export function analyzeLeanSource(source: string): LeanSourceAnalysis {
   }
 
   chunks.push(source.slice(codeStart));
-  return { code: chunks.join(""), moduleDocuments, literalRanges };
+  return { code: chunks.join(""), moduleDocuments, literalRanges, commentRanges };
+}
+
+/**
+ * The source with every comment form removed, including module and declaration
+ * documents, and with trailing whitespace and blank lines dropped.
+ *
+ * Literals and indentation stay, because they are elaboration input. This is the
+ * text [the cost record](./lean-module-cost.ts) binds, so a comment repair does
+ * not invalidate a memory measurement of unchanged code.
+ */
+export function leanCodeWithoutComments(source: string): string {
+  const kept: string[] = [];
+  let cursor = 0;
+  for (const { start, end } of analyzeLeanSource(source).commentRanges) {
+    kept.push(source.slice(cursor, start));
+    cursor = end;
+  }
+  kept.push(source.slice(cursor));
+  return kept.join("").split("\n").map((line) => line.trimEnd()).filter((line) => line.length > 0).join("\n");
 }
 
 /** Tracked and non-ignored pending Lean sources that still exist in the worktree. */
