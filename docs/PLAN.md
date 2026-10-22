@@ -76,18 +76,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes, and `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
+Current task: `PC-SCOPE-04`, the next increment of the embedded and called scope family in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01` and `PC-SCOPE-02` stay open for their recorded remainders. Multi-Instance closure stays held at qualification.
 
-Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md); `PC-SCOPE-02` stays open for re-entry (`PC-CF-06`) and data/effect lifetimes, and implicit fan-in (`PC-CF-07`) stays later.
+Deliverable: the [Call variable mapping account](capsules/CALL-VARIABLE-MAPPING-PROPOSAL.md), CIB `camunda:in`/`camunda:out` on one serial Call with caller/callee isolation and outputs at normal return, growing the `DATA` family's cumulative profile.
 
-Acceptance blockers: none; the closure landed at `e2bfb1e4`.
+Acceptance blockers: the cold proposal review; the inherited unattributed public publication-read failure of the [Call data closure review](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) blocks public qualification if it reproduces.
 
-Current result: closure reviews approved at `f65f05a1` with both correction audits resolved; the capsule graduated. Cost rows now bind comment-free module code, so the stale Lean capsule links were repaired and both nested scope capsules graduated without re-measurement.
+Current result: the proposal is drafted from a cited extraction of CIB Seven `2.2.0` (tag `v2.2.0`).
 
-Effort budget: 8 hours wall from 2026-10-22 for the journey move and family closure, about 5 used, reassessed at the limit.
+Effort budget: 3 hours wall from 2026-10-22 for the proposal and its review, about 1 used, reassessed at the limit.
 
-Next action: open `PC-SCOPE-04` from its checklist row. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: commit the proposal and run its cold proposal review. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
-Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
+Oracle: an output that skips an absent or never-set source, or a called read or write that reaches a caller namesake.
 
 Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
