@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: owner-approved
+Review: approved
 
 ## Question and delivery boundary
 
@@ -326,6 +326,8 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy).
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `d51d42c4` | `fork-turns-none` | `approve-with-required-edits` | `647ab54c, df3fc157` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The cold proposal review of `d51d42c4` (baseline `2edc6da0`, packet `cffe38786b9e22d808936314177eb310438ac8b05c8425d4a7e8eb0f86c07e86`) required seven bounded edits. It found further hosting-root guards in Lean batch selection and both graph validators, a called-root mapping lookup keyed by definition, a larger Stage B Lean census, an unamended `CIB-EXT-0021` boundary, unrouted deferred shapes, a misapplied capacity envelope and two contradictions. It judged the two-stage split sound and the `testTwoSubProcesses` refusal honest and forward-compatible. The same reviewer's first audit of `647ab54c` resolved six edits and required one more census row. Its second audit approved `df3fc157` on 2026-10-23 and found no correction material enough to need a fresh cold review. Each stage records its own semantic-checkpoint row when that checkpoint is reviewed.

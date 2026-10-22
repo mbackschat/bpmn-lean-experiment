@@ -76,17 +76,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: a proposal for `PC-SCOPE-05` in batch 2 of the [batch order](#scheduled-delivery-batches); `PC-SCOPE-04` closed on 2026-10-23 under its [closure receipt](capsules/CALL-VARIABLE-MAPPING-SPEC.md#independent-cold-review-receipt), `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification. No sibling joins: `PC-SCOPE-03` needs a governed version decision, `PC-SCOPE-06` needs `PC-SCOPE-07` and Error/Escalation contracts, and `PC-SCOPE-07` needs a Call trigger that host admission refuses beside a token split.
+Current task: Stage A of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); its proposal was approved on 2026-10-23. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls, with Process-root callers in the `SCOPE` profile before the mapped Call inside an embedded Sub-Process in the `DATA` profile; each stage's Lean lift carries its own effort bound.
+Deliverable: Stage A through its semantic checkpoint. Process-root callers (repeated, nested and concurrent Calls) are admitted in the `SCOPE` profile with Lean/core agreement on the supplier model and the hosted refinement witness.
 
-Acceptance blockers: the proposal's cold review.
+Acceptance blockers: the supplier model and its refusal variants, the invocation, batch-selection, pairing and graph-rule lifts in both languages, the definition-selection census, the hosted witness and the checkpoint review.
 
-Current result: the [proposal](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) stages Process-root callers in the `SCOPE` profile before the mapped Call inside a Sub-Process in the `DATA` profile, whose Lean premise lift carries an 8-hour bound.
+Current result: the approved proposal fixes the guard inventory, the concurrency rules `CALLN-ONCE-01`/`CALLN-SHARED-01` and the Stage A Lean bound.
 
-Effort budget: 6 hours wall from 2026-10-23 through proposal approval, reassessed at the limit.
+Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 through the Stage A checkpoint, reassessed at the limit.
 
-Next action: commit the proposal and run its cold proposal review. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: red/green the supplier model in the core: source admission, then the invocation and graph-rule lifts. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
