@@ -1,4 +1,4 @@
-import { sameCallDataInterface } from "./call-data-admission.js";
+import { sameCallDataInterface, variableMappingsValid } from "./call-data-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { VariableMappingCallData } from "./call-data-contract.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
@@ -213,7 +213,8 @@ function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[]
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   if (scopes.length !== children.length + calls.length + 1 || children.length === 0 || calls.length > 1 ||
       roots.length !== calls.length + 1 || !roots.some(({ id }) => id === root) ||
-      !calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) ||
+      !calls.every(call => call.scope !== root && variableMappingsValid(call.data) &&
+        callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
       !records.every(record => children.includes(record.scopeId) && recordValid(handlers, record))) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);

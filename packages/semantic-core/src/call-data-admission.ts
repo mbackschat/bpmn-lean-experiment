@@ -85,7 +85,7 @@ const reservedOutputTargets: ReadonlySet<string> =
 const mappingLimit = 8;
 
 /** CVM-ADMIT-01's structural part; name syntax and resolution belong to the hosting profile's admission. */
-function variableMappingsValid(data: VariableMappingCallData): boolean {
+export function variableMappingsValid(data: VariableMappingCallData): boolean {
   const inputTargets = data.inputs.map(({ target }) => target);
   const outputTargets = data.outputs.map(({ target }) => target);
   return data.inputs.length > 0 && data.inputs.length <= mappingLimit && data.outputs.length <= mappingLimit &&

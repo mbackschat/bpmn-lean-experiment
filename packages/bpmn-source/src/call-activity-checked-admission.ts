@@ -64,7 +64,8 @@ export function hasSelectedCallActivityDefinitions(
 
 /**
  * CVM-ADMIT-01's root census: one called root per Call, at most one Call, the caller root naming the checked Process.
- * The Call may sit in an embedded Sub-Process; the nested scope-data analysis owns placement and the called path.
+ * This census does not decide placement: the nested scope-data analysis refuses a Call inside an embedded Sub-Process
+ * (PC-SCOPE-05) and owns the called path.
  */
 function hasMappedCallRoots(graph: CallActivityCheckedGraph): boolean {
   const roots = graph.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);

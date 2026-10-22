@@ -11,8 +11,9 @@ import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/
 import type { CompileBpmnToSemanticProcessRequest } from "@bpmn-lean/bpmn-source";
 import {
   CallDataKind, CheckedNodeKind, MappingExpressionKind, SemanticOperationKind, SemanticProfileId,
-  isWellFormedSemanticProcessProgram,
+  isWellFormedSemanticProcessProgram, nestedScopeCheckedAnalysis,
 } from "@bpmn-lean/semantic-core";
+import type { CheckedProcess, VariableMappingCallData } from "@bpmn-lean/semantic-core";
 
 const directory = new URL("../../../scenarios/call-variable-mapping/", import.meta.url);
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
@@ -65,10 +66,12 @@ const firstIn = '<camunda:in source="applicant" target="customer" />';
 test("CVM-ADMIT-01 refuses each excluded Call attribute and mapping form", async () => {
   const xml = await loanXml();
   const variants: ReadonlyArray<readonly [string, string, string]> = [
-    ["sourceExpression", firstIn, '<camunda:in sourceExpression="${applicant}" target="customer" />'],
-    ["variables all", firstIn, '<camunda:in variables="all" />'],
+    // Each excluded form also carries a valid source and target, so only the key whitelist can refuse it, not the
+    // missing-source check: CIB itself would silently prefer `source` or add the extra transfer.
+    ["sourceExpression", firstIn, '<camunda:in source="applicant" sourceExpression="${applicant}" target="customer" />'],
+    ["variables all", firstIn, '<camunda:in source="applicant" target="customer" variables="all" />'],
     ["local", firstIn, '<camunda:in source="applicant" target="customer" local="true" />'],
-    ["businessKey", firstIn, '<camunda:in businessKey="${applicant}" />'],
+    ["businessKey", firstIn, '<camunda:in source="applicant" target="customer" businessKey="${applicant}" />'],
     ["missing source", firstIn, '<camunda:in target="customer" />'],
     ["empty target", firstIn, '<camunda:in source="applicant" target="" />'],
     ["duplicate input target", firstIn, `${firstIn}<camunda:in source="amount" target="customer" />`],
@@ -108,4 +111,28 @@ test("CVM-ADMIT-01 refuses a Call inside an embedded Sub-Process", async () => {
   assert.equal(control.status, BpmnCompilationStatus.Accepted);
   const result = await compile(nested);
   assert.equal(result.status, BpmnCompilationStatus.Rejected);
+});
+
+/**
+ * The checked nested analysis itself refuses structurally invalid Call mappings, as Lean's `NestedScopeData.analyze`
+ * does through `variableMappingsValid`, rather than leaving them to the source reader and Program well-formedness.
+ */
+test("CVM-ADMIT-01 the checked nested analysis refuses structurally invalid Call mappings", async () => {
+  const compiled = await compile(await loanXml());
+  assert.ok(compiled.status === BpmnCompilationStatus.Accepted);
+  const checked = compiled.checkedProcess;
+  assert.notEqual(nestedScopeCheckedAnalysis(checked), null);
+  const withData = (change: (data: VariableMappingCallData) => VariableMappingCallData): CheckedProcess => ({
+    ...checked,
+    nodes: checked.nodes.map((node) => node.kind === CheckedNodeKind.CallActivity &&
+      node.data.kind === CallDataKind.VariableMappings ? { ...node, data: change(node.data) } : node),
+  });
+  for (const [label, change] of [
+    ["reserved output target", (data) => ({ ...data, outputs: [{ target: "nrOfInstances", expression: local("verdict") }] })],
+    ["input reading a local", (data) => ({ ...data, inputs: [{ target: "customer", expression: local("applicant") }] })],
+    ["duplicate input target", (data) => ({ ...data, inputs: [...data.inputs, { target: "customer", expression: enclosing("amount") }] })],
+    ["no input", (data) => ({ ...data, inputs: [] })],
+  ] as const satisfies ReadonlyArray<readonly [string, (data: VariableMappingCallData) => VariableMappingCallData]>) {
+    assert.equal(nestedScopeCheckedAnalysis(withData(change)), null, label);
+  }
 });

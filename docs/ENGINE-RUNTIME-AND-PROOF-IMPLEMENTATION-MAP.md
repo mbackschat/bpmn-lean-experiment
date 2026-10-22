@@ -208,7 +208,7 @@ The exact sequential Multi-Instance User Task profile is implemented and executi
 ### Definition and execution scopes
 
 - arbitrary or repeated nesting, loops that reactivate one definition scope, and concurrent occurrences of the same child definition
-- public Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, Call Activities beyond the registered empty/scalar two-Process slices, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
+- public Event Sub-Processes outside the bounded compensation snapshot/handler restoration account, Call Activities beyond the registered empty/scalar/mapped two-Process slices, Transactions beyond the [bounded cancellation account](capsules/TRANSACTION-CANCELLATION-SPEC.md), Compensation source/profile admission beyond the exact registered topology, Temporal execution beyond its dedicated scheduler, Multi-Instance Sub-Process snapshots, general cancellation beyond the exact reviewed regional slices, and exceptional propagation beyond one direct-parent exact-code Error handler
 - public projection of definition-scope or runtime-scope identity
 
 ### Lean

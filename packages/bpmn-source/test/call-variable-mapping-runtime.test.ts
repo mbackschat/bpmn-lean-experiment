@@ -10,7 +10,8 @@ import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
   CommandOutcome, EffectExecutionResultKind, SemanticProfileId, StimulusKind, VariableValueKind,
-  applyStimulus, deriveCalledProcessInstanceId, initialState, isWellFormedRuntimeState,
+  applyStimulus, canonicalNamedValueArrayUtf8ByteLength, deriveCalledProcessInstanceId, initialState,
+  isWellFormedRuntimeState, nestedScopePatchByteLimit,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
 
@@ -103,6 +104,30 @@ test("an absent input source copies a present null and an output source the call
   state = commit(program, state, complete("RecordVerdict", []));
   assert.deepEqual(processBindings(state).filter(({ name }) => name === "decision" || name === "echoedCustomer"),
     [bind("decision", nullValue), bind("echoedCustomer", nullValue)]);
+});
+
+/** A one-binding patch of a Map whose canonical size is exactly `bytes`, built from seventeen bounded Strings. */
+function patchOfSize(name: string, bytes: number): VariableBinding[] {
+  const lengths = Array.from({ length: 17 }, () => 1_000);
+  const patch = () => [bind(name, { kind: VariableValueKind.Map,
+    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text("p".repeat(length)) })) })];
+  for (let index = lengths.length - 1; index >= 0; index -= 1) {
+    const excess = canonicalNamedValueArrayUtf8ByteLength(patch()) - bytes;
+    if (excess <= 0) break;
+    lengths[index] = Math.max(0, lengths[index]! - excess);
+  }
+  assert.equal(canonicalNamedValueArrayUtf8ByteLength(patch()), bytes);
+  return patch();
+}
+
+test("CVM-TASK-01 commits a called patch at the allowance and rejects one byte more with the state unchanged", async () => {
+  const program = await loanProgram();
+  let state = commit(program, initialState, start([bind("amount", text("25000")), bind("applicant", text("Ada"))]));
+  state = commit(program, state, acknowledge);
+  state = commit(program, state, complete("CollectDocument", []));
+  rejected(program, state, complete("RecordVerdict", patchOfSize("verdict", nestedScopePatchByteLimit + 1)),
+    "over-allowance called patch");
+  commit(program, state, complete("RecordVerdict", patchOfSize("verdict", nestedScopePatchByteLimit)));
 });
 
 test("CVM-START-01 admits Call sources and Process-level output targets and rejects a called-only name", async () => {
