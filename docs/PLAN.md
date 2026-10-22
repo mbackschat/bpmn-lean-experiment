@@ -82,11 +82,11 @@ Deliverable: a cold-reviewed account of repeated, nested and concurrent Calls in
 
 Acceptance blockers: the proposal's cold review.
 
-Current result: the call record, transitive called-subtree removal and `calledProcessAssociationsValid` already admit root-caller call graphs; admission limits Calls to two Processes and one Call.
+Current result: the [proposal](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) stages Process-root callers in the `SCOPE` profile before the mapped Call inside a Sub-Process in the `DATA` profile, whose Lean premise lift carries an 8-hour bound.
 
 Effort budget: 6 hours wall from 2026-10-23 through proposal approval, reassessed at the limit.
 
-Next action: read the structured-body admission, closure burst bound, Call pairing and host admission for the `SCOPE` profile, then draft the proposal. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: commit the proposal and run its cold proposal review. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
