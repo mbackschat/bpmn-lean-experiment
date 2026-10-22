@@ -82,7 +82,7 @@ Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-E
 
 Acceptance blockers: the complete pipeline, the audit's two closure obligations (activation-addressed completion after Worker replacement or accepted-result recovery, and the 192 KiB query and terminal measurement), and the family closure reviews.
 
-Current result: Lean and registration at `8e7d80b2`, checkpoint corrections at `f7a3e568` with the audit resolved; `main` at `6d66db5a` passed `verify-complete`. Conformance journeys now build in the separate `BpmnConformance` root, leaving 18–32% of measured full rebuilds routine ([measurement](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#conformance-root-split-2026-10-22)).
+Current result: Lean and registration at `8e7d80b2`, checkpoint corrections at `f7a3e568` with the audit resolved; `main` at `6d66db5a` passed `verify-complete`. Conformance journeys now build in the separate `BpmnConformance` root, leaving 18–33% of measured full rebuilds routine ([measurement](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#conformance-root-split-2026-10-22)).
 
 Effort budget: 8 hours wall from 2026-10-22 for the journey move (about 2 used) and family closure, reassessed at the limit.
 

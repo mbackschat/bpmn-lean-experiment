@@ -263,6 +263,13 @@ export function libraryRootAssignmentFindings(
         path.posix.basename(sourcePath).endsWith("Conformance.lean") && semantic.has(module)
       )
       .map(({ module }) => `${module}: conformance module built by the semantic root via ${semantic.get(module)}`),
+    // Only witnesses may leave the routine build; a law, evaluator or codec they import stays checked by it.
+    ...maintained
+      .filter(({ path: sourcePath, module }) =>
+        !/(?:Conformance|Fixtures?|AssuranceAxiomFootprint)\.lean$/u.test(path.posix.basename(sourcePath)) &&
+        conformance.has(module) && !semantic.has(module)
+      )
+      .map(({ module }) => `${module}: semantic module built only by the conformance root via ${conformance.get(module)}`),
   ].sort();
 }
 
@@ -373,10 +380,10 @@ test("the maintained-conformance import guard derives omissions instead of trust
     libraryRootAssignmentFindings([
       {
         path: "BpmnConformance.lean",
-        source: "import BpmnSemantics.Suite\n-- import BpmnSemantics.MissingConformance\n",
+        source: "import BpmnSemantics.SuiteConformance\n-- import BpmnSemantics.MissingConformance\n",
       },
       {
-        path: "BpmnSemantics/Suite.lean",
+        path: "BpmnSemantics/SuiteConformance.lean",
         source: "import BpmnSemantics.AlreadyConformance\n",
       },
       { path: "BpmnSemantics/AlreadyConformance.lean", source: "" },
@@ -431,11 +438,13 @@ test("each maintained module belongs to exactly one library root", () => {
     { path: "BpmnSemantics/Law.lean", source: "theorem law : True := by trivial\n" },
     { path: "BpmnSemantics/Footprint.lean", source: "import BpmnSemantics.PinnedConformance\n" },
     { path: "BpmnSemantics/PinnedConformance.lean", source: "" },
-    { path: "BpmnSemantics/JourneyConformance.lean", source: "import BpmnSemantics.JourneyFixtures\n" },
+    { path: "BpmnSemantics/JourneyConformance.lean", source: "import BpmnSemantics.JourneyFixtures\nimport BpmnSemantics.JourneyLaws\n" },
     { path: "BpmnSemantics/JourneyFixtures.lean", source: "def journey := 0\n" },
+    { path: "BpmnSemantics/JourneyLaws.lean", source: "theorem journey_law : True := by trivial\n" },
     { path: "BpmnSemantics/OrphanConformance.lean", source: "" },
   ];
   assert.deepEqual(libraryRootAssignmentFindings(sources), [
+    "BpmnSemantics.JourneyLaws: semantic module built only by the conformance root via BpmnSemantics.JourneyConformance",
     "BpmnSemantics.Law: imported by the conformance root but already built by the semantic root",
     "BpmnSemantics.OrphanConformance: reached by neither library root",
     "BpmnSemantics.PinnedConformance: conformance module built by the semantic root via BpmnSemantics.Footprint",

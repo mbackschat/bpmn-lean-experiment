@@ -110,14 +110,14 @@ From run 5's warm cache, the same displaced-target measurement gave 2,252,272 Ki
 
 ## Conformance root split, 2026-10-22
 
-The finite `*Conformance` journeys and the axiom footprint moved out of the `BpmnSemantics` root into the separate `BpmnConformance` Lake library, which the [import-boundary guard](../../scripts/lean-import-boundaries.test.ts) keeps disjoint from the semantic root. The routine full-build time before and after is measured on five real full gates that rebuilt after a shared change on 2026-10-20 and 2026-10-21, all local at one Lean thread: Lake's per-module elapsed times are partitioned by the root that now builds each module. Their sum before the split is the whole rebuild; after it, a routine full gate pays only the semantic-root share, and the conformance share moves to family closure and Verify.
+The finite `*Conformance` journeys and the axiom footprint moved out of the `BpmnSemantics` root into the separate `BpmnConformance` Lake library, which the [import-boundary guard](../../scripts/lean-import-boundaries.test.ts) keeps disjoint from the semantic root. The routine full-build time before and after is measured on five real full gates that rebuilt after a shared change on 2026-10-20 and 2026-10-21, all local at one Lean thread: Lake's per-module elapsed times are partitioned by the root that now builds each module. Their sum before the split is the whole rebuild; after it, a routine full gate pays only the semantic-root share, and the conformance share moves to family closure and Verify. Only witnesses move: the guard keeps every law, evaluator and codec module that a witness imports in the semantic root, and the figures count them there.
 
 | Full gate | Rebuilt modules | Before | After, semantic root | Moved to `BpmnConformance` |
 |---|---:|---:|---:|---:|
-| `test-semantic` at `ef54af62` | 778 | 65.0 min | 20.9 min (32%) | 44.1 min, 200 modules |
-| `cea-lean-full-1` | 639 | 67.2 min | 16.4 min (24%) | 50.8 min, 197 modules |
-| `test-semantic` at `7ccb15c1` | 615 | 56.5 min | 15.9 min (28%) | 40.5 min, 195 modules |
-| `cea-lean-full-7` | 485 | 62.0 min | 14.3 min (23%) | 47.7 min, 190 modules |
-| `cea-lean-full-3` | 415 | 52.9 min | 9.6 min (18%) | 43.3 min, 170 modules |
+| `test-semantic` at `ef54af62` | 778 | 65.0 min | 21.3 min (33%) | 43.7 min, 184 modules |
+| `cea-lean-full-1` | 639 | 67.2 min | 16.7 min (25%) | 50.4 min, 182 modules |
+| `test-semantic` at `7ccb15c1` | 615 | 56.5 min | 16.1 min (29%) | 40.3 min, 183 modules |
+| `cea-lean-full-7` | 485 | 62.0 min | 14.7 min (24%) | 47.3 min, 177 modules |
+| `cea-lean-full-3` | 415 | 52.9 min | 9.7 min (18%) | 43.2 min, 165 modules |
 
 `NestedScopeControlConformance` was the slowest module in every run, 133 to 165 s. Building both roots after the split at `fb48bc37` plus the move compiled only the two root modules, 7.6 s and 6.5 s, so no module's content or build output changed. All 120 receipt-bound rows of the [module cost record](../../scripts/lean-module-cost.ts) are conformance modules, 46 of them above 1.5 GiB GNU peak; no record yet measures a semantic-root module's peak.
