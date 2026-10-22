@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: owner-approved
-Review: correction audit pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -110,15 +110,15 @@ The planned laws are: input installation yields exactly the mapped snapshot with
 
 ## Temporal hosting and refinement preflight
 
-No new hosting mechanism is added. Durable ingress stays the existing Start and User Task completion Updates; called tasks are addressed by their called semantic instance identity as the [Call specification](CALL-ACTIVITY-SPEC.md#data-and-public-boundary-constraints) already requires, with the caller instance selecting the hosting Workflow. Waits are one User Task at a time; there are no timers, effects, Message waits or BPMN cancellation, and host termination fabricates no return or output. Invocation and return are internal closure steps inside the command that reaches them, so a mapping is evaluated exactly once, deterministically, from committed state, and replay re-derives it. The called-root frame is ordinary runtime state carried through Continue-As-New and restored by ownership; the continuation decoder must reject a frame without its called root, a called root without its frame and a frame owned by the caller.
+No new hosting mechanism is added. Durable ingress stays the existing Start and User Task completion Updates; called tasks are addressed by their called semantic instance identity as the [Call specification](CALL-ACTIVITY-SPEC.md#data-and-public-boundary-constraints) already requires, with the caller instance selecting the hosting Workflow. Waits are one User Task or one effect at a time, effects under the existing effect contract as in the nested profile; there are no timers, Message waits or BPMN cancellation, and host termination fabricates no return or output. Invocation and return are internal closure steps inside the command that reaches them, so a mapping is evaluated exactly once, deterministically, from committed state, and replay re-derives it. The called-root frame is ordinary runtime state carried through Continue-As-New and restored by ownership; the continuation decoder must reject a frame without its called root, a called root without its frame and a frame owned by the caller.
 
 The preserved relation is the existing one between hosted committed state and the semantic core's state; the profile only adds frames to it. The hosting risk is size: the profile's [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts) must count the called tasks among its journey steps and the called-root frame, bounded by sixteen names at the portable value bound, and keep refusing a Start whose journey exceeds a budget. The 1,024-journey cap counts called tasks like caller tasks, so some admitted Programs with three called tasks are refused at Start as host-unsupported, as for the nested profile today. [Called-task detail](../../packages/temporal-adapter/protocol/src/user-task-detail.ts) changes its source for called tasks only.
 
 One unresolved hosted risk is inherited: the [Call data closure review](CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md#independent-cold-review-receipt) observed a public String journey whose publication read returned `unavailable` after a correct terminal receipt, without proven attribution. This profile's public journeys run the same Call hosting path; if that failure reproduces, it blocks this closure and is recorded, not worked around.
 
-Admission widening adds two stable-state shapes, one called User Task wait and one caller User Task wait after return, each the only open wait. Both resume through the existing User Task completion Update, and the host-capability obligation is that host admission accepts this profile's Call Programs with one serial wait and still refuses every concurrent wait set.
+Admission widening adds stable-state shapes around the call, a caller effect wait before it, one called User Task wait and one caller User Task wait after return, each the only open wait. Both resume through the existing User Task completion Update, and the host-capability obligation is that host admission accepts this profile's Call Programs with one serial wait and still refuses every concurrent wait set.
 
-The smallest executable refinement witness is one live call with two called tasks, Worker replacement between them, Continue-As-New across the live call, completion, return with outputs into a caller frame, and every-Run replay.
+The smallest executable refinement witness is one live call with two called tasks, Worker replacement between them, Continue-As-New across the live call, completion, return with outputs into the caller's Process binding, then the review Sub-Process frame initialized from them, and every-Run replay.
 
 ## Evidence and acceptance
 
@@ -128,7 +128,7 @@ The CIB lane is a standalone probe in the CIB runner, modelled on the existing [
 
 Acceptance: Lean, core and pipeline agree on every scenario's `StateObservation`, the Lean laws hold, the probe agrees with the expected caller observations at its declared fidelity, the hosted called-task detail witnesses pass, and the hosted pipeline passes once at family acceptance.
 
-Nearest unsupported claims: agreement on called-frame contents beyond what reaches the caller's Process variables, which rests on the Lean laws, core state validity and hosted detail; repeated, nested or concurrent calls; exceptional return; and caller-task detail of frame-shadowed names. Common-mode risk: Lean and the core transcribe one reading of the CIB extraction, and only the CIB probe checks that reading independently.
+Nearest unsupported claims: agreement on called-frame contents beyond what reaches the caller's Process variables, which rests on the Lean laws, core state validity and hosted detail; repeated, nested or concurrent calls; a Call output written into a declaring caller frame (`PC-SCOPE-05`); exceptional return; and caller-task detail of frame-shadowed names. Common-mode risk: Lean and the core transcribe one reading of the CIB extraction, and only the CIB probe checks that reading independently.
 
 ## Versioning consequences
 
@@ -159,8 +159,8 @@ The profile lane: this proposal grows the `DATA` family's cumulative profile bec
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `9358fb36` | `fork-turns-none` | `approve-with-required-edits` | `aeaf5512` |
+| Proposal | `9358fb36` | `fork-turns-none` | `approve-with-required-edits` | `b26c5a9a` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The cold proposal review of `9358fb36` (baseline `7e12e6db`, packet `98467f79a1ee2277b5a1303bb15fa451630ba15845050e603d462039ebcee08e`) required ten bounded edits and confirmed the `DATA` profile lane; the same reviewer's first audit approved correction `aeaf5512` on 2026-10-22. A placement correction after `92efb41a` narrows it to the caller's root path: implementation found that the Lean internal-batch and child-cancellation proofs rest on Call callers being Process roots (`calledProcessAssociationsValid`, `calledInstanceClosure_child_empty`, 305 dependent declarations), so lifting that premise, which nested Calls need anyway, moves with the Sub-Process placement to `PC-SCOPE-05`; the same reviewer's audit is pending. Its lane-legend advisory is applied without re-audit, and its evaluator advisory binds implementation: the Call arm needs its own reader with present, absent-to-null and refused outcomes rather than the unchanged nested input evaluator.
+The cold proposal review of `9358fb36` (baseline `7e12e6db`, packet `98467f79a1ee2277b5a1303bb15fa451630ba15845050e603d462039ebcee08e`) required ten bounded edits and confirmed the `DATA` profile lane; the same reviewer's first audit approved correction `aeaf5512` on 2026-10-22. A placement correction after `92efb41a` narrows it to the caller's root path: implementation found that the Lean internal-batch and child-cancellation proofs rest on Call callers being Process roots (`calledProcessAssociationsValid`, `calledInstanceClosure_child_empty`, 305 dependent declarations), so lifting that premise, which nested Calls need anyway, moves with the Sub-Process placement to `PC-SCOPE-05`; the same reviewer's audit of `b26c5a9a` required three text edits, which it stated need no re-review and which the following commit applies as specified. Its lane-legend advisory is applied without re-audit, and its evaluator advisory binds implementation: the Call arm needs its own reader with present, absent-to-null and refused outcomes rather than the unchanged nested input evaluator.
