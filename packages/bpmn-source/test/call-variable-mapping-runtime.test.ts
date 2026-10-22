@@ -13,7 +13,9 @@ import {
   applyStimulus, canonicalNamedValueArrayUtf8ByteLength, deriveCalledProcessInstanceId, initialState,
   isWellFormedRuntimeState, nestedScopePatchByteLimit,
 } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
+import type {
+  BusinessValue, RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding,
+} from "@bpmn-lean/semantic-core";
 
 const directory = new URL("../../../scenarios/call-variable-mapping/", import.meta.url);
 const instanceId = "Loan_1";
@@ -70,10 +72,12 @@ test("the loan application copies inputs by value, isolates called writes and la
   state = commit(program, state, acknowledge);
   // CVM-IN-01: the called-root frame holds exactly the input targets, copied before the called instance exists.
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", text("Ada"))]);
-  // CVM-TASK-01 and CVM-REFUSE-01: caller-only names, a caller-addressed completion and an unknown name are rejected.
+  // CVM-TASK-01 and CVM-REFUSE-01: caller-only, unknown and duplicate names and a caller-addressed completion are rejected.
   rejected(program, state, complete("CollectDocument", [bind("applicant", text("Eve"))]), "caller-only name");
   rejected(program, state, complete("CollectDocument", [], instanceId), "caller-addressed completion");
   rejected(program, state, complete("CollectDocument", [bind("unrelated", text("x"))]), "undeclared name");
+  rejected(program, state, complete("CollectDocument", [bind("amount", text("1")), bind("amount", text("2"))]),
+    "duplicate name");
   // CVM-ISOLATE-01: the namesake `amount` written by the called task stays in the called frame.
   state = commit(program, state, complete("CollectDocument", [bind("amount", text("1"))]));
   assert.deepEqual(calledFrame(state), [bind("amount", text("1")), bind("customer", text("Ada"))]);
@@ -109,8 +113,8 @@ test("an absent input source copies a present null and an output source the call
 /** A one-binding patch of a Map whose canonical size is exactly `bytes`, built from seventeen bounded Strings. */
 function patchOfSize(name: string, bytes: number): VariableBinding[] {
   const lengths = Array.from({ length: 17 }, () => 1_000);
-  const patch = () => [bind(name, { kind: VariableValueKind.Map,
-    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text("p".repeat(length)) })) })];
+  const patch = (): Array<{ name: string; value: BusinessValue }> => [{ name, value: { kind: VariableValueKind.Map,
+    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text("p".repeat(length)) })) } }];
   for (let index = lengths.length - 1; index >= 0; index -= 1) {
     const excess = canonicalNamedValueArrayUtf8ByteLength(patch()) - bytes;
     if (excess <= 0) break;
