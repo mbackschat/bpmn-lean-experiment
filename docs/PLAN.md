@@ -86,7 +86,7 @@ Current result: closure reviews approved at `f65f05a1` with both correction audi
 
 Effort budget: 8 hours wall from 2026-10-22 for the journey move and family closure, about 5 used, reassessed at the limit.
 
-Next action: land the closure, then open `PC-SCOPE-04` from its checklist row. Separately, the review's smells (per-call merge-output recomputation in `isMergeTargetOperation`, the `"merge"` sentinel in `RawBodyNode.kind`, a duplicate `Running` check in `selectScopeCompletion`) are one refactor. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: land the closure, then open `PC-SCOPE-04` from its checklist row. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

@@ -11,16 +11,15 @@ import { SemanticProfileId } from "./semantic-profile-catalog.js";
  */
 export function isMergeTargetOperation(program: SemanticProcessProgram, operation: SemanticOperation): boolean {
   if (program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion) return false;
-  const mergeOutputs = new Set(program.operations.flatMap(candidate =>
-    candidate.kind === SemanticOperationKind.MergeExclusive ? [candidate.output] : []));
-  const fedByMerge = (candidate: SemanticOperation): boolean =>
-    candidate.kind === SemanticOperationKind.EnterScope && mergeOutputs.has(candidate.input);
+  const fedByMerge = (input: string): boolean => program.operations.some(candidate =>
+    candidate.kind === SemanticOperationKind.MergeExclusive && candidate.output === input);
   switch (operation.kind) {
     case SemanticOperationKind.EnterScope:
-      return fedByMerge(operation);
+      return fedByMerge(operation.input);
     case SemanticOperationKind.CompleteScope:
-      return operation.parentOutput !== null && program.operations.some(candidate => fedByMerge(candidate) &&
-        candidate.kind === SemanticOperationKind.EnterScope && candidate.childScopeId === operation.scopeId);
+      return operation.parentOutput !== null && program.operations.some(candidate =>
+        candidate.kind === SemanticOperationKind.EnterScope && candidate.childScopeId === operation.scopeId &&
+        fedByMerge(candidate.input));
     default:
       return false;
   }

@@ -255,9 +255,6 @@ export function selectScopeCompletion(
   >,
   state: RuntimeState,
 ): SelectedScopeCompletion | null {
-  if (state.control.kind !== ControlStateKind.Running) {
-    return null;
-  }
   const occurrences = state.scopeOccurrences.filter(
     ({ id }) => id.definitionScopeId === operation.scopeId,
   );

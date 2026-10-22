@@ -7,7 +7,7 @@ import type { SemanticOperation, SemanticProcessProgram } from "./semantic-proce
 import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { ParallelBodyNodeKind as Kind } from "./structured-parallel-body-analysis.js";
 import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
-import { contractMergeRegions, mergeVertexKind, multiplicityWeightedExtra } from "./merge-region-admission.js";
+import { RawBodyNodeKind, contractMergeRegions, multiplicityWeightedExtra } from "./merge-region-admission.js";
 import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 
@@ -198,16 +198,16 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   flows: readonly CheckedSequenceFlow[];
 }>;
 
-function checkedKind(node: CheckedNode): RawBodyNode["kind"] | null {
+function checkedKind(node: CheckedNode): RawBodyNodeKind | null {
   switch (node.kind) {
-    case CheckedNodeKind.NoneStartEvent: return Kind.Start;
-    case CheckedNodeKind.NoneEndEvent: return Kind.End;
-    case CheckedNodeKind.UserTask: return node.metadata === undefined ? Kind.Task : null;
-    case CheckedNodeKind.EmbeddedSubProcess: return Kind.Task;
-    case CheckedNodeKind.ExclusiveMerge: return mergeVertexKind;
+    case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
+    case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
+    case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
+    case CheckedNodeKind.EmbeddedSubProcess: return RawBodyNodeKind.Task;
+    case CheckedNodeKind.ExclusiveMerge: return RawBodyNodeKind.Merge;
     case CheckedNodeKind.ParallelGateway:
-      return node.direction === GatewayDirection.Diverging ? Kind.Fork
-        : node.direction === GatewayDirection.Converging ? Kind.Join : null;
+      return node.direction === GatewayDirection.Diverging ? RawBodyNodeKind.Fork
+        : node.direction === GatewayDirection.Converging ? RawBodyNodeKind.Join : null;
     default: return null;
   }
 }
@@ -283,20 +283,20 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
       return targets.every(target => target !== undefined) ? targets as string[] : null;
     };
     for (const operation of members) {
-      let kind: RawBodyNode["kind"];
+      let kind: RawBodyNodeKind;
       let outputs: string[] | null;
       switch (operation.kind) {
-        case SemanticOperationKind.Initiate: kind = Kind.Start; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.Initiate: kind = RawBodyNodeKind.Start; outputs = follow([operation.output]); break;
         case SemanticOperationKind.AwaitUserTask:
-          kind = Kind.Task; outputs = operation.task.metadata === undefined ? follow([operation.output]) : null; break;
-        case SemanticOperationKind.Duplicate: kind = Kind.Fork; outputs = follow(operation.outputs); break;
-        case SemanticOperationKind.Synchronize: kind = Kind.Join; outputs = follow([operation.output]); break;
-        case SemanticOperationKind.MergeExclusive: kind = mergeVertexKind; outputs = follow([operation.output]); break;
-        case SemanticOperationKind.ReachNoneEnd: kind = Kind.End; outputs = []; break;
+          kind = RawBodyNodeKind.Task; outputs = operation.task.metadata === undefined ? follow([operation.output]) : null; break;
+        case SemanticOperationKind.Duplicate: kind = RawBodyNodeKind.Fork; outputs = follow(operation.outputs); break;
+        case SemanticOperationKind.Synchronize: kind = RawBodyNodeKind.Join; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.MergeExclusive: kind = RawBodyNodeKind.Merge; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.ReachNoneEnd: kind = RawBodyNodeKind.End; outputs = []; break;
         case SemanticOperationKind.EnterScope: {
           const output = parentOutput(operation.childScopeId);
           const entry = consumer(operation.childScopeId, operation.childEntry);
-          kind = Kind.Task;
+          kind = RawBodyNodeKind.Task;
           outputs = output === null || output === undefined || entry === undefined ? null : follow([output]);
           children.set(operation.id, operation.childScopeId);
           break;
@@ -317,7 +317,7 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
       if (enter?.kind !== SemanticOperationKind.EnterScope || childBody === undefined) return null;
       const entry = consumer(child, enter.childEntry);
       if (entry === undefined) return null;
-      bodies.set(child, { ...childBody, nodes: [{ id: childStart(child), kind: Kind.Start, outputs: [entry] }, ...childBody.nodes] });
+      bodies.set(child, { ...childBody, nodes: [{ id: childStart(child), kind: RawBodyNodeKind.Start, outputs: [entry] }, ...childBody.nodes] });
     }
   }
   return bodies;
