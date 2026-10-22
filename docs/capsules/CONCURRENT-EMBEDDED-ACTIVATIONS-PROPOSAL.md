@@ -266,5 +266,5 @@ Growth makes the following passages false, and the implementation corrects them 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `ee316777` | `fork-turns-none` | `approve-with-required-edits` | `d48061da, 1b40e87c, 65e7bc85, owner-authorized` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `8e7d80b2` | `fork-turns-none` | `approve-with-required-edits` | `42075b5a, f7a3e568` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

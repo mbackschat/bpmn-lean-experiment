@@ -53,7 +53,6 @@ Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL
 
 | Order | Outcome | Shared mechanism and exit |
 |---|---|---|
-| At qualification | Repair Verify and push qualified work. | Owner authorized the fix and the push on 2026-10-21. The full Lean library must build again after the `890b010f` placeholder; the PMIS Temporal recovery witness reports as `todo` until `PC-MI-05` opens production admission. Preserve the security fix and SDK hold; qualify clean HEAD with the pre-push gate, then push. |
 | After push | Move example journeys out of the routine Lean build. | Owner-approved enabling task (2026-10-21): finite `*Conformance` journeys build in a separate `BpmnConformance` Lake library, run at family closure and in CI; new finite examples run as executable checks instead of kernel decisions. Exit: the routine library imports no moved module, a guard assigns every module to exactly one root, Verify and CI build both roots, the owning testing and setup documents describe the split, and the routine full-build time is measured before and after. Then `what-binds` lists a Lean definition's unfolding sites ([Finding 75](PROCESS-ASSESSMENT-LEDGER.md#finding-75)). |
 | At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. The [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns the complete work partition; this tracker counts only its selected exact-bound cohort. |
 | 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
@@ -82,13 +81,13 @@ Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family
 
 Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through a converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
 
-Acceptance blockers: checkpoint corrections and their audit, push qualification, then the complete pipeline and family closure.
+Acceptance blockers: the [example-journey move](#scheduled-delivery-batches), then the complete pipeline, the two closure obligations the checkpoint audit assigned (activation-addressed completion after Worker replacement or accepted-result recovery, and the 192 KiB query and terminal measurement), and the family closure reviews.
 
-Current result: core at `598e532a`, Lean and registration at `8e7d80b2`; the checkpoint corrections are implemented and their consumer modules build.
+Current result: core at `598e532a`, Lean and registration at `8e7d80b2`, checkpoint corrections at `42075b5a` and `f7a3e568` with the same reviewer's audit resolved; `main` is at `6d66db5a`, whose hosted checks including `verify-complete` passed after the native Lean drivers and the Temporal job split.
 
-Effort budget: 8 hours wall from 2026-10-21 to the semantic checkpoint, reassessed at the limit.
+Effort budget: 8 hours wall from 2026-10-22 for the example-journey move and family closure, reassessed at the limit.
 
-Next action: finish the full library build, commit the corrections with the placeholder removal, request the same reviewer's correction audit, run the pre-push gate on the clean HEAD and push; then the [example-journey move](#scheduled-delivery-batches), then family closure.
+Next action: measure the routine full-library build, move the finite `*Conformance` journeys into `BpmnConformance` with the one-root guard, and measure again; then family closure.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 
