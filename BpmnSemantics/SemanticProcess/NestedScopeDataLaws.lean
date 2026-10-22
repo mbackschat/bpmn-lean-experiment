@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 Quantified read, write and initialization laws for the frame operations of `NestedScopeData`, with
 the nearest checked non-law, per the
-[nested scope data proposal](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#lean-assurance-lane).
+[nested scope data specification](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#lean-assurance-lane).
 The laws hold for every Program, chain and frame population; they need no runtime well-formedness
 because a definition with more than one live frame makes resolution refuse rather than choose.
 -/

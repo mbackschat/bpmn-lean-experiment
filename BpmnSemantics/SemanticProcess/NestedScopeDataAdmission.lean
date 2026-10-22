@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.NestedScopeData
 /-! # Nested scope-data profile admission
 
 NSD-ADMIT-01 and NSD-AVAILABLE-01 for `nestedScopeDataProfileId`, per the
-[nested scope data proposal](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#stable-rules).
+[nested scope data specification](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#stable-rules).
 The checked graph and the IL are analyzed independently into one transient tree walk: each scope is
 one serial path, and a Sub-Process vertex walks its child scope before its own successor. The walk
 records every read and definite write with the declaring frames enclosing it, which is all the

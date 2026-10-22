@@ -12,7 +12,7 @@ import { compareCanonicalStrings } from "./wire.js";
 
 /**
  * Frame resolution, initialization, outputs and completion writes of the nested scope-data profile, per the
- * nested scope data proposal's stable rules (NSD-INIT-01 to NSD-RETIRE-01).
+ * nested scope data specification's stable rules (NSD-INIT-01 to NSD-RETIRE-01).
  *
  * The chain is walked over definition scopes, selecting the live frame of each one in the reading instance. The
  * profile's admission activates every definition at most once per instance, so that frame is the actual ancestor's;

@@ -1,9 +1,9 @@
-# Nested embedded scope data proposal
+# Nested embedded scope data specification
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -11,7 +11,7 @@ Can a business process nest ordinary embedded Sub-Processes in a serial chain, d
 
 This is the first increment of the embedded and called scope family selected in [PLAN](../PLAN.md#exact-resume-point). It serves the embedded, scope-local surfaces of `PC-DATA-03` and the embedded-owner clauses of `PC-DATA-04`, `PC-DATA-05` and `PC-DATA-06` in the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#business-data-and-expressions), restricted to serial composition. It does not claim `PC-SCOPE-01`: concurrent branches inside nested scopes need a concurrent-wait Start capacity account, and concurrent branches with effects need a concurrent-effect hosting mechanism that [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) refuses today. Expression-based mappings wait for `PC-DATA-07`.
 
-Later increments of this family are concurrent nested scopes (`PC-SCOPE-01`), Call input/output mapping (`PC-SCOPE-04`, after the called-definition policy of `PC-SCOPE-03`) and repeated or concurrent activations of one definition (`PC-SCOPE-02`, after `PC-CF-06`/`PC-CF-07`). This increment is the family's selected batch under the [family review unit](../REVIEW-POLICY.md#independent-cold-review-gate): it takes this proposal review, is implemented as one batch and then takes its own checkpoint and closure review. Each later increment forms its own batch with its own proposal, checkpoint and closure review, so no Call, concurrent or repeated-activation semantics are implemented under this review. `PC-SCOPE-01` belongs to the checklist's `SCOPE` family and grows that family's profile through the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#question-and-delivery-boundary), which records the two-lane decision. Here the embedded and called scope family is PLAN's batch grouping, while `DATA` and `SCOPE` are checklist families; `PC-SCOPE-02` and `PC-SCOPE-04` choose their profile lane in their own proposals.
+Later increments of this family are concurrent nested scopes (`PC-SCOPE-01`), Call input/output mapping (`PC-SCOPE-04`, after the called-definition policy of `PC-SCOPE-03`) and repeated or concurrent activations of one definition (`PC-SCOPE-02`, after `PC-CF-06`/`PC-CF-07`). No Call, concurrent or repeated-activation semantics belong to this account. `PC-SCOPE-01` belongs to the checklist's `SCOPE` family and grows that family's profile through the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#question-and-delivery-boundary), which records the two-lane decision. Here the embedded and called scope family is PLAN's batch grouping, while `DATA` and `SCOPE` are checklist families; `PC-SCOPE-02` and `PC-SCOPE-04` choose their profile lane in their own proposals.
 
 ## Normative basis and CIB classification
 
@@ -88,20 +88,15 @@ All witnesses run in one purchase-order approval model with three serial levels 
 
 Lane shape: proved
 
-Evidence: the starting owners are [scope variable data](../../BpmnSemantics/SemanticProcess/ScopeVariableData.lean), [scoped data primitives](../../BpmnSemantics/SemanticProcess/Data.lean) and the embedded scope entry and completion relation; they are inputs to this account, not evidence for it.
+Evidence: the frame laws in [NestedScopeDataLaws](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean) hold for every Program, chain and frame population and need no runtime well-formedness, because a definition with more than one live frame makes resolution refuse rather than choose, beginning with the read law [`resolveOwner?_frame_nearest`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#resolveOwner?_frame_nearest). Their starting owners, [scope variable data](../../BpmnSemantics/SemanticProcess/ScopeVariableData.lean) and [scoped data primitives](../../BpmnSemantics/SemanticProcess/Data.lean), are inputs to this account, not evidence for it. Each rule's evidence:
 
-The frame laws are proved and reused by every later increment; admission and the witnesses are checked. The chain walk is a computable function over runtime scope occurrences, recursing on the parent link with the number of live scope occurrences as fuel. The quantified laws assume runtime well-formedness, stated as exact hypotheses: frames are unique per owner, every live occurrence's parent is live, and parent links are acyclic.
+- `NSD-READ-01`: [`resolveOwner?_frame_nearest`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#resolveOwner?_frame_nearest) shows that resolution selects the unique frame of the first chain scope that declares the name, and [`resolveOwner?_process_undeclared`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#resolveOwner?_process_undeclared) that the Process decides only when no chain scope declares it. No law states that the definition chain is the actual ancestor chain on admitted Programs; serial admission activates each definition at most once per instance, and the retained witnesses check the three models.
+- `NSD-WRITE-01`: [`write?_frame`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#write?_frame) and [`write?_process`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#write?_process) show that a write changes exactly the resolved frame or the Process binding. [`innermost_write_is_not_the_nearest_owner_write`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#innermost_write_is_not_the_nearest_owner_write) is the nearest checked non-law: writing to the innermost frame is not the nearest-owner write when only an ancestor declares the name.
+- `NSD-INIT-01`: [`initializeFrame?_reads_parent_chain`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#initializeFrame?_reads_parent_chain) shows that a declared scope's frame holds exactly the inputs evaluated against the parent chain.
+- `NSD-RETIRE-01`: [`completeScopeState?_retires_frame`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#completeScopeState?_retires_frame) shows that a child completion removes exactly the completing occurrence's frames and keeps every other frame and the Process unchanged.
+- Preservation: [`enterDeclaredScope?_other_profile`](../../BpmnSemantics/SemanticProcess/DeclaredScopeTransition.lean#enterDeclaredScope?_other_profile), [`completeDeclaredScope?_other_profile`](../../BpmnSemantics/SemanticProcess/DeclaredScopeTransition.lean#completeDeclaredScope?_other_profile), [`enterDeclaredScope?_undeclared`](../../BpmnSemantics/SemanticProcess/DeclaredScopeTransition.lean#enterDeclaredScope?_undeclared) and [`completeDeclaredScope?_undeclared`](../../BpmnSemantics/SemanticProcess/DeclaredScopeTransition.lean#completeDeclaredScope?_undeclared) show that declared entry and completion equal the existing entry and completion under every other profile and for every undeclared scope, so every embedded, Transaction and Call-bearing profile keeps its runtime state. Admission refuses a `scopeLocalData` table under any other profile.
 
-- Read law: over any chain, the walk returns the first chain scope whose frame declares the name, otherwise the Process binding. No law yet states that `definitionChain` equals the actual ancestor chain on admitted Programs or that the scope count suffices as fuel; the retained witnesses check it on the three models only.
-- Write law: a write changes exactly the nearest declaring frame or the Process binding.
-- Disposal law: completion removes exactly one frame and preserves every other frame and the Process.
-- Initialization law: entry evaluates against the parent's visible context only.
-- Reduction law: on states in which every chain carries at most one frame, the generalized read, write and initialization equal the current one-frame operations.
-- Entry and completion preservation: for a scope without a `scopeLocalData` record, `enterScope` and `completeScope` produce exactly the states they produce today, so every embedded, Transaction and Call-bearing profile, whose Programs omit the table, keeps its runtime state, including validators that require no scope frames.
-- Preservation: the reduction law is the preservation basis for every existing profile, because their admission keeps every chain to at most one frame (Multi-Instance bodies directly under the root only). The value-policy `scalar` pin preserves only their value domain.
-- Nearest checked non-law: writing to the innermost frame is not the nearest-owner write when only an ancestor declares the name.
-
-The declarative relation arms for `enterScope` and `completeScope` gain the initialization premise and the output-write conclusion, and the evaluator-soundness bridge extends to them. The bound is two new law owners and one conformance owner, each at most 800 nonblank lines; growth beyond it triggers replanning. The core Lean edits to `Data`, `ScopeVariableData`, the Multi-Instance scope write, the IL constructor and `ValueDomain` (including its pending unused-simp-argument lint) are made in one batch, with one full Lean gate at family acceptance.
+The other rules and admission are checked by the [conformance fixture](../../BpmnSemantics/NestedScopeDataConformance.lean). The declarative `enterScope` and `completeScope` arms take the declared evaluator result as their premise, so the evaluator-soundness bridge is a dispatcher check for them and the laws above carry the semantic evidence.
 
 ## Temporal hosting and refinement preflight
 
@@ -123,7 +118,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 - Registration: [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0020` and the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
 - Structure: [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 
-### Owners this implementation grows
+### Owners this implementation grew
 
 - IL and checked graph: the IL specification, the Semantic Process and checked-process schemas, both TypeScript contracts (with the conditional extraction above), the Lean Program structure and `CheckedProcessContract`, lowering and both JSON codecs.
 - Lean: scope variable data, scoped data primitives, Multi-Instance scope write, value domains, profile shapes, embedded scope admission, entry and completion relations, and one new conformance owner.

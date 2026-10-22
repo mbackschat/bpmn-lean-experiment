@@ -12,7 +12,7 @@ Start capacity envelope, so it is the only lane witnessing them. Each step is
 one dispatcher evaluation and the theorems only read its result. They do not discharge the quantified
 frame laws, and the 16,384-byte patch bound is stated beside its predicate instead of kernel-reducing a
 boundary-sized patch; see the
-[nested scope data proposal](../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#separating-witnesses-and-rule-to-evidence-matrix).
+[nested scope data specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#separating-witnesses-and-rule-to-evidence-matrix).
 -/
 
 namespace BpmnSemantics.NestedScopeDataConformance

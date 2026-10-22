@@ -10,7 +10,7 @@ block of two Sub-Processes inside a third-level scope. Each journey step is one 
 theorems only read its result. The depth refusal and the admitted fan-out bound agree across the checked
 and Program analyses; the structural and over-limit refusals use the checked analysis. They do not
 discharge a quantified law; see the
-[nested scope-control proposal](../docs/capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#separating-witnesses).
+[nested scope-control specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#separating-witnesses).
 -/
 
 namespace BpmnSemantics.NestedScopeControlConformance

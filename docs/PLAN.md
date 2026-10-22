@@ -80,13 +80,13 @@ Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family
 
 Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md); `PC-SCOPE-02` stays open for re-entry (`PC-CF-06`) and data/effect lifetimes, and implicit fan-in (`PC-CF-07`) stays later.
 
-Acceptance blockers: landing the closure through the branch flow with green `verify-complete`.
+Acceptance blockers: none; the closure landed at `e2bfb1e4`.
 
-Current result: closure reviews approved at `f65f05a1` with both correction audits resolved; the capsule graduated. The two CEA conformance modules' Lean comments still link the former `-PROPOSAL` path, because their cost rows bind source bytes; repair them at their next measured change.
+Current result: closure reviews approved at `f65f05a1` with both correction audits resolved; the capsule graduated. Cost rows now bind comment-free module code, so the stale Lean capsule links were repaired and both nested scope capsules graduated without re-measurement.
 
 Effort budget: 8 hours wall from 2026-10-22 for the journey move and family closure, about 5 used, reassessed at the limit.
 
-Next action: land the closure, then open `PC-SCOPE-04` from its checklist row. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: open `PC-SCOPE-04` from its checklist row. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

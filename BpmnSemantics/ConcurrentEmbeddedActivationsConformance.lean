@@ -9,7 +9,7 @@ element and activation. Each journey step is one dispatcher evaluation, and each
 observation, so no kernel decision keeps another journey's reduction resident. They do not discharge a
 quantified law; the quantified laws live in `ScopeOccurrenceEntry`, `ScopeCompletion` and
 `MergeTargetOccurrenceLaws`. See the
-[concurrent embedded activations proposal](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#separating-witnesses).
+[concurrent embedded activations specification](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#separating-witnesses).
 -/
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance

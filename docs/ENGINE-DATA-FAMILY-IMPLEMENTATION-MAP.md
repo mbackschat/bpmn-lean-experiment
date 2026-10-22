@@ -60,10 +60,10 @@ The [Message payload catch mediation specification](capsules/MESSAGE-PAYLOAD-CAT
 
 ## Nested embedded scope data
 
-The approved [nested scope-data account](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md) for `cibseven-2.2.0-nested-embedded-scope-data-draft` has a private checkpoint candidate awaiting semantic-checkpoint review.
+The implemented [nested scope-data account](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md) defines `cibseven-2.2.0-nested-embedded-scope-data-draft`.
 
 **Implemented.** Lean and the independent core carry one Program-level `scopeLocalData` table and an occurrence-owned frame for each declaring serial embedded Sub-Process, nested at most three deep. Entry evaluates declared inputs against the enclosing chain and installs the frame; reads resolve innermost-out to the Process; writes land at the innermost declaring frame; completion writes outputs and then disposes the frame. Prepared scope-creation and regional-completion transitions refuse declared scopes, and frames never reach public observation. The Start capacity envelope runs one journey per combination of extreme nested User Task completions, capped at 1,024, and refuses the Start before any Workflow when a journey exceeds a budget or the cap; [protocol](../packages/temporal-adapter/protocol/test/nested-scope-data-capacity-envelope.test.ts) and [Workflow encoder](../packages/temporal-adapter/workflow/test/nested-scope-data-capacity-envelope.test.ts) tests bound the estimates.
 
-The [capsule receipt](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#independent-cold-review-receipt) owns review state, and its [epistemic closure](capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#epistemic-closure) records the complete pipeline, Temporal and model-corpus gates and the full Lean gate's inherited placeholder failure.
+The [capsule receipt](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#independent-cold-review-receipt) owns review state, and its [epistemic closure](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#epistemic-closure) records the complete pipeline, Temporal and model-corpus gates and the full Lean gate's inherited placeholder failure.
 
 **Open.** CIB calibration of the third nesting level (`CIB-EXT-0020`); concurrent, repeated-activation and Call scope data (`PC-SCOPE-01`, `02`, `04`).

@@ -7,7 +7,7 @@ retained audit, intake and depth-two claim models are admitted with agreeing che
 bounds, the multiplicity-weighted task bound is tight, and each excluded neighbour of the minimal region is
 refused before start. Each refusal is its own theorem, so no kernel decision keeps another model's
 reduction resident. The region scan has no quantified certificate; see the
-[concurrent embedded activations proposal](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#separating-witnesses).
+[concurrent embedded activations specification](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#separating-witnesses).
 -/
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance

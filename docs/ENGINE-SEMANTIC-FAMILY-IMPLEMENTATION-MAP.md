@@ -140,7 +140,7 @@ The [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPE
 
 ## Nested embedded scope control
 
-The approved [nested scope-control account](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md) grows `cibseven-2.2.0-embedded-subprocess-completion-draft`; its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#independent-cold-review-receipt) owns review state.
+The implemented [nested scope-control account](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md) grows `cibseven-2.2.0-embedded-subprocess-completion-draft`; its [receipt](capsules/NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#independent-cold-review-receipt) owns review state.
 
 **Implemented.** Source admission, Lean and the independently written core admit the retained one-level multiset class or a scope tree in which every scope body composes User Tasks and embedded Sub-Processes in sequence and through paired and, below the root, terminal Parallel forks with separate child Ends, nested at most three deep, at most 128 User Tasks, and within the closure bound composed over the tree. Existing completion, quiescence and parent-continuation transitions execute the admitted trees unchanged. Lean conformance and the core witness the employee-onboarding and internal-audit journeys at the public boundary of open User Tasks, refusals and Process status; three registered scenarios carry seeded mutations, and the complete pipeline agrees on them across Lean, the core and Temporal.
 

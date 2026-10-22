@@ -1,9 +1,9 @@
-# Nested embedded scope control proposal
+# Nested embedded scope control specification
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -11,7 +11,7 @@ Can the engine admit ordinary embedded Sub-Processes nested to a definition dept
 
 This is the second batch of the embedded and called scope family in [PLAN](../PLAN.md#exact-resume-point) and serves the control clauses of `PC-SCOPE-01` and the human-branch, nested-region and separate-End clauses of `PC-CF-03` in the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). It does not close either row: mixed automated activities need concurrent-effect hosting that [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) refuses for any program combining a token split with an effect or Timer wait, and selected Exclusive decisions inside scopes need a data and expression binding this profile lacks. Both stay named later increments.
 
-Depth counts enclosing Sub-Processes: the root body has depth zero and a Sub-Process declared there owns a depth-one body, the convention of the [nested scope-data capsule](NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#required-optional-and-excluded-scope).
+Depth counts enclosing Sub-Processes: the root body has depth zero and a Sub-Process declared there owns a depth-one body, the convention of the [nested scope-data capsule](NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#required-optional-and-excluded-scope).
 
 Profile family: the owner direction of 2026-10-14 grows one cumulative profile per Practical CIB7 family, and the [checklist legend](../PRACTICAL-CIB7-COVERAGE-TARGET.md#contract-dependency-key-and-retained-evidence) separates `DATA` (PC-DATA-01–09) from `SCOPE` (PC-SCOPE-01–07 and PC-MI-01–12). The nested scope-data capsule served the `DATA` rows, so its profile stays that family's cumulative profile. `PC-SCOPE-01` names the [embedded owner](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md) as its row owner, so the `SCOPE` family grows that capsule's profile. The two lanes converge only at the concurrent owners of `PC-DATA-04`, where scope-local data meets concurrency. The data profile cannot absorb this increment anyway: its admission walk, Start capacity journey and frame commutation charge all assume no token split. Narrowing to User Tasks removes both blockers PLAN carried. Without Start data or Service effects, Start capacity reduces to the static task bound below, and no effect wait reaches host admission.
 
@@ -123,7 +123,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - Structure: [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 
-### Owners this implementation grows
+### Owners this implementation grew
 
 - TypeScript core: one nested-scope composition owner over the reused structured-body analysis, joined by union with the exact multisets of [Program profile shapes](../../packages/semantic-core/src/semantic-program-profile-shape.ts) and [checked profile shapes](../../packages/semantic-core/src/checked-process-profile-shape.ts) in [profile dispatch](../../packages/semantic-core/src/semantic-process-profile.ts) and [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts).
 - Lean: one admission-composition owner and one conformance owner, joined by union with the profile's exact Program and checked multisets in [`ProfileShapeCatalog`](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean). The existing embedded conformance module stays unchanged.
@@ -134,7 +134,7 @@ Growth makes these passages false, and the implementation corrects them in the s
 
 - in the [embedded owner](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md), the admission account's exact multisets and depth of one, the selected source profile's rejection of more than one Sub-Process, nesting and child joins, the targeted preservation gate's profile-wide claims, and the arbitrary-nesting re-open condition;
 - in the [profile-parameterized admission specification](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md), this profile's guarded multiset row and its introductory claim;
-- in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) and [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), the one-level embedded completion and nesting statements; [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#nested-embedded-scope-control) records the family.
+- in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](../ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md) and [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), the one-level embedded completion and nesting statements; [`implementation-status-delegation:ENGINE-SEMANTIC-FAMILY`](../ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#nested-embedded-scope-control) records the family.
 
 After growth, this capsule owns the profile's admission account, and the embedded owner's admission section routes to it. The one-level fixture keeps its evidence there.
 

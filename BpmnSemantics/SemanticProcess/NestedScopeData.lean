@@ -4,7 +4,7 @@ import BpmnSemantics.SemanticProcess.EffectDataMapping
 /-! # Nested embedded scope data
 
 Name resolution, frame initialization and output writes for `nestedScopeDataProfileId`, per the
-[nested scope data proposal](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#stable-rules).
+[nested scope data specification](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#stable-rules).
 A frame is the existing occurrence-keyed `ScopeVariableScope`; a scope's declarations are the
 Program's `scopeLocalData` record for its definition.
 

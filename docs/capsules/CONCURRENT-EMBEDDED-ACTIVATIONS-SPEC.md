@@ -16,7 +16,7 @@ This is the third batch of the embedded and called scope family in [PLAN](../PLA
 - effects, which need concurrent-effect hosting;
 - implicit fan-in into an Activity (`PC-CF-07`), whose lowering needs a synthetic merge that the public control-position and flow-node projections cannot yet represent.
 
-A second live occurrence of one embedded definition arises in BPMN only through a merge of concurrent tokens, a cycle or Multi-Instance. An explicit Exclusive merge is the only one of these that this profile can reach with existing operations, real Sequence Flows and passive hosting. Depth follows the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#question-and-delivery-boundary): the root body has depth zero, and the deepest admitted Sub-Process body has depth three.
+A second live occurrence of one embedded definition arises in BPMN only through a merge of concurrent tokens, a cycle or Multi-Instance. An explicit Exclusive merge is the only one of these that this profile can reach with existing operations, real Sequence Flows and passive hosting. Depth follows the [nested scope-control capsule](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#question-and-delivery-boundary): the root body has depth zero, and the deepest admitted Sub-Process body has depth three.
 
 ## Normative basis and CIB classification
 
@@ -30,7 +30,7 @@ CIB Seven agrees at source level. In the pinned checkout `5a45b47ea2`, `Exclusiv
 
 ## Required, optional and excluded scope
 
-Required: everything the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-PROPOSAL.md#required-optional-and-excluded-scope) requires, plus the merge region below as an additional child-body construct. A merge region lies in a child body at depth one or two. It consists of:
+Required: everything the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#required-optional-and-excluded-scope) requires, plus the merge region below as an additional child-body construct. A merge region lies in a child body at depth one or two. It consists of:
 
 - a Parallel fork with two or more outputs, each starting a branch that is a serial chain of one or more User Tasks;
 - one identity-only converging Exclusive Gateway whose incoming flows are exactly those branches' last flows, with one unconditioned outgoing flow;

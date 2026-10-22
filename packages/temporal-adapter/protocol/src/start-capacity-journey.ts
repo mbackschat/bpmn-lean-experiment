@@ -9,7 +9,7 @@
  * nested scope-data profile completes each User Task with a patch at the `NSD-TASK-01` cap. See the
  * [capacity admission](../../../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#capacity-admission) rule, its
  * counterparts `PBV-EFF-05` and `PBV-MSG-03`, and the nested
- * [hosting preflight](../../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-PROPOSAL.md#temporal-hosting-and-refinement-preflight).
+ * [hosting preflight](../../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#temporal-hosting-and-refinement-preflight).
  */
 import {
   EffectExecutionResultKind,
