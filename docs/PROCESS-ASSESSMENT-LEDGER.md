@@ -65,7 +65,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 24
+: 25
 
 Disposition
 : `executable guard`
@@ -83,12 +83,14 @@ Twenty-third instance, nested scope-data closure on 2026-10-18: a new cost-ledge
 
 Twenty-fourth instance, nested scope-control closure on 2026-10-21: the registration commit grew the pipeline catalog, the evidence-free registry and the differential tests without running the guards that bind them, so the warm-ceiling guard, the profile-authority guard and the gate-reachability guard first failed in the closure infrastructure gate. The guards held before acceptance; the cost was a closure delay, so the disposition stands and the registration step must run the infrastructure guards `what-binds` names for the registry paths.
 
+Twenty-fifth instance, Call variable mapping checkpoint on 2026-10-22: the implementation commit grew the model corpus, the capability catalog, the Lean import roots and the module-cost registry, and the corpus counts, capability union, import-boundary and module-cost guards first failed in the qualification run, as did the PLAN and runtime-map word limits. The guards held before the checkpoint commit, so the disposition stands; `what-binds` on the registry and corpus paths names these guards.
+
 ### Finding 02
 
 Which module or conjunct enforced a behavior was asserted without opening or probing it, and the claim was wrong.
 
 Instances
-: 13
+: 14
 
 Disposition
 : `unguardable`
@@ -105,6 +107,8 @@ Retained recurrence evidence: [Finding 02](process-assessment/SEMANTIC-EVIDENCE-
 Twelfth instance, concurrent embedded activations proposal on 2026-10-21: the draft asserted that join counting, control-position and flow-node projections and the reused structured-body owner needed no change for two live occurrences of one definition without opening them, and the cold proposal review refuted all three from the code.
 
 Thirteenth instance, the redesigned concurrent embedded activations proposal on 2026-10-21: the redesign and both of its correction rounds again attributed behavior to unopened owners — definition-keyed record, lifecycle, replay and occurrence-application arms described as already occurrence-addressed — and stated equality laws without the premises the existing functions need, so the review and two audits each refuted part of the previous correction from the code. Grepping every consumer of a replaced selection before claiming its behavior would have caught each.
+
+Fourteenth instance, Call variable mapping proposal on 2026-10-22: the approved proposal placed the Call inside an embedded Sub-Process without opening the Lean premises that bind Call callers to Process roots (`calledProcessAssociationsValid`, `calledInstanceClosure_child_empty`); implementation found 305 dependent declarations and narrowed placement to the root path, a correction audited before the checkpoint.
 
 ### Finding 03
 
@@ -335,7 +339,7 @@ Retained recurrence evidence: [Finding 14](process-assessment/PLANNING-AND-OWNER
 A checklist item was corrected only where attention already was, leaving its siblings unaudited: a capsule's Required evidence list was amended for the two scenarios under discussion while two other Required items stayed listed and absent, a stale claim was fixed in the owning map but not in the capsule that copied it, one Required-Lean list was corrected while the sibling list and matrix row restating the same obligation were not, and the correction for that then declared itself the single owner while one sibling enumeration survived.
 
 Instances
-: 32
+: 33
 
 Disposition
 : `unguardable`
@@ -348,6 +352,8 @@ Evidence
 Collapse duplicated obligations rather than repeatedly synchronizing them. A gate can compare known statements but cannot decide arbitrary semantic equivalence or which copies an author opened; question 8 therefore asks for the actual owning and sibling passages read. Sweep by the corrected construct/claim across code, current/absence passages and unchanged owners, including every packet-routed owner. [Finding 65](#finding-65) guards enumerable changed-section routing only, never truth of unchanged claims.
 
 Retained recurrence evidence: [Finding 15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15).
+
+Thirty-third instance, Call variable mapping checkpoint on 2026-10-22: the implementation added the mapped Call to the IL arm, the profile and the data family map, while the IL specification, the runtime map, the nested scope-data specification and the source package README kept excluding it; the checkpoint review found all four.
 
 ### Finding 16
 
@@ -892,7 +898,7 @@ Retained recurrence evidence: [Finding 45](process-assessment/PLANNING-AND-OWNER
 A negative witness passed for a mechanism other than the one under test, twice in one correction round and on the same finding.
 
 Instances
-: 3
+: 4
 
 Disposition
 : `executable guard`
@@ -906,12 +912,14 @@ A refusal test must fail when its intended mechanism is reverted. The generalize
 
 Retained recurrence evidence: [Finding 46](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-46).
 
+Fourth instance, Call variable mapping checkpoint on 2026-10-22: the `sourceExpression`, `variables="all"` and `businessKey` refusal variants lacked a `source` or `target`, so the missing-attribute check refused them before the key whitelist the witness named; the correction gives each variant a valid source and target, so only the whitelist can refuse it. The disposition stands: the guard is the seeded-revert discipline its witness applies, not a repository-wide mutation census.
+
 ### Finding 47
 
 A rule was asserted over two independent targets and enforced over one, and the asymmetry was invisible because the enforcing guard's own scope was never stated.
 
 Instances
-: 2
+: 3
 
 Disposition
 : `executable guard`
@@ -924,6 +932,8 @@ Evidence
 The census now covers both languages, separates cross-family pairing from same-family identity checks, and requires a record lookup: absence of bad joins is vacuous when nothing is paired. Cross-target wire/projection and differential evidence accompany a contract; TypeScript schema checks alone do not establish two-language coverage.
 
 Retained recurrence evidence: [Finding 47](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-47).
+
+Third instance, Call variable mapping checkpoint on 2026-10-22: mapping validity was asserted for both admissions but enforced asymmetrically: the bounded first fixture build found three Lean admission gaps the core did not share, and the checkpoint review found the core's nested analysis leaving structural mapping validity to the reader. Each side now carries its own refusal witnesses, the [checked nested analysis test](../packages/bpmn-source/test/call-variable-mapping-source.test.ts) and the [conformance fixture](../BpmnSemantics/CallVariableMappingConformance.lean), so the disposition stands.
 
 ### Finding 48
 
@@ -1459,7 +1469,7 @@ The complete Temporal gate failed a varying set of publication reads with `unava
 A semantic-core classification change was qualified by hand-picked consumer tests, so a Workflow component test that pins the changed classification stayed red in the committed target although the complete Temporal component lane would have run it.
 
 Instances
-: 2
+: 3
 
 Disposition
 : `unguardable`
@@ -1472,6 +1482,8 @@ Evidence
 Commit `2fb8a861` made a refused Start a semantic rejection in `advanceScenario` and was qualified by the semantic-core suite, the value-domain matrix, selected host-admission tests and the pipeline. `closure-failure-classification-probe.ts` used exactly such a Start to provoke a projection failure, and only `test:temporal:built:components` runs it. The consumer set had an exact criterion, the importers of `advanceScenario`, which a census would have listed.
 
 Second instance, `PC-DATA-03` effect-data closure on 2026-10-14: `b6a6fe74` widened effect transport to every value arm and was qualified by the component lane, selected hosted files and the pipeline, while a structured-human-work testkit test in `test:temporal:built:concurrent` still pinned the old transport refusal; the closure `test:temporal` gate failed on it and `041ad7f5` moved the lock to the profile policy. The consumer set is computable from imports, but which lanes an author ran before a local commit leaves no tracked fact; the acceptance-boundary complete gate that observed both instances is the designed backstop, so the class is unguardable short of running every complete lane per commit, which the verification cadence rejects. Reusable question: before committing a change to an exported encoder or classifier, have the complete lanes of every package that imports it run, not only the lanes already under attention?
+
+Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) already asks for type checks while coding, so the instance is a lapse in a written step, not a missing control, and the disposition stands.
 
 ### Finding 78
 
