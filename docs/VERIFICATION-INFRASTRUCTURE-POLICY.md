@@ -42,6 +42,8 @@ The [pipeline budget](../scripts/pipeline-budget.ts) derives a diagnostic warm t
 
 A soft-target breach reports the exact measurement and does not fail correctness. The prepared hosted aggregate ceiling remains hard; local cold pipeline time is measured and never reported as zero for prepared CI. Compare `phaseMs.warmTotal` only with the last uncontended measurement in [PLAN.md](PLAN.md). A full gate overlapping review or other heavy work is contended by construction: report correctness evidence and non-comparable timing, never a new performance baseline. Repeated hosted breaches require classifying the child deadline or optimizing the gate; changing a budget requires an explicit owner decision and strict parent-over-child ordering.
 
+Each hosted verification job keeps its measured duration below about 70% of its `timeout-minutes`. Read job durations from the pull request's check runs at each push; when a job passes that share, split it by owned contract, as the integration lane was split on 2026-10-21 after a single job reached its 10-minute limit unnoticed behind an earlier red job, rather than raising the limit.
+
 Stop if a feedback budget can be met only by weakening independence or evidence. Remove duplicate work, split by owned contract or make a performance measure diagnostic; never delete a discriminator, merge independent producers, skip a selected lane or relax its correctness oracle. During a complete pipeline measurement, no repository worktree may be modified: the harness records `git status --porcelain` after replay. Concurrent preparation stays read-only outside every worktree; ignored build output still obeys disjoint ownership.
 
 ## Long-running JavaScript and TypeScript commands
