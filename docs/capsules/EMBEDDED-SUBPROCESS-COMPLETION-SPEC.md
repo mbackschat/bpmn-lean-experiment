@@ -122,7 +122,7 @@ The child occurrence owns Child A, Child B, all child tokens, and all internal c
 
 Activity-local variable scopes remain distinct from execution-scope occurrences. This capsule adds no child-local variable binding, input/output mapping, or public nested data projection.
 
-Public User Task occurrence identity remains unchanged because outside a merge target the profile admits at most one occurrence of each Sub-Process element, and User Task elements are document-unique. The [concurrent embedded activations proposal](CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md) admits concurrently live occurrences of a merge-target Sub-Process, whose User Tasks are distinguished by activation number. Other repeated activation of the same child element, loops, multi-instance, and nesting beyond the selected depth reopen the public identity contract.
+Public User Task occurrence identity remains unchanged because outside a merge target the profile admits at most one occurrence of each Sub-Process element, and User Task elements are document-unique. The [concurrent embedded activations specification](CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md) admits concurrently live occurrences of a merge-target Sub-Process, whose User Tasks are distinguished by activation number. Other repeated activation of the same child element, loops, multi-instance, and nesting beyond the selected depth reopen the public identity contract.
 
 ## Stable semantic rules
 

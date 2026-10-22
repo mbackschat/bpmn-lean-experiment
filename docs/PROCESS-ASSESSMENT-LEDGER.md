@@ -1556,7 +1556,7 @@ Disposition
 : `review question`
 
 Evidence
-: [concurrent embedded activations checkpoint corrections](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md#independent-cold-review-receipt)
+: [concurrent embedded activations checkpoint corrections](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#independent-cold-review-receipt)
 
 **First observed:** `PC-SCOPE-02` semantic checkpoint review on 2026-10-21.
 

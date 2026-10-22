@@ -78,15 +78,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: `PC-SCOPE-02`, third batch of the embedded and called scope family per the [batch order](#scheduled-delivery-batches); `PC-SCOPE-01` stays open for mixed activities and Exclusive decisions inside scopes, and `PC-SCOPE-04` follows. Multi-Instance closure stays held at qualification.
 
-Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-PROPOSAL.md), a Parallel fork merged through a converging Exclusive Gateway into an embedded Sub-Process with independent concurrent occurrences; implicit fan-in (`PC-CF-07`) and re-entry (`PC-CF-06`) stay later.
+Deliverable: the [concurrent embedded activations account](capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md); `PC-SCOPE-02` stays open for re-entry (`PC-CF-06`) and data/effect lifetimes, and implicit fan-in (`PC-CF-07`) stays later.
 
-Acceptance blockers: the complete pipeline, the audit's two closure obligations (activation-addressed completion after Worker replacement or accepted-result recovery, and the 192 KiB query and terminal measurement), and the family closure reviews.
+Acceptance blockers: landing the closure through the branch flow with green `verify-complete`.
 
-Current result: Lean and registration at `8e7d80b2`, checkpoint corrections at `f7a3e568` with the audit resolved; `main` at `6d66db5a` passed `verify-complete`. Conformance journeys now build in the separate `BpmnConformance` root, leaving 18–33% of measured full rebuilds routine ([measurement](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#conformance-root-split-2026-10-22)).
+Current result: closure reviews approved at `f65f05a1` with both correction audits resolved; the capsule graduated. The two CEA conformance modules' Lean comments still link the former `-PROPOSAL` path, because their cost rows bind source bytes; repair them at their next measured change.
 
-Effort budget: 8 hours wall from 2026-10-22 for the journey move (about 2 used) and family closure, reassessed at the limit.
+Effort budget: 8 hours wall from 2026-10-22 for the journey move and family closure, about 5 used, reassessed at the limit.
 
-Next action: land the journey move through the branch flow, then run the closure gates once on the clean head and the cold design and code reviews. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: land the closure, then open `PC-SCOPE-04` from its checklist row. Separately, the review's smells (per-call merge-output recomputation in `isMergeTargetOperation`, the `"merge"` sentinel in `RawBodyNode.kind`, a duplicate `Running` check in `selectScopeCompletion`) are one refactor. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a second arrival that joins, deduplicates or completes another occurrence of the same definition.
 

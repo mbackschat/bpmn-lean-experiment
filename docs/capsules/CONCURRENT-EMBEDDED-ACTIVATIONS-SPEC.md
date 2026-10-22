@@ -1,9 +1,9 @@
-# Concurrent embedded activations proposal
+# Concurrent embedded activations specification
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -148,7 +148,7 @@ All witnesses differ at the public boundary of open User Tasks, named by element
 
 Lane shape: proved
 
-Evidence: concurrency families are `proved` under the owner direction of 2026-10-14. The new variants need quantified laws, because their correctness on states with several live occurrences of one definition is exactly what this increment adds. They start from [`ScopeCompletion`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) and [`InternalOperationOccurrence`](../../BpmnSemantics/SemanticProcess/InternalOperationOccurrence.lean):
+Evidence: concurrency families are `proved` under the owner direction of 2026-10-14. The new variants need quantified laws, because their correctness on states with several live occurrences of one definition is exactly what this increment adds. The guaranteeing declarations are [`enterConcurrentScopeState_fresh`](../../BpmnSemantics/SemanticProcess/ScopeOccurrenceEntry.lean#enterConcurrentScopeState_fresh), [`completeScopeState_factors`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeState_factors), [`completeScopeOccurrenceState_selected`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeOccurrenceState_selected), [`completeScopeOccurrenceState_refuses_nonquiescent`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeOccurrenceState_refuses_nonquiescent), the frame laws [`enterConcurrentScopeState_frame`](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean#enterConcurrentScopeState_frame) and [`completeScopeOccurrenceState_frame`](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean#completeScopeOccurrenceState_frame), and the dispatcher bridge [`applyInternalOperationOccurrence_mergeTarget_sound`](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean#applyInternalOperationOccurrence_mergeTarget_sound). They start from [`ScopeCompletion`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean) and [`InternalOperationOccurrence`](../../BpmnSemantics/SemanticProcess/InternalOperationOccurrence.lean):
 
 - `CEA-QUIESCE-01`: the analogues of [`completeScopeState_selected_update`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeState_selected_update) and [`completeScopeState_refuses_nonquiescent`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeState_refuses_nonquiescent) follow by specialization from the lookup-by-id composition and the factoring law, not by restatement. The if half of quiescence stays a conformance check.
 - `CEA-ISOLATE-01`: a new frame law, because [`completeScopeState_preserves_unrelated_components`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean#completeScopeState_preserves_unrelated_components) covers only six fields. Completing occurrence `o` changes tokens only by adding the one parent-output token, `scopeOccurrences` only by removing `o`, variables only by removing those owned by `o`, and waits not at all, so every component of another occurrence of the same definition is unchanged. Entry has the matching frame: it adds the fresh occurrence and its Start token and consumes only the arriving token.
@@ -237,7 +237,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
   - the [profile capability dispatch guard](../../scripts/lean-profile-capability-dispatch.test.ts);
   - [source hygiene](../../scripts/source-hygiene.test.ts).
 
-### Owners this implementation grows
+### Owners this implementation grew
 
 - Source: merge-region admission for this profile in [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), which admits identity-only Exclusive merges with two or more incoming flows inside child bodies; its exact-three merge arity stays for every other profile. Lowering is unchanged.
 - TypeScript core:
@@ -254,7 +254,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
   - the entry-child selection in the owned-operation lifecycle, and that lifecycle's owner-addressed `completeScope` arm; `FlowNodeOccurrenceBoundaryStarts` only validates the occurrence it is given and stays unchanged;
   - one new conformance owner.
 
-Growth makes the following passages false, and the implementation corrects them in the same change:
+Growth falsified the following passages, which the implementation corrected:
 
 - in the nested scope-control capsule, its single-occurrence statement and its reopen condition on a second live occurrence;
 - in the [embedded owner](EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md), its exclusion of repeated or concurrent activation;
@@ -269,4 +269,4 @@ Growth makes the following passages false, and the implementation corrects them 
 |---|---|---|---|---|
 | Proposal | `ee316777` | `fork-turns-none` | `approve-with-required-edits` | `d48061da, 1b40e87c, 65e7bc85, owner-authorized` |
 | Semantic checkpoint | `8e7d80b2` | `fork-turns-none` | `approve-with-required-edits` | `42075b5a, f7a3e568` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `f65f05a1` | `fork-turns-none` | `approve-with-required-edits` | `76a63032, cfdd18e7` |
