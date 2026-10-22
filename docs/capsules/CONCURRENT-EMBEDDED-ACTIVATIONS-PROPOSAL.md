@@ -201,7 +201,7 @@ The multiplicity-weighted bound keeps every reachable open-task set within the c
 
 ## Evidence and acceptance
 
-The audit and intake models carry the journey witnesses as answer-free scenarios with registered pipeline cases and seeded join, deduplication and wrong-occurrence mutations. They also get a corpus row, the About disclosure and a runnable Product 1 example. The depth-two model and the refusals are admission fixtures in both languages.
+The audit and intake models carry the journey witnesses as answer-free scenarios with registered pipeline cases and seeded join, deduplication and wrong-activation mutations. They also get a corpus row, the About disclosure and a runnable Product 1 example. The depth-two model and the refusals are admission fixtures in both languages.
 
 Acceptance requires:
 
