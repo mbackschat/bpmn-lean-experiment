@@ -78,13 +78,13 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); Stage A's checkpoint was accepted at `f6933b64`. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: Stage B built in the extension shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), so that it needs no complete Lean rebuild.
+Deliverable: Stage B built in the family shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), with at most one complete Lean rebuild, at its start.
 
-Acceptance blockers: the proposal's independent cold review; the owner asked for it before deciding.
+Acceptance blockers: the correction audit of the proposal's cold review, then the owner decision.
 
-Current result: the proposal records the measured rebuild causes and the verified module-system mechanisms; three build threads gained only 14%, so the pin stays at one.
+Current result: the proposal's cold review approved with required edits; the corrected proposal limits the goal to one complete rebuild per vocabulary-adding family; three build threads gained only 14%, so the pin stays at one.
 
-Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 for Lean batch `calln-stage-a`, reassessed at the limit; about 14 hours wall elapsed by 15:15, the build-scaling study included.
+Effort budget: 4 hours wall from 2026-10-23 16:00 for the proposal's correction audit and owner decision, reassessed at the limit; Stage B's budget is set when it opens, and Stage A closed at about 14.5 of its 16 hours.
 
 Next action: run the proposal's cold review; on approval convert the kernel types to modules and open Stage B in the extension shape.
 
