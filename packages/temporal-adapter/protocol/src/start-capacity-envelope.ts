@@ -22,6 +22,7 @@ import {
   StimulusKind,
   projectOpenFlowNodeOccurrences,
   stimulusCommandId,
+  utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
   DeepReadonly,
@@ -142,6 +143,8 @@ export enum StartCapacityEnvelopeResultKind {
   EffectTaskExceeded = "effectTaskExceeded",
   /** The nested User Tasks admit more reserved completion combinations than the envelope evaluates. */
   ReservedCompletionsExceeded = "reservedCompletionsExceeded",
+  /** An embedded completion Start names a hosting identity longer than its bound; no journey is evaluated. */
+  HostingIdentityExceeded = "hostingIdentityExceeded",
 }
 
 export type StartCapacityEnvelopeFailure = Readonly<{
@@ -168,7 +171,25 @@ export type StartCapacityEnvelopeResult =
   | Readonly<{
       kind: StartCapacityEnvelopeResultKind.ReservedCompletionsExceeded;
       failure: Readonly<{ configuredBound: number }>;
+    }>
+  | Readonly<{
+      kind: StartCapacityEnvelopeResultKind.HostingIdentityExceeded;
+      failure: StartCapacityHostingIdentityFailure;
     }>;
+
+export type StartCapacityHostingIdentityFailure = Readonly<{ configuredBound: number; identityBytes: number }>;
+
+/**
+ * The hosting identity bound of the embedded completion profile, in UTF-8 bytes.
+ *
+ * The envelope does not run this profile, whose concurrent User Task waits it cannot enumerate. Its hosted
+ * artifacts are fixed by the admitted definition apart from the hosting identity, which every open wait and every
+ * called identity embeds, so bounding that identity bounds them. The value equals the reserved command identifier
+ * width; the retained supplier onboarding model, the profile's deepest Call forest, passes the hosted Query and
+ * terminal ceilings with an identity of exactly this size. See the
+ * [identity-length risk](../../../../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md#temporal-hosting-and-refinement-preflight).
+ */
+export const embeddedCompletionHostingIdentityByteLimit = 256;
 
 /** The profiles whose successful path the envelope reserves before Workflow creation. */
 const envelopedProfiles: ReadonlySet<string> = new Set([
@@ -203,6 +224,11 @@ export function assessStartCapacityEnvelope(
   limits: StartCapacityEnvelopeLimits = productionStartCapacityEnvelopeLimits(),
   effectLimits: StartCapacityEffectLimits = productionStartCapacityEffectLimits(),
 ): StartCapacityEnvelopeResult {
+  if (program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
+    utf8ByteLength(start.instanceId) > embeddedCompletionHostingIdentityByteLimit) {
+    return { kind: StartCapacityEnvelopeResultKind.HostingIdentityExceeded, failure: {
+      configuredBound: embeddedCompletionHostingIdentityByteLimit, identityBytes: utf8ByteLength(start.instanceId) } };
+  }
   if (!envelopedProfiles.has(program.identity.semanticProfile)) {
     return { kind: StartCapacityEnvelopeResultKind.NotApplicable };
   }
@@ -241,6 +267,11 @@ export function assessStartCapacityEnvelope(
 export function startCapacityReservedCompletionsEvidence(failure: Readonly<{ configuredBound: number }>): string {
   return `The nested User Tasks admit more than ${failure.configuredBound} reserved completion combinations; ` +
     "no Workflow was started.";
+}
+
+export function startCapacityHostingIdentityEvidence(failure: StartCapacityHostingIdentityFailure): string {
+  return `The hosting Process-instance identity is ${failure.identityBytes} UTF-8 bytes, above its ` +
+    `${failure.configuredBound}-byte bound; no Workflow was started.`;
 }
 
 /** The operator-facing evidence naming the exceeded budget, its bound and the estimate. */

@@ -6,6 +6,7 @@ import { nestedScopeDataPipelineCases } from "./nested-scope-data-pipeline-cases
 import { callVariableMappingPipelineCases } from "./call-variable-mapping-pipeline-cases.ts";
 import { nestedScopeControlPipelineCases } from "./nested-scope-control-pipeline-cases.ts";
 import { concurrentEmbeddedActivationsPipelineCases } from "./concurrent-embedded-activations-pipeline-cases.ts";
+import { repeatedNestedConcurrentCallsPipelineCases } from "./repeated-nested-concurrent-calls-pipeline-cases.ts";
 import { portableMessagePayloadPipelineCases } from "./portable-message-payload-pipeline-cases.ts";
 import { businessTaskCompositionPipelineCases } from "./business-task-composition-pipeline-cases.ts";
 import { transactionCancellationPipelineCases } from "./transaction-cancellation-pipeline-cases.ts";
@@ -575,6 +576,7 @@ export const pipelineCases = Object.freeze([
   ...embeddedSubProcessPipelineCases,
   ...nestedScopeControlPipelineCases,
   ...concurrentEmbeddedActivationsPipelineCases,
+  ...repeatedNestedConcurrentCallsPipelineCases,
   ...subprocessErrorPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),

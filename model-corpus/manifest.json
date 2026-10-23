@@ -824,6 +824,43 @@
       }
     },
     {
+      "id": "supplier-onboarding-repeated-nested-calls",
+      "title": "Onboard a supplier through shared approvals",
+      "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",
+      "cloneFamily": "supplier-onboarding-repeated-nested-calls",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeated-nested-concurrent-calls/supplier-onboarding.bpmn",
+        "sha256": "a9159c72f8806b92bb3e4f587758e3ef970556b4f0bf7cabdf8337ea76a295e6",
+        "scenarioRelativePath": "scenarios/repeated-nested-concurrent-calls/natural-order.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "repeated-nested-calls-natural-order",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The repeated, nested and concurrent Calls are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
       "id": "scoped-business-error-recovery",
       "title": "Recover scoped work after a business error",
       "businessPurpose": "Route a failed scoped operation to its declared recovery work while cancelling its live sibling.",

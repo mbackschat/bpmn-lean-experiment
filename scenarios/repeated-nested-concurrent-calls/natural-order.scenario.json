@@ -1,0 +1,153 @@
+{
+  "kind": "scenario",
+  "id": "repeated-nested-calls-natural-order",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "supplier-onboarding",
+    "relativePath": "scenarios/repeated-nested-concurrent-calls/supplier-onboarding.bpmn",
+    "sha256": "a9159c72f8806b92bb3e4f587758e3ef970556b4f0bf7cabdf8337ea76a295e6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_SupplierOnboarding",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-register-supplier",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_RegisterSupplier",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-tax-documents",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CollectTaxDocuments",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-bank-details",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CollectBankDetails",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-tax-prepare-approval",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+        "elementId": "UserTask_PrepareApproval",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-tax-approve",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+        "elementId": "UserTask_Approve",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-bank-prepare-approval",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+        "elementId": "UserTask_PrepareApproval",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-bank-approve",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+        "elementId": "UserTask_Approve",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess-risk",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:23:CallActivity_ReviewRisk:1",
+        "elementId": "UserTask_AssessRisk",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-screen-sanctions",
+      "taskId": {
+        "processInstanceId": "call:47:call:10:Instance_1:23:CallActivity_ReviewRisk:1:28:CallActivity_CheckCompliance:1",
+        "elementId": "UserTask_ScreenSanctions",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-final-prepare-approval",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
+        "elementId": "UserTask_PrepareApproval",
+        "activation": 3
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-final-approve",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
+        "elementId": "UserTask_Approve",
+        "activation": 3
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0021"
+    ]
+  }
+}
