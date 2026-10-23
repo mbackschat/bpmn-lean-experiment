@@ -276,7 +276,7 @@ Before starting any JavaScript or TypeScript test or build, follow the [long-run
 - Preserve unrelated user changes and avoid destructive Git operations.
 - Make local commits autonomously for coherent, qualified changes, honoring required gates and explicit user instructions about committing.
 - Use Conventional Commits: `type(scope): subject`, lowercase type, imperative subject, plus a concise body when non-obvious rationale, architectural consequences, or compatibility constraints would otherwise be lost.
-- Do not push without an explicit current request.
+- Do not push `main` or tags without an explicit current request. Feature branches may be pushed so that hosted CI runs full builds (owner direction 2026-10-23); `main` still moves only through the [branch push flow](docs/TESTING-SPEC.md#branch-push-flow).
 - Keep [AGENTS.md](AGENTS.md) as a symlink to `CLAUDE.md`; never maintain divergent copies.
 - The default branch requires the `verify-complete` hosted check (selected Ubuntu verification). Administrators may bypass it; never override to land unverified work.
 
