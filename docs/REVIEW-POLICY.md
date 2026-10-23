@@ -93,9 +93,9 @@ Review a representative dependency chain and same-transition consumers for prema
 
 Material changes select/change BPMN meaning, profile/CIB relationship, checked-source/IL representation, runtime/public observation, admission, transition family, proof boundary or Temporal refinement. This governs capsules and root proposals/specifications by claims, never layer/size. Changes to none of these open no review cycle: use guards/complete applicable gate and record non-material classification/covering guards in the status owner. Milestone reflection may still require architecture review for correlated risk.
 
-Require cold proposal review, conditional cold checkpoint and governed closure; closure is cold except [warm continuity](#when-a-warm-review-is-valid) or [single-lane combined review](#combined-checkpoint-and-closure).
+Require one cold proposal review and one governed closure review; closure is cold except [warm continuity](#when-a-warm-review-is-valid) or [single-lane combined review](#combined-checkpoint-and-closure).
 
-Owner direction (2026-10-14), for Practical CIB7 Coverage: the review unit is a checklist family, not a slice. A family takes one proposal review covering its selected increments, implements them as one batch through registration and hosting, and then takes one checkpoint and one closure review, or one combined review when its conditions hold. Intermediate slices inside the batch are private checkpoints and open no review stage; a review already in flight for a slice may complete.
+For Practical CIB7 Coverage the review unit is a checklist family, not a slice or stage ([delivery cycle](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery)). A family takes one proposal review covering its selected increments, implements them as one batch through registration and hosting, and then takes one closure review. Intermediate slices and stages are private checkpoints and open no review stage; the semantic-checkpoint row below remains only for capsules outside Practical CIB7 Coverage and historical receipts.
 
 | Stage | Immutable target and timing | Isolation | Boundary |
 |---|---|---|---|
@@ -245,22 +245,10 @@ After the full gate is green, independently review:
 - Independence of BPMN, CIB, Lean, TypeScript and Temporal claims.
 - Version/history policy and meaningful mutations: each name matches the injected defect and reaches a public/durable discriminator rather than an indistinguishable prefix.
 - Duplicate builds, cleanup, harness coupling, dominant timing, document placement, stale status and removable complexity.
-- Baseline/closure commits and reproducible nonblank code/documentation churn in [the cost ledger](CAPSULE-COST-LEDGER.md), compared with the nearest completed capsule rather than an impression of wall time. Read the selected full row and comparator; consult the row’s directly linked resource evidence only for the relevant resource claim.
-
-Run `node scripts/capsule-cost.ts <baseline-commit> <closure-commit>` for nonblank code (hand-written Lean/TS/Java/JS) and Markdown `+added/-removed` measures; the dependency-free parser/blank exclusions are infrastructure-tested. Elapsed time requires retained start/closure timestamps, otherwise unknown, never inferred from commit dates. Mixed uncommitted worktrees cannot supply reproducible closure cost.
-
-Answer [the self-assessment questions](PROCESS-ASSESSMENT-LEDGER.md#self-assessment-questions), then inspect matching complete findings through the [finding index](PROCESS-ASSESSMENT-LEDGER.md#finding-index). Record every escape under its mechanism, retaining the cumulative count and compact relevant provenance instead of another incident narrative. Its guard forbids `review question`/`accepted risk` at two or more instances: recurrence shows prose failed to bind.
+Inspect matching complete findings through the [finding index](PROCESS-ASSESSMENT-LEDGER.md#finding-index). Record every escape under its mechanism, retaining the cumulative count and compact relevant provenance instead of another incident narrative. Its guard forbids `review question`/`accepted risk` at two or more instances: recurrence shows prose failed to bind.
 
 ### Milestone and capsule reflection
 
-This epistemic-closure review runs separately after the technical gate is green and before a milestone or semantic capsule is marked complete. Under the 2026-10-21 owner direction in [CLAUDE.md](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) it applies at family closure, not per slice. In addition to the closure-review items above:
-
-1. identify the nearest realistic counterexample and require either a checked non-law or an executable negative witness;
-2. confirm every claimed separating witness differs at the approved public observation boundary; a hidden microstep, storage order, or evaluator choice is not a discriminator unless the contract exposes it;
-3. when the comparison shows the measured cost did not fall, remove one identified process weight before starting the next capsule. The removed weight must bear on the measure that rose, or the row states why no such weight exists; a removal on an axis that already improved leaves the growing cost unaddressed and satisfies the only subtractive rule in this process without subtracting anything;
-4. decide whether the result changes the next best step;
-5. complete the applicable proposal, conditional semantic-checkpoint, and closure reviews under [the independent cold-review rule](#independent-cold-review-gate) before crossing their stage boundaries.
-
-Answer the same self-assessment questions at each session handoff, not only at a capsule boundary. A finding that already has a row gets its instance count incremented rather than a second near-duplicate row, because that count is what the escalation rule reads: recurrence requires an executable guard or an explicit explanation that the class is unguardable under the ledger’s closed dispositions. Assume your own fresh prose does not bind you.
+At family closure, the closure review above also identifies the nearest realistic counterexample and requires a checked non-law or an executable negative witness, confirms every claimed separating witness differs at the approved public observation boundary, and decides whether the result changes the next best step. No cost row, cost comparison or per-handoff self-assessment is required.
 
 Turn every escaped issue into either a reusable review question or an executable guard, and record it in [the process-assessment ledger](PROCESS-ASSESSMENT-LEDGER.md) so a repeat is distinguishable from a first occurrence. Record each resulting correction in its existing owner: semantic meaning in the applicable [capsule](capsules/README.md), durable product and semantic boundaries in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), concrete package and deployment architecture in [ARCHITECTURE.md](ARCHITECTURE.md), evidence and guards in the focused owner selected by [TESTING-SPEC.md](TESTING-SPEC.md#select-the-task-owner), implementation status in the applicable detail map routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), immediate sequencing in [PLAN.md](PLAN.md), and only reusable contributor behavior in this file. Do not create a retrospective diary per capsule.
