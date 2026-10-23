@@ -3,6 +3,7 @@ import BpmnSemantics.SemanticProcess.GraphReachability
 import BpmnSemantics.SemanticProcess.CallActivityAdmission
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.OperationControlPlaces
 
 /-! # Fuel-bounded graph validation
 
@@ -10,140 +11,6 @@ This module owns small executable graph predicates shared by checked-source proo
 -/
 
 namespace BpmnSemantics.SemanticProcess
-
-private def operationInputs : SemanticOperation → List ControlPlaceId
-  | .initiate ..
-  | .initiateMessage ..
-  | .initiateTimer ..
-  | .returnProcess ..
-  | .completeSequentialMultiInstanceScope ..
-  | .completeParallelMultiInstanceScope ..
-  | .completeParallelMultiInstanceUserTask ..
-  | .completeScope ..
-  | .completeEventSubProcess .. => []
-  | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
-  | .enterParallelMultiInstanceScope _ _ input _ _ _ _ _ _ _
-  | .enterScope _ _ input _ _
-  | .enterBoundedScope _ _ input _ _ _
-  | .enterMonitoredScope _ _ input _ _ _
-  | .invokeProcess _ _ input _ _ _ _ _
-  | .awaitUserTask _ _ input _ _
-  | .awaitDataInputUserTask _ _ input _ _ _ _
-  | .awaitDataInputOutputUserTask _ _ input _ _ _ _ _
-  | .awaitDataOutputUserTask _ _ input _ _ _ _
-  | .awaitSequentialMultiInstanceUserTask _ _ input _ _ _ _ _
-  | .awaitParallelMultiInstanceUserTask _ _ input _ _ _ _ _ _ _
-  | .awaitTimer _ _ input _ _
-  | .awaitMessage _ _ input _ _ | .awaitPayloadMessage _ _ input _ _ _
-  | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
-  | .awaitEventRace _ _ input _ _
-  | .awaitBoundedUserTask _ _ input _ _
-  | .awaitMessageBoundedUserTask _ _ input _ _
-  | .awaitMessageMonitoredUserTask _ _ input _ _
-  | .awaitMonitoredUserTask _ _ input _ _
-  | .awaitEffect _ _ input _ _ _
-  | .duplicate _ _ input _
-  | .choose _ _ input _ _ _
-  | .selectMany _ _ input _ _ _
-  | .throwError _ _ input _ _
-  | .reachNoneEnd _ _ input
-  | .terminateScope _ _ input _ => [input]
-  | .triggerCompensation _ _ _ input _ => [input]
-  | .cancelTransaction _ _ _ input _ _ => [input]
-  | .synchronize _ _ inputs _
-  | .mergeExclusive _ _ inputs _
-  | .synchronizeSelected _ _ inputs _ _ => inputs
-
-def operationOutputs : SemanticOperation → List ControlPlaceId
-  | .initiate _ _ output
-  | .invokeProcess _ _ _ _ _ output _ _
-  | .returnProcess _ _ _ _ output _
-  | .awaitUserTask _ _ _ output _
-  | .awaitDataInputUserTask _ _ _ output _ _ _
-  | .awaitDataInputOutputUserTask _ _ _ output _ _ _ _
-  | .awaitDataOutputUserTask _ _ _ output _ _ _
-  | .awaitTimer _ _ _ output _
-  | .awaitMessage _ _ _ output _ | .awaitPayloadMessage _ _ _ output _ _
-  | .awaitCorrelatedPayloadMessage _ _ _ output _ _ _ _ _
-  | .synchronize _ _ _ output
-  | .mergeExclusive _ _ _ output => [output]
-  | .awaitSequentialMultiInstanceUserTask _ _ _ _ _ normalOutput boundaryTimer _ =>
-      [normalOutput, boundaryTimer.output]
-  | .awaitParallelMultiInstanceUserTask _ _ _ _ _ _ _ boundaryTimer _ _ =>
-      [boundaryTimer.output]
-  | .completeParallelMultiInstanceUserTask _ _ _ _ normalOutput => [normalOutput]
-  | .awaitEventRace _ _ _ message timer => [message.output, timer.output]
-  -- The monitored family declares the same two outputs, though it can produce both within one run
-  -- rather than one of them.
-  | .awaitBoundedUserTask _ _ _ task boundaryTimer
-  | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
-      [task.output, boundaryTimer.output]
-  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage
-  | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
-      [task.output, boundaryMessage.output]
-  | .synchronizeSelected _ _ _ output _ => [output]
-  | .enterSequentialMultiInstanceScope _ _ _ childEntry _ _ _ _ _ _
-  | .enterParallelMultiInstanceScope _ _ _ childEntry _ _ _ _ _ _
-  | .enterScope _ _ _ childEntry _ => [childEntry]
-  -- The boundary route is token-carrying and lands in the parent scope, unlike the child entry.
-  | .enterBoundedScope _ _ _ childEntry _ boundaryTimer
-  | .enterMonitoredScope _ _ _ childEntry _ boundaryTimer =>
-      [childEntry, boundaryTimer.output]
-  | .awaitEffect _ _ _ output _ route =>
-      output :: route.toList.map (·.output)
-  | .duplicate _ _ _ outputs => outputs
-  | .choose _ _ _ candidates defaultOutput _ =>
-      candidates.map (·.output) ++ [defaultOutput]
-  | .selectMany _ _ _ candidates defaultBranch _ =>
-      candidates.map (·.output) ++ [defaultBranch.output]
-  | .throwError _ _ _ _ handler => [handler.output]
-  | .completeSequentialMultiInstanceScope ..
-  | .completeParallelMultiInstanceScope ..
-  | .reachNoneEnd ..
-  | .completeEventSubProcess ..
-  | .terminateScope .. => []
-  | .completeScope _ _ _ parentOutput => parentOutput.toList
-  | .initiateMessage _ _ _ outputs => outputs
-  | .initiateTimer _ _ _ outputs => outputs
-  | .triggerCompensation _ _ _ _ output => [output]
-  | .cancelTransaction _ _ _ _ output _ => [output]
-
-/-- All token-carrying ports read or produced by one operation. -/
-def operationControlPlaces (operation : SemanticOperation) : List ControlPlaceId :=
-  operationInputs operation ++ operationOutputs operation
-
-/-- Whether every token-carrying port of an operation belongs to its operation scope.
-
-The excluded constructors deliberately cross a definition-scope boundary for at least one port.
--/
-def operationControlPlacesShareOwner : SemanticOperation → Bool
-  | .enterSequentialMultiInstanceScope ..
-  | .enterParallelMultiInstanceScope ..
-  | .completeSequentialMultiInstanceScope ..
-  | .completeParallelMultiInstanceScope ..
-  | .enterScope ..
-  | .enterBoundedScope ..
-  | .enterMonitoredScope ..
-  | .invokeProcess ..
-  | .returnProcess ..
-  | .completeScope ..
-  | .throwError .. | .cancelTransaction .. => false
-  | _ => true
-
-/-- A payload-bearing Message Catch Event's outgoing place is one of its same-scope token ports. -/
-theorem awaitPayloadMessage_output_mem_operationControlPlaces (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (message : MessageDefinition) (directOutput : DirectCatchEventPayloadOutput) :
-    output ∈ operationControlPlaces (.awaitPayloadMessage id origin input output message directOutput) := by simp [operationControlPlaces, operationInputs, operationOutputs]
-
-/-- A correlated payload Message Catch Event's outgoing place is one of its same-scope token ports. -/
-theorem awaitCorrelatedPayloadMessage_output_mem_operationControlPlaces
-    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
-    (message : MessageDefinition) (correlationKeyId correlationPropertyId : String)
-    (payloadSelector : CorrelationMessagePath)
-    (processPropertySelector : CorrelationProcessPropertyPath) :
-    output ∈ operationControlPlaces
-      (.awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
-        correlationPropertyId payloadSelector processPropertySelector) := by
-  simp [operationControlPlaces, operationInputs, operationOutputs]
 
 def producers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
@@ -160,7 +27,7 @@ def producers (operations : List SemanticOperation)
 private def consumers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
-    if (operationInputs operation).contains place then
+    if (operationInputPlaces operation).contains place then
       some operation.id
     else
       none
@@ -236,10 +103,20 @@ def operationRespectsScopes (program : Program)
       | .invokeProcess _ _ input _ calledRoot childEntry _ _ =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] calledRoot
-      | .returnProcess _ _ _ calledRoot callerOutput _ =>
+      | .returnProcess id _ _ calledRoot callerOutput _ =>
+          -- CALLN-ADMIT-01: the caller output lies in the Process root that holds the paired invocation.
           calledRoot = owner &&
             (definitionScope? program owner).any (·.parentScopeId.isNone) &&
-            placesOwnedBy program [callerOutput] entryRootId
+            match program.operations.filter (fun candidate => match candidate with
+                | .invokeProcess _ _ _ _ _ _ returned _ => decide (returned = id)
+                | _ => false) with
+            | [invoke] =>
+                match operationScope? program invoke.id with
+                | some caller =>
+                    (definitionScope? program caller).any (·.parentScopeId.isNone) &&
+                      placesOwnedBy program [callerOutput] caller
+                | none => false
+            | _ => false
       | .completeScope _ _ scopeId parentOutput =>
           scopeId = owner &&
             match definitionScope? program scopeId with
@@ -273,7 +150,7 @@ def operationRespectsScopes (program : Program)
             | none => false
       | _ =>
           placesOwnedBy program
-            (operationInputs operation ++ operationOutputs operation) owner
+            (operationInputPlaces operation ++ operationOutputs operation) owner
 
 def scopeEdges (program : Program) :
     List (GraphEdge DefinitionScopeId) :=
@@ -345,6 +222,25 @@ private def programEdges (program : Program) : List (GraphEdge OperationId) :=
   messageHandlerEdges program ++ placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
     (callCompletionPairs program).map fun pair =>
       { source := pair.1, target := pair.2 }
+
+private def isInvocation (program : Program) (operationId : OperationId) : Bool :=
+  program.operations.any fun
+    | .invokeProcess id .. => id == operationId
+    | _ => false
+
+/-- The control order the graph policy judges: each call stands as an edge from its invocation to its
+paired return, because a body called from two sites joins both sites' paths through it; reachability
+keeps `programEdges` through the body (CALLN-ADMIT-01). -/
+private def programOrderEdges (program : Program) : List (GraphEdge OperationId) :=
+  messageHandlerEdges program ++ (placeEdges program).filter (fun edge => !isInvocation program edge.source) ++
+    completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
+    program.operations.filterMap fun
+      | .invokeProcess id _ _ _ _ _ returned _ => some { source := id, target := returned }
+      | _ => none
+
+def operationIsInvocation : SemanticOperation → Bool
+  | .invokeProcess .. => true
+  | _ => false
 
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
@@ -481,14 +377,43 @@ def programGraphWellFormedWithScopeLifecycle (program : Program)
             boundedScopeEntryOriginsOwnTheirScopes program &&
             scopeLifecycle program entryRoot &&
             program.controlPlaces.all (fun place =>
-            (producers program.operations place.id).length +
-              (program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.childEntry == place.id)).length = 1 &&
+            ((producers program.operations place.id).length +
+              (program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.childEntry == place.id)).length = 1 ||
+              -- A called root's entry place is produced by every invocation of that root (CALLN-ADMIT-01).
+              1 < (producers program.operations place.id).length &&
+                program.operations.all fun operation =>
+                  operationIsInvocation operation || !(producers program.operations place.id).contains operation.id) &&
               (consumers program.operations place.id).length = 1) &&
             allReachableWithin operationIds edges fuel start &&
             allCoreachableWithin operationIds edges fuel ends &&
-            programGraphPolicyValid program edges fuel
+            programGraphPolicyValid program (programOrderEdges program) fuel
       | none => false
   | _ => false
+
+/-- Without invocations, the producer census is the single-producer rule: a shared producer must be an
+invocation (CALLN-ADMIT-01). -/
+theorem producerCensus_without_invocations (program : Program) (place : ControlPlaceId)
+    (noInvocation : ∀ operation ∈ program.operations, operationIsInvocation operation = false)
+    (census : ((producers program.operations place).length +
+        (program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.childEntry == place)).length = 1 ||
+      1 < (producers program.operations place).length &&
+        program.operations.all fun operation =>
+          operationIsInvocation operation || !(producers program.operations place).contains operation.id) = true) :
+    (producers program.operations place).length +
+      (program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.childEntry == place)).length = 1 := by
+  simp only [Bool.or_eq_true, Bool.and_eq_true, decide_eq_true_eq] at census
+  rcases census with single | ⟨many, shared⟩
+  · exact single
+  · exfalso
+    obtain ⟨producer, present⟩ := List.exists_mem_of_length_pos (by omega : 0 < (producers program.operations place).length)
+    obtain ⟨operation, member, produced⟩ := List.mem_filterMap.mp present
+    have idEq : operation.id = producer := by
+      dsimp only at produced
+      repeat' split at produced
+      all_goals first | exact Option.some.inj produced | contradiction
+    have allowed := List.all_eq_true.mp shared operation member
+    simp [noInvocation operation member] at allowed
+    exact allowed (idEq ▸ present)
 
 /-- Standalone raw-graph backstop for decoded programs, independent of hidden Program declarations. -/
 def programGraphWellFormed (program : Program) : Bool :=
@@ -581,7 +506,7 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
                   have portOwned : placeScope? program place = some owner := by
                     cases operation <;>
                       simp_all [operationControlPlacesShareOwner, operationControlPlaces,
-                        operationInputs, operationOutputs, placesOwnedBy] <;> grind
+                        operationInputPlaces, operationOutputs, placesOwnedBy] <;> grind
                   unfold operationScope? at operationOwnerEq
                   generalize operationFoundEq : program.operationScopes.find? (fun ownership =>
                     decide (ownership.operationId = operation.id)) = operationFound
@@ -680,11 +605,11 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
   have entryPlaceMember : arm.boundaryTimer.output ∈ operationControlPlaces entry := by
     cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
     rw [← projects]
-    simp [operationControlPlaces, operationInputs, operationOutputs]
+    simp [operationControlPlaces, operationInputPlaces, operationOutputs]
   have inputPlaceMember : arm.input ∈ operationControlPlaces entry := by
     cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
     rw [← projects]
-    simp [operationControlPlaces, operationInputs, operationOutputs]
+    simp [operationControlPlaces, operationInputPlaces, operationOutputs]
   have completionSameScope : operationControlPlacesShareOwner completion = true := by
     cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
     cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
@@ -694,7 +619,7 @@ theorem programGraphWellFormed_pairedOperationControlPlaceScopes (program : Prog
     cases entry <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
     cases completion <;> simp_all [ParallelMultiInstanceArm.ofOperation?,
       ParallelMultiInstanceCompletionArm.ofOperation?, parallelMultiInstanceOperationsPair,
-      operationControlPlaces, operationInputs, operationOutputs]
+      operationControlPlaces, operationInputPlaces, operationOutputs]
   obtain ⟨inputOwner, inputDeclared, inputEntryScope, inputPlaceScope, inputPlaceDeclaration⟩ :=
     programGraphWellFormed_operationControlPlaceScope program entry arm.input graphValid
       operationIdsUnique placeIdsUnique entryMember entrySameScope inputPlaceMember

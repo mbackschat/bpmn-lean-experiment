@@ -69,7 +69,7 @@ theorem selectInternalScopeCreation_read_frame (before after : RuntimeState)
       callActivationCount after ⟨record.id.elementId.value⟩ =
         callActivationCount before ⟨record.id.elementId.value⟩ ∧
       (after.calledProcessOccurrences.filter (fun candidate =>
-        candidate.caller = selected.owner && candidate.id.elementId.value = record.id.elementId.value)).length = 0 ∧
+        decide (candidate.id.elementId.value = record.id.elementId.value))).length = 0 ∧
       (after.scopeOccurrences.filter (fun occurrence =>
         decide (occurrence.id.processInstanceId = selected.created.id.processInstanceId))).length = 0 ∧
       (after.calledProcessOccurrences.filter (fun candidate =>
@@ -120,18 +120,18 @@ theorem scopeCreation_selection_child_facts (state : RuntimeState)
       all_goals cases found
       all_goals simp_all
 
-theorem scopeCreation_selection_call_facts (state : RuntimeState)
+private theorem scopeCreation_selection_call_facts_core (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (record : CalledProcessOccurrence) (hosting : SemanticId)
     (running : state.control = .running hosting)
     (found : selectInternalScopeCreation? state operation = some selected)
     (called : selected.kind = .called record) :
-    selected.owner.processInstanceId = hosting ∧ record.caller = selected.owner ∧
-      record.id.processInstanceId = hosting ∧ selected.created.id = record.calledRoot ∧
-      record.calledRoot.processInstanceId = deriveCalledProcessInstanceId hosting
+    record.caller = selected.owner ∧
+      record.id.processInstanceId = selected.owner.processInstanceId ∧ selected.created.id = record.calledRoot ∧
+      record.calledRoot.processInstanceId = deriveCalledProcessInstanceId selected.owner.processInstanceId
         ⟨record.id.elementId.value⟩ record.id.activation ∧
       (state.calledProcessOccurrences.filter (fun candidate =>
-        candidate.caller = selected.owner && candidate.id.elementId.value = record.id.elementId.value)).length = 0 ∧
+        decide (candidate.id.elementId.value = record.id.elementId.value))).length = 0 ∧
       (state.scopeOccurrences.filter (fun occurrence =>
         decide (occurrence.id.processInstanceId = selected.created.id.processInstanceId))).length = 0 ∧
       (state.calledProcessOccurrences.filter (fun candidate =>
@@ -229,6 +229,30 @@ theorem scopeCreation_selection_call_associations (state : RuntimeState)
       all_goals cases found
       all_goals first | contradiction | assumption
 
+
+/-- The facts a selected Call exports to its frames. The called instance is never the hosting one,
+since the hosting root is live and the selection found the called instance fresh; with a nested
+caller, the caller's instance no longer settles this. -/
+theorem scopeCreation_selection_call_facts (state : RuntimeState)
+    (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
+    (record : CalledProcessOccurrence) (hosting : SemanticId)
+    (running : state.control = .running hosting)
+    (found : selectInternalScopeCreation? state operation = some selected)
+    (called : selected.kind = .called record) :
+    selected.created.id.processInstanceId ≠ hosting ∧ record.caller = selected.owner ∧
+      record.id.processInstanceId = selected.owner.processInstanceId ∧ selected.created.id = record.calledRoot ∧
+      record.calledRoot.processInstanceId = deriveCalledProcessInstanceId selected.owner.processInstanceId
+        ⟨record.id.elementId.value⟩ record.id.activation ∧
+      (state.calledProcessOccurrences.filter (fun candidate =>
+        decide (candidate.id.elementId.value = record.id.elementId.value))).length = 0 ∧
+      (state.scopeOccurrences.filter (fun occurrence =>
+        decide (occurrence.id.processInstanceId = selected.created.id.processInstanceId))).length = 0 ∧
+      (state.calledProcessOccurrences.filter (fun candidate =>
+        decide (candidate.id = record.id ||
+          candidate.calledRoot.processInstanceId = selected.created.id.processInstanceId))).length = 0 := by
+  have facts := scopeCreation_selection_call_facts_core state operation selected record hosting running found called
+  exact ⟨fresh_instance_ne_hosting state hosting _ running
+    (scopeCreation_selection_call_associations state operation selected record found called) facts.2.2.2.2.2.1, facts⟩
 /-- Definition-wide exclusion rejects another activation or instance as well as an exact alias. -/
 theorem scopeCreation_child_definition_population_refused (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)

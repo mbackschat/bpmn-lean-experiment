@@ -329,11 +329,9 @@ private theorem selection_created_facts (program : Program) (state : RuntimeStat
           all_goals
             simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true,
               decide_eq_true_eq] at matching
-            have ownerHosting : owner.processInstanceId = hosting := by assumption
             have different : deriveCalledProcessInstanceId owner.processInstanceId origin.elementId
-                (callActivationCount state origin.elementId + 1) ≠ hosting := by
-              rw [← ownerHosting]
-              exact calledProcessIdentity_differs_from_caller _ _ _
+                (callActivationCount state origin.elementId + 1) ≠ hosting :=
+              fresh_instance_ne_hosting state hosting _ running (by assumption) (by assumption)
             let rootId : ScopeOccurrenceId :=
               { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId
                   origin.elementId (callActivationCount state origin.elementId + 1)

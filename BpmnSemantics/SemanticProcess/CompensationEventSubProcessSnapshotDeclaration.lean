@@ -110,12 +110,13 @@ private def ordinaryScopeLifecycleValid (program : Program)
                 operationScope? program id = some scope.id
             | _ => false).isEmpty
       else
+        -- One return per paired invocation, at least one per called root (CALLN-ADMIT-01).
         (program.operations.filter (completesScope scope.id)).isEmpty &&
-          (program.operations.filter fun operation =>
+          !(program.operations.filter fun operation =>
             match operation with
             | .returnProcess id _ _ _ _ _ =>
                 operationScope? program id = some scope.id
-            | _ => false).length = 1
+            | _ => false).isEmpty
   | some _ =>
       (program.operations.filter (completesScope scope.id)).length = 1) &&
     match scope.parentScopeId with

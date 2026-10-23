@@ -43,8 +43,9 @@ def InternalScopeCreationSelection.apply (state : RuntimeState)
         callActivations := setCallActivationCount state
           ⟨record.id.elementId.value⟩ record.id.activation }
 
-/-- Selection preserves the current Lean restriction to the hosting Process owner; the approved
-scope-creation account does not extend admission to child entry inside a called Process. -/
+/-- Child entry stays restricted to the hosting Process owner; a Call invokes from any parentless root
+that association validity admits, the hosting instance or a live called root (CALLN-INVOKE-01), so
+batched nested invocations agree with the singleton path. -/
 def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOperation) :
     Option InternalScopeCreationSelection :=
   (match state.control with
@@ -68,36 +69,34 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
           decide (token.placeId = input && token.owner = owner)).length ≠ 1 then none
       else
       if calledProcessAssociationsValid state then
-        if owner.processInstanceId = hosting then
-          if (state.calledProcessOccurrences.filter fun record : CalledProcessOccurrence =>
-              record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0 then
-            match state.scopeOccurrences.filter fun occurrence : RuntimeScopeOccurrence =>
-                decide (occurrence.id = owner) with
-            | [callerRoot] =>
-                if callerRoot.id = owner && callerRoot.parent.isNone then
-                  let activation := callActivationCount state origin.elementId + 1
-                  let calledInstance := deriveCalledProcessInstanceId owner.processInstanceId
-                    origin.elementId activation
-                  let created : RuntimeScopeOccurrence :=
-                    { id := { processInstanceId := calledInstance, definitionScopeId := definition
-                              activation := 1 }
-                      parent := none }
-                  let record : CalledProcessOccurrence :=
-                    { id := { processInstanceId := owner.processInstanceId
-                              elementId := ⟨origin.elementId.value⟩, activation }
-                      caller := owner, calledProcessId := process, calledRoot := created.id
-                      returnOperationId := returnOperation }
-                  if (state.scopeOccurrences.filter fun occurrence : RuntimeScopeOccurrence =>
-                        decide (occurrence.id.processInstanceId = calledInstance)).length = 0 then
-                    if (state.calledProcessOccurrences.filter fun candidate : CalledProcessOccurrence =>
-                        decide (candidate.id = record.id ||
-                          candidate.calledRoot.processInstanceId = calledInstance)).length = 0 then
-                      pure { operation, owner, input, entry, created, kind := .called record }
-                    else none
+        if (state.calledProcessOccurrences.filter fun record : CalledProcessOccurrence =>
+            decide (record.id.elementId.value = origin.elementId.value)).length = 0 then
+          match state.scopeOccurrences.filter fun occurrence : RuntimeScopeOccurrence =>
+              decide (occurrence.id = owner) with
+          | [callerRoot] =>
+              if callerRoot.id = owner && callerRoot.parent.isNone then
+                let activation := callActivationCount state origin.elementId + 1
+                let calledInstance := deriveCalledProcessInstanceId owner.processInstanceId
+                  origin.elementId activation
+                let created : RuntimeScopeOccurrence :=
+                  { id := { processInstanceId := calledInstance, definitionScopeId := definition
+                            activation := 1 }
+                    parent := none }
+                let record : CalledProcessOccurrence :=
+                  { id := { processInstanceId := owner.processInstanceId
+                            elementId := ⟨origin.elementId.value⟩, activation }
+                    caller := owner, calledProcessId := process, calledRoot := created.id
+                    returnOperationId := returnOperation }
+                if (state.scopeOccurrences.filter fun occurrence : RuntimeScopeOccurrence =>
+                      decide (occurrence.id.processInstanceId = calledInstance)).length = 0 then
+                  if (state.calledProcessOccurrences.filter fun candidate : CalledProcessOccurrence =>
+                      decide (candidate.id = record.id ||
+                        candidate.calledRoot.processInstanceId = calledInstance)).length = 0 then
+                    pure { operation, owner, input, entry, created, kind := .called record }
                   else none
                 else none
-            | _ => none
-          else none
+              else none
+          | _ => none
         else none
       else none
   | _ => none
@@ -228,13 +227,11 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
               | .notStarted | .failed .. => none)
           rw [owned, rootSelected]
           change (if calledProcessAssociationsValid state then
-            if owner.processInstanceId = hosting then
-              if (state.tokens.filter fun token =>
-                  decide (token.placeId = input && token.owner = owner)).length = 1 then
-                if (state.calledProcessOccurrences.filter fun record =>
-                    record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0
-                  then _ else none
-              else none
+            if (state.tokens.filter fun token =>
+                decide (token.placeId = input && token.owner = owner)).length = 1 then
+              if (state.calledProcessOccurrences.filter fun record =>
+                  decide (record.id.elementId.value = origin.elementId.value)).length = 0
+                then _ else none
             else none
           else none) = _
           repeat first | split at found | contradiction

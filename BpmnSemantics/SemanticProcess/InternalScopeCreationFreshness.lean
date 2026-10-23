@@ -27,7 +27,7 @@ theorem selectInternalScopeCreation_fresh (state : RuntimeState)
       all_goals cases found
       all_goals
         intro occurrence member same
-        simp_all only [Bool.or_eq_true, Bool.not_eq_true, decide_eq_true_eq,
+        simp_all only [Bool.or_eq_true, decide_eq_true_eq,
           List.length_eq_zero_iff, List.filter_eq_nil_iff, List.any_eq_true]
         grind
 

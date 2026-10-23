@@ -153,7 +153,6 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
     (inserted : RuntimeScopeOccurrence) (record : CalledProcessOccurrence)
     (valid : AssociationFacts state hosting)
     (parent : inserted.parent = none) (rootId : inserted.id = record.calledRoot)
-    (callerHosting : record.caller.processInstanceId = hosting)
     (recordProcess : record.id.processInstanceId = record.caller.processInstanceId)
     (positive : record.id.activation > 0)
     (derived : record.calledRoot.processInstanceId = deriveCalledProcessInstanceId
@@ -173,9 +172,15 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
       hosting := by
   obtain ⟨hostingCount, records, roots, reach⟩ := valid
   have calledDifferent : record.calledRoot.processInstanceId ≠ hosting := by
-    obtain ⟨caller, member, identity⟩ := scope_present_of_count _ _ callerCount
-    have fresh := instanceFresh caller member
-    rw [identity, callerHosting] at fresh
+    have present : ∃ root ∈ state.scopeOccurrences, root.id.processInstanceId = hosting := by
+      have nonempty : 0 < (state.scopeOccurrences.filter (fun occurrence =>
+          decide (occurrence.parent.isNone ∧ occurrence.id.processInstanceId = hosting))).length := by omega
+      obtain ⟨root, member⟩ := List.exists_mem_of_length_pos nonempty
+      obtain ⟨member, named⟩ := List.mem_filter.mp member
+      exact ⟨root, member, (of_decide_eq_true named).2⟩
+    obtain ⟨root, member, identity⟩ := present
+    have fresh := instanceFresh root member
+    rw [identity] at fresh
     exact Ne.symm fresh
   have newDifferent (scope : RuntimeScopeOccurrence) (member : scope ∈ state.scopeOccurrences) :
       record.calledRoot ≠ scope.id := by
@@ -204,8 +209,26 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
     intro old member
     simp only [decide_eq_true_eq]
     exact fun same => (oldEndpoints old member).2 (rootId.trans same.symm)
+  -- The caller is a parentless root: the hosting one, or a called root whose own record is reachable.
+  have callerReached : record.caller.processInstanceId ∈ processInstanceClosureWithin
+      state.calledProcessOccurrences [hosting] (state.calledProcessOccurrences.length + 1) := by
+    by_cases hosted : record.caller.processInstanceId = hosting
+    · exact processInstanceClosureWithin_seed_subset _ _ _ (by simp [hosted])
+    · have nonempty : 0 < (state.scopeOccurrences.filter (fun occurrence =>
+          decide (occurrence.id = record.caller ∧ occurrence.parent.isNone))).length := by omega
+      obtain ⟨caller, member⟩ := List.exists_mem_of_length_pos nonempty
+      obtain ⟨member, named⟩ := List.mem_filter.mp member
+      obtain ⟨identity, parentless⟩ := of_decide_eq_true named
+      have single := roots caller member parentless (by rw [identity]; exact hosted)
+      have recorded : 0 < (state.calledProcessOccurrences.filter (fun old =>
+          decide (old.calledRoot = caller.id))).length := by omega
+      obtain ⟨old, oldMember⟩ := List.exists_mem_of_length_pos recorded
+      obtain ⟨oldMember, oldNamed⟩ := List.mem_filter.mp oldMember
+      have called := of_decide_eq_true oldNamed
+      rw [← identity, ← called]
+      exact reach old oldMember
   have extension := processInstanceClosureWithin_sorted_extension state.calledProcessOccurrences
-    [hosting] record (by simp) (by simp [callerHosting])
+    [hosting] record (by simp) callerReached
   refine ⟨?_, ?_, ?_, ?_⟩
   · simpa [insertScopeOccurrence, length_filter_canonicalInsertBy, parent, rootId,
       calledDifferent] using hostingCount
@@ -214,9 +237,8 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
     rcases List.mem_cons.mp member' with equal | existing
     · subst old
       have callerDifferent : inserted.id ≠ record.caller := by
-        intro same
-        exact calledDifferent ((congrArg ScopeOccurrenceId.processInstanceId
-          (rootId.symm.trans same)).trans callerHosting)
+        obtain ⟨caller, callerMember, identity⟩ := scope_present_of_count _ _ callerCount
+        exact identity ▸ rootId ▸ newDifferent caller callerMember
       simp only [RecordFacts]
       refine ⟨recordProcess, positive, ?_, derived, calledDifferent, separated, rootActivation,
         ?_, ?_⟩
@@ -298,7 +320,6 @@ theorem selectInternalScopeCreation_preserves_callAssociations (state : RuntimeS
             · exact facts
             · rfl
             · rfl
-            · assumption
             · rfl
             · exact Nat.zero_lt_succ _
             · rfl
@@ -306,9 +327,11 @@ theorem selectInternalScopeCreation_preserves_callAssociations (state : RuntimeS
             · rfl
             · apply root_count_of_singleton <;> first | assumption | (simp_all only [Bool.and_eq_true,
                 decide_eq_true_eq])
-            · simpa only [Bool.decide_and] using (by assumption :
-                (state.calledProcessOccurrences.filter fun record =>
-                  record.caller = owner && record.id.elementId.value = origin.elementId.value).length = 0)
+            · have fresh : (state.calledProcessOccurrences.filter fun record =>
+                  decide (record.id.elementId.value = origin.elementId.value)).length = 0 := by assumption
+              simp only [List.length_eq_zero_iff, List.filter_eq_nil_iff, decide_eq_true_eq] at fresh ⊢
+              intro record member
+              simp [fresh record member]
             · intro occurrence member
               have absent : (state.scopeOccurrences.filter fun occurrence =>
                   decide (occurrence.id.processInstanceId = deriveCalledProcessInstanceId

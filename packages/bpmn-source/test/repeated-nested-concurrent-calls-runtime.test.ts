@@ -8,8 +8,8 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CommandOutcome, ControlStateKind, SemanticProfileId, StimulusKind, applyStimulus, deriveCalledProcessInstanceId,
-  initialState, isWellFormedRuntimeState,
+  CommandOutcome, ControlStateKind, SemanticOperationKind, SemanticProfileId, StimulusKind, applyInternalOperation,
+  applyStimulus, deriveCalledProcessInstanceId, initialState, isWellFormedRuntimeState,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 import { forest, forked, serial } from "./call-forest-fixture.ts";
@@ -155,4 +155,36 @@ test("CALLN-INVOKE-01 batches two nested invocations from two called roots in th
     });
   }
   assert.equal(state.control.kind, ControlStateKind.Completed);
+});
+
+test("CALLN-INVOKE-01 refuses a second live record of one Call element, the record Return selects by element", async () => {
+  const [program, live] = await bothApprovalsLive();
+  let state = live;
+  for (const stimulus of [complete(tax, "PrepareApproval", 1), complete(tax, "Approve", 1),
+    complete(bank, "PrepareApproval", 2), complete(bank, "Approve", 2), complete(risk, "AssessRisk", 1)]) {
+    state = commit(program, state, stimulus);
+  }
+  const invokeOf = (elementId: string) => {
+    const found = program.operations.find(operation => operation.kind === SemanticOperationKind.InvokeProcess &&
+      operation.origin.elementId === elementId);
+    assert.ok(found?.kind === SemanticOperationKind.InvokeProcess);
+    return found;
+  };
+  const invoke = invokeOf("CallActivity_CheckCompliance");
+  // No admitted model reaches this state: a second risk review instance, live beside the first, holding a token at
+  // the compliance Call. Its caller differs from the live compliance record's, so only the element names the clash.
+  const secondRisk = deriveCalledProcessInstanceId(instanceId, "CallActivity_FinalApproval", 1);
+  const secondRoot = { processInstanceId: secondRisk, definitionScopeId: "scope:Process_SupplierRiskReview", activation: 1 };
+  const supplierRoot = state.scopeOccurrences.find(({ id, parent }) => id.processInstanceId === instanceId && parent === null)!;
+  const crafted: typeof state = {
+    ...state,
+    scopeOccurrences: [...state.scopeOccurrences, { id: secondRoot, parent: null }],
+    calledProcessOccurrences: [...state.calledProcessOccurrences, {
+      id: { processInstanceId: instanceId, elementId: "CallActivity_FinalApproval", activation: 1 },
+      caller: supplierRoot.id, calledProcessId: "Process_SupplierRiskReview", calledRoot: secondRoot,
+      returnOperationId: invokeOf("CallActivity_FinalApproval").returnOperationId,
+    }],
+    controlTokens: [...state.controlTokens, { placeId: invoke.input, owner: secondRoot, multiplicity: 1 }],
+  };
+  assert.equal(applyInternalOperation(program, invoke, crafted), null);
 });

@@ -204,7 +204,7 @@ theorem regionalPublicationTemplate_after_independent_scopeCreation (program : P
     simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
     exact allValidity.1
   obtain ⟨actualEntry, actualCreated, started⟩ := prepared_scope_creation_start_projects program state creationOperation creation
-    programValid structural creationFound
+    programValid structural current opened creationFound
   have same : actualEntry = entry := by
     have equality := congrArg UnnumberedFlowNodeOccurrenceDelta.started (actualCreated.symm.trans created)
     simpa using equality

@@ -48,14 +48,15 @@ theorem callOperationsPaired_invoke_input_scope_ne_calledRoot
         split at selected
         · split at selected
           · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
-            obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨rootEq, different⟩, _⟩, _⟩, inputFound⟩, _⟩, _⟩, _⟩, _⟩, _⟩ :=
+            obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨rootEq, _⟩, callerRoot⟩, _⟩, inputFound⟩, _⟩, _⟩, _⟩, _⟩, _⟩ :=
               selected.1
-            change (program.controlPlaceScopes.find? fun ownership =>
-              decide (ownership.controlPlaceId = input)).map (·.scopeId) =
-                some entryRoot.id at inputFound
-            rw [inputLookup] at inputFound
-            have scopeEq := Option.some.inj inputFound
-            exact fun equal => different (rootEq.trans (equal.trans scopeEq))
+            -- The invocation's own root holds its input, and that root is never the called root.
+            split at callerRoot
+            · next callerScope found =>
+                simp only [Bool.and_eq_true, decide_eq_true_eq] at callerRoot
+                have scopeEq := Option.some.inj (inputLookup.symm.trans (inputFound.trans found))
+                exact fun equal => callerRoot.1 (scopeEq.symm.trans (equal.symm.trans rootEq.symm))
+            · contradiction
           · contradiction
         · contradiction
     · contradiction

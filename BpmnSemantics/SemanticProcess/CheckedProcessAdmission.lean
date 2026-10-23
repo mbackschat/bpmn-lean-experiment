@@ -91,6 +91,18 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
           source.nodes.any fun
             | .callActivity _ calledProcessId _ => calledProcessId.value = root.originElementId.value
             | _ => false
+    -- CALLN-ADMIT-01: beside the entry root, an embedded completion source holds one root per distinct
+    -- called definition, reached only by empty-data Calls of another root. Placement, acyclicity, depth
+    -- and the concurrency rules are the nested scope-control analysis's, which sees the whole forest.
+    else if source.identity.semanticProfile.value = embeddedCompletionProfile then
+      let calls := source.nodes.filterMap fun
+        | .callActivity _ calledProcessId data => some (calledProcessId, data)
+        | _ => none
+      entryRoots.length = 1 &&
+        roots.length = (calls.map (·.1.value)).eraseDups.length + 1 &&
+        calls.all fun (calledProcessId, data) =>
+          decide (data = .empty) && decide (calledProcessId.value ≠ source.processId.value) &&
+            (roots.filter fun root => root.originElementId.value = calledProcessId.value).length = 1
     else
       match roots with
       | [root] => root.originElementId.value = source.processId.value

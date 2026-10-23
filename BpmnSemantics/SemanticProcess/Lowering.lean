@@ -625,37 +625,36 @@ theorem lowering_preserves_user_task_resumption_cut
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
   simp [lowerNode, unbounded, noMessageBoundary, scope]
 
-private def lowerOrdinaryScopeCompletion (source : CheckedProcess)
-    (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
-  if checkedScopeIsCompensationDormant source scope then none
+private def lowerOrdinaryScopeCompletions (source : CheckedProcess)
+    (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=
+  if checkedScopeIsCompensationDormant source scope then []
   else if scope.parentScopeId.isNone &&
       scope.originElementId.value ≠ source.processId.value then
-    match source.nodes.filter fun
-        | .callActivity _ calledProcessId _ =>
-            calledProcessId.value = scope.originElementId.value
-        | _ => false with
-    | [.callActivity callId calledProcessId data] => some
-        (.returnProcess
-          (returnProcessOperationId callId)
-          { elementId := callId }
-          calledProcessId
-          scope.id
-          (firstPlace (outgoingPlaces source callId)) data, scope.id)
-    | _ => none
+    -- A called root completes by one return per Call naming it, each continuing that Call (CALLN-RETURN-01).
+    source.nodes.filterMap fun
+      | .callActivity callId calledProcessId data =>
+          if calledProcessId.value = scope.originElementId.value then
+            some (.returnProcess
+              (returnProcessOperationId callId)
+              { elementId := callId }
+              calledProcessId
+              scope.id
+              (firstPlace (outgoingPlaces source callId)) data, scope.id)
+          else none
+      | _ => none
   else
     let parentOutput := scope.parentScopeId.map fun _ =>
       firstPlace (outgoingPlaces source scope.originElementId)
-    some
-      (.completeScope
+    [(.completeScope
         ⟨"operation:complete-scope:" ++ scope.id.value⟩
         { elementId := scope.originElementId }
         scope.id
-        parentOutput, scope.id)
+        parentOutput, scope.id)]
 
-private def lowerScopeCompletion (source : CheckedProcess)
-    (scope : DefinitionScope) : Option (SemanticOperation × DefinitionScopeId) :=
+private def lowerScopeCompletions (source : CheckedProcess)
+    (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=
   match lowerMessageEventSubProcessCompletion? source scope with
-  | some completion => some completion
+  | some completion => [completion]
   | none =>
       let completionId : OperationId := ⟨"operation:complete-scope:" ++ scope.id.value⟩
       match source.nodes.findSome? (fun
@@ -666,8 +665,8 @@ private def lowerScopeCompletion (source : CheckedProcess)
             if childScopeId == scope.id then some (SemanticOperation.completeParallelMultiInstanceScope
               completionId { elementId := id } (nodeOperationId id)) else none
         | _ => none) with
-      | some completion => some (completion, scope.id)
-      | none => lowerOrdinaryScopeCompletion source scope
+      | some completion => [(completion, scope.id)]
+      | none => lowerOrdinaryScopeCompletions source scope
 
 private def insertScopedOperation
     (operation : SemanticOperation × DefinitionScopeId) :
@@ -699,7 +698,7 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
   let scopedOperations := sortScopedOperations
     (source.nodes.filterMap (lowerNode source) ++
       source.nodes.filterMap (lowerParallelMultiInstanceCompletion? source) ++
-      source.definitionScopes.filterMap (lowerScopeCompletion source))
+      source.definitionScopes.flatMap (lowerScopeCompletions source))
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := source.identity.semanticProfile

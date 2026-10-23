@@ -87,14 +87,14 @@ export function selectCalledProcessInvocation(
 ): SelectedCalledProcessInvocation | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
+    // Association validity places every parentless root, and so the parentless caller checked below, in the
+    // hosting instance or under a live record, the two callers CALLN-INVOKE-01 admits.
     !calledProcessAssociationsAreValid(state) ||
-    (caller.processInstanceId !== state.control.instanceId &&
-      !state.calledProcessOccurrences.some(({ calledRoot }) => sameScopeOccurrence(calledRoot, caller))) ||
     ownedTokenMultiplicity(state.controlTokens, operation.input, caller) !== 1 ||
+    // Return selects its record by Call element alone, so a second live record of one element, possible only once a
+    // nested caller is live twice, would leave both unreturnable; CALLN-INVOKE-01 refuses it at invocation instead.
     state.calledProcessOccurrences.some(
-      (record) =>
-        sameScopeOccurrence(record.caller, caller) &&
-        record.id.elementId === operation.origin.elementId,
+      (record) => record.id.elementId === operation.origin.elementId,
     )
   ) {
     return null;

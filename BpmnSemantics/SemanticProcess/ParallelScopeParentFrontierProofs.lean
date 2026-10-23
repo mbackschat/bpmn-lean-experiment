@@ -25,6 +25,7 @@ private theorem admitted_initiations_eq (program : Program) (analysis : ProgramA
   rename_i start startsEq
   have singleton : program.operations.filterMap (fun operation => match operation with
       | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) = [start] := startsEq
+  clear graph
   have selected (operation : SemanticOperation) (member : operation ∈ program.operations)
       (kind : operation.kind = .initiate) : operation.id = start := by
     have included : operation.id ∈ program.operations.filterMap (fun current => match current with

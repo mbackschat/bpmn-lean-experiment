@@ -171,9 +171,17 @@ theorem analyzeProgram_place_incidence (program : Program) (analysis : ProgramAn
   split at graph <;> try contradiction
   simp only [Bool.and_eq_true] at graph
   have counts := List.all_eq_true.mp graph.1.1.1.2 place declared
-  simp only [noHandlers, List.filter_nil, List.length_nil, Nat.add_zero, Bool.and_eq_true, decide_eq_true_eq] at counts
-  refine ⟨counts.1, ?_⟩
-  rw [← counts.2]
+  simp only [Bool.and_eq_true] at counts
+  have single := producerCensus_without_invocations program place.id (fun operation member => by
+    have selected := List.all_eq_true.mp allowed operation member
+    cases operation <;> first
+      | rfl
+      | simp [programOperationAllowed, SequentialScopeProgram.operationAllowed] at selected) counts.1
+  simp only [noHandlers, List.filter_nil, List.length_nil, Nat.add_zero] at single
+  have consumers := counts.2
+  simp only [decide_eq_true_eq] at consumers
+  refine ⟨single, ?_⟩
+  rw [← consumers]
   apply congrArg List.length
   apply filterMap_eq_on
   intro operation member

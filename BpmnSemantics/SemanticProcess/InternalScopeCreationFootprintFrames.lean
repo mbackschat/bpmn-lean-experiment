@@ -238,27 +238,21 @@ theorem scopeCreation_independent_reads (program : Program) (instanceId : Semant
       apply scopeCreation_apply_scope_filter
       simpa using childKeys child
     · intro leftRecord leftCalled
-      obtain ⟨leftHosting, leftCaller, _, leftRoot, leftDerived, callerEmpty, scopeEmpty, collisionEmpty⟩ :=
+      obtain ⟨notHosting, leftCaller, _, leftRoot, leftDerived, callerEmpty, scopeEmpty, collisionEmpty⟩ :=
         scopeCreation_selection_call_facts state leftOperation leftSelected leftRecord instanceId
           leftRunning leftSelection leftCalled
       have associations := associationsPreserved (scopeCreation_selection_call_associations state leftOperation
         leftSelected leftRecord leftSelection leftCalled)
-      have notHosting : leftSelected.created.id.processInstanceId ≠ instanceId := by
-        intro same
-        have present : leftOwner ∈ state.scopeOccurrences.filter (fun occurrence =>
-            decide (occurrence.id.processInstanceId = leftSelected.created.id.processInstanceId)) := by
-          apply List.mem_filter.mpr
-          exact ⟨ownerMember.1, by simp [ownerMember.2, leftHosting, same]⟩
-        rw [List.length_eq_zero_iff.mp scopeEmpty] at present
-        contradiction
       have callInstances : ∀ rightRecord, rightSelected.kind = .called rightRecord →
           rightSelected.created.id.processInstanceId ≠ leftSelected.created.id.processInstanceId := by
         intro rightRecord rightCalled same
         obtain ⟨_, _, _, rightRoot, rightDerived, _⟩ :=
           scopeCreation_selection_call_facts state rightOperation rightSelected rightRecord instanceId
             leftRunning rightSelection rightCalled
-        have derivedEqual : deriveCalledProcessInstanceId instanceId ⟨rightRecord.id.elementId.value⟩ rightRecord.id.activation =
-            deriveCalledProcessInstanceId instanceId ⟨leftRecord.id.elementId.value⟩ leftRecord.id.activation := by
+        have derivedEqual : deriveCalledProcessInstanceId rightSelected.owner.processInstanceId
+              ⟨rightRecord.id.elementId.value⟩ rightRecord.id.activation =
+            deriveCalledProcessInstanceId leftSelected.owner.processInstanceId
+              ⟨leftRecord.id.elementId.value⟩ leftRecord.id.activation := by
           rw [← rightDerived, ← leftDerived, ← rightRoot, ← leftRoot]
           exact same
         have keysEqual := (calledProcessIdentityTuple_injective _ _ _ _ _ _ derivedEqual).2.1

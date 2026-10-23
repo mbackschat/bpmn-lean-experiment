@@ -1,7 +1,9 @@
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationGraph
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationCalls
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 
 /-! Scope creation preserves regional selectors through their exact queried populations. Fresh identity alone is insufficient: independence also protects the inserted parent and Call edges, token censuses, and quiescence. -/
@@ -390,14 +392,6 @@ theorem scopeCreation_regional_selection
             · cases creationKind : selected.kind with
               | child => simp only [InternalScopeCreationSelection.apply, creationKind]
               | called inserted =>
-                  obtain ⟨_, _, current, _, _, _, _, _, opened, _, _, _⟩ :=
-                    regionalPublicationTemplate_facts program state regional.selection regional.region _ published
-                  have allValidity := (projectOpenFlowNodeOccurrences_validities program state current hosting running opened).1
-                  have structural : flowNodeOccurrenceStructuralProgramValidity program state = true := by
-                    simp only [flowNodeOccurrenceProgramValidity, Bool.and_eq_true, and_assoc] at allValidity
-                    exact allValidity.1
-                  have callers := regionalScopeCreation_call_caller_eq program state hosting record inserted
-                    creationOperation selected position structural running member selection creationKind
                   obtain ⟨_, _, _, _, _, absent, _, _⟩ := scopeCreation_selection_call_facts
                     state creationOperation selected inserted hosting running selection creationKind
                   have rejected : decide (inserted.returnOperationId = id &&
@@ -406,8 +400,8 @@ theorem scopeCreation_regional_selection
                     intro matching
                     simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
                     have old : record ∈ state.calledProcessOccurrences.filter (fun candidate =>
-                        candidate.caller = selected.owner && candidate.id.elementId.value = inserted.id.elementId.value) :=
-                      List.mem_filter.mpr ⟨member, by simp [callers, named.2, matching.2]⟩
+                        decide (candidate.id.elementId.value = inserted.id.elementId.value)) :=
+                      List.mem_filter.mpr ⟨member, by simp [named.2, matching.2]⟩
                     rw [List.length_eq_zero_iff.mp absent] at old
                     contradiction
                   simp only [InternalScopeCreationSelection.apply, creationKind]

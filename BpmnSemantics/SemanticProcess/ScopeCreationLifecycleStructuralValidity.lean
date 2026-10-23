@@ -453,10 +453,8 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
                 simp only [List.filter_cons, show added.calledRoot = rootId from rfl,
                   show added.calledProcessId.value = definition.originElementId.value from matchingDefinition.2.symm,
                   decide_true, Bool.true_and, ↓reduceIte, absent, List.length_singleton]
-              have different : calledInstance ≠ hosting := by
-                have callerHosting : owner.processInstanceId = hosting := by assumption
-                rw [← callerHosting]
-                exact calledProcessIdentity_differs_from_caller _ _ _
+              have different : calledInstance ≠ hosting :=
+                fresh_instance_ne_hosting state hosting calledInstance running (by assumption) (by assumption)
               have nonempty : calledInstance.value ≠ "" := by
                 change "call:" ++ toString owner.processInstanceId.value.utf8ByteSize ++ ":" ++
                   owner.processInstanceId.value ++ ":" ++ toString selectedOrigin.elementId.value.utf8ByteSize ++

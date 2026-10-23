@@ -10,6 +10,15 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+/-- CALLN-NEST-01: a live Call record blocks its caller's completion, so a called root waiting on its own
+nested Call is not quiescent and its return is not enabled, even though it holds no task. -/
+theorem scopeQuiescent_refuses_live_called_record (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences)
+    (caller : record.caller = owner) : scopeQuiescent state owner = false := by
+  have present : (state.calledProcessOccurrences.any fun candidate => candidate.caller == owner) = true :=
+    List.any_eq_true.mpr ⟨record, member, by simp [caller]⟩
+  simp [scopeQuiescent, present]
+
 theorem quiescent_region_owned_filter {α : Type} (values : List α) (owner : α → ScopeOccurrenceId)
     (root : ScopeOccurrenceId) (region : InternalOccurrenceRegion)
     (singleton : region.members = [root])

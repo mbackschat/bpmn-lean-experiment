@@ -96,6 +96,8 @@ theorem prepared_scope_creation_start_projects (program : Program) (state : Runt
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
     (admitted : programWellFormed program = true)
     (structural : flowNodeOccurrenceStructuralProgramValidity program state = true)
+    (current : List OpenSemanticFlowNodeOccurrence)
+    (projected : projectOpenFlowNodeOccurrences? program state = some current)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
     ∃ start,
       prepared.publicationTemplate.lifecycle = { started := [start], ended := [] } ∧
@@ -107,17 +109,15 @@ theorem prepared_scope_creation_start_projects (program : Program) (state : Runt
       prepareInternalScopeCreation_facts program state operation prepared found
   have live : flowNodeOccurrenceOwnerLiveUnique state selected.owner = true := by
     simp [flowNodeOccurrenceOwnerLiveUnique, owners]
-  have ownerHosting : selected.owner.processInstanceId = hosting := by
-    cases kind : selected.kind with
-    | child => exact (scopeCreation_selection_child_facts state operation selected hosting running selection kind).1
-    | called record => exact (scopeCreation_selection_call_facts state operation selected record hosting
-        running selection kind).1
-  have process : processIdForOwner? program state selected.owner = some program.processId := by
-    simp [processIdForOwner?, hostingInstanceId?, running, live, ownerHosting]
+  -- A nested Call's owner is a called root, so its Process is the one its record names.
+  obtain ⟨process, processFound⟩ := Option.isSome_iff_exists.mp
+    (processIdForOwner_isSome_of_open_projection program state selected.owner current hosting running structural
+      (projectOpenFlowNodeOccurrences_validities program state current hosting running projected).2.1
+      (by simpa [exactLiveOccurrence, flowNodeOccurrenceOwnerLiveUnique] using live) projected)
   have staticProcess := candidateProcessIdForDefinitionScope_eq_processIdForOwner
-    program state selected.owner program.processId hosting admitted running structural live process
+    program state selected.owner process hosting admitted running structural live processFound
   have afterProcess := scopeCreation_process_lookup_preserved program state operation selected selected.owner
-    program.processId selection process
+    process selection processFound
   refine ⟨start, rfl, ?_⟩
   change (match selected.kind with
     | .child => scopeStart? program (selected.apply state) selected.created
@@ -126,11 +126,11 @@ theorem prepared_scope_creation_start_projects (program : Program) (state : Runt
   | child =>
       simp only [internalScopeCreationStart?, kind] at startFound
       exact candidate_scope_start_agrees_with_projection program (selected.apply state) selected.operation
-        selected.owner selected.created start program.processId staticProcess afterProcess startFound
+        selected.owner selected.created start process staticProcess afterProcess startFound
   | called record =>
       simp only [internalScopeCreationStart?, kind] at startFound
       exact candidate_call_start_agrees_with_projection program (selected.apply state) selected.operation
-        selected.owner record start program.processId staticProcess afterProcess startFound
+        selected.owner record start process staticProcess afterProcess startFound
 
 theorem prepared_scope_creation_open_projection (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
@@ -176,7 +176,7 @@ theorem prepared_scope_creation_open_projection (program : Program) (state : Run
     cases kind : prepared.selection.kind <;> simp only [InternalScopeCreationSelection.apply, kind]
     all_goals with_unfolding_all exact prior.2.2.2.2
   obtain ⟨start, template, created⟩ := prepared_scope_creation_start_projects program state operation
-    prepared admitted structuralBefore found
+    prepared admitted structuralBefore current projected found
   have fresh := scopeCreation_started_anchor_fresh program state operation prepared.selection current start
     selection projected created
   refine ⟨start, template, ?_⟩

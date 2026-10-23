@@ -247,7 +247,10 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
           else
           match completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId with
           | some successor =>
-              if taskId.processInstanceId = instanceId &&
+              -- CALLN-IDENTITY-01: a called instance's task carries its own instance, which association
+              -- validity places under the hosting one; the exact wait identity selects it.
+              if (taskId.processInstanceId = instanceId ||
+                    program.identity.semanticProfile.value = embeddedCompletionProfile) &&
                   !isCallActivityProgram program &&
                   ((program.identity.semanticProfile != serialBusinessTaskProfileId && program.identity.semanticProfile != mixedTaskControlFlowProfileId && program.identity.semanticProfile != mixedTaskBusinessErrorProfileId) ||
                     SerialBusinessTask.bindingsValid (SerialBusinessTask.programHandlers program) submittedValues) &&

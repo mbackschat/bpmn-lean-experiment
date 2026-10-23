@@ -16,7 +16,8 @@ theorem graph_output_producer_identity (program : Program) (place : ControlPlace
     (valid : programGraphWellFormedForProgram program = true)
     (declared : place ∈ program.controlPlaces)
     (leftMember : left ∈ program.operations) (rightMember : right ∈ program.operations)
-    (leftOutput : place.id ∈ operationOutputs left) (rightOutput : place.id ∈ operationOutputs right) :
+    (leftOutput : place.id ∈ operationOutputs left) (rightOutput : place.id ∈ operationOutputs right)
+    (rightKind : operationIsInvocation right = false) :
     left.id = right.id := by
   have memberId (operation : SemanticOperation) (member : operation ∈ program.operations)
       (output : place.id ∈ operationOutputs operation) : operation.id ∈ producers program.operations place.id := by
@@ -27,9 +28,19 @@ theorem graph_output_producer_identity (program : Program) (place : ControlPlace
   · split at valid
     · simp only [Bool.and_eq_true] at valid
       have ports := List.all_eq_true.mp valid.1.1.1.2 place declared
-      simp only [Bool.and_eq_true, decide_eq_true_eq] at ports
       have leftIn := memberId left leftMember leftOutput
       have rightIn := memberId right rightMember rightOutput
+      simp only [Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq] at ports
+      obtain ⟨produced, _⟩ := ports
+      -- Only invocations share an output place, and `right` is no invocation.
+      have single : (producers program.operations place.id).length +
+          (program.interruptingMessageEventSubProcesses.filter
+            (fun declaration => declaration.childEntry == place.id)).length = 1 := by
+        rcases produced with single | ⟨_, shared⟩
+        · exact single
+        · have rightShared := List.all_eq_true.mp shared right rightMember
+          simp [rightKind] at rightShared
+          exact absurd rightIn rightShared
       have positive : 0 < (producers program.operations place.id).length :=
         List.length_pos_iff.mpr (List.ne_nil_of_mem leftIn)
       have count : (producers program.operations place.id).length = 1 := by omega
@@ -52,7 +63,7 @@ theorem boundedCompletion_output_operation_binding (program : Program) (place : 
   exact graph_output_producer_identity program place projected
     (.enterBoundedScope id origin input childEntry scopeId boundary)
     (programWellFormed_graph program valid) declared projectedMember entry projectedOutput
-    (by simp [operationOutputs, output])
+    (by simp [operationOutputs, output]) rfl
 
 /-- Once projection validates the Timer declaration, its operation is the unique bounded entry.
 This resolves the TypeScript lookup identity without adding a field or an Activity binding rule. -/

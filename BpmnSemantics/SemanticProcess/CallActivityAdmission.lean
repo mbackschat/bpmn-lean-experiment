@@ -55,7 +55,9 @@ def returnProcessOperationWellFormed (program : Program)
     (program.controlPlaces.any fun place => place.id = callerOutput) &&
     (program.definitionScopes.any fun scope => scope.id = calledRootScopeId)
 
-/-- Count every identity-associated invoke/return before validating its other fields. -/
+/-- Count every identity-associated invoke/return before validating its other fields. Each invocation
+crosses from the parentless root that holds it, never its called root, into one exact called-root
+return pair, and the called root is never the entry root (CALLN-ADMIT-01). -/
 def callOperationsPaired (program : Program) : Bool :=
   let invokes : List InvokeBinding := program.operations.filterMap fun
     | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
@@ -90,11 +92,15 @@ def callOperationsPaired (program : Program) : Bool :=
                 | [calledRoot] =>
                     calledRoot.id = invoke.calledRoot &&
                       calledRoot.id ≠ entryRoot.id &&
-                      operationScope? program invoke.id = some entryRoot.id &&
+                      (match operationScope? program invoke.id with
+                        | some callerRoot => callerRoot ≠ calledRoot.id &&
+                            program.definitionScopes.any fun scope =>
+                              scope.id = callerRoot && scope.parentScopeId.isNone
+                        | none => false) &&
                       operationScope? program returned.id = some calledRoot.id &&
-                      placeScope? program invoke.input = some entryRoot.id &&
+                      placeScope? program invoke.input = operationScope? program invoke.id &&
                       placeScope? program invoke.calledEntry = some calledRoot.id &&
-                      placeScope? program returned.callerOutput = some entryRoot.id &&
+                      placeScope? program returned.callerOutput = operationScope? program invoke.id &&
                       returned.origin = invoke.origin &&
                       returned.calledProcessId = invoke.calledProcessId &&
                       returned.calledRoot = invoke.calledRoot && returned.data = invoke.data
@@ -150,10 +156,8 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
         split at selected
         · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
           have selected := selected.1
-          obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨_, _⟩, invokeScope⟩, _⟩, _⟩, _⟩, outputScope⟩, _⟩, _⟩, _⟩ := selected
-          change (program.operationScopes.find? fun binding => decide (binding.operationId = invokeId)).map (·.scopeId) = some entryRoot.id at invokeScope
-          have sameScope := Option.some.inj (caller.symm.trans invokeScope)
-          simpa only [placeScope?, sameScope] using outputScope
+          obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨_, _⟩, _⟩, _⟩, _⟩, _⟩, outputScope⟩, _⟩, _⟩, _⟩ := selected
+          exact outputScope.trans caller
         · contradiction
       · contradiction
     · contradiction

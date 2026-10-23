@@ -30,10 +30,12 @@ theorem sortCallRecords_perm (records : List CalledProcessOccurrence) :
       exact (insertCallRecord_perm record _).trans (ih.cons record)
 
 /-- Inserting and sorting a Call association preserves old bounded reachability at the
-evaluator's record-count fuel and reaches the newly called instance from its seeded caller. -/
+evaluator's record-count fuel and reaches the newly called instance from its reachable caller, a
+seed or a nested caller already called from one. -/
 theorem processInstanceClosureWithin_sorted_extension (records : List CalledProcessOccurrence)
-    (seed : List SemanticId) (record : CalledProcessOccurrence)
-    (unique : seed.Nodup) (caller : record.caller.processInstanceId ∈ seed) :
+    (seed : List SemanticId) (record : CalledProcessOccurrence) (unique : seed.Nodup)
+    (caller : record.caller.processInstanceId ∈
+      processInstanceClosureWithin records seed (records.length + 1)) :
     processInstanceClosureWithin records seed (records.length + 1) ⊆
       processInstanceClosureWithin (sortCallRecords (record :: records)) seed
         ((sortCallRecords (record :: records)).length + 1) ∧
@@ -44,12 +46,14 @@ theorem processInstanceClosureWithin_sorted_extension (records : List CalledProc
   have included : records ⊆ sortCallRecords (record :: records) := by
     intro candidate member
     exact permutation.symm.subset (List.mem_cons_of_mem record member)
-  constructor
-  · exact (processInstanceClosureWithin_mono _ _ _ _ _ included (List.Subset.refl _) unique).trans
+  have preserved : processInstanceClosureWithin records seed (records.length + 1) ⊆
+      processInstanceClosureWithin (sortCallRecords (record :: records)) seed
+        ((sortCallRecords (record :: records)).length + 1) :=
+    (processInstanceClosureWithin_mono _ _ _ _ _ included (List.Subset.refl _) unique).trans
       (processInstanceClosureWithin_fuel_mono _ _ _ _ (by
         rw [permutation.length_eq]
         simp))
-  · exact processInstanceClosureWithin_direct _ _ _ _
-      (permutation.symm.subset (by simp)) caller
+  exact ⟨preserved, processInstanceClosureWithin_closed _ _ unique record
+    (permutation.symm.subset (by simp)) (preserved caller)⟩
 
 end BpmnSemantics.SemanticProcess
