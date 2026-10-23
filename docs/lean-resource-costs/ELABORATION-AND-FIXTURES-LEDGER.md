@@ -140,3 +140,20 @@ The breach was an amplification in `NestedScopeControlAdmission`. The CALLN-ONCE
 Run 2's aggregate peak came from the new admission module, and single-theorem probe modules located it. Deciding `admitted supplier` peaked at 3,020,004 KiB, because `definitionBindingValid` repeats the checked and Program well-formedness that `admitted` has already decided in the same declaration. `programWellFormed` of the supplier forest alone peaked at 2,436,540 KiB, of which its graph check accounts for 2,132,040 KiB. Deciding each conjunct in its own theorem and composing `admitted` by rewriting brought the module to 2,440,548 KiB in 47.10 s.
 
 `RepeatedNestedConcurrentCallsConformance` peaked at 2,956,412 KiB in 127.26 s. Its largest declaration is the eleven-step onboarding journey, which peaked at 2,958,768 KiB as a probe of its own. Every command of that journey re-runs the program-level admission that the 2,436,540 KiB well-formedness figure dominates, as the concurrent activations journeys do. The module is disclosed as near-cap in the [module cost record](../../scripts/lean-module-cost.ts) with about 185 MiB of margin, so a longer supplier journey belongs in a new module. Both rows there are bound to their receipts.
+
+## Call fixture pilot, 2026-10-23
+
+The owner-approved pilot converted the six Call conformance modules' standalone kernel-decided theorems into `Bool` executable checks, which [`CallFamilyChecksMain`](../../BpmnSemantics/CallFamilyChecksMain.lean) runs natively in the Lean-checks stage. No proof consumed them. In the admission module, the per-conjunct theorems that kept `admitted` below the fixture ceiling became one `admitted` check per model, because native evaluation holds no kernel term. Each module was measured alone under the 1-CPU, 3 GiB, no-swap container procedure, with only its own outputs displaced from a warm cache over the uncommitted pilot on base `7ac96ded`. Each row is bound to its receipt in the [module cost record](../../scripts/lean-module-cost.ts).
+
+| Module | Before | After |
+|---|---:|---:|
+| `CallActivityConformance` | 72.67 s, 1,458,860 KiB | 3.75 s, 757,412 KiB |
+| `CallActivityDataBoundariesConformance` | 119.89 s, 1,613,264 KiB | 2.60 s, 786,724 KiB |
+| `CallActivityPairingConformance` | 2.95 s, 1,170,064 KiB | 1.29 s, 737,016 KiB |
+| `CallVariableMappingConformance` | 24.80 s, 1,604,552 KiB | 1.27 s, 754,672 KiB |
+| `RepeatedNestedConcurrentCallsAdmissionConformance` | 77.42 s, 2,439,372 KiB | 0.95 s, 737,700 KiB |
+| `RepeatedNestedConcurrentCallsConformance` | 127.26 s, 2,956,412 KiB | 1.08 s, 752,508 KiB |
+
+Together the six went from 425.0 s to 10.9 s, and `RepeatedNestedConcurrentCallsConformance` left the near-cap disclosure. On the development machine, building the driver from a warm cache took 12.8 s, and its 142 checks ran in 1.8 s. A flipped expected value fails the driver with the check's module and name.
+
+Five modules that imported `CallActivityConformance` only for its fixtures now import `CallActivityConformanceFixtures`, so a check edit no longer rebuilds them. Their first container runs also rebuilt stale dependencies, so their rows come from a second run with warm dependencies. Their own declarations are unchanged, and their peaks moved by at most 7.9%. The largest move was a rise in `InternalScopeCreationValidityConformance`, last measured at `d7fcdcb0`, to 1,863,572 KiB in 17.32 s.

@@ -9,7 +9,7 @@ verification through the actual external dispatcher: a root-path Call copies `ap
 into the called-root frame, the called tasks write the namesake `amount` and the output source
 `verdict`, and the return lands `decision` and `echoedCustomer` at the Process, where the review
 Sub-Process initializes its frame from `decision`. Each step is one dispatcher evaluation and the
-theorems only read its result; the quantified laws are in
+checks only read its result; the quantified laws are in
 [CallVariableMappingLaws](SemanticProcess/CallVariableMappingLaws.lean), and the rule-to-witness table
 is the [Call variable mapping specification](../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#separating-witnesses)'s.
 -/
@@ -118,148 +118,126 @@ private def refusedUnchanged (result : StimulusResult) (before : RuntimeState) :
 private def analysisOf (source : CheckedProcess) : Option NestedScopeData.Analysis :=
   NestedScopeData.checkedAnalysis source
 
-theorem loan_definition_is_admitted :
+def loan_definition_is_admitted : Bool := decide <|
     checkedWellFormed checked = true ∧ programWellFormed program = true ∧
       programProfileCapabilitiesValid program = true ∧
-      definitionBindingValid checked program = true := by
-  decide +kernel
+      definitionBindingValid checked program = true
 
 def serviceCalledTask : CheckedNode :=
   .serviceTask ⟨"QU"⟩ { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := "collect" } [] [] none
 
 /-- CVM-ADMIT-01: a Call inside the review Sub-Process is PC-SCOPE-05's placement and is refused. -/
-theorem call_inside_a_sub_process_is_refused :
-    (analysisOf (checkedWith true "Q" inputs outputs collectDocument)).isNone = true := by
-  decide +kernel
+def call_inside_a_sub_process_is_refused : Bool := decide <|
+    (analysisOf (checkedWith true "Q" inputs outputs collectDocument)).isNone = true
 
 /-- CVM-ADMIT-01: a called Process with a Service Task is refused. -/
-theorem called_service_task_is_refused :
-    (analysisOf (checkedWith false "Q" inputs outputs serviceCalledTask)).isNone = true := by
-  decide +kernel
+def called_service_task_is_refused : Bool := decide <|
+    (analysisOf (checkedWith false "Q" inputs outputs serviceCalledTask)).isNone = true
 
 /-- CVM-RESOLVE-01: a `calledElement` naming the caller is refused. -/
-theorem call_of_the_caller_is_refused :
-    (analysisOf (checkedWith false "P" inputs outputs collectDocument)).isNone = true := by
-  decide +kernel
+def call_of_the_caller_is_refused : Bool := decide <|
+    (analysisOf (checkedWith false "P" inputs outputs collectDocument)).isNone = true
 
 /-- CVM-RESOLVE-01: a `calledElement` naming no Process of the definitions is refused. -/
-theorem call_of_an_absent_process_is_refused :
-    (analysisOf (checkedWith false "Absent" inputs outputs collectDocument)).isNone = true := by
-  decide +kernel
+def call_of_an_absent_process_is_refused : Bool := decide <|
+    (analysisOf (checkedWith false "Absent" inputs outputs collectDocument)).isNone = true
 
 /-- CVM-ADMIT-01: an output targeting a name CIB reserves for multi-instance bookkeeping is refused. -/
-theorem reserved_output_target_is_refused :
+def reserved_output_target_is_refused : Bool := decide <|
     (analysisOf (checkedWith false "Q" inputs [fromLocal "nrOfInstances" "verdict"] collectDocument)).isNone =
-      true := by
-  decide +kernel
+      true
 
 /-- CVM-ADMIT-01: a duplicate input target is refused. -/
-theorem duplicate_input_target_is_refused :
+def duplicate_input_target_is_refused : Bool := decide <|
     (analysisOf (checkedWith false "Q" (inputs ++ [enclosing "amount" "applicant"]) outputs
-      collectDocument)).isNone = true := by
-  decide +kernel
+      collectDocument)).isNone = true
 
 /-- CVM-AVAILABLE-01 and CVM-START-01: the review's read of `decision` is produced by the Call's output,
 so nothing is required, and the admitted Start names are the input sources and the output targets
 landing at the Process. -/
-theorem call_outputs_count_as_writes :
+def call_outputs_count_as_writes : Bool := decide <|
     (analysisOf checked).map (fun analysis => (analysis.required, analysis.optional)) =
-      some ([], some ["amount", "applicant", "decision", "echoedCustomer"]) := by
-  decide +kernel
+      some ([], some ["amount", "applicant", "decision", "echoedCustomer"])
 
 /-- CVM-AVAILABLE-01's separating case: without the `decision` output the review's read is required. -/
-theorem without_the_output_the_read_is_required :
+def without_the_output_the_read_is_required : Bool := decide <|
     (analysisOf (checkedWith false "Q" inputs [fromLocal "echoedCustomer" "customer"] collectDocument)).map
-      (·.required) = some ["decision"] := by
-  decide +kernel
+      (·.required) = some ["decision"]
 
 /-- CVM-START-01: a Process-level output target is an admitted Start name. -/
-theorem start_admits_a_process_output_target :
+def start_admits_a_process_output_target : Bool := decide <|
     (start [{ name := "amount", value := text "1" }, { name := "decision", value := text "old" }]).outcome =
-      .committed := by
-  decide +kernel
+      .committed
 
 /-- CVM-START-01: a called-only name is a rejection. -/
-theorem start_rejects_a_called_only_name :
+def start_rejects_a_called_only_name : Bool := decide <|
     refusedUnchanged (start [{ name := "amount", value := text "1" }, { name := "customer", value := text "Ada" }])
-      initialState = true := by
-  decide +kernel
+      initialState = true
 
 /-- CVM-START-01: a called output source is a rejection. -/
-theorem start_rejects_a_called_output_source :
+def start_rejects_a_called_output_source : Bool := decide <|
     refusedUnchanged (start [{ name := "amount", value := text "1" }, { name := "verdict", value := text "x" }])
-      initialState = true := by
-  decide +kernel
+      initialState = true
 
 /-- CVM-IN-01: the called-root frame holds exactly the copied input targets. -/
-theorem invocation_installs_the_copied_snapshot :
+def invocation_installs_the_copied_snapshot : Bool := decide <|
     (started.outcome == .committed &&
       calledFrames started.state == [[{ name := "amount", value := text "25000" },
-        { name := "customer", value := text "Ada" }]]) = true := by
-  decide +kernel
+        { name := "customer", value := text "Ada" }]]) = true
 
 /-- CVM-IN-01: an absent input source is a present null in the called-root frame. -/
-theorem absent_input_source_copies_a_present_null :
+def absent_input_source_copies_a_present_null : Bool := decide <|
     calledFrames (start [{ name := "amount", value := text "25000" }]).state ==
-      [[{ name := "amount", value := text "25000" }, { name := "customer", value := .null }]] := by
-  decide +kernel
+      [[{ name := "amount", value := text "25000" }, { name := "customer", value := .null }]]
 
 /-- The nearest non-law: the caller Process holds `applicant`, yet a called read of it is absent, so
 resolving through the caller hierarchy is not the isolated read. -/
-theorem called_reads_do_not_reach_the_caller_namesake :
+def called_reads_do_not_reach_the_caller_namesake : Bool := decide <|
     (started.state.variables.process.bindings.any (· == { name := "applicant", value := text "Ada" }) &&
       NestedScopeData.readOutcome? program started.state.variables calledInstance (scope "Q") "applicant" ==
-        some none) = true := by
-  decide +kernel
+        some none) = true
 
 /-- CVM-TASK-01: a called patch naming a caller-only name is rejected unchanged. -/
-theorem called_patch_of_a_caller_name_is_rejected :
+def called_patch_of_a_caller_name_is_rejected : Bool := decide <|
     refusedUnchanged (collect (calledTask "QU") [{ name := "applicant", value := text "Eve" }]) started.state =
-      true := by
-  decide +kernel
+      true
 
 /-- CVM-TASK-01: a called patch naming one name twice is rejected unchanged. -/
-theorem called_patch_with_a_duplicate_name_is_rejected :
+def called_patch_with_a_duplicate_name_is_rejected : Bool := decide <|
     refusedUnchanged (collect (calledTask "QU")
-      [{ name := "amount", value := text "1" }, { name := "amount", value := text "2" }]) started.state = true := by
-  decide +kernel
+      [{ name := "amount", value := text "1" }, { name := "amount", value := text "2" }]) started.state = true
 
 /-- CVM-REFUSE-01: a called completion addressed with the caller instance is rejected unchanged. -/
-theorem caller_addressed_called_completion_is_rejected :
-    refusedUnchanged (collect { calledTask "QU" with processInstanceId := ⟨"I"⟩ } []) started.state = true := by
-  decide +kernel
+def caller_addressed_called_completion_is_rejected : Bool := decide <|
+    refusedUnchanged (collect { calledTask "QU" with processInstanceId := ⟨"I"⟩ } []) started.state = true
 
 /-- CVM-ISOLATE-01: the called write of the namesake `amount` stays in the called frame. -/
-theorem called_writes_stay_in_the_called_frame :
+def called_writes_stay_in_the_called_frame : Bool := decide <|
     (collected.outcome == .committed &&
       calledFrames collected.state == [[{ name := "amount", value := text "1" },
         { name := "customer", value := text "Ada" }]] &&
       collected.state.variables.process.bindings ==
-        [{ name := "amount", value := text "25000" }, { name := "applicant", value := text "Ada" }]) = true := by
-  decide +kernel
+        [{ name := "amount", value := text "25000" }, { name := "applicant", value := text "Ada" }]) = true
 
 /-- CVM-OUT-01 and CVM-RETIRE-01: the outputs land at the Process, the called frame is gone and the
 review frame starts from the returned `decision`. -/
-theorem return_lands_outputs_and_retires_the_called_frame :
+def return_lands_outputs_and_retires_the_called_frame : Bool := decide <|
     (returned.outcome == .committed && calledFrames returned.state == [] &&
       returned.state.variables.scopes.map (·.bindings) == [[{ name := "decision", value := text "approved" }]] &&
       returned.state.variables.process.bindings ==
         [{ name := "amount", value := text "25000" }, { name := "applicant", value := text "Ada" },
          { name := "decision", value := text "approved" }, { name := "echoedCustomer", value := text "Ada" }]) =
-      true := by
-  decide +kernel
+      true
 
 /-- CVM-RETIRE-01: a called completion after return is rejected because its wait is gone. -/
-theorem stale_called_completion_is_rejected :
-    refusedUnchanged (recordVerdict returned.state []) returned.state = true := by
-  decide +kernel
+def stale_called_completion_is_rejected : Bool := decide <|
+    refusedUnchanged (recordVerdict returned.state []) returned.state = true
 
 /-- The review overrides the returned verdict in its frame and publishes it back to the Process. -/
-theorem review_publishes_the_overridden_decision :
+def review_publishes_the_overridden_decision : Bool := decide <|
     (confirmed.outcome == .committed && confirmed.state.control == .completed ⟨"I"⟩ &&
       confirmed.state.variables.process.bindings.filter (·.name == "decision") ==
-        [{ name := "decision", value := text "referred" }]) = true := by
-  decide +kernel
+        [{ name := "decision", value := text "referred" }]) = true
 
 def unsetVerdict : StimulusResult :=
   let begun := start [{ name := "amount", value := text "25000" }, { name := "decision", value := text "old" }]
@@ -268,11 +246,37 @@ def unsetVerdict : StimulusResult :=
   recordVerdict collectedNothing.state []
 
 /-- CVM-OUT-01: an output source the callee never sets overwrites the Start `decision` with null. -/
-theorem unset_output_source_overwrites_with_null :
+def unset_output_source_overwrites_with_null : Bool := decide <|
     (unsetVerdict.outcome == .committed &&
       unsetVerdict.state.variables.process.bindings.filter (fun binding =>
           binding.name == "decision" || binding.name == "echoedCustomer") ==
-        [{ name := "decision", value := .null }, { name := "echoedCustomer", value := .null }]) = true := by
-  decide +kernel
+        [{ name := "decision", value := .null }, { name := "echoedCustomer", value := .null }]) = true
+
+/-- Every check of this module, named for the executable driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("loan_definition_is_admitted", loan_definition_is_admitted),
+  ("call_inside_a_sub_process_is_refused", call_inside_a_sub_process_is_refused),
+  ("called_service_task_is_refused", called_service_task_is_refused),
+  ("call_of_the_caller_is_refused", call_of_the_caller_is_refused),
+  ("call_of_an_absent_process_is_refused", call_of_an_absent_process_is_refused),
+  ("reserved_output_target_is_refused", reserved_output_target_is_refused),
+  ("duplicate_input_target_is_refused", duplicate_input_target_is_refused),
+  ("call_outputs_count_as_writes", call_outputs_count_as_writes),
+  ("without_the_output_the_read_is_required", without_the_output_the_read_is_required),
+  ("start_admits_a_process_output_target", start_admits_a_process_output_target),
+  ("start_rejects_a_called_only_name", start_rejects_a_called_only_name),
+  ("start_rejects_a_called_output_source", start_rejects_a_called_output_source),
+  ("invocation_installs_the_copied_snapshot", invocation_installs_the_copied_snapshot),
+  ("absent_input_source_copies_a_present_null", absent_input_source_copies_a_present_null),
+  ("called_reads_do_not_reach_the_caller_namesake", called_reads_do_not_reach_the_caller_namesake),
+  ("called_patch_of_a_caller_name_is_rejected", called_patch_of_a_caller_name_is_rejected),
+  ("called_patch_with_a_duplicate_name_is_rejected", called_patch_with_a_duplicate_name_is_rejected),
+  ("caller_addressed_called_completion_is_rejected", caller_addressed_called_completion_is_rejected),
+  ("called_writes_stay_in_the_called_frame", called_writes_stay_in_the_called_frame),
+  ("return_lands_outputs_and_retires_the_called_frame", return_lands_outputs_and_retires_the_called_frame),
+  ("stale_called_completion_is_rejected", stale_called_completion_is_rejected),
+  ("review_publishes_the_overridden_decision", review_publishes_the_overridden_decision),
+  ("unset_output_source_overwrites_with_null", unset_output_source_overwrites_with_null)
+]
 
 end BpmnSemantics.CallVariableMappingConformance

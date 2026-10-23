@@ -1,4 +1,4 @@
-import BpmnSemantics.CallActivityConformance
+import BpmnSemantics.CallActivityConformanceFixtures
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
 

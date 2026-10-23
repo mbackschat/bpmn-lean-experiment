@@ -42,42 +42,36 @@ def data : ScalarCallData :=
 def valid (candidate : ScalarCallData) : Bool :=
   callDataInterfaceValid (.scalar candidate) "Call" "Process"
 
-theorem separately_owned_singleton_ports_correspond : valid data = true := by
-  decide +kernel
+def separately_owned_singleton_ports_correspond : Bool := decide (valid data = true)
 
-theorem correspondence_does_not_require_equal_names :
+def correspondence_does_not_require_equal_names : Bool := decide <|
     valid { data with called := { data.called with
-      input := { data.called.input with name := some "Different label" } } } = true := by
-  decide +kernel
+      input := { data.called.input with name := some "Different label" } } } = true
 
-theorem caller_associations_cannot_skip_call_ports :
+def caller_associations_cannot_skip_call_ports : Bool := decide <|
     (valid { data with directInput := { data.directInput with targetDataInputId := "Process_request" } },
      valid { data with directOutput := { data.directOutput with sourceDataOutputId := "Process_result" } }) =
-      (false, false) := by
-  decide +kernel
+      (false, false)
 
-theorem matching_requires_exact_interface_owners_and_set_references :
+def matching_requires_exact_interface_owners_and_set_references : Bool := decide <|
     (valid { data with called := { data.called with ownerId := "Call" } },
      valid { data with called := { data.called with
        inputSet := { data.called.inputSet with dataInputRefs := ["Call_request"] } } },
      valid { data with called := { data.called with
        outputSet := { data.called.outputSet with dataOutputRefs := [] } } }) =
-      (false, false, false) := by
-  decide +kernel
+      (false, false, false)
 
-theorem caller_endpoints_are_distinct_declared_properties :
+def caller_endpoints_are_distinct_declared_properties : Bool := decide <|
     (valid { data with callerProperties := ["Request"] },
      valid { data with directInput := { data.directInput with source := .processDataInput "Request" } },
      valid { data with directOutput := { data.directOutput with target := .property "Request" } }) =
-      (false, false, false) := by
-  decide +kernel
+      (false, false, false)
 
-theorem global_identity_separation_includes_unused_properties_and_associations :
+def global_identity_separation_includes_unused_properties_and_associations : Bool := decide <|
     (valid { data with callerProperties := ["Request", "Result", "Process_inputs"] },
      valid { data with directOutput := { data.directOutput with associationId := "Read" } },
      valid { data with called := { data.called with id := "Call_io" } }) =
-      (false, false, false) := by
-  decide +kernel
+      (false, false, false)
 
 open Lean SemanticProcessJson
 
@@ -111,37 +105,32 @@ def decodesAs (json : Json) (expected : CallDataInterface) : Bool :=
 def refusesWire (json : Json) : Bool :=
   !(decodeCallDataInterface json).isOk
 
-theorem call_wire_preserves_explicit_empty_and_exact_scalar_declarations :
+def call_wire_preserves_explicit_empty_and_exact_scalar_declarations : Bool := decide <|
     decodesAs (Json.mkObj [("kind", toJson "empty")]) .empty = true ∧
-    decodesAs (Json.mkObj scalarFields) (.scalar data) = true := by
-  decide +kernel
+    decodesAs (Json.mkObj scalarFields) (.scalar data) = true
 
-theorem call_wire_requires_every_scalar_field :
+def call_wire_requires_every_scalar_field : Bool := decide <|
     (scalarFields.map fun omitted =>
-      Json.mkObj (scalarFields.filter fun pair => pair.1 != omitted.1)).all refusesWire = true := by
-  decide +kernel
+      Json.mkObj (scalarFields.filter fun pair => pair.1 != omitted.1)).all refusesWire = true
 
-theorem call_wire_has_no_null_unknown_or_extra_field_fallback :
+def call_wire_has_no_null_unknown_or_extra_field_fallback : Bool := decide <|
     [Json.null, Json.mkObj [], Json.mkObj [("kind", toJson "other")],
      Json.mkObj [("kind", toJson "empty"), ("call", .null)],
-     Json.mkObj (scalarFields ++ [("extra", .null)])].all refusesWire = true := by
-  decide +kernel
+     Json.mkObj (scalarFields ++ [("extra", .null)])].all refusesWire = true
 
-theorem call_wire_checks_both_owned_interfaces_recursively :
+def call_wire_checks_both_owned_interfaces_recursively : Bool := decide <|
     [replaceField scalarFields "call" (Json.mkObj ((ioFields "Call").filter fun p => p.1 != "input")),
      replaceField scalarFields "called" (Json.mkObj (ioFields "Process" ++ [("extra", .null)])),
      replaceField scalarFields "call" (replaceField (ioFields "Call") "input"
        (Json.mkObj [("id", toJson ""), ("name", .null)])),
      replaceField scalarFields "called" (replaceField (ioFields "Process") "outputSet"
        (Json.mkObj [("id", toJson "Outputs"), ("name", .null), ("dataOutputRefs", toJson [""])])),
-     replaceField scalarFields "callerProperties" (toJson ["Request", ""])].all refusesWire = true := by
-  decide +kernel
+     replaceField scalarFields "callerProperties" (toJson ["Request", ""])].all refusesWire = true
 
-theorem call_wire_preserves_contextual_owner_errors_for_admission :
+def call_wire_preserves_contextual_owner_errors_for_admission : Bool := decide <|
     decodesAs (replaceField scalarFields "called" (Json.mkObj (ioFields "Foreign")))
       (.scalar { data with called := interface "Foreign" }) = true ∧
-    valid { data with called := interface "Foreign" } = false := by
-  decide +kernel
+    valid { data with called := interface "Foreign" } = false
 
 def controlDeclarationFixture (callData : CallDataInterface) : CheckedProcess :=
   { identity := { semanticProfile := ⟨"bpmn-2.0.2-called-process-call-activity-draft"⟩
@@ -173,17 +162,15 @@ def loweredCallData (program : Program) : List CallDataInterface :=
     | .invokeProcess _ _ _ _ _ _ _ callData | .returnProcess _ _ _ _ _ callData => some callData
     | _ => none
 
-theorem call_lowering_preserves_both_exact_declarations :
+def call_lowering_preserves_both_exact_declarations : Bool := decide <|
     loweredCallData (lowerCheckedProcess (controlDeclarationFixture (.scalar data))) =
-      [.scalar data, .scalar data] := by
-  decide +kernel
+      [.scalar data, .scalar data]
 
-theorem predecessor_profiles_require_the_explicit_empty_interface :
+def predecessor_profiles_require_the_explicit_empty_interface : Bool := decide <|
     checkedProfileCapabilitiesValid (controlDeclarationFixture .empty) = true ∧
     programProfileCapabilitiesValid (lowerCheckedProcess (controlDeclarationFixture .empty)) = true ∧
     checkedProfileCapabilitiesValid (controlDeclarationFixture (.scalar data)) = false ∧
-    programProfileCapabilitiesValid (lowerCheckedProcess (controlDeclarationFixture (.scalar data))) = false := by
-  decide +kernel
+    programProfileCapabilitiesValid (lowerCheckedProcess (controlDeclarationFixture (.scalar data))) = false
 
 def mismatchedReturn : Program :=
   let program := lowerCheckedProcess (controlDeclarationFixture (.scalar data))
@@ -193,10 +180,9 @@ def mismatchedReturn : Program :=
             (.scalar { data with callerProperties := data.callerProperties ++ ["Invented"] })
       | operation => operation }
 
-theorem call_pairing_requires_equal_data_declarations :
+def call_pairing_requires_equal_data_declarations : Bool := decide <|
     callOperationsPaired (lowerCheckedProcess (controlDeclarationFixture (.scalar data))) = true ∧
-    callOperationsPaired mismatchedReturn = false := by
-  decide +kernel
+    callOperationsPaired mismatchedReturn = false
 
 def identityFields : List (String × Json) :=
   [("semanticProfile", toJson "profile"), ("sourceId", toJson "source"),
@@ -239,22 +225,20 @@ def programWireRetains (wire : Json) (expected : CallDataInterface) : Bool :=
        .returnProcess ⟨"ret"⟩ ⟨⟨"Call"⟩⟩ ⟨"Process"⟩ ⟨"root"⟩ ⟨"out"⟩ expected])
   | .error _ => false
 
-theorem document_decoders_retain_both_call_data_variants :
+def document_decoders_retain_both_call_data_variants : Bool := decide <|
     checkedWireRetains (Json.mkObj [("kind", toJson "empty")]) .empty = true ∧
     checkedWireRetains (Json.mkObj scalarFields) (.scalar data) = true ∧
     programWireRetains (Json.mkObj [("kind", toJson "empty")]) .empty = true ∧
-    programWireRetains (Json.mkObj scalarFields) (.scalar data) = true := by
-  decide +kernel
+    programWireRetains (Json.mkObj scalarFields) (.scalar data) = true
 
-theorem document_decoders_require_call_data_without_legacy_defaults :
+def document_decoders_require_call_data_without_legacy_defaults : Bool := decide <|
     (decodeCheckedProcess (checkedWire (Json.mkObj
       ((callNodeFields .null).filter fun pair => pair.1 != "data")))).isOk = false ∧
     (decodeCheckedProcess (checkedWire (Json.mkObj (callNodeFields .null)))).isOk = false ∧
     [false, true].all (fun returning =>
       !(decodeProgram (programWire [Json.mkObj
         ((operationWireFields returning .null).filter fun pair => pair.1 != "data")])).isOk &&
-      !(decodeProgram (programWire [Json.mkObj (operationWireFields returning .null)])).isOk) = true := by
-  decide +kernel
+      !(decodeProgram (programWire [Json.mkObj (operationWireFields returning .null)])).isOk) = true
 
 def callerOwner : ScopeOccurrenceId :=
   { processInstanceId := ⟨"CallerInstance"⟩, definitionScopeId := ⟨"CallerScope"⟩, activation := 1 }
@@ -294,7 +278,7 @@ def returnScalar (state : RuntimeState) : Option RuntimeState :=
   returnProcessWithDataState? state ⟨"Return"⟩ ⟨⟨"Call"⟩⟩ ⟨"Process"⟩ ⟨"CalledScope"⟩
     ⟨"CallerOutput"⟩ (.scalar data)
 
-theorem scalar_invocation_copies_string_and_null_without_caller_write :
+def scalar_invocation_copies_string_and_null_without_caller_write : Bool := decide <|
     [.string "supplier", .null].all (fun value =>
       match invokeScalar (beforeInvocation value) with
       | none => false
@@ -302,10 +286,9 @@ theorem scalar_invocation_copies_string_and_null_without_caller_write :
           decide (state.variables.process = (beforeInvocation value).variables.process) &&
           decide (state.variables.processInterfaces = [{ owner := calledOwner, inputs := [{ name := "Process_request", value }], outputs := [] }]) &&
           decide (state.calledProcessOccurrences = [callRecord]) &&
-          decide (state.tokens = [{ owner := calledOwner, placeId := ⟨"CalledEntry"⟩ }])) = true := by
-  decide +kernel
+          decide (state.tokens = [{ owner := calledOwner, placeId := ⟨"CalledEntry"⟩ }])) = true
 
-theorem scalar_return_copies_string_and_null_and_disposes_the_exact_call :
+def scalar_return_copies_string_and_null_and_disposes_the_exact_call : Bool := decide <|
     [.string "approved", .null].all (fun value =>
       match returnScalar (beforeReturn [{ name := "Process_result", value }]) with
       | none => false
@@ -316,17 +299,15 @@ theorem scalar_return_copies_string_and_null_and_disposes_the_exact_call :
           state.variables.processInterfaces.isEmpty && state.calledProcessOccurrences.isEmpty &&
           decide (state.scopeOccurrences = [{ id := callerOwner, parent := none }]) &&
           decide (state.tokens = [{ owner := callerOwner, placeId := ⟨"CallerOutput"⟩ }]) &&
-          (returnScalar state).isNone) = true := by
-  decide +kernel
+          (returnScalar state).isNone) = true
 
-theorem scalar_return_refuses_missing_wrong_and_ambiguous_output :
+def scalar_return_refuses_missing_wrong_and_ambiguous_output : Bool := decide <|
     [[], [{ name := "Call_result", value := .null }],
      [{ name := "Process_result", value := .boolean true }],
      [{ name := "Process_result", value := .null }, { name := "Process_result", value := .null }]].all
-      (fun outputs => (returnScalar (beforeReturn outputs)).isNone) = true := by
-  decide +kernel
+      (fun outputs => (returnScalar (beforeReturn outputs)).isNone) = true
 
-theorem scalar_return_requires_complete_owner_and_quiescence :
+def scalar_return_requires_complete_owner_and_quiescence : Bool := decide <|
     (let state := beforeReturn [{ name := "Process_result", value := .null }]
      let scope : ProcessInterfaceScope :=
        { owner := calledOwner, inputs := [], outputs := [{ name := "Process_result", value := .null }] }
@@ -335,17 +316,15 @@ theorem scalar_return_requires_complete_owner_and_quiescence :
       [{ scope with owner := { calledOwner with definitionScopeId := ⟨"OtherScope"⟩ } }],
       [{ scope with owner := { calledOwner with processInstanceId := ⟨"OtherInstance"⟩ } }]].all
        (fun scopes => (returnScalar { state with variables := { state.variables with processInterfaces := scopes } }).isNone) &&
-     (returnScalar { state with tokens := [{ owner := calledOwner, placeId := ⟨"CalledEntry"⟩ }] }).isNone) = true := by
-  decide +kernel
+     (returnScalar { state with tokens := [{ owner := calledOwner, placeId := ⟨"CalledEntry"⟩ }] }).isNone) = true
 
-theorem scalar_invocation_requires_unique_available_input_and_fresh_interface :
+def scalar_invocation_requires_unique_available_input_and_fresh_interface : Bool := decide <|
     (let state := beforeInvocation (.string "supplier")
      [[], [{ name := "Request", value := .boolean true }],
       [{ name := "Request", value := .null }, { name := "Request", value := .null }]].all
        (fun bindings => (invokeScalar { state with variables := { state.variables with process := { bindings } } }).isNone) &&
      (invokeScalar { state with variables := { state.variables with
-       processInterfaces := [{ owner := calledOwner, inputs := [], outputs := [] }] } }).isNone) = true := by
-  decide +kernel
+       processInterfaces := [{ owner := calledOwner, inputs := [], outputs := [] }] } }).isNone) = true
 
 def callerTaskInput : DirectActivityDataInput :=
   { associationId := "CallerTask_read", source := .property "Result"
@@ -377,36 +356,32 @@ def supplierChecked : CheckedProcess :=
           else .dataInputOutputUserTask id name calledTaskInput calledTaskOutput
       | node => node).foldr (canonicalInsertBy (fun left right => left.id.value < right.id.value)) [] }
 
-theorem independent_supplier_checked_admission_accepts_the_exact_typed_model :
-    checkedWellFormed supplierChecked = true := by
-  decide +kernel
+def independent_supplier_checked_admission_accepts_the_exact_typed_model : Bool := decide <|
+    checkedWellFormed supplierChecked = true
 
 def changeSupplierCall (replace : ScalarCallData → ScalarCallData) : CheckedProcess :=
   { supplierChecked with nodes := supplierChecked.nodes.map fun
       | .callActivity id process (.scalar current) => .callActivity id process (.scalar (replace current))
       | node => node }
 
-theorem independent_supplier_admission_rejects_call_identity_and_property_drift :
+def independent_supplier_admission_rejects_call_identity_and_property_drift : Bool := decide <|
     [changeSupplierCall (fun current => { current with callerProperties := ["Request", "Result"] }),
      changeSupplierCall (fun current => { current with callerProperties := ["Receipt", "Request", "Result", "f1"] }),
      changeSupplierCall (fun current => { current with called := { current.called with ownerId := "Caller" } }),
      changeSupplierCall (fun current => { current with callerProperties := ["Request", "Receipt", "Result"] })].all
-       (fun source => !(checkedWellFormed source)) = true := by
-  decide +kernel
+       (fun source => !(checkedWellFormed source)) = true
 
-theorem supplier_admission_preserves_unused_properties_and_descriptive_names :
+def supplier_admission_preserves_unused_properties_and_descriptive_names : Bool := decide <|
     checkedWellFormed (changeSupplierCall (fun current => { current with
       callerProperties := current.callerProperties ++ ["Unused"]
       called := { current.called with
         input := { current.called.input with name := some "A different label" }
-        outputSet := { current.called.outputSet with name := some "Descriptive only" } } })) = true := by
-  decide +kernel
+        outputSet := { current.called.outputSet with name := some "Descriptive only" } } })) = true
 
-theorem checked_supplier_admission_selects_the_exact_private_execution_profile :
-    programProfileCapabilitiesValid (lowerCheckedProcess supplierChecked) = true := by
-  decide +kernel
+def checked_supplier_admission_selects_the_exact_private_execution_profile : Bool := decide <|
+    programProfileCapabilitiesValid (lowerCheckedProcess supplierChecked) = true
 
-theorem independent_supplier_admission_rejects_cross_process_endpoints_and_early_caller_task :
+def independent_supplier_admission_rejects_cross_process_endpoints_and_early_caller_task : Bool := decide <|
     [ { supplierChecked with nodes := supplierChecked.nodes.map fun
           | .dataInputOutputUserTask id name input output =>
               if id.value = "CalledTask" then .dataInputOutputUserTask id name
@@ -421,21 +396,18 @@ theorem independent_supplier_admission_rejects_cross_process_endpoints_and_early
           if flow.id.value = "f1" then { flow with targetId := ⟨"CallerTask"⟩ }
           else if flow.id.value = "f2" then { flow with sourceId := ⟨"CallerTask"⟩, targetId := ⟨"Call"⟩ }
           else if flow.id.value = "f3" then { flow with sourceId := ⟨"Call"⟩ }
-          else flow } ].all (fun source => !(checkedWellFormed source)) = true := by
-  decide +kernel
+          else flow } ].all (fun source => !(checkedWellFormed source)) = true
 
-theorem standalone_supplier_program_admits_exact_lowering :
-    programWellFormed (lowerCheckedProcess supplierChecked) = true := by
-  decide +kernel
+def standalone_supplier_program_admits_exact_lowering : Bool := decide <|
+    programWellFormed (lowerCheckedProcess supplierChecked) = true
 
-theorem standalone_supplier_program_rejects_property_inventory_drift :
+def standalone_supplier_program_rejects_property_inventory_drift : Bool := decide <|
     [changeSupplierCall (fun current => { current with callerProperties := ["Request", "Result"] }),
      changeSupplierCall (fun current => { current with callerProperties := ["Receipt", "Request", "Result", "f1"] }),
      changeSupplierCall (fun current => { current with callerProperties := ["Request", "Receipt", "Result"] })].all
-       (fun source => !(programWellFormed (lowerCheckedProcess source))) = true := by
-  decide +kernel
+       (fun source => !(programWellFormed (lowerCheckedProcess source))) = true
 
-theorem standalone_supplier_program_rejects_cross_process_data_routing :
+def standalone_supplier_program_rejects_cross_process_data_routing : Bool := decide <|
     [ { supplierChecked with nodes := supplierChecked.nodes.map fun
           | .dataInputOutputUserTask id name input output =>
               if id.value = "CalledTask" then .dataInputOutputUserTask id name
@@ -450,8 +422,7 @@ theorem standalone_supplier_program_rejects_cross_process_data_routing :
           if flow.id.value = "f1" then { flow with targetId := ⟨"CallerTask"⟩ }
           else if flow.id.value = "f2" then { flow with sourceId := ⟨"CallerTask"⟩, targetId := ⟨"Call"⟩ }
           else if flow.id.value = "f3" then { flow with sourceId := ⟨"Call"⟩ }
-          else flow } ].all (fun source => !(programWellFormed (lowerCheckedProcess source))) = true := by
-  decide +kernel
+          else flow } ].all (fun source => !(programWellFormed (lowerCheckedProcess source))) = true
 
 def supplierProgram : Program :=
   lowerCheckedProcess (changeSupplierCall (fun current =>
@@ -464,14 +435,13 @@ def supplierInitial (value : VariableValue) : List VariableBinding :=
   [{ name := "Request", value }, { name := "Result", value := .string "previous" },
    { name := "Unused", value := .string "untouched" }]
 
-theorem supplier_start_admits_exact_string_and_null_request_with_optional_declared_properties :
+def supplier_start_admits_exact_string_and_null_request_with_optional_declared_properties : Bool := decide <|
     [.string "supplier", .null].all (fun value =>
       let result := supplierStart (supplierInitial value)
       result.outcome == .committed && result.state.variables.process.bindings == supplierInitial value &&
-        result.state.variables.processInterfaces.isEmpty) = true := by
-  decide +kernel
+        result.state.variables.processInterfaces.isEmpty) = true
 
-theorem supplier_start_refuses_missing_undeclared_duplicate_unordered_and_non_scalar_data :
+def supplier_start_refuses_missing_undeclared_duplicate_unordered_and_non_scalar_data : Bool := decide <|
     [[], [{ name := "Result", value := .null }],
      supplierInitial (.null) ++ [{ name := "Unknown", value := .null }],
      [{ name := "Request", value := .null }, { name := "Request", value := .null }],
@@ -480,8 +450,7 @@ theorem supplier_start_refuses_missing_undeclared_duplicate_unordered_and_non_sc
      [{ name := "Request", value := .integer 1 }],
      [{ name := "Request", value := .stringList ["supplier"] }]].all (fun bindings =>
        let result := supplierStart bindings
-       result.outcome == .rejected && result.state == initialState) = true := by
-  decide +kernel
+       result.outcome == .rejected && result.state == initialState) = true
 
 def supplierCalledWait? : Option RuntimeState := do
   let started := (supplierStart (supplierInitial (.string "supplier"))).state
@@ -499,7 +468,7 @@ def supplierCalledWait? : Option RuntimeState := do
 def supplierComplete (state : RuntimeState) (task : UserTaskInstanceId) (values : List VariableBinding) : ExternalAdmission :=
   admitStimulus supplierProgram state (.completeUserTaskInstance ⟨"complete"⟩ task values)
 
-theorem supplier_called_completion_fills_only_process_output_for_string_and_null :
+def supplier_called_completion_fills_only_process_output_for_string_and_null : Bool := decide <|
     (match supplierCalledWait? with
      | none => false
      | some before => [.string "approved", .null].all fun value =>
@@ -511,10 +480,9 @@ theorem supplier_called_completion_fills_only_process_output_for_string_and_null
              result.outcome == .committed && result.state.variables.process == before.variables.process &&
                result.state.variables.processInterfaces.any (fun scope => scope.outputs == [{ name := "Process_result", value }]) &&
                result.state.waits.isEmpty && result.state.variables.activities.isEmpty && result.state.calledProcessOccurrences.length == 1
-         | _ => false) = true := by
-  decide +kernel
+         | _ => false) = true
 
-theorem supplier_called_completion_refuses_wrong_output_and_occurrence_without_mutation :
+def supplier_called_completion_refuses_wrong_output_and_occurrence_without_mutation : Bool := decide <|
     (match supplierCalledWait? with
      | none => false
      | some before => match before.waits with
@@ -533,10 +501,9 @@ theorem supplier_called_completion_refuses_wrong_output_and_occurrence_without_m
            ids.all (fun id =>
              let result := supplierComplete before id [{ name := "CalledTask_output", value := .null }]
              result.outcome == .rejected && result.state == before)
-       | _ => false) = true := by
-  decide +kernel
+       | _ => false) = true
 
-theorem supplier_called_completion_is_stale_after_its_single_write :
+def supplier_called_completion_is_stale_after_its_single_write : Bool := decide <|
     (match supplierCalledWait? with
      | none => false
      | some before => match before.waits with
@@ -546,36 +513,32 @@ theorem supplier_called_completion_is_stale_after_its_single_write :
            let after := supplierComplete before task [{ name := "CalledTask_output", value := .string "approved" }]
            let duplicate := supplierComplete after.state task [{ name := "CalledTask_output", value := .null }]
            after.outcome == .committed && duplicate.outcome == .rejected && duplicate.state == after.state
-       | _ => false) = true := by
-  decide +kernel
+       | _ => false) = true
 
-theorem supplier_start_binds_optional_values_to_actual_property_declarations :
+def supplier_start_binds_optional_values_to_actual_property_declarations : Bool := decide <|
     [supplierChecked, changeSupplierCall (fun current =>
       { current with callerProperties := ["Other", "Receipt", "Request", "Result"] })].all (fun source =>
       let result := admitStimulus (lowerCheckedProcess source) initialState
         (.startProcess ⟨"start"⟩ ⟨"Caller"⟩ ⟨"instance"⟩ (supplierInitial (.null)))
-      result.outcome == .rejected && result.state == initialState) = true := by
-  decide +kernel
+      result.outcome == .rejected && result.state == initialState) = true
 
-theorem operation_dispatch_invokes_scalar_data_without_control_only_fallback :
+def operation_dispatch_invokes_scalar_data_without_control_only_fallback : Bool := decide <|
     [.string "supplier", .null].all (fun value =>
       let state := beforeInvocation value
       let operation := SemanticOperation.invokeProcess ⟨"Invoke"⟩ ⟨⟨"Call"⟩⟩ ⟨"Input"⟩
         ⟨"Process"⟩ ⟨"CalledScope"⟩ ⟨"CalledEntry"⟩ ⟨"Return"⟩ (.scalar data)
       (fire? supplierProgram operation state).isSome &&
       fire? supplierProgram operation state == invokeScalar state &&
-      (fire? supplierProgram operation { state with variables := emptyScopedVariables }).isNone) = true := by
-  decide +kernel
+      (fire? supplierProgram operation { state with variables := emptyScopedVariables }).isNone) = true
 
-theorem operation_dispatch_returns_scalar_data_only_with_available_output :
+def operation_dispatch_returns_scalar_data_only_with_available_output : Bool := decide <|
     [.string "approved", .null].all (fun value =>
       let state := beforeReturn [{ name := "Process_result", value }]
       let operation := SemanticOperation.returnProcess ⟨"Return"⟩ ⟨⟨"Call"⟩⟩
         ⟨"Process"⟩ ⟨"CalledScope"⟩ ⟨"CallerOutput"⟩ (.scalar data)
       (fire? supplierProgram operation state).isSome &&
       fire? supplierProgram operation state == returnScalar state &&
-      (fire? supplierProgram operation (beforeReturn [])).isNone) = true := by
-  decide +kernel
+      (fire? supplierProgram operation (beforeReturn [])).isNone) = true
 
 def supplierStartCommand (value : VariableValue) : Stimulus :=
   .startProcess ⟨"start"⟩ ⟨"Caller"⟩ ⟨"instance"⟩ (supplierInitial value)
@@ -601,14 +564,13 @@ def supplierReturnedTrace : TracedStimulusResult :=
 def supplierFinishedTrace : TracedStimulusResult :=
   applyStimulusTraced 2 supplierProgram supplierReturnedTrace.result.state supplierCallerCommand
 
-theorem supplier_scheduled_start_closes_in_three_steps_with_publication :
+def supplier_scheduled_start_closes_in_three_steps_with_publication : Bool := decide <|
     supplierStartedTrace.result.outcome = .committed ∧
     some supplierStartedTrace.result.state = supplierCalledWait? ∧
     supplierStartedTrace.committedTransitions.length = 4 ∧
-    supplierStartedTrace.flowNodeOccurrenceLifecycles.length = 4 := by
-  decide +kernel
+    supplierStartedTrace.flowNodeOccurrenceLifecycles.length = 4
 
-theorem supplier_scheduled_return_closes_in_three_steps_with_publication :
+def supplier_scheduled_return_closes_in_three_steps_with_publication : Bool := decide <|
     supplierReturnedTrace.result.outcome = .committed ∧
     supplierReturnedTrace.result.state.variables.process.bindings =
       [{ name := "Request", value := .string "supplier" },
@@ -616,10 +578,9 @@ theorem supplier_scheduled_return_closes_in_three_steps_with_publication :
        { name := "Unused", value := .string "untouched" }] ∧
     supplierReturnedTrace.result.state.variables.processInterfaces = [] ∧
     supplierReturnedTrace.committedTransitions.length = 4 ∧
-    supplierReturnedTrace.flowNodeOccurrenceLifecycles.length = 4 := by
-  decide +kernel
+    supplierReturnedTrace.flowNodeOccurrenceLifecycles.length = 4
 
-theorem supplier_scheduled_completion_closes_in_two_steps_with_publication :
+def supplier_scheduled_completion_closes_in_two_steps_with_publication : Bool := decide <|
     supplierFinishedTrace.result.outcome = .committed ∧
     supplierFinishedTrace.result.state.control = .completed ⟨"instance"⟩ ∧
     supplierFinishedTrace.result.state.variables.process.bindings =
@@ -628,18 +589,16 @@ theorem supplier_scheduled_completion_closes_in_two_steps_with_publication :
        { name := "Result", value := .string "approved" },
        { name := "Unused", value := .string "untouched" }] ∧
     supplierFinishedTrace.committedTransitions.length = 3 ∧
-    supplierFinishedTrace.flowNodeOccurrenceLifecycles.length = 3 := by
-  decide +kernel
+    supplierFinishedTrace.flowNodeOccurrenceLifecycles.length = 3
 
-theorem supplier_one_less_step_rolls_back_the_complete_command_without_publication :
+def supplier_one_less_step_rolls_back_the_complete_command_without_publication : Bool := decide <|
     [(initialState, supplierStartCommand (.string "supplier"), 2),
      (supplierStartedTrace.result.state, supplierCalledCommand (.string "approved"), 2),
      (supplierReturnedTrace.result.state, supplierCallerCommand, 1)].all (fun (state, command, fuel) =>
        let trace := applyStimulusTraced fuel supplierProgram state command
        trace.result.outcome == .rolledBack && trace.result.state == state &&
        trace.result.internalStepBoundExceeded && trace.committedTransitions.isEmpty &&
-       trace.flowNodeOccurrenceLifecycles.isEmpty) = true := by
-  decide +kernel
+       trace.flowNodeOccurrenceLifecycles.isEmpty) = true
 
 def supplierHost : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance"⟩, definitionScopeId := ⟨"caller"⟩, activation := 1 }
@@ -652,7 +611,7 @@ def expectedRecord (id : String) (kind : SemanticOperationKind) (element : Strin
     (owner : ScopeOccurrenceId) : CommittedTransition :=
   .internalOperation { operationId := ⟨id⟩, operationKind := kind, origin := ⟨⟨element⟩⟩, owner }
 
-theorem supplier_scheduled_trace_has_exact_operation_id_kind_origin_and_owner :
+def supplier_scheduled_trace_has_exact_operation_id_kind_origin_and_owner : Bool := decide <|
     supplierStartedTrace.committedTransitions =
       [.externalStimulus (supplierStartCommand (.string "supplier")),
        expectedRecord "operation:CallerStart" .initiate "CallerStart" supplierHost,
@@ -666,8 +625,7 @@ theorem supplier_scheduled_trace_has_exact_operation_id_kind_origin_and_owner :
     supplierFinishedTrace.committedTransitions =
       [.externalStimulus supplierCallerCommand,
        expectedRecord "operation:CallerEnd" .reachNoneEnd "CallerEnd" supplierHost,
-       expectedRecord "operation:complete-scope:caller" .completeScope "Caller" supplierHost] := by
-  decide +kernel
+       expectedRecord "operation:complete-scope:caller" .completeScope "Caller" supplierHost]
 
 def expectedInstant (command element process : String) (index : Nat)
     (owner : ScopeOccurrenceId) : UnnumberedFlowNodeOccurrenceDelta :=
@@ -682,7 +640,7 @@ def expectedTaskEnd (element : String) (owner : ScopeOccurrenceId) :
     UnnumberedFlowNodeOccurrenceDelta :=
   { started := [], ended := [{ anchor := .wait { processInstanceId := owner.processInstanceId, elementId := ⟨element⟩, activation := 1 }, terminal := .completed }] }
 
-theorem supplier_scheduled_lifecycles_retain_exact_called_identity_and_return_order :
+def supplier_scheduled_lifecycles_retain_exact_called_identity_and_return_order : Bool := decide <|
     supplierStartedTrace.flowNodeOccurrenceLifecycles =
       [{ started := [], ended := [] }, expectedInstant "start" "CallerStart" "Caller" 1 supplierHost,
        { started := [{ anchor := .callActivity { processInstanceId := ⟨"instance"⟩, elementId := ⟨"Call"⟩, activation := 1 }, processId := ⟨"Caller"⟩, elementId := ⟨"Call"⟩, owner := supplierHost }], ended := [] },
@@ -693,8 +651,7 @@ theorem supplier_scheduled_lifecycles_retain_exact_called_identity_and_return_or
        expectedTaskStart "CallerTask" "Caller" supplierHost] ∧
     supplierFinishedTrace.flowNodeOccurrenceLifecycles =
       [expectedTaskEnd "CallerTask" supplierHost, expectedInstant "caller" "CallerEnd" "Caller" 1 supplierHost,
-       { started := [], ended := [] }] := by
-  decide +kernel
+       { started := [], ended := [] }]
 
 def singletonPrefixes (before : RuntimeState) (trace : TracedStimulusResult) : Bool :=
   !trace.committedTransitions.isEmpty && (List.range trace.committedTransitions.length).all fun index =>
@@ -705,13 +662,12 @@ def singletonPrefixes (before : RuntimeState) (trace : TracedStimulusResult) : B
         !frontier.preparationFailed && frontier.offers.length ==
           (if index + 1 == trace.committedTransitions.length then 0 else 1)
 
-theorem every_supplier_scheduled_microstep_has_a_complete_singleton_frontier :
+def every_supplier_scheduled_microstep_has_a_complete_singleton_frontier : Bool := decide <|
     singletonPrefixes initialState supplierStartedTrace = true ∧
     singletonPrefixes supplierStartedTrace.result.state supplierReturnedTrace = true ∧
-    singletonPrefixes supplierReturnedTrace.result.state supplierFinishedTrace = true := by
-  decide +kernel
+    singletonPrefixes supplierReturnedTrace.result.state supplierFinishedTrace = true
 
-theorem unprepared_scalar_offer_cannot_enter_a_multiple_offer_batch :
+def unprepared_scalar_offer_cannot_enter_a_multiple_offer_batch : Bool := decide <|
     (let before := (supplierStart (supplierInitial (.string "supplier"))).state
      let started := step supplierProgram before ⟨"operation:CallerStart"⟩
      match started with
@@ -722,8 +678,7 @@ theorem unprepared_scalar_offer_cannot_enter_a_multiple_offer_batch :
          let frontier := InternalCommutation.deriveInternalExecutionFrontier program state
          let closure := InternalCommutation.closeScheduledTraced 8 program ⟨"adversary"⟩ 1 0 [] state
          frontier.offers.length == 2 && frontier.offers.any (fun offer => offer.preparation.isNone) &&
-         closure.ambiguousChoice && closure.state == state && closure.records.isNone && closure.lifecycles.isNone) = true := by
-  decide +kernel
+         closure.ambiguousChoice && closure.state == state && closure.records.isNone && closure.lifecycles.isNone) = true
 
 def validSupplierPrefixes (before : RuntimeState) (trace : TracedStimulusResult) : Bool :=
   callDataCheckpointStateWellFormed supplierProgram ⟨"instance"⟩ before &&
@@ -732,13 +687,12 @@ def validSupplierPrefixes (before : RuntimeState) (trace : TracedStimulusResult)
     | none => false
     | some state => callDataCheckpointStateWellFormed supplierProgram ⟨"instance"⟩ state
 
-theorem supplier_initial_admitted_scheduled_and_terminal_states_preserve_complete_validity :
+def supplier_initial_admitted_scheduled_and_terminal_states_preserve_complete_validity : Bool := decide <|
     validSupplierPrefixes initialState supplierStartedTrace = true ∧
     validSupplierPrefixes supplierStartedTrace.result.state supplierReturnedTrace = true ∧
-    validSupplierPrefixes supplierReturnedTrace.result.state supplierFinishedTrace = true := by
-  decide +kernel
+    validSupplierPrefixes supplierReturnedTrace.result.state supplierFinishedTrace = true
 
-theorem malformed_called_interface_cannot_be_completed :
+def malformed_called_interface_cannot_be_completed : Bool := decide <|
     (match supplierCalledWait? with
      | none => false
      | some state => match state.waits with
@@ -752,10 +706,9 @@ theorem malformed_called_interface_cannot_be_completed :
                  else { scope with inputs := scope.inputs ++ [{ name := "Undeclared", value := .null }] } } }
              let result := supplierComplete malformed task [{ name := "CalledTask_output", value := .null }]
              result.outcome == .rejected && result.state == malformed
-       | _ => false) = true := by
-  decide +kernel
+       | _ => false) = true
 
-theorem null_supplier_data_preserves_validity_through_actual_scheduled_closure :
+def null_supplier_data_preserves_validity_through_actual_scheduled_closure : Bool := decide <|
     (let start := applyStimulusTraced 3 supplierProgram initialState (supplierStartCommand .null)
      let returned := applyStimulusTraced 3 supplierProgram start.result.state (supplierCalledCommand .null)
      let finished := applyStimulusTraced 2 supplierProgram returned.result.state supplierCallerCommand
@@ -768,10 +721,9 @@ theorem null_supplier_data_preserves_validity_through_actual_scheduled_closure :
      finished.flowNodeOccurrenceLifecycles == supplierFinishedTrace.flowNodeOccurrenceLifecycles &&
      finished.result.state.variables.process.bindings ==
        [{ name := "Receipt", value := .string "receipt" }, { name := "Request", value := .null },
-        { name := "Result", value := .null }, { name := "Unused", value := .string "untouched" }]) = true := by
-  decide +kernel
+        { name := "Result", value := .null }, { name := "Unused", value := .string "untouched" }]) = true
 
-theorem interface_owner_port_cardinality_and_lifetime_corruption_is_invalid :
+def interface_owner_port_cardinality_and_lifetime_corruption_is_invalid : Bool := decide <|
     (match supplierCalledWait? with
      | none => false
      | some state => match state.variables.processInterfaces with
@@ -791,7 +743,59 @@ theorem interface_owner_port_cardinality_and_lifetime_corruption_is_invalid :
            !callDataRuntimeStateValid supplierProgram { state with variables := { state.variables with process := { bindings := state.variables.process.bindings ++ [{ name := "Wrong", value := .null }] } } } &&
            !callDataRuntimeStateValid supplierProgram { initialState with variables := state.variables } &&
            !callDataRuntimeStateValid supplierProgram { supplierFinishedTrace.result.state with variables := { supplierFinishedTrace.result.state.variables with processInterfaces := [scope] } }
-       | _ => false) = true := by
-  decide +kernel
+       | _ => false) = true
+
+/-- Every check of this module, named for the executable driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("separately_owned_singleton_ports_correspond", separately_owned_singleton_ports_correspond),
+  ("correspondence_does_not_require_equal_names", correspondence_does_not_require_equal_names),
+  ("caller_associations_cannot_skip_call_ports", caller_associations_cannot_skip_call_ports),
+  ("matching_requires_exact_interface_owners_and_set_references", matching_requires_exact_interface_owners_and_set_references),
+  ("caller_endpoints_are_distinct_declared_properties", caller_endpoints_are_distinct_declared_properties),
+  ("global_identity_separation_includes_unused_properties_and_associations", global_identity_separation_includes_unused_properties_and_associations),
+  ("call_wire_preserves_explicit_empty_and_exact_scalar_declarations", call_wire_preserves_explicit_empty_and_exact_scalar_declarations),
+  ("call_wire_requires_every_scalar_field", call_wire_requires_every_scalar_field),
+  ("call_wire_has_no_null_unknown_or_extra_field_fallback", call_wire_has_no_null_unknown_or_extra_field_fallback),
+  ("call_wire_checks_both_owned_interfaces_recursively", call_wire_checks_both_owned_interfaces_recursively),
+  ("call_wire_preserves_contextual_owner_errors_for_admission", call_wire_preserves_contextual_owner_errors_for_admission),
+  ("call_lowering_preserves_both_exact_declarations", call_lowering_preserves_both_exact_declarations),
+  ("predecessor_profiles_require_the_explicit_empty_interface", predecessor_profiles_require_the_explicit_empty_interface),
+  ("call_pairing_requires_equal_data_declarations", call_pairing_requires_equal_data_declarations),
+  ("document_decoders_retain_both_call_data_variants", document_decoders_retain_both_call_data_variants),
+  ("document_decoders_require_call_data_without_legacy_defaults", document_decoders_require_call_data_without_legacy_defaults),
+  ("scalar_invocation_copies_string_and_null_without_caller_write", scalar_invocation_copies_string_and_null_without_caller_write),
+  ("scalar_return_copies_string_and_null_and_disposes_the_exact_call", scalar_return_copies_string_and_null_and_disposes_the_exact_call),
+  ("scalar_return_refuses_missing_wrong_and_ambiguous_output", scalar_return_refuses_missing_wrong_and_ambiguous_output),
+  ("scalar_return_requires_complete_owner_and_quiescence", scalar_return_requires_complete_owner_and_quiescence),
+  ("scalar_invocation_requires_unique_available_input_and_fresh_interface", scalar_invocation_requires_unique_available_input_and_fresh_interface),
+  ("independent_supplier_checked_admission_accepts_the_exact_typed_model", independent_supplier_checked_admission_accepts_the_exact_typed_model),
+  ("independent_supplier_admission_rejects_call_identity_and_property_drift", independent_supplier_admission_rejects_call_identity_and_property_drift),
+  ("supplier_admission_preserves_unused_properties_and_descriptive_names", supplier_admission_preserves_unused_properties_and_descriptive_names),
+  ("checked_supplier_admission_selects_the_exact_private_execution_profile", checked_supplier_admission_selects_the_exact_private_execution_profile),
+  ("independent_supplier_admission_rejects_cross_process_endpoints_and_early_caller_task", independent_supplier_admission_rejects_cross_process_endpoints_and_early_caller_task),
+  ("standalone_supplier_program_admits_exact_lowering", standalone_supplier_program_admits_exact_lowering),
+  ("standalone_supplier_program_rejects_property_inventory_drift", standalone_supplier_program_rejects_property_inventory_drift),
+  ("standalone_supplier_program_rejects_cross_process_data_routing", standalone_supplier_program_rejects_cross_process_data_routing),
+  ("supplier_start_admits_exact_string_and_null_request_with_optional_declared_properties", supplier_start_admits_exact_string_and_null_request_with_optional_declared_properties),
+  ("supplier_start_refuses_missing_undeclared_duplicate_unordered_and_non_scalar_data", supplier_start_refuses_missing_undeclared_duplicate_unordered_and_non_scalar_data),
+  ("supplier_called_completion_fills_only_process_output_for_string_and_null", supplier_called_completion_fills_only_process_output_for_string_and_null),
+  ("supplier_called_completion_refuses_wrong_output_and_occurrence_without_mutation", supplier_called_completion_refuses_wrong_output_and_occurrence_without_mutation),
+  ("supplier_called_completion_is_stale_after_its_single_write", supplier_called_completion_is_stale_after_its_single_write),
+  ("supplier_start_binds_optional_values_to_actual_property_declarations", supplier_start_binds_optional_values_to_actual_property_declarations),
+  ("operation_dispatch_invokes_scalar_data_without_control_only_fallback", operation_dispatch_invokes_scalar_data_without_control_only_fallback),
+  ("operation_dispatch_returns_scalar_data_only_with_available_output", operation_dispatch_returns_scalar_data_only_with_available_output),
+  ("supplier_scheduled_start_closes_in_three_steps_with_publication", supplier_scheduled_start_closes_in_three_steps_with_publication),
+  ("supplier_scheduled_return_closes_in_three_steps_with_publication", supplier_scheduled_return_closes_in_three_steps_with_publication),
+  ("supplier_scheduled_completion_closes_in_two_steps_with_publication", supplier_scheduled_completion_closes_in_two_steps_with_publication),
+  ("supplier_one_less_step_rolls_back_the_complete_command_without_publication", supplier_one_less_step_rolls_back_the_complete_command_without_publication),
+  ("supplier_scheduled_trace_has_exact_operation_id_kind_origin_and_owner", supplier_scheduled_trace_has_exact_operation_id_kind_origin_and_owner),
+  ("supplier_scheduled_lifecycles_retain_exact_called_identity_and_return_order", supplier_scheduled_lifecycles_retain_exact_called_identity_and_return_order),
+  ("every_supplier_scheduled_microstep_has_a_complete_singleton_frontier", every_supplier_scheduled_microstep_has_a_complete_singleton_frontier),
+  ("unprepared_scalar_offer_cannot_enter_a_multiple_offer_batch", unprepared_scalar_offer_cannot_enter_a_multiple_offer_batch),
+  ("supplier_initial_admitted_scheduled_and_terminal_states_preserve_complete_validity", supplier_initial_admitted_scheduled_and_terminal_states_preserve_complete_validity),
+  ("malformed_called_interface_cannot_be_completed", malformed_called_interface_cannot_be_completed),
+  ("null_supplier_data_preserves_validity_through_actual_scheduled_closure", null_supplier_data_preserves_validity_through_actual_scheduled_closure),
+  ("interface_owner_port_cardinality_and_lifetime_corruption_is_invalid", interface_owner_port_cardinality_and_lifetime_corruption_is_invalid)
+]
 
 end BpmnSemantics.CallActivityDataBoundariesConformance

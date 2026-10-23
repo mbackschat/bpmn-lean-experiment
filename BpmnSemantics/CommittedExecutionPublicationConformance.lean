@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.ParallelScopeTransitionTraceProofs
 import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.CallActivityConformance
+import BpmnSemantics.CallActivityConformanceFixtures
 
 /-! # Committed execution publication conformance
 

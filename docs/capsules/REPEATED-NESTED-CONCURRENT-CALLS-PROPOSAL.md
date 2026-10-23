@@ -182,7 +182,7 @@ Layers: every Stage A rule restates BPMN Clauses 10.3.6 and 13.3.4 for the selec
 
 ## Separating witnesses
 
-Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB probe, N negative witness, M seeded mutation.
+Lanes: B profile admission, L Lean law, decided fixture or executable check, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB probe, N negative witness, M seeded mutation.
 
 | Rule | Witness | Lanes | Mutant it kills |
 |---|---|---|---|
@@ -211,7 +211,7 @@ Evidence: the guard lifts and the return association are proved from the startin
 
 Stage A effort bound: 10 hours of root Lean time from Stage A start, measured at the stage's commits, covering the invocation, batch-selection, pairing and graph-rule lifts. At the limit, Stage A records its exact unresolved boundary and stays open.
 
-Admission and the concurrency rules are fixed per retained model and refusal with `decide +kernel`, extending `NestedScopeControlAdmission`. The structural certificate stays quantified over rules 1–3 only. The nearest checked non-law is a decided fixture in which selecting the return by called definition, on two live instances, continues the wrong caller.
+Admission and the concurrency rules are fixed per retained model and refusal as executable checks that [`CallFamilyChecksMain`](../../BpmnSemantics/CallFamilyChecksMain.lean) runs, extending `NestedScopeControlAdmission`. The structural certificate stays quantified over rules 1–3 only. The nearest checked non-law is an executable check in which selecting the return by called definition, on two live instances, continues the wrong caller.
 
 **Stage B lift.** The parentless clause of `calledProcessAssociationsValid` is consumed through five named lemmas. On 2026-10-23, `rg` over them and their two transitive wrappers (`cancellation_child_calls_frame`, `cancelScopeSubtree_child_preserves_position`) found 44 occurrences in 21 modules. The census counts named lemmas only, so any direct unfolding of the clause found later is charged to the same effort bound.
 

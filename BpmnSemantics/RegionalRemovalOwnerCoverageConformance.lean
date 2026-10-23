@@ -1,4 +1,4 @@
-import BpmnSemantics.CallActivityConformance
+import BpmnSemantics.CallActivityConformanceFixtures
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
 import BpmnSemantics.SemanticProcess.TerminateEnd
 

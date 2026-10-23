@@ -1,5 +1,5 @@
 import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
-import BpmnSemantics.CallActivityConformance
+import BpmnSemantics.CallActivityConformanceFixtures
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 
 /-! # Flow-node occurrence lifecycle happy-path conformance

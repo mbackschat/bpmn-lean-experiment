@@ -54,3 +54,7 @@ root = "BpmnSemantics.ParallelScopeReservationMain"
 [[lean_exe]]
 name = "emitScenarioSupport"
 root = "BpmnSemantics.ScenarioSupportJsonMain"
+
+[[lean_exe]]
+name = "checkCallFamilyFixtures"
+root = "BpmnSemantics.CallFamilyChecksMain"

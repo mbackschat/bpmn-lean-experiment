@@ -5,8 +5,7 @@ import BpmnSemantics.RepeatedNestedConcurrentCallsFixtures
 Finite checked admission witnesses of Process-root Call forests under the cumulative embedded completion
 profile (CALLN-ADMIT-01): the retained supplier onboarding forest is admitted with agreeing checked and
 Program closure bounds, and each refused forest is refused before start while its control, which differs in
-the one fact the refusal names, is admitted. Each refusal is its own theorem, so no kernel decision keeps
-another model's reduction resident. The forest scan has no quantified certificate; see the
+the one fact the refusal names, is admitted. Each refusal is its own check. The forest scan has no quantified certificate; see the
 [repeated, nested and concurrent Calls proposal](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md#separating-witnesses).
 -/
 
@@ -16,115 +15,95 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.ConcurrentEmbeddedActivationsConformance (admitted analyses)
 
-/-- `admitted` from its separately decided conjuncts. Deciding `admitted` whole reduces the checked and
-Program well-formedness twice in one kernel declaration, once directly and once inside
-`definitionBindingValid`, which peaked at 3,020,004 KiB against the 3 GiB fixture ceiling on 2026-10-23;
-each conjunct alone stays below 2.5 GiB. -/
-private theorem admitted_of (source : CheckedProcess) (checked : checkedWellFormed source = true)
-    (program : programWellFormed (lowerCheckedProcess source) = true)
-    (capabilities : programProfileCapabilitiesValid (lowerCheckedProcess source) = true) :
-    admitted source = true := by
-  simp [admitted, definitionBindingValid, checked, program, capabilities]
+def supplier_is_admitted : Bool := admitted supplier
 
-theorem supplier_checked : checkedWellFormed supplier = true := by decide +kernel
-
-theorem supplier_program : programWellFormed (lowerCheckedProcess supplier) = true := by decide +kernel
-
-theorem supplier_capabilities : programProfileCapabilitiesValid (lowerCheckedProcess supplier) = true := by
-  decide +kernel
-
-theorem supplier_is_admitted : admitted supplier = true :=
-  admitted_of supplier supplier_checked supplier_program supplier_capabilities
-
-theorem supplier_analyses_agree_on_its_burst : analyses supplier = (some 6, some 6) := by decide +kernel
+def supplier_analyses_agree_on_its_burst : Bool := decide (analyses supplier = (some 6, some 6))
 
 /-- CALLN-ONCE-01: a fork straight into two Calls of one definition is refused. -/
-theorem fork_into_two_calls_of_one_definition_is_refused :
-    NestedScopeControl.checkedAnalysis forkIntoTwoCalls = none := by decide +kernel
+def fork_into_two_calls_of_one_definition_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis forkIntoTwoCalls = none
 
-theorem user_task_first_branches_calling_one_definition_are_admitted :
-    analyses forkIntoTwoCallsControl = (some 5, some 5) := by decide +kernel
+def user_task_first_branches_calling_one_definition_are_admitted : Bool := decide <|
+    analyses forkIntoTwoCallsControl = (some 5, some 5)
 
 /-- CALLN-SHARED-01: two branches calling one Call-bearing definition are refused. -/
-theorem branches_sharing_a_call_bearing_definition_are_refused :
-    NestedScopeControl.checkedAnalysis sharedCallBearing = none := by decide +kernel
+def branches_sharing_a_call_bearing_definition_are_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis sharedCallBearing = none
 
-theorem serial_calls_of_a_call_bearing_definition_are_admitted :
-    analyses sharedCallBearingControl = (some 6, some 6) := by decide +kernel
+def serial_calls_of_a_call_bearing_definition_are_admitted : Bool := decide <|
+    analyses sharedCallBearingControl = (some 6, some 6)
 
-theorem call_cycle_is_refused : NestedScopeControl.checkedAnalysis callCycle = none := by decide +kernel
+def call_cycle_is_refused : Bool := decide (NestedScopeControl.checkedAnalysis callCycle = none)
 
 /-- The Program analysis refuses the lowered cycle on its own: acyclicity orders a Call by its invocation-to-return
 summary edge, so the invocation cycle is refused by the profile analysis, not by structural well-formedness. -/
-theorem call_cycle_program_is_refused :
-    NestedScopeControl.programAnalysis (lowerCheckedProcess callCycle) = none := by decide +kernel
+def call_cycle_program_is_refused : Bool := decide <|
+    NestedScopeControl.programAnalysis (lowerCheckedProcess callCycle) = none
 
 /-- The cycle's control ends the chain at Call depth two. -/
-theorem call_chain_of_depth_two_is_admitted : analyses callCycleControl = (some 6, some 6) := by
-  decide +kernel
+def call_chain_of_depth_two_is_admitted : Bool := decide (analyses callCycleControl = (some 6, some 6))
 
-theorem call_depth_four_is_refused : NestedScopeControl.checkedAnalysis depthFour = none := by decide +kernel
+def call_depth_four_is_refused : Bool := decide (NestedScopeControl.checkedAnalysis depthFour = none)
 
-theorem call_depth_three_is_admitted : analyses depthFourControl = (some 8, some 8) := by decide +kernel
+def call_depth_three_is_admitted : Bool := decide (analyses depthFourControl = (some 8, some 8))
 
-theorem parallel_gateway_in_called_body_is_refused :
-    NestedScopeControl.checkedAnalysis gatewayInCalledBody = none := by decide +kernel
+def parallel_gateway_in_called_body_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis gatewayInCalledBody = none
 
-theorem serial_called_body_is_admitted : analyses gatewayInCalledBodyControl = (some 4, some 4) := by
-  decide +kernel
+def serial_called_body_is_admitted : Bool := decide (analyses gatewayInCalledBodyControl = (some 4, some 4))
 
-theorem four_called_vertices_are_refused :
-    NestedScopeControl.checkedAnalysis fourCalledVertices = none := by decide +kernel
+def four_called_vertices_are_refused : Bool := decide (NestedScopeControl.checkedAnalysis fourCalledVertices = none)
 
-theorem three_called_vertices_are_admitted : analyses fourCalledVerticesControl = (some 4, some 4) := by
-  decide +kernel
+def three_called_vertices_are_admitted : Bool := decide (analyses fourCalledVerticesControl = (some 4, some 4))
 
-theorem call_inside_sub_process_is_refused :
-    NestedScopeControl.checkedAnalysis callInSubProcess = none := by decide +kernel
+def call_inside_sub_process_is_refused : Bool := decide (NestedScopeControl.checkedAnalysis callInSubProcess = none)
 
-theorem call_after_sub_process_is_admitted : analyses callInSubProcessControl = (some 4, some 4) := by
-  decide +kernel
+def call_after_sub_process_is_admitted : Bool := decide (analyses callInSubProcessControl = (some 4, some 4))
 
-theorem unreached_called_root_is_refused :
-    NestedScopeControl.checkedAnalysis unreachedRoot = none := by decide +kernel
+def unreached_called_root_is_refused : Bool := decide (NestedScopeControl.checkedAnalysis unreachedRoot = none)
 
-theorem reached_called_roots_are_admitted : analyses unreachedRootControl = (some 4, some 4) := by
-  decide +kernel
+def reached_called_roots_are_admitted : Bool := decide (analyses unreachedRootControl = (some 4, some 4))
 
 /-- A closure of nine steps exceeds the closure bound of eight and is refused. -/
-theorem nine_step_burst_is_refused : NestedScopeControl.checkedAnalysis nineStepBurst = none := by
-  decide +kernel
+def nine_step_burst_is_refused : Bool := decide (NestedScopeControl.checkedAnalysis nineStepBurst = none)
 
-theorem eight_step_burst_is_admitted : analyses nineStepBurstControl = (some 8, some 8) := by decide +kernel
-
-theorem fork_into_leading_calls_checked : checkedWellFormed forkIntoLeadingCalls = true := by decide +kernel
-
-theorem fork_into_leading_calls_program : programWellFormed (lowerCheckedProcess forkIntoLeadingCalls) = true := by
-  decide +kernel
-
-theorem fork_into_leading_calls_capabilities :
-    programProfileCapabilitiesValid (lowerCheckedProcess forkIntoLeadingCalls) = true := by
-  decide +kernel
+def eight_step_burst_is_admitted : Bool := decide (analyses nineStepBurstControl = (some 8, some 8))
 
 /-- CALLN-INVOKE-01: an entry closure that batches two nested invocations reaches the bound exactly. -/
-theorem fork_into_leading_calls_is_admitted : admitted forkIntoLeadingCalls = true :=
-  admitted_of forkIntoLeadingCalls fork_into_leading_calls_checked fork_into_leading_calls_program
-    fork_into_leading_calls_capabilities
+def fork_into_leading_calls_is_admitted : Bool := admitted forkIntoLeadingCalls
 
-theorem fork_into_leading_calls_reaches_the_closure_bound :
-    analyses forkIntoLeadingCalls = (some 8, some 8) := by decide +kernel
-
-theorem two_callers_checked : checkedWellFormed twoCallers = true := by decide +kernel
-
-theorem two_callers_program : programWellFormed (lowerCheckedProcess twoCallers) = true := by
-  decide +kernel
-
-theorem two_callers_capabilities :
-    programProfileCapabilitiesValid (lowerCheckedProcess twoCallers) = true := by
-  decide +kernel
+def fork_into_leading_calls_reaches_the_closure_bound : Bool := decide <|
+    analyses forkIntoLeadingCalls = (some 8, some 8)
 
 /-- The non-law's model is admitted, so its two live instances are reachable under the profile. -/
-theorem two_callers_is_admitted : admitted twoCallers = true :=
-  admitted_of twoCallers two_callers_checked two_callers_program two_callers_capabilities
+def two_callers_is_admitted : Bool := admitted twoCallers
+
+/-- Every check of this module, named for the executable driver's failure report. -/
+def admissionChecks : List (String × Bool) := [
+  ("supplier_is_admitted", supplier_is_admitted),
+  ("supplier_analyses_agree_on_its_burst", supplier_analyses_agree_on_its_burst),
+  ("fork_into_two_calls_of_one_definition_is_refused", fork_into_two_calls_of_one_definition_is_refused),
+  ("user_task_first_branches_calling_one_definition_are_admitted", user_task_first_branches_calling_one_definition_are_admitted),
+  ("branches_sharing_a_call_bearing_definition_are_refused", branches_sharing_a_call_bearing_definition_are_refused),
+  ("serial_calls_of_a_call_bearing_definition_are_admitted", serial_calls_of_a_call_bearing_definition_are_admitted),
+  ("call_cycle_is_refused", call_cycle_is_refused),
+  ("call_cycle_program_is_refused", call_cycle_program_is_refused),
+  ("call_chain_of_depth_two_is_admitted", call_chain_of_depth_two_is_admitted),
+  ("call_depth_four_is_refused", call_depth_four_is_refused),
+  ("call_depth_three_is_admitted", call_depth_three_is_admitted),
+  ("parallel_gateway_in_called_body_is_refused", parallel_gateway_in_called_body_is_refused),
+  ("serial_called_body_is_admitted", serial_called_body_is_admitted),
+  ("four_called_vertices_are_refused", four_called_vertices_are_refused),
+  ("three_called_vertices_are_admitted", three_called_vertices_are_admitted),
+  ("call_inside_sub_process_is_refused", call_inside_sub_process_is_refused),
+  ("call_after_sub_process_is_admitted", call_after_sub_process_is_admitted),
+  ("unreached_called_root_is_refused", unreached_called_root_is_refused),
+  ("reached_called_roots_are_admitted", reached_called_roots_are_admitted),
+  ("nine_step_burst_is_refused", nine_step_burst_is_refused),
+  ("eight_step_burst_is_admitted", eight_step_burst_is_admitted),
+  ("fork_into_leading_calls_is_admitted", fork_into_leading_calls_is_admitted),
+  ("fork_into_leading_calls_reaches_the_closure_bound", fork_into_leading_calls_reaches_the_closure_bound),
+  ("two_callers_is_admitted", two_callers_is_admitted)
+]
 
 end BpmnSemantics.RepeatedNestedConcurrentCallsConformance

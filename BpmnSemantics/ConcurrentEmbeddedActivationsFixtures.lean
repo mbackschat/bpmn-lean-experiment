@@ -1,5 +1,4 @@
 import BpmnSemantics.NestedScopeControlConformance
-import BpmnSemantics.SemanticProcess.MergeTargetOccurrenceLaws
 
 /-! # Concurrent embedded activations fixtures
 

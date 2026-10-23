@@ -2,7 +2,7 @@ import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
 import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 import BpmnSemantics.ActivityBoundaryTimerConformance
 import BpmnSemantics.ConfiguredTaskConformance
-import BpmnSemantics.CallActivityConformance
+import BpmnSemantics.CallActivityConformanceFixtures
 
 /-! # Flow-node occurrence lifecycle program-validity conformance
 

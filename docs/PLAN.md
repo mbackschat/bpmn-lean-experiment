@@ -80,13 +80,13 @@ Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: Stage B built in the family shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), with at most one complete Lean rebuild, at its start.
 
-Acceptance blockers: none for the TypeScript side; Stage B's Lean lift waits for the proposal's guard migration, which the owner (2026-10-23) ordered after the TypeScript side and the Call-family executable-guard pilot.
+Acceptance blockers: the Lean lift waits for the proposal's guard migration (owner order, 2026-10-23); registration (scenarios, pipeline cases, mutations, corpus row) waits for the lift, because pipeline cases need Lean–TypeScript agreement.
 
-Current result: the owner adopted the proposal; the hosted three-thread pin built the Lean library in 44 min against 67–68 min at one thread (8.6 GiB peak) and stays at three. Stage B's guarantor model, source admission and core journey are green in TypeScript, uncommitted.
+Current result: the owner adopted the proposal and kept the hosted three-thread pin (44 min against 67–68 min, 8.6 GiB peak). Stage B's TypeScript core and host admission are committed. The [Call fixture pilot](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#call-fixture-pilot-2026-10-23) turned six Call conformance modules into 142 native executable checks, 425.0 s to 10.9 s of single-core elaboration.
 
 Effort budget: 4 hours wall from 2026-10-23 16:00 for the proposal's correction audit and owner decision, reassessed at the limit; Stage B's budget is set when it opens, and Stage A closed at about 14.5 of its 16 hours.
 
-Next action: finish Stage B's TypeScript side (the return-caller scope check, censuses, scenarios, pipeline cases, mutations, corpus row), then the Call fixture pilot, then guard migration.
+Next action: guard migration (the proposal's first migration step), then Stage B's Lean lift, then its registration.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 

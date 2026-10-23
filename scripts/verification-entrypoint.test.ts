@@ -564,7 +564,7 @@ test("Lean checks interpret their own witnesses and build package drivers native
   );
   await assertLineOccursOnce(
     verifyScriptPath,
-    "./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport",
+    "./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures",
   );
   await assertLineOccursOnce(
     verifyScriptPath,
@@ -579,6 +579,7 @@ test("Lean checks interpret their own witnesses and build package drivers native
       `./scripts/lake.sh run ${path}`,
     );
   }
+  await assertLineOccursOnce(verifyScriptPath, ".lake/build/bin/checkCallFamilyFixtures");
   assert.doesNotMatch(source, /lake\.sh exe/u);
 });
 

@@ -28,16 +28,24 @@ private def balancedManyToOne (distinctInvokeId : Bool) : Program :=
       [{ operationId := ⟨"operation:AliasedCall"⟩, scopeId := callerScopeId },
        { operationId := ⟨"operation:UnclaimedReturn"⟩, scopeId := calledScopeId }] }
 
-theorem baseline_pair_is_accepted : callOperationsPaired program = true := by decide +kernel
+def baseline_pair_is_accepted : Bool := decide (callOperationsPaired program = true)
 
-theorem duplicate_invoke_with_balanced_unclaimed_return_is_rejected :
-    callOperationsPaired (balancedManyToOne false) = false := by decide +kernel
+def duplicate_invoke_with_balanced_unclaimed_return_is_rejected : Bool := decide <|
+    callOperationsPaired (balancedManyToOne false) = false
 
-theorem distinct_invoke_alias_with_balanced_unclaimed_return_is_rejected :
-    callOperationsPaired (balancedManyToOne true) = false := by decide +kernel
+def distinct_invoke_alias_with_balanced_unclaimed_return_is_rejected : Bool := decide <|
+    callOperationsPaired (balancedManyToOne true) = false
 
-theorem full_program_admission_rejects_both_malformed_populations :
+def full_program_admission_rejects_both_malformed_populations : Bool := decide <|
     programWellFormed (balancedManyToOne false) = false ∧
-      programWellFormed (balancedManyToOne true) = false := by decide +kernel
+      programWellFormed (balancedManyToOne true) = false
+
+/-- Every check of this module, named for the executable driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("baseline_pair_is_accepted", baseline_pair_is_accepted),
+  ("duplicate_invoke_with_balanced_unclaimed_return_is_rejected", duplicate_invoke_with_balanced_unclaimed_return_is_rejected),
+  ("distinct_invoke_alias_with_balanced_unclaimed_return_is_rejected", distinct_invoke_alias_with_balanced_unclaimed_return_is_rejected),
+  ("full_program_admission_rejects_both_malformed_populations", full_program_admission_rejects_both_malformed_populations)
+]
 
 end BpmnSemantics.CallActivityPairingConformance
