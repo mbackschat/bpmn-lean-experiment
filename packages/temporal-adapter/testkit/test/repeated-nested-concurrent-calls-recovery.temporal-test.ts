@@ -6,12 +6,16 @@ import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/
 import { CommandOutcome, SemanticProfileId, StimulusKind, observeStableState } from "@bpmn-lean/semantic-core";
 import type { CanonicalObservation, CompleteUserTaskInstanceStimulus } from "@bpmn-lean/semantic-core";
 import {
-  BpmnWorkflowHostInputKind, WorkflowChainBudgetKind, bpmnProcessWorkflowType, bpmnSemanticTaskQueue,
-  bpmnTraceQueryName, bpmnWorkflowContinuationV1, createCachedLocalEnvironment, loadBpmnWorkflowBundle,
-  processWorkflowId, readTestProcessTerminalResult, requireBpmnWorkflowContinuationStateV1, submitUserTaskCompletion,
-  workflowChainProductionLimit,
+  BpmnWorkflowHostInputKind, ExecutionPublicationResultKind, FlowNodeOccurrencePublicationResultKind,
+  WorkflowChainBudgetKind, bpmnProcessWorkflowType, bpmnSemanticTaskQueue, bpmnTraceQueryName,
+  bpmnWorkflowContinuationV1, createCachedLocalEnvironment, loadBpmnWorkflowBundle,
+  observeTemporalExecutionPublication, observeTemporalFlowNodeOccurrences, processWorkflowId,
+  readPublicationUntilAnswered, readTestProcessTerminalResult, requireBpmnWorkflowContinuationStateV1,
+  submitUserTaskCompletion, workflowChainCanonicalUtf8ByteLength, workflowChainProductionLimit,
 } from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
+import type {
+  TemporalExecutionPublicationClient, TemporalFlowNodeOccurrencePublicationClient, TemporalHistory,
+} from "@bpmn-lean/temporal-testkit";
 import { embeddedCompletionHostingIdentityByteLimit } from "@bpmn-lean/temporal-protocol";
 import { createBusinessTaskHostOracle } from "./business-task-host-oracle.ts";
 import { decodeJsonPayload, historyEvents } from "./temporal-history-facts.ts";
@@ -34,7 +38,7 @@ const program = compiled.semanticProcess;
 // Continue-As-New with a Worker replacement between their completions, the calls completing in reverse order,
 // the nested risk-review chain live across a later Continue-As-New, and every Run replayed. The hosting identity is
 // the longest Start admits, so every publication, Query and terminal envelope is measured at that bound.
-test("concurrent and nested Calls keep their records through continuation, Worker replacement and replay", async () => {
+test("concurrent and nested Calls keep their records through continuation, Worker replacement and replay", async (t) => {
   const start = { kind: StimulusKind.StartProcess, commandId: "start", processId: program.processId,
     instanceId: "Supplier_hosted_".padEnd(embeddedCompletionHostingIdentityByteLimit, "x"),
     initialVariables: [] } as const;
@@ -84,6 +88,24 @@ test("concurrent and nested Calls keep their records through continuation, Worke
     const terminal = await withDeadline(readTestProcessTerminalResult(handle), 20_000, "supplier onboarding completion");
     assert.deepEqual(terminal.receipt.finalState, observeStableState(program, oracle.state));
     await oracle.assertPublications();
+    const terminalBytes = workflowChainCanonicalUtf8ByteLength(terminal);
+    assert.ok(terminalBytes <= workflowChainProductionLimit(WorkflowChainBudgetKind.TerminalResultEnvelopeBytes));
+    const identity = { definition: program.identity, processId: program.processId, processInstanceId: start.instanceId };
+    const [execution, occurrences] = await Promise.all([
+      readPublicationUntilAnswered("supplier E1 publication", () => observeTemporalExecutionPublication(
+        environment.client.workflow as unknown as TemporalExecutionPublicationClient, workflowId, identity,
+        { afterRevision: 0 })),
+      readPublicationUntilAnswered("supplier E2 publication", () => observeTemporalFlowNodeOccurrences(
+        environment.client.workflow as unknown as TemporalFlowNodeOccurrencePublicationClient, workflowId, identity,
+        { afterRevision: 0 })),
+    ]);
+    if (execution.kind !== ExecutionPublicationResultKind.Available ||
+        occurrences.kind !== FlowNodeOccurrencePublicationResultKind.Available) assert.fail("publications must be available");
+    const publicationBytes = workflowChainCanonicalUtf8ByteLength(execution.page) +
+      workflowChainCanonicalUtf8ByteLength(occurrences.page);
+    assert.ok(publicationBytes <= workflowChainProductionLimit(WorkflowChainBudgetKind.QueryResponseBytes));
+    t.diagnostic(`terminal ${terminalBytes} bytes, first E1+E2 publication page ${publicationBytes} bytes, ` +
+      `through revision ${execution.page.pageThroughRevision} of ${execution.page.headRevision}`);
 
     const trace: CanonicalObservation[] = [];
     let concurrentCarried = 0;
