@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance operation contract
 
@@ -13,6 +15,8 @@ operation: `ofOperation?` accepts only the distinct parallel constructor.
 Scope boundary: immutable operation facts and their exact projection. It defines no runtime state,
 transition, evaluator, admission rule, or public observation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

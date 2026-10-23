@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! SBT-CHAIN-01 and SBT-AVAILABLE-01 independently analyze the checked graph and IL. The transient chain is analysis evidence, never serialized executable authority. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -11,7 +15,7 @@ abbrev serialBusinessTaskProfileId : ProfileId :=
 
 namespace SerialBusinessTask
 
-private def asciiLetter (c : Char) : Bool :=
+def asciiLetter (c : Char) : Bool :=
   ('A' ≤ c && c ≤ 'Z') || ('a' ≤ c && c ≤ 'z')
 
 def identifier (name : String) : Bool :=
@@ -43,14 +47,14 @@ def bindingsValid (handlers : List String) (bindings : List VariableBinding) : B
   strictlySortedStrings (bindings.map (·.name)) &&
     bindings.all (fun b => nameAllowed handlers b.name && scalar b.value)
 
-private def edgeWhitespace (c : Char) : Bool :=
+def edgeWhitespace (c : Char) : Bool :=
   [9, 10, 11, 12, 13, 32, 160, 5760, 8192, 8193, 8194, 8195, 8196, 8197,
    8198, 8199, 8200, 8201, 8202, 8232, 8233, 8239, 8287, 12288, 65279].contains c.toNat
 
 /-- Whether `marker` is immediately followed by `{`. Structural over the characters, because
 `String.splitOn` recurses well-foundedly over positions and the kernel cannot decide it, which left
 every literal-input admission outside `decide +kernel`. -/
-private def opensExpression (marker : Char) : List Char → Bool
+def opensExpression (marker : Char) : List Char → Bool
   | first :: second :: rest => (first == marker && second == '{') || opensExpression marker (second :: rest)
   | _ => false
 

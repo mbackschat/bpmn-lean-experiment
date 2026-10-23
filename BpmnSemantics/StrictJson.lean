@@ -1,6 +1,10 @@
-import Lean.Data.Json
+module
+
+public import Lean.Data.Json
 
 /-! A JSON parser that preserves wire facts erased by `Lean.Json.parse`. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.StrictJson
 
@@ -8,7 +12,7 @@ open Std.Internal.Parsec
 open Std.Internal.Parsec.String
 open Lean
 
-private def escapedChar : Parser Char := do
+def escapedChar : Parser Char := do
   let c ← any
   match c with
   | '\\' => return '\\'
@@ -36,7 +40,7 @@ private def escapedChar : Parser Char := do
         return ⟨value.toUInt32, Or.inr ⟨Nat.not_lt.mp h', Nat.lt_trans value.toFin.isLt (by decide +kernel)⟩⟩
   | _ => fail "illegal JSON escape"
 
-private partial def stringCore (acc : String) : Parser String := do
+partial def stringCore (acc : String) : Parser String := do
   let c ← peek!
   if c = '"' then
     skip
@@ -49,12 +53,12 @@ private partial def stringCore (acc : String) : Parser String := do
   else
     fail "unexpected character in JSON string"
 
-private def string : Parser String :=
+def string : Parser String :=
   stringCore ""
 
 mutual
 
-  private partial def arrayCore (values : Array Json) :
+  partial def arrayCore (values : Array Json) :
       Parser (Array Json) := do
     let value ← valueCore
     let values := values.push value
@@ -68,7 +72,7 @@ mutual
     else
       fail "unexpected character in JSON array"
 
-  private partial def objectCore (members : Std.TreeMap.Raw String Json) :
+  partial def objectCore (members : Std.TreeMap.Raw String Json) :
       Parser (Std.TreeMap.Raw String Json) := do
     Json.Parser.lookahead (fun c => c = '"') "\""
     skip
@@ -91,7 +95,7 @@ mutual
     else
       fail "unexpected character in JSON object"
 
-  private partial def valueCore : Parser Json := do
+  partial def valueCore : Parser Json := do
     let c ← peek!
     if c = '[' then
       skip
@@ -137,7 +141,7 @@ mutual
 
 end
 
-private def document : Parser Json := do
+def document : Parser Json := do
   ws
   let value ← valueCore
   eof

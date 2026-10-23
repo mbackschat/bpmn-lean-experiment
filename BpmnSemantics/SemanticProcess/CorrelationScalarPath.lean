@@ -1,4 +1,6 @@
-import BpmnSemantics.Scenario
+module
+
+public import BpmnSemantics.Scenario
 
 /-! # Closed scalar paths for Message correlation
 
@@ -6,6 +8,8 @@ This module owns the deliberately tiny path language selected by the Message key
 profile. Decoding is exact: neither whitespace nor another spelling is normalized into a valid
 selector.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

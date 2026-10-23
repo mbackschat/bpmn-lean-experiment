@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcessContract
-import BpmnSemantics.SemanticProcess.ClosureLimit
+module
+
+public import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.SemanticProcess.ClosureLimit
 
 /-! The approved structured-composition proposal requires independent graph contraction, definite-write intersection and task-cut closure bounds. These private analysis vertices carry no serialized or runtime authority. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

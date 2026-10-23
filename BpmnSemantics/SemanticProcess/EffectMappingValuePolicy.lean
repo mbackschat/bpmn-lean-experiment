@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Effect-mapping value policy
 
@@ -10,6 +12,8 @@ policy is derived from the exact Program profile and is never a wire flag, per t
 It is the effect-side analogue of `PropertyPathValuePolicy`; the two are independent because a profile
 may widen one path only.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

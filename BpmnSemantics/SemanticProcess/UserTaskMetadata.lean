@@ -1,4 +1,6 @@
-import BpmnSemantics.Contract
+module
+
+public import BpmnSemantics.Contract
 
 /-! # User Task assignment and form metadata
 
@@ -6,6 +8,8 @@ This module owns the neutral immutable metadata vocabulary and the exact literal
 shared by checked User Tasks, Semantic Process waits, and public observations. It defines no BPMN
 source interpretation, assignment authorization, form validation, or task-lifecycle behavior.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics
 
@@ -54,7 +58,7 @@ def boundarySpaceCodePoint (value : Nat) : Bool :=
     value = 0x2028 || value = 0x2029 || value = 0x202f ||
     value = 0x205f || value = 0x3000 || value = 0xfeff
 
-private def containsExpressionOpener : List Char → Bool
+def containsExpressionOpener : List Char → Bool
   | []
   | [_] => false
   | '$' :: '{' :: _

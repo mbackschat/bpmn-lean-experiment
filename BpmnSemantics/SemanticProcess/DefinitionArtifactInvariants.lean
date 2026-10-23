@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Shared definition-artifact invariants
 
 This module owns only representation-independent string identity and canonical-order predicates shared by checked-process and Semantic Process admission. Node, operation, profile, and graph rules remain with their representation-specific validators.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

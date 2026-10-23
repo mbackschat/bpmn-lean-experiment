@@ -1,5 +1,7 @@
-import Init.Data.ByteArray.Basic
-import Init.Data.String.Basic
+module
+
+public import Init.Data.ByteArray.Basic
+public import Init.Data.String.Basic
 
 /-! # Canonical JSON string collection byte measure
 
@@ -18,6 +20,8 @@ UTF-8. Its expansion is one byte for quote, backslash, and the named controls, a
 other controls. Every non-ASCII byte and every other ASCII byte has zero expansion, so adding this
 census to the already cached raw UTF-8 size is exact without constructing decoded characters.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

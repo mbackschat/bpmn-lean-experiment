@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+module
+
+public import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
 
 /-! # Property-path value policy
 
@@ -8,6 +10,8 @@ derived from the exact Program profile and is never a wire flag, per the
 [serial-handoff amendment](../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#runtime-ownership-and-acceptance).
 Process-interface and Call ports keep `processInterfaceScalar`; this owner does not reach them.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

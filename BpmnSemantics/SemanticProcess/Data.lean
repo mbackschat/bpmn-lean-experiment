@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic Process bounded data mappings
 
 This module owns scoped binding merges, immutable containing-context input evaluation, captured input snapshots and local result mappings; profile admission selects the permitted expression and scalar subsets.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -58,7 +62,7 @@ def emptyScopedVariables : ScopedVariables :=
     processInterfaces := []
     scopes := [] }
 
-private def insertVariableBinding (binding : VariableBinding) :
+def insertVariableBinding (binding : VariableBinding) :
     List VariableBinding → List VariableBinding
   | [] => [binding]
   | candidate :: remaining =>
@@ -67,7 +71,7 @@ private def insertVariableBinding (binding : VariableBinding) :
       else
         candidate :: insertVariableBinding binding remaining
 
-private def sortVariableBindings : List VariableBinding → List VariableBinding
+def sortVariableBindings : List VariableBinding → List VariableBinding
   | [] => []
   | binding :: remaining =>
       insertVariableBinding binding (sortVariableBindings remaining)

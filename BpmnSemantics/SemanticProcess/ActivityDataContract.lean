@@ -1,7 +1,11 @@
+module
+
 /-! # Activity data contract
 
 Task-neutral typed endpoints for direct BPMN Data Input and Data Output Associations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

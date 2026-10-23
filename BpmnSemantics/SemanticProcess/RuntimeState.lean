@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.ParallelScopePopulation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+module
+
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 
 /-! # Semantic Process runtime state
 
 This module owns committed runtime data, scope-occurrence ownership, token operations, wait construction, and pure state transformations shared by the declarative and executable transition accounts.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -399,7 +403,7 @@ def initialState : RuntimeState :=
     logicalTimeMs := 0 }
 
 /-- The failed-state validator checks this listed subset of live collections; inherited listeners and scope/interface data are outside this predicate. -/
-private def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :=
+def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :=
   !state.initiationPending && state.scopeOccurrences.isEmpty && state.tokens.isEmpty &&
     state.waits.isEmpty && state.messageWaits.isEmpty && state.timerWaits.isEmpty &&
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
@@ -412,7 +416,7 @@ private def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) 
     state.compensationParentContextRetentions.isEmpty &&
     state.compensationHandlerEffectWaits.isEmpty && state.variables.activities.isEmpty
 
-private def compensationSubjectOwnsEffect (program : Program)
+def compensationSubjectOwnsEffect (program : Program)
     (occurrence : CompensationSubjectOccurrence) (effectElementId : SemanticId) : Bool :=
   match program.compensationExecution with
   | none => false
@@ -428,14 +432,14 @@ private def compensationSubjectOwnsEffect (program : Program)
           body.effectElementId.value == effectElementId.value
       | _ => false
 
-private def compensationFailureEffectActivationMatches (state : RuntimeState)
+def compensationFailureEffectActivationMatches (state : RuntimeState)
     (effectId : EffectOccurrenceId) : Bool :=
   match state.effectActivations.filter fun activation =>
       activation.elementId.value == effectId.elementId.value with
   | [activation] => activation.count == effectId.activation
   | _ => false
 
-private def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
+def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
     (instanceId : SemanticId) (failure : CompensationHandlerFailure)
     (trigger : CompensationTriggerExecution) : Bool :=
   trigger.id == failure.triggerId && trigger.lifecycle == .failed &&

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Bounded graph reachability
 
 Finite search and saturation certificates shared by semantic graph admission and its laws.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

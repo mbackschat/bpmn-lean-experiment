@@ -1,11 +1,15 @@
-import BpmnSemantics.Scenario
-import BpmnSemantics.SemanticProcess.CallDataContract
-import BpmnSemantics.SemanticProcess.CorrelationScalarPath
+module
+
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.SemanticProcess.CallDataContract
+public import BpmnSemantics.SemanticProcess.CorrelationScalarPath
 
 /-! # BpmnSemantics.CheckedProcessContract — checked definitions and shared identities
 
 This module owns checked-source definitions and the identities shared with Semantic Process IL. Keeping their declarations together preserves the reviewed source boundary independently of executable operation variants.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

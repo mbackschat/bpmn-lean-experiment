@@ -1,3 +1,5 @@
+module
+
 /-! # BpmnSemantics.BusinessValue — portable recursive business values
 
 The closed recursive value domain of the
@@ -8,6 +10,8 @@ not a constructor, so it cannot occur below a List or Map by construction.
 This module owns representation and structural equality only. Wire spelling, bounds and profile
 eligibility belong to the JSON and value-domain owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics
 

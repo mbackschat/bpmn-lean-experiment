@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ActivityDataContract
-import BpmnSemantics.SemanticProcess.VariableMappingContract
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataContract
+public import BpmnSemantics.SemanticProcess.VariableMappingContract
 
 /-! # Call data interface declarations
 
@@ -7,6 +9,8 @@ The scalar arm retains distinct Call and callable owners, ports, sets and associ
 CDATA-MATCH-01. Its source contract excludes collections, ItemDefinitions, DataStates, optional and
 while-executing members, and set pairing. Names are descriptive and never establish correspondence.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

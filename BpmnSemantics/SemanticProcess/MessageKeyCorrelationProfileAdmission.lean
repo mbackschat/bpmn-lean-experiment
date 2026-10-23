@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Message key-correlation profile admission
 
@@ -6,13 +8,15 @@ This module owns correlation-specific payload, channel, selector, and identity c
 and operation cardinalities remain in `ProfileAdmission`.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 /-- Runtime-frozen identity of the approved Message key-correlation profile. -/
 def messageKeyCorrelationProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-message-key-correlation-draft"⟩
 
-private def exactOperationChannelIdentities (elementId : NodeId)
+def exactOperationChannelIdentities (elementId : NodeId)
     (channel : MessageChannel) (extra : List String) : Bool :=
   match channel with
   | .operationMessage interfaceId operationId messageId =>

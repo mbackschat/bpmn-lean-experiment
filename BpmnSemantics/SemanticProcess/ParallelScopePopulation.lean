@@ -1,10 +1,14 @@
-import BpmnSemantics.Scenario
-import BpmnSemantics.WireNatural
+module
+
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.WireNatural
 
 /-! # Parallel Sub-Process population retirement
 
 PMIS-END-01 and PMIS-CANCEL-01 require exact child ownership and separate completed from cancelled bodies. This account establishes local membership, retirement dispatch and accounting laws; callers establish quiescence and perform runtime cleanup.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -300,9 +304,9 @@ theorem retireParallelScopeIteration_remaining_valid (controller next : Parallel
     intro iteration member
     exact original.2 iteration (retained.subset member)
 
-private def sampleController : ParallelScopeController :=
+def sampleController : ParallelScopeController :=
   ⟨⟨⟨"applicants"⟩, ⟨"Check"⟩, 2⟩, 3, 0⟩
-private def sampleIteration (index : Nat) : ParallelScopeIteration :=
+def sampleIteration (index : Nat) : ParallelScopeIteration :=
   ⟨⟨⟨"applicants"⟩, ⟨"CheckBody"⟩, 8 + index⟩, index, "same applicant value"⟩
 
 example : retireParallelScopeIteration sampleController

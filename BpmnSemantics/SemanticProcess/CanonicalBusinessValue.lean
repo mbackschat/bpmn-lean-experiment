@@ -1,5 +1,7 @@
-import BpmnSemantics.BusinessValue
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+module
+
+public import BpmnSemantics.BusinessValue
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 
 /-! # Canonical portable-value byte measure
 
@@ -10,10 +12,12 @@ no whitespace, field order `kind` then `value` (or `kind`, `coefficient`, `scale
 measurement only; the 16,384-byte limit belongs to the wire domain owner.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 /-- Bytes of a JSON array whose members measure `sizes`, including brackets and separators. -/
-private def canonicalArrayBytes (sizes : List Nat) : Nat :=
+def canonicalArrayBytes (sizes : List Nat) : Nat :=
   2 + sizes.foldl (· + ·) 0 + (sizes.length - 1)
 
 mutual

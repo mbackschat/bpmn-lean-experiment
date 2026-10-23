@@ -1,12 +1,16 @@
-import BpmnSemantics.BusinessValue
-import BpmnSemantics.Contract
-import BpmnSemantics.SemanticProcess.UserTaskMetadata
+module
+
+public import BpmnSemantics.BusinessValue
+public import BpmnSemantics.Contract
+public import BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # BpmnSemantics.Scenario — implementation-neutral runner contract
 
 This module defines the smallest shared vocabulary needed by the current semantic runners.
 It contains no BPMN transition semantics and no CIB Seven or Temporal representation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics
 

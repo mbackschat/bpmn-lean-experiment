@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Independent checked admission for scalar Call data
 
@@ -7,6 +9,8 @@ The caller and called Task endpoints must close over their respective Process de
 global retained identities and the canonical caller Property inventory remain independently checked.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 abbrev callDataCheckpointProfileId : ProfileId :=
@@ -14,40 +18,40 @@ abbrev callDataCheckpointProfileId : ProfileId :=
 
 namespace CallDataAdmission
 
-private def one? (values : List α) : Option α :=
+def one? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
-private def owner? (source : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
+def owner? (source : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
   (one? (source.nodeScopes.filter fun binding => binding.nodeId == id)).map (·.scopeId)
 
-private def root? (source : CheckedProcess) (process : ProcessId) : Option DefinitionScope :=
+def root? (source : CheckedProcess) (process : ProcessId) : Option DefinitionScope :=
   one? (source.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == process.value)
 
-private def start? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
+def start? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
   one? (source.nodes.filterMap fun
     | .noneStartEvent id => if owner? source id == some scope then some id else none
     | _ => none)
 
-private def next? (source : CheckedProcess) (id : NodeId) : Option CheckedNode := do
+def next? (source : CheckedProcess) (id : NodeId) : Option CheckedNode := do
   let flow ← one? (source.sequenceFlows.filter fun flow => flow.sourceId == id)
   if flow.condition.isSome then none
   else one? (source.nodes.filter fun node => node.id == flow.targetId)
 
-private structure Task where
+structure Task where
   id : NodeId
   input : DirectActivityDataInput
   output : DirectActivityDataOutput
 
-private def task? : CheckedNode → Option Task
+def task? : CheckedNode → Option Task
   | .dataInputOutputUserTask id _ input output => some { id, input, output }
   | _ => none
 
-private def taskIds (task : Task) : List String :=
+def taskIds (task : Task) : List String :=
   [task.input.associationId, task.input.targetDataInputId,
     task.output.associationId, task.output.sourceDataOutputId]
 
-private def portsValid (data : ScalarCallData) (caller called : Task) : Bool :=
+def portsValid (data : ScalarCallData) (caller called : Task) : Bool :=
   match data.directInput.source, data.directOutput.target,
       caller.input.source, caller.output.target, called.input.source, called.output.target with
   | .property request, .property result, .property readResult, .property receipt,
@@ -82,10 +86,10 @@ def checked? (source : CheckedProcess) : Option ScalarCallData := do
       strictlySortedStrings data.callerProperties && portsValid data callerTask calledTask &&
       ids.all nonempty && decide ids.Nodup then some data else none
 
-private def operationOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
+def operationOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
   (one? (program.operationScopes.filter fun binding => binding.operationId == id)).map (·.scopeId)
 
-private def consuming? (program : Program) (place : ControlPlaceId) : Option SemanticOperation :=
+def consuming? (program : Program) (place : ControlPlaceId) : Option SemanticOperation :=
   one? (program.operations.filter fun
     | .invokeProcess _ _ input .. | .awaitDataInputOutputUserTask _ _ input ..
     | .reachNoneEnd _ _ input => input == place

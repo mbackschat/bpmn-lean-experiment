@@ -1,9 +1,13 @@
-import BpmnSemantics.CheckedProcessContract
+module
+
+public import BpmnSemantics.CheckedProcessContract
 
 /-! # BpmnSemantics.SemanticProcessContract — reviewed IL and proof boundaries
 
 This module owns the approved Semantic Process definition types and generic proof propositions, using the checked definitions from `CheckedProcessContract`. The implementations and achieved proof status live in `SemanticProcess` and `SemanticProcessJson` so the reviewed obligation statements remain separately visible.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

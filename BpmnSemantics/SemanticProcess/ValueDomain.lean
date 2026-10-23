@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.CallDataAdmission
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
-import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 
 /-! # Semantic Process value-domain admission
 
 This module owns the profile-sensitive boundary between the shared typed variable domain and the two external Process-data ingress surfaces. It does not define variable merge, effect mapping, or control-flow expression behavior.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -67,7 +71,7 @@ inductive ProcessDataIngress where
   | messagePayload
   deriving Repr, DecidableEq
 
-private inductive ProcessDataValueDomain where
+inductive ProcessDataValueDomain where
   | empty
   | stringOnly
   | stringListOnly
@@ -80,11 +84,11 @@ private inductive ProcessDataValueDomain where
   /-- Start of the structured effect-data profile: String or Null under the item policy's root String bound. -/
   | stringNullItemBound
 
-@[simp] private abbrev profileIsOneOf (profile : ProfileId) (ids : List String) : Bool :=
+@[simp] abbrev profileIsOneOf (profile : ProfileId) (ids : List String) : Bool :=
   ids.any fun id => profile.value == id
 
 /-- Closed profile-by-surface value-domain selection. Unlisted and unknown profiles admit only an empty patch. -/
-@[simp] private abbrev profileValueDomain (profile : ProfileId) :
+@[simp] abbrev profileValueDomain (profile : ProfileId) :
     ProcessDataIngress → ProcessDataValueDomain
   | .processStart =>
       if profile = portableHandoffProfileId ∨ profile = nestedScopeDataProfileId then

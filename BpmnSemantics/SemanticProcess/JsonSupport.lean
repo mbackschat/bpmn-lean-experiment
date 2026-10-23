@@ -1,31 +1,35 @@
-import BpmnSemantics.SemanticProcessContract
-import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.StrictJson
-import BpmnSemantics.WireNatural
-import Lean.Data.Json
+module
+
+public import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.StrictJson
+public import BpmnSemantics.WireNatural
+public import Lean.Data.Json
 
 /-! # Semantic Process JSON value support
 
 This module owns the strict reusable decoders for safe wire integers, identities, Message channels, variables, and typed effect results. Document-role decoders and cross-artifact validation remain in `SemanticProcessJson`.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics
 open Lean
 
-private inductive WireLexicalMode where
+inductive WireLexicalMode where
   | value
   | string
   | escaped
 
-private def wireDigit (c : Char) : Bool := '0' ≤ c && c ≤ '9'
+def wireDigit (c : Char) : Bool := '0' ≤ c && c ≤ '9'
 
-private def wireNumberDelimiter (c : Char) : Bool :=
+def wireNumberDelimiter (c : Char) : Bool :=
   c = ',' || c = ']' || c = '}' || c = ' ' || c = '\t' || c = '\r' || c = '\n'
 
-private def canonicalWireDigits (digits : List Char) : Bool :=
+def canonicalWireDigits (digits : List Char) : Bool :=
   match digits with
   | [] => false
   | '0' :: rest => rest.isEmpty
@@ -33,7 +37,7 @@ private def canonicalWireDigits (digits : List Char) : Bool :=
       let next := 10 * value + (c.toNat - '0'.toNat)
       if isSafeWireNat next then some next else none) 0).isSome
 
-private def wireNumeralsValid : WireLexicalMode → List Char → Bool
+def wireNumeralsValid : WireLexicalMode → List Char → Bool
   | _, [] => true
   | .escaped, _ :: rest => wireNumeralsValid .string rest
   | .string, '\\' :: rest => wireNumeralsValid .escaped rest
@@ -126,13 +130,13 @@ def decodeOptionalString : Json → Except String (Option String)
   | .str value => pure (some value)
   | _ => throw "string or null expected"
 
-private def decodeUserTaskCandidate (json : Json) :
+def decodeUserTaskCandidate (json : Json) :
     Except String UserTaskCandidate := do
   requireObjectShape json ["id", "kind"]
   expectStringField json "kind" "group"
   pure { kind := .group, id := ← stringField json "id" }
 
-private def decodeUserTaskFormField (json : Json) :
+def decodeUserTaskFormField (json : Json) :
     Except String UserTaskFormField := do
   requireObjectShape json ["key", "type"]
   let fieldType ←
@@ -172,14 +176,14 @@ def decodeOptionalUserTaskMetadataField (json : Json) :
   | none => pure none
   | some value => some <$> decodeUserTaskMetadata value
 
-private def userTaskCandidateJson (candidate : UserTaskCandidate) : Json :=
+def userTaskCandidateJson (candidate : UserTaskCandidate) : Json :=
   match candidate.kind with
   | .group =>
       Json.mkObj
         [ ("kind", toJson "group")
         , ("id", toJson candidate.id) ]
 
-private def userTaskFormFieldJson (field : UserTaskFormField) : Json :=
+def userTaskFormFieldJson (field : UserTaskFormField) : Json :=
   let type := match field.type with
     | .string => "string"
     | .boolean => "boolean"

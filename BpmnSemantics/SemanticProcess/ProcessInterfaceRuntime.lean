@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Passive Process interface runtime
 
@@ -6,6 +8,8 @@ Call invocation and composed task transitions share exact-owner scalar storage p
 Selector success equivalences support constructor-selection bridges here; higher preservation laws
 live in `ProcessInterfaceData` because collection-order proofs already depend on Call execution.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

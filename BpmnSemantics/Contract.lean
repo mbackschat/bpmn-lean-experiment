@@ -1,9 +1,13 @@
+module
+
 /-! # BpmnSemantics.Contract — profile-independent outcome vocabulary
 
 This module captures distinctions required directly by the architecture handoff before
 any BPMN feature semantics are chosen. It deliberately contains no CIB Seven, Temporal,
 or BPMN execution algorithm.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics
 

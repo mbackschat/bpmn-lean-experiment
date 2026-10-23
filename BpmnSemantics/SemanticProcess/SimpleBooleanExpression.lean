@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcessContract
-import BpmnSemantics.StrictJson
+module
+
+public import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.StrictJson
 
 /-! # Simple Boolean expression language
 
 This module independently parses and evaluates the project-owned Simple Boolean v1 language used by condition-bearing BPMN elements. The language is deliberately smaller than XPath or JUEL and consumes only complete Process-scope string/null bindings.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -14,14 +18,14 @@ open Lean
 def simpleBooleanExpressionLanguage : String :=
   "urn:bpmn-lean:expression:simple-boolean:v1"
 
-private def asciiLetter (character : Char) : Bool :=
+def asciiLetter (character : Char) : Bool :=
   ('A' ≤ character && character ≤ 'Z') ||
     ('a' ≤ character && character ≤ 'z')
 
-private def identifierFirst (character : Char) : Bool :=
+def identifierFirst (character : Char) : Bool :=
   asciiLetter character || character = '_'
 
-private def identifierRest (character : Char) : Bool :=
+def identifierRest (character : Char) : Bool :=
   identifierFirst character ||
     ('0' ≤ character && character ≤ '9') ||
     character = '.' ||
@@ -35,7 +39,7 @@ def simpleBooleanIdentifierValid (value : String) : Bool :=
         identifierFirst first &&
         rest.all identifierRest
 
-private def stripPrefixChars : List Char → List Char → Option (List Char)
+def stripPrefixChars : List Char → List Char → Option (List Char)
   | [], source => some source
   | expected :: remainingPrefix, actual :: source =>
       if expected = actual then
@@ -44,20 +48,20 @@ private def stripPrefixChars : List Char → List Char → Option (List Char)
         none
   | _ :: _, [] => none
 
-private def callBody (name source : String) : Option String := do
+def callBody (name source : String) : Option String := do
   let rest ← stripPrefixChars (name ++ "(").toList source.toList
   match rest.reverse with
   | ')' :: reversedBody => some (String.ofList reversedBody.reverse)
   | _ => none
 
-private def splitAtComma : List Char → Option (List Char × List Char)
+def splitAtComma : List Char → Option (List Char × List Char)
   | [] => none
   | ',' :: rest => some ([], rest)
   | character :: rest => do
       let (left, right) ← splitAtComma rest
       pure (character :: left, right)
 
-private def parseCanonicalString (token : String) : Option String := do
+def parseCanonicalString (token : String) : Option String := do
   let json ← (BpmnSemantics.StrictJson.parse token).toOption
   match json with
   | .str value =>
@@ -67,7 +71,7 @@ private def parseCanonicalString (token : String) : Option String := do
         none
   | _ => none
 
-private def parseVariableCall
+def parseVariableCall
     (constructor : String → SimpleBooleanExpression)
     (name source : String) : Option SimpleBooleanExpression := do
   let identifier ← callBody name source

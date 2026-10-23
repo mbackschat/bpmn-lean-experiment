@@ -1,9 +1,13 @@
+module
+
 /-! # Variable mapping declarations
 
 A mapping target and its source expression, shared by Activity and scope parameters and by Call
 `camunda:in`/`camunda:out` copies. Owning them below the Call data contract lets a Call interface
 carry mappings without the checked-definition contract importing anything above it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

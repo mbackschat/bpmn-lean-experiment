@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
 
 /-! # Parallel Multi-Instance outer controller
 
@@ -13,6 +15,8 @@ stored counter that can drift from the partition.
 Scope boundary: controller representation and derived projections. It defines no transition,
 evaluator, runtime-state field, admission rule, or public observation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
