@@ -76,17 +76,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); Stage A's checkpoint was accepted at `f6933b64`. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
+Current task: closure of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md), batch 2 of the [batch order](#scheduled-delivery-batches). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: Stage B's Lean lift, with its kernel and closed-world edits batched into one complete rebuild at its start ([migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order): step 3 follows Stage B).
+Deliverable: the family closure of both stages, landed on `main`; then [migration step 3](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order).
 
-Acceptance blockers: the Lean premise lift across its 21 consumer modules; registration (scenarios, pipeline cases, mutations, corpus row) waits for it, because pipeline cases need Lean–TypeScript agreement.
+Acceptance blockers: green closure lanes (Stage B Temporal witness, CIB oracle with the embedded mapped Calls probe, integration pipeline, hosted complete rebuild) and an approved cold closure review.
 
-Current result: Stage B's TypeScript core and host admission are committed. The [Call fixture pilot](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#call-fixture-pilot-2026-10-23) cut six modules from 425.0 s to 10.9 s. Guards read the module-system syntax. The kernel types are Lean modules with exposed public bodies and public helpers (`2f881290`, hosted complete rebuild green).
+Current result: Stage B's Lean lift is committed (`b96f0139`): Call association, invocation, return and position proofs admit Sub-Process callers, interruption proofs carry the explicit `InterruptionInvocationsRooted` premise, and `CALLN-FRAME-01`'s laws are proved.
 
-Effort budget: 14 hours of root Lean time for the lift, the capsule's bound; the kernel conversion used under one of its eight hours.
+Effort budget: 4 hours for the closure lanes, review corrections and landing. The Lean lift used 4 h 25 min of Stage B's 14-hour bound.
 
-Next action: transcribe Stage B's well-formedness, association and called-root mapping changes into Lean, then lift the proofs.
+Next action: run the closure lanes one at a time, commit registration and evidence, push a branch, then request the cold closure review.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
