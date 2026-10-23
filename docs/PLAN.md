@@ -80,13 +80,13 @@ Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: Stage B built in the family shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), with at most one complete Lean rebuild, at its start.
 
-Acceptance blockers: the owner decision on the independently approved proposal and on piloting its executable-guard option, which changes a gate.
+Acceptance blockers: none for the TypeScript side; the owner (2026-10-23) decides the proposal after a CI thread measurement and a Call-family executable-guard pilot, and Stage B's Lean lift waits for that.
 
-Current result: the proposal's cold review approved with required edits; the corrected proposal limits the goal to one complete rebuild per vocabulary-adding family; three build threads gained only 14%, so the pin stays at one.
+Current result: the proposal's cold review approved after two audits; hosted CI now builds Lean with its own thread pin and brake and reports the peak.
 
 Effort budget: 4 hours wall from 2026-10-23 16:00 for the proposal's correction audit and owner decision, reassessed at the limit; Stage B's budget is set when it opens, and Stage A closed at about 14.5 of its 16 hours.
 
-Next action: after the owner decision, migrate the Lean-source guards to the module syntax, convert the kernel types to modules, then open Stage B in the family shape.
+Next action: run the cache-free hosted measurement of the CI thread pin against the 67–68 min one-thread baseline, then start Stage B's TypeScript side and the Call fixture pilot.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
