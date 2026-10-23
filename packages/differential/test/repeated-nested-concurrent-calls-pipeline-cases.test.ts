@@ -66,10 +66,12 @@ const journeys = new Map<string, Journey>([
       ["CollectBankDetails#1@supplier", "PrepareApproval#1@tax"],
       ["PrepareApproval#1@tax", "PrepareApproval#2@bank"],
       ["Approve#1@bank", "PrepareApproval#1@tax"],
+      // The live Approve activation 1 belongs to the bank instance, so addressing it with the tax instance's or the
+      // caller's identity is refused, although its element and activation match.
+      ["Approve#1@bank", "PrepareApproval#1@tax"],
+      ["Approve#1@bank", "PrepareApproval#1@tax"],
       // The bank instance has returned into its own branch; the tax instance is untouched and the join waits.
       ["PrepareApproval#1@tax"],
-      ["Approve#2@tax"],
-      // Approve activation 1 belongs to the bank instance, so addressing it with the tax identity is refused.
       ["Approve#2@tax"],
       ["AssessRisk#1@risk"],
       // The tax instance has returned, so its Approve activation 2 is stale and refused with Assess risk still open.
@@ -79,7 +81,7 @@ const journeys = new Map<string, Journey>([
       ["Approve#3@final"],
       [],
     ],
-    rejected: [7, 9],
+    rejected: [5, 6, 10],
   }],
 ]);
 
@@ -136,7 +138,7 @@ test("a refused completion leaves the predecessor state unchanged", async () => 
   const contexts = await loadAndCompileCases(repeatedNestedConcurrentCallsPipelineCases);
   const refusals = contexts.flatMap(({ scenario, semanticProcess: program }) =>
     (journeys.get(scenario.id.slice(prefix.length))?.rejected ?? []).map((position) => ({ scenario, program, index: 1 + 2 * position })));
-  assert.equal(refusals.length, 2, "the reverse-order schedule refuses one cross-addressed and one stale completion");
+  assert.equal(refusals.length, 3, "the reverse-order schedule refuses two cross-addressed and one stale completion");
   for (const { scenario, program, index } of refusals) {
     const trace = runScenario(scenario, program).trace;
     assert.deepEqual(stateAt(trace, index + 1), stateAt(trace, index - 1), `${scenario.id} trace[${index}] must not move any observation`);

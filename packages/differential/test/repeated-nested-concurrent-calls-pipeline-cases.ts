@@ -74,7 +74,7 @@ const cases = {
     inject: retireFirstInvokedInstance,
     expected: {
       kind: DisagreementKind.ObservationValue,
-      path: "trace[12].openUserTasks.length",
+      path: "trace[16].openUserTasks.length",
       expected: 1,
       actual: 0,
     },

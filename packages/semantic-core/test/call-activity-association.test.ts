@@ -158,7 +158,7 @@ test("rejects malformed call records and called roots", () => {
   }
 });
 
-test("binds a call record caller to the exact hosting root occurrence", () => {
+test("binds a call record caller to a parentless Process root occurrence, never a child scope", () => {
   const { activeWait, beforeReturn, hostingRoot, record, returnOperation } =
     returnReadyContext();
   const childCaller = {

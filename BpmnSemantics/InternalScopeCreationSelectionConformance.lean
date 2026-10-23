@@ -108,6 +108,9 @@ private def mixedOwners : RuntimeState :=
 private def foreignInput : RuntimeState :=
   { before with tokens := [{ placeId := ⟨"input"⟩, owner := foreignOwner }] }
 
+/-- "Nonhosting" names an owner in an instance that is neither the hosting instance nor a live called one: no call
+record reaches `foreign`. A caller in a live called instance is admitted since repeated, nested and concurrent Calls,
+so this refusal witnesses unreachability, not a hosting-only caller. -/
 theorem creation_refuses_ambiguous_or_nonhosting_input_ownership :
     selectInternalScopeCreation? mixedOwners childOperation = none ∧
       selectInternalScopeCreation? mixedOwners callOperation = none ∧

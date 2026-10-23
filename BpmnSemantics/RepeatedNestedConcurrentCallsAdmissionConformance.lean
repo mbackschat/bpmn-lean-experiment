@@ -54,8 +54,13 @@ theorem serial_calls_of_a_call_bearing_definition_are_admitted :
 
 theorem call_cycle_is_refused : NestedScopeControl.checkedAnalysis callCycle = none := by decide +kernel
 
-/-- The depth-three admission variant invokes from the second-level called root. -/
-theorem call_chain_of_depth_three_is_admitted : analyses callCycleControl = (some 6, some 6) := by
+/-- The Program analysis refuses the lowered cycle on its own: acyclicity orders a Call by its invocation-to-return
+summary edge, so the invocation cycle is refused by the profile analysis, not by structural well-formedness. -/
+theorem call_cycle_program_is_refused :
+    NestedScopeControl.programAnalysis (lowerCheckedProcess callCycle) = none := by decide +kernel
+
+/-- The cycle's control ends the chain at Call depth two. -/
+theorem call_chain_of_depth_two_is_admitted : analyses callCycleControl = (some 6, some 6) := by
   decide +kernel
 
 theorem call_depth_four_is_refused : NestedScopeControl.checkedAnalysis depthFour = none := by decide +kernel

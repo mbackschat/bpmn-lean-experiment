@@ -188,3 +188,47 @@ test("CALLN-INVOKE-01 refuses a second live record of one Call element, the reco
   };
   assert.equal(applyInternalOperation(program, invoke, crafted), null);
 });
+
+test("CALLN-NEST-01 state validity keeps a live nested record and refuses one whose caller is orphaned or returned", async () => {
+  const [program, live] = await bothApprovalsLive();
+  let state = live;
+  for (const stimulus of [complete(tax, "PrepareApproval", 1), complete(tax, "Approve", 1),
+    complete(bank, "PrepareApproval", 2), complete(bank, "Approve", 2), complete(risk, "AssessRisk", 1)]) {
+    state = commit(program, state, stimulus);
+  }
+  const nested = state.calledProcessOccurrences.find(({ calledRoot }) => calledRoot.processInstanceId === compliance);
+  assert.ok(nested !== undefined && nested.caller.processInstanceId === risk);
+  assert.equal(isWellFormedRuntimeState(program, instanceId, state), true);
+  // The risk review's own record is gone, so the nested caller is a parentless root no Call record reaches.
+  const orphaned: RuntimeState = { ...state, calledProcessOccurrences: state.calledProcessOccurrences
+    .filter(({ calledRoot }) => calledRoot.processInstanceId !== risk) };
+  assert.equal(isWellFormedRuntimeState(program, instanceId, orphaned), false);
+  // The tax approval instance has returned, so a record naming its root as caller has no live caller occurrence.
+  const returned: RuntimeState = { ...state, calledProcessOccurrences: state.calledProcessOccurrences.map((record) =>
+    record === nested
+      ? { ...record, caller: { processInstanceId: tax, definitionScopeId: "scope:Process_FourEyesApproval", activation: 1 } }
+      : record) };
+  assert.equal(isWellFormedRuntimeState(program, instanceId, returned), false);
+});
+
+test("CALLN-INVOKE-01 invokes from a second-level called root at depth three and returns through every level", async () => {
+  const chain = await program(new TextEncoder().encode(forest({
+    P0: serial("T", "P1"), P1: serial("T", "P2"), P2: serial("T", "P3"), P3: serial("T"),
+  })));
+  const first = deriveCalledProcessInstanceId(instanceId, "P0_V1", 1);
+  const second = deriveCalledProcessInstanceId(first, "P1_V1", 1);
+  const third = deriveCalledProcessInstanceId(second, "P2_V1", 1);
+  const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "P0", instanceId, initialVariables: [] };
+  let state = commit(chain, initialState, start);
+  const completeOnly = (owner: string): Stimulus => {
+    assert.deepEqual(state.userTaskWaits.map(({ id }) => id.processInstanceId), [owner]);
+    return { kind: StimulusKind.CompleteUserTaskInstance, commandId: `complete-${owner}`, taskId: state.userTaskWaits[0]!.id,
+      submittedValues: [] };
+  };
+  for (const owner of [instanceId, first, second]) state = commit(chain, state, completeOnly(owner));
+  assert.deepEqual(state.calledProcessOccurrences.map(({ caller, calledRoot }) =>
+    [caller.processInstanceId, calledRoot.processInstanceId]), [[instanceId, first], [first, second], [second, third]]);
+  state = commit(chain, state, completeOnly(third));
+  assert.equal(state.control.kind, ControlStateKind.Completed);
+  assert.deepEqual(state.calledProcessOccurrences, []);
+});

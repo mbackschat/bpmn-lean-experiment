@@ -80,13 +80,13 @@ Current task: Stage A of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: Stage A through its semantic checkpoint. Process-root callers (repeated, nested and concurrent Calls) are admitted in the `SCOPE` profile with Lean/core agreement on the supplier model and the hosted refinement witness.
 
-Acceptance blockers: the hosted witness, the pipeline run and the checkpoint review.
+Acceptance blockers: the pipeline rerun after the corrected reverse journey and the correction audit.
 
-Current result: source admission, the core and Lean admit the supplier forest; Lean and the core agree on its refusals, journeys and non-laws under the 3 GiB fixture ceiling. Scenarios, pipeline cases, the corpus row, About text, the `CIB-EXT-0021` amendment and a 256-byte Start identity bound are in place.
+Current result: the hosted witness and the complete pipeline passed at `0db7e397`; the checkpoint cold review approved with required edits. The corrections add cross-addressed refusals, a depth-three journey, nested-record validity and a Program-level cycle refusal, and align the capsule; the owner accepted naming `CIB-EXT-0021` through the README and scenario provenance, now guarded.
 
-Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 through the Stage A checkpoint, reassessed at the limit; about 3.5 hours wall used by 04:40.
+Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 through the Stage A checkpoint, reassessed at the limit; about 4 hours wall used by 05:15.
 
-Next action: run the hosted recovery witness, then the complete pipeline once, then the Stage A checkpoint cold review. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: commit the corrections after the pipeline rerun, then send them to the same reviewer. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 

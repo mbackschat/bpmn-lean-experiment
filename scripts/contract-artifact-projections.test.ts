@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   compareCanonicalStrings,
   readAndVerifyArtifactSets,
+  readAndVerifyNormativeArtifactSets,
   verifyArtifactSet,
   verifyDefinitionArtifacts,
 } from "./contract-artifacts.ts";
@@ -657,5 +658,42 @@ test("binds repeated Sub-Process relationships to the live register", async () =
       [...artifact.registeredRelationshipIds].filter(id => id !== relationship),
     ) };
     assert.throws(() => verifyArtifactSet(withoutRelationship), /profile references unknown CIB-BPMN relationship/);
+  }
+});
+
+/**
+ * A scenario's provenance may name a relationship its profile artifact omits only through a recorded substitution:
+ * the `SCOPE` artifact's digest is pinned by the immutable cyclic preservation baseline, so the owner accepted naming
+ * `CIB-EXT-0021` in the profile README and the Call scenarios instead (repeated, nested and concurrent Calls proposal,
+ * Versioning consequences). The entry also requires the artifact to still omit it, so a re-pin retires the entry.
+ */
+const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relationship: string; boundary: string }>> = [
+  { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-EXT-0021",
+    boundary: "Under the embedded completion profile only the key clause applies" },
+];
+
+test("binds every scenario CIB relationship to its profile artifact or a recorded substitution", async () => {
+  const [cib, normative, register] = await Promise.all([
+    readAndVerifyArtifactSets(projectRoot), readAndVerifyNormativeArtifactSets(projectRoot),
+    readFile(new URL("docs/CIB-BPMN-RELATION-REGISTER.md", `file://${projectRoot}`), "utf8"),
+  ]);
+  const substituted = new Set<string>();
+  for (const { scenario, profile, registeredRelationshipIds } of [...cib, ...normative]) {
+    for (const relationship of scenario.provenance.cibRefs) {
+      if (!/^CIB-[A-Z]+-[0-9]{4}$/u.test(relationship)) continue;
+      assert.ok(registeredRelationshipIds.has(relationship), `${scenario.id} names unregistered ${relationship}`);
+      if (profile.bpmn.relationships.includes(relationship)) continue;
+      const substitution = relationshipSubstitutions.find(entry =>
+        entry.profile === scenario.profile && entry.relationship === relationship);
+      assert.ok(substitution !== undefined, `${scenario.id} names ${relationship}, absent from ${scenario.profile}`);
+      substituted.add(`${substitution.profile} ${relationship}`);
+    }
+  }
+  for (const { profile, relationship, boundary } of relationshipSubstitutions) {
+    assert.ok(substituted.has(`${profile} ${relationship}`), `unused substitution ${relationship}`);
+    const entry = new RegExp(`^### ${relationship}\\b[\\s\\S]*?^\\*\\*Boundary:\\*\\*(.*)$`, "mu").exec(register);
+    assert.ok(entry?.[1]?.includes(boundary), `${relationship} Boundary does not name ${profile}`);
+    const readme = await readFile(new URL(`profiles/${profile}/README.md`, `file://${projectRoot}`), "utf8");
+    assert.ok(readme.includes(`\`${relationship}\``), `${profile} README does not name ${relationship}`);
   }
 });
