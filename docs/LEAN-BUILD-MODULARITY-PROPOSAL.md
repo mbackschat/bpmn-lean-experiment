@@ -13,7 +13,7 @@ The owner directed on 2026-10-23 that ordinary work must never need a complete L
   - Of the 616 edits to modules with more than 200 transitive dependents, 55% added lines beginning with `|` (`match` arms or proof case alternatives) and 33% edited existing bodies.
   - Only 8 were pure profile-identity edits.
   - A heuristic name-reference scan finds no large set of unused imports.
-- **Family-enumerating kernel types.** `SemanticOperation`, `Program`, `CheckedProcess`, `RuntimeState` and the value contract carry per-family constructors and fields. Over the same period, 18 commits across about 12 families touched `SemanticProcessContract`, `CheckedProcessContract`, `RuntimeState` or `Data`, 3 of them since 2026-10-13.
+- **Family-enumerating kernel types.** `SemanticOperation`, `Program`, `CheckedProcess`, `RuntimeState` and the value contract carry per-family constructors and fields. Over the same period, 18 commits touched `SemanticProcessContract`, `CheckedProcessContract`, `RuntimeState` or `Data`. Four were on or after 2026-10-13, and one of those four is a lemma-renaming refactor.
 - **Fixtures over shared definitions.** Kernel-decided fixtures reduce those shared definitions, so a hub edit rebuilds them, and they dominate wall time ([inventory](#fixture-inventory)).
 
 More build threads do not compensate. In one run on 2026-10-23, eight conformance modules took 8:45 at one thread (container limit 1 CPU, 3 GiB) and 7:31 at three (3 CPUs, 10 GiB). Individual modules took 0.69 to 5.1 times as long.
@@ -39,7 +39,7 @@ Method: a static scan on 2026-10-23 of decided theorems outside `BpmnSemantics/E
 Findings:
 
 - About 80% of decided theorems are standalone checks: the theorem is the claim, and no proof consumes it.
-- Placement matters more than class. 1,028 decided theorems name a definition owned by one of the 170 modules with more than 500 transitive dependents. Their 173 modules carry 48.8 of the 54.9 measured fixture minutes.
+- 1,028 decided theorems name a definition owned by one of the 170 modules with more than 500 transitive dependents, and their 173 modules carry 48.8 of the 54.9 measured fixture minutes. This is an upper bound on future global fixtures, because the set includes kernel types such as `Program` and `RuntimeState`, which family-local fixtures also name.
 - Of the 102 decided theorems carrying a rule ID (all classes), 89 share it with a TypeScript test. This shows shared rule coverage, not duplicated assertions.
 - Only 37 of 161 conformance modules have a name-matched differential test family, so most whole-model witnesses have no name-matched Lean–TypeScript differential cross-check.
 
@@ -58,13 +58,13 @@ Required:
 3. **Kernel and families.**
    - The kernel owns the shared types and the generic composition laws.
    - Each family owns its step, admission, descriptor, proofs, and the fixtures that reduce only its own functions.
-   - The closed-world functions are named and stay above the families: program structural well-formedness, runtime-state well-formedness, scope cancellation, publication projection, the global dispatch and the profile registry. Their bodies are hidden, consumers reason through characterization lemmas in bridge modules, and adding a family arm is a body-only edit.
-   - The bridges and fixtures that reduce a closed-world function rebuild whenever it changes.
-4. **Kernel types change at most once per family.** Changes to checked source, IL, value domain and runtime-state types are batched at family start. That one change is a complete rebuild, and may run in hosted CI. Per-family extension points in these types would remove it, but they change the IL and runtime representation and are excluded here.
+   - The closed-world functions are named and stay above the families: program structural well-formedness, runtime-state well-formedness, scope cancellation, publication projection, the global dispatch and the profile registry. Their bodies are hidden, and consumers reason through characterization lemmas in bridge modules. Adding a family arm is expected to be a body-only edit, provided the private import of the new family leaves the public interface unchanged; the first converted family verifies this.
+   - The bridges, the proved-lane theorems over closed-world functions (such as cancellation and well-formedness preservation) and the fixtures that reduce a closed-world function rebuild whenever it changes.
+4. **Kernel types change at most once per family.** Changes to checked source, IL, value domain and runtime-state types are batched at family start and recorded in the family proposal. That one change is a complete rebuild, and may run in hosted CI. Per-family extension points in these types would remove it, but they change the IL and runtime representation and are excluded here.
 5. **Fixture placement.** A fixture that reduces only family-owned functions imports only the kernel and its family. A fixture that reduces a closed-world function is global. A multi-family whole-model fixture may instead reduce a closed-world function instantiated with only the families its model uses, if a generic lemma states that this agrees with the full registry. That design is unverified on the real code and is settled in the first converted family.
 6. **Fanout ratchet.**
    - A fast static guard follows `public import` edges and cuts at private imports, so it gives an upper bound.
-   - For every module outside a declared kernel and registry list, the transitive public importers stay within a recorded bound.
+   - For every module outside a declared kernel and registry list, the transitive public importers stay within a recorded bound. The list changes only by reviewed edit, like the source-hygiene exceptions.
    - The guard measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
 
 Optional:

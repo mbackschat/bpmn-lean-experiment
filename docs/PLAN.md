@@ -86,7 +86,7 @@ Current result: the proposal's cold review approved with required edits; the cor
 
 Effort budget: 4 hours wall from 2026-10-23 16:00 for the proposal's correction audit and owner decision, reassessed at the limit; Stage B's budget is set when it opens, and Stage A closed at about 14.5 of its 16 hours.
 
-Next action: run the proposal's cold review; on approval convert the kernel types to modules and open Stage B in the extension shape.
+Next action: after the correction audit and the owner decision, migrate the Lean-source guards to the module syntax, convert the kernel types to modules, then open Stage B in the family shape.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
