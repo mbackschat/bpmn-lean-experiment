@@ -125,10 +125,13 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
   assert.notEqual(mappedCallRowStart, -1);
   const mappedCallRow = html.slice(mappedCallRowStart, html.indexOf("</tr>", mappedCallRowStart));
   for (const disclosed of [
-    "root serial path to an in-document Process of one to three serial User Tasks",
+    "up to two Calls of one in-document Process of one to three serial User Tasks",
+    "on the serial path of an embedded Sub-Process body at depth one or two",
     "an absent source becoming a present null",
-    "called tasks read and write only the copied names and never reach caller data",
-    "a Call inside a Sub-Process, more than one Call",
+    "copied names and never reach caller data",
+    "a target that an enclosing Sub-Process declares lands in that Sub-Process",
+    "a second Call of the same Process gets its own called instance and task activations",
+    "a third Call, nested Calls, Calls on concurrent branches",
     "a hosted Start whose copied values cannot fit the capacity envelope is refused",
   ]) assert.ok(mappedCallRow.includes(disclosed), `Call variable mapping row must disclose: ${disclosed}`);
   const parallelGatewayRowStart = html.indexOf('data-capability-id="parallelGateway"');
