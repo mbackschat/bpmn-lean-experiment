@@ -80,13 +80,13 @@ Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: Stage B built in the family shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), with at most one complete Lean rebuild, at its start.
 
-Acceptance blockers: the correction audit of the proposal's cold review, then the owner decision.
+Acceptance blockers: the owner decision on the independently approved proposal and on piloting its executable-guard option, which changes a gate.
 
 Current result: the proposal's cold review approved with required edits; the corrected proposal limits the goal to one complete rebuild per vocabulary-adding family; three build threads gained only 14%, so the pin stays at one.
 
 Effort budget: 4 hours wall from 2026-10-23 16:00 for the proposal's correction audit and owner decision, reassessed at the limit; Stage B's budget is set when it opens, and Stage A closed at about 14.5 of its 16 hours.
 
-Next action: after the correction audit and the owner decision, migrate the Lean-source guards to the module syntax, convert the kernel types to modules, then open Stage B in the family shape.
+Next action: after the owner decision, migrate the Lean-source guards to the module syntax, convert the kernel types to modules, then open Stage B in the family shape.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
