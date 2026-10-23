@@ -14,7 +14,7 @@ import { join, relative, resolve } from "node:path";
 import { readWorktreeSource, readWorktreeSources } from "./worktree-source-read.ts";
 import test from "node:test";
 
-import { analyzeLeanSource } from "./lean-source-analysis.ts";
+import { analyzeLeanSource, leanHeader } from "./lean-source-analysis.ts";
 import {
   hardCeiling,
   headroomReportLines,
@@ -83,13 +83,11 @@ function javaScriptModules(files: ReadonlyArray<string>): string[] {
 }
 
 function assessLeanUmbrella(path: string, source: string): string | null {
-  const executableLines = analyzeLeanSource(source).code
+  const invalidLine = analyzeLeanSource(source).code
+    .slice(leanHeader(source).endOffset)
     .split(/\r?\n/u)
     .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  const invalidLine = executableLines.find(
-    (line) => !/^import [A-Za-z0-9_.]+$/u.test(line),
-  );
+    .find((line) => line.length > 0);
   return invalidLine === undefined
     ? null
     : `${path}: import-only umbrella contains ${JSON.stringify(invalidLine)}`;
@@ -277,6 +275,10 @@ test("Lean umbrellas reject executable declarations", () => {
       "import Example.Core\n\ndef hiddenDefinition := 1\n",
     ),
     'Umbrella.lean: import-only umbrella contains "def hiddenDefinition := 1"',
+  );
+  assert.equal(
+    assessLeanUmbrella("Umbrella.lean", "module\n\npublic import Example.Core\nimport all Example.Laws\n"),
+    null,
   );
 });
 

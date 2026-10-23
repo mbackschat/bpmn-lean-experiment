@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
-import { leanCodeWithoutComments } from "./lean-source-analysis.ts";
+import { leanCodeWithoutComments, leanHeader } from "./lean-source-analysis.ts";
 
 type ChecksModule = Readonly<{ path: string; source: string }>;
 
@@ -52,8 +52,8 @@ test("every executable check is listed once and every list runs in its driver", 
   assert.ok(drivers.length > 0, "no executable checks driver was discovered");
   for (const driverPath of drivers) {
     const driver = { path: driverPath, source: readFileSync(driverPath, "utf8") };
-    const modules = [...leanCodeWithoutComments(driver.source).matchAll(/^import (BpmnSemantics\.\S+)$/gmu)]
-      .map((match) => `${match[1]!.replaceAll(".", "/")}.lean`)
+    const modules = leanHeader(driver.source).imports.filter(({ module }) => module.startsWith("BpmnSemantics."))
+      .map(({ module }) => `${module.replaceAll(".", "/")}.lean`)
       .map((path) => ({ path, source: readFileSync(path, "utf8") }));
     assert.deepEqual(executableCheckFindings(driver, modules), [], driverPath);
   }

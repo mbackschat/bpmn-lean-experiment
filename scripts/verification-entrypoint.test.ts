@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
+import { leanHeader } from "./lean-source-analysis.ts";
 import { defaultWarmBudgetMs } from "./pipeline-budget.ts";
 
 const verifyScriptPath = fileURLToPath(
@@ -201,6 +202,12 @@ async function readNonemptyLines(path: string): Promise<readonly string[]> {
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+}
+
+/** Asserts that the Lean file at `path` imports `module` exactly once, in any header form. */
+async function assertImportsOnce(path: string, module: string): Promise<void> {
+  const imports = leanHeader(await readFile(path, "utf8")).imports;
+  assert.equal(imports.filter((candidate) => candidate.module === module).length, 1, `${path} imports ${module}`);
 }
 
 async function assertLineOccursOnce(
@@ -584,21 +591,12 @@ test("Lean checks interpret their own witnesses and build package drivers native
 });
 
 test("the checked-source proof target imports both Stage 3a frontier modules", async () => {
-  await assertLineOccursOnce(
-    checkedSourceRelationMainPath,
-    "import BpmnSemantics.Experiments.CheckedSourceFrontier",
-  );
-  await assertLineOccursOnce(
-    checkedSourceRelationMainPath,
-    "import BpmnSemantics.Experiments.CheckedSourceFrontierConformance",
-  );
+  await assertImportsOnce(checkedSourceRelationMainPath, "BpmnSemantics.Experiments.CheckedSourceFrontier");
+  await assertImportsOnce(checkedSourceRelationMainPath, "BpmnSemantics.Experiments.CheckedSourceFrontierConformance");
 });
 
 test("frontier conformance imports the Stage 3b parallel-frontier module", async () => {
-  await assertLineOccursOnce(
-    checkedSourceFrontierConformancePath,
-    "import BpmnSemantics.Experiments.CheckedSourceParallelFrontier",
-  );
+  await assertImportsOnce(checkedSourceFrontierConformancePath, "BpmnSemantics.Experiments.CheckedSourceParallelFrontier");
 });
 
 /**

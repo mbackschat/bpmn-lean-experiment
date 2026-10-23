@@ -17,6 +17,7 @@ import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   analyzeLeanSource,
   inlineWaitIdentityLookups,
+  leanHeader,
   leanSelfComparisons,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
@@ -35,42 +36,16 @@ export type SourceViolation = Readonly<{
   message: string;
 }>;
 
-function lineStartOffsets(source: string): number[] {
-  const offsets = [0];
-  for (let index = 0; index < source.length; index += 1) {
-    if (source[index] === "\n") {
-      offsets.push(index + 1);
-    }
-  }
-  return offsets;
-}
-
 function moduleContractViolation(
   sourcePath: string,
   source: string,
 ): SourceViolation | null {
   const analysis = analyzeLeanSource(source);
-  const lines = analysis.code.split(/\r?\n/u);
-  const offsets = lineStartOffsets(source);
-  let importPreludeEnd = 0;
-  let firstDeclarationOffset = source.length;
-
-  for (const [lineIndex, line] of lines.entries()) {
-    const lineOffset = offsets[lineIndex];
-    if (lineOffset === undefined) {
-      throw new RangeError("Lean source line offset is missing");
-    }
-    const trimmed = line.trim();
-    if (trimmed.length === 0) {
-      continue;
-    }
-    if (/^import\s+[A-Za-z0-9_.]+\s*$/u.test(trimmed)) {
-      importPreludeEnd = lineOffset + line.length;
-      continue;
-    }
-    firstDeclarationOffset = lineOffset;
-    break;
-  }
+  const importPreludeEnd = leanHeader(source).endOffset;
+  const firstCode = /\S/u.exec(analysis.code.slice(importPreludeEnd));
+  const firstDeclarationOffset = firstCode === null
+    ? source.length
+    : source.lastIndexOf("\n", importPreludeEnd + firstCode.index) + 1;
 
   const moduleDocument = analysis.moduleDocuments[0];
   if (moduleDocument === undefined) {
@@ -343,6 +318,20 @@ test("module contracts accept declarations and import-only umbrellas", () => {
       "import Example.Core\nimport Example.Laws\n\n/-! Public imports. -/\n",
     ),
     null,
+  );
+  assert.equal(
+    moduleContractViolation(
+      "Module.lean",
+      "module\n\npublic import Example.Core\nimport all Example.Laws\n\n/-! Contract. -/\n\npublic section\ndef value := 1\n",
+    ),
+    null,
+  );
+  assert.equal(
+    moduleContractViolation(
+      "Module.lean",
+      "module\n/-! Before imports. -/\npublic import Example.Core\n\ndef value := 1\n",
+    )?.message,
+    "module document must follow imports and precede the first declaration",
   );
 });
 

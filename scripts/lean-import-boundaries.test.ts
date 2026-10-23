@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   analyzeLeanSource,
+  leanHeader,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
 
@@ -112,13 +113,9 @@ export function broadSemanticProcessImports(
   ) {
     return [];
   }
-  return analyzeLeanSource(source).code
-    .split(/\r?\n/u)
-    .flatMap((line, index) =>
-      /^\s*import\s+BpmnSemantics\.SemanticProcess\s*$/u.test(line)
-        ? [`${normalizedPath}:${index + 1}`]
-        : [],
-    );
+  return leanHeader(source).imports
+    .filter(({ module }) => module === "BpmnSemantics.SemanticProcess")
+    .map(({ line }) => `${normalizedPath}:${line}`);
 }
 
 function moduleName(sourcePath: string): string {
@@ -126,7 +123,7 @@ function moduleName(sourcePath: string): string {
 }
 
 function importedModules(code: string): readonly string[] {
-  return [...code.matchAll(/^\s*import\s+([A-Za-z0-9_.]+)\s*$/gmu)].map(match => match[1]!);
+  return leanHeader(code).imports.map(({ module }) => module);
 }
 
 export function maintainedExecutableRoots(lakefile: string): readonly string[] {
@@ -424,7 +421,7 @@ test("the assurance import guard reaches initialization and differently named th
   assert.deepEqual(
     libraryRootAssignmentFindings(sources.map((source) =>
       source.path === "BpmnSemantics/Suite.lean"
-        ? { ...source, source: `${source.source}import BpmnSemantics.Initialization\nimport BpmnSemantics.Preservation\n` }
+        ? { ...source, source: `import BpmnSemantics.Initialization\nimport BpmnSemantics.Preservation\n${source.source}` }
         : source,
     )),
     [],

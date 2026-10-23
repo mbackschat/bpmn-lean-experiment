@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
+import { leanHeader } from "./lean-source-analysis.ts";
+
 const legacyTarget = "02330ad0f980a5fc282cc0aa93600a9632b86c3e";
 const legacyManifestPath = "adoption/a12/legacy/manifest.json";
 const legacyInventoryPath =
@@ -276,11 +278,7 @@ function baselineDependencies(
       }
     }
   } else if (relativePath.endsWith(".lean")) {
-    for (const match of source.matchAll(/^import\s+([A-Za-z0-9_.]+)$/gmu)) {
-      const moduleName = match[1];
-      if (moduleName === undefined) {
-        continue;
-      }
+    for (const { module: moduleName } of leanHeader(source).imports) {
       const candidate = `${moduleName.replaceAll(".", "/")}.lean`;
       if (baselinePaths.has(candidate)) {
         dependencies.add(candidate);

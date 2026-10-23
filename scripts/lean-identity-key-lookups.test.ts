@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { inlineWaitIdentityLookups } from "./lean-source-analysis.ts";
+import { inlineWaitIdentityLookups, leanHeader } from "./lean-source-analysis.ts";
 
 const scan = (source: string) => inlineWaitIdentityLookups("Fixture.lean", source);
 
@@ -40,7 +40,7 @@ test("named matchers and different owner, definition, or partial keys remain dis
 test("both JSON runners consume the same observation encoder", () => {
   for (const runner of ["SemanticProcessJsonMain", "EnginePopulationScenarioJsonMain"]) {
     const source = readFileSync(`BpmnSemantics/${runner}.lean`, "utf8");
-    assert.match(source, /^import BpmnSemantics\.SemanticProcessJson\.Observation$/mu);
+    assert.ok(leanHeader(source).imports.some(({ module }) => module === "BpmnSemantics.SemanticProcessJson.Observation"));
     assert.doesNotMatch(source, /^(?:private\s+)?def\s+(?:stateObservationJson|processStatusJson|waitKindJson|enabledInteractionJson)\b/mu);
   }
 });

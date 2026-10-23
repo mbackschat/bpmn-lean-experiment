@@ -153,6 +153,13 @@ export function leanDriverEntryModules(
 }
 
 /**
+ * A string literal that opens a Lean header in any form of the pinned grammar (see `leanHeader`), its
+ * words separated by whitespace or an escaped newline as TypeScript source writes one.
+ */
+const generatedLeanHeader =
+  /["'`](?:module(?:\s|\\n)+)?(?:prelude(?:\s|\\n)+)?(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?BpmnSemantics\./u;
+
+/**
  * Names package sources that embed Lean source text.
  *
  * A Lean program written to a temporary file at test time has no `[[lean_exe]]`, so it could only run
@@ -163,7 +170,7 @@ export function generatedLeanSourceFindings(
 ): ReadonlyArray<string> {
   return surfaces
     .filter(({ relativePath, source }) =>
-      relativePath.startsWith("packages/") && /["'`]import BpmnSemantics\./u.test(source))
+      relativePath.startsWith("packages/") && generatedLeanHeader.test(source))
     .map(({ relativePath }) => relativePath);
 }
 

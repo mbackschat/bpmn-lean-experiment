@@ -197,9 +197,10 @@ test("package tests run tracked Lean drivers rather than generating Lean source"
   assert.deepEqual(
     generatedLeanSourceFindings([
       { relativePath: "packages/example/test/targets.ts", source: "await writeFile(driver, `import BpmnSemantics.Example\ndef main : IO Unit := pure ()`);" },
+      { relativePath: "packages/example/test/module.ts", source: "const header = 'module\\npublic import all BpmnSemantics.Example';" },
       { relativePath: "scripts/example.test.ts", source: "const fixture = `import BpmnSemantics.Example`;" },
     ]),
-    ["packages/example/test/targets.ts"],
+    ["packages/example/test/targets.ts", "packages/example/test/module.ts"],
   );
 });
 

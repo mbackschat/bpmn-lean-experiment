@@ -194,6 +194,77 @@ export function leanCodeWithoutComments(source: string): string {
   return kept.join("").split("\n").map((line) => line.trimEnd()).filter((line) => line.length > 0).join("\n");
 }
 
+/** One import of a Lean header, with the module-system modifiers that decide its visibility. */
+export type LeanImport = Readonly<{
+  module: string;
+  line: number;
+  isPublic: boolean;
+  isMeta: boolean;
+  importsAll: boolean;
+}>;
+
+export type LeanHeader = Readonly<{
+  isModule: boolean;
+  imports: ReadonlyArray<LeanImport>;
+  /** Offset just past the header's last token, or 0 for an empty header. */
+  endOffset: number;
+}>;
+
+const leanModuleName = /^[\p{L}_][\p{L}\p{N}_']*(?:\.[\p{L}_][\p{L}\p{N}_']*)*$/u;
+const leanHeaderKeywords = new Set(["module", "prelude", "public", "meta", "import", "all"]);
+const lateHeaderForm = /^[ \t]*(?:(?:public|meta)\s+)*import\b|^[ \t]*(?:module|prelude)[ \t]*$/mu;
+
+/**
+ * The header of a Lean file under the pinned toolchain's grammar (Lean v4.34.1,
+ * `src/lean/Lean/Parser/Module/Syntax.lean`): an optional `module`, an optional `prelude`, then
+ * `[public] [meta] import [all] <ident>` imports.
+ *
+ * Every guard that reads imports goes through this parser, so the module system's forms cannot hide a
+ * build edge from one of them. Anything that looks like a header form but falls outside the grammar
+ * throws a `SyntaxError` instead of being skipped: a quoted or missing module name, a modifier after
+ * `import`, trailing tokens on an import line, or an import, `module` or `prelude` after the header.
+ */
+export function leanHeader(source: string): LeanHeader {
+  const code = analyzeLeanSource(source).code;
+  const tokens = [...code.matchAll(/\S+/gu)].map((match) => ({ text: match[0], offset: match.index }));
+  const lineOf = (offset: number) => code.slice(0, offset).split("\n").length;
+  let index = 0;
+  const accept = (word: string): boolean => {
+    if (tokens[index]?.text !== word) return false;
+    index += 1;
+    return true;
+  };
+  const isModule = accept("module");
+  accept("prelude");
+  let endOffset = index === 0 ? 0 : tokens[index - 1]!.offset + tokens[index - 1]!.text.length;
+  const imports: LeanImport[] = [];
+  for (;;) {
+    const start = index;
+    const isPublic = accept("public");
+    const isMeta = accept("meta");
+    if (!accept("import")) {
+      index = start;
+      break;
+    }
+    const line = lineOf(tokens[start]!.offset);
+    const importsAll = accept("all");
+    const name = tokens[index];
+    const nameEnd = name === undefined ? code.length : name.offset + name.text.length;
+    if (name === undefined || !leanModuleName.test(name.text) || leanHeaderKeywords.has(name.text) ||
+      !/^[ \t]*(?:\n|$)/u.test(code.slice(nameEnd))) {
+      throw new SyntaxError(`unrecognized Lean import form at line ${line}`);
+    }
+    index += 1;
+    endOffset = nameEnd;
+    imports.push({ module: name.text, line, isPublic, isMeta, importsAll });
+  }
+  const late = lateHeaderForm.exec(code.slice(endOffset));
+  if (late !== null) {
+    throw new SyntaxError(`Lean header form after the header at line ${lineOf(endOffset + late.index)}`);
+  }
+  return { isModule, imports, endOffset };
+}
+
 /** Tracked and non-ignored pending Lean sources that still exist in the worktree. */
 export function worktreeLeanSourceFiles(worktree = "."): string[] {
   return execFileSync(
