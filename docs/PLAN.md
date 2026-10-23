@@ -76,17 +76,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Stage A of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); its proposal was approved on 2026-10-23. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
+Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); Stage A's checkpoint was accepted at `f6933b64`. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: Stage A through its semantic checkpoint. Process-root callers (repeated, nested and concurrent Calls) are admitted in the `SCOPE` profile with Lean/core agreement on the supplier model and the hosted refinement witness.
+Deliverable: Stage B built in the extension shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), so that it needs no complete Lean rebuild.
 
-Acceptance blockers: none; the checkpoint is accepted with the batch's full Lean build green at `f6933b64`.
+Acceptance blockers: the owner decision on that proposal, whose executable checked-lane guards change the fixture evidence gate.
 
-Current result: the checkpoint cold review of `0db7e397` approved with required edits; its audit approved the corrections at `f6933b64`, with the pipeline rerun green, and the owner-accepted `CIB-EXT-0021` substitution is guarded.
+Current result: the proposal records the measured rebuild causes and the verified module-system mechanisms; three build threads gained only 14%, so the pin stays at one.
 
-Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 for Lean batch `calln-stage-a`, one full build at close plus at most one after a correction, reassessed at the limit; about 12.5 hours wall elapsed by 13:45, much of it idle.
+Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 for Lean batch `calln-stage-a`, reassessed at the limit; about 14 hours wall elapsed by 15:15, the build-scaling study included.
 
-Next action: build the conformance root and re-measure the near-cap modules, then open Stage B. The build-thread proposal waits for a semantic-root memory peak from the next full rebuild after a shared change.
+Next action: on approval, implement the executable guard driver and convert the Call fixtures first, then open Stage B.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
