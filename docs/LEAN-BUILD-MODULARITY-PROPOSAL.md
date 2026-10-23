@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: owner-approved
 Review: approved-with-required-edits
 
 ## Problem
@@ -16,7 +16,7 @@ The owner directed on 2026-10-23 that ordinary work must never need a complete L
 - **Family-enumerating kernel types.** `SemanticOperation`, `Program`, `CheckedProcess`, `RuntimeState` and the value contract carry per-family constructors and fields. Over the same period, 18 commits touched `SemanticProcessContract`, `CheckedProcessContract`, `RuntimeState` or `Data`. Four were on or after 2026-10-13, and one of those four is a lemma-renaming refactor.
 - **Fixtures over shared definitions.** Kernel-decided fixtures reduce those shared definitions, so a hub edit rebuilds them, and they dominate wall time ([inventory](#fixture-inventory)).
 
-More build threads do not compensate. In one run on 2026-10-23, eight conformance modules took 8:45 at one thread (container limit 1 CPU, 3 GiB) and 7:31 at three (3 CPUs, 10 GiB). Individual modules took 0.69 to 5.1 times as long.
+More build threads do not compensate. A cache-free hosted run on 2026-10-23 (run 39966178466) built the Lean library in 44 minutes at three threads against 67–68 minutes at one, with an 8.6 GiB process-tree peak: a fixed factor of about 1.5 on a 16 GB runner, which leaves the rebuild set unchanged.
 
 ## Fixture inventory
 
@@ -78,7 +78,7 @@ Excluded:
 - per-family extension points in kernel types;
 - a speculative up-front design of all remaining family semantics;
 - dropping the shared kernel;
-- raising build threads or memory ceilings;
+- raising local build threads or memory ceilings; the hosted CI pin is a separate owner decision of 2026-10-23;
 - weakening any lane shape, claim or gate.
 
 ## Mechanism observations (Lean v4.34.1, 2026-10-23)
@@ -122,4 +122,4 @@ Existing families move when next touched, and profile identity branches become p
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The cold review of `05624114` (baseline `af8828a9`, packet `3b1bf9ed3419574012cf3d79c850381590c41bec006c3997945b68ffe61aee5b`) required eight edits: kernel types that enumerate families, cross-family operations, global whole-model fixtures, the fixture classification, the ratchet measure, guard migration, retained mechanism evidence and the rule-ID claim. The first audit closed them at `c46dcce6` and required the resume point to order guard migration first. The second audit approved `02ff88ba`. The owner decision on adoption is separate.
+The cold review of `05624114` (baseline `af8828a9`, packet `3b1bf9ed3419574012cf3d79c850381590c41bec006c3997945b68ffe61aee5b`) required eight edits: kernel types that enumerate families, cross-family operations, global whole-model fixtures, the fixture classification, the ratchet measure, guard migration, retained mechanism evidence and the rule-ID claim. The first audit closed them at `c46dcce6` and required the resume point to order guard migration first. The second audit approved `02ff88ba`. The owner adopted the proposal on 2026-10-23 after the hosted thread measurement.
