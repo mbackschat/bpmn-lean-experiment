@@ -110,7 +110,7 @@ test("presents versioned BPMN and CIB capability boundaries from the canonical c
     "The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks",
     "a Sub-Process completes exactly when it owns no token, User Task or child scope",
     "continues once at its own parent without touching concurrent work outside it",
-    "a Start or completion closure of more than eight steps is refused before Workflow start",
+    "a Start or completion closure of more than eight steps or a hosting instance identity above 256 UTF-8 bytes is refused before Workflow start",
     "CIB agreement is retained only for the one-level fixture",
     "every arriving branch starts its own concurrent activation of that Sub-Process, which completes alone and continues once",
     "counting such a target and its successors once per branch",
