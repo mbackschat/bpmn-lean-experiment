@@ -64,15 +64,16 @@ export function hasSelectedCallActivityDefinitions(
 }
 
 /**
- * CVM-ADMIT-01's root census: one called root per Call, at most one Call, the caller root naming the checked Process.
- * This census does not decide placement: the nested scope-data analysis refuses a Call inside an embedded Sub-Process
- * (PC-SCOPE-05) and owns the called path.
+ * CVM-ADMIT-01's root census, widened by CALLN-ADMIT-01's Stage B: at most two Calls, all of one called definition,
+ * whose one root sits beside the caller root naming the checked Process. This census does not decide placement: the
+ * nested scope-data analysis bounds the Calls' depth and owns the called path.
  */
 function hasMappedCallRoots(graph: CallActivityCheckedGraph): boolean {
   const roots = graph.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);
   const calls = graph.nodes.filter((node): node is Extract<CheckedNode, { kind: CheckedNodeKind.CallActivity }> =>
     node.kind === CheckedNodeKind.CallActivity);
-  return calls.length <= 1 && roots.length === calls.length + 1 &&
+  const calledProcessIds = new Set(calls.map(({ calledProcessId }) => calledProcessId));
+  return calls.length <= 2 && calledProcessIds.size <= 1 && roots.length === calledProcessIds.size + 1 &&
     roots.filter(({ originElementId }) => originElementId === graph.processId).length === 1 &&
     calls.every((call) => call.data.kind === CallDataKind.VariableMappings && call.calledProcessId !== graph.processId &&
       roots.filter(({ originElementId }) => originElementId === call.calledProcessId).length === 1);

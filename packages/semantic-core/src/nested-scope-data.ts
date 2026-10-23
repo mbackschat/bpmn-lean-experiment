@@ -7,7 +7,9 @@ import { SemanticOperationKind as SemanticOperationKindValue } from "./semantic-
 import type { SemanticOperation, SemanticOperationKind, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { compareScopeOccurrenceIds, sameScopeOccurrence } from "./semantic-process-state.js";
-import type { RuntimeState, ScopedVariables, ScopeOccurrenceId, ScopeVariableScope } from "./semantic-process-state.js";
+import type {
+  CalledProcessOccurrence, RuntimeState, ScopedVariables, ScopeOccurrenceId, ScopeVariableScope,
+} from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { ScopeLocalData, VariableMapping } from "./semantic-value-contract.js";
 import { canonicalNamedValueArrayUtf8ByteLength, cloneVariableBinding } from "./variable-value.js";
@@ -57,13 +59,31 @@ function framesOf(variables: ScopedVariables, instanceId: string, scopeId: strin
 }
 
 /**
- * The Call data of the invocation whose called root is `scopeId`, when that root is a variable-mapping called Process.
- * Its frame is the called instance's Process store (CVM-ISOLATE-01), so resolution ends there instead of at the caller.
+ * Whether `scopeId` is the root of a variable-mapping called Process: some invocation targets it and every one carries
+ * mappings. Its frame is the called instance's Process store (CVM-ISOLATE-01), so resolution ends there instead of at
+ * the caller. Two Calls of one definition may map differently, so this answers only the kind, never the mappings.
  */
-export function calledRootMappings(program: SemanticProcessProgram, scopeId: string): VariableMappingCallData | undefined {
-  if (!nestedScopeDataProgram(program)) return undefined;
+export function mappedCalledRoot(program: SemanticProcessProgram, scopeId: string): boolean {
+  if (!nestedScopeDataProgram(program)) return false;
   const invocations = program.operations.filter(operation =>
     operation.kind === SemanticOperationKindValue.InvokeProcess && operation.calledRootScopeId === scopeId);
+  return invocations.length > 0 && invocations.every(operation =>
+    operation.kind === SemanticOperationKindValue.InvokeProcess && operation.data.kind === CallDataKind.VariableMappings);
+}
+
+/**
+ * The mappings of the Call that created the called root `root`: its one live record names the return operation, which
+ * belongs to exactly one invocation. Selecting by called definition instead would give the second of two Calls of one
+ * definition the first Call's mappings (CALLN-FRAME-01).
+ */
+export function calledRootMappings(program: SemanticProcessProgram, calls: readonly CalledProcessOccurrence[],
+  root: ScopeOccurrenceId): VariableMappingCallData | undefined {
+  if (!nestedScopeDataProgram(program)) return undefined;
+  const records = calls.filter(({ calledRoot }) => sameScopeOccurrence(calledRoot, root));
+  const record = records.length === 1 ? records[0] : undefined;
+  const invocations = record === undefined ? [] : program.operations.filter(operation =>
+    operation.kind === SemanticOperationKindValue.InvokeProcess &&
+    operation.returnOperationId === record.returnOperationId && operation.calledRootScopeId === root.definitionScopeId);
   const data = invocations.length === 1 && invocations[0]!.kind === SemanticOperationKindValue.InvokeProcess
     ? invocations[0]!.data : undefined;
   return data?.kind === CallDataKind.VariableMappings ? data : undefined;
@@ -90,7 +110,7 @@ function resolveOwner(program: SemanticProcessProgram, variables: ScopedVariable
     }
   }
   const last = chain[chain.length - 1];
-  if (last === undefined || calledRootMappings(program, last) === undefined) return { kind: "process" };
+  if (last === undefined || !mappedCalledRoot(program, last)) return { kind: "process" };
   const roots = framesOf(variables, instanceId, last);
   return roots.length === 1 ? { kind: "calledRoot", owner: roots[0]!.owner } : null;
 }
@@ -272,7 +292,7 @@ export function nestedScopeFramesValid(program: SemanticProcessProgram, state: R
   if (!nestedScopeDataProgram(program)) return state.variables.scopes.length === 0;
   const declaredOccurrences = state.scopeOccurrences.filter(({ id }) => nestedScopeRecord(program, id.definitionScopeId));
   const calledRoots = state.scopeOccurrences.filter(({ id, parent }) =>
-    parent === null && calledRootMappings(program, id.definitionScopeId) !== undefined);
+    parent === null && mappedCalledRoot(program, id.definitionScopeId));
   return state.variables.scopes.length === declaredOccurrences.length + calledRoots.length &&
     calledRoots.every(({ id }) => calledRootFrameValid(program, state, id)) &&
     declaredOccurrences.every(({ id }) => {
@@ -292,7 +312,7 @@ export function nestedScopeFramesValid(program: SemanticProcessProgram, state: R
  * input targets ⊆ names ⊆ input targets ∪ output sources, every value in the item domain.
  */
 function calledRootFrameValid(program: SemanticProcessProgram, state: RuntimeState, root: ScopeOccurrenceId): boolean {
-  const data = calledRootMappings(program, root.definitionScopeId);
+  const data = calledRootMappings(program, state.calledProcessOccurrences, root);
   const frames = state.variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, root));
   const frame = frames[0];
   if (data === undefined || frames.length !== 1 || frame === undefined) return false;
@@ -330,13 +350,18 @@ export function completeDeclaredScope(program: SemanticProcessProgram,
  * reservation: NSD-TASK-01's names declared by a frame on the chain, or inside a called instance CVM-TASK-01's
  * called-root names, since that frame grows by output sources the callee has not yet set.
  */
-export function nestedScopeDeclaredNames(program: SemanticProcessProgram, variables: ScopedVariables,
+export function nestedScopeDeclaredNames(program: SemanticProcessProgram, state: RuntimeState,
   owner: ScopeOccurrenceId): ReadonlySet<string> {
   const chain = nestedDefinitionChain(program, owner.definitionScopeId);
-  const called = calledRootMappings(program, chain[chain.length - 1] ?? owner.definitionScopeId);
-  if (called !== undefined) return calledRootPatchNames(called);
+  const last = chain[chain.length - 1] ?? owner.definitionScopeId;
+  if (mappedCalledRoot(program, last)) {
+    const roots = state.scopeOccurrences.filter(({ id, parent }) =>
+      parent === null && id.processInstanceId === owner.processInstanceId && id.definitionScopeId === last);
+    const called = roots.length === 1 ? calledRootMappings(program, state.calledProcessOccurrences, roots[0]!.id) : undefined;
+    return called === undefined ? new Set() : calledRootPatchNames(called);
+  }
   return new Set(chain.flatMap(scopeId =>
-    framesOf(variables, owner.processInstanceId, scopeId).flatMap(frame => frame.bindings.map(({ name }) => name))));
+    framesOf(state.variables, owner.processInstanceId, scopeId).flatMap(frame => frame.bindings.map(({ name }) => name))));
 }
 
 /**
@@ -344,9 +369,9 @@ export function nestedScopeDeclaredNames(program: SemanticProcessProgram, variab
  * `SingletonBusinessItem`, and the canonical JSON of the whole binding array within one value allowance. The name
  * restriction is a profile admission restriction: CIB would create a root binding for an undeclared name.
  */
-export function nestedScopePatchAdmitted(program: SemanticProcessProgram, variables: ScopedVariables,
+export function nestedScopePatchAdmitted(program: SemanticProcessProgram, state: RuntimeState,
   owner: ScopeOccurrenceId, patch: readonly VariableBinding[]): boolean {
-  const declared = nestedScopeDeclaredNames(program, variables, owner);
+  const declared = nestedScopeDeclaredNames(program, state, owner);
   if (!patch.every((binding, index) => index === 0 || compareCanonicalStrings(patch[index - 1]!.name, binding.name) < 0) ||
       !patch.every(binding => declared.has(binding.name) && effectMappingAcceptsValue(itemPolicy, binding.value, true))) {
     return false;

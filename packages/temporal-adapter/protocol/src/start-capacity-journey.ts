@@ -261,14 +261,14 @@ function reservedNestedPatch(
   wait: SemanticUserTaskWait,
   choose: (targets: number) => number,
 ): VariableBinding[] {
-  const names = [...nestedScopeDeclaredNames(program, state.variables, wait.owner)].sort(compareCanonicalStrings);
+  const names = [...nestedScopeDeclaredNames(program, state, wait.owner)].sort(compareCanonicalStrings);
   const name = names[choose(names.length + 1)];
   if (name === undefined) return [];
   const framing = canonicalNamedValueArrayUtf8ByteLength([{ name, value: allowanceValue(0) }]) -
     canonicalValueUtf8ByteLength(allowanceValue(0));
   const patch = [{ name, value: allowanceValue(nestedScopePatchByteLimit - framing) }];
   if (canonicalNamedValueArrayUtf8ByteLength(patch) !== nestedScopePatchByteLimit ||
-      !nestedScopePatchAdmitted(program, state.variables, wait.owner, patch)) {
+      !nestedScopePatchAdmitted(program, state, wait.owner, patch)) {
     throw new TypeError("The reserved nested completion does not fill the admitted patch allowance");
   }
   return patch;

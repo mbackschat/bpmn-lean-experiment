@@ -36,6 +36,9 @@ const VertexKind = {
 } as const;
 /** CVM-ADMIT-01: the called Process is one serial path through one to three User Tasks. */
 const calledTaskLimit = 3;
+/** CALLN-ADMIT-01's Stage B: up to two Calls, each on the root path or at most two Sub-Processes deep. */
+const callLimit = 2;
+const callDepthLimit = 2;
 type VertexKind = typeof VertexKind[keyof typeof VertexKind];
 
 type Vertex = Readonly<{
@@ -95,7 +98,8 @@ function childScopeValid(scopes: readonly DefinitionScope[], parent: string, chi
   return matching.length === 1 && matching[0]!.parentScopeId === parent && matching[0]!.originElementId === origin;
 }
 
-type Walked = Readonly<{ accesses: readonly Access[]; visited: readonly string[] }>;
+/** `visited` is the caller tree, each vertex once; `called` is every called body walk, once per call site. */
+type Walked = Readonly<{ accesses: readonly Access[]; visited: readonly string[]; called: readonly string[] }>;
 
 function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], scopes: readonly DefinitionScope[],
   fuel: number, depth: number, frames: readonly (readonly string[])[], scope: string, id: string): Walked | null {
@@ -103,7 +107,9 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
   const matching = vertices.filter(vertex => vertex.id === id);
   const vertex = matching.length === 1 ? matching[0]! : undefined;
   if (vertex === undefined || vertex.scope !== scope) return null;
-  if (vertex.kind === VertexKind.Finish) return vertex.outputs.length === 0 ? { accesses: [], visited: [vertex.id] } : null;
+  if (vertex.kind === VertexKind.Finish) {
+    return vertex.outputs.length === 0 ? { accesses: [], visited: [vertex.id], called: [] } : null;
+  }
   const next = vertex.outputs.length === 1 ? vertex.outputs[0]! : undefined;
   if (next === undefined) return null;
   switch (vertex.kind) {
@@ -116,7 +122,7 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
         ...vertex.reads.map(name => ({ kind: "read" as const, name, frames })),
         ...vertex.writes.map(name => ({ kind: "write" as const, name, frames })),
       ] : [];
-      return { accesses: [...own, ...rest.accesses], visited: [vertex.id, ...rest.visited] };
+      return { accesses: [...own, ...rest.accesses], visited: [vertex.id, ...rest.visited], called: rest.called };
     }
     case VertexKind.SubProcess: {
       const child = vertex.child;
@@ -136,13 +142,16 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
           ...rest.accesses,
         ],
         visited: [vertex.id, ...inner.visited, ...rest.visited],
+        called: [...inner.called, ...rest.called],
       };
     }
     case VertexKind.Call: {
       const call = vertex.call;
-      // CVM-ADMIT-01 keeps the Call on the root path: the Lean batch and cancellation proofs rest on Call callers being
-      // Process roots, and lifting that premise belongs to PC-SCOPE-05.
-      if (call === undefined || depth !== 0 || !calledScopeValid(scopes, call.scope, call.calledProcessId)) return null;
+      // The Call's inputs read and its outputs write along the enclosing `frames`, so a Call inside a Sub-Process
+      // resolves through that Sub-Process's chain (CALLN-FRAME-01).
+      if (call === undefined || depth > callDepthLimit || !calledScopeValid(scopes, call.scope, call.calledProcessId)) {
+        return null;
+      }
       // The called instance has no parent scope, so its walk starts with no enclosing frame (CVM-ISOLATE-01).
       const inner = walk(vertices, records, scopes, fuel - 1, depth, [], call.scope, call.entry);
       const rest = inner === null ? null : walk(vertices, records, scopes, fuel - 1, depth, frames, scope, next);
@@ -154,7 +163,8 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
           ...call.data.outputs.map(({ target }) => ({ kind: "callOutput" as const, name: target, frames })),
           ...rest.accesses,
         ],
-        visited: [vertex.id, ...inner.visited, ...rest.visited],
+        visited: [vertex.id, ...rest.visited],
+        called: [...inner.visited, ...rest.called],
       };
     }
   }
@@ -210,16 +220,19 @@ function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[]
   root: string, entry: string, handlers: ReadonlySet<string>): NestedScopeStartNames | null {
   const children = vertices.flatMap(vertex => vertex.child === undefined ? [] : [vertex.child.scope]);
   const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
+  const calledScopes = new Set(calls.map(({ scope }) => scope));
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  if (scopes.length !== children.length + calls.length + 1 || children.length === 0 || calls.length > 1 ||
-      roots.length !== calls.length + 1 || !roots.some(({ id }) => id === root) ||
+  if (scopes.length !== children.length + calledScopes.size + 1 || children.length === 0 || calls.length > callLimit ||
+      calledScopes.size > 1 || roots.length !== calledScopes.size + 1 || !roots.some(({ id }) => id === root) ||
       !calls.every(call => call.scope !== root && variableMappingsValid(call.data) &&
         callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
       !records.every(record => children.includes(record.scopeId) && recordValid(handlers, record))) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);
-  if (walked === null || walked.visited.length !== vertices.length ||
-      new Set(walked.visited).size !== walked.visited.length) return null;
+  const calledVertices = new Set(walked?.called ?? []);
+  if (walked === null || new Set(walked.visited).size !== walked.visited.length ||
+      walked.visited.some(id => calledVertices.has(id)) ||
+      walked.visited.length + calledVertices.size !== vertices.length) return null;
   return { required: requiredReads(walked.accesses), optional: calls.length === 0 ? null : optionalCallNames(walked.accesses) };
 }
 

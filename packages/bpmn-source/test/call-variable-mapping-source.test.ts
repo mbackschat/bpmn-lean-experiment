@@ -96,9 +96,9 @@ test("CVM-ADMIT-01 refuses each excluded Call attribute and mapping form", async
   }
 });
 
-// The Call and the review task trade places, so the Call sits inside the review Sub-Process; the Lean account still
-// binds Call callers to Process roots, so CVM-ADMIT-01 leaves that placement to PC-SCOPE-05.
-test("CVM-ADMIT-01 refuses a Call inside an embedded Sub-Process", async () => {
+// The Call and the review task trade places, so the Call sits inside the review Sub-Process, the placement
+// CALLN-ADMIT-01's Stage B adds to CVM-ADMIT-01.
+test("CVM-ADMIT-01 with CALLN-ADMIT-01's Stage B admits the Call inside an embedded Sub-Process", async () => {
   const xml = await loanXml();
   const callStart = xml.indexOf(callElement);
   const callEnd = xml.indexOf("</callActivity>", callStart) + "</callActivity>".length;
@@ -110,7 +110,7 @@ test("CVM-ADMIT-01 refuses a Call inside an embedded Sub-Process", async () => {
   const control = await compile(xml);
   assert.equal(control.status, BpmnCompilationStatus.Accepted);
   const result = await compile(nested);
-  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  assert.equal(result.status, BpmnCompilationStatus.Accepted, JSON.stringify(result.diagnostics));
 });
 
 /**

@@ -12,7 +12,12 @@
  * - `callerScope` selects a Sub-Process occurrence by definition scope alone. Only the caller Process holds
  *   Sub-Processes and it is live once; called roots enter by `invokeProcess` and complete by `returnProcess`.
  * - `calledDefinitionData` reads called-root mappings by called definition. It answers only for the nested scope-data
- *   profile, whose single Call is Stage B's to lift; the embedded completion profile carries no mappings.
+ *   profile, and only Lean still selects so; Stage B's TypeScript side moved to `callRecordData`, and its Lean lift
+ *   follows. The embedded completion profile carries no mappings.
+ * - `callRecordData` reads a called root's mappings through the live record whose called root it is, so two Calls of
+ *   one definition each see their own Call's data (CALLN-FRAME-01).
+ * - `calledDefinitionKind` asks only whether every invocation of a called root carries mappings, a property of the
+ *   called definition that no choice between two of its Calls changes.
  * - `outsideAlphabet` serves an operation or state family the embedded completion profile's Program alphabet excludes.
  * - `selectorDefinition` is a selector's own definition in terms of another.
  */
@@ -23,7 +28,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-type Category = "placeOwner" | "callerScope" | "calledDefinitionData" | "outsideAlphabet" | "selectorDefinition";
+type Category = "placeOwner" | "callerScope" | "calledDefinitionData" | "callRecordData" | "calledDefinitionKind" |
+  "outsideAlphabet" | "selectorDefinition";
 type Site = readonly [file: string, definition: string, selector: string, category: Category];
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -54,12 +60,13 @@ const typeScriptSites: ReadonlyArray<Site> = [
   ["interrupting-message-event-subprocess-runtime.ts", "armEventSubProcessMessageSubscriptions", byDefinitionScope, "outsideAlphabet"],
   ["interrupting-message-event-subprocess-runtime.ts", "selectEventSubProcessCompletion", byDefinitionScope, "outsideAlphabet"],
   ["interrupting-message-event-subprocess-state-validation.ts", "interruptingMessageEventSubProcessStateIsValid", byDefinitionScope, "outsideAlphabet"],
-  ["nested-scope-data.ts", "calledRootFrameValid", "calledRootMappings", "calledDefinitionData"],
-  ["nested-scope-data.ts", "nestedScopeDeclaredNames", "calledRootMappings", "calledDefinitionData"],
-  ["nested-scope-data.ts", "nestedScopeFramesValid", "calledRootMappings", "calledDefinitionData"],
+  ["nested-scope-data.ts", "calledRootFrameValid", "calledRootMappings", "callRecordData"],
+  ["nested-scope-data.ts", "nestedScopeDeclaredNames", "calledRootMappings", "callRecordData"],
+  ["nested-scope-data.ts", "nestedScopeDeclaredNames", "mappedCalledRoot", "calledDefinitionKind"],
+  ["nested-scope-data.ts", "nestedScopeFramesValid", "mappedCalledRoot", "calledDefinitionKind"],
   ["nested-scope-data.ts", "nestedScopeFramesValid", byDefinitionScope, "calledDefinitionData"],
   ["nested-scope-data.ts", "occurrenceWithParent", byDefinitionScope, "calledDefinitionData"],
-  ["nested-scope-data.ts", "resolveOwner", "calledRootMappings", "calledDefinitionData"],
+  ["nested-scope-data.ts", "resolveOwner", "mappedCalledRoot", "calledDefinitionKind"],
   ["parallel-scope-runtime.ts", "enterParallelScope", byDefinitionScope, "outsideAlphabet"],
   ["parallel-scope-state-validation.ts", "parallelScopeCheckpointValid", byDefinitionScope, "outsideAlphabet"],
   ["parallel-scope-state-validation.ts", "parallelScopeStateValid", byDefinitionScope, "outsideAlphabet"],
@@ -167,7 +174,7 @@ function selectsByDefinitionScope(body: string, pattern: RegExp): boolean {
 }
 
 function typeScriptCensus(): string[] {
-  const selector = /\b(onlyTokenOwner|commonTokenOwner|tokenOwners|calledRootMappings|completeScopeOwner)\(/g;
+  const selector = /\b(onlyTokenOwner|commonTokenOwner|tokenOwners|calledRootMappings|mappedCalledRoot|completeScopeOwner)\(/g;
   return trackedFiles("packages/semantic-core/src", ".ts").flatMap((file) => {
     const source = readFileSync(path.join(projectRoot, file), "utf8");
     const starts = [...source.matchAll(/^(?:export )?function (\w+)/gm)];

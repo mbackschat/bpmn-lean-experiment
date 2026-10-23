@@ -78,7 +78,7 @@ export function completeOrdinaryUserTask(
   }
   if (nestedScopeDataProgram(program) && (wait.id.processInstanceId !== wait.owner.processInstanceId ||
       state.userTaskWaits.filter(candidate => sameOccurrence(candidate.id, stimulus.taskId)).length !== 1 ||
-      !nestedScopePatchAdmitted(program, state.variables, wait.owner, stimulus.submittedValues))) return null;
+      !nestedScopePatchAdmitted(program, state, wait.owner, stimulus.submittedValues))) return null;
   const parallel = hasParallelScopeDefinition(program, wait.owner);
   if (parallel && (hasSequentialScopeDefinition(program, wait.owner) ||
       wait.id.processInstanceId !== wait.owner.processInstanceId ||

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  SemanticOperationKind as Kind, isWellFormedSemanticProcessProgram,
+  RuntimeStateDefect, SemanticOperationKind as Kind, isWellFormedSemanticProcessProgram,
   projectCurrentControlPositions, runtimeStateDefects, supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type { CalledProcessOccurrence, RuntimeState, ScopeOccurrenceId } from "@bpmn-lean/semantic-core";
@@ -35,14 +35,18 @@ for (const selectedIndex of [0, 1]) {
       scopeOccurrences: [...state.scopeOccurrences, ...added.map(({ calledRoot }) => ({ id: calledRoot, parent: null }))]
         .sort((left, right) => compareScopeOccurrenceIds(left.id, right.id)),
     };
+    // The Program declares no invocation inside a called root, so the hand-built nested records are its only defect:
+    // state validity binds each record to the scope of its own invocation (CALLN-FRAME-01), and cleanup is
+    // Program-independent, so every other defect class stays checked exactly.
     const valid = (candidate: RuntimeState) => {
-      assert.deepEqual(runtimeStateDefects(program, start.instanceId, candidate), []);
+      assert.deepEqual(runtimeStateDefects(program, start.instanceId, candidate), [RuntimeStateDefect.UndeclaredHiddenRecord]);
       assert.equal(calledProcessAssociationsAreValid(candidate), true);
       assert.notEqual(projectCurrentControlPositions(program, candidate), null);
     };
     assert.equal(isWellFormedSemanticProcessProgram(program), true);
     // The Program is an admitted fork into two Calls (CALLN-ADMIT-01); the nested records are hand-built, since no
     // admitted journey nests them through these serial bodies.
+    assert.deepEqual(runtimeStateDefects(program, start.instanceId, state), []);
     assert.equal(supportsSemanticProcessExecution(start, program), true);
     valid(before);
     const selectedCaller = originals[selectedIndex]!.calledRoot;

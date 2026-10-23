@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_GuarantorLoan" targetNamespace="urn:bpmn-lean:guarantor-loan">
+  <process id="Process_GuarantorLoan" name="Decide a guaranteed loan" isExecutable="true">
+    <startEvent id="LoanRequested" name="Loan requested" />
+    <serviceTask id="RegisterApplication" name="Register application"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${registerApplication}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="applicant">${applicant}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <callActivity id="VerifyApplicant" name="Verify applicant" calledElement="Process_IdentityVerification">
+      <extensionElements>
+        <camunda:in source="applicant" target="customer" />
+        <camunda:in source="amount" target="amount" />
+        <camunda:out source="verdict" target="applicantVerdict" />
+      </extensionElements>
+    </callActivity>
+    <subProcess id="GuarantorReview" name="Guarantor review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="guarantorVerdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="guarantorVerdict">${guarantorVerdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="GuarantorReviewOpened" name="Guarantor review opened" />
+      <callActivity id="VerifyGuarantor" name="Verify guarantor" calledElement="Process_IdentityVerification">
+        <extensionElements>
+          <camunda:in source="guarantor" target="customer" />
+          <camunda:out source="verdict" target="guarantorVerdict" />
+        </extensionElements>
+      </callActivity>
+      <userTask id="ConfirmGuarantor" name="Confirm guarantor" />
+      <endEvent id="GuarantorReviewClosed" name="Guarantor review closed" />
+      <sequenceFlow id="Flow_GuarantorReviewOpened" sourceRef="GuarantorReviewOpened" targetRef="VerifyGuarantor" />
+      <sequenceFlow id="Flow_GuarantorVerified" sourceRef="VerifyGuarantor" targetRef="ConfirmGuarantor" />
+      <sequenceFlow id="Flow_GuarantorConfirmed" sourceRef="ConfirmGuarantor" targetRef="GuarantorReviewClosed" />
+    </subProcess>
+    <endEvent id="LoanDecided" name="Loan decided" />
+    <sequenceFlow id="Flow_Requested" sourceRef="LoanRequested" targetRef="RegisterApplication" />
+    <sequenceFlow id="Flow_Registered" sourceRef="RegisterApplication" targetRef="VerifyApplicant" />
+    <sequenceFlow id="Flow_ApplicantVerified" sourceRef="VerifyApplicant" targetRef="GuarantorReview" />
+    <sequenceFlow id="Flow_GuarantorReviewed" sourceRef="GuarantorReview" targetRef="LoanDecided" />
+  </process>
+  <process id="Process_IdentityVerification" name="Verify a person's identity" isExecutable="true">
+    <startEvent id="VerificationRequested" name="Verification requested" />
+    <userTask id="CollectDocument" name="Collect identity document" />
+    <userTask id="RecordVerdict" name="Record verdict" />
+    <endEvent id="VerificationCompleted" name="Verification completed" />
+    <sequenceFlow id="Flow_Requested_Verification" sourceRef="VerificationRequested" targetRef="CollectDocument" />
+    <sequenceFlow id="Flow_Collected" sourceRef="CollectDocument" targetRef="RecordVerdict" />
+    <sequenceFlow id="Flow_Recorded" sourceRef="RecordVerdict" targetRef="VerificationCompleted" />
+  </process>
+</definitions>

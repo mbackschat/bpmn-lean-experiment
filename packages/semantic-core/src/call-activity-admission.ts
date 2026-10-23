@@ -57,8 +57,9 @@ export function isWellFormedReturnProcessOperation(
 }
 
 /**
- * Requires each invocation to cross from the Process root that holds it into one exact called-root return pair, the
- * called root never the entry root nor the caller's own root (CALLN-ADMIT-01).
+ * Requires each invocation to cross from the scope that holds it into one exact called-root return pair, the called
+ * root never the entry root nor the root of the caller's own Process tree (CALLN-ADMIT-01). Stage B admits that scope
+ * to be an embedded scope of the caller Process; the caller output lies in the same scope.
  */
 export function callOperationsArePaired(
   processId: string,
@@ -91,19 +92,19 @@ export function callOperationsArePaired(
           originElementId === invoke.calledProcessId,
       );
       const calledRoot = calledRoots[0];
-      const callerRoot = operationScope.get(invoke.id);
+      const callerScope = operationScope.get(invoke.id);
+      const callerRoot = callerScope === undefined ? undefined : processRootOf(definitionScopes, callerScope);
       return matching.length === 1 &&
         returned !== undefined &&
         calledRoots.length === 1 &&
         calledRoot !== undefined &&
         calledRoot.id === invoke.calledRootScopeId &&
         calledRoot.id !== entryRoot.id &&
-        callerRoot !== undefined && callerRoot !== calledRoot.id &&
-        definitionScopes.some(({ id, parentScopeId }) => id === callerRoot && parentScopeId === null) &&
+        callerScope !== undefined && callerRoot !== undefined && callerRoot !== calledRoot.id &&
         operationScope.get(returned.id) === calledRoot.id &&
-        placeScope.get(invoke.input) === callerRoot &&
+        placeScope.get(invoke.input) === callerScope &&
         placeScope.get(invoke.calledEntry) === calledRoot.id &&
-        placeScope.get(returned.callerOutput) === callerRoot &&
+        placeScope.get(returned.callerOutput) === callerScope &&
         returned.origin.kind === SemanticOriginKind.BpmnElement &&
         returned.origin.elementId === invoke.origin.elementId &&
         returned.calledProcessId === invoke.calledProcessId &&
@@ -114,6 +115,19 @@ export function callOperationsArePaired(
       invokes.filter(({ returnOperationId }) => returnOperationId === returned.id)
         .length === 1
     );
+}
+
+/** The parentless root above `scopeId`; the scope count bounds a cyclic parent relation. */
+function processRootOf(definitionScopes: ReadonlyArray<DefinitionScope>, scopeId: string): string | undefined {
+  let current: string | null = scopeId;
+  for (let fuel = definitionScopes.length; fuel > 0 && current !== null; fuel -= 1) {
+    const matching: ReadonlyArray<DefinitionScope> = definitionScopes.filter(({ id }) => id === current);
+    const scope = matching.length === 1 ? matching[0] : undefined;
+    if (scope === undefined) return undefined;
+    if (scope.parentScopeId === null) return scope.id;
+    current = scope.parentScopeId;
+  }
+  return undefined;
 }
 
 /** Supplies the virtual called-End-to-return edge erased from control places. */

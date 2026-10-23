@@ -5,6 +5,7 @@ import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 
 import {
   CommandOutcome,
+  RuntimeStateDefect,
   SemanticOperationKind,
   applyInternalOperation,
   applyStimulus,
@@ -12,6 +13,7 @@ import {
   deriveCalledProcessInstanceId,
   initialState,
   isStableStateResumable,
+  runtimeStateDefects,
 } from "@bpmn-lean/semantic-core";
 import type {
   RuntimeState,
@@ -158,7 +160,9 @@ test("rejects malformed call records and called roots", () => {
   }
 });
 
-test("binds a call record caller to a parentless Process root occurrence, never a child scope", () => {
+// CALLN-INVOKE-01's Stage B admits an embedded caller, so association validity no longer requires a parentless one;
+// program-aware state validity instead binds the caller to the scope holding the record's invocation, here the root.
+test("binds a call record caller to the scope that holds its invocation, never a child scope", () => {
   const { activeWait, beforeReturn, hostingRoot, record, returnOperation } =
     returnReadyContext();
   const childCaller = {
@@ -175,8 +179,8 @@ test("binds a call record caller to a parentless Process root occurrence, never 
     userTaskWaits: [callerWait(activeWait, childCaller)],
     calledProcessOccurrences: [{ ...record, caller: childCaller }],
   };
-  assert.equal(applyInternalOperation(program, returnOperation, childCallerState), null);
-  assert.equal(isStableStateResumable(childCallerState), false);
+  assert.ok(runtimeStateDefects(program, instanceId, childCallerState)
+    .includes(RuntimeStateDefect.UndeclaredHiddenRecord));
 });
 
 test("requires exactly one parentless hosting root occurrence", () => {

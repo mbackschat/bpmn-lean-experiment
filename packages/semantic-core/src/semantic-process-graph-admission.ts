@@ -357,14 +357,13 @@ function operationRespectsScopes(
           operation.calledRootScopeId,
         );
     case SemanticOperationKind.ReturnProcess: {
-      // CALLN-ADMIT-01: the caller output lies in the Process root that holds the paired invocation.
+      // CALLN-ADMIT-01: the caller output lies in the scope that holds the paired invocation, a Process root or,
+      // under Stage B, an embedded scope; pairing places that scope outside the called root's tree.
       const paired = graph.operations.filter((candidate) =>
         candidate.kind === SemanticOperationKind.InvokeProcess && candidate.returnOperationId === operation.id);
       const caller = paired.length === 1 ? operationScope.get(paired[0]!.id) : undefined;
-      const isRoot = (scopeId: string | undefined) => graph.definitionScopes.some(
-        ({ id, parentScopeId }) => id === scopeId && parentScopeId === null,
-      );
-      return operation.calledRootScopeId === owner && isRoot(owner) && caller !== undefined && isRoot(caller) &&
+      return operation.calledRootScopeId === owner && caller !== undefined &&
+        graph.definitionScopes.some(({ id, parentScopeId }) => id === owner && parentScopeId === null) &&
         referencesOwnedBy([operation.callerOutput], caller);
     }
     case SemanticOperationKind.ThrowError: {

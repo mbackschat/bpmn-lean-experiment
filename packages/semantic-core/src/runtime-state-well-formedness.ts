@@ -403,7 +403,18 @@ export function runtimeStateDefects(
         : [],
     ),
   );
+  // A call record is declared by exactly one invocation, whose scope is the caller's: association validity binds the
+  // caller only to its instance, which an embedded caller shares with its Process root (CALLN-FRAME-01).
+  const callRecordDeclared = ({ id, caller, calledProcessId, calledRoot, returnOperationId }:
+    RuntimeState["calledProcessOccurrences"][number]): boolean => program.operations.filter((operation) =>
+    operation.kind === SemanticOperationKind.InvokeProcess && operation.returnOperationId === returnOperationId &&
+    operation.origin.elementId === id.elementId && operation.calledProcessId === calledProcessId &&
+    operation.calledRootScopeId === calledRoot.definitionScopeId &&
+    program.operationScopes.some(({ operationId, scopeId }) =>
+      operationId === operation.id && scopeId === caller.definitionScopeId)
+  ).length === 1;
   const hiddenRecordsDeclared = (state.parallelScopeControllers?.length ?? 0) === 0 &&
+    state.calledProcessOccurrences.every(callRecordDeclared) &&
     state.selectedBranchSets.every(({ selectionKey }) => selectionKeys.has(selectionKey)) &&
     state.eventRaces.every(({ id }) => raceElementIds.has(id.elementId)) &&
     (state.sequentialScopeControllers ?? []).every(({ id }) =>

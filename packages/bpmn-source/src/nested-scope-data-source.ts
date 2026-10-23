@@ -74,7 +74,7 @@ export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceId
     if (failure !== null) return unsupported(failure);
   }
   const caller = callerProcess(roots, collected);
-  if (caller === undefined) return unsupported("A second Process must be the called Process of the one Call Activity on the caller's root path.");
+  if (caller === undefined) return unsupported("A second Process must be the called Process of every Call Activity in the caller.");
   const processId = caller;
   if (new Set(collected.ids).size !== collected.ids.length) return unsupported("Flow element IDs must be unique.");
   const byId = <T extends { id: string }>(values: readonly T[]) =>
@@ -154,19 +154,29 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
 
 /**
  * CVM-RESOLVE-01: CIB reads `calledElement` as a raw definition key (BpmnParse.java:3934, tag v2.2.0), so the caller is
- * the Process whose root scope holds the one Call and the Call must name the other Process by exact identifier; a lone
- * Process keeps the profile's single-Process account. CVM-ADMIT-01 keeps the Call on the root path: a Call inside an
- * embedded Sub-Process is PC-SCOPE-05's, whose Lean account must first lift the root-caller premise.
+ * the Process whose tree holds every Call and each Call must name the other Process by exact identifier; a lone Process
+ * keeps the profile's single-Process account. CALLN-ADMIT-01's Stage B admits up to two Calls of that one definition;
+ * where they lie, at most two Sub-Processes deep, is the nested scope-data analysis's decision.
  */
 function callerProcess(roots: readonly { processId: string; scopeId: string }[], collected: Collected): string | undefined {
   const calls = collected.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []);
   if (roots.length === 1) return calls.length === 0 ? roots[0]!.processId : undefined;
-  const call = calls.length === 1 ? calls[0]! : undefined;
-  const owner = call === undefined ? undefined : collected.nodeScopes.find(({ nodeId }) => nodeId === call.id)?.scopeId;
+  const rootOf = (scopeId: string | undefined): string | undefined => {
+    let current = scopeId;
+    for (let fuel = collected.scopes.length; fuel > 0 && current !== undefined; fuel -= 1) {
+      const scope = collected.scopes.find(({ id }) => id === current);
+      if (scope?.parentScopeId === null) return scope.id;
+      current = scope?.parentScopeId;
+    }
+    return undefined;
+  };
+  const owners = new Set(calls.map(call =>
+    rootOf(collected.nodeScopes.find(({ nodeId }) => nodeId === call.id)?.scopeId)));
+  const owner = owners.size === 1 ? [...owners][0] : undefined;
   const callerId = roots.find(({ scopeId }) => scopeId === owner)?.processId;
   const called = roots.find(({ processId }) => processId !== callerId);
-  return call !== undefined && callerId !== undefined && called !== undefined && call.calledProcessId === called.processId
-    ? callerId : undefined;
+  return calls.length >= 1 && calls.length <= 2 && callerId !== undefined && called !== undefined &&
+      calls.every(call => call.calledProcessId === called.processId) ? callerId : undefined;
 }
 
 /**

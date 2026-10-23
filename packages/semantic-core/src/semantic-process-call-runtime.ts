@@ -87,8 +87,8 @@ export function selectCalledProcessInvocation(
 ): SelectedCalledProcessInvocation | null {
   if (
     state.control.kind !== ControlStateKind.Running ||
-    // Association validity places every parentless root, and so the parentless caller checked below, in the
-    // hosting instance or under a live record, the two callers CALLN-INVOKE-01 admits.
+    // Association validity places every parentless root in the hosting instance or under a live record, so the
+    // caller checked below is a live scope occurrence of one of those instances, as CALLN-INVOKE-01 admits.
     !calledProcessAssociationsAreValid(state) ||
     ownedTokenMultiplicity(state.controlTokens, operation.input, caller) !== 1 ||
     // Return selects its record by Call element alone, so a second live record of one element, possible only once a
@@ -99,12 +99,9 @@ export function selectCalledProcessInvocation(
   ) {
     return null;
   }
-  const callerOccurrences = state.scopeOccurrences.filter(({ id }) =>
-    sameScopeOccurrence(id, caller)
-  );
   if (
-    callerOccurrences.length !== 1 ||
-    callerOccurrences[0]?.parent !== null
+    state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, caller))
+      .length !== 1
   ) {
     return null;
   }
@@ -249,8 +246,9 @@ export function calledProcessAssociationsAreValid(state: RuntimeState): boolean 
   );
   const recordsValid = state.calledProcessOccurrences.every(
     (record, index, records) => {
-      const callers = state.scopeOccurrences.filter(({ id, parent }) =>
-        parent === null && sameScopeOccurrence(id, record.caller)
+      // Stage B admits an embedded caller; its instance is reached through its own Process root's record below.
+      const callers = state.scopeOccurrences.filter(({ id }) =>
+        sameScopeOccurrence(id, record.caller)
       );
       return record.id.processInstanceId === record.caller.processInstanceId &&
         record.id.activation > 0 &&
