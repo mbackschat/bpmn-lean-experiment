@@ -78,15 +78,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); Stage A's checkpoint was accepted at `f6933b64`. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
 
-Deliverable: Stage B built in the family shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), with at most one complete Lean rebuild, at its start.
+Deliverable: Stage B's Lean lift, with its kernel and closed-world edits batched into one complete rebuild at its start ([migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order): step 3 follows Stage B).
 
-Acceptance blockers: the Lean lift follows the proposal's migration order (kernel module conversion, then closed-world bridges); registration (scenarios, pipeline cases, mutations, corpus row) waits for the lift, because pipeline cases need Lean–TypeScript agreement.
+Acceptance blockers: the Lean premise lift across its 21 consumer modules; registration (scenarios, pipeline cases, mutations, corpus row) waits for it, because pipeline cases need Lean–TypeScript agreement.
 
-Current result: Stage B's TypeScript core and host admission are committed. The [Call fixture pilot](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#call-fixture-pilot-2026-10-23) turned six Call conformance modules into 142 native executable checks, 425.0 s to 10.9 s of single-core elaboration. Guards now read the module-system syntax and fail closed on unknown header forms.
+Current result: Stage B's TypeScript core and host admission are committed. The [Call fixture pilot](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#call-fixture-pilot-2026-10-23) cut six modules from 425.0 s to 10.9 s. Guards read the module-system syntax. The kernel types are Lean modules with exposed public bodies and public helpers (`2f881290`, hosted complete rebuild green).
 
-Effort budget: 8 hours of root Lean time for the kernel-type conversion once approved, stopping at the limit with its exact boundary recorded.
+Effort budget: 14 hours of root Lean time for the lift, the capsule's bound; the kernel conversion used under one of its eight hours.
 
-Next action: owner go-ahead for the kernel-type module conversion (one complete rebuild), then the bridges, then Stage B's Lean lift and registration.
+Next action: transcribe Stage B's well-formedness, association and called-root mapping changes into Lean, then lift the proofs.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 

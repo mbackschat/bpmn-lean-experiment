@@ -106,6 +106,8 @@ Hub functions are explicitly unfolded in few files: `programWellFormed` in 18 of
 
 Existing families move when next touched, and profile identity branches become per-family descriptors as their families move.
 
+Step 3 is larger than this order assumed, measured after step 2 on 2026-10-23. A module cannot import a non-module file, so hiding a closed-world function first converts its import closure: 180 non-module modules below the transition dispatch, 46 below program structural well-formedness and 61 below runtime-state well-formedness. A hidden-body edit still rebuilds every non-module importer (scratch probe on the pinned toolchain, not retained), so the hidden bodies pay off only as their consumers convert. On the owner's delegation the same day, Stage B's Lean lift runs before step 3 and batches its kernel and closed-world edits into one complete rebuild at its start, under rule 4; step 3 is rescoped after Stage B.
+
 ## Acceptance
 
 - The fanout ratchet is green.
