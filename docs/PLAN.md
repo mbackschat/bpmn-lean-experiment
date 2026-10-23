@@ -80,13 +80,13 @@ Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: Stage B built in the extension shape of the [Lean build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md), so that it needs no complete Lean rebuild.
 
-Acceptance blockers: the owner decision on that proposal, whose executable checked-lane guards change the fixture evidence gate.
+Acceptance blockers: the proposal's independent cold review; the owner asked for it before deciding.
 
 Current result: the proposal records the measured rebuild causes and the verified module-system mechanisms; three build threads gained only 14%, so the pin stays at one.
 
 Effort budget: 10 hours of root Lean time and 16 hours wall from 2026-10-23 for Lean batch `calln-stage-a`, reassessed at the limit; about 14 hours wall elapsed by 15:15, the build-scaling study included.
 
-Next action: on approval, implement the executable guard driver and convert the Call fixtures first, then open Stage B.
+Next action: run the proposal's cold review; on approval convert the kernel types to modules and open Stage B in the extension shape.
 
 Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
 
