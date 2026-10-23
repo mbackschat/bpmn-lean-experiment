@@ -682,8 +682,9 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
     "#!/bin/sh\nprintf '%s\\n%s\\n' \"$LEAN_NUM_THREADS\" \"$*\"\n",
     { mode: 0o755 },
   );
+  const { GITHUB_ACTIONS: _actions, RUNNER_ENVIRONMENT: _runner, ...ambient } = process.env;
   const environment = {
-    ...process.env,
+    ...ambient,
     LEAN_NUM_THREADS: "8",
     PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
   };

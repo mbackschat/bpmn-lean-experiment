@@ -45,7 +45,9 @@ async function readProjectFile(relativePath: string): Promise<string> {
   return readFile(path.join(projectRoot, relativePath), "utf8");
 }
 
-type ManifestPins = Readonly<{ node: string; pnpm: string; leanThreads: string; leanMemoryBrakeMib: string }>;
+type ManifestPins = Readonly<{
+  node: string; pnpm: string; leanThreads: string; leanMemoryBrakeMib: string; leanCiThreads: string; leanCiMemoryBrakeMib: string;
+}>;
 
 async function ownerPins(): Promise<ManifestPins> {
   const manifest = JSON.parse(await readProjectFile("package.json")) as Readonly<{
@@ -62,6 +64,8 @@ async function ownerPins(): Promise<ManifestPins> {
     pnpm: pnpmVersion ?? "",
     leanThreads: manifest.config.leanBuildThreads ?? "",
     leanMemoryBrakeMib: manifest.config.leanMemoryBrakeMiB ?? "",
+    leanCiThreads: manifest.config.leanCiBuildThreads ?? "",
+    leanCiMemoryBrakeMib: manifest.config.leanCiMemoryBrakeMiB ?? "",
   };
 }
 
@@ -80,7 +84,9 @@ test("resolves the manifest pins for shell consumers", async () => {
     `required_node_version=${pins.node}\n` +
       `required_pnpm_version=${pins.pnpm}\n` +
       `required_lean_build_threads=${pins.leanThreads}\n` +
-      `required_lean_memory_brake_mib=${pins.leanMemoryBrakeMib}\n`,
+      `required_lean_memory_brake_mib=${pins.leanMemoryBrakeMib}\n` +
+      `required_lean_ci_build_threads=${pins.leanCiThreads}\n` +
+      `required_lean_ci_memory_brake_mib=${pins.leanCiMemoryBrakeMib}\n`,
   );
 });
 

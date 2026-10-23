@@ -73,12 +73,18 @@ terminate() {
   for pid in $(descendants); do kill "-$1" "$pid" 2>/dev/null; done
 }
 
+peak_kib=0
 while kill -0 "$wrapper_pid" 2>/dev/null; do
   total_kib=0
   for pid in $(descendants); do
     sample=$(footprint_kib "$pid")
     total_kib=$((total_kib + ${sample:-0}))
   done
+  # The wrapper reads the largest sampled total from "$marker.peak" for an optional peak report.
+  if [ "$total_kib" -gt "$peak_kib" ]; then
+    peak_kib=$total_kib
+    printf '%s\n' "$peak_kib" > "$marker.peak"
+  fi
   if [ "$total_kib" -gt "$limit_kib" ]; then
     printf '%s\n' "$total_kib" > "$marker"
     terminate TERM

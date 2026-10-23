@@ -36,12 +36,12 @@ async function withFakeLake(
   }
 }
 
-function runWrapper(fakeBin: string, brakeMib: string) {
-  const { LEAN_FULL_GATE: _gate, LEAN_MEMORY_BRAKE_MIB: _brake, ...ambient } = process.env;
+function runWrapper(fakeBin: string, brakeMib: string, extra: Readonly<Record<string, string>> = {}) {
+  const { LEAN_FULL_GATE: _gate, LEAN_MEMORY_BRAKE_MIB: _brake, LEAN_MEMORY_PEAK_FILE: _peak, ...ambient } = process.env;
   return spawnSync(lakeWrapperPath, ["build", "BpmnSemantics.Fake"], {
     encoding: "utf8",
     timeout: 60_000,
-    env: { ...ambient, LEAN_MEMORY_BRAKE_MIB: brakeMib, PATH: `${fakeBin}:${process.env.PATH ?? ""}` },
+    env: { ...ambient, ...extra, LEAN_MEMORY_BRAKE_MIB: brakeMib, PATH: `${fakeBin}:${process.env.PATH ?? ""}` },
   });
 }
 
@@ -80,4 +80,28 @@ test("an environment brake value can only lower the manifest limit", async () =>
   });
   const wrapper = await readFile(lakeWrapperPath, "utf8");
   assert.match(wrapper, /-lt "\$required_lean_memory_brake_mib"/u, "a larger environment value must not raise the brake");
+});
+
+/**
+ * CI raises Lean parallelism under its own brake, so each run reports the largest process-tree
+ * footprint the brake sampled. The report goes to a file the caller names rather than to output,
+ * because retained Lean memory receipts hash the build output, and it keeps the larger of the file's
+ * value and this run's peak so that several wrapper invocations in one job report their maximum.
+ */
+test("the Lean wrapper reports the sampled peak footprint only to a requested file", async () => {
+  await withFakeLake(
+    `"${process.execPath}" -e 'const held = Buffer.alloc(64 * 1024 * 1024, 1); setTimeout(() => held, 5000)'`,
+    async (fakeBin) => {
+      const peakFile = path.join(fakeBin, "peak-kib");
+      const reported = runWrapper(fakeBin, "4096", { LEAN_MEMORY_PEAK_FILE: peakFile });
+      assert.equal(reported.status, 0, reported.stderr);
+      assert.equal(reported.stdout + reported.stderr, "");
+      const peak = Number(await readFile(peakFile, "utf8"));
+      assert.ok(peak >= 60 * 1024 && peak < 4096 * 1024, `implausible peak ${peak} KiB`);
+
+      await writeFile(peakFile, String(4000 * 1024));
+      assert.equal(runWrapper(fakeBin, "4096", { LEAN_MEMORY_PEAK_FILE: peakFile }).status, 0);
+      assert.equal(Number(await readFile(peakFile, "utf8")), 4000 * 1024, "a smaller peak replaced a larger one");
+    },
+  );
 });

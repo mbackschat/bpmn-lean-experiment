@@ -7,7 +7,9 @@
   "packageManager": "pnpm@11.20.0",
   "config": {
     "leanBuildThreads": "1",
-    "leanMemoryBrakeMiB": "4096"
+    "leanMemoryBrakeMiB": "4096",
+    "leanCiBuildThreads": "3",
+    "leanCiMemoryBrakeMiB": "12288"
   },
   "engines": {
     "node": "26.10.0",

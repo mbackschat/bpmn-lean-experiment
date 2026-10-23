@@ -35,8 +35,18 @@ required_lean_memory_brake_mib=$(
   sed -n 's/^[[:space:]]*"leanMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
 )
 
+# A GitHub-hosted runner is a separate disposable host with its own memory, so it has its own pair;
+# scripts/lake.sh selects it and this reader stays independent of the environment.
+required_lean_ci_build_threads=$(
+  sed -n 's/^[[:space:]]*"leanCiBuildThreads"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+required_lean_ci_memory_brake_mib=$(
+  sed -n 's/^[[:space:]]*"leanCiMemoryBrakeMiB"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest"
+)
+
 if test -z "$required_node_version" || test -z "$required_pnpm_version" ||
-    test -z "$required_lean_build_threads" || test -z "$required_lean_memory_brake_mib"; then
+    test -z "$required_lean_build_threads" || test -z "$required_lean_memory_brake_mib" ||
+    test -z "$required_lean_ci_build_threads" || test -z "$required_lean_ci_memory_brake_mib"; then
   echo "pinned-toolchain.sh read no Node or pnpm pin from $manifest" >&2
   exit 1
 fi
@@ -45,3 +55,5 @@ printf 'required_node_version=%s\n' "$required_node_version"
 printf 'required_pnpm_version=%s\n' "$required_pnpm_version"
 printf 'required_lean_build_threads=%s\n' "$required_lean_build_threads"
 printf 'required_lean_memory_brake_mib=%s\n' "$required_lean_memory_brake_mib"
+printf 'required_lean_ci_build_threads=%s\n' "$required_lean_ci_build_threads"
+printf 'required_lean_ci_memory_brake_mib=%s\n' "$required_lean_ci_memory_brake_mib"

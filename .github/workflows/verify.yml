@@ -90,6 +90,9 @@ jobs:
       # every run records which mode produced its result. The weekly schedule
       # and an explicit dispatch both verify from scratch.
       LEAN_CACHE: ${{ github.event_name != 'schedule' && github.event.inputs.skip_lean_cache != 'true' }}
+      # The CI Lean pin runs several Lean processes at once, so every run reports
+      # the largest process-tree footprint the memory brake sampled.
+      LEAN_MEMORY_PEAK_FILE: ${{ runner.temp }}/lean-memory-peak-kib
     steps:
       - name: Report Lean cache mode
         run: |
@@ -138,6 +141,12 @@ jobs:
         id: lean-build
         timeout-minutes: 120
         run: ./scripts/verify.sh lean-library
+
+      - name: Report Lean memory peak
+        if: always()
+        run: |
+          echo "lean process-tree peak KiB: $(cat "$LEAN_MEMORY_PEAK_FILE" 2>/dev/null || echo none)"
+          echo "runner cgroup memory.peak bytes: $(cat /sys/fs/cgroup/memory.peak 2>/dev/null || echo unavailable)"
 
       - name: Save completed Lean build output
         if: env.LEAN_CACHE == 'true' && steps.lean-build.outcome == 'success' && steps.lean-cache.outputs.cache-hit != 'true'
