@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { leanHeader } from "./lean-source-analysis.ts";
+import { leanDeclarationPrefix, leanHeader } from "./lean-source-analysis.ts";
 
 test("reads every module-system import form with its visibility, and where the header ends", () => {
   const source = [
@@ -56,4 +56,20 @@ test("fails closed on an import form outside the header grammar", () => {
   ] as const) {
     assert.throws(() => leanHeader(source), SyntaxError, label);
   }
+});
+
+test("declaration prefixes accept every pinned modifier in grammar order and honour exclusions", () => {
+  const declaration = new RegExp(`^${leanDeclarationPrefix()}(def|theorem)\\s+(\\S+)`, "u");
+  for (const line of [
+    "@[expose] public def exposed := 1",
+    "public meta def compileTime := 1",
+    "private protected noncomputable unsafe partial def everything := 1",
+    "@[simp] @[inline]\npublic nonrec theorem stated : True := trivial",
+  ]) {
+    assert.match(line, declaration, line);
+  }
+  assert.doesNotMatch("open def := 1", declaration);
+  const citable = new RegExp(`^${leanDeclarationPrefix(["private"])}(def|theorem)\\s+(\\S+)`, "u");
+  assert.match("public def cited := 1", citable);
+  assert.doesNotMatch("private def hidden := 1", citable);
 });

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { analyzeLeanSource } from "./lean-source-analysis.ts";
+import { analyzeLeanSource, leanDeclarationPrefix } from "./lean-source-analysis.ts";
 
 const semanticRoot = new URL("../BpmnSemantics/SemanticProcess/", import.meta.url);
 
@@ -17,7 +17,8 @@ test("regional removal names agreement laws for the previously unrepresented own
     "cancelScopeSubtree_process_interfaces_eq_prepared_region",
     "cancelScopeSubtree_scope_controllers_eq_prepared_region",
   ]) {
-    assert.ok(new RegExp(`^theorem ${theorem}\\b`, "m").test(source), `missing agreement: ${theorem}`);
+    const declaration = new RegExp(`^${leanDeclarationPrefix()}theorem ${theorem}\\b`, "m");
+    assert.ok(declaration.test(source), `missing agreement: ${theorem}`);
   }
 });
 

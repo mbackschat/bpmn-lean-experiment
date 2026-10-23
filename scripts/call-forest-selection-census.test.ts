@@ -28,6 +28,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { leanDeclarationPrefix } from "./lean-source-analysis.ts";
+
 type Category = "placeOwner" | "callerScope" | "calledDefinitionData" | "callRecordData" | "calledDefinitionKind" |
   "outsideAlphabet" | "selectorDefinition";
 type Site = readonly [file: string, definition: string, selector: string, category: Category];
@@ -193,7 +195,8 @@ function typeScriptCensus(): string[] {
 
 function leanCensus(): string[] {
   const selector = /(onlyTokenOwner\?|calledRootMappings\?|commonTokenOwner\?)/g;
-  const declaration = /^(?:@\[[^\]]*\]\s*)?(?:(?:private|protected|noncomputable|partial) )*(def|theorem|lemma|abbrev|instance|structure|inductive|example|opaque)\s+(\S+)/gm;
+  const declaration = new RegExp(
+    `^${leanDeclarationPrefix()}(def|theorem|lemma|abbrev|instance|structure|inductive|example|opaque)\\s+(\\S+)`, "gm");
   return trackedFiles("BpmnSemantics", ".lean")
     .filter((file) => !file.includes("/Experiments/") && !file.endsWith("Conformance.lean"))
     .flatMap((file) => {

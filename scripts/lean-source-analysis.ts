@@ -265,6 +265,28 @@ export function leanHeader(source: string): LeanHeader {
   return { isModule, imports, endOffset };
 }
 
+/**
+ * The keywords that may precede a Lean declaration keyword under the pinned grammar (Lean v4.34.1
+ * `declModifiers`, `src/lean/Lean/Parser/Command.lean`): `private`/`public`, `protected`,
+ * `meta`/`noncomputable`, `unsafe` and `partial`/`nonrec`.
+ */
+export const leanDeclarationModifierKeywords = [
+  "private", "public", "protected", "meta", "noncomputable", "unsafe", "partial", "nonrec",
+] as const;
+
+/**
+ * Regex source for the attributes and modifiers before a declaration keyword, in any order.
+ *
+ * Every guard that classifies declarations by keyword composes this, so a module-system declaration
+ * such as `@[expose] public def` is never read as a non-declaration. A guard may exclude keywords that
+ * change its claim, as the citable-declaration index excludes `private`. Doc comments are not covered;
+ * callers scan comment-masked code.
+ */
+export function leanDeclarationPrefix(excluded: ReadonlyArray<string> = []): string {
+  const keywords = leanDeclarationModifierKeywords.filter((keyword) => !excluded.includes(keyword));
+  return String.raw`(?:@\[[^\]]*\]\s*|(?:${keywords.join("|")})\s+)*`;
+}
+
 /** Tracked and non-ignored pending Lean sources that still exist in the worktree. */
 export function worktreeLeanSourceFiles(worktree = "."): string[] {
   return execFileSync(
@@ -310,7 +332,9 @@ export function leanSelfComparisons(sources: ReadonlyArray<{ path: string; sourc
     Array<{ path: string; line: number; theorem: string; alias: string }> {
   const declarations = sources.flatMap(({ path, source }) => {
     const { code, literalRanges } = analyzeLeanSource(source);
-    const commands = [...code.matchAll(/^[\t ]*(?:@\[[^\]\n]*\]\s*)*(?:(?:private|protected|noncomputable|partial)\s+)*(namespace|section|end|open|def|abbrev|theorem|lemma|inductive|structure|instance|class)(?:[\t ]+([^\s:({\[]+))?(?=[\t \r\n:({\[]|$)/gmu)];
+    const commands = [...code.matchAll(new RegExp(
+      `^[\\t ]*${leanDeclarationPrefix()}(namespace|section|end|open|def|abbrev|theorem|lemma|inductive|structure|instance|class)(?:[\\t ]+([^\\s:({\\[]+))?(?=[\\t \\r\\n:({\\[]|$)`,
+      "gmu"))];
     let namespaces: string[] = [];
     let opened: string[] = [];
     const scopes: Array<{ namespaces: string[]; opened: string[] }> = [];

@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   analyzeLeanSource,
+  leanDeclarationPrefix,
   leanHeader,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
@@ -143,7 +144,8 @@ export function executableProofImportEdges(
 ): readonly string[] {
   const graph = new Map(sources.map(({ path: sourcePath, source }) => {
     const code = analyzeLeanSource(source).code;
-    const kinds = [...code.matchAll(/^[\t ]*(?:@\[[^\]]*\]\s*)*(?:(?:private|protected|noncomputable|partial|unsafe|nonrec)\s+)*(theorem|lemma|example|def|abbrev|inductive|structure|class|instance)\b/gmu)]
+    const declaration = `^[\\t ]*${leanDeclarationPrefix()}(theorem|lemma|example|def|abbrev|inductive|structure|class|instance)\\b`;
+    const kinds = [...code.matchAll(new RegExp(declaration, "gmu"))]
       .map((match) => match[1]!);
     return [moduleName(sourcePath.replaceAll(path.sep, "/")), {
       imports: importedModules(code),
@@ -571,6 +573,15 @@ test("import-only facades cannot hide an executable proof dependency", () => {
     { path: "Facade.lean", source: "import Loop\nimport Proofs\n" },
     { path: "Loop.lean", source: "import Facade\n" },
     { path: "Proofs.lean", source: "theorem witness : True := by trivial\n" },
+  ];
+  assert.deepEqual(executableProofImportEdges(sources, ["Runtime"]), ["Runtime -> Proofs"]);
+});
+
+test("module-system modifiers keep a definition a definition and a theorem a theorem", () => {
+  const sources = [
+    { path: "Runtime.lean", source: "module\n\npublic import all Proofs\n\n@[expose] public def run : Nat := 0\n" },
+    { path: "Proofs.lean", source: "module\n\npublic meta import Base\n\npublic theorem sound : True := by trivial\n" },
+    { path: "Base.lean", source: "module\n\npublic meta def helper : Nat := 0\n" },
   ];
   assert.deepEqual(executableProofImportEdges(sources, ["Runtime"]), ["Runtime -> Proofs"]);
 });

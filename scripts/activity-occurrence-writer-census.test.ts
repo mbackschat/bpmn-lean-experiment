@@ -5,6 +5,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { leanDeclarationPrefix } from "./lean-source-analysis.ts";
+
 import {
   ClaimPreservation,
   SourceLanguage,
@@ -103,8 +105,11 @@ function withoutComments(source: string, language: SourceLanguage): string {
   return result;
 }
 
+const leanDeclarationLine = new RegExp(
+  `^${leanDeclarationPrefix()}(def|inductive|structure|theorem|lemma|abbrev|class|instance|example)\\b(?:\\s+([^\\s(:]+))?`, "u");
+
 function leanDeclaration(line: string): Readonly<{ owner: string; production: boolean }> | null {
-  const match = /^(?:@\[[^\]]*\]\s*)*(?:private\s+)?(def|inductive|structure|theorem|lemma|abbrev|class|instance|example)\b(?:\s+([^\s(:]+))?/u.exec(line);
+  const match = leanDeclarationLine.exec(line);
   if (match === null) return null;
   const kind = match[1] ?? "";
   return { owner: match[2] ?? `<${kind}>`, production: kind === "def" || kind === "inductive" };

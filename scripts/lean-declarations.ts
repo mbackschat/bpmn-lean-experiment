@@ -1,4 +1,4 @@
-import { analyzeLeanSource } from "./lean-source-analysis.ts";
+import { analyzeLeanSource, leanDeclarationPrefix } from "./lean-source-analysis.ts";
 
 const declarationKinds = [
   "theorem",
@@ -19,11 +19,12 @@ export type LeanDeclaration = Readonly<{
   name: string;
 }>;
 
-// A declaration starts its line, optionally behind attributes and the modifiers below. `private` is
-// deliberately absent: the project reserves private declarations for supporting lemmas, so a private
-// name is never a citable guarantee. Anonymous instances have no name to cite and do not match.
+// A declaration starts its line, optionally behind attributes and the pinned declaration modifiers.
+// `private` is deliberately excluded: the project reserves private declarations for supporting
+// lemmas, so a private name is never a citable guarantee. Anonymous instances have no name to cite
+// and do not match.
 const declarationLine = new RegExp(
-  `^(?:(?:protected|noncomputable|partial|unsafe|nonrec)\\s+|@\\[[^\\]]*\\]\\s*)*(${
+  `^${leanDeclarationPrefix(["private"])}(${
     declarationKinds.join("|")
   })\\s+([^\\s:({\\[⟨]+)`,
   "u",

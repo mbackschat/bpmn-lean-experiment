@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
-import { leanCodeWithoutComments, leanHeader } from "./lean-source-analysis.ts";
+import { leanCodeWithoutComments, leanDeclarationPrefix, leanHeader } from "./lean-source-analysis.ts";
 
 type ChecksModule = Readonly<{ path: string; source: string }>;
 
@@ -23,9 +23,11 @@ export function executableCheckFindings(
   return modules.flatMap(({ path, source }) => {
     const code = leanCodeWithoutComments(source);
     const namespace = /^namespace BpmnSemantics\.(\S+)$/mu.exec(code)?.[1];
-    const listBodies = [...code.matchAll(/^def (\w+) : List \(String × Bool\) := \[\n([\s\S]*?)^\]$/gmu)];
+    const listBodies = [...code.matchAll(
+      new RegExp(`^${leanDeclarationPrefix()}def (\\w+) : List \\(String × Bool\\) := \\[\\n([\\s\\S]*?)^\\]$`, "gmu"))];
     const lists = listBodies.map((match) => match[1]!);
-    const checks = [...code.matchAll(/^def (\w+) : Bool :=/gmu)].map((match) => match[1]!);
+    const checks = [...code.matchAll(new RegExp(`^${leanDeclarationPrefix()}def (\\w+) : Bool :=`, "gmu"))]
+      .map((match) => match[1]!);
     const entries = listBodies.flatMap((match) => [...match[2]!.matchAll(/^ {2}\("(\w+)", (\w+)\),?$/gmu)])
       .map((match) => [match[1]!, match[2]!] as const);
     const listed = entries.map(([, check]) => check);

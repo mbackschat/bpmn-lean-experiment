@@ -16,12 +16,11 @@
  * matched by their last component, so an unrelated declaration with the same name over-reports.
  */
 import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
-import { analyzeLeanSource } from "./lean-source-analysis.ts";
+import { analyzeLeanSource, leanDeclarationPrefix } from "./lean-source-analysis.ts";
 
 const identifier = /(?<![\p{L}\p{N}_'?!.])(?:[\p{L}_][\p{L}\p{N}_'?!]*\.)*[\p{L}_][\p{L}\p{N}_'?!]*/gu;
 const equationLemma = /\.(?:eq_def|eq_unfold|eq_\d+)$/u;
-const definitionHeader =
-  /^(?:@\[[^\]\n]*\]\s*)?(?:(?:private|protected|noncomputable|partial|unsafe)\s+)*(?:def|abbrev)\s+(\S+)/gmu;
+const definitionHeader = new RegExp(`^${leanDeclarationPrefix()}(?:def|abbrev)\\s+(\\S+)`, "gmu");
 const argumentLine = /\b(unfold|delta)\b([^\n]*)/gu;
 const lemmaList = /\b(simp_all|simpa|simp|dsimp|rwa|erw|rw)\??(?:\s+only)?\s*\[([^\]]*)\]/gu;
 

@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   analyzeLeanSource,
+  leanDeclarationModifierKeywords,
   worktreeLeanSourceFiles,
 } from "./lean-source-analysis.ts";
 
@@ -24,15 +25,7 @@ const declarationCommands = new Set([
   "class",
   "instance",
 ]);
-const declarationModifiers = new Set([
-  "private",
-  "protected",
-  "noncomputable",
-  "unsafe",
-  "partial",
-  "local",
-  "scoped",
-]);
+const declarationModifiers = new Set<string>([...leanDeclarationModifierKeywords, "local", "scoped"]);
 
 type LeanStatistics = {
   publicTheorems: number;

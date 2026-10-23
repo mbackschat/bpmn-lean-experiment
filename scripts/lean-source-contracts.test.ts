@@ -17,6 +17,7 @@ import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   analyzeLeanSource,
   inlineWaitIdentityLookups,
+  leanDeclarationPrefix,
   leanHeader,
   leanSelfComparisons,
   worktreeLeanSourceFiles,
@@ -29,6 +30,9 @@ import {
   readWorktreeSource,
   readWorktreeSources,
 } from "./worktree-source-read.ts";
+
+/** The line that ends a declaration block: the next declaration or an `end`. Callers scan comment-masked code. */
+const nextDeclaration = new RegExp(`^${leanDeclarationPrefix()}(?:def|theorem|structure|inductive|abbrev|end)\\b`, "u");
 
 export type SourceViolation = Readonly<{
   path: string;
@@ -245,7 +249,7 @@ function evaluatorDelegationViolations(
     }
     const rest = lines.slice(start + 1);
     const relativeEnd = rest.findIndex((line) =>
-      /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+      nextDeclaration
         .test(line),
     );
     const end = relativeEnd < 0 ? lines.length : start + relativeEnd + 1;
@@ -709,7 +713,7 @@ function declarationBody(source: string, declaration: string): string {
   }
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) =>
-    /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+    nextDeclaration
       .test(line)
   );
   return [lines[start], ...(end < 0 ? rest : rest.slice(0, end))].join("\n");
@@ -725,7 +729,7 @@ function inductiveConstructors(source: string, inductive: string): string[] {
   }
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) =>
-    /^(?:@\[|\/-|private\s+)?(?:def|theorem|structure|inductive|abbrev|end)\b/u
+    nextDeclaration
       .test(line)
   );
   const body = end < 0 ? rest : rest.slice(0, end);
