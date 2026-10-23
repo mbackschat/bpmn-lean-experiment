@@ -48,7 +48,7 @@ endpoints cannot seed a called-instance deletion from a child. The continuation 
 theorem interruptScope_preserves_position (program : Program) (before : RuntimeState)
     (expectedInstanceId instanceId : SemanticId) (root : RuntimeScopeOccurrence)
     (parent : ScopeOccurrenceId) (output : ControlPlaceId)
-    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (valid : runtimePositionValid program expectedInstanceId before = true) [CallersParentless before]
     (running : before.control = .running instanceId)
     (member : root ∈ before.scopeOccurrences) (parentEq : root.parent = some parent)
     (declared : ∃ place, program.controlPlaces.filter (fun candidate => decide (candidate.id = output)) = [place])
@@ -75,7 +75,7 @@ continuation has the declared parent binding; no intermediate validity is assume
 theorem throwErrorState_preserves_position (program : Program) (before after : RuntimeState)
     (expectedInstanceId instanceId : SemanticId) (input : ControlPlaceId)
     (error : ErrorReference) (handler : InterruptingErrorHandler)
-    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (valid : runtimePositionValid program expectedInstanceId before = true) [CallersParentless before]
     (running : before.control = .running instanceId)
     (continuation : ∀ root ∈ before.scopeOccurrences, ∀ parent, root.parent = some parent →
       root.id.definitionScopeId = handler.attachedScopeId →
@@ -145,7 +145,7 @@ Admission supplies the continuation binding, and cancellation supplies parent su
 theorem declaredError_preserves_position (program : Program) (before after : RuntimeState)
     (expectedInstanceId instanceId : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (error : ErrorReference) (handler : InterruptingErrorHandler)
-    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (valid : runtimePositionValid program expectedInstanceId before = true) [CallersParentless before]
     (running : before.control = .running instanceId)
     (operation : .throwError id origin input error handler ∈ program.operations)
     (result : throwErrorState? before input error handler = some after) :

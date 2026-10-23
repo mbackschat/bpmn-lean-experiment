@@ -347,7 +347,7 @@ theorem sequentialScope_entry_full_validity (program : Program) (hosting : Seman
       have afterFacts := (position_iff program hosting hosting changed nextRunning).mp afterPosition
       obtain ⟨occurrences, projected⟩ := projectOpenFlowNodeOccurrences_hosting_total program changed hosting
         nextRunning afterFacts.1 occurrenceValidity (by simp [eventRaceAssociationsValid, changed, census.2.2.2.1])
-        afterFacts.2.2.2.2.1 pairs (by simpa only [changed] using census.1)
+        afterFacts.2.2.2.2.2.1 pairs (by simpa only [changed] using census.1)
         (by simpa only [changed] using census.2.1) (by simpa only [changed] using census.2.2.1)
         (by simpa only [changed] using census.2.2.2.2.1)
         (by
@@ -506,7 +506,7 @@ private theorem smis_ingress_projection (program : Program) (hosting : SemanticI
     cases operation <;> simp_all [SemanticOperation.kind, messageBoundedOperationProjectionValid]
   obtain ⟨occurrences, projected⟩ := projectOpenFlowNodeOccurrences_hosting_total program after hosting
     running facts.1 flow (by simp [eventRaceAssociationsValid, empty.2.2.2.1])
-    facts.2.2.2.2.1 pairs empty.1 empty.2.1 empty.2.2.1 empty.2.2.2.2
+    facts.2.2.2.2.2.1 pairs empty.1 empty.2.1 empty.2.2.1 empty.2.2.2.2
     (by
       intro owner live
       obtain ⟨occurrence, census⟩ := List.length_eq_one_iff.mp (of_decide_eq_true live)
@@ -752,8 +752,8 @@ theorem sequentialScope_completion_full_validity (program : Program) (hosting : 
       have bodyMember : (⟨child, some binding.activity.owner⟩ : RuntimeScopeOccurrence) ∈ after.scopeOccurrences :=
         scopes.mem_iff.mpr (by simp)
       have facts := (position_iff program hosting hosting after runningAfter).mp position
-      have parentLive := (facts.2.2.2.2.2.1 _ rootMember).1
-      have childLive := (facts.2.2.2.2.2.1 _ bodyMember).1
+      have parentLive := (facts.2.2.2.2.2.2.1 _ rootMember).1
+      have childLive := (facts.2.2.2.2.2.2.1 _ bodyMember).1
       have structural : flowNodeOccurrenceStructuralProgramValidity program after = true := by
         apply sequentialScope_structural_of_position program hosting after position runningAfter (callFrame.trans empty.2.2.2.2.1)
         intro occurrence member actual found

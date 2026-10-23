@@ -159,7 +159,7 @@ private theorem smis_effect_arming_waiting (program : Program) (before : Runtime
 
 
 /-- Actual child-owned ordinary preparation advances the whole held certificate and records exactly this body firing. -/
-theorem sequentialScope_body_prepared_certificate (program : Program)
+theorem sequentialScope_body_prepared_certificate (program : Program) [InterruptionInvocationsRooted program]
     (data : SequentialScopeData.Analysis) (root : DefinitionScope) (before : RuntimeState)
     (hosting : SemanticId) (parentFired : List SemanticOperation) (operation : SemanticOperation)
     (bodyOperations : List SemanticOperation) (vertex : StructuredParallelBody.Vertex)

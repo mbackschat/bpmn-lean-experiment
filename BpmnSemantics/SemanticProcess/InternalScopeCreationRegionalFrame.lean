@@ -54,7 +54,7 @@ private theorem filtered_empty_of_subset (before after : List Î±) (predicate : Î
 /-- The selector and its read populations survive independent retirement. Both ordinary and
 bounded child preparation consume these facts without inventing a Program declaration. -/
 theorem scopeCreation_after_regional_reads
-    (program : Program) (before after : RuntimeState)
+    (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (regionalOperation creationOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (selected : InternalScopeCreationSelection)
     (hosting : SemanticId) (ownerRecord : RuntimeScopeOccurrence)
@@ -181,7 +181,7 @@ theorem scopeCreation_after_regional_reads
 
 /-- Complete preparation retains the literal artifact, including its publication payload. -/
 theorem prepareInternalScopeCreation_after_independent_regional
-    (program : Program) (before after : RuntimeState)
+    (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (regionalOperation creationOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
     (beforeWF : runtimeStateWellFormed program creation.runtimeInstanceId before = true)

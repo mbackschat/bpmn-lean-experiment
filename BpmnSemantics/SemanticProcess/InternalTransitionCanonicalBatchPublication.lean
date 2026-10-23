@@ -9,7 +9,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem prepared_transition_canonical_batch_publication (program : Program) (state : RuntimeState)
+theorem prepared_transition_canonical_batch_publication (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId commandId : SemanticId) (first : Nat)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)
@@ -41,7 +41,7 @@ theorem prepared_transition_canonical_batch_publication (program : Program) (sta
 
 /-- Every multiplicity-preserving permutation has the same successful actual publication and raw
 final state; validity and both execution folds are derived from the original preparations. -/
-theorem prepared_transition_canonical_batch_publication_perm (program : Program) (state : RuntimeState)
+theorem prepared_transition_canonical_batch_publication_perm (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (left right : List PreparedInternalTransition) (instanceId commandId : SemanticId) (first : Nat)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)

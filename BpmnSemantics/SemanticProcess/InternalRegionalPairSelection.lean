@@ -39,7 +39,7 @@ theorem returning_record_member (program : Program) (state : RuntimeState)
 
 /-- The second selector survives an actual independent regional step. Every filter,
 withdrawal and token-owner query is derived from the two complete predecessor preparations. -/
-theorem regionalSelection_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem regionalSelection_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

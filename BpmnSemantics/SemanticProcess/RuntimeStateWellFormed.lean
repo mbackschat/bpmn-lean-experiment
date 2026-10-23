@@ -619,13 +619,8 @@ def waitDeclarationsValid (program : Program) (instanceId : SemanticId)
 
 /-- `RSI-BIND-05` requires unique declarations for selected branches, event races and repeated-scope
 controllers. A controller uses its outer Activity element to identify the scope-entry declaration.
-
-The rule's third clause is **not** decided here or anywhere else in this predicate. Binding a called
-record to its paired `invokeProcess` and `returnProcess` is a program-side fact, and
-`calledProcessAssociationsValid` cannot supply it: that predicate takes only a `RuntimeState` and
-decides runtime-to-runtime association, never reading `program.operations`. Supplying it needs the
-paired operations looked up by the record's `returnOperationId`, and is recorded as absent rather
-than assumed. -/
+The call-record clause is `callRecordDeclared`, which running position validity owns, because the
+cancellation proofs that consume it see only that predicate. -/
 def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : Bool :=
   state.parallelScopeControllers.isEmpty &&
   state.selectedBranchSets.all (fun record =>

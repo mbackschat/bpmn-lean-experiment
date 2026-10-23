@@ -34,8 +34,8 @@ private theorem restricted_graph_exact (program : Program) (before after : Runti
           change ((after.scopeOccurrences.filter fun candidate => decide (candidate.id = owner)).length == 1) = true
           simpa only [exactLiveOccurrence, Bool.beq_eq_decide_eq] using live
   · intro record member
-    obtain ⟨⟨caller, callerMember, callerId, _⟩, _⟩ :=
-      calledProcessAssociationsValid_parentless_endpoints after calls record member
+    obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+      calledProcessAssociationsValid_endpoints after calls record member
     have live := (runtimePositionValid_scope_parent_binding program hosting hosting after valid running caller callerMember).1
     refine Bool.and_eq_true_iff.mpr ⟨?_, ?_⟩
     · change ((after.scopeOccurrences.filter fun candidate => decide (candidate.id = record.caller)).length == 1) = true
@@ -195,7 +195,7 @@ theorem preparedRegional_graph_filters (program : Program) (before after : Runti
 /-- Independent complete preparations preserve the other operation's literal occurrence region.
 The existing restriction law recomputes the closure with the successor's own population fuel. -/
 theorem prepareInternalRegional_region_after_independent_regional
-    (program : Program) (before after : RuntimeState) (hosting : SemanticId)
+    (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
     (running : before.control = .running hosting)

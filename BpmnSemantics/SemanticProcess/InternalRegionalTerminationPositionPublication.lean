@@ -30,7 +30,7 @@ theorem terminateScopeState_regional_position_delta (program : Program) (before 
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (definition : DefinitionScopeId) (owner : ScopeOccurrenceId)
     (region : InternalOccurrenceRegion)
-    (valid : runtimePositionValid program hosting before = true)
+    (valid : runtimePositionValid program hosting before = true) [CallersParentless before]
     (running : before.control = .running hosting)
     (selected : selectedTerminateOwner? program before id origin input definition = some owner)
     (derived : deriveInternalOccurrenceRegion? before owner = some region)
@@ -70,7 +70,7 @@ theorem terminateScopeState_regional_position_delta (program : Program) (before 
     apply Bool.eq_iff_iff.mpr
     simp [and_comm]
 
-theorem preparedTerminate_position_delta (program : Program) (before : RuntimeState)
+theorem preparedTerminate_position_delta (program : Program) [InvocationsInProcessRoots program] (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (definition : DefinitionScopeId)
     (prepared : PreparedInternalRegional)
     (found : prepareInternalRegional? program before (.terminateScope id origin input definition) = some prepared) :
@@ -95,6 +95,7 @@ theorem preparedTerminate_position_delta (program : Program) (before : RuntimeSt
     split at projected
     · assumption
     · contradiction
+  haveI := CallersParentless.of_rooted program before hosting hosting valid runningState
   have positionsExact : positions =
       { controlTokens := projectTokens program before.tokens, scopes := projectScopes program before.scopeOccurrences } := by
     simpa [projectControlPosition?, valid] using projected.symm

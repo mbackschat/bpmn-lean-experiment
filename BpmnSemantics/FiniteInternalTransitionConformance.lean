@@ -95,6 +95,9 @@ private def frontier : List SemanticOperation := [data, ordinary, routing]
 private def prepared : List PreparedInternalTransition :=
   (prepareInternalTransitionBatch? program ready frontier).getD []
 
+instance : InterruptionInvocationsRooted program :=
+  .of_check program (by decide +kernel)
+
 theorem fixture_is_admitted :
     programWellFormed program = true ∧
       runtimeStateWellFormed program instanceId ready = true ∧

@@ -354,12 +354,15 @@ def malformedDerivedCallState : RuntimeState :=
           { record with calledRoot := malformedDerivedRootOwner }
         else record }
 
+/-- A dangling caller. Stage B admits any one live occurrence as caller (CALLN-FRAME-01), so an
+embedded caller is no longer malformed at this state-only boundary; a caller naming no live
+occurrence still is. -/
 def malformedCallerState : RuntimeState :=
   { cancellationCounterexampleState with
     calledProcessOccurrences :=
       cancellationCounterexampleState.calledProcessOccurrences.map fun record =>
         if record.calledRoot = nestedCalledRootOwner then
-          { record with caller := calledChildOwner }
+          { record with caller := { calledChildOwner with activation := 2 } }
         else record }
 
 def duplicateHostingRootState : RuntimeState :=

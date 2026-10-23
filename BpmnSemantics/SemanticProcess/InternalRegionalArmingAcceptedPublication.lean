@@ -10,7 +10,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem preparedArming_regional_start_frame (program : Program) (before after : RuntimeState)
+theorem preparedArming_regional_start_frame (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (regionalOperation : SemanticOperation) (regional : PreparedInternalRegional)
     (arm : PreparedInternalArming) (element : NodeId) (activation : Nat)
     (beforeWF : runtimeStateWellFormed program arm.scopeFramePatch.runtimeInstanceId before = true)
@@ -89,6 +89,10 @@ theorem preparedArming_regional_start_frame (program : Program) (before after : 
               exact False.elim (untouched (baseWrites _ (by simp)))
           | some owner => simp [regionalBaseFootprint?, operationEq, kind, parent] at baseFound
   | throwError id origin input error handler =>
+      haveI := InterruptionInvocationsRooted.declared program _
+        (prepareInternalRegional_operation_declared program before _ regional regionalFound) rfl
+      haveI := CallersParentless.of_rooted program before arm.scopeFramePatch.runtimeInstanceId
+        arm.scopeFramePatch.runtimeInstanceId position facts.2.2
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
@@ -101,6 +105,10 @@ theorem preparedArming_regional_start_frame (program : Program) (before after : 
       rw [update]
       exact frame
   | terminateScope id origin input definition =>
+      haveI := InterruptionInvocationsRooted.declared program _
+        (prepareInternalRegional_operation_declared program before _ regional regionalFound) rfl
+      haveI := CallersParentless.of_rooted program before arm.scopeFramePatch.runtimeInstanceId
+        arm.scopeFramePatch.runtimeInstanceId position facts.2.2
       have chosen := (regionalSelection_terminate_owner program before id origin input definition regional.selection selected).1
       have child : regional.selection.root.parent ≠ none := by
         intro parentless
@@ -127,7 +135,7 @@ theorem preparedArming_regional_start_frame (program : Program) (before after : 
       exact frame
   | _ => simp [selectInternalRegional?] at selected
 
-theorem preparedArming_regional_publication_frame (program : Program) (commandId : SemanticId)
+theorem preparedArming_regional_publication_frame (program : Program) [InterruptionInvocationsRooted program] (commandId : SemanticId)
     (before after : RuntimeState) (regionalOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (arm : PreparedInternalArming)
     (programWF : programWellFormed program = true)

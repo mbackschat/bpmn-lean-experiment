@@ -11,7 +11,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics
 
 theorem prepareInternalBoundedScope_after_independent_regional
-    (program : Program) (before after : RuntimeState)
+    (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (contract : InternalBoundedScopeContract) (bounded : PreparedInternalBoundedScope)
     (operation : SemanticOperation) (regional : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program bounded.runtimeInstanceId before = true)

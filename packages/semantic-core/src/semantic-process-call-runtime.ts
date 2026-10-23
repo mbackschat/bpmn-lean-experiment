@@ -250,7 +250,9 @@ export function calledProcessAssociationsAreValid(state: RuntimeState): boolean 
       const callers = state.scopeOccurrences.filter(({ id }) =>
         sameScopeOccurrence(id, record.caller)
       );
-      return record.id.processInstanceId === record.caller.processInstanceId &&
+      // One live record per Call element, as invocation freshness keeps it; Return selects its record by element.
+      return records.filter((candidate) => candidate.id.elementId === record.id.elementId).length === 1 &&
+        record.id.processInstanceId === record.caller.processInstanceId &&
         record.id.activation > 0 &&
         callers.length === 1 &&
         record.calledRoot.processInstanceId === deriveCalledProcessInstanceId(

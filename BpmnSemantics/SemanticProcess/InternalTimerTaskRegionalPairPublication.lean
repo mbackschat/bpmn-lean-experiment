@@ -9,7 +9,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem prepared_regional_timer_task_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_timer_task_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation : SemanticOperation) (regional : PreparedInternalRegional)
     (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
     (commandId : SemanticId) (regionalIndex taskIndex : Nat)

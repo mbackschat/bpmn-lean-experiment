@@ -13,10 +13,11 @@ open BpmnSemantics
 
 private def RecordFacts (state : RuntimeState) (hosting : SemanticId)
     (record : CalledProcessOccurrence) : Prop :=
+  (state.calledProcessOccurrences.filter fun candidate =>
+    decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 ∧
   record.id.processInstanceId = record.caller.processInstanceId ∧
   record.id.activation > 0 ∧
-  (state.scopeOccurrences.filter fun occurrence =>
-    decide (occurrence.id = record.caller ∧ occurrence.parent.isNone)).length = 1 ∧
+  (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = record.caller)).length = 1 ∧
   record.calledRoot.processInstanceId = deriveCalledProcessInstanceId
     record.caller.processInstanceId ⟨record.id.elementId.value⟩ record.id.activation ∧
   record.calledRoot.processInstanceId ≠ hosting ∧
@@ -84,8 +85,8 @@ private theorem associations_iff (state : RuntimeState) (hosting : SemanticId)
           · intro record member
             have fields := valid.1.1 record member
             simp only [and_assoc] at fields
-            obtain ⟨a,b,c,d,e,f,g,h,i⟩ := fields
-            refine ⟨a,b,c,d,e,f,g,?_,i⟩
+            obtain ⟨u,a,b,c,d,e,f,g,h,i⟩ := fields
+            refine ⟨u,a,b,c,d,e,f,g,?_,i⟩
             change (state.calledProcessOccurrences.filter (fun candidate =>
               decide (candidate.caller = record.caller) &&
                 decide (candidate.id.elementId.value = record.id.elementId.value))).length = 1 at h
@@ -98,8 +99,8 @@ private theorem associations_iff (state : RuntimeState) (hosting : SemanticId)
           · intro record member
             have fields := records record member
             simp only [and_assoc]
-            obtain ⟨a,b,c,d,e,f,g,h,i⟩ := fields
-            refine ⟨a,b,c,d,e,f,g,?_,i⟩
+            obtain ⟨u,a,b,c,d,e,f,g,h,i⟩ := fields
+            refine ⟨u,a,b,c,d,e,f,g,?_,i⟩
             change (state.calledProcessOccurrences.filter (fun candidate =>
               decide (candidate.caller = record.caller) &&
                 decide (candidate.id.elementId.value = record.id.elementId.value))).length = 1
@@ -111,9 +112,18 @@ private theorem associations_iff (state : RuntimeState) (hosting : SemanticId)
                   roots occurrence member condition.1 condition.2
             · rfl
 
+private theorem scope_present_of_id_count (scopes : List RuntimeScopeOccurrence)
+    (owner : ScopeOccurrenceId)
+    (count : (scopes.filter fun scope => decide (scope.id = owner)).length = 1) :
+    ∃ scope ∈ scopes, scope.id = owner := by
+  obtain ⟨scope, member⟩ := List.exists_mem_of_length_pos (by omega : 0 < (scopes.filter fun scope =>
+    decide (scope.id = owner)).length)
+  exact ⟨scope, (List.mem_filter.mp member).1, of_decide_eq_true (List.mem_filter.mp member).2⟩
+
 private theorem child_insert_associations (state : RuntimeState) (hosting : SemanticId)
     (inserted : RuntimeScopeOccurrence) (owner : ScopeOccurrenceId)
     (parent : inserted.parent = some owner)
+    (fresh : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ inserted.id)
     (valid : AssociationFacts state hosting) :
     AssociationFacts
       { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences }
@@ -122,8 +132,12 @@ private theorem child_insert_associations (state : RuntimeState) (hosting : Sema
   refine ⟨?_, ?_, ?_, reach⟩
   · simpa [insertScopeOccurrence, length_filter_canonicalInsertBy, parent] using hostingCount
   · intro record member
-    simpa [RecordFacts, insertScopeOccurrence, length_filter_canonicalInsertBy, parent]
-      using records record member
+    have fields := records record member
+    obtain ⟨caller, callerMember, callerId⟩ := scope_present_of_id_count _ _ fields.2.2.2.1
+    have callerDifferent : inserted.id ≠ record.caller := fun same =>
+      fresh caller callerMember (callerId.trans same.symm)
+    simpa [RecordFacts, insertScopeOccurrence, length_filter_canonicalInsertBy, parent, callerDifferent]
+      using fields
   · intro occurrence member isRoot different
     rcases (mem_insertScopeOccurrence inserted occurrence state.scopeOccurrences).mp member with
       equal | old
@@ -161,6 +175,10 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
     (rootActivation : record.calledRoot.activation = 1)
     (callerCount : (state.scopeOccurrences.filter fun occurrence =>
       decide (occurrence.id = record.caller ∧ occurrence.parent.isNone)).length = 1)
+    (callerIdCount : (state.scopeOccurrences.filter fun occurrence =>
+      decide (occurrence.id = record.caller)).length = 1)
+    (elementAbsent : (state.calledProcessOccurrences.filter fun candidate =>
+      decide (candidate.id.elementId.value = record.id.elementId.value)).length = 0)
     (anchorAbsent : (state.calledProcessOccurrences.filter fun candidate =>
       decide (candidate.caller = record.caller ∧
         candidate.id.elementId.value = record.id.elementId.value)).length = 0)
@@ -189,14 +207,19 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
   have oldEndpoints (old : CalledProcessOccurrence) (member : old ∈ state.calledProcessOccurrences) :
       inserted.id ≠ old.caller ∧ inserted.id ≠ old.calledRoot := by
     have fields := records old member
-    obtain ⟨caller, cm, ce⟩ := scope_present_of_count _ _ fields.2.2.1
-    obtain ⟨called, rm, re⟩ := scope_present_of_count _ _ fields.2.2.2.2.2.2.2.2
+    obtain ⟨caller, cm, ce⟩ := scope_present_of_id_count _ _ fields.2.2.2.1
+    obtain ⟨called, rm, re⟩ := scope_present_of_count _ _ fields.2.2.2.2.2.2.2.2.2
     exact ⟨rootId ▸ ce ▸ newDifferent caller cm, rootId ▸ re ▸ newDifferent called rm⟩
   have oldAnchor (old : CalledProcessOccurrence) (member : old ∈ state.calledProcessOccurrences) :
       ¬ (record.caller = old.caller ∧ record.id.elementId.value = old.id.elementId.value) := by
     have absent := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp anchorAbsent) old member
     simp only [decide_eq_true_eq] at absent
     exact fun same => absent ⟨same.1.symm, same.2.symm⟩
+  have oldElement (old : CalledProcessOccurrence) (member : old ∈ state.calledProcessOccurrences) :
+      record.id.elementId.value ≠ old.id.elementId.value := by
+    have absent := List.filter_eq_nil_iff.mp (List.length_eq_zero_iff.mp elementAbsent) old member
+    simp only [decide_eq_true_eq] at absent
+    exact fun same => absent same.symm
   have oldRootAbsent : (state.scopeOccurrences.filter fun occurrence =>
       decide (occurrence.id = record.calledRoot ∧ occurrence.parent.isNone)) = [] := by
     apply List.filter_eq_nil_iff.mpr
@@ -240,10 +263,11 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
         obtain ⟨caller, callerMember, identity⟩ := scope_present_of_count _ _ callerCount
         exact identity ▸ rootId ▸ newDifferent caller callerMember
       simp only [RecordFacts]
-      refine ⟨recordProcess, positive, ?_, derived, calledDifferent, separated, rootActivation,
+      refine ⟨?_, recordProcess, positive, ?_, derived, calledDifferent, separated, rootActivation,
         ?_, ?_⟩
+      · simp only [call_filter_insert, decide_true, ↓reduceIte, elementAbsent, Nat.add_zero]
       · simpa [insertScopeOccurrence, length_filter_canonicalInsertBy, callerDifferent]
-          using callerCount
+          using callerIdCount
       · simp only [call_filter_insert, and_self, decide_true, ↓reduceIte, anchorAbsent, Nat.add_zero]
       · simp only [insertScopeOccurrence, length_filter_canonicalInsertBy, rootId, parent,
           Option.isNone_none, and_self, decide_true, ↓reduceIte, oldRootAbsent, List.length_nil,
@@ -252,7 +276,7 @@ private theorem call_insert_associations (state : RuntimeState) (hosting : Seman
       have different := oldEndpoints old existing
       simpa only [RecordFacts, insertScopeOccurrence, length_filter_canonicalInsertBy,
         call_filter_insert, different.1, different.2, false_and, decide_false, Bool.false_eq_true, ↓reduceIte,
-        oldAnchor old existing, Nat.zero_add, Nat.add_zero] using fields
+        oldAnchor old existing, oldElement old existing, and_false, Nat.zero_add, Nat.add_zero] using fields
   · intro scope member isRoot notHosting
     rcases (mem_insertScopeOccurrence inserted scope state.scopeOccurrences).mp member with
       equal | existing
@@ -305,7 +329,11 @@ theorem selectInternalScopeCreation_preserves_callAssociations (state : RuntimeS
       · contradiction
       · cases found
         apply (associations_iff _ hosting (by exact running)).mpr
-        exact child_insert_associations state hosting _ owner rfl facts
+        refine child_insert_associations state hosting _ owner rfl ?_ facts
+        intro occurrence member same
+        have absent : ¬ (state.scopeOccurrences.any fun occurrence =>
+            occurrence.id.definitionScopeId == definition) = true := by simp_all
+        exact absent (List.any_eq_true.mpr ⟨occurrence, member, by simp [same]⟩)
   | invokeProcess id origin input process definition entry returnOperation data =>
       cases data with
       | scalar => simp at found
@@ -327,6 +355,12 @@ theorem selectInternalScopeCreation_preserves_callAssociations (state : RuntimeS
             · rfl
             · apply root_count_of_singleton <;> first | assumption | (simp_all only [Bool.and_eq_true,
                 decide_eq_true_eq])
+            · obtain ⟨callerRoot, selected⟩ : ∃ callerRoot, (state.scopeOccurrences.filter fun occurrence =>
+                  decide (occurrence.id = owner)) = [callerRoot] := ⟨_, by assumption⟩
+              rw [selected]; rfl
+            · have fresh : (state.calledProcessOccurrences.filter fun record =>
+                  decide (record.id.elementId.value = origin.elementId.value)).length = 0 := by assumption
+              exact fresh
             · have fresh : (state.calledProcessOccurrences.filter fun record =>
                   decide (record.id.elementId.value = origin.elementId.value)).length = 0 := by assumption
               simp only [List.length_eq_zero_iff, List.filter_eq_nil_iff, decide_eq_true_eq] at fresh ⊢
@@ -377,7 +411,7 @@ theorem fresh_parentless_scope_without_call_record_invalid (state : RuntimeState
     simp only [decide_eq_true_eq]
     intro same
     obtain ⟨root, rootMember, rootId⟩ := scope_present_of_count _ _
-      (before.2.1 record member).2.2.2.2.2.2.2.2
+      (before.2.1 record member).2.2.2.2.2.2.2.2.2
     exact fresh root rootMember (congrArg ScopeOccurrenceId.processInstanceId (rootId.trans same))
   cases result : calledProcessAssociationsValid
       { state with scopeOccurrences := insertScopeOccurrence inserted state.scopeOccurrences } with

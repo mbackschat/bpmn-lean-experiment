@@ -19,15 +19,17 @@ for (const selectedIndex of [0, 1]) {
     const { program, state, start } = regionalPairFixture(Kind.ReturnProcess, Kind.ReturnProcess);
     const originals = state.calledProcessOccurrences;
     assert.equal(originals.length, 2);
-    const nested = (caller: ScopeOccurrenceId, prototype: CalledProcessOccurrence): CalledProcessOccurrence => ({
-      ...prototype, caller, id: { ...prototype.id, processInstanceId: caller.processInstanceId },
+    // Each nested record names its own Call element, since association validity keeps one live record per
+    // element, as invocation freshness does (CALLN-FRAME-01).
+    const nested = (caller: ScopeOccurrenceId, prototype: CalledProcessOccurrence, elementId: string): CalledProcessOccurrence => ({
+      ...prototype, caller, id: { ...prototype.id, processInstanceId: caller.processInstanceId, elementId },
       calledRoot: { ...prototype.calledRoot, processInstanceId: deriveCalledProcessInstanceId(
-        caller.processInstanceId, prototype.id.elementId, prototype.id.activation,
+        caller.processInstanceId, elementId, prototype.id.activation,
       ) },
     });
     const branches = originals.map((record, index) => {
-      const child = nested(record.calledRoot, originals[1 - index]!);
-      return [child, nested(child.calledRoot, record)];
+      const child = nested(record.calledRoot, originals[1 - index]!, `${record.id.elementId}-child`);
+      return [child, nested(child.calledRoot, record, `${record.id.elementId}-grandchild`)];
     });
     const added = branches.flat();
     const before: RuntimeState = { ...state,
@@ -70,6 +72,17 @@ for (const selectedIndex of [0, 1]) {
     assert.equal(calledProcessAssociationsAreValid({ ...after,
       calledProcessOccurrences: [...after.calledProcessOccurrences, after.calledProcessOccurrences[0]!] }), false);
     assert.equal(calledProcessAssociationsAreValid({ ...after, calledProcessOccurrences: before.calledProcessOccurrences }), false);
+    const [retainedChild, retainedGrandchild] = retainedPath;
+    const reusedElement = { ...retainedGrandchild!, id: { ...retainedGrandchild!.id, elementId: retainedChild!.id.elementId },
+      calledRoot: { ...retainedGrandchild!.calledRoot, processInstanceId: deriveCalledProcessInstanceId(
+        retainedGrandchild!.caller.processInstanceId, retainedChild!.id.elementId, retainedGrandchild!.id.activation,
+      ) } };
+    assert.equal(calledProcessAssociationsAreValid({ ...after,
+      calledProcessOccurrences: after.calledProcessOccurrences.map((record) => record === retainedGrandchild ? reusedElement : record)
+        .sort(compareCalledProcessOccurrences),
+      scopeOccurrences: after.scopeOccurrences.map((occurrence) => occurrence.id === retainedGrandchild!.calledRoot
+        ? { ...occurrence, id: reusedElement.calledRoot } : occurrence)
+        .sort((left, right) => compareScopeOccurrenceIds(left.id, right.id)) }), false);
     assert.deepEqual(removeCalledProcessSubtreesForCallers(before,
       [{ ...selectedCaller, activation: selectedCaller.activation + 1 }]), before);
   });

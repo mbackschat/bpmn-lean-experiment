@@ -16,7 +16,7 @@ open BpmnSemantics
 private theorem cancellation_runtime_components (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (running : before.control = .running hosting)
-    (valid : runtimeStateWellFormed program hosting before = true)
+    (valid : runtimeStateWellFormed program hosting before = true) [CallersParentless before]
     (owners : ∀ wait ∈ before.waits, wait.processInstanceId = wait.owner.processInstanceId)
     (closed : regionalOwnershipClosed before (cancellationReferenceRetention before root disposition) = true)
     (position : runtimePositionValid program hosting (cancelScopeSubtree before root disposition) = true)
@@ -56,7 +56,8 @@ private theorem cancellation_runtime_components (program : Program) (before : Ru
     cancelScopeSubtree_preserves_repeated_scope_state program before hosting root disposition
       beforePosition running activityIds repeated⟩
 
-theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
+theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) [InvocationsInProcessRoots program]
+    (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (definition : DefinitionScopeId) (prepared : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -73,6 +74,7 @@ theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (
   obtain ⟨actual, running⟩ := regionalSelection_running program before _ prepared.selection selection
   have same := runtimePositionValid_running_instance program hosting actual before position running
   subst actual
+  haveI := CallersParentless.of_rooted program before hosting hosting position running
   have rootMember := regionalSelection_root_member program before _ prepared.selection selection
   obtain ⟨_, _, current, _, _, _, _, _, opened, _⟩ :=
     regionalPublicationTemplate_facts program before prepared.selection prepared.region prepared.publicationTemplate published
@@ -116,7 +118,8 @@ theorem preparedTerminate_preserves_runtimeStateWellFormed (program : Program) (
     by change (match before.control with | .notStarted => _ | _ => true) = true; rw [running],
     bodies, retention, snapshotValid, execution, repeated⟩
 
-theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
+theorem preparedError_preserves_runtimeStateWellFormed (program : Program) [InvocationsInProcessRoots program]
+    (before : RuntimeState)
     (hosting : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (error : ErrorReference) (handler : InterruptingErrorHandler)
     (prepared : PreparedInternalRegional) (valid : runtimeStateWellFormed program hosting before = true)
@@ -133,6 +136,7 @@ theorem preparedError_preserves_runtimeStateWellFormed (program : Program) (befo
   obtain ⟨actual, running⟩ := regionalSelection_running program before _ prepared.selection selection
   have same := runtimePositionValid_running_instance program hosting actual before position running
   subst actual
+  haveI := CallersParentless.of_rooted program before hosting hosting position running
   have rootMember := regionalSelection_root_member program before _ prepared.selection selection
   obtain ⟨_, _, current, _, _, _, _, _, opened, _⟩ :=
     regionalPublicationTemplate_facts program before prepared.selection prepared.region prepared.publicationTemplate published

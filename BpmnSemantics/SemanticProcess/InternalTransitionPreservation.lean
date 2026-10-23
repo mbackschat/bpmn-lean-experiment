@@ -53,7 +53,7 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
         (by simp) (by simp) (by simp) (by simp) readOnly
       simpa only [PreparedInternalTransition.apply, applied, Option.getD_some] using frame.1
 
-theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
+theorem prepared_transition_preserves (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)

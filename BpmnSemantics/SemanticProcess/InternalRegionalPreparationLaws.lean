@@ -21,7 +21,8 @@ theorem prepareInternalRegional_rootCompensationDomain (program : Program) (stat
 
 /-- Predecessor publication supplies the valid position, and exact declaration plus ownership
 closure supply the selected evaluator's position and reference preservation premises. -/
-theorem preparedInternalRegional_preserves_position_and_references (program : Program) (before : RuntimeState)
+theorem preparedInternalRegional_preserves_position_and_references (program : Program)
+    [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (structural : flowNodeOccurrenceStructuralProgramValidity program before = true)
     (identities : waitIdentitiesUnique before = true)
@@ -45,7 +46,8 @@ theorem preparedInternalRegional_preserves_position_and_references (program : Pr
     (List.mem_filter.mp (by rw [declared]; simp)).1
   obtain ⟨after, result, retainedPosition, retainedActivities, retainedRaces⟩ :=
     ownershipClosedSelection_preserves_position_and_references program before hosting operation prepared.selection
-      snapshots position structural member identities activities races selected
+      snapshots position structural member identities activities races
+      (InterruptionInvocationsRooted.declared program operation member) selected
   refine ⟨hosting, after, running, ?_, retainedPosition, retainedActivities, retainedRaces⟩
   simp [applyPreparedInternalRegional?, prepareInternalRegional_operation program before operation prepared found, found, result]
 

@@ -192,7 +192,7 @@ theorem prepareInternalBoundedScope_preserves_child_runtime
   have result := selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state
     contract.entryOperation entry hosting ownerRecord contract.origin definition delta
     valid entryFound control snapshots ownerExact definitionFound checks position (fun entry declared => (separation entry declared).1)
-    (by intro record called; simp [child] at called)
+    (by intro record called; simp [child] at called) (by intro record called; simp [child] at called)
   simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] using result
 
@@ -212,7 +212,7 @@ theorem prepareInternalBoundedScope_preserves_child_position
   have childPosition := selectedScopeCreation_preserves_runtimePositionValid program state
     contract.entryOperation entry instanceId hosting ownerRecord contract.origin definition delta
     valid entryFound control ownerExact definitionFound checks position
-    (by intro record called; simp [child] at called)
+    (by intro record called; simp [child] at called) (by intro record called; simp [child] at called)
   simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] using childPosition
 

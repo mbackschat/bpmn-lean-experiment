@@ -65,6 +65,9 @@ private def program (kind : InternalTimerTaskKind) : Program :=
     operationScopes := operations.map fun operation =>
       { operationId := operation.id, scopeId := rootDefinitionScopeId processId } }
 
+instance (kind : InternalTimerTaskKind) : InterruptionInvocationsRooted (program kind) :=
+  .of_check (program kind) (by cases kind <;> decide +kernel)
+
 private def ready : RuntimeState :=
   { initialState with
     control := .running instanceId

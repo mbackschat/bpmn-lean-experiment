@@ -123,7 +123,6 @@ const leanSites: ReadonlyArray<Site> = [
   ["InterruptingMessageEventSubProcessRegistration.lean", "registerEventSubProcessListener?", byDefinitionScope, "outsideAlphabet"],
   ["MessageBoundedTask.lean", "armMessageBoundedUserTaskState?", "onlyTokenOwner?", "outsideAlphabet"],
   ["MonitoredTask.lean", "armMonitoredUserTaskState?", "onlyTokenOwner?", "outsideAlphabet"],
-  ["NestedScopeData.lean", "calledRootOf?", "calledRootMappings?", "calledDefinitionData"],
   ["NestedScopeDataCommand.lean", "declaredNames", "calledRootMappings?", "calledDefinitionData"],
   ["ParallelMultiInstanceTransition.lean", "enterSharedParallelMultiInstance?", "onlyTokenOwner?", "outsideAlphabet"],
   ["ParallelScopeRuntime.lean", "enterParallelScope?", byDefinitionScope, "outsideAlphabet"],

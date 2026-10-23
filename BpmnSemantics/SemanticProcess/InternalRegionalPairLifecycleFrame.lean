@@ -27,7 +27,7 @@ private theorem cancellation_predicates_disjoint (ownerLeft ownerRight handlerLe
 
 /-- Acceptance and the regional fold determine the actual successor projection, including
 canonical order and retained-end identity, without another operation-family projection proof. -/
-theorem preparedRegional_open_projection_filter (program : Program) (before after : RuntimeState)
+theorem preparedRegional_open_projection_filter (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
     (found : prepareInternalRegional? program before operation = some prepared)
@@ -180,7 +180,7 @@ private theorem closed_reference_handlers_retained (state : RuntimeState)
         have target := List.all_eq_true.mp targets wait member
         simpa only [named, Bool.not_true, Bool.false_or] using target
 
-theorem regional_pair_handler_withdrawal (program : Program) (before after : RuntimeState)
+theorem regional_pair_handler_withdrawal (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -714,7 +714,7 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
 
 /-- Independent preparation protects every projected entry selected by cancellation,
 including handlers whose owner is outside the cancelling region. -/
-theorem regionalCancellationEnds_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem regionalCancellationEnds_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

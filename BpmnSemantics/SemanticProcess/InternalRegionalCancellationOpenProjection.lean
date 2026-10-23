@@ -17,7 +17,7 @@ open BpmnSemantics
 theorem cancelScopeSubtree_child_open_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (current : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (unique : attachedMessagesUnambiguous state = true)

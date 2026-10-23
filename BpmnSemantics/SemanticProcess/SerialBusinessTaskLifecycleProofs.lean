@@ -556,7 +556,7 @@ theorem ordered_suffix_position_guard (program : Program) (analysis : Analysis) 
       · apply Bool.and_eq_true_iff.mpr
         refine ⟨?_, ?_⟩
         · apply Bool.and_eq_true_iff.mpr
-          refine ⟨by simp, ?_⟩
+          refine ⟨by simp [calls], ?_⟩
           with_unfolding_all exact decide_eq_true_iff.mpr rootCount
         · simp [calledProcessAssociationsValid, rootInstanceId?, running, calls, live]
       · change (state.scopeOccurrences.all fun occurrence => exactLiveOccurrence state occurrence.id && _) = true

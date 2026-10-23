@@ -30,7 +30,7 @@ private theorem preparedArming_publication_at_index (program : Program) (state :
 
 /-- Both orders execute, retain preparation, preserve validity, and accept the same publication
 for each operation at its assigned index, including nonzero and unequal indices. -/
-theorem prepared_regional_arming_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_arming_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation : SemanticOperation) (regional : PreparedInternalRegional) (arm : PreparedInternalArming)
     (commandId : SemanticId) (regionalIndex armingIndex : Nat)
     (programWF : programWellFormed program = true)

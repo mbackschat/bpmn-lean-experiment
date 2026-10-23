@@ -161,8 +161,8 @@ private theorem insertion_graph_exact (program : Program) (before after : Runtim
             simp only [parent, Bool.and_eq_true] at previous
             exact previous.2
   · intro record member
-    obtain ⟨⟨caller, callerMember, callerId, _⟩, _⟩ :=
-      calledProcessAssociationsValid_parentless_endpoints after calls record member
+    obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+      calledProcessAssociationsValid_endpoints after calls record member
     have live := (runtimePositionValid_scope_parent_binding program hosting hosting after valid running caller callerMember).1
     refine Bool.and_eq_true_iff.mpr ⟨?_, ?_⟩
     · change ((after.scopeOccurrences.filter fun candidate => decide (candidate.id = record.caller)).length == 1) = true
