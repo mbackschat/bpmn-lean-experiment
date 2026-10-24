@@ -16,8 +16,9 @@
 # count; `scripts/verification-entrypoint.test.ts` now rejects a bare `lake` in any instruction
 # surface. `package.json`'s `config.leanBuildThreads` owns the value. The wrapper always replaces an
 # inherited LEAN_NUM_THREADS value: an ambient or agent-supplied override must never turn an ordinary
-# project command into an unbounded host build. The host-wide lock prevents two repository Lean
-# process trees from multiplying that bounded peak.
+# project command into an unbounded host build. The project lock, shared by every checkout of this
+# repository and ignoring other projects, prevents two Lean process trees of this project from
+# multiplying that bounded peak.
 #
 # `run <source.lean> [args...]` deliberately uses Lean's interpreter after the owning gate has built
 # that source module. Runtime witnesses need their `main`; they do not need Lake to regenerate and
