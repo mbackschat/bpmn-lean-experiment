@@ -101,12 +101,24 @@ Hub functions are explicitly unfolded in few files: `programWellFormed` in 18 of
 
 1. Guard migration.
 2. Module conversion of the kernel types, a one-time complete rebuild.
-3. Hidden closed-world functions with their bridges.
-4. The next family, `PC-SCOPE-05` Stage B, built in the family shape.
+3. Module conversion of every remaining library module with exposed bodies, a one-time complete rebuild.
+4. Hidden hub bodies, one hub at a time in the order of the measurement below: an importer that unfolds or kernel-reduces the hub imports it with `import all` until a bridge lemma replaces that use.
+5. The next coverage family, built in the family shape: its declarations live in family-owned modules, never appended to a hub.
 
-Existing families move when next touched, and profile identity branches become per-family descriptors as their families move.
+Existing families move when next touched, and profile identity branches become per-family descriptors as their families move. `PC-SCOPE-05` Stage B ran before step 3 on the owner's delegation of 2026-10-23, batching its kernel and closed-world edits into one complete rebuild under rule 4.
 
-Step 3 is larger than this order assumed, measured after step 2 on 2026-10-23. A module cannot import a non-module file, so hiding a closed-world function first converts its import closure: 180 non-module modules below the transition dispatch, 46 below program structural well-formedness and 61 below runtime-state well-formedness. A hidden-body edit still rebuilds every non-module importer (scratch probe on the pinned toolchain, not retained), so the hidden bodies pay off only as their consumers convert. On the owner's delegation the same day, Stage B's Lean lift runs before step 3 and batches its kernel and closed-world edits into one complete rebuild at its start, under rule 4; step 3 is rescoped after Stage B.
+Hiding pays off only with every importer converted, because a hidden-body edit still rebuilds every non-module importer (scratch probe on the pinned toolchain, 2026-10-23, not retained). A static replay on 2026-10-24 of the 92 Lean commits from 2026-09-24 to 2026-10-24 against today's import graph (979 modules) gives the median number of modules each commit invalidates. It counts comment-free changes, charges a new file only to itself, and treats a theorem statement, a signature, a structure or an inductive as interface. Kernel-reducing fixtures that `import all` a hub are not modelled, so the hidden-body rows are lower bounds.
+
+| Design | Median invalidated | Commits above 500 |
+|---|---|---|
+| Today | 786 | 58 |
+| Step 3: every module converted, bodies exposed | 661 | 54 |
+| Step 3 with every body hidden | 649 | 49 |
+| New declarations placed in leaf modules, no module system | 660 | 50 |
+| Placement and step 3, bodies exposed | 541 | 46 |
+| Placement, step 3 and hidden bodies | 11 | 34 |
+
+Only the combination meets the acceptance below; the remaining commits above 500 change a signature or a kernel type. The hubs whose interface edit set a commit's invalidation above 500 most often were `CheckedProcessContract` (5), `ParallelScopeRuntime` (4), and `ScopeCompletion`, `ProfileShapeCatalog`, `ValueDomain` and `SemanticProcessContract` (3 each); half of those edits only added declarations.
 
 ## Acceptance
 
