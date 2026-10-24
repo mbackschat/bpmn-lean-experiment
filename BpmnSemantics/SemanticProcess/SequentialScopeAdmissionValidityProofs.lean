@@ -6,6 +6,9 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
 
@@ -323,7 +326,7 @@ theorem sequentialScope_start_projectable (program : Program) (instanceId : Sema
   simp [projectOpenFlowNodeOccurrences?, flowNodeOccurrenceProgramValidity, structural, waits, pairs,
     started, owner, runningStartState, initialState, emptyScopedVariables, valid, eventRaceAssociationsValid,
     calledProcessAssociationsValid, rootInstanceId?, effectIncidentAssociationsValid,
-    projectWaits?, sortFlowNodeOccurrenceStarts, sortBy]
+    projectWaits?, sortFlowNodeOccurrenceStarts, SemanticProcess.sortBy]
 
 private theorem smis_entry_static_binding (program : Program) (entry : SequentialScopeEntry)
     (before : RuntimeState) (hosting : SemanticId) (parent : ScopeOccurrenceId)

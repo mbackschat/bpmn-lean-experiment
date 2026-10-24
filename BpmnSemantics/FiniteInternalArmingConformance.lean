@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! An admitted claim-assessment frontier separates retained finite arming from ID-only execution. -/
 

@@ -4,6 +4,10 @@ public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! A concurrent document review witnesses production closure over a local fork, human review, and a deadline. The selected account is [Internal Commutation](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). These kernel-decided facts cover this structurally admitted Program and its actual Start command, not checked XML admission, a generalized closure-fuel theorem, or scheduled choice. -/
 

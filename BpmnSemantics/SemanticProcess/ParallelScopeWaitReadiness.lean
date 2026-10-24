@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
 public import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Reachable wait reservation validity
 

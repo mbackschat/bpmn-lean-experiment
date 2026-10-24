@@ -6,6 +6,8 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairMixedFields
 public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Complete regional pairs compose the existing preparation, execution, validity, and publication laws. Canonical token order and additive end counts are proved separately from retained-field removal before reconstructing literal RuntimeState equality. -/
 

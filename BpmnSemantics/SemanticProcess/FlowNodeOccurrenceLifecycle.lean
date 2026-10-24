@@ -3,16 +3,20 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle -/
 
-@[expose] public section
+-- Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce
+-- definitionally is `@[expose]` with what its body calls ([migration step 4](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)).
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-def stimulusCommandId : Stimulus → SemanticId
+@[expose] def stimulusCommandId : Stimulus → SemanticId
   | .startProcess commandId ..
   | .triggerMessageStart commandId ..
   | .triggerTimerStart commandId ..
@@ -91,7 +95,7 @@ private theorem mem_insertBy (before : α → α → Bool) (value inserted : α)
       simp only [insertBy]
       split <;> simp_all [or_left_comm]
 
-private theorem mem_sortBy (before : α → α → Bool) (value : α) (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
+private theorem mem_lifecycleSortBy (before : α → α → Bool) (value : α) (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
   induction values with
   | nil => simp [sortBy]
   | cons head tail ih => simp [sortBy, mem_insertBy, ih]
@@ -115,7 +119,7 @@ private theorem sortBy_perm (before : α → α → Bool) : ∀ values, (sortBy 
 def sortFlowNodeOccurrenceStarts : List UnnumberedFlowNodeOccurrenceStart → List UnnumberedFlowNodeOccurrenceStart := sortBy startBefore
 
 theorem mem_sortFlowNodeOccurrenceStarts (value : UnnumberedFlowNodeOccurrenceStart) (values : List UnnumberedFlowNodeOccurrenceStart) : value ∈ sortFlowNodeOccurrenceStarts values ↔ value ∈ values := by
-  exact mem_sortBy startBefore value values
+  exact mem_lifecycleSortBy startBefore value values
 
 theorem sortFlowNodeOccurrenceStarts_perm (values : List UnnumberedFlowNodeOccurrenceStart) : (sortFlowNodeOccurrenceStarts values).Perm values := sortBy_perm startBefore values
 
@@ -126,29 +130,29 @@ theorem sortFlowNodeOccurrenceEnds_perm (values : List UnnumberedFlowNodeOccurre
   sortBy_perm (fun left right : UnnumberedFlowNodeOccurrenceEnd => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) values
 
 theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd) (values : List UnnumberedFlowNodeOccurrenceEnd) : value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
-  exact mem_sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) value values
+  exact mem_lifecycleSortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) value values
 
-def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
+@[expose] def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
     (origin : BpmnElementOrigin) : Option ScopeOccurrenceId :=
   match state.calledProcessOccurrences.filter fun record =>
       decide (record.returnOperationId = id && record.id.elementId.value = origin.elementId.value) with
   | [record] => some record.calledRoot
   | _ => none
 
-def uniqueCompletingScopeOwner? (state : RuntimeState)
+@[expose] def uniqueCompletingScopeOwner? (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Option ScopeOccurrenceId :=
   match state.scopeOccurrences.filter fun occurrence =>
       decide (occurrence.id.definitionScopeId = scopeId) with
   | [occurrence] => some occurrence.id
   | _ => none
 
-def selectedJoinOwner? (state : RuntimeState)
+@[expose] def selectedJoinOwner? (state : RuntimeState)
     (selectionKey : String) : Option ScopeOccurrenceId :=
   match state.selectedBranchSets.filter (selectedBranchJoinReady state selectionKey) with
   | [record] => some record.owner
   | _ => none
 
-def flowNodeSelectedOperationOwner? (state : RuntimeState) :
+@[expose] def flowNodeSelectedOperationOwner? (state : RuntimeState) :
     SemanticOperation → Option ScopeOccurrenceId
   | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
   | .enterScope _ _ input _ _
@@ -193,12 +197,12 @@ def flowNodeSelectedOperationOwner? (state : RuntimeState) :
   | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId =>
       uniqueCompletingScopeOwner? state scopeId
 
-def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
+@[expose] def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
   | .notStarted | .failed .. => none
 
-def processIdForOwner? (program : Program) (state : RuntimeState)
+@[expose] def processIdForOwner? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option ProcessId := do
   let hosting ← hostingInstanceId? state
   if !flowNodeOccurrenceOwnerLiveUnique state owner then none
@@ -209,11 +213,11 @@ def processIdForOwner? (program : Program) (state : RuntimeState)
     | [record] => some record.calledProcessId
     | _ => none
 
-def occurrenceId (processInstanceId : SemanticId) (elementId : NodeId)
+@[expose] def occurrenceId (processInstanceId : SemanticId) (elementId : NodeId)
     (activation : Nat) : OccurrenceId :=
   { processInstanceId, elementId := ⟨elementId.value⟩, activation }
 
-def waitStart? (program : Program) (state : RuntimeState)
+@[expose] def waitStart? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (elementId : NodeId) (activation : Nat) :
     Option OpenSemanticFlowNodeOccurrence := do
   let processId ← processIdForOwner? program state owner
@@ -223,7 +227,7 @@ def waitStart? (program : Program) (state : RuntimeState)
       elementId
       owner }
 
-def scopeStart? (program : Program) (state : RuntimeState)
+@[expose] def scopeStart? (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) : Option OpenSemanticFlowNodeOccurrence := do
   let owner ← occurrence.parent
   let processId ← processIdForOwner? program state owner
@@ -237,7 +241,7 @@ def scopeStart? (program : Program) (state : RuntimeState)
       elementId := definition.originElementId
       owner }
 
-def callStart? (program : Program) (state : RuntimeState)
+@[expose] def callStart? (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Option OpenSemanticFlowNodeOccurrence := do
   let processId ← processIdForOwner? program state record.caller
   pure

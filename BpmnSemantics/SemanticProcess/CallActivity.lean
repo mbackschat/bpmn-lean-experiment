@@ -10,7 +10,9 @@ public import BpmnSemantics.SemanticProcess.ScopeCompletion
 This module owns the hidden caller/called association, exact invocation and normal-return transitions, and their declarative soundness boundary. Called-instance identity is owned by `CallActivityIdentity`; source QName resolution, public observation, and Temporal hosting remain outside this module.
 -/
 
-@[expose] public section
+-- Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce
+-- definitionally is `@[expose]` with what its body calls ([migration step 4](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)).
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -37,19 +39,19 @@ def sortCallRecords :
   | [] => []
   | record :: rest => insertCallRecord record (sortCallRecords rest)
 
-def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
+@[expose] def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId
   | .completed instanceId
   | .cancelled instanceId => some instanceId
   | .notStarted | .failed .. => none
 
-def sameCallIdentity (record : CalledProcessOccurrence)
+@[expose] def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
 
 /-- The hidden call collection and parentless called roots form a one-to-one identity association. -/
-def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
+@[expose] def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
   match rootInstanceId? state with
   | none => false
   | some hostingInstanceId =>
@@ -280,7 +282,7 @@ theorem calledProcessAssociationsValid_called_instance_injective (state : Runtim
           congrArg (fun id : NodeId => (⟨id.value⟩ : SemanticId)) tuple.2.1,
           tuple.2.2⟩
 
-def removeCalledProcessTree (state : RuntimeState)
+@[expose] def removeCalledProcessTree (state : RuntimeState)
     (record : CalledProcessOccurrence) : RuntimeState :=
   let removed := processInstanceClosureWithin state.calledProcessOccurrences
     [record.calledRoot.processInstanceId]

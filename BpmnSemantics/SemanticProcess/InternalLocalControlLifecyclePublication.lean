@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Complete local-control preparation determines the actual record and accepted lifecycle
 publication under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

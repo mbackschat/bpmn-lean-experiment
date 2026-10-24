@@ -5,6 +5,10 @@ public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
 public import BpmnSemantics.ActivityBodyTurnoverConformance
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! BTP-LEGACY-HOST-01 affects both Task arms as well as bounded scopes. These constructed
 states distinguish AOO-JOIN-03's exact attachment from the retired ordinal coincidence;

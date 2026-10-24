@@ -4,6 +4,9 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInput
 public import BpmnSemantics.SemanticProcess.ActivityDataOutput
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity-counter canonical insertion witnesses
 

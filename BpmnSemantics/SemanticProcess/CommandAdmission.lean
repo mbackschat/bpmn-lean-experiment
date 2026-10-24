@@ -32,6 +32,7 @@ public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessIn
 public import BpmnSemantics.SemanticProcess.CommandStartBindings
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataCommand
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Semantic Process external command admission
 

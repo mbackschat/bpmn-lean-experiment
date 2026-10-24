@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValid
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Cancellation preserves Compensation validity through the exact retained-owner census.
 The selected operation must justify retention or removal; an empty result alone is not

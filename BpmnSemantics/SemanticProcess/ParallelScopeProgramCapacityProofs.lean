@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Admitted parallel Program capacity certificates
 

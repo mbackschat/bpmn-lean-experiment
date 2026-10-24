@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.InclusiveGateway
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! RSI-ORDER-01 separates committed unique-key storage from raw evaluator frame laws.
 Lean tokens are a unit bag: repeated equal tokens encode positive multiplicity, unlike

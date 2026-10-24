@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

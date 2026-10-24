@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Called-tree position preservation
 

@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.CallActivityConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Balanced invoke/return populations must still form a bijection, as required by
 the [Call Activity account](../docs/capsules/CALL-ACTIVITY-SPEC.md).

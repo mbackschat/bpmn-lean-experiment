@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! A deadline-bound review runs beside an independent review and a standalone Timer.
 These constructed Program frontiers bind both Timer-task variants to finite batching;

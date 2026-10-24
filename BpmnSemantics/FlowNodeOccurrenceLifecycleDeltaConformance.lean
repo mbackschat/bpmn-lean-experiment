@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Flow-node occurrence lifecycle delta conformance
 

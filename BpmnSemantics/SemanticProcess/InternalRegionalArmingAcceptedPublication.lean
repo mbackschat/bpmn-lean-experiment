@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! The arming publication keeps its predecessor-selected start and time across an independent
 regional execution. Only the surviving arming owner needs a Process lookup frame.

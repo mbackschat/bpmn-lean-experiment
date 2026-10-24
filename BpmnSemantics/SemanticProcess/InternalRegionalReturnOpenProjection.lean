@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalReturnScopeCallProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Accepted Return publication composes actual cleanup, all independent projection
 guards, and exact Scope/Call/wait populations. The ending removes only the selected

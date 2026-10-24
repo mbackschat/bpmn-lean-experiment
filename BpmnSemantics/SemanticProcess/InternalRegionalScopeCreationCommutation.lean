@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationFrame
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalFrame
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalAlgebra
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! The complete regional/scope-creation outcome derives both preparations and opposite executions from predecessor facts. Collection algebra supplies literal canonical state equality; the existing publication acceptance laws then apply to all four actual steps. -/
 

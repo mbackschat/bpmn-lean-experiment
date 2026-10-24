@@ -9,6 +9,10 @@ public import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Interrupting Activity boundary Message conformance
 

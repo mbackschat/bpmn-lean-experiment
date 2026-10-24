@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.CallActivityConformanceFixtures
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.Scenario
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Bounded called-Process Call Activity conformance
 

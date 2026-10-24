@@ -5,6 +5,10 @@ public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.ActivityBoundaryTimerConformance — interrupting boundary Timer locks
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Actual lifetime parent continuation accounting
 

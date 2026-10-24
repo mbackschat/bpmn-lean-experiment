@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Prepared regions and actual Call cleanup
 

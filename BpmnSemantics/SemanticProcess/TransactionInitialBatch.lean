@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.TransactionInitialValidity
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Transaction initial Task batch
 

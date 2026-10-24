@@ -14,6 +14,10 @@ public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Call data boundary discriminators
 

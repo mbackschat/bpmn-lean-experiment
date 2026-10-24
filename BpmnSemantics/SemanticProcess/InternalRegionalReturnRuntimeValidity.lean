@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaw
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemovalValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Prepared Return preserves the complete runtime predicate by composing the existing
 Call-removal laws. Its Compensation case follows from the declaration restrictions and

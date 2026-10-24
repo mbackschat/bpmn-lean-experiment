@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.ProfileAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Parallel Multi-Instance evaluator soundness and invariant preservation
 

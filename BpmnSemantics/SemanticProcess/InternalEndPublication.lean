@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 public import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Ordinary End publishes an instantaneous occurrence and one consumed token. Acceptance is
 derived from the unchanged open projection, independently of later batch numbering. -/

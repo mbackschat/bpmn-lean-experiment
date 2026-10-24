@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! RHP-HANDLER-01 keeps the handler-publication reductions in a separate kernel process
 from the cancellation projection witnesses to respect the fixed 3 GiB validation bound. -/

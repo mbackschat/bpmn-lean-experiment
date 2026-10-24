@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Actual parallel-body lifetime firing accounting
 

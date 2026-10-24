@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomain
 public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.MessagePayload
 public import BpmnSemantics.SemanticProcess.TokenOrder
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Message payload delivery preservation
 

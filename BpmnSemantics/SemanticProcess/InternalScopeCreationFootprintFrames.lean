@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Complete preparation preservation under the declared scope-creation footprints from the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

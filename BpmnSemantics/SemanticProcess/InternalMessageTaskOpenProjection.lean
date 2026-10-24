@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPairProjection
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! ESL-OWN-01 inserts the Task and subscription anchors in one projection step.
 The half-inserted state is not a publication boundary; freshness applies to both starts. -/

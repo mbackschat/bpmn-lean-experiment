@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Disjoint token keys of reserved parallel members
 

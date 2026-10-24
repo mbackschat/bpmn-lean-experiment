@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitPreservation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Child completion's projection associations retain exact Call roots, incident owners,
 and event-race member censuses. Each predicate is preserved from its predecessor account. -/

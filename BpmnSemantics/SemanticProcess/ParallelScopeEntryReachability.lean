@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Actual parent execution and parallel-entry uniqueness
 

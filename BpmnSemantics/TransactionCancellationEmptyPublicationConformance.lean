@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.TransactionCancellationPublicationFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Transaction journey checks are separated at command boundaries because the combined
 kernel reduction reached the 3 GiB ceiling on 2026-09-26. Each module retains the complete

@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! ESL-TIMER finite command witnesses separate replacement identity, overlapping handlers,
 withdrawal and capacity refusal. The shared quantified Timer relation covers both host bodies. -/

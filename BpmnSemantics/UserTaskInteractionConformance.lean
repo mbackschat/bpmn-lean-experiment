@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.Conformance
 public import BpmnSemantics.SequentialUserTask
 public import BpmnSemantics.SemanticProcess.Execution
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks
 

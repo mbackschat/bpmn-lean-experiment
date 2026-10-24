@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Ordinary arming inserts exactly one wait start while preserving the focused Compensation projection. -/
 

@@ -7,6 +7,7 @@ public import BpmnSemantics.SemanticProcess.ErrorDefinition
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! # Checked-process structural admission
 

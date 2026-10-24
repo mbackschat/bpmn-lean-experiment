@@ -8,7 +8,9 @@ public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. `normalizedFlowSource` remains scoped to the inline Service Task boundary route, where the boundary event is source metadata rather than a checked runtime node. Explicit boundary nodes contribute a separate parent-local exceptional edge from the Activity they attach to, keyed on attachment rather than on trigger kind.
 -/
 
-@[expose] public section
+-- Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce
+-- definitionally is `@[expose]` with what its body calls ([migration step 4](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)).
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

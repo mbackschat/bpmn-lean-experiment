@@ -4,6 +4,10 @@ public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.SubProcessBoundaryTimerConformance — interrupting Sub-Process boundary Timer locks
 

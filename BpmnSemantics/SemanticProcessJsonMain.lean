@@ -5,6 +5,10 @@ public import BpmnSemantics.SemanticProcessJson
 public import BpmnSemantics.SemanticProcessJson.Publication
 public import BpmnSemantics.SemanticProcessJson.Observation
 public import Lean.Data.Json
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
 

@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalHostingCancellationP
 public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
 public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Cancellation acceptance connects the independently projected raw successor to the
 prepared lifecycle fold. Exact predecessor anchors identify each removed occurrence;

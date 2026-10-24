@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.ServiceTaskEffectConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Service Task incident and retry conformance
 

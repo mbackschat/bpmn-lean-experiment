@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleCorrespondence
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! The regional selection supplies the actual lifecycle selector's owner and parent facts.
 These bridges preserve the existing evaluator's selection and publication contracts.

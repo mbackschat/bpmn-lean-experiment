@@ -8,6 +8,7 @@ public import BpmnSemantics.SemanticProcess.OccurrenceReservationState
 public import BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! PMIS-SELECT-01: exact occurrence execution over the discovery in `InternalOperationOccurrenceDiscovery`,
 which CEA-OCCUR-01 and CEA-QUIESCE-01 reuse for merge-target scope operations. This changing execution

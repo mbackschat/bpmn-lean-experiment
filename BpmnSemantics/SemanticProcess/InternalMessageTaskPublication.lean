@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskOpenProjection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Message-host candidates must select the exact two newly inserted waits before the lifecycle fold.
 ESL-OWN-01 freshness and predecessor owner identity settle the selectors independently of projection. -/

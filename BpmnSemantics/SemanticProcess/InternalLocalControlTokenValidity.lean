@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.TokenPatch
 public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Local-control token-patch validity
 

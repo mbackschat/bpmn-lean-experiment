@@ -5,6 +5,10 @@ public import BpmnSemantics.SemanticProcess.InternalCommutationCensus
 public import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Message payload Catch Event conformance
 

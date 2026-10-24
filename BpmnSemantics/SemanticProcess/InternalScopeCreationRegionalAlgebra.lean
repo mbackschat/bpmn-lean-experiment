@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
 public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 public import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Scope creation inserts outside a prepared removal region. These collection laws retain exact order and multiplicity when insertion is exchanged with removal; token equality is kept separate from the other RuntimeState fields. -/
 

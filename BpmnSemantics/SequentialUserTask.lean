@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcess.Execution
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.SequentialUserTask — sequential capsule witnesses
 

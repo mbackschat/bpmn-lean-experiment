@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CallStorageOrder
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Exact canonical Call storage requires the unique caller/element anchors of the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

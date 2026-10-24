@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Data-arming runtime and projection frames
 

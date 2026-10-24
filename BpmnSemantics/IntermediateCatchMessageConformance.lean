@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Intermediate Catch Message conformance
 

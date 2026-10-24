@@ -5,6 +5,9 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 public import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
 public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! SMIS-ADMIT-01 retains full runtime validity and actual projectability for successful individual transitions through admission and lifecycle contracts, below certificate preservation and scheduler transport. -/
 
@@ -213,7 +216,7 @@ theorem sequentialScope_entry_full_validity (program : Program) (hosting : Seman
           projectWaits?, flowNodeOccurrenceProgramValidity, flowNodeOccurrenceWaitProgramValidity,
           flowNodeOccurrenceUserTaskProgramValidity,
           eventRaceAssociationsValid, calledProcessAssociationsValid, effectIncidentAssociationsValid,
-          rootInstanceId?, sortFlowNodeOccurrenceStarts, sortBy]
+          rootInstanceId?, sortFlowNodeOccurrenceStarts, SemanticProcess.sortBy]
   | cons item rest =>
       obtain ⟨⟨issued, child⟩, issuance, entered⟩ := Option.bind_eq_some_iff.mp entered
       obtain ⟨variables, initialized, entered⟩ := Option.bind_eq_some_iff.mp entered

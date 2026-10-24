@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.InternalCommutation
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 public import BpmnSemantics.SemanticProcess.Fixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Internal commutation conformance locks -/
 

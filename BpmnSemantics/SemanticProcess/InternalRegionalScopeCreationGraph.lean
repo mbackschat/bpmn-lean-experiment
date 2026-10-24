@@ -5,6 +5,8 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Scope insertion adds a parent edge or a Call edge. The regional read footprint protects their source as well as their fresh destination, so an independent insertion cannot enlarge the selected occurrence region. -/
 

@@ -6,6 +6,10 @@ public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.NonInterruptingBoundaryTimerConformance — non-interrupting boundary Timer locks
 

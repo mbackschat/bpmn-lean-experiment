@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! A structurally admitted claim-routing frontier runs beside human review and input-bound
 coverage assessment. Admission here is Program/runtime admission, not registered XML or reachability.

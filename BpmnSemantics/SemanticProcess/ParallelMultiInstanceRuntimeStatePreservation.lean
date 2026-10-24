@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
 public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 

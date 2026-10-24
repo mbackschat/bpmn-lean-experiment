@@ -6,6 +6,8 @@ public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Committed semantic transition traces
 

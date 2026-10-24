@@ -5,6 +5,10 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputCompletionRun
 public import BpmnSemantics.ActivityDataInputOutputAdmissionConformance
 public import BpmnSemantics.ActivityDataInputOutputRefusalConformance
 public import BpmnSemantics.ActivityDataInputOutputProjectionConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Composed Activity data-input/output conformance
 

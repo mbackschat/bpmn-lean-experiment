@@ -7,6 +7,9 @@ public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralVali
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Accepted lifecycle publication for the prepared child and Call operations in the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

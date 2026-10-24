@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Child completion preserves the exact ordered wait projection. Its withdrawn Timer
 was already private, and every retained wait keeps its complete owner/Process lookup. -/

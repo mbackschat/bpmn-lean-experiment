@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionPro
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Admitted token-patch position totality
 

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Actual parallel body wait-declaration preservation
 

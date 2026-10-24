@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstance
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Message-host arming preserves the existing runtime predicate from complete raw preparation.
 The independent issuer and attachment obligations remain separate from public projection. -/

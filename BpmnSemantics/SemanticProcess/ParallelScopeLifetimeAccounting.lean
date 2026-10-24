@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Actual parallel body retirement accounting
 

@@ -6,6 +6,10 @@ public import BpmnSemantics.TerminateEndEventFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Separating states for the cancellation projection obligation. The existing bounded
 scope fixture supplies an actually armed state; each mutation removes only Activity

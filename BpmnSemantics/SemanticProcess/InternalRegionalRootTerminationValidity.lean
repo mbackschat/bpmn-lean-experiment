@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Hosting-root termination position
 

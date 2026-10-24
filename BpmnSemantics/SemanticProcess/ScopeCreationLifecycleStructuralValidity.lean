@@ -4,6 +4,8 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 public import BpmnSemantics.SemanticProcess.CallReachability
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Structural lifecycle preservation for the predecessor-selected scope creation account in
 [Internal Commutation](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

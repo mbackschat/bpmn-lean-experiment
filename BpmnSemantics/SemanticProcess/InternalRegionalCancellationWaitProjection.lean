@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Cancellation compares public anchors only after private Timer classification.
 The predecessor projection supplies the cross-family identity census needed to preserve

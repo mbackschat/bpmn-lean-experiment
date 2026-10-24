@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Repeated-scope preservation and reachability
 

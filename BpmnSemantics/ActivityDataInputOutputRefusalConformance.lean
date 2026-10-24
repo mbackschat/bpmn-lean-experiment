@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Composed Activity data-input/output refusal conformance
 

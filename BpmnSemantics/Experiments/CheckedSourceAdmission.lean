@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.Experiments.CheckedSourceCoverage
 public import BpmnSemantics.SemanticProcess.Fixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Stage 2 structured-admission witnesses
 

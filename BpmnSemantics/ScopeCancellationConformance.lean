@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Regional Activity lifetime regression witnesses
 

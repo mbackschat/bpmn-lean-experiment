@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Classified internal commutation
 

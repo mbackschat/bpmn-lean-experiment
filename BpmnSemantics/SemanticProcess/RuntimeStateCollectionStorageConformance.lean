@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.ActivityBoundaryTimerFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! AA-18 separates committed storage admission from the raw evaluator's token and frame laws. -/
 

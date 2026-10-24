@@ -53,7 +53,6 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 [Migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) owns the steps; this list owns the class repairs found in step 3.
 
 - Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
-- Before step 4: a fast guard that fails when a public declaration can win unqualified resolution over another of the same short name.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
@@ -86,18 +85,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: landing of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md), closure-approved on 2026-10-24, batch 2 of the [batch order](#scheduled-delivery-batches); then [migration step 3](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: [migration step 4](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) (owner-directed 2026-10-24), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: `PC-SCOPE-05` and migration step 3 on `main`.
+Deliverable: the first hidden hubs (`ProgramStructuralValidation`, `CheckedGraphValidation`, `FlowNodeOccurrenceLifecycle`, `CallActivity`) and the name-shadowing guard on `main`.
 
-Acceptance blockers: green hosted checks on the zod 4.4.3 → 4.6.6 upgrade, landed early under the owner's security release-age exception. Routine fast-uri 3.1.9 (moderate advisories, below the gate) is admissible after 2026-11-02 23:05 UTC.
+Acceptance blockers: a green complete library and `BpmnConformance` build, re-measured cost rows for every changed conformance module, and green hosted checks.
 
-Current result: `PC-SCOPE-05` is closure-approved and green on `3f457ad4`. Step 3 is on PR #19: the library is modules, 100 evaluating fixture and driver files stay plain, 131 cost rows re-measured, and every hosted check but dependency-security is green on `d05ad9eb`. Two performance findings must close before the next coverage family adds pipeline cases: every Temporal run executes serially since `ec3ff2b3` (an absent effect schedule maps to `null`, but the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
+Current result: `PC-SCOPE-05`, step 3 and the zod 4.6.6 security upgrade are on `main` (`49f2f085`). Step 4 hides four hubs, saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
-Effort budget: 2 hours for the upgrade and landing; step 3's renewed 4 hours from 12:05 UTC.
+Effort budget: 3 hours from 17:47 UTC on 2026-10-24, renewed by the owner for 2 hours at 20:50 UTC.
 
-Next action: land on green checks for the exact SHA; at 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row, after which the exception guard fails.
+Next action: land step 4 on green checks for the exact SHA, then move standalone decided checks to executable guards (owner decision 2026-10-24, the proposal's optional item) in family-sized batches, then hide the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a landing commit whose hosted checks are not all green, or an age exclusion beyond `zod@4.6.6`.
 
-Stop if the upgrade needs another dependency change or a gate change. Existing runtime/release holds remain open.
+Stop if a hub needs a consumer proof rewritten rather than an exposure or `import all`. Runtime/release holds remain open. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

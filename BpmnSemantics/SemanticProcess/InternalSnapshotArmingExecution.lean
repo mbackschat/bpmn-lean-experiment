@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Complete ordinary frontiers derive prefix refusal absence and canonical publication equality in the actual snapshot batch runner. -/
 

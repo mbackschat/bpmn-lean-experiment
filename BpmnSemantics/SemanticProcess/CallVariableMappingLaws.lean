@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CallVariableMapping
 public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Call variable mapping laws
 

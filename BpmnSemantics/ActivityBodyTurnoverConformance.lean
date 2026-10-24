@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.ActivityBoundaryTimerConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity body turnover fixtures
 

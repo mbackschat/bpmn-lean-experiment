@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Exact balanced parallel topology admission conformance
 

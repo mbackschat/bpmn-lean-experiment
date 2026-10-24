@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitProjection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! The actual child-completion projection removes exactly the completed scope anchor.
 All admission predicates and component projections come from predecessor validity and

@@ -8,6 +8,8 @@ public import BpmnSemantics.SemanticProcess.InternalMergePublication
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPairPublication
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 

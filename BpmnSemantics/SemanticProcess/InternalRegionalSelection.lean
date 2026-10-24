@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Regional predecessor selection
 

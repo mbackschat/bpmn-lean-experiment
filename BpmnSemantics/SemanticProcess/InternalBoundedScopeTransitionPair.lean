@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalBoundedScopeTokenPairs
 public import BpmnSemantics.SemanticProcess.InternalSubscriptionPairExclusions
 public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! The selected subscription child-entry pairs reuse complete raw preparation laws.
 The immutable admission certificate excludes other composite and child declarations. -/

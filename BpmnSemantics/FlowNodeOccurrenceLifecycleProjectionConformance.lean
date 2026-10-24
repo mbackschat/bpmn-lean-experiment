@@ -5,6 +5,10 @@ public import BpmnSemantics.EventBasedGatewayConformance
 public import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.ReceiveTaskConformance
 public import BpmnSemantics.ConfiguredTaskConformance
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle projection conformance
 

@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameP
 public import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! SPC-CLOSURE-01 requires reachable lifecycle and exact Activity-local shape, beyond input availability and decreasing rank. These predicates describe the existing runtime and are preserved through its actual operations and command admission. -/
 

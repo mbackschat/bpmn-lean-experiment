@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 
 /-! Individual family acceptance is shared by pair and finite-batch consumers, without depending on their unified preparation type. -/

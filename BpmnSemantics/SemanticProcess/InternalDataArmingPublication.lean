@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Accepted data-arming publication
 

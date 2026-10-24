@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source lowering fixtures
 

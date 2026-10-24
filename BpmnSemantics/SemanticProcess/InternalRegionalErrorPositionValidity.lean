@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Error continuation position
 

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Exact task lifetime and declaration ownership provide concrete admitted completion commands.
 Reached completion availability derives committed collection storage from the existing execution,

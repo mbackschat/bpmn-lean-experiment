@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source storage-limit binding conformance
 

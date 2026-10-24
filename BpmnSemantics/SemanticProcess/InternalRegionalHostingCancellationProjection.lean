@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationOpenProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Hosting-root termination retains its parentless root while cancelling all live
 owners. The root is not a public scope start, so the resulting open projection is empty. -/

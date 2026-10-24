@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity-data open lifecycle projection conformance
 

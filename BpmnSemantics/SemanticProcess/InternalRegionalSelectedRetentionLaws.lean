@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservatio
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectionLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Ownership-closed regional selections preserve the retained data and reference fields. -/
 
