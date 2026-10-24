@@ -64,16 +64,35 @@ def framesOf (scopes : List ScopeVariableScope) (instanceId : SemanticId) (scope
   scopes.filter fun frame =>
     frame.owner.processInstanceId == instanceId && frame.owner.definitionScopeId == scopeId
 
-/-- The `camunda:in`/`camunda:out` copies of the unique invocation creating `scopeId`, when that
-scope is a called root of this profile; the frame such an invocation installs stands in for the
-called instance's Process data (CVM-RESOLVE-01). -/
-def calledRootMappings? (program : Program) (scopeId : DefinitionScopeId) :
-    Option (List VariableMapping × List VariableMapping) :=
-  if nestedScopeDataProgram program then
+/-- Whether `scopeId` is the root of a variable-mapping called Process: some invocation targets it and
+every one carries mappings. Its frame stands in for the called instance's Process data
+(CVM-RESOLVE-01). Two Calls of one definition may map differently, so this answers only the kind,
+never the mappings. -/
+def mappedCalledRoot (program : Program) (scopeId : DefinitionScopeId) : Bool :=
+  nestedScopeDataProgram program &&
     match program.operations.filter (fun
         | .invokeProcess _ _ _ _ calledRootScopeId .. => calledRootScopeId == scopeId
         | _ => false) with
-    | [.invokeProcess _ _ _ _ _ _ _ (.variableMappings inputs outputs)] => some (inputs, outputs)
+    | [] => false
+    | invocations => invocations.all fun
+        | .invokeProcess _ _ _ _ _ _ _ (.variableMappings _ _) => true
+        | _ => false
+
+/-- The `camunda:in`/`camunda:out` copies of the Call that created the called root `root`: its one
+live record names the return operation, which belongs to exactly one invocation. Selecting by called
+definition instead would give the second of two Calls of one definition the first Call's mappings
+(CALLN-FRAME-01). -/
+def calledRootMappings? (program : Program) (calls : List CalledProcessOccurrence)
+    (root : ScopeOccurrenceId) : Option (List VariableMapping × List VariableMapping) :=
+  if nestedScopeDataProgram program then
+    match calls.filter (·.calledRoot == root) with
+    | [record] =>
+        match program.operations.filter (fun
+            | .invokeProcess _ _ _ _ calledRootScopeId _ returned _ =>
+                returned == record.returnOperationId && calledRootScopeId == root.definitionScopeId
+            | _ => false) with
+        | [.invokeProcess _ _ _ _ _ _ _ (.variableMappings inputs outputs)] => some (inputs, outputs)
+        | _ => none
     | _ => none
   else none
 
@@ -81,7 +100,7 @@ def calledRootMappings? (program : Program) (scopeId : DefinitionScopeId) :
 instance's Process data. -/
 def calledRootOf? (program : Program) (chain : List DefinitionScopeId) : Option DefinitionScopeId :=
   match chain.getLast? with
-  | some scopeId => if (calledRootMappings? program scopeId).isSome then some scopeId else none
+  | some scopeId => if mappedCalledRoot program scopeId then some scopeId else none
   | none => none
 
 inductive Owner where

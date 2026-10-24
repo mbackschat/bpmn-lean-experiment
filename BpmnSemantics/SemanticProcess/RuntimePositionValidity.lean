@@ -106,9 +106,78 @@ def hostingRootCount (program : Program) (instanceId : SemanticId)
     | none => false
     | some scope => hostingRoot program instanceId scope occurrence).length
 
+/-- A call record is declared by exactly one invocation of its Call element, return operation,
+called definition and called root scope, held by the caller's definition scope. Association
+validity binds the caller only to an occurrence, which an embedded caller need not be a Process root
+of (CALLN-FRAME-01); the paired return follows from `callOperationsPaired`. -/
+def callRecordDeclared (program : Program) (record : CalledProcessOccurrence) : Bool :=
+  (program.operations.filter fun
+    | .invokeProcess id origin _ calledProcessId calledRoot _ returned _ =>
+        decide (returned = record.returnOperationId &&
+          origin.elementId.value = record.id.elementId.value &&
+          calledProcessId = record.calledProcessId &&
+          calledRoot = record.calledRoot.definitionScopeId) &&
+          program.operationScopes.any fun owner =>
+            decide (owner.operationId = id && owner.scopeId = record.caller.definitionScopeId)
+    | _ => false).length = 1
+
+/-- Every invocation lies in a Process root: every definition scope owning an `invokeProcess` is
+parentless. Profiles admitting interruption hold no Call inside a Sub-Process, and the cancellation
+proofs take this explicit premise where they need a parentless caller (PC-SCOPE-05 Stage B). -/
+def invocationsInProcessRoots (program : Program) : Bool :=
+  program.operations.all fun
+    | .invokeProcess id .. => program.operationScopes.all fun owner =>
+        owner.operationId != id || program.definitionScopes.all fun scope =>
+          scope.id != owner.scopeId || scope.parentScopeId.isNone
+    | _ => true
+
+/-- The explicit Program premise of the cancellation proofs, a class so those proofs thread it by
+instance resolution rather than by argument position. -/
+class InvocationsInProcessRoots (program : Program) : Prop where
+  rooted : invocationsInProcessRoots program = true
+
+/-- The declared operations whose transitions cancel a scope subtree. -/
+def operationInterrupts : SemanticOperation → Bool
+  | .throwError .. | .terminateScope .. => true
+  | _ => false
+
+/-- A Program declaring an interrupting operation keeps every invocation in a Process root. Mixed
+dispatchers take this weaker premise, so their normal-path conclusions stay unconditional for a
+Program with an embedded Call and no interruption, as Stage B admits (PC-SCOPE-05). -/
+class InterruptionInvocationsRooted (program : Program) : Prop where
+  rooted : program.operations.any operationInterrupts = true → invocationsInProcessRoots program = true
+
+instance (program : Program) [InvocationsInProcessRoots program] : InterruptionInvocationsRooted program :=
+  ⟨fun _ => InvocationsInProcessRoots.rooted⟩
+
+/-- A declared interrupting operation discharges the cancellation proofs' premise. -/
+theorem InterruptionInvocationsRooted.declared (program : Program) [InterruptionInvocationsRooted program]
+    (operation : SemanticOperation) (member : operation ∈ program.operations)
+    (interrupts : operationInterrupts operation = true) : InvocationsInProcessRoots program :=
+  ⟨InterruptionInvocationsRooted.rooted (List.any_eq_true.mpr ⟨operation, member, interrupts⟩)⟩
+
+/-- The decidable discharge for a concrete Program: no interrupting operation, or every invocation
+in a Process root. -/
+theorem InterruptionInvocationsRooted.of_check (program : Program)
+    (checked : (!program.operations.any operationInterrupts || invocationsInProcessRoots program) = true) :
+    InterruptionInvocationsRooted program :=
+  ⟨fun interrupts => by simpa [interrupts] using checked⟩
+
+/-- Every live Call record's caller is a parentless occurrence, the one fact about calls that the
+cancellation proofs need. A Program keeping its invocations in Process roots supplies it in every
+valid state, and a state without calls holds it vacuously (PC-SCOPE-05 Stage B). -/
+class CallersParentless (state : RuntimeState) : Prop where
+  parentless : ∀ record ∈ state.calledProcessOccurrences,
+    ∃ caller ∈ state.scopeOccurrences, caller.id = record.caller ∧ caller.parent = none
+
+theorem CallersParentless.of_no_calls (state : RuntimeState)
+    (noCalls : state.calledProcessOccurrences = []) : CallersParentless state :=
+  ⟨by simp [noCalls]⟩
+
 def runningPositionValid (program : Program) (expectedInstanceId instanceId : SemanticId)
     (state : RuntimeState) : Bool :=
-  instanceId = expectedInstanceId &&
+  state.calledProcessOccurrences.all (callRecordDeclared program) &&
+    instanceId = expectedInstanceId &&
     hostingRootCount program instanceId state = 1 &&
     calledProcessAssociationsValid state &&
     (state.scopeOccurrences.all fun occurrence =>
@@ -186,6 +255,18 @@ theorem runtimePositionValid_scope_parent_binding (program : Program)
         · contradiction
       · contradiction
 
+/-- Running position validity binds every Call record to its declaring invocation. -/
+theorem runtimePositionValid_call_records_declared (program : Program)
+    (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId)
+    (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) :
+    callRecordDeclared program record = true := by
+  simp only [runtimePositionValid, Bool.and_eq_true] at valid
+  have lifecycle := valid.2
+  simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at lifecycle
+  exact List.all_eq_true.mp lifecycle.1.1.1.1.1 record member
+
 /-- Running position validity includes the complete Call association predicate. -/
 theorem runtimePositionValid_called_associations (program : Program)
     (expectedInstanceId instanceId : SemanticId) (state : RuntimeState)
@@ -221,7 +302,7 @@ theorem runtimePositionValid_running_instance
   simp only [runtimePositionValid, Bool.and_eq_true] at valid
   unfold lifecyclePositionValid at valid
   simp [running, runningPositionValid] at valid
-  exact valid.2.1.1.1.1
+  exact valid.2.1.1.1.1.2
 
 /-- Removing any token sublist preserves position; explicit owned removal need not select the
 only owner at a place, as selected joins may share that place with a different live owner. -/
@@ -271,8 +352,8 @@ theorem runtimePositionValid_tokens_sublist_frame (program : Program)
       exact ⟨valid.2.1, emptyFrame valid.2.2⟩
   | running instanceId =>
       simp only [controlEq, runningPositionValid, Bool.and_eq_true] at valid ⊢
-      obtain ⟨⟨⟨⟨identity, roots⟩, associations⟩, scopes⟩, tokens⟩ := valid.2
-      refine ⟨⟨⟨⟨identity, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+      obtain ⟨⟨⟨⟨⟨records, identity⟩, roots⟩, associations⟩, scopes⟩, tokens⟩ := valid.2
+      refine ⟨⟨⟨⟨⟨by rw [callsFrame]; exact records, identity⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
       · rw [rootsFrame]
         exact roots
       · rw [associationsFrame]
@@ -316,6 +397,7 @@ theorem runtimePositionValid_forest_removal_frame (program : Program)
       (after.calledProcessOccurrences.filter fun record => decide (record.calledRoot = occurrence.id)) =
       before.calledProcessOccurrences.filter (fun record => decide (record.calledRoot = occurrence.id)))
     (associations : calledProcessAssociationsValid after = true)
+    (recordsKept : ∀ record ∈ after.calledProcessOccurrences, record ∈ before.calledProcessOccurrences)
     (parentsLive : ∀ occurrence ∈ after.scopeOccurrences, ∀ parent,
       occurrence.parent = some parent → exactLiveOccurrence after parent = true)
     (tokens : after.tokens.Sublist before.tokens)
@@ -340,7 +422,9 @@ theorem runtimePositionValid_forest_removal_frame (program : Program)
   have prior := valid.2
   simp only [lifecyclePositionValid, running, runningPositionValid, Bool.and_eq_true] at prior
   simp only [lifecyclePositionValid, controlFrame, running, runningPositionValid, Bool.and_eq_true]
-  refine ⟨⟨⟨⟨prior.1.1.1.1, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨⟨?_, prior.1.1.1.1.2⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  · exact List.all_eq_true.mpr fun record member =>
+      List.all_eq_true.mp prior.1.1.1.1.1 record (recordsKept record member)
   · simpa only [rootsCount] using prior.1.1.1.2
   · exact associations
   · apply List.all_eq_true.mpr
@@ -383,19 +467,24 @@ theorem runtimePositionValid_scope_removal_frame (program : Program)
     (rootsFrame : after.scopeOccurrences.filter (·.parent.isNone) =
       before.scopeOccurrences.filter (·.parent.isNone))
     (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (callersFrame : ∀ record ∈ before.calledProcessOccurrences,
+      after.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = record.caller)) =
+        before.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = record.caller)))
     (parentsLive : ∀ occurrence ∈ after.scopeOccurrences, ∀ parent,
       occurrence.parent = some parent → exactLiveOccurrence after parent = true)
     (tokens : after.tokens.Sublist before.tokens)
     (tokenOwnersLive : ∀ token ∈ after.tokens, exactLiveOccurrence after token.owner = true) :
     runtimePositionValid program expectedInstanceId after = true := by
   apply runtimePositionValid_forest_removal_frame program expectedInstanceId instanceId before after
-    valid running controlFrame scopes _ _ _ parentsLive tokens tokenOwnersLive
+    valid running controlFrame scopes _ _ _ (by rw [callsFrame]; exact fun _ member => member)
+    parentsLive tokens tokenOwnersLive
   · have same := congrArg (List.filter (fun occurrence : RuntimeScopeOccurrence =>
       decide (occurrence.id.processInstanceId = instanceId))) rootsFrame
     simpa only [List.filter_filter, Bool.and_comm] using same
   · intro occurrence _
     rw [callsFrame]
-  · rw [calledProcessAssociationsValid_parentless_frame before after controlFrame rootsFrame callsFrame]
+  · rw [calledProcessAssociationsValid_parentless_frame before after controlFrame rootsFrame callsFrame
+      callersFrame]
     exact runtimePositionValid_called_associations program expectedInstanceId instanceId before valid running
 
 /-- Every token's owner names one exact live occurrence in a valid running predecessor. -/
@@ -487,7 +576,7 @@ theorem runtimePositionValid_liveOccurrence_unique_of_single_definition_scope
   have lifecycleValid := position.2
   unfold lifecyclePositionValid at lifecycleValid
   simp only [running, runningPositionValid, Bool.and_eq_true] at lifecycleValid
-  obtain ⟨⟨⟨⟨_instanceIdentity, oneHostingRoot⟩, associations⟩, occurrencesValid⟩,
+  obtain ⟨⟨⟨⟨⟨_records, _instanceIdentity⟩, oneHostingRoot⟩, associations⟩, occurrencesValid⟩,
     _tokensValid⟩ := lifecycleValid
   obtain ⟨soleScope, scopesEq⟩ := List.length_eq_one_iff.mp singleScope
 
@@ -577,23 +666,20 @@ theorem runtimePositionValid_liveOccurrence_unique_of_single_definition_scope
                 grind
               have callerLength :
                   (scopes.filter fun candidate =>
-                    decide ((decide (candidate.id = record.caller) &&
-                      candidate.parent.isNone) = true)).length = 1 := by
+                    decide (candidate.id = record.caller)).length = 1 := by
                 grind
               obtain ⟨callerOccurrence, callerSingleton⟩ :=
                 List.length_eq_one_iff.mp callerLength
               have callerFilteredMember : callerOccurrence ∈
-                  scopes.filter (fun candidate =>
-                    decide ((decide (candidate.id = record.caller) &&
-                      candidate.parent.isNone) = true)) := by
+                  scopes.filter (fun candidate => decide (candidate.id = record.caller)) := by
                 rw [callerSingleton]
                 simp
               obtain ⟨callerMember, callerFacts⟩ := List.mem_filter.mp callerFilteredMember
-              simp only [Bool.and_eq_true, decide_eq_true_eq] at callerFacts
+              simp only [decide_eq_true_eq] at callerFacts
               have callerScope := (occurrenceIsRoot callerOccurrence callerMember).1
               exfalso
               apply differentDefinitionScope
-              rw [calledRootIdentity, occurrenceScope, ← callerFacts.1, callerScope]
+              rw [calledRootIdentity, occurrenceScope, ← callerFacts, callerScope]
 
   unfold hostingRootCount at oneHostingRoot
   have oneHostingRootLength := of_decide_eq_true oneHostingRoot

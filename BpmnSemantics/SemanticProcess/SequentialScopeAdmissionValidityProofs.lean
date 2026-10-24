@@ -212,7 +212,7 @@ theorem sequentialScope_committed_start_wellFormed (program : Program)
   have lookup : uniqueDefinitionScope? program root.id = some root := by
     simp only [uniqueDefinitionScope?, rootDefinition, rootSource]
   apply (position_iff program instanceId instanceId _ rfl).mpr
-  refine ⟨valid, projection, rfl, ?_, ?_, ?_, ?_⟩
+  refine ⟨valid, projection, by simp [runningStartState, initialState], rfl, ?_, ?_, ?_, ?_⟩
   · simp [lookup, parent, origin]
   · simp [calledProcessAssociationsValid, rootInstanceId?, runningStartState, initialState]
   · intro occurrence member
@@ -257,7 +257,7 @@ theorem sequentialScope_structural_of_position (program : Program) (hosting : Se
     grind
   simp only [flowNodeOccurrenceStructuralProgramValidity, noCalls, List.all_nil, Bool.and_true, List.all_eq_true]
   intro occurrence present
-  obtain ⟨live, definition, lookup, named, positive, parent⟩ := facts.2.2.2.2.2.1 occurrence present
+  obtain ⟨live, definition, lookup, named, positive, parent⟩ := facts.2.2.2.2.2.2.1 occurrence present
   have entry := declared occurrence present definition lookup
   have census : program.definitionScopes.filter
       (fun scope => decide (scope.id = occurrence.id.definitionScopeId)) = [definition] := by

@@ -6,7 +6,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem withdrawn_activity_frame (program : Program) (before after : RuntimeState)
+theorem withdrawn_activity_frame (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -52,7 +52,7 @@ theorem withdrawn_activity_frame (program : Program) (before after : RuntimeStat
 
 /-- Recomputed reads and writes retain the exact predecessor footprint. In particular,
 another deletion cannot silently erase one of this operation's Activity withdrawals. -/
-theorem regionalStateFootprint_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem regionalStateFootprint_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

@@ -113,6 +113,163 @@ theorem write?_process (program : Program) (variables : ScopedVariables) (instan
       { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } } := by
   simp [write?, resolved, hosted]
 
+/-- NSD-READ-01's frame case as an evaluator: once resolution selects a frame, the read is that
+frame's binding outcome and never consults the Process binding. -/
+theorem readOutcome?_frame (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
+    (scopeId : DefinitionScopeId) (name : String) (owner : ScopeOccurrenceId)
+    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) name =
+      some (.frame owner)) :
+    readOutcome? program variables instanceId scopeId name =
+      (selectScopeVariables? variables owner).bind fun frame => bindingOutcome? frame.bindings name := by
+  simp only [readOutcome?, resolved, bind, Option.bind]
+
+private theorem merge_mem_self (existing : List VariableBinding) (binding : VariableBinding) :
+    binding ∈ mergeProcessVariableBindings existing [binding] :=
+  (mergeProcessVariableBindings_perm existing [binding]).mem_iff.mpr (by simp)
+
+private theorem merge_mem_kept (existing : List VariableBinding) (binding kept : VariableBinding)
+    (member : kept ∈ existing) (different : kept.name ≠ binding.name) :
+    kept ∈ mergeProcessVariableBindings existing [binding] :=
+  (mergeProcessVariableBindings_perm existing [binding]).mem_iff.mpr
+    (List.mem_append_right _ (List.mem_filter.mpr ⟨member, by simp [different]⟩))
+
+/-- Replacing an already declared name leaves the declared name set unchanged. -/
+private theorem merge_declares (existing : List VariableBinding) (binding : VariableBinding) (name : String)
+    (present : existing.any (·.name == binding.name) = true) :
+    (mergeProcessVariableBindings existing [binding]).any (·.name == name) = existing.any (·.name == name) := by
+  apply Bool.eq_iff_iff.mpr
+  simp only [List.any_eq_true, beq_iff_eq]
+  constructor
+  · rintro ⟨candidate, member, named⟩
+    rcases List.mem_append.mp ((mergeProcessVariableBindings_perm existing [binding]).mem_iff.mp member) with
+      same | kept
+    · simp only [List.mem_singleton] at same
+      subst candidate
+      obtain ⟨declared, declaredMember, declaredName⟩ := List.any_eq_true.mp present
+      exact ⟨declared, declaredMember, by simpa [named] using declaredName⟩
+    · exact ⟨candidate, (List.mem_filter.mp kept).1, named⟩
+  · rintro ⟨candidate, member, named⟩
+    by_cases same : candidate.name = binding.name
+    · exact ⟨binding, merge_mem_self existing binding, by rw [← same, named]⟩
+    · exact ⟨candidate, merge_mem_kept existing binding candidate member same, named⟩
+
+/-- Updating bindings inside frames without changing their owners or declared names leaves every
+resolution unchanged. -/
+private theorem resolveOwner?_map_declared (scopes : List ScopeVariableScope)
+    (update : ScopeVariableScope → ScopeVariableScope) (owner : ∀ frame, (update frame).owner = frame.owner)
+    (names : ∀ frame ∈ scopes, ∀ name,
+      (update frame).bindings.any (·.name == name) = frame.bindings.any (·.name == name))
+    (instanceId : SemanticId) (name : String) :
+    ∀ chain, resolveOwner? (scopes.map update) instanceId chain name = resolveOwner? scopes instanceId chain name
+  | [] => rfl
+  | scopeId :: rest => by
+      have frames : framesOf (scopes.map update) instanceId scopeId =
+          (framesOf scopes instanceId scopeId).map update := by
+        simp only [framesOf, List.filter_map, Function.comp_def, owner]
+      have later := resolveOwner?_map_declared scopes update owner names instanceId name rest
+      simp only [resolveOwner?, frames]
+      cases selected : framesOf scopes instanceId scopeId with
+      | nil => simpa using later
+      | cons frame tail =>
+          cases tail with
+          | nil =>
+              have member : frame ∈ scopes := by
+                have : frame ∈ framesOf scopes instanceId scopeId := by rw [selected]; simp
+                exact (List.mem_filter.mp this).1
+              simp [names frame member, owner, later]
+          | cons _ _ => simp
+
+/-- One frame write keeps the Process binding and every resolution, adds the written binding to its
+frame, and keeps every binding of another name in place. -/
+private theorem write?_frame_step (program : Program) (variables result : ScopedVariables)
+    (instanceId : SemanticId) (scopeId : DefinitionScopeId) (binding : VariableBinding) (owner : ScopeOccurrenceId)
+    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name =
+      some (.frame owner))
+    (written : write? program variables instanceId scopeId binding = some result) :
+    result.process = variables.process ∧
+      (∀ name, resolveOwner? result.scopes instanceId (definitionChain program.definitionScopes scopeId) name =
+        resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) name) ∧
+      (∀ frame ∈ result.scopes, frame.owner = owner → binding ∈ frame.bindings) ∧
+      (∀ (kept : VariableBinding) (keptOwner : ScopeOccurrenceId), kept.name ≠ binding.name →
+        (∀ frame ∈ variables.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) →
+        ∀ frame ∈ result.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) := by
+  rw [write?_frame program variables result instanceId scopeId binding owner resolved written]
+  obtain ⟨_, scope, _, declared, _, frames, owned, declares, _⟩ :=
+    resolveOwner?_frame_nearest variables instanceId binding.name _ owner resolved
+  have only : ∀ frame ∈ variables.scopes, frame.owner = owner → frame = declared := by
+    intro frame member same
+    have declaredMember : declared ∈ framesOf variables.scopes instanceId scope := by rw [frames]; simp
+    have selected : frame ∈ framesOf variables.scopes instanceId scope := by
+      simp only [framesOf, List.mem_filter] at declaredMember ⊢
+      exact ⟨member, by rw [same, ← owned]; exact declaredMember.2⟩
+    rw [frames] at selected
+    simpa using selected
+  refine ⟨rfl, fun name => ?_, ?_, ?_⟩
+  · apply resolveOwner?_map_declared
+    · intro frame; split <;> rfl
+    · intro frame member name
+      split
+      · rename_i same
+        rw [only frame member same]
+        exact merge_declares declared.bindings binding name declares
+      · rfl
+  · intro frame member same
+    obtain ⟨original, _, rfl⟩ := List.mem_map.mp member
+    split at same
+    · rename_i originalOwner
+      simp only [originalOwner, ite_true]
+      exact merge_mem_self _ binding
+    · simp_all
+  · intro kept keptOwner different before frame member same
+    obtain ⟨original, originalMember, rfl⟩ := List.mem_map.mp member
+    by_cases originalOwner : original.owner = owner
+    · simp only [originalOwner, ite_true] at same ⊢
+      exact merge_mem_kept _ binding kept (before original originalMember (originalOwner.trans same)) different
+    · simp only [originalOwner, ite_false] at same ⊢
+      exact before original originalMember same
+
+/-- NSD-WRITE-01 over a whole binding list: when every name resolves to a frame and no name repeats,
+the writes leave the Process binding unchanged and each binding lands in its resolved frame. -/
+theorem writeAll?_frames (program : Program) (instanceId : SemanticId) (scopeId : DefinitionScopeId) :
+    ∀ (values : List VariableBinding) (variables result : ScopedVariables),
+      writeAll? program variables instanceId scopeId values = some result →
+      (values.map (·.name)).Nodup →
+      (∀ value ∈ values, ∃ owner, resolveOwner? variables.scopes instanceId
+        (definitionChain program.definitionScopes scopeId) value.name = some (.frame owner)) →
+      result.process = variables.process ∧
+        (∀ value ∈ values, ∀ owner, resolveOwner? variables.scopes instanceId
+          (definitionChain program.definitionScopes scopeId) value.name = some (.frame owner) →
+          ∀ frame ∈ result.scopes, frame.owner = owner → value ∈ frame.bindings) ∧
+        (∀ (kept : VariableBinding) (keptOwner : ScopeOccurrenceId), kept.name ∉ values.map (·.name) →
+          (∀ frame ∈ variables.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) →
+          ∀ frame ∈ result.scopes, frame.owner = keptOwner → kept ∈ frame.bindings)
+  | [], variables, result, written, _, _ => by
+      simp only [writeAll?, Option.some.injEq] at written
+      subst written
+      exact ⟨rfl, by simp, fun _ _ _ kept => kept⟩
+  | value :: rest, variables, result, written, distinct, resolvedAll => by
+      simp only [writeAll?, bind, Option.bind] at written
+      split at written
+      · contradiction
+      · rename_i middle wrote
+        obtain ⟨owner, resolved⟩ := resolvedAll value List.mem_cons_self
+        obtain ⟨process, same, landed, kept⟩ :=
+          write?_frame_step program variables middle instanceId scopeId value owner resolved wrote
+        simp only [List.map_cons, List.nodup_cons] at distinct
+        obtain ⟨restProcess, restLanded, restKept⟩ := writeAll?_frames program instanceId scopeId rest middle result
+          written distinct.2 (fun other member => by
+            rw [same]; exact resolvedAll other (List.mem_cons_of_mem _ member))
+        refine ⟨restProcess.trans process, ?_, ?_⟩
+        · intro other member otherOwner otherResolved
+          rcases List.mem_cons.mp member with rfl | member
+          · rw [resolved] at otherResolved
+            cases otherResolved
+            exact restKept other owner distinct.1 landed
+          · exact restLanded other member otherOwner (by rw [same]; exact otherResolved)
+        · intro keptBinding keptOwner absent before
+          simp only [List.map_cons, List.mem_cons, not_or] at absent
+          exact restKept keptBinding keptOwner absent.2 (kept keptBinding keptOwner absent.1 before)
+
 /-- NSD-INIT-01: a declared scope's frame holds exactly the inputs evaluated against the parent
 occurrence's chain in the predecessor state, and entry initialization changes nothing else. -/
 theorem initializeFrame?_reads_parent_chain (program : Program) (state result : RuntimeState)

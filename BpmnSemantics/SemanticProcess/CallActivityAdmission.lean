@@ -55,9 +55,22 @@ def returnProcessOperationWellFormed (program : Program)
     (program.controlPlaces.any fun place => place.id = callerOutput) &&
     (program.definitionScopes.any fun scope => scope.id = calledRootScopeId)
 
+/-- The parentless root above `scopeId`; the fuel bound terminates a cyclic parent relation. -/
+def processRootWithin (scopes : List DefinitionScope) :
+    Nat → DefinitionScopeId → Option DefinitionScopeId
+  | 0, _ => none
+  | fuel + 1, scopeId =>
+      match scopes.filter (·.id == scopeId) with
+      | [scope] =>
+          match scope.parentScopeId with
+          | none => some scope.id
+          | some parent => processRootWithin scopes fuel parent
+      | _ => none
+
 /-- Count every identity-associated invoke/return before validating its other fields. Each invocation
-crosses from the parentless root that holds it, never its called root, into one exact called-root
-return pair, and the called root is never the entry root (CALLN-ADMIT-01). -/
+crosses from the scope that holds it into one exact called-root return pair, the called root never
+the entry root nor the root of the caller's own Process tree (CALLN-ADMIT-01). Stage B admits that
+scope to be an embedded scope of the caller Process; the caller output lies in the same scope. -/
 def callOperationsPaired (program : Program) : Bool :=
   let invokes : List InvokeBinding := program.operations.filterMap fun
     | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
@@ -93,9 +106,11 @@ def callOperationsPaired (program : Program) : Bool :=
                     calledRoot.id = invoke.calledRoot &&
                       calledRoot.id ≠ entryRoot.id &&
                       (match operationScope? program invoke.id with
-                        | some callerRoot => callerRoot ≠ calledRoot.id &&
-                            program.definitionScopes.any fun scope =>
-                              scope.id = callerRoot && scope.parentScopeId.isNone
+                        | some callerScope =>
+                            match processRootWithin program.definitionScopes
+                                program.definitionScopes.length callerScope with
+                            | some callerRoot => callerRoot ≠ calledRoot.id
+                            | none => false
                         | none => false) &&
                       operationScope? program returned.id = some calledRoot.id &&
                       placeScope? program invoke.input = operationScope? program invoke.id &&
@@ -210,5 +225,103 @@ def callCompletionPairs (program : Program) : List (OperationId × OperationId) 
         | [.reachNoneEnd endId _ _] => some (endId, returnId)
         | _ => none
     | _ => none
+
+
+private theorem invoke_return_count (operations : List SemanticOperation) (returned : OperationId) :
+    (operations.filter fun
+      | .invokeProcess _ _ _ _ _ _ candidate _ => decide (candidate = returned)
+      | _ => false).length =
+    ((operations.filterMap fun
+      | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
+          some (show InvokeBinding from
+            { id, origin, input, calledProcessId, calledRoot, calledEntry
+              returnOperationId := returned, data })
+      | _ => none).filter fun invoke => decide (invoke.returnOperationId = returned)).length := by
+  induction operations with
+  | nil => rfl
+  | cons operation rest ih =>
+      cases operation
+      all_goals simp only [List.filter_cons, List.filterMap_cons]
+      all_goals first
+        | exact ih
+        | (split <;> simp_all)
+
+/-- Paired Calls declare at most one invocation of each return operation: an invocation's return is
+declared, and each return counts exactly one invocation. -/
+theorem callOperationsPaired_invokes_by_return_le_one (program : Program) (returned : OperationId)
+    (paired : callOperationsPaired program = true) :
+    (program.operations.filter fun
+      | .invokeProcess _ _ _ _ _ _ candidate _ => decide (candidate = returned)
+      | _ => false).length ≤ 1 := by
+  rw [invoke_return_count]
+  unfold callOperationsPaired at paired
+  dsimp only at paired
+  split at paired
+  · rename_i empty
+    simp only [Bool.and_eq_true, List.isEmpty_iff] at empty
+    rw [empty.1]
+    simp
+  · split at paired
+    · simp only [Bool.and_eq_true, List.all_eq_true] at paired
+      cases filtered : (program.operations.filterMap fun
+          | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
+              some (show InvokeBinding from
+                { id, origin, input, calledProcessId, calledRoot, calledEntry
+                  returnOperationId := returned, data })
+          | _ => none).filter (fun invoke => decide (invoke.returnOperationId = returned)) with
+      | nil => simp
+      | cons first rest =>
+          have firstIn : first ∈ (program.operations.filterMap fun
+              | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
+                  some (show InvokeBinding from
+                    { id, origin, input, calledProcessId, calledRoot, calledEntry
+                      returnOperationId := returned, data })
+              | _ => none).filter (fun invoke => decide (invoke.returnOperationId = returned)) := by
+            rw [filtered]; exact List.mem_cons_self
+          obtain ⟨firstMember, firstReturned⟩ := List.mem_filter.mp firstIn
+          have firstReturnedEq := of_decide_eq_true firstReturned
+          have selected := paired.1.2 first firstMember
+          split at selected
+          · rename_i returnBinding returns
+            have returnIn : returnBinding ∈ _ := returns ▸ List.mem_singleton_self returnBinding
+            obtain ⟨returnMember, returnId⟩ := List.mem_filter.mp returnIn
+            have counted := of_decide_eq_true (paired.2 returnBinding returnMember)
+            rw [← filtered]
+            rw [of_decide_eq_true returnId, firstReturnedEq] at counted
+            exact Nat.le_of_eq counted
+          · contradiction
+    · contradiction
+
+/-- A paired invocation is held by the scope that holds its input place. -/
+theorem callOperationsPaired_invoke_input_scope (program : Program) (id : OperationId)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (calledProcessId : ProcessId)
+    (calledRoot : DefinitionScopeId) (calledEntry : ControlPlaceId) (returned : OperationId)
+    {data : CallDataInterface}
+    (paired : callOperationsPaired program = true)
+    (member : .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data ∈
+      program.operations) :
+    (program.operationScopes.find? fun owner => decide (owner.operationId = id)).map (·.scopeId) =
+      (program.controlPlaceScopes.find? fun owner => decide (owner.controlPlaceId = input)).map (·.scopeId) := by
+  unfold callOperationsPaired at paired
+  dsimp only at paired
+  split at paired
+  · rename_i empty
+    simp only [Bool.and_eq_true, List.isEmpty_iff] at empty
+    have absent := List.filterMap_eq_nil_iff.mp empty.1 _ member
+    contradiction
+  · split at paired
+    · simp only [Bool.and_eq_true] at paired
+      have selected := paired.1.2
+      rw [List.all_filterMap] at selected
+      have selected := List.all_eq_true.mp selected _ member
+      dsimp only at selected
+      split at selected
+      · split at selected
+        · simp only [Bool.and_eq_true, decide_eq_true_eq] at selected
+          obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨_, _⟩, _⟩, _⟩, inputFound⟩, _⟩, _⟩, _⟩, _⟩, _⟩ := selected.1
+          exact inputFound.symm
+        · contradiction
+      · contradiction
+    · contradiction
 
 end BpmnSemantics.SemanticProcess

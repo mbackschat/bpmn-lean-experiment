@@ -12,7 +12,7 @@ open BpmnSemantics
 theorem cancelScopeSubtree_child_scope_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (projected : (state.scopeOccurrences.filter (·.parent.isSome)).mapM
@@ -55,7 +55,7 @@ theorem cancelScopeSubtree_child_scope_projection (program : Program) (state : R
 theorem cancelScopeSubtree_child_call_projection_filtered (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (projected : state.calledProcessOccurrences.mapM (callStart? program state) = some entries) :

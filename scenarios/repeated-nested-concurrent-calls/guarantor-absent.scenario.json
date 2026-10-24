@@ -1,0 +1,140 @@
+{
+  "kind": "scenario",
+  "id": "repeated-nested-calls-guarantor-absent",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "guarantor-loan",
+    "relativePath": "scenarios/repeated-nested-concurrent-calls/guarantor-loan.bpmn",
+    "sha256": "f5647d8bc3457960d9525b4d167f5665ebf2b9e1622abfda17a68e7c28691abb",
+    "sourceOverlay": {
+      "id": "guarantor-loan-handlers",
+      "sha256": "d5523873a4bff4351b14dcdb873967d6e243532c6b2622bfaab2c38cc2b993db"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start",
+      "processId": "Process_GuarantorLoan",
+      "instanceId": "Loan_unvouched",
+      "initialVariables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "string",
+            "value": "8000"
+          }
+        },
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "string",
+            "value": "Grace"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:d731296806b306eeb1849d42856ee9d99524718a779aa4387df2801e5ba655b3",
+      "effectId": {
+        "processInstanceId": "Loan_unvouched",
+        "elementId": "RegisterApplication",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-applicant-collect-document",
+      "taskId": {
+        "processInstanceId": "call:14:Loan_unvouched:15:VerifyApplicant:1",
+        "elementId": "CollectDocument",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-applicant-record-verdict",
+      "taskId": {
+        "processInstanceId": "call:14:Loan_unvouched:15:VerifyApplicant:1",
+        "elementId": "RecordVerdict",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "rejected"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-guarantor-collect-document",
+      "taskId": {
+        "processInstanceId": "call:14:Loan_unvouched:15:VerifyGuarantor:1",
+        "elementId": "CollectDocument",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-guarantor-record-verdict",
+      "taskId": {
+        "processInstanceId": "call:14:Loan_unvouched:15:VerifyGuarantor:1",
+        "elementId": "RecordVerdict",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-guarantor",
+      "taskId": {
+        "processInstanceId": "Loan_unvouched",
+        "elementId": "ConfirmGuarantor",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

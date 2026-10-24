@@ -26,7 +26,7 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private theorem prepared_regional_transition_pair (program : Program) (state : RuntimeState)
+private theorem prepared_regional_transition_pair (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (instanceId : SemanticId) (regional : PreparedInternalRegional) (other : PreparedInternalTransition)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -126,7 +126,7 @@ private theorem prepared_regional_transition_pair (program : Program) (state : R
       · simp only [PreparedInternalTransition.apply, leftApplied, rightApplied, Option.getD_some,
           lrApplied, rlApplied]
 
-private theorem prepared_end_transition_pair (program : Program) (state : RuntimeState)
+private theorem prepared_end_transition_pair (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (instanceId : SemanticId) (ending : PreparedInternalEnd) (other : PreparedInternalTransition)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -174,7 +174,7 @@ private theorem prepared_end_transition_pair (program : Program) (state : Runtim
         programValid stateValid otherFound endFound (PreparedInternalTransition.independent_symm independent)
       exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
 
-private theorem prepared_merge_transition_pair (program : Program) (state : RuntimeState)
+private theorem prepared_merge_transition_pair (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (instanceId : SemanticId) (merge : PreparedInternalMerge) (other : PreparedInternalTransition)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -223,7 +223,7 @@ private theorem prepared_merge_transition_pair (program : Program) (state : Runt
         programValid stateValid otherFound mergeFound (PreparedInternalTransition.independent_symm independent)
       exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
 
-theorem prepared_transition_pair (program : Program) (state : RuntimeState)
+theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -500,7 +500,7 @@ theorem prepared_transition_batch_control_read_only (program : Program) (state :
               (selected head (by simp)) (PreparedInternalTransition.independent_symm
                 ((List.pairwise_cons.mp independent).1 member inTail))
 
-theorem prepared_transition_tail (program : Program) (state : RuntimeState)
+theorem prepared_transition_tail (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -516,7 +516,7 @@ theorem prepared_transition_tail (program : Program) (state : RuntimeState)
 
 /-- Each recursive step derives validity, running identity, projectability, and the complete
 remaining preparations from its predecessor; no successor fact is supplied by the caller. -/
-theorem prepared_transition_batch_preserves (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_preserves (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -541,7 +541,7 @@ theorem prepared_transition_batch_preserves (program : Program) (state : Runtime
         (fun member present => readOnly member (by simp [present]))
         (List.pairwise_cons.mp independent).2
 
-theorem prepared_transition_batch_frame (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_frame (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (query : PreparedInternalTransition)
     (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
@@ -570,7 +570,7 @@ theorem prepared_transition_batch_frame (program : Program) (state : RuntimeStat
 
 /-- List permutation preserves multiplicity, and each adjacent swap uses the actual predecessor's
 canonical state. This covers arbitrary finite mixed lists without a bound on their length. -/
-theorem prepared_transition_batch_perm (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_perm (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (left right : List PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -606,7 +606,7 @@ theorem prepared_transition_batch_perm (program : Program) (state : RuntimeState
           (fun member present => readOnly member (first.mem_iff.mpr present))
           (independent.perm first PreparedInternalTransition.independent_symm))
 
-theorem prepared_transition_batch_perm_preserves (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_perm_preserves (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (left right : List PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -674,7 +674,7 @@ theorem fireInternalAlternativeBatch_ordinary_preparations (program : Program) (
 
 /-- The real evaluator and checked prepared fold both succeed at every derived prefix. Snapshot
 exclusion is needed for these execution paths, not for the raw-state permutation law. -/
-theorem prepared_transition_batch_applies (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_applies (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)

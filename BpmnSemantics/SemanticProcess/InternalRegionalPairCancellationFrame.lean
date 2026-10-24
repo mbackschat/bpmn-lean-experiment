@@ -44,7 +44,7 @@ private theorem cancellation_effect_filters (program : Program) (state : Runtime
 
 /-- The evaluator's withdrawn populations retain their exact identity and list order.
 Activity write conflicts protect handler-bearing records beyond directly owned work. -/
-theorem regional_pair_cancellation_populations (program : Program) (before after : RuntimeState)
+theorem regional_pair_cancellation_populations (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -88,7 +88,7 @@ theorem regional_pair_cancellation_populations (program : Program) (before after
 /-- Fully prepared cancellation has no selected Compensation trigger to withdraw.
 The child case follows from the existing exact retained-trigger filter, rather than a
 new assumption that all Compensation execution is globally empty. -/
-theorem preparedRegional_cancellation_triggers_empty (program : Program) (state : RuntimeState)
+theorem preparedRegional_cancellation_triggers_empty (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting state = true)
     (running : state.control = .running hosting)
@@ -113,6 +113,9 @@ theorem preparedRegional_cancellation_triggers_empty (program : Program) (state 
         (Bool.and_eq_true_iff.mp retention).1 execution).1
       simp [empty]
   | throwError id origin input error handler =>
+      haveI := InterruptionInvocationsRooted.declared program _
+        (prepareInternalRegional_operation_declared program state _ prepared found) rfl
+      haveI := CallersParentless.of_rooted program state hosting hosting position running
       obtain ⟨after, fired, _⟩ := prepareInternalRegional_executes program state _ prepared found
       have raw : throwErrorState? state input error handler = some after := by
         simp only [fire?, snapshots] at fired

@@ -40,7 +40,8 @@ theorem preparedRootComplete_preserves_runtimeStateWellFormed (program : Program
     (List.mem_filter.mp (by rw [declared]; simp)).1
   obtain ⟨checked, fired, afterPosition, afterActivities, afterRaces⟩ :=
     ownershipClosedSelection_preserves_position_and_references program before hosting _ prepared.selection
-      snapshots position structural operation waitIds activities races closedSelection
+      snapshots position structural operation waitIds activities races
+      (by intro interrupts; simp [operationInterrupts] at interrupts) closedSelection
   obtain ⟨after, firedAgain, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have equal : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked

@@ -10,7 +10,7 @@ open BpmnSemantics
 
 /-- The exact retained graph preserves cancellation ownership even for historical IDs.
 The two traversals retain their own successor population bounds. -/
-theorem regional_pair_cancellation_classifiers (program : Program) (before after : RuntimeState)
+theorem regional_pair_cancellation_classifiers (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -129,7 +129,7 @@ theorem regional_pair_call_closure (program : Program) (before after : RuntimeSt
   · simp [InternalOccurrenceRegion.contains, callerOutside]
   · simp [InternalOccurrenceRegion.contains, targetOutside]
 
-theorem regional_pair_owner_retention (program : Program) (before after : RuntimeState)
+theorem regional_pair_owner_retention (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -161,7 +161,7 @@ theorem regional_pair_owner_retention (program : Program) (before after : Runtim
 
 /-- ESL-RETAIN-01 changes actual withdrawals, while the existing region read still protects
 all Activity endpoints in that region. This frames either explicit root disposition. -/
-theorem regional_pair_cancellation_activity_frame (program : Program) (before after : RuntimeState)
+theorem regional_pair_cancellation_activity_frame (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -273,7 +273,7 @@ private theorem cancellation_local_data_closed (state : RuntimeState) (selected 
 /-- Both preparations close references before execution. Their actual retention filters and
 re-derived ownership classifiers preserve those same three guards in the successor. -/
 theorem prepareInternalRegional_ownership_after_independent_regional
-    (program : Program) (before after : RuntimeState) (hosting : SemanticId)
+    (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
     (running : before.control = .running hosting)

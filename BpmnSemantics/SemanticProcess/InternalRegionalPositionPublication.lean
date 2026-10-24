@@ -13,6 +13,7 @@ open BpmnSemantics
 
 theorem preparedRegional_position_delta (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+    (interruptionRooted : operationInterrupts operation = true → InvocationsInProcessRoots program)
     (found : prepareInternalRegional? program before operation = some prepared) :
     ∃ hosting after, before.control = .running hosting ∧
       applyPreparedInternalRegional? program before prepared = some after ∧
@@ -25,8 +26,10 @@ theorem preparedRegional_position_delta (program : Program) (before : RuntimeSta
   | completeScope id origin definition output =>
       exact preparedComplete_position_delta program before id origin definition output prepared found
   | throwError id origin input error handler =>
+      haveI := interruptionRooted rfl
       exact preparedError_position_delta program before id origin input error handler prepared found
   | terminateScope id origin input definition =>
+      haveI := interruptionRooted rfl
       exact preparedTerminate_position_delta program before id origin input definition prepared found
   | _ =>
       have closedSelection := (prepareInternalRegional_facts program before _ prepared found).2.2.2.1

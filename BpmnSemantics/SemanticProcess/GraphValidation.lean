@@ -104,7 +104,9 @@ def operationRespectsScopes (program : Program)
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] calledRoot
       | .returnProcess id _ _ calledRoot callerOutput _ =>
-          -- CALLN-ADMIT-01: the caller output lies in the Process root that holds the paired invocation.
+          -- CALLN-ADMIT-01: the caller output lies in the scope that holds the paired invocation, a
+          -- Process root or, under Stage B, an embedded scope; pairing places that scope outside the
+          -- called root's tree.
           calledRoot = owner &&
             (definitionScope? program owner).any (·.parentScopeId.isNone) &&
             match program.operations.filter (fun candidate => match candidate with
@@ -112,9 +114,7 @@ def operationRespectsScopes (program : Program)
                 | _ => false) with
             | [invoke] =>
                 match operationScope? program invoke.id with
-                | some caller =>
-                    (definitionScope? program caller).any (·.parentScopeId.isNone) &&
-                      placesOwnedBy program [callerOutput] caller
+                | some caller => placesOwnedBy program [callerOutput] caller
                 | none => false
             | _ => false
       | .completeScope _ _ scopeId parentOutput =>

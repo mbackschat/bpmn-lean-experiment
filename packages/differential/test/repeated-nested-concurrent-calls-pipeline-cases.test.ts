@@ -1,5 +1,5 @@
 /**
- * Locks the registered supplier onboarding schedules against the repeated, nested and concurrent Calls proposal's
+ * Locks the registered supplier onboarding schedules against the repeated, nested and concurrent Calls specification's
  * separating witnesses without Lean or Temporal: the open User Tasks, named by element, activation and owning instance,
  * and Process status after every command (CALLN-INVOKE-01, CALLN-RETURN-01, CALLN-NEST-01, CALLN-IDENTITY-01), refused
  * completions that leave the committed state unchanged (CALLN-REFUSE-01), and a seeded mutation per schedule that must move

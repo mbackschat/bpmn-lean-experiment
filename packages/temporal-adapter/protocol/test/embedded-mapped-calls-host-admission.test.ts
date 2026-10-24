@@ -1,5 +1,5 @@
 /**
- * Hosting preflight of Stage B of the repeated, nested and concurrent Calls proposal: the retained guarantor loan is
+ * Hosting preflight of Stage B of the repeated, nested and concurrent Calls specification: the retained guarantor loan is
  * admitted for hosting, and the Start capacity journeys walk both mapped Calls of one definition, reserving each called
  * task's patch under the names of the Call that created its instance, as the live record selects them.
  */

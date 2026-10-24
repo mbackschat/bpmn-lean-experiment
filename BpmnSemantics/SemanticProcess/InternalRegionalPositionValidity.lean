@@ -11,33 +11,58 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-theorem calledProcessAssociationsValid_parentless_endpoints (state : RuntimeState)
-    (valid : calledProcessAssociationsValid state = true)
+/-- Under `invocationsInProcessRoots`, every live Call record's caller is a parentless occurrence: its
+declaring invocation lies in a Process root, and position validity gives an occurrence of a root
+definition scope no parent (PC-SCOPE-05 Stage B). -/
+theorem CallersParentless.of_rooted (program : Program) [InvocationsInProcessRoots program]
+    (state : RuntimeState) (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId) : CallersParentless state := by
+  refine ⟨fun record member => ?_⟩
+  have calls := runtimePositionValid_called_associations program expectedInstanceId instanceId state
+    valid running
+  obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+    calledProcessAssociationsValid_endpoints state calls record member
+  refine ⟨caller, callerMember, callerId, ?_⟩
+  have declared := runtimePositionValid_call_records_declared program expectedInstanceId instanceId
+    state valid running record member
+  unfold callRecordDeclared at declared
+  obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true declared)
+  have present : operation ∈ [operation] := List.mem_singleton_self _
+  rw [← singleton] at present
+  obtain ⟨operationMember, accepted⟩ := List.mem_filter.mp present
+  have rootedOperation := List.all_eq_true.mp (InvocationsInProcessRoots.rooted (program := program))
+    operation operationMember
+  obtain ⟨definition, definitionMember, definitionId, binding⟩ :=
+    (runtimePositionValid_scope_parent_binding program expectedInstanceId instanceId state valid running
+      caller callerMember).2
+  cases operation with
+  | invokeProcess id origin input calledProcessId calledRootScope calledEntry returned data =>
+      simp only [Bool.and_eq_true, List.any_eq_true, decide_eq_true_eq] at accepted
+      obtain ⟨_, owner, ownerMember, ownerId, ownerScope⟩ := accepted
+      have ownerRooted := List.all_eq_true.mp rootedOperation owner ownerMember
+      simp only [ownerId, bne_self_eq_false, Bool.false_or, List.all_eq_true] at ownerRooted
+      have parentless := ownerRooted definition definitionMember
+      simp only [definitionId, ownerScope, callerId, bne_self_eq_false, Bool.false_or,
+        Option.isNone_iff_eq_none] at parentless
+      rcases binding with ⟨_, none⟩ | ⟨parent, some, static, _⟩
+      · exact none
+      · rw [parentless] at static
+        cases static
+  | _ => simp at accepted
+
+/-- Parentless callers and association validity give each live record parentless endpoints; the
+cancellation proofs take the caller fact as their explicit premise. -/
+theorem runtimePositionValid_parentless_endpoints (program : Program) (state : RuntimeState)
+    (expectedInstanceId instanceId : SemanticId)
+    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (running : state.control = .running instanceId) [CallersParentless state]
     (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) :
     (∃ caller ∈ state.scopeOccurrences, caller.id = record.caller ∧ caller.parent = none) ∧
-      (∃ root ∈ state.scopeOccurrences, root.id = record.calledRoot ∧ root.parent = none) := by
-  have endpoint (owner : ScopeOccurrenceId)
-      (count : (state.scopeOccurrences.filter fun occurrence =>
-        decide (occurrence.id = owner) && occurrence.parent.isNone).length = 1) :
-      ∃ occurrence ∈ state.scopeOccurrences, occurrence.id = owner ∧ occurrence.parent = none := by
-    obtain ⟨occurrence, singleton⟩ := List.length_eq_one_iff.mp count
-    have present : occurrence ∈ state.scopeOccurrences.filter fun candidate =>
-        decide (candidate.id = owner) && candidate.parent.isNone := by rw [singleton]; simp
-    obtain ⟨present, fields⟩ := List.mem_filter.mp present
-    simp only [Bool.and_eq_true, decide_eq_true_eq, Option.isNone_iff_eq_none] at fields
-    exact ⟨occurrence, present, fields⟩
-  unfold calledProcessAssociationsValid at valid
-  split at valid
-  · contradiction
-  · split at valid
-    · simp only [Bool.and_eq_true, List.all_eq_true] at valid
-      have fields := valid.1.1 record member
-      constructor
-      · apply endpoint record.caller
-        simpa only [Bool.decide_and, Bool.decide_eq_true] using (of_decide_eq_true fields.1.1.1.1.1.1.2)
-      · apply endpoint record.calledRoot
-        simpa only [Bool.decide_and, Bool.decide_eq_true] using (of_decide_eq_true fields.2)
-    · contradiction
+      (∃ root ∈ state.scopeOccurrences, root.id = record.calledRoot ∧ root.parent = none) :=
+  ⟨CallersParentless.parentless record member,
+    (calledProcessAssociationsValid_endpoints state (runtimePositionValid_called_associations program
+      expectedInstanceId instanceId state valid running) record member).2⟩
 
 private theorem child_seed_excludes_parentless (state : RuntimeState)
     (unique : (state.scopeOccurrences.map (·.id)).Nodup)
@@ -55,11 +80,13 @@ private theorem child_seed_excludes_parentless (state : RuntimeState)
   exact occurrenceInSubtreeWithin_parentless state.scopeOccurrences root.id candidate.id different
     (by rw [occurrenceParent_of_mem state.scopeOccurrences unique candidate member, parentless]) _
 
-/-- A valid Call's caller is parentless, so cancelling a child scope seeds no called instance. -/
+/-- Under `invocationsInProcessRoots` a valid Call's caller is parentless, so cancelling a child
+scope seeds no called instance. -/
 theorem calledInstanceClosure_child_empty (program : Program) (state : RuntimeState)
     (expectedInstanceId instanceId : SemanticId)
-    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (valid : runtimePositionValid program expectedInstanceId state = true) [CallersParentless state]
     (running : state.control = .running instanceId)
+
     (root : RuntimeScopeOccurrence) (member : root ∈ state.scopeOccurrences)
     (child : root.parent ≠ none) : calledInstanceClosure state root.id = [] := by
   have unique := runtimePositionValid_scope_ids_nodup program expectedInstanceId instanceId state valid running
@@ -70,7 +97,8 @@ theorem calledInstanceClosure_child_empty (program : Program) (state : RuntimeSt
     apply List.filterMap_eq_nil_iff.mpr
     intro record present
     obtain ⟨⟨caller, callerMember, callerId, parentless⟩, _⟩ :=
-      calledProcessAssociationsValid_parentless_endpoints state calls record present
+      runtimePositionValid_parentless_endpoints program state expectedInstanceId instanceId valid running
+        record present
     have outside := child_seed_excludes_parentless state unique root member child caller callerMember parentless
     simp only [callerId] at outside
     simp [outside]
@@ -83,8 +111,9 @@ theorem calledInstanceClosure_child_empty (program : Program) (state : RuntimeSt
 
 theorem cancellation_child_calls_frame (program : Program) (state : RuntimeState)
     (expectedInstanceId instanceId : SemanticId)
-    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (valid : runtimePositionValid program expectedInstanceId state = true) [CallersParentless state]
     (running : state.control = .running instanceId)
+
     (root : RuntimeScopeOccurrence) (member : root ∈ state.scopeOccurrences)
     (child : root.parent ≠ none) (disposition : SelectedScopeDisposition) :
     (cancelScopeSubtree state root.id disposition).calledProcessOccurrences =
@@ -92,12 +121,12 @@ theorem cancellation_child_calls_frame (program : Program) (state : RuntimeState
   have empty := calledInstanceClosure_child_empty program state expectedInstanceId instanceId
     valid running root member child
   have unique := runtimePositionValid_scope_ids_nodup program expectedInstanceId instanceId state valid running
-  have calls := runtimePositionValid_called_associations program expectedInstanceId instanceId state valid running
   change state.calledProcessOccurrences.filter _ = _
   apply List.filter_eq_self.mpr
   intro record present
   obtain ⟨⟨caller, callerMember, callerId, callerParent⟩, ⟨called, calledMember, calledId, calledParent⟩⟩ :=
-    calledProcessAssociationsValid_parentless_endpoints state calls record present
+    runtimePositionValid_parentless_endpoints program state expectedInstanceId instanceId valid running
+      record present
   have callerOutside := child_seed_excludes_parentless state unique root member child caller callerMember callerParent
   have calledOutside := child_seed_excludes_parentless state unique root member child called calledMember calledParent
   simpa only [callerId, calledId] using show
@@ -156,8 +185,9 @@ theorem runtimePositionValid_parent_outside_child_subtree (program : Program) (s
 retains the selected child itself. Position and projection preservation share this ancestry fact. -/
 theorem cancelScopeSubtree_child_parent_outside (program : Program) (state : RuntimeState)
     (expectedInstanceId instanceId : SemanticId)
-    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (valid : runtimePositionValid program expectedInstanceId state = true) [CallersParentless state]
     (running : state.control = .running instanceId)
+
     (root : RuntimeScopeOccurrence) (rootMember : root ∈ state.scopeOccurrences)
     (child : root.parent ≠ none) (disposition : SelectedScopeDisposition)
     (occurrence : RuntimeScopeOccurrence)
@@ -196,8 +226,9 @@ theorem cancelScopeSubtree_child_parent_outside (program : Program) (state : Run
 unrelated called Processes. No successor validity or precomputed successor mask is assumed. -/
 theorem cancelScopeSubtree_child_preserves_position (program : Program) (state : RuntimeState)
     (expectedInstanceId instanceId : SemanticId)
-    (valid : runtimePositionValid program expectedInstanceId state = true)
+    (valid : runtimePositionValid program expectedInstanceId state = true) [CallersParentless state]
     (running : state.control = .running instanceId)
+
     (root : RuntimeScopeOccurrence) (rootMember : root ∈ state.scopeOccurrences)
     (child : root.parent ≠ none) (disposition : SelectedScopeDisposition) :
     runtimePositionValid program expectedInstanceId (cancelScopeSubtree state root.id disposition) = true := by
@@ -223,6 +254,27 @@ theorem cancelScopeSubtree_child_preserves_position (program : Program) (state :
       · simp [parentless]
   · exact cancellation_child_calls_frame program state expectedInstanceId instanceId
       valid running root rootMember child disposition
+  · intro record present
+    obtain ⟨⟨caller, callerMember, callerId, callerParent⟩, _⟩ :=
+      runtimePositionValid_parentless_endpoints program state expectedInstanceId instanceId valid running
+        record present
+    have outside := child_seed_excludes_parentless state unique root rootMember child caller callerMember
+      callerParent
+    cases disposition <;>
+      change (state.scopeOccurrences.filter _).filter _ = _
+    all_goals
+      rw [List.filter_filter]
+      apply List.filter_congr
+      intro occurrence member
+      by_cases same : occurrence.id = record.caller
+      · rw [← callerId] at same
+        simp only [same, callerId, decide_true, Bool.true_and]
+        first
+        | change (decide (occurrence.id = root.id) || !(_ || _)) = true
+        | change (!(_ || _)) = true
+        all_goals simp only [same, Bool.or_eq_true, Bool.not_eq_true', decide_eq_true_eq]
+        all_goals first | exact Or.inr outside | simp [empty, outside]
+      · simp [same]
   · intro occurrence member parent parentEq
     have prior := (List.mem_filter.mp member).1
     obtain ⟨_, definition, _, _, binding⟩ := runtimePositionValid_scope_parent_binding

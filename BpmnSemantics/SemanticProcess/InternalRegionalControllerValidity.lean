@@ -54,7 +54,7 @@ theorem repeated_binding_members (entry : SequentialScopeEntry) (state : Runtime
 private theorem repeated_body_retention_mask (program : Program) (state : RuntimeState)
     (hosting : SemanticId) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (entry : SequentialScopeEntry) (binding : SequentialScopeBinding)
-    (position : runtimePositionValid program hosting state = true)
+    (position : runtimePositionValid program hosting state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (bound : sequentialScopeBindingForEntry? entry state = some binding) :
     let cancelled := fun owner => occurrenceInSubtree state.scopeOccurrences root owner ||
@@ -172,7 +172,7 @@ private theorem repeated_controller_retention_mask (state : RuntimeState)
 theorem cancelScopeSubtree_preserves_repeated_binding (program : Program) (state : RuntimeState)
     (hosting : SemanticId) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
     (entry : SequentialScopeEntry) (binding : SequentialScopeBinding)
-    (position : runtimePositionValid program hosting state = true)
+    (position : runtimePositionValid program hosting state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (unique : activityIdentitiesUnique state = true)
     (bound : sequentialScopeBindingForEntry? entry state = some binding)
@@ -226,7 +226,7 @@ private theorem repeated_filters_commute {α : Type} (values : List α) (keep se
 /-- SMIS-IDENTITY-01 survives actual regional cancellation in both directions, including removed and retained bodies. -/
 theorem cancelScopeSubtree_preserves_repeated_scope_state (program : Program) (state : RuntimeState)
     (hosting : SemanticId) (root : ScopeOccurrenceId) (disposition : SelectedScopeDisposition)
-    (position : runtimePositionValid program hosting state = true)
+    (position : runtimePositionValid program hosting state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (unique : activityIdentitiesUnique state = true)
     (valid : sequentialScopeStateValid program state = true) :

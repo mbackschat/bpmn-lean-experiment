@@ -187,7 +187,7 @@ export type StartCapacityHostingIdentityFailure = Readonly<{ configuredBound: nu
  * called identity embeds, so bounding that identity bounds them. The value equals the reserved command identifier
  * width; the retained supplier onboarding model, the profile's deepest Call forest, passes the hosted Query and
  * terminal ceilings with an identity of exactly this size. See the
- * [identity-length risk](../../../../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md#temporal-hosting-and-refinement-preflight).
+ * [identity-length risk](../../../../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#temporal-hosting-and-refinement-preflight).
  */
 export const embeddedCompletionHostingIdentityByteLimit = 256;
 

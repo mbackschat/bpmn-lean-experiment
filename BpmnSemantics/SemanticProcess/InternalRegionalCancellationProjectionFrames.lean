@@ -12,7 +12,7 @@ open BpmnSemantics
 theorem cancelScopeSubtree_child_process_lookup_frame (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (owner : ScopeOccurrenceId)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (outside : (occurrenceInSubtree state.scopeOccurrences root.id owner ||
@@ -28,7 +28,7 @@ theorem cancelScopeSubtree_child_process_lookup_frame (program : Program) (state
 theorem cancelScopeSubtree_child_wait_start_frame (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (outside : (occurrenceInSubtree state.scopeOccurrences root.id owner ||
@@ -40,7 +40,7 @@ theorem cancelScopeSubtree_child_wait_start_frame (program : Program) (state : R
 
 theorem cancelScopeSubtree_child_scope_start_frame (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root scope : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (outside : ∀ parent, scope.parent = some parent →
@@ -57,7 +57,7 @@ theorem cancelScopeSubtree_child_scope_start_frame (program : Program) (state : 
 theorem cancelScopeSubtree_child_call_start_frame (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (record : CalledProcessOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (member : record ∈ state.calledProcessOccurrences) :
@@ -71,7 +71,7 @@ theorem cancelScopeSubtree_child_call_start_frame (program : Program) (state : R
 
 theorem cancelScopeSubtree_child_call_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none) :
     (cancelScopeSubtree state root.id disposition).calledProcessOccurrences.mapM

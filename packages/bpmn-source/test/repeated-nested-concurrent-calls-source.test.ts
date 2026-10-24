@@ -1,6 +1,6 @@
 /**
  * CALLN-ADMIT-01 for Stage A through the exact-bytes source path: the supplier onboarding model's Process-root Calls
- * under the `SCOPE` profile. The oracle is the repeated, nested and concurrent Calls proposal's required and excluded
+ * under the `SCOPE` profile. The oracle is the repeated, nested and concurrent Calls specification's required and excluded
  * scope; every refusal differs from the admitted control in the one fact its label names.
  */
 import assert from "node:assert/strict";

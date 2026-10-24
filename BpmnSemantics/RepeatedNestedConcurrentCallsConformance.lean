@@ -8,7 +8,7 @@ compliance check from its own called root, and final approval invokes the approv
 Tasks are named by element and activation. Each journey step is one dispatcher evaluation, and each check
 decides one observation. They do not discharge a quantified law; the invocation, return and association laws live in `CallActivity`,
 `ScopeCreationCallAssociations` and `ScopeCompletion`. See the
-[repeated, nested and concurrent Calls proposal](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md#separating-witnesses).
+[repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance

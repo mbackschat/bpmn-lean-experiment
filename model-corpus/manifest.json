@@ -861,6 +861,49 @@
       }
     },
     {
+      "id": "guarantor-loan-embedded-mapped-calls",
+      "title": "Decide a guaranteed loan through two identity checks",
+      "businessPurpose": "Register a loan application, verify the applicant through a reusable identity-verification Process, then verify the guarantor through the same Process inside a guarantor review whose own verdict a reviewer confirms before the review publishes it to the loan.",
+      "cloneFamily": "guarantor-loan-embedded-mapped-calls",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "userTaskWait",
+        "userTaskCompletion",
+        "externalEffect",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/repeated-nested-concurrent-calls/guarantor-loan.bpmn",
+        "sha256": "f5647d8bc3457960d9525b4d167f5665ebf2b9e1622abfda17a68e7c28691abb",
+        "scenarioRelativePath": "scenarios/repeated-nested-concurrent-calls/guarantor-verified.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": {
+        "kind": "accepted"
+      },
+      "pipelineCaseId": "repeated-nested-calls-guarantor-verified",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected, no Product 2 handler registration exists for the registration and the browser does not yet present called-instance tasks of a mapped Call; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "scoped-business-error-recovery",
       "title": "Recover scoped work after a business error",
       "businessPurpose": "Route a failed scoped operation to its declared recovery work while cancelling its live sibling.",

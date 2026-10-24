@@ -233,5 +233,111 @@ theorem returnState?_retires_called_frames (program : Program) (before after : R
     rw [keptOwner, same] at keptMember
     simp [seeded] at keptMember
 
+private theorem copyValue?_name (read : String → Option (Option VariableValue)) (mapping : VariableMapping)
+    (binding : VariableBinding) (copied : copyValue? read mapping = some binding) :
+    binding.name = mapping.target := by
+  unfold copyValue? at copied
+  split at copied
+  · contradiction
+  all_goals
+    simp only [bind, Option.bind_eq_some_iff, Option.some.injEq] at copied
+    obtain ⟨_, _, rfl⟩ := copied
+    rfl
+
+/-- Each copied binding is named by its mapping's target, in mapping order. -/
+theorem copyValues?_names (read : String → Option (Option VariableValue)) :
+    ∀ (mappings : List VariableMapping) (bindings : List VariableBinding),
+      copyValues? read mappings = some bindings → bindings.map (·.name) = mappings.map (·.target)
+  | [], bindings, copied => by
+      simp only [copyValues?, List.mapM_nil, pure, Option.some.injEq] at copied
+      simp [← copied]
+  | mapping :: rest, bindings, copied => by
+      simp only [copyValues?, List.mapM_cons, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at copied
+      obtain ⟨binding, one, others, many, rfl⟩ := copied
+      simp only [List.map_cons, copyValue?_name read mapping binding one,
+        copyValues?_names read rest others many]
+
+private theorem copyValues?_mem (read : String → Option (Option VariableValue)) :
+    ∀ (mappings : List VariableMapping) (bindings : List VariableBinding),
+      copyValues? read mappings = some bindings →
+      ∀ mapping ∈ mappings, ∃ binding ∈ bindings, copyValue? read mapping = some binding
+  | [], _, _ => by simp
+  | head :: rest, bindings, copied => by
+      simp only [copyValues?, List.mapM_cons, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at copied
+      obtain ⟨binding, one, others, many, rfl⟩ := copied
+      intro mapping member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact ⟨binding, List.mem_cons_self, one⟩
+      · obtain ⟨other, otherMember, otherCopied⟩ := copyValues?_mem read rest others many mapping member
+        exact ⟨other, List.mem_cons_of_mem _ otherMember, otherCopied⟩
+
+/-- CALLN-FRAME-01, input side: a mapped invocation reads each input along its caller occurrence's
+own chain, so for a Call inside a Sub-Process an input whose source a frame on that chain declares
+copies that frame's value, never the Process binding (NSD-READ-01). -/
+theorem invokeState?_reads_caller_frames (program : Program) (before after : RuntimeState)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (calledProcessId : ProcessId)
+    (calledRootScopeId : DefinitionScopeId) (calledEntry : ControlPlaceId) (returnOperationId : OperationId)
+    (inputs outputs : List VariableMapping)
+    (invoked : invokeState? program before origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId inputs outputs = some after) :
+    ∃ caller bindings,
+      onlyTokenOwner? before input = some caller ∧
+      copyValues? (readOutcome? program before.variables caller.processInstanceId caller.definitionScopeId)
+        inputs = some bindings ∧
+      ∀ mapping ∈ inputs, ∀ (name : String) (owner : ScopeOccurrenceId),
+        mapping.expression = .enclosingVariable name →
+        resolveOwner? before.variables.scopes caller.processInstanceId
+          (definitionChain program.definitionScopes caller.definitionScopeId) name = some (.frame owner) →
+        ∃ frame value, selectScopeVariables? before.variables owner = some frame ∧
+          bindingOutcome? frame.bindings name = some value ∧
+          ({ name := mapping.target, value := value.getD .null } : VariableBinding) ∈ bindings := by
+  obtain ⟨caller, bindings, owned, copied, _⟩ := invokeState?_installs_snapshot program before after origin input
+    calledProcessId calledRootScopeId calledEntry returnOperationId inputs outputs invoked
+  refine ⟨caller, bindings, owned, copied, ?_⟩
+  intro mapping member name owner expression resolved
+  obtain ⟨binding, bindingMember, one⟩ := copyValues?_mem _ inputs bindings copied mapping member
+  unfold copyValue? at one
+  simp only [expression, readOutcome?_frame program before.variables caller.processInstanceId
+    caller.definitionScopeId name owner resolved, bind, Option.bind_eq_some_iff, Option.some.injEq] at one
+  obtain ⟨value, ⟨frame, selected, outcome⟩, rfl⟩ := one
+  exact ⟨frame, value, selected, outcome, bindingMember⟩
+
+/-- CALLN-FRAME-01, output side: a mapped return writes its outputs from the record's caller
+occurrence, so for a Call inside a Sub-Process each output whose target that occurrence's chain
+resolves to a frame lands in that frame, and the Process binding stays unchanged (NSD-WRITE-01). -/
+theorem returnState?_outputs_land_in_caller_frames (program : Program) (before after : RuntimeState)
+    (id : OperationId) (origin : BpmnElementOrigin) (calledProcessId : ProcessId)
+    (calledRootScopeId : DefinitionScopeId) (callerOutput : ControlPlaceId) (inputs outputs : List VariableMapping)
+    (result : returnState? program before id origin calledProcessId calledRootScopeId callerOutput inputs outputs =
+      some after) :
+    ∃ (record : CalledProcessOccurrence) (values : List VariableBinding) (returned : RuntimeState),
+      scalarReturnRecord? before id origin = some record ∧
+      returnProcessState? before id origin calledProcessId calledRootScopeId callerOutput = some returned ∧
+      values.map (·.name) = outputs.map (·.target) ∧
+      ((∀ value ∈ values, ∃ owner, resolveOwner? returned.variables.scopes record.caller.processInstanceId
+          (definitionChain program.definitionScopes record.caller.definitionScopeId) value.name =
+            some (.frame owner)) →
+        after.variables.process = returned.variables.process ∧
+          ∀ value ∈ values, ∀ owner, resolveOwner? returned.variables.scopes record.caller.processInstanceId
+            (definitionChain program.definitionScopes record.caller.definitionScopeId) value.name =
+              some (.frame owner) →
+            ∀ frame ∈ after.variables.scopes, frame.owner = owner → value ∈ frame.bindings) := by
+  have distinct : (outputs.map (·.target)).Nodup := by
+    unfold returnState? at result
+    split at result
+    · contradiction
+    · rename_i valid
+      simp only [callDataInterfaceValid, variableMappingsValid, Bool.not_eq_true', Bool.not_eq_false,
+        Bool.and_eq_true, decide_eq_true_eq] at valid
+      exact valid.2
+  obtain ⟨record, _, values, returned, selected, _, copied, controlled, wrote⟩ :=
+    returnState?_writes_outputs_from_caller program before after id origin calledProcessId calledRootScopeId
+      callerOutput inputs outputs result
+  have names := copyValues?_names _ outputs values copied
+  refine ⟨record, values, returned, selected, controlled, names, fun resolvedAll => ?_⟩
+  obtain ⟨process, landed, _⟩ := NestedScopeData.writeAll?_frames program _ _ values returned.variables
+    after.variables wrote (names ▸ distinct) resolvedAll
+  exact ⟨process, landed⟩
+
 end CallVariableMapping
 end BpmnSemantics.SemanticProcess

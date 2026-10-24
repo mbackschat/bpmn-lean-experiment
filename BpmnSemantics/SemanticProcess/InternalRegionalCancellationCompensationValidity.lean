@@ -60,7 +60,7 @@ private theorem parentless_outside_child (state : RuntimeState)
 
 theorem cancelScopeSubtree_child_parentless_census (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (valid : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state] (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none) (owner : ScopeOccurrenceId) :
     ((cancelScopeSubtree state root.id disposition).scopeOccurrences.filter fun occurrence =>
       occurrence.id == owner && occurrence.parent.isNone) =
@@ -85,7 +85,7 @@ theorem cancelScopeSubtree_child_parentless_census (program : Program) (state : 
 
 theorem cancelScopeSubtree_child_root_definition_outside (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (definition : DefinitionScope)
-    (valid : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state] (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (definitionMember : definition ∈ program.definitionScopes) (parentless : definition.parentScopeId = none)
     (owner : ScopeOccurrenceId) (ownerDefinition : owner.definitionScopeId = definition.id) :
@@ -375,7 +375,7 @@ theorem compensation_execution_running_retained_frame (program : Program) (befor
 theorem cancelScopeSubtree_child_compensation_retention (program : Program) (state : RuntimeState)
     (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (position : runtimePositionValid program expected state = true) [CallersParentless state] (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationActivityRetentionStateValid program state = true) :
     compensationActivityRetentionStateValid program (cancelScopeSubtree state root.id disposition) = true := by
@@ -416,7 +416,7 @@ theorem cancelScopeSubtree_child_compensation_retention (program : Program) (sta
 theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state : RuntimeState)
     (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (position : runtimePositionValid program expected state = true) [CallersParentless state] (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationExecutionStateValid program state = true) :
     (cancelScopeSubtree state root.id disposition).compensationTriggers = state.compensationTriggers ∧
@@ -469,7 +469,7 @@ theorem cancelScopeSubtree_child_compensation_fields (program : Program) (state 
 theorem cancelScopeSubtree_child_compensation_execution (program : Program) (state : RuntimeState)
     (domain : RootCompensationExecutionDomain program)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (position : runtimePositionValid program expected state = true) (running : state.control = .running hosting)
+    (position : runtimePositionValid program expected state = true) [CallersParentless state] (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (valid : compensationExecutionStateValid program state = true) :
     compensationExecutionStateValid program (cancelScopeSubtree state root.id disposition) = true := by

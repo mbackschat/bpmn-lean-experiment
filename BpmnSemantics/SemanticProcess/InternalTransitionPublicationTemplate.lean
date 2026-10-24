@@ -21,7 +21,7 @@ private theorem actualInternalAlternativePublication_operation (program : Progra
 
 /-- Every actual publication component is accepted at any later assigned index and equals the
 predecessor template; acceptance and position correspondence are derived, never premises. -/
-theorem prepared_transition_publication_template_accepted (program : Program) (state : RuntimeState)
+theorem prepared_transition_publication_template_accepted (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId commandId : SemanticId) (transitionIndex : Nat)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)
@@ -177,7 +177,7 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
   | ordinaryEnd _ => exact found
   | mergeInput _ => exact found
 
-theorem prepared_transition_template_after_step (program : Program) (state : RuntimeState)
+theorem prepared_transition_template_after_step (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (step query : PreparedInternalTransition) (instanceId : SemanticId)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)

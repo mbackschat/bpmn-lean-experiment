@@ -1,7 +1,7 @@
 /**
  * CALLN-ADMIT-01 for Stage B through the exact-bytes source path: the guarantor loan model's two mapped Calls of one
  * definition under the nested scope-data profile, one on the root path and one inside the Guarantor review
- * Sub-Process. The oracle is the repeated, nested and concurrent Calls proposal's Stage B scope; every refusal differs
+ * Sub-Process. The oracle is the repeated, nested and concurrent Calls specification's Stage B scope; every refusal differs
  * from the admitted control in the one fact its label names.
  */
 import assert from "node:assert/strict";
@@ -122,6 +122,18 @@ const applicantCall = '<callActivity id="VerifyApplicant" name="Verify applicant
 const thirdCall = '<callActivity id="VerifyCoSigner" calledElement="Process_IdentityVerification"><extensionElements>' +
   '<camunda:in source="coSigner" target="customer" /><camunda:out source="verdict" target="coSignerVerdict" />' +
   "</extensionElements></callActivity>";
+
+test("CALLN-ADMIT-01 refuses two Calls of two definitions", async () => {
+  const xml = await guarantorXml();
+  const open = xml.indexOf('<process id="Process_IdentityVerification"');
+  const verification = xml.slice(open, xml.indexOf("</process>", open) + "</process>".length);
+  const copy = verification.replaceAll(/(id|sourceRef|targetRef)="([^"]+)"/gu, '$1="$2_Copy"');
+  const guarantorCall = '<callActivity id="VerifyGuarantor" name="Verify guarantor" calledElement="Process_IdentityVerification">';
+  assert.ok(open >= 0 && xml.includes(guarantorCall));
+  const result = await compile(xml.replace(verification, `${verification}\n  ${copy}`)
+    .replace(guarantorCall, guarantorCall.replace("Process_IdentityVerification", "Process_IdentityVerification_Copy")));
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+});
 
 test("CALLN-ADMIT-01 refuses a third Call, a call cycle and a Call naming its own caller", async () => {
   const xml = await guarantorXml();

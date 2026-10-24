@@ -95,7 +95,7 @@ theorem preparedReturn_preserves_runtimeStateWellFormed (program : Program) (bef
   obtain ⟨checked, fired, afterPosition, afterActivities, afterRaces⟩ :=
     ownershipClosedSelection_preserves_position_and_references program before hosting _ prepared.selection
       snapshots position structural (List.mem_filter.mp (by rw [declared]; simp)).1
-      waitIds activities races closedSelection
+      waitIds activities races (by intro interrupts; simp [operationInterrupts] at interrupts) closedSelection
   obtain ⟨after, firedAgain, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have sameAfter : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked

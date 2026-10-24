@@ -35,11 +35,24 @@ theorem regional_child_call_associations_frame (before after : RuntimeState)
     (parent : root.parent.isSome = true)
     (scopes : after.scopeOccurrences = before.scopeOccurrences.filter (fun child => decide (child.id ≠ root.id)))
     (control : after.control = before.control)
-    (calls : after.calledProcessOccurrences = before.calledProcessOccurrences) :
+    (calls : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (quiet : scopeQuiescent before root.id = true) :
     calledProcessAssociationsValid after = calledProcessAssociationsValid before := by
-  apply calledProcessAssociationsValid_parentless_frame before after control _ calls
-  apply regional_child_scope_filter_frame before after root definition _ children scopes
-  cases shape : root.parent <;> simp_all
+  refine calledProcessAssociationsValid_parentless_frame before after control ?roots calls ?callers
+  case callers =>
+    intro record member
+    have different : record.caller ≠ root.id := by
+      intro same
+      have present : (before.calledProcessOccurrences.any fun candidate => candidate.caller == root.id) = true :=
+        List.any_eq_true.mpr ⟨record, member, by simp [same]⟩
+      simp [scopeQuiescent, present] at quiet
+    rw [scopes, List.filter_filter]
+    apply List.filter_congr
+    intro occurrence _
+    by_cases same : occurrence.id = record.caller <;> simp [same, different]
+  case roots =>
+    apply regional_child_scope_filter_frame before after root definition _ children scopes
+    cases shape : root.parent <;> simp_all
 
 theorem regional_child_incident_associations_frame (before after : RuntimeState) (removed : ScopeOccurrenceId)
     (quiet : scopeQuiescent before removed = true)
@@ -97,7 +110,8 @@ theorem preparedChildComplete_projection_associations (program : Program) (befor
         (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1] at fired
     exact fired
   have parent := completeSelectedScope_child_has_parent program before after definition output prepared.selection.root children result
-  have callFrame := regional_child_call_associations_frame before after prepared.selection.root definition children parent scopes control calls
+  have callFrame := regional_child_call_associations_frame before after prepared.selection.root definition children parent scopes
+    control calls quiet
   obtain ⟨effects, incidents, _⟩ := regionalSelectedCompletion_effect_and_branch_fields program before after definition (some output) result
   have locals := congrArg ScopedVariables.activities
     (regionalLocalData_selected_completion_variables program before after definition (some output) result)

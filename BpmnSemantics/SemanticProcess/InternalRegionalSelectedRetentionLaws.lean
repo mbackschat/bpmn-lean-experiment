@@ -208,6 +208,7 @@ theorem ownershipClosedSelection_preserves_position_and_references (program : Pr
     (identities : waitIdentitiesUnique before = true)
     (activities : activityRecordsOwnLiveWork before = true)
     (races : eventRaceAssociationsValid before = true)
+    (interruptionRooted : operationInterrupts operation = true → InvocationsInProcessRoots program)
     (found : selectInternalOwnershipClosedRegional? program before operation = some selected) :
     ∃ after, fire? program operation before = some after ∧
       runtimePositionValid program expectedInstanceId after = true ∧
@@ -216,7 +217,8 @@ theorem ownershipClosedSelection_preserves_position_and_references (program : Pr
   obtain ⟨after, result, retainedActivities, retainedRaces⟩ := ownershipClosedSelection_preserves_references
     program before operation selected snapshotAbsent identities activities races found
   obtain ⟨positionAfter, positionResult, retainedPosition⟩ := regionalSelection_preserves_position
-    program before expectedInstanceId operation selected snapshotAbsent position structural declared selectedBefore
+    program before expectedInstanceId operation selected snapshotAbsent position structural declared interruptionRooted
+    selectedBefore
   have equal := Option.some.inj (positionResult.symm.trans result)
   subst positionAfter
   exact ⟨after, result, retainedPosition, retainedActivities, retainedRaces⟩

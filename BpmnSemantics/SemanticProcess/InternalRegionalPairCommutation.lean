@@ -29,7 +29,7 @@ private structure RegionalPairExecutionSquare (program : Program)
   lrRunning : finalLR.control = .running hosting
   rlRunning : finalRL.control = .running hosting
 
-private theorem regional_pair_execution_square (program : Program) (before : RuntimeState)
+private theorem regional_pair_execution_square (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -410,7 +410,7 @@ private theorem cancellation_fields_commute (before afterLeft afterRight : Runti
   | exact filters _ _ _
   | (congr 1 <;> exact filters _ _ _)
 
-private theorem regional_cancellation_pair_fields (program : Program)
+private theorem regional_cancellation_pair_fields (program : Program) [InterruptionInvocationsRooted program]
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -452,7 +452,7 @@ private theorem regional_cancellation_pair_fields (program : Program)
     (leftPopulations none).2.1 (rightPopulations none).2.1 (leftPopulations none).2.2 (rightPopulations none).2.2
     (leftTriggersAfter.trans leftTriggers.symm) (rightTriggersAfter.trans rightTriggers.symm)
 
-private theorem regional_return_cancellation_fields (program : Program)
+private theorem regional_return_cancellation_fields (program : Program) [InterruptionInvocationsRooted program]
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (record : CalledProcessOccurrence)
@@ -491,7 +491,7 @@ private theorem regional_return_cancellation_fields (program : Program)
     (by simpa only [binding] using closure) classes.1 classes.2 (populations _).1 (populations none).2.1 (populations none).2.2
     (triggersAfter.trans triggers.symm)
 
-private theorem regional_completion_cancellation_fields (program : Program)
+private theorem regional_completion_cancellation_fields (program : Program) [InterruptionInvocationsRooted program]
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (withdrawal : InternalCompletionWithdrawal)
@@ -528,7 +528,7 @@ private theorem regional_completion_cancellation_fields (program : Program)
   exact completion_cancel_fields_commute before afterLeft afterRight _ _ _ _ _ _ _ _ leftUpdate rightUpdate
     classes.1 classes.2 (populations _).1 (populations none).2.1 (populations none).2.2 (triggersAfter.trans triggers.symm)
 
-private theorem regional_pair_retained_fields_equal (program : Program)
+private theorem regional_pair_retained_fields_equal (program : Program) [InterruptionInvocationsRooted program]
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -630,7 +630,7 @@ private theorem regional_pair_tokens_equal (program : Program)
 
 /-- Both complete preparations survive, both orders execute to literally the same canonical
 state, and every successor is valid. All intermediate facts follow from the predecessor. -/
-theorem prepared_regional_pair_commutes (program : Program) (before : RuntimeState)
+theorem prepared_regional_pair_commutes (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -675,7 +675,7 @@ theorem prepared_regional_pair_commutes (program : Program) (before : RuntimeSta
 
 /-- Each operation accepts its original record, lifecycle and position template at its
 assigned publication index in either execution order, with the same final state. -/
-theorem prepared_regional_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (hosting commandId : SemanticId) (leftIndex rightIndex : Nat)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

@@ -15,6 +15,7 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
     (valid : runtimePositionValid program expectedInstanceId state = true)
     (structural : flowNodeOccurrenceStructuralProgramValidity program state = true)
     (declared : operation ∈ program.operations)
+    (interruptionRooted : operationInterrupts operation = true → InvocationsInProcessRoots program)
     (found : selectInternalRegional? program state operation = some selected) :
     ∃ after, fire? program operation state = some after ∧
       runtimePositionValid program expectedInstanceId after = true := by
@@ -38,9 +39,13 @@ theorem regionalSelection_preserves_position (program : Program) (state : Runtim
       exact declaredSelectedComplete_preserves_position program state after expectedInstanceId hosting id origin definition output
         valid structural running declared result
   | throwError id origin input error handler =>
+      haveI := interruptionRooted rfl
+      haveI := CallersParentless.of_rooted program state expectedInstanceId hosting valid running
       exact declaredError_preserves_position program state after expectedInstanceId hosting id origin input error handler
         valid running declared result
   | terminateScope id origin input definition =>
+      haveI := interruptionRooted rfl
+      haveI := CallersParentless.of_rooted program state expectedInstanceId hosting valid running
       exact terminateScopeState_preserves_position program state after expectedInstanceId id origin input definition
         valid result
   | _ => simp [selectInternalRegional?] at found

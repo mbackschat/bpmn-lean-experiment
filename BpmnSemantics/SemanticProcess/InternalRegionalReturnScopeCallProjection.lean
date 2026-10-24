@@ -8,8 +8,9 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem quiescent_return_call_filter (state : RuntimeState) (hosting : SemanticId)
+theorem quiescent_return_call_filter (program : Program) (state : RuntimeState) (expected hosting : SemanticId)
     (selected : CalledProcessOccurrence) (root : RuntimeScopeOccurrence)
+    (position : runtimePositionValid program expected state = true)
     (running : state.control = .running hosting) (valid : calledProcessAssociationsValid state = true)
     (selectedMember : selected ∈ state.calledProcessOccurrences)
     (rootMember : root ∈ state.scopeOccurrences) (rootId : root.id = selected.calledRoot)
@@ -19,7 +20,7 @@ theorem quiescent_return_call_filter (state : RuntimeState) (hosting : SemanticI
   let removed := processInstanceClosureWithin state.calledProcessOccurrences [selected.calledRoot.processInstanceId]
     (state.calledProcessOccurrences.length + 1)
   have membership (process : SemanticId) : process ∈ removed ↔ process = root.id.processInstanceId := by
-    simpa only [rootId] using quiescent_root_call_closure_membership state hosting running valid root rootMember
+    simpa only [rootId] using quiescent_root_call_closure_membership program state expected hosting running position root rootMember
       parentless quiet (state.calledProcessOccurrences.length + 1) process
   change state.calledProcessOccurrences.filter (fun record => decide (record.id ≠ selected.id) &&
     !removed.contains record.caller.processInstanceId && !removed.contains record.calledRoot.processInstanceId) = _
@@ -29,7 +30,8 @@ theorem quiescent_return_call_filter (state : RuntimeState) (hosting : SemanticI
   · simp [same]
   · have callerOutside : record.caller.processInstanceId ∉ removed := by
       rw [membership]
-      exact quiescent_root_excludes_call_caller state hosting running valid root rootMember parentless quiet record member
+      exact quiescent_root_excludes_call_caller program state expected hosting running position root rootMember parentless quiet
+        record member
     have targetOutside : record.calledRoot.processInstanceId ∉ removed := by
       intro inside
       have target := (membership _).mp inside
@@ -38,8 +40,9 @@ theorem quiescent_return_call_filter (state : RuntimeState) (hosting : SemanticI
     simp [same, callerOutside, targetOutside]
 
 theorem quiescent_return_call_projection (program : Program) (before after : RuntimeState)
-    (hosting : SemanticId) (selected : CalledProcessOccurrence) (root : RuntimeScopeOccurrence)
+    (expected hosting : SemanticId) (selected : CalledProcessOccurrence) (root : RuntimeScopeOccurrence)
     (output : ControlPlaceId) (projected : List OpenSemanticFlowNodeOccurrence)
+    (position : runtimePositionValid program expected before = true)
     (running : before.control = .running hosting) (valid : calledProcessAssociationsValid before = true)
     (selectedMember : selected ∈ before.calledProcessOccurrences)
     (rootMember : root ∈ before.scopeOccurrences) (rootId : root.id = selected.calledRoot)
@@ -51,7 +54,8 @@ theorem quiescent_return_call_projection (program : Program) (before after : Run
   have calls : after.calledProcessOccurrences =
       before.calledProcessOccurrences.filter (fun record => decide (record.id ≠ selected.id)) := by
     rw [actual]
-    exact quiescent_return_call_filter before hosting selected root running valid selectedMember rootMember rootId parentless quiet
+    exact quiescent_return_call_filter program before expected hosting selected root position running valid selectedMember
+      rootMember rootId parentless quiet
   rw [calls]
   apply mapM_filter_preserves_success before.calledProcessOccurrences
     (callStart? program before) (callStart? program after) (fun record => decide (record.id ≠ selected.id))
@@ -62,8 +66,10 @@ theorem quiescent_return_call_projection (program : Program) (before after : Run
   · intro record member entry found _
     have outside : record.caller.processInstanceId ∉ processInstanceClosureWithin before.calledProcessOccurrences
         [selected.calledRoot.processInstanceId] (before.calledProcessOccurrences.length + 1) := by
-      rw [← rootId, quiescent_root_call_closure_membership before hosting running valid root rootMember parentless quiet]
-      exact quiescent_root_excludes_call_caller before hosting running valid root rootMember parentless quiet record member
+      rw [← rootId, quiescent_root_call_closure_membership program before expected hosting running position root rootMember
+        parentless quiet]
+      exact quiescent_root_excludes_call_caller program before expected hosting running position root rootMember parentless
+        quiet record member
     rw [actual]
     exact (removeCalledProcessTree_call_start_frame program before selected record valid selectedMember outside).trans found
 

@@ -426,13 +426,14 @@ theorem selectedScopeCreation_preserves_runtimeStateWellFormed
     (repeatedSeparated : ∀ entry ∈ program.operations.filterMap sequentialScopeEntry?,
       entry.childScopeId ≠ selected.created.id.definitionScopeId)
     (callSeparated : ∀ record, selected.kind = .called record →
-      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId) :
+      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId)
+    (callDeclared : ∀ record, selected.kind = .called record → callRecordDeclared program record = true) :
     runtimeStateWellFormed program instanceId (selected.apply state) = true := by
   have position := selectedScopeCreation_preserves_runtimePositionValid program state operation
     selected instanceId hosting ownerRecord origin definition delta (by
       have parts := valid
       simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at parts
-      exact parts.1) selection running ownerExact definitionFound checks deltaFound callSeparated
+      exact parts.1) selection running ownerExact definitionFound checks deltaFound callSeparated callDeclared
   have ordered := scopeCreation_preserves_canonicalCollectionOrder state selected
     (runtimeStateWellFormed_canonicalCollectionOrder program instanceId state valid)
   have fresh := selectInternalScopeCreation_fresh state operation selected selection
@@ -485,6 +486,8 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
   have repeatedSeparated := prepared_repeated_scope_separate program state operation prepared admitted found
   have callSeparated := prepareInternalScopeCreation_called_definition_ne_owner
     program state operation prepared
+  have callDeclared := prepareInternalScopeCreation_called_record_declared
+    program state operation prepared
   obtain ⟨selected, hosting, ownerRecord, origin, definition, start, delta, selection, running,
     snapshots, operationExact, ownerExact, _, definitionFound, checks, _, deltaFound, rfl⟩ :=
     prepareInternalScopeCreation_facts program state operation prepared found
@@ -497,5 +500,6 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
   exact selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state operation selected
     hosting ownerRecord origin definition delta valid selection running snapshots ownerExact
     definitionFound checks deltaFound repeatedSeparated (fun record kind => callSeparated record admitted found kind)
+    (fun record kind => callDeclared record admitted found kind)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation
