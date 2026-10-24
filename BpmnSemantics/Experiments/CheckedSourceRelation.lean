@@ -8,6 +8,9 @@ public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.UserTaskInteractionConformance
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
 

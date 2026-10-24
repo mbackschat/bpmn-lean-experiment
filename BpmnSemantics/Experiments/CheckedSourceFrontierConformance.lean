@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.Experiments.CheckedSourceFrontier
 public import BpmnSemantics.Experiments.CheckedSourceParallelFrontier
 public import BpmnSemantics.SemanticProcess.Fixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Checked-source frontier witnesses
 

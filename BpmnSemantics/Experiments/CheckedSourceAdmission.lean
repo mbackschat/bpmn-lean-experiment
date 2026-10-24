@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.Experiments.CheckedSourceCoverage
 public import BpmnSemantics.SemanticProcess.Fixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Stage 2 structured-admission witnesses
 
