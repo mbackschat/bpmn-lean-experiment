@@ -153,6 +153,24 @@
     },
     {
       "kind": "completeUserTaskInstance",
+      "commandId": "refuse-guarantor-patch-of-an-applicant-only-name",
+      "taskId": {
+        "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
+        "elementId": "CollectDocument",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "string",
+            "value": "1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
       "commandId": "complete-guarantor-collect-document",
       "taskId": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",

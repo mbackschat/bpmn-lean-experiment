@@ -61,18 +61,20 @@ const journeys = new Map<string, Journey>([
       // The applicant's called task wrote its namesake amount into its called frame, not the Process.
       [6, { task: ["applicant", "RecordVerdict", 1], variables: verifiedStart }],
       // The root-path Call returned into the Process; the Guarantor review's Call opened the repeated first task as
-      // activation 2, and the three refusals below leave this very wait.
+      // activation 2, and the four refusals below leave this very wait.
       [8, { task: ["guarantor", "CollectDocument", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
       [10, { task: ["guarantor", "CollectDocument", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
       [12, { task: ["guarantor", "CollectDocument", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
       [14, { task: ["guarantor", "CollectDocument", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
-      [16, { task: ["guarantor", "RecordVerdict", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
+      // CALLN-FRAME-01: `amount` is a called name of the first Call only, so the guarantor's patch of it was refused.
+      [16, { task: ["guarantor", "CollectDocument", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
+      [18, { task: ["guarantor", "RecordVerdict", 2], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
       // CALLN-FRAME-01: the guarantor verdict landed in the Guarantor review frame, so the Process does not hold it yet.
-      [18, { task: ["caller", "ConfirmGuarantor", 1], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
+      [20, { task: ["caller", "ConfirmGuarantor", 1], variables: { ...verifiedStart, applicantVerdict: text("approved") } }],
     ]),
-    rejectedAt: [9, 11, 13],
+    rejectedAt: [9, 11, 13, 15],
     // The Sub-Process publishes the frame value on completion; the root-path output stays as written.
-    completedAt: 20, final: { ...verifiedStart, applicantVerdict: text("approved"), guarantorVerdict: text("rejected") },
+    completedAt: 22, final: { ...verifiedStart, applicantVerdict: text("approved"), guarantorVerdict: text("rejected") },
   }],
   ["repeated-nested-calls-guarantor-absent", {
     at: new Map([

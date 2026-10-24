@@ -53,7 +53,7 @@ function requireRejected(result: MutableScenarioResult, index: number, commandId
  * show it there before the Sub-Process publishes it.
  */
 function writeOutputFromHostingRoot(result: MutableScenarioResult): void {
-  const state = stateAt(result, 18, "ConfirmGuarantor");
+  const state = stateAt(result, 20, "ConfirmGuarantor");
   if (stringBinding(state, "guarantorVerdict") !== undefined) {
     throw new Error("Embedded mapped Calls calibration requires no Process guarantorVerdict at the Confirm guarantor wait");
   }
@@ -61,16 +61,25 @@ function writeOutputFromHostingRoot(result: MutableScenarioResult): void {
 }
 
 /**
- * CALLN-FRAME-01: the second Call's own mappings send `verdict` to `guarantorVerdict`. Applying the first invocation's
- * mappings instead, as selection by called definition would, overwrites the applicant's "rejected" with the guarantor's
+ * CALLN-FRAME-01: the second Call's return is lowered with its own outputs, so `verdict` goes to `guarantorVerdict`. A
+ * return lowered with the first Call's outputs instead overwrites the applicant's "rejected" with the guarantor's
  * "approved".
  */
-function applyFirstInvocationMappings(result: MutableScenarioResult): void {
+function returnWithFirstCallOutputs(result: MutableScenarioResult): void {
   const state = stateAt(result, 12, "ConfirmGuarantor");
   if (stringBinding(state, "applicantVerdict") !== "rejected") {
     throw new Error("Embedded mapped Calls calibration requires the applicant's rejected verdict at the Confirm guarantor wait");
   }
   withBinding(state, { name: "applicantVerdict", value: { kind: VariableValueKind.String, value: "approved" } });
+}
+
+/**
+ * CALLN-FRAME-01, the proposal's wrong algorithm 5: the guarantor instance's patchable names come from the live record's
+ * own Call, which copies no `amount`. Selecting the called root's mappings by called definition would take the first
+ * Call's, which copies `amount`, and accept the patch.
+ */
+function acceptFirstCallNamePatch(result: MutableScenarioResult): void {
+  requireRejected(result, 15, "refuse-guarantor-patch-of-an-applicant-only-name").outcome = CommandOutcome.Committed;
 }
 
 /**
@@ -93,11 +102,15 @@ function acceptCrossAddressedCompletion(result: MutableScenarioResult): void {
 export const embeddedMappedCallsMutations = {
   "write the output from the hosting root": {
     rule: "CALLN-FRAME-01", scenario: "guarantor-verified", inject: writeOutputFromHostingRoot,
-    expected: { kind: DisagreementKind.ObservationValue, path: "trace[18].variables.length", expected: 4, actual: 5 },
+    expected: { kind: DisagreementKind.ObservationValue, path: "trace[20].variables.length", expected: 4, actual: 5 },
   },
-  "apply the first invocation's mappings to the second call": {
-    rule: "CALLN-FRAME-01", scenario: "guarantor-absent", inject: applyFirstInvocationMappings,
+  "lower the second return with the first Call's outputs": {
+    rule: "CALLN-FRAME-01", scenario: "guarantor-absent", inject: returnWithFirstCallOutputs,
     expected: { kind: DisagreementKind.ObservationValue, path: "trace[12].variables[2].value.value", expected: "rejected", actual: "approved" },
+  },
+  "select the called root's mappings by called definition": {
+    rule: "CALLN-FRAME-01", scenario: "guarantor-verified", inject: acceptFirstCallNamePatch,
+    expected: { kind: DisagreementKind.ObservationValue, path: "trace[15].outcome", expected: CommandOutcome.Rejected, actual: CommandOutcome.Committed },
   },
   "accept a stale first-call completion": {
     rule: "CALLN-REFUSE-01", scenario: "guarantor-verified", inject: acceptStaleFirstCallCompletion,
@@ -112,7 +125,7 @@ export const embeddedMappedCallsMutations = {
 /** A pipeline case carries one mutation; the registration test runs every other named mutation against its own journey. */
 const registered = {
   "guarantor-verified": "write the output from the hosting root",
-  "guarantor-absent": "apply the first invocation's mappings to the second call",
+  "guarantor-absent": "lower the second return with the first Call's outputs",
 } as const satisfies Record<EmbeddedMappedCallsName, keyof typeof embeddedMappedCallsMutations>;
 
 /**

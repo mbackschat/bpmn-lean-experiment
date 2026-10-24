@@ -123,6 +123,18 @@ const thirdCall = '<callActivity id="VerifyCoSigner" calledElement="Process_Iden
   '<camunda:in source="coSigner" target="customer" /><camunda:out source="verdict" target="coSignerVerdict" />' +
   "</extensionElements></callActivity>";
 
+test("CALLN-ADMIT-01 refuses two Calls of two definitions", async () => {
+  const xml = await guarantorXml();
+  const open = xml.indexOf('<process id="Process_IdentityVerification"');
+  const verification = xml.slice(open, xml.indexOf("</process>", open) + "</process>".length);
+  const copy = verification.replaceAll(/(id|sourceRef|targetRef)="([^"]+)"/gu, '$1="$2_Copy"');
+  const guarantorCall = '<callActivity id="VerifyGuarantor" name="Verify guarantor" calledElement="Process_IdentityVerification">';
+  assert.ok(open >= 0 && xml.includes(guarantorCall));
+  const result = await compile(xml.replace(verification, `${verification}\n  ${copy}`)
+    .replace(guarantorCall, guarantorCall.replace("Process_IdentityVerification", "Process_IdentityVerification_Copy")));
+  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+});
+
 test("CALLN-ADMIT-01 refuses a third Call, a call cycle and a Call naming its own caller", async () => {
   const xml = await guarantorXml();
   const decided = '<sequenceFlow id="Flow_GuarantorReviewed" sourceRef="GuarantorReview" targetRef="LoanDecided" />';

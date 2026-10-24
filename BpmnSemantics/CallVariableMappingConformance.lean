@@ -142,6 +142,89 @@ def call_of_the_caller_is_refused : Bool := decide <|
 def call_of_an_absent_process_is_refused : Bool := decide <|
     (analysisOf (checkedWith false "Absent" inputs outputs collectDocument)).isNone = true
 
+/-- The serial path of one scope, from its Start to its End, with one flow per consecutive pair. -/
+private def serialFlows (path : List String) : List CheckedSequenceFlow :=
+  (path.zip path.tail).map fun (source, target) => flow (source ++ "-" ++ target) source target
+
+/-- Caller `P`: Start, `R1`, End; each `Ri` below the innermost holds Start, `R(i+1)`, End; the innermost `R<depth>`
+holds Start, then one mapped Call `V1`, `V2`, … per entry of `calledProcesses`, in order, then End. Each named called
+Process `X` is Start, *Collect document*, End. `depth` must be positive, since the profile requires a Sub-Process. -/
+private def nestedCalls (depth : Nat) (calledProcesses : List String) : CheckedProcess :=
+  let subProcess (level : Nat) : String := "R" ++ toString level
+  let innermost := subProcess depth
+  let calls := (List.range calledProcesses.length).zip calledProcesses |>.map fun (index, called) =>
+    ("V" ++ toString (index + 1), called)
+  let called := calledProcesses.eraseDups
+  let paths : List (String × List String) :=
+    ("P", ["A", "R1", "Z"]) ::
+      ((List.range (depth - 1)).map fun index =>
+        (subProcess (index + 1), [subProcess (index + 1) ++ "A", subProcess (index + 2), subProcess (index + 1) ++ "Z"])) ++
+      [(innermost, [innermost ++ "A"] ++ calls.map (·.1) ++ [innermost ++ "Z"])] ++
+      called.map fun name => (name, [name ++ "A", name ++ "U", name ++ "Z"])
+  { identity :=
+      { semanticProfile := nestedScopeDataProfileId, sourceId := ⟨"nested-calls"⟩
+        sourceSha256 := "0000000000000000000000000000000000000000000000000000000000000001"
+        sourceOverlay := some
+          { id := ⟨"handlers"⟩
+            sha256 := "0000000000000000000000000000000000000000000000000000000000000002" } }
+    processId := ⟨"P"⟩
+    definitionScopes :=
+      { id := scope "P", parentScopeId := none, originElementId := ⟨"P"⟩ } ::
+        called.map (fun name => { id := scope name, parentScopeId := none, originElementId := ⟨name⟩ }) ++
+        (List.range depth).map fun index =>
+          { id := scope (subProcess (index + 1)), originElementId := ⟨subProcess (index + 1)⟩
+            parentScopeId := some (scope (if index = 0 then "P" else subProcess index)) }
+    nodeScopes := paths.flatMap fun (owner, path) => owned owner path
+    sequenceFlowScopes := paths.flatMap fun (owner, path) =>
+      flowsIn owner ((serialFlows path).map (·.id.value))
+    nodes :=
+      [.noneStartEvent ⟨"A"⟩, .noneEndEvent ⟨"Z"⟩] ++
+        ((List.range depth).flatMap fun index =>
+          [.embeddedSubProcess ⟨subProcess (index + 1)⟩ (scope (subProcess (index + 1))),
+            .noneStartEvent ⟨subProcess (index + 1) ++ "A"⟩, .noneEndEvent ⟨subProcess (index + 1) ++ "Z"⟩]) ++
+        calls.map (fun (id, calledProcess) =>
+          .callActivity ⟨id⟩ ⟨calledProcess⟩ (.variableMappings inputs outputs)) ++
+        called.flatMap fun name =>
+          [.noneStartEvent ⟨name ++ "A"⟩, .userTask ⟨name ++ "U"⟩ (some "Collect document"), .noneEndEvent ⟨name ++ "Z"⟩]
+    sequenceFlows := paths.flatMap fun (_, path) => serialFlows path }
+
+/-- CALLN-ADMIT-01, Stage B depth bound: two Calls two Sub-Processes deep are admitted, and one Call three deep is
+refused although the three Sub-Processes alone are admitted. -/
+def call_depth_bound_is_two : Bool := decide <|
+    (analysisOf (nestedCalls 2 ["Q", "Q"])).isSome = true ∧ (analysisOf (nestedCalls 3 [])).isSome = true ∧
+      (analysisOf (nestedCalls 3 ["Q"])).isNone = true
+
+/-- CALLN-ADMIT-01, Stage B count bound: two Calls of one definition are admitted, and a third is refused. -/
+def call_count_bound_is_two : Bool := decide <|
+    (analysisOf (nestedCalls 1 ["Q", "Q"])).isSome = true ∧ (analysisOf (nestedCalls 1 ["Q", "Q", "Q"])).isNone = true
+
+/-- CALLN-ADMIT-01, Stage B: two Calls of two different definitions are refused. -/
+def calls_of_two_definitions_are_refused : Bool := decide <|
+    (analysisOf (nestedCalls 1 ["Q", "Q2"])).isNone = true
+
+/-- CALLN-FRAME-01, the proposal's wrong algorithm 5: of two invocations of one called root, the mappings are those
+of the invocation that the live record's return operation names, never the first invocation of the definition. The
+second invocation is added to the loan Program by hand, since its retained Programs hold no two invocations whose
+output sources differ. -/
+def called_root_mappings_follow_the_live_record : Bool :=
+  match program.operations.find? (fun | .invokeProcess .. => true | _ => false) with
+  | some (.invokeProcess id origin input calledProcessId calledRootScope calledEntry returned _) =>
+      let secondReturn : OperationId := ⟨returned.value ++ ":second"⟩
+      let secondOutputs := [fromLocal "secondDecision" "secondVerdict"]
+      let twoInvocations : Program :=
+        { program with operations := program.operations ++
+            [.invokeProcess ⟨id.value ++ ":second"⟩ origin input calledProcessId calledRootScope calledEntry secondReturn
+              (.variableMappings [] secondOutputs)] }
+      let root : ScopeOccurrenceId :=
+        { processInstanceId := calledInstance, definitionScopeId := calledRootScope, activation := 1 }
+      let record (returnOperationId : OperationId) : CalledProcessOccurrence :=
+        { id := { processInstanceId := ⟨"I"⟩, elementId := ⟨"V"⟩, activation := 1 }
+          caller := { processInstanceId := ⟨"I"⟩, definitionScopeId := scope "P", activation := 1 }
+          calledProcessId, calledRoot := root, returnOperationId }
+      NestedScopeData.calledRootMappings? twoInvocations [record secondReturn] root == some ([], secondOutputs) &&
+        NestedScopeData.calledRootMappings? twoInvocations [record returned] root == some (inputs, outputs)
+  | _ => false
+
 /-- CVM-ADMIT-01: an output targeting a name CIB reserves for multi-instance bookkeeping is refused. -/
 def reserved_output_target_is_refused : Bool := decide <|
     (analysisOf (checkedWith false "Q" inputs [fromLocal "nrOfInstances" "verdict"] collectDocument)).isNone =
@@ -259,6 +342,10 @@ def checks : List (String × Bool) := [
   ("called_service_task_is_refused", called_service_task_is_refused),
   ("call_of_the_caller_is_refused", call_of_the_caller_is_refused),
   ("call_of_an_absent_process_is_refused", call_of_an_absent_process_is_refused),
+  ("call_depth_bound_is_two", call_depth_bound_is_two),
+  ("call_count_bound_is_two", call_count_bound_is_two),
+  ("calls_of_two_definitions_are_refused", calls_of_two_definitions_are_refused),
+  ("called_root_mappings_follow_the_live_record", called_root_mappings_follow_the_live_record),
   ("reserved_output_target_is_refused", reserved_output_target_is_refused),
   ("duplicate_input_target_is_refused", duplicate_input_target_is_refused),
   ("call_outputs_count_as_writes", call_outputs_count_as_writes),
