@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 
 /-! SMI reverse binding under regional cancellation.
 
@@ -6,6 +8,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 because forward binding and claim uniqueness establish a finite correspondence whose complete
 tuples are withdrawn together, rather than because arbitrary filters preserve equal lengths.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -281,12 +285,12 @@ private theorem tuple_retention (program : Program) (state : RuntimeState)
         contradiction
       simp [noClaim]
 
-private def controllerTaskRelated (state : RuntimeState)
+def controllerTaskRelated (state : RuntimeState)
     (controller : SequentialMultiInstanceController) (wait : UserTaskWait) : Bool :=
   state.activityOccurrences.any fun record =>
     controllerNamesActivityOccurrence controller record && recordBodyNamesWait wait record
 
-private def controllerTimerRelated (state : RuntimeState)
+def controllerTimerRelated (state : RuntimeState)
     (controller : SequentialMultiInstanceController) (wait : TimerWait) : Bool :=
   state.activityOccurrences.any fun record =>
     controllerNamesActivityOccurrence controller record &&

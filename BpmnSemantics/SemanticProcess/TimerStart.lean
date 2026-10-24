@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.MessageStart
+module
+
+public import BpmnSemantics.SemanticProcess.MessageStart
 
 /-! # Timer Start Event transition
 
 This module owns the profile-independent Timer Start initiation relation and executable state transformation. External resolved-occurrence admission and profile cardinality remain separate owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

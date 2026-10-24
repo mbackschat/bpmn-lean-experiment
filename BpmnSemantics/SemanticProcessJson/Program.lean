@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcessJson.CallData
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcessJson.Elements
-import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
-import BpmnSemantics.SemanticProcessJson.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcessJson.CompensationTriggerHandler
+module
+
+public import BpmnSemantics.SemanticProcessJson.CallData
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcessJson.Elements
+public import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcessJson.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcessJson.CompensationTriggerHandler
 
 /-! # Strict Semantic Process program wire decoding
 
 Owns one public contract: the executable program the semantic core evaluates. Decoding establishes
 neither structural validity, profile capability, nor equality with checked-process lowering. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
@@ -16,26 +20,26 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeInternalSchedulingMode (json : Json) :
+def decodeInternalSchedulingMode (json : Json) :
     Except String InternalSchedulingMode := do
   match ← json.getStr? with
   | "rejectObservableChoice" => pure .rejectObservableChoice
   | "requireChoiceSchedule" => pure .requireChoiceSchedule
   | mode => throw s!"unsupported internal scheduling mode {mode}"
 
-private def decodeSequenceFlowOrigin (json : Json) :
+def decodeSequenceFlowOrigin (json : Json) :
     Except String BpmnSequenceFlowOrigin := do
   requireObjectShape json ["elementId", "kind"]
   expectStringField json "kind" "bpmnSequenceFlow"
   pure { elementId := ⟨← stringField json "elementId"⟩ }
 
-private def decodeElementOrigin (json : Json) :
+def decodeElementOrigin (json : Json) :
     Except String BpmnElementOrigin := do
   requireObjectShape json ["elementId", "kind"]
   expectStringField json "kind" "bpmnElement"
   pure { elementId := ⟨← stringField json "elementId"⟩ }
 
-private def decodeControlPlace (json : Json) : Except String ControlPlace := do
+def decodeControlPlace (json : Json) : Except String ControlPlace := do
   requireObjectShape json ["id", "origin"]
   pure
     { id := ⟨← stringField json "id"⟩
@@ -56,43 +60,33 @@ def decodeTaskDefinition (json : Json) :
 /-- Decode the data-input entry task identity. Separate from `decodeTaskDefinition` because this
 family carries no optional metadata arm, so accepting one here would admit a wire shape the
 operation cannot represent. -/
-private def decodeDataInputTaskDefinition (json : Json) :
+def decodeDataInputTaskDefinition (json : Json) :
     Except String (TaskDefinitionId × Option String) := do
   requireObjectShape json ["elementId", "name"]
   pure (⟨← stringField json "elementId"⟩, ← decodeOptionalString (← field json "name"))
 
-private def decodeDirectCatchEventPayloadOutput (json : Json) :
-    Except String DirectCatchEventPayloadOutput := do
-  requireObjectShape json
-    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
-  pure
-    { associationId := ← stringField json "associationId"
-      sourceDataOutputId := ← stringField json "sourceDataOutputId"
-      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
-      targetPropertyId := ← stringField json "targetPropertyId" }
-
-private def decodeTimerDefinition (json : Json) :
+def decodeTimerDefinition (json : Json) :
     Except String TimerDefinition := do
   requireObjectShape json ["durationMs", "elementId"]
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       durationMs := ← decodeSafeNat (← field json "durationMs") }
 
-private def decodeMessageDefinition (json : Json) :
+def decodeMessageDefinition (json : Json) :
     Except String MessageDefinition := do
   requireObjectShape json ["channel", "elementId"]
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       channel := ← decodeMessageChannel (← field json "channel") }
 
-private def decodePayloadMessageDefinition (json : Json) :
+def decodePayloadMessageDefinition (json : Json) :
     Except String MessageDefinition := do
   requireObjectShape json ["channel", "elementId"]
   pure
     { elementId := ⟨← stringField json "elementId"⟩
       channel := ← decodeOperationMessageChannel (← field json "channel") }
 
-private def decodeEventRaceMessageArm (json : Json) :
+def decodeEventRaceMessageArm (json : Json) :
     Except String EventRaceMessageArm := do
   requireObjectShape json
     ["channel", "configurationOrigin", "elementId", "output"]
@@ -103,7 +97,7 @@ private def decodeEventRaceMessageArm (json : Json) :
       channel := ← decodeMessageChannel (← field json "channel")
       output := ⟨← stringField json "output"⟩ }
 
-private def decodeEventRaceTimerArm (json : Json) :
+def decodeEventRaceTimerArm (json : Json) :
     Except String EventRaceTimerArm := do
   requireObjectShape json
     ["configurationOrigin", "durationMs", "elementId", "output"]
@@ -114,7 +108,7 @@ private def decodeEventRaceTimerArm (json : Json) :
       durationMs := ← decodeSafeNat (← field json "durationMs")
       output := ⟨← stringField json "output"⟩ }
 
-private def decodeBoundedTaskArm (json : Json) :
+def decodeBoundedTaskArm (json : Json) :
     Except String BoundedTaskArm := do
   requireObjectShape json ["elementId", "name", "output"]
   pure
@@ -122,7 +116,7 @@ private def decodeBoundedTaskArm (json : Json) :
       name := ← decodeOptionalString (← field json "name")
       output := ⟨← stringField json "output"⟩ }
 
-private def decodeBoundaryTimerArm (json : Json) (allowRecurrence : Bool := false) :
+def decodeBoundaryTimerArm (json : Json) (allowRecurrence : Bool := false) :
     Except String BoundaryTimerArm := do
   let hasRecurrence := allowRecurrence && (json.getObjVal? "recurrence").isOk
   requireObjectShape json (["durationMs", "elementId", "origin", "output"] ++
@@ -138,7 +132,7 @@ private def decodeBoundaryTimerArm (json : Json) (allowRecurrence : Bool := fals
       origin := ← decodeSequenceFlowOrigin (← field json "origin")
       recurrence }
 
-private def decodeBoundaryMessageArm (json : Json) :
+def decodeBoundaryMessageArm (json : Json) :
     Except String BoundaryMessageArm := do
   requireObjectShape json ["channel", "elementId", "origin", "output"]
   pure
@@ -147,53 +141,21 @@ private def decodeBoundaryMessageArm (json : Json) :
       output := ⟨← stringField json "output"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
-private def decodeSequentialMultiInstanceTask (json : Json) :
+def decodeSequentialMultiInstanceTask (json : Json) :
     Except String SequentialMultiInstanceTaskDefinition := do
   requireObjectShape json ["elementId", "name"]
   pure
     { id := ⟨← stringField json "elementId"⟩
       name := ← decodeOptionalString (← field json "name") }
 
-private def decodeSequentialMultiInstanceInput (json : Json) :
-    Except String SequentialMultiInstanceInputDefinition := do
-  requireObjectShape json
-    ["collectionAssociationId", "collectionItemDefinitionId", "dataObjectId",
-      "dataObjectReferenceId", "inputDataItemId", "itemAssociationId",
-      "loopDataInputId", "scalarItemDefinitionId", "taskDataInputId"]
-  pure
-    { collectionItemDefinitionId := ← stringField json "collectionItemDefinitionId"
-      scalarItemDefinitionId := ← stringField json "scalarItemDefinitionId"
-      dataObjectId := ← stringField json "dataObjectId"
-      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
-      loopDataInputId := ← stringField json "loopDataInputId"
-      inputDataItemId := ← stringField json "inputDataItemId"
-      taskDataInputId := ← stringField json "taskDataInputId"
-      collectionAssociationId := ← stringField json "collectionAssociationId"
-      itemAssociationId := ← stringField json "itemAssociationId" }
-
-private def decodeSequentialMultiInstanceOutput (json : Json) :
-    Except String SequentialMultiInstanceOutputDefinition := do
-  requireObjectShape json
-    ["collectionAssociationId", "dataObjectId", "dataObjectReferenceId",
-      "itemAssociationId", "loopDataOutputId", "outputDataItemId",
-      "taskDataOutputId"]
-  pure
-    { dataObjectId := ← stringField json "dataObjectId"
-      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
-      taskDataOutputId := ← stringField json "taskDataOutputId"
-      outputDataItemId := ← stringField json "outputDataItemId"
-      loopDataOutputId := ← stringField json "loopDataOutputId"
-      itemAssociationId := ← stringField json "itemAssociationId"
-      collectionAssociationId := ← stringField json "collectionAssociationId" }
-
-private def decodeSequentialMultiInstanceData (json : Json) :
+def decodeSequentialMultiInstanceData (json : Json) :
     Except String SequentialMultiInstanceDataDefinition := do
   requireObjectShape json ["input", "output"]
   pure
     { input := ← decodeSequentialMultiInstanceInput (← field json "input")
       output := ← decodeSequentialMultiInstanceOutput (← field json "output") }
 
-private def decodeSequentialMultiInstanceLimits (json : Json) :
+def decodeSequentialMultiInstanceLimits (json : Json) :
     Except String SequentialMultiInstanceLimits := do
   requireObjectShape json
     ["maximumCanonicalCollectionUtf8Bytes", "maximumItemUtf8Bytes", "maximumItems"]
@@ -208,7 +170,7 @@ private def decodeSequentialMultiInstanceLimits (json : Json) :
     throw "Sequential Multi-Instance limits must equal the registered profile bounds"
   pure limits
 
-private def decodeEffectDefinition (json : Json) :
+def decodeEffectDefinition (json : Json) :
     Except String EffectDefinition := do
   requireObjectShape json
     ["descriptor", "elementId", "inputMappings", "outputMappings"]
@@ -220,7 +182,7 @@ private def decodeEffectDefinition (json : Json) :
       outputMappings :=
         ← decodeArray decodeVariableMapping (← field json "outputMappings") }
 
-private def decodeBpmnErrorRoute (json : Json) :
+def decodeBpmnErrorRoute (json : Json) :
     Except String (Option BpmnErrorRoute) :=
   match json with
   | .null => pure none
@@ -242,7 +204,7 @@ private def decodeBpmnErrorRoute (json : Json) :
                 errorElementId := ⟨← stringField origin "errorElementId"⟩
                 sequenceFlowId := ⟨← stringField origin "sequenceFlowId"⟩ } })
 
-private def decodeInterruptingErrorHandler (json : Json) :
+def decodeInterruptingErrorHandler (json : Json) :
     Except String InterruptingErrorHandler := do
   requireObjectShape json ["attachedScopeId", "code", "origin", "output"]
   let origin ← field json "origin"
@@ -260,11 +222,11 @@ private def decodeInterruptingErrorHandler (json : Json) :
           errorElementId := ⟨← stringField origin "errorElementId"⟩
           sequenceFlowId := ⟨← stringField origin "sequenceFlowId"⟩ } }
 
-private def decodePlaceIdArray (json : Json) :
+def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
 
-private def decodeSimpleBooleanExpression (json : Json) :
+def decodeSimpleBooleanExpression (json : Json) :
     Except String SimpleBooleanExpression := do
   match ← stringField json "kind" with
   | "literal" =>
@@ -284,14 +246,14 @@ private def decodeSimpleBooleanExpression (json : Json) :
           (← stringField json "value"))
   | kind => throw s!"unsupported Simple Boolean expression {kind}"
 
-private def decodeParallelMultiInstanceCompletionCondition (json : Json) :
+def decodeParallelMultiInstanceCompletionCondition (json : Json) :
     Except String SimpleBooleanExpression := do
   let condition ← decodeSimpleBooleanExpression json
   if condition ≠ .stringEquals "completionPolicy" "first" then
     throw "Parallel Multi-Instance requires the exact reviewed completion condition"
   pure condition
 
-private def decodeConditionalCandidate (json : Json) :
+def decodeConditionalCandidate (json : Json) :
     Except String ConditionalCandidate := do
   requireObjectShape json ["condition", "origin", "output"]
   pure
@@ -300,7 +262,7 @@ private def decodeConditionalCandidate (json : Json) :
       output := ⟨← stringField json "output"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
-private def decodeInclusiveCandidate (json : Json) :
+def decodeInclusiveCandidate (json : Json) :
     Except String InclusiveCandidate := do
   requireObjectShape json
     ["condition", "expectedJoinInput", "origin", "output"]
@@ -310,7 +272,7 @@ private def decodeInclusiveCandidate (json : Json) :
       expectedJoinInput := ⟨← stringField json "expectedJoinInput"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
-private def decodeInclusiveDefaultBranch (json : Json) :
+def decodeInclusiveDefaultBranch (json : Json) :
     Except String InclusiveDefaultBranch := do
   requireObjectShape json ["expectedJoinInput", "origin", "output"]
   pure
@@ -318,7 +280,7 @@ private def decodeInclusiveDefaultBranch (json : Json) :
       expectedJoinInput := ⟨← stringField json "expectedJoinInput"⟩
       origin := ← decodeSequenceFlowOrigin (← field json "origin") }
 
-private def decodeOperation (json : Json) :
+def decodeOperation (json : Json) :
     Except String SemanticOperation := do
   let kind ← stringField json "kind"
   let id : OperationId := ⟨← stringField json "id"⟩
@@ -757,21 +719,21 @@ private def decodeOperation (json : Json) :
         ⟨← decodeNonemptyStringField json "boundaryEventElementId"⟩)
   | _ => throw s!"unsupported Semantic Process operation {kind}"
 
-private def decodeOperationScopeOwnership (json : Json) :
+def decodeOperationScopeOwnership (json : Json) :
     Except String OperationScopeOwnership := do
   requireObjectShape json ["operationId", "scopeId"]
   pure
     { operationId := ⟨← stringField json "operationId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
-private def decodeControlPlaceScopeOwnership (json : Json) :
+def decodeControlPlaceScopeOwnership (json : Json) :
     Except String ControlPlaceScopeOwnership := do
   requireObjectShape json ["controlPlaceId", "scopeId"]
   pure
     { controlPlaceId := ⟨← stringField json "controlPlaceId"⟩
       scopeId := ⟨← stringField json "scopeId"⟩ }
 
-private def decodeInterruptingMessageEventSubProcess (json : Json) :
+def decodeInterruptingMessageEventSubProcess (json : Json) :
     Except String InterruptingMessageEventSubProcessDeclaration := do
   requireObjectShape json ["channel", "childEntry", "elementId", "handlerScopeId", "parentScopeId", "startEventId"]
   pure {

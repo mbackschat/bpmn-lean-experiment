@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 
 /-! Complete predecessor preparations for ordinary child entry and Call invocation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

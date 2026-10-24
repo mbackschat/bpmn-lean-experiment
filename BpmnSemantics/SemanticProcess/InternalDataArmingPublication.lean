@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 
 /-! # Accepted data-arming publication
 
 The prepared wait's exact candidate must pass the existing lifecycle acceptance boundary; a
 successful projection alone does not establish the committed delta.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

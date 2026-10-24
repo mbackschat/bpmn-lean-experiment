@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.BoundedScopeArming
-import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+module
+
+public import BpmnSemantics.SemanticProcess.BoundedScopeArming
+public import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
 
 /-! ESL-OWN/CLOSE and the monitored-child account retain the child on firing and retire its exact
 Activity/deadline on normal completion. Declaration selection is independent of the interrupting
 family; the shared arming and primitive completion owners remain unchanged. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -107,10 +111,10 @@ instance (program : Program) (state : RuntimeState) (pair : MonitoredScopePair) 
       unfold NonInterruptingBoundaryTimerBinding
       cases pair.record.body <;> infer_instance
 
-private def monitoredScopeOnly? (values : List α) : Option α :=
+def monitoredScopeOnly? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
-private def monitoredScopeCandidate? (program : Program) (state : RuntimeState)
+def monitoredScopeCandidate? (program : Program) (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Option MonitoredScopePair := do
   let definition ← monitoredScopeOnly? ((monitoredScopeDefinitions program).filter fun definition =>
     decide (definition.childScopeId = scopeId))

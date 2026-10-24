@@ -43,7 +43,7 @@ theorem quote_expansion_separates_the_raw_and_canonical_collection_bounds :
       profileLimits.maximumCanonicalCollectionUtf8Bytes < 16305 := by
   decide +kernel
 
-private def escapeClassCollection : List String :=
+def escapeClassCollection : List String :=
   ["\"", "\\", "\u0008", "\u0001"]
 
 /-- Entry refuses a small collection that the obsolete raw measure puts at seventeen bytes while
@@ -57,7 +57,7 @@ theorem every_escape_class_is_counted_at_entry :
         state) = none := by
   decide +kernel
 
-private def escapeClassResult : String :=
+def escapeClassResult : String :=
   "\"\\\u0008\u0001"
 
 /-- The same four escape classes gate the final candidate before publication. Its obsolete raw

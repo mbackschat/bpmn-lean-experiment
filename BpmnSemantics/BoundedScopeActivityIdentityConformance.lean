@@ -12,7 +12,7 @@ namespace BpmnSemantics.BoundedScopeActivityIdentityConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def checked (taskName : String) : CheckedProcess :=
+def checked (taskName : String) : CheckedProcess :=
   let original := SubProcessBoundaryTimerConformance.checkedProcess
   let scope : DefinitionScopeId := ⟨taskName⟩
   let taskScope := if taskName = "ChildTask" then scope else SubProcessBoundaryTimerConformance.rootScopeId
@@ -36,7 +36,7 @@ private def checked (taskName : String) : CheckedProcess :=
       | _ => node) ++ [.noneEndEvent ⟨"InnerTimeoutEnd"⟩]
     sequenceFlows := original.sequenceFlows ++
       [{ id := ⟨"Flow_Inner_Timeout"⟩, sourceId := ⟨"InnerDeadline"⟩, targetId := ⟨"InnerTimeoutEnd"⟩ }] }
-private def programFor (taskName : String) : Program :=
+def programFor (taskName : String) : Program :=
   let lowered := lowerCheckedProcess (checked taskName)
   { lowered with
     operations := SemanticProcess.sortBy (fun a b : SemanticOperation => decide (a.id.value < b.id.value)) lowered.operations
@@ -46,7 +46,7 @@ private def programFor (taskName : String) : Program :=
     controlPlaceScopes := SemanticProcess.sortBy (fun a b : ControlPlaceScopeOwnership =>
       decide (a.controlPlaceId.value < b.controlPlaceId.value)) lowered.controlPlaceScopes }
 
-private def before : RuntimeState :=
+def before : RuntimeState :=
   let owner : ScopeOccurrenceId :=
     { processInstanceId := SubProcessBoundaryTimerConformance.instanceId
       definitionScopeId := SubProcessBoundaryTimerConformance.rootScopeId
@@ -58,7 +58,7 @@ private def before : RuntimeState :=
     activityActivations := [{ taskId := ⟨"Scope"⟩, count := 7 }]
     tokens := [⟨⟨"place:Flow_Start"⟩, owner⟩] }
 
-private def validBoundedEntry (taskName : String) : Bool := Id.run do
+def validBoundedEntry (taskName : String) : Bool := Id.run do
   let program := programFor taskName
   let [contract] := program.operations.filterMap boundedScopeContract? | return false
   let some prepared := prepareInternalBoundedScope? program before contract | return false
@@ -81,7 +81,7 @@ theorem bounded_entry_preserves_validity_with_following_task_scope_id :
     validBoundedEntry "AfterScope" = true := by
   decide +kernel
 
-private def ambiguousProgram (sequential : Bool) : Program :=
+def ambiguousProgram (sequential : Bool) : Program :=
   let base := if sequential then programFor "ChildTask" else SubProcessBoundaryTimerConformance.program
   { base with operations := base.operations.map fun operation => match operation with
       | .awaitSequentialMultiInstanceUserTask id _ input task data output timer limits =>
@@ -93,7 +93,7 @@ private def ambiguousProgram (sequential : Bool) : Program :=
           else .awaitUserTask id origin input output task
       | _ => operation }
 
-private def ambiguityRefused (sequential : Bool) : Bool := Id.run do
+def ambiguityRefused (sequential : Bool) : Bool := Id.run do
   let program := ambiguousProgram sequential
   let [contract] := program.operations.filterMap boundedScopeContract? | return false
   return programWellFormed program &&

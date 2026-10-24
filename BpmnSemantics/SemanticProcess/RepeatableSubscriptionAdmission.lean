@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! The approved repeatable-subscription proposal selects a fork forest and an eight-operation
 whole-burst limit. These independent representation readers supplement generic validation;
 they neither replace reference validation nor grant public scheduling or hosting capability. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -10,16 +14,16 @@ namespace BpmnSemantics.SemanticProcess
 abbrev repeatableSubscriptionCheckpointProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-repeatable-event-subscriptions-draft"⟩
 
-private def one? (values : List α) : Option α :=
+def one? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
-private def distinct [DecidableEq α] (values : List α) : Bool := decide values.Nodup
+def distinct [DecidableEq α] (values : List α) : Bool := decide values.Nodup
 
-private def operationMessage : MessageChannel → Bool
+def operationMessage : MessageChannel → Bool
   | .operationMessage .. => true
   | _ => false
 
-private def checkedAllowed : CheckedNode → Bool
+def checkedAllowed : CheckedNode → Bool
   | .noneStartEvent _ | .embeddedSubProcess .. | .noneEndEvent _ | .terminateEndEvent _ => true
   | .userTask _ _ metadata => metadata.isNone
   | .intermediateCatchMessageEvent _ channel => operationMessage channel
@@ -33,11 +37,11 @@ private def checkedAllowed : CheckedNode → Bool
       | .cycle literal => literal == "R/PT1S" && decide (interruption = .nonInterrupting)
   | _ => false
 
-private def checkedBoundary : CheckedNode → Bool
+def checkedBoundary : CheckedNode → Bool
   | .timerBoundaryEvent .. | .messageBoundaryEvent .. => true
   | _ => false
 
-private def checkedTimer : CheckedNode → Bool
+def checkedTimer : CheckedNode → Bool
   | .timerBoundaryEvent .. | .intermediateCatchTimerEvent .. => true
   | _ => false
 
@@ -47,7 +51,7 @@ def repeatableSubscriptionCheckedShape (nodes : List CheckedNode) (scopeCount : 
     (nodes.filter (fun node => match node with | .embeddedSubProcess .. => true | _ => false)).length + 1 == scopeCount &&
     (nodes.filter checkedBoundary).length ≤ 1 && (nodes.filter checkedTimer).length ≤ 1
 
-private def timerArmAllowed (arm : BoundaryTimerArm) (monitored : Bool) : Bool :=
+def timerArmAllowed (arm : BoundaryTimerArm) (monitored : Bool) : Bool :=
   arm.durationMs == 1000 && (monitored || arm.recurrence.isNone)
 
 def repeatableSubscriptionOperationAllowed : SemanticOperation → Bool
@@ -67,7 +71,7 @@ def repeatableSubscriptionBoundaryOperation : SemanticOperation → Bool
   | .enterBoundedScope .. | .enterMonitoredScope .. => true
   | _ => false
 
-private def programTimer : SemanticOperation → Bool
+def programTimer : SemanticOperation → Bool
   | .awaitTimer .. | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .enterBoundedScope .. | .enterMonitoredScope .. => true
   | _ => false
@@ -84,13 +88,13 @@ def repeatableSubscriptionProgramShape (operations : List SemanticOperation) (sc
     (operations.filter (fun op => (repeatableSubscriptionChildScope? op).isSome)).length + 1 == scopeCount &&
     (operations.filter repeatableSubscriptionBoundaryOperation).length ≤ 1 && (operations.filter programTimer).length ≤ 1
 
-private inductive VertexKey where
+inductive VertexKey where
   | node (id : String)
   | boundary (id : String)
   | entry (id : String)
   deriving DecidableEq
 
-private inductive VertexKind where
+inductive VertexKind where
   | start
   | boundary (host : VertexKey) (timer repeated : Bool)
   | wait (timer : Bool)
@@ -100,38 +104,38 @@ private inductive VertexKind where
   | terminate
   deriving DecidableEq
 
-private structure Vertex where
+structure SubscriptionVertex where
   key : VertexKey
   owner : DefinitionScopeId
   kind : VertexKind
   outputs : List VertexKey
 
-private structure Forest where
+structure Forest where
   scopes : List DefinitionScope
   root : DefinitionScopeId
-  vertices : List Vertex
+  vertices : List SubscriptionVertex
 
-private def vertex? (forest : Forest) (key : VertexKey) : Option Vertex :=
+def vertex? (forest : Forest) (key : VertexKey) : Option SubscriptionVertex :=
   one? (forest.vertices.filter fun vertex => decide (vertex.key = key))
 
-private def scopeStart? (forest : Forest) (scope : DefinitionScopeId) : Option Vertex :=
+def forestScopeStart? (forest : Forest) (scope : DefinitionScopeId) : Option SubscriptionVertex :=
   one? (forest.vertices.filter fun vertex => decide (vertex.owner = scope ∧ vertex.kind = .start))
 
-private def parentEntry? (forest : Forest) (scope : DefinitionScopeId) : Option Vertex :=
+def parentEntry? (forest : Forest) (scope : DefinitionScopeId) : Option SubscriptionVertex :=
   one? (forest.vertices.filter fun vertex => decide (vertex.kind = .enter scope))
 
-private def scopeForest (scopes : List DefinitionScope) (process : ProcessId) : Option DefinitionScopeId := do
+def scopeForest (scopes : List DefinitionScope) (process : ProcessId) : Option DefinitionScopeId := do
   let root ← one? (scopes.filter fun scope => scope.parentScopeId.isNone)
   if !((scopes.length == 1 || scopes.length == 2) && distinct (scopes.map (·.id)) &&
       root.originElementId.value == process.value && scopes.all (fun scope =>
         decide (scope.id = root.id) || decide (scope.parentScopeId = some root.id))) then none
   else some root.id
 
-private def checkedOwner? (checked : CheckedProcess) (id : NodeId) : Option DefinitionScopeId := do
+def checkedOwner? (checked : CheckedProcess) (id : NodeId) : Option DefinitionScopeId := do
   let owner ← one? (checked.nodeScopes.filter fun owner => decide (owner.nodeId = id))
   pure owner.scopeId
 
-private def checkedVertex? (checked : CheckedProcess) (node : CheckedNode) : Option Vertex := do
+def subscriptionCheckedVertex? (checked : CheckedProcess) (node : CheckedNode) : Option SubscriptionVertex := do
   let owner ← checkedOwner? checked node.id
   let kind ← match node with
     | .noneStartEvent _ => some .start
@@ -149,13 +153,13 @@ private def checkedVertex? (checked : CheckedProcess) (node : CheckedNode) : Opt
   let flows := checked.sequenceFlows.filter fun flow => decide (flow.sourceId = node.id)
   pure { key := .node node.id.value, owner, kind, outputs := flows.map (fun flow => .node flow.targetId.value) }
 
-private def checkedHost (checked : CheckedProcess) (host : NodeId) (timer : Bool) : Bool :=
+def checkedHost (checked : CheckedProcess) (host : NodeId) (timer : Bool) : Bool :=
   match one? (checked.nodes.filter fun node => decide (node.id = host)) with
   | some (.userTask ..) => true
   | some (.embeddedSubProcess ..) => timer
   | _ => false
 
-private def checkedBindings (checked : CheckedProcess) : Bool :=
+def checkedBindings (checked : CheckedProcess) : Bool :=
   distinct (checked.nodes.map (·.id)) && distinct (checked.sequenceFlows.map (·.id)) &&
     checked.nodeScopes.length == checked.nodes.length &&
     checked.sequenceFlowScopes.length == checked.sequenceFlows.length &&
@@ -176,11 +180,11 @@ private def checkedBindings (checked : CheckedProcess) : Bool :=
           (checked.sequenceFlows.filter fun flow => decide (flow.sourceId = id)).map (·.id) == [output]
       | _ => true)
 
-private def programOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId := do
+def programOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId := do
   let owner ← one? (program.operationScopes.filter fun owner => decide (owner.operationId = id))
   pure owner.scopeId
 
-private def programInput : SemanticOperation → Option ControlPlaceId
+def programInput : SemanticOperation → Option ControlPlaceId
   | .awaitUserTask _ _ input _ _ | .awaitTimer _ _ input _ _ | .awaitMessage _ _ input _ _
   | .awaitBoundedUserTask _ _ input _ _ | .awaitMonitoredUserTask _ _ input _ _
   | .awaitMessageBoundedUserTask _ _ input _ _ | .awaitMessageMonitoredUserTask _ _ input _ _
@@ -189,18 +193,18 @@ private def programInput : SemanticOperation → Option ControlPlaceId
   | .enterMonitoredScope _ _ input _ _ _ => some input
   | _ => none
 
-private def placeTarget? (program : Program) (place : ControlPlaceId) : Option VertexKey := do
+def placeTarget? (program : Program) (place : ControlPlaceId) : Option VertexKey := do
   let operation ← one? (program.operations.filter fun op => decide (programInput op = some place))
   pure (.node operation.id.value)
 
-private def completion? (program : Program) (scope : DefinitionScopeId) : Option SemanticOperation :=
+def completion? (program : Program) (scope : DefinitionScopeId) : Option SemanticOperation :=
   one? (program.operations.filter fun (op : SemanticOperation) => match op with | .completeScope _ _ id _ => decide (id = scope) | _ => false)
 
-private def parentOutput? (program : Program) (scope : DefinitionScopeId) : Option ControlPlaceId := do
+def parentOutput? (program : Program) (scope : DefinitionScopeId) : Option ControlPlaceId := do
   let .completeScope _ _ _ (some output) ← completion? program scope | none
   pure output
 
-private def programVertex? (program : Program) (op : SemanticOperation) : Option Vertex := do
+def programVertex? (program : Program) (op : SemanticOperation) : Option SubscriptionVertex := do
   let owner ← programOwner? program op.id
   let (kind, outputs) ← match op with
     | .initiate _ _ output => some (.start, [output])
@@ -219,7 +223,7 @@ private def programVertex? (program : Program) (op : SemanticOperation) : Option
   let targets ← outputs.mapM (placeTarget? program)
   pure { key := .node op.id.value, owner, kind, outputs := targets }
 
-private def programBoundaryVertex? (program : Program) (op : SemanticOperation) : Option Vertex := do
+def programBoundaryVertex? (program : Program) (op : SemanticOperation) : Option SubscriptionVertex := do
   let owner ← programOwner? program op.id
   let (timer, repeated, output) ← match op with
     | .awaitMessageBoundedUserTask _ _ _ _ arm => some (false, false, arm.output)
@@ -230,7 +234,7 @@ private def programBoundaryVertex? (program : Program) (op : SemanticOperation) 
   let target ← placeTarget? program output
   pure { key := .boundary op.id.value, owner, kind := .boundary (.node op.id.value) timer repeated, outputs := [target] }
 
-private def programEntryVertex? (program : Program) (op : SemanticOperation) : Option Vertex := do
+def programEntryVertex? (program : Program) (op : SemanticOperation) : Option SubscriptionVertex := do
   let (child, place) ← match op with
     | .enterScope _ _ _ entry child | .enterBoundedScope _ _ _ entry child _
     | .enterMonitoredScope _ _ _ entry child _ => some (child, entry)
@@ -238,7 +242,7 @@ private def programEntryVertex? (program : Program) (op : SemanticOperation) : O
   let target ← placeTarget? program place
   pure { key := .entry child.value, owner := child, kind := .start, outputs := [target] }
 
-private def programProduced : SemanticOperation → List ControlPlaceId
+def programProduced : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output | .awaitUserTask _ _ _ output _ | .awaitMessage _ _ _ output _
   | .awaitTimer _ _ _ output _ => [output]
   | .enterScope _ _ _ entry _ => [entry]
@@ -249,7 +253,7 @@ private def programProduced : SemanticOperation → List ControlPlaceId
   | .completeScope _ _ _ output => output.toList
   | _ => []
 
-private def programBindings (program : Program) (root : DefinitionScopeId) : Bool :=
+def programBindings (program : Program) (root : DefinitionScopeId) : Bool :=
   distinct (program.operations.map (·.id)) && distinct (program.controlPlaces.map (·.id)) &&
     program.operationScopes.length == program.operations.length &&
     program.controlPlaceScopes.length == program.controlPlaces.length &&
@@ -276,17 +280,17 @@ private def programBindings (program : Program) (root : DefinitionScopeId) : Boo
       | _ => pure true).getD false) &&
     program.definitionScopes.all (fun scope => (completion? program scope.id).isSome)
 
-private def boundaryHost (forest : Forest) (vertex : Vertex) (host : VertexKey) (timer : Bool) : Bool :=
+def boundaryHost (forest : Forest) (vertex : SubscriptionVertex) (host : VertexKey) (timer : Bool) : Bool :=
   match vertex? forest host with
   | none => false
   | some body => decide (body.owner = vertex.owner) &&
       match body.kind with | .wait false => true | .enter _ => timer | _ => false
 
-private def resumed : VertexKind → Bool
+def resumed : VertexKind → Bool
   | .wait _ | .boundary .. => true
   | _ => false
 
-private def vertexShape (forest : Forest) (vertex : Vertex) : Bool :=
+def vertexShape (forest : Forest) (vertex : SubscriptionVertex) : Bool :=
   let incoming := forest.vertices.filter fun prior => prior.outputs.any (fun key => decide (key = vertex.key))
   let root := match vertex.kind with | .start | .boundary .. => true | _ => false
   forest.scopes.any (fun scope => decide (scope.id = vertex.owner)) &&
@@ -302,35 +306,35 @@ private def vertexShape (forest : Forest) (vertex : Vertex) : Bool :=
     | _ => vertex.outputs.length == 1)
 
 -- Traversal exhaustion rejects: malformed cyclic inputs never receive a successful bound.
-private def descendants (forest : Forest) (allowed : Vertex → Bool) : Nat → VertexKey → Bool
+def descendants (forest : Forest) (allowed : SubscriptionVertex → Bool) : Nat → VertexKey → Bool
   | 0, _ => false
   | fuel + 1, key => match vertex? forest key with
     | none => false
     | some vertex => allowed vertex && vertex.outputs.all (descendants forest allowed fuel)
 
-private def handlerAllowed (forest : Forest) (vertex : Vertex) : Bool :=
+def handlerAllowed (forest : Forest) (vertex : SubscriptionVertex) : Bool :=
   (match vertex.kind with | .wait false | .fork | .finish | .terminate => true | _ => false) &&
     !(forest.vertices.any fun boundary => match boundary.kind with
       | .boundary host _ _ => decide (host = vertex.key) | _ => false)
 
-private def forestShape (forest : Forest) : Bool :=
+def forestShape (forest : Forest) : Bool :=
   distinct (forest.vertices.map (·.key)) && forest.vertices.all (vertexShape forest) &&
-    forest.scopes.all (fun scope => (scopeStart? forest scope.id).isSome &&
+    forest.scopes.all (fun scope => (forestScopeStart? forest scope.id).isSome &&
       (if scope.id = forest.root then (parentEntry? forest scope.id).isNone else (parentEntry? forest scope.id).isSome)) &&
     forest.vertices.all (fun vertex => descendants forest (fun _ => true) (forest.vertices.length + 1) vertex.key) &&
     forest.vertices.all (fun vertex => match vertex.kind with
       | .boundary _ _ true => vertex.outputs.all (descendants forest (handlerAllowed forest) (forest.vertices.length + 1))
       | _ => true)
 
-private structure Burst where
+structure Burst where
   steps : Nat
   waiting : Bool
 
-private def joinBursts (bursts : List Burst) : Burst :=
+def joinBursts (bursts : List Burst) : Burst :=
   { steps := (bursts.map (·.steps)).foldl (· + ·) 0, waiting := bursts.any (·.waiting) }
 
 -- The fold sums every sibling. A child None Start has no IL transition; its completion does.
-private def burst (forest : Forest) : Nat → VertexKey → Option Burst
+def burst (forest : Forest) : Nat → VertexKey → Option Burst
   | 0, _ => none
   | fuel + 1, key => do
       let vertex ← vertex? forest key
@@ -339,7 +343,7 @@ private def burst (forest : Forest) : Nat → VertexKey → Option Burst
       | .finish | .terminate => pure { steps := 1, waiting := false }
       | .boundary .. => none
       | .enter child => do
-          let start ← scopeStart? forest child
+          let start ← forestScopeStart? forest child
           let childBurst ← burst forest fuel start.key
           if childBurst.waiting then pure { childBurst with steps := childBurst.steps + 1 }
           else do
@@ -352,7 +356,7 @@ private def burst (forest : Forest) : Nat → VertexKey → Option Burst
           let step := if vertex.kind = .start ∧ vertex.owner ≠ forest.root then 0 else 1
           pure { tail with steps := step + tail.steps }
 
-private def finishBurst (forest : Forest) : Nat → DefinitionScopeId → Burst → Option Burst
+def finishBurst (forest : Forest) : Nat → DefinitionScopeId → Burst → Option Burst
   | 0, _, _ => none
   | fuel + 1, scope, result => do
       if result.waiting then pure result
@@ -363,21 +367,21 @@ private def finishBurst (forest : Forest) : Nat → DefinitionScopeId → Burst 
         let tail := joinBursts tails
         finishBurst forest fuel entry.owner { tail with steps := result.steps + 1 + tail.steps }
 
-private def burstWithin (forest : Forest) (owner : DefinitionScopeId) (keys : List VertexKey) : Bool :=
+def burstWithin (forest : Forest) (owner : DefinitionScopeId) (keys : List VertexKey) : Bool :=
   (do
     let results ← keys.mapM (burst forest (forest.vertices.length + 1))
     let result ← finishBurst forest (forest.scopes.length + 1) owner (joinBursts results)
     pure (decide (result.steps ≤ 8))).getD false
 
-private def forestBursts (forest : Forest) : Bool :=
-  ((scopeStart? forest forest.root).map (fun start => burstWithin forest forest.root [start.key])).getD false &&
+def forestBursts (forest : Forest) : Bool :=
+  ((forestScopeStart? forest forest.root).map (fun start => burstWithin forest forest.root [start.key])).getD false &&
     forest.vertices.all (fun vertex => !resumed vertex.kind || burstWithin forest vertex.owner vertex.outputs)
 
 def repeatableSubscriptionCheckedGraph (checked : CheckedProcess) : Bool :=
   repeatableSubscriptionCheckedShape checked.nodes checked.definitionScopes.length &&
     checked.compensation.isNone && checkedBindings checked && (do
       let root ← scopeForest checked.definitionScopes checked.processId
-      let vertices ← checked.nodes.mapM (checkedVertex? checked)
+      let vertices ← checked.nodes.mapM (subscriptionCheckedVertex? checked)
       let forest := { scopes := checked.definitionScopes, root, vertices : Forest }
       pure (forestShape forest && forestBursts forest)).getD false
 

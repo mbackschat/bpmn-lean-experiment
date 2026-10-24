@@ -1,40 +1,44 @@
-import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
-import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
-import BpmnSemantics.SemanticProcess.CallDataStateValidation
-import BpmnSemantics.SemanticProcess.Incident
-import BpmnSemantics.SemanticProcess.IncidentCancellation
-import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.WaitCompletion
-import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.MessagePayload
-import BpmnSemantics.SemanticProcess.MessageBoundedTask
-import BpmnSemantics.SemanticProcess.MessageMonitoredTask
-import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
-import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
-import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
-import BpmnSemantics.SemanticProcess.CommandStartBindings
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeDataCommand
+module
+
+public import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.CallDataStateValidation
+public import BpmnSemantics.SemanticProcess.Incident
+public import BpmnSemantics.SemanticProcess.IncidentCancellation
+public import BpmnSemantics.SemanticProcess.MessageStartAdmission
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.WaitCompletion
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.ActivityDataOutput
+public import BpmnSemantics.SemanticProcess.MessagePayload
+public import BpmnSemantics.SemanticProcess.MessageBoundedTask
+public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
+public import BpmnSemantics.SemanticProcess.CommandStartBindings
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeDataCommand
 
 /-! # Semantic Process external command admission
 
 This module owns the complete external stimulus dispatch and the fail-closed runtime-state gate applied before dispatch. It separates command admission from bounded internal closure and rejects incident-bearing states unless they belong to the exact approved profile, program shape, and private association invariant.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -53,7 +57,7 @@ structure ExternalAdmission where
 
 /-! Closed raw dispatchers remain private because they do not enforce snapshot declaration admission. -/
 
-private def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
   match state.control with
   | .running instanceId =>
@@ -66,7 +70,7 @@ private def dispatchCorrelatedPayloadMessage (program : Program) (state : Runtim
   | .notStarted | .completed _ | .cancelled _ | .failed .. =>
       { outcome := .rejected, state }
 
-private def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
+def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
   if program.identity.semanticProfile = messageKeyCorrelationProfileId &&
       programWellFormed program && programProfileCapabilitiesValid program &&
@@ -92,7 +96,7 @@ def incidentStateAdmitted (program : Program) (state : RuntimeState) : Bool :=
       programProfileCapabilitiesValid program &&
       effectIncidentAssociationsValid state)
 
-@[simp] private def dispatchStimulusWithoutCompensationSnapshots (program : Program)
+@[simp] def dispatchStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState) :
     Stimulus → ExternalAdmission
   | .startProcess _ processId instanceId initialVariables =>
@@ -455,7 +459,7 @@ theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
       (dispatchStimulus program state stimulus).state = state := by
   simp [dispatchStimulus, declared]
 
-@[simp] private def admitStimulusWithoutCompensationSnapshots (program : Program)
+@[simp] def admitStimulusWithoutCompensationSnapshots (program : Program)
     (state : RuntimeState)
     (stimulus : Stimulus) : ExternalAdmission :=
   if !committedStateCollectionAdmitted state then { outcome := .rejected, state }
@@ -556,7 +560,7 @@ def prepareStartedSnapshotState (program : Program) (before : RuntimeState)
 dispatcher itself exposed. `COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md` § Reservation,
 promotion, purge, and capacity therefore makes the post-state check part of admission, while the
 transition-specific laws still prove why valid commands remain committed. -/
-private def retainValidSnapshotAdmission (program : Program) (before : RuntimeState)
+def retainValidSnapshotAdmission (program : Program) (before : RuntimeState)
     (admission : ExternalAdmission) : ExternalAdmission :=
   match admission.outcome with
   | .committed =>

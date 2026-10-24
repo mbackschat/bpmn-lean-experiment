@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
-import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
-import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
-import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 
 /-! # Complete accepted data-arming publication
 
 Prepared footprints share the traced evaluator's record, lifecycle acceptance, position delta, and
 canonical numbering. Their availability to the production classifier is a separate boundary.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

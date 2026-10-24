@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Selected parallel transition-trace certificates
 
@@ -8,6 +10,8 @@ PMIS-SELECT-01 publication derives ordered replay and declaration attribution
 from the executable trace check. Accounting-history consumers import this owner
 without making the private runtime runner depend on graph or lifetime proofs.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

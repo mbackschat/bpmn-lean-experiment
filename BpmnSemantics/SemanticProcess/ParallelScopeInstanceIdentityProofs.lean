@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
 
 /-! # Actual parallel hosting-instance provenance
 
@@ -8,6 +10,8 @@ Actual Start and control-preserving execution retain that identity across entry
 and completion commands. Nonempty identity comes separately from actual Start
 admission; the history constructors alone deliberately do not impose it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+module
+
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 
 /-! The exact serial suffix and root frame discharge the runtime ingress validator.
 This derived guard is separate from command progress and its scheduled closure assembly. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 

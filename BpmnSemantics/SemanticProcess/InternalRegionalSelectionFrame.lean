@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 
 /-! Both local-control and arming patches preserve scope and Call records. Their regional
 selector proofs share this read interface, with each caller deriving the changed-work queries. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

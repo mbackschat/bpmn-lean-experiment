@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! # Roles derived from bounded Transaction admission
 
 The successful production reader supplies the complete owned role graph used by the scheduling proof. Keeping this derivation outside admission avoids rebuilding interpreter consumers when a proof changes.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ScopeVariableData
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeVariableData
 
 /-! # Occurrence-owned body data witnesses
 
@@ -6,28 +8,30 @@ SMIS-DATA-01 requires pre-entry mapping, present-null shadowing and nearest-exis
 These separating controls cover owner collisions and turnover without claiming MI execution.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ScopeVariableDataConformance
 
 open SemanticProcess
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := ⟨"first"⟩, definitionScopeId := ⟨"body"⟩, activation := 1 }
 
-private def foreign : ScopeOccurrenceId := { owner with processInstanceId := ⟨"second"⟩ }
+def foreign : ScopeOccurrenceId := { owner with processInstanceId := ⟨"second"⟩ }
 
-private def input (target source : String) : VariableMapping :=
+def input (target source : String) : VariableMapping :=
   { target, expression := .enclosingVariable source }
 
-private def literal (target value : String) : VariableMapping :=
+def literal (target value : String) : VariableMapping :=
   { target, expression := .stringLiteral value }
 
-private def before : ScopedVariables :=
+def before : ScopedVariables :=
   { emptyScopedVariables with
     process := { bindings := [{ name := "a", value := .string "outer" },
       { name := "status", value := .string "parent" }] }
     scopes := [{ owner := foreign, bindings := [{ name := "status", value := .string "foreign" }] }] }
 
-private def initialized : Option ScopedVariables :=
+def initialized : Option ScopedVariables :=
   initializeScopeVariables? before owner [literal "a" "seed", input "b" "a", input "status" "status"]
 
 theorem inputs_use_pre_entry_context_and_ignore_declaration_order :

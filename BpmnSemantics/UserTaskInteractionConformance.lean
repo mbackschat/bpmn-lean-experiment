@@ -1,11 +1,15 @@
-import BpmnSemantics.Conformance
-import BpmnSemantics.SequentialUserTask
-import BpmnSemantics.SemanticProcess.Execution
+module
+
+public import BpmnSemantics.Conformance
+public import BpmnSemantics.SequentialUserTask
+public import BpmnSemantics.SemanticProcess.Execution
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks
 
 These checks close the structured User Task occurrence, exact completion, full-identity mismatch, wrong-activation, stale-completion, and state-derived interaction projection lanes for the bounded interaction capsule.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.UserTaskInteractionConformance
 
@@ -24,7 +28,7 @@ def exactCompletionStimulus : Stimulus :=
   .completeUserTaskInstance
     ⟨"complete-user-task-instance"⟩ exactTaskId submittedValues
 
-private def interactionObservations : List ObservationKind :=
+def interactionObservations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -36,7 +40,7 @@ private def interactionObservations : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
-private def interactionScenario (id : String) (stimuli : List Stimulus) : Scenario :=
+def interactionScenario (id : String) (stimuli : List Stimulus) : Scenario :=
   { kind := .scenario
     id := ⟨id⟩
     profile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩

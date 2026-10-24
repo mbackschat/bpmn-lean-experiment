@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 
 /-! Regional selection observes token-owner censuses and quiescence. The existing patch filter
 laws retain both observations when the regional footprint excludes local-control writes. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

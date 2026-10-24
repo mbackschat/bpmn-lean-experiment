@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Boundary Compensation Activity retention
 
@@ -9,6 +11,8 @@ This module owns the approved hidden register for successfully completed outer A
 an explicitly declared boundary Compensation handler. It defines no throw, handler, snapshot,
 ordering, cancellation, source, public-observation, or host behavior.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -33,14 +37,11 @@ def CompensationCompletionFacts.activity : CompensationCompletionFacts → Activ
   | .ordinaryUserTask activity
   | .multiInstanceUserTask activity _ _ _ => activity
 
-private def safeNat (value : Nat) : Bool :=
-  BpmnSemantics.SemanticProcessJson.isSafeWireNat value
-
-private def activityIdentityValid (id : ActivityOccurrenceId) : Bool :=
+def activityIdentityValid (id : ActivityOccurrenceId) : Bool :=
   !id.processInstanceId.value.isEmpty && !id.activityElementId.value.isEmpty &&
     id.activation > 0 && safeNat id.activation
 
-private def declarationTargetsActivity
+def declarationTargetsActivity
     (declaration : CompensationActivityRetentionDeclaration)
     (activity : ActivityOccurrenceId) : Bool :=
   declaration.targets.any fun target =>
@@ -74,17 +75,17 @@ def canonicalCompensationRecordsUtf8Bytes : List CompletedCompensableActivity �
         total + canonicalCompletedCompensableActivityUtf8Bytes record + 1)
         (canonicalCompletedCompensableActivityUtf8Bytes first) + 2
 
-private def recordsHaveIncreasingOrdinals : List CompletedCompensableActivity → Bool
+def recordsHaveIncreasingOrdinals : List CompletedCompensableActivity → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       left.completionOrdinal < right.completionOrdinal &&
         recordsHaveIncreasingOrdinals (right :: rest)
 
-private def recordIdentityUnique (records : List CompletedCompensableActivity)
+def recordIdentityUnique (records : List CompletedCompensableActivity)
     (record : CompletedCompensableActivity) : Bool :=
   (records.filter fun candidate => candidate.id == record.id).length = 1
 
-private def retentionRegisterValid
+def retentionRegisterValid
     (declaration : CompensationActivityRetentionDeclaration)
     (instanceId : SemanticId) (state : RuntimeState)
     (retention : CompensationActivityRetention)
@@ -108,7 +109,7 @@ private def retentionRegisterValid
         record.completionOrdinal < retention.nextCompletionOrdinal &&
         safeNat record.completionOrdinal
 
-private def childRetentionStateValid (declaration : CompensationActivityRetentionDeclaration)
+def childRetentionStateValid (declaration : CompensationActivityRetentionDeclaration)
     (parentScopeId : DefinitionScopeId) (instanceId : SemanticId) (state : RuntimeState) : Bool :=
   let parent : ScopeOccurrenceId := ⟨instanceId, parentScopeId, 1⟩
   (state.scopeOccurrences.filter fun occurrence =>
@@ -162,7 +163,7 @@ def multiInstanceCompletionEligible : CompensationCompletionFacts → Bool
         | .allSuccessfulCompletion => planned == successful
         | .earlyCompletion | .interrupted => false
 
-private def retentionCandidate? :
+def retentionCandidate? :
     CompensationCompletionFacts → Option (Option ActivityOccurrenceId)
   | .ordinaryUserTask activity =>
       if activityIdentityValid activity then some (some activity) else none
@@ -174,7 +175,7 @@ private def retentionCandidate? :
         | .earlyCompletion | .interrupted =>
             if successful < planned then some none else none
 
-private def CompensationCompletionFacts.operationFamily :
+def CompensationCompletionFacts.operationFamily :
     CompensationCompletionFacts → CompensationActivityOperationFamily
   | .ordinaryUserTask _ => .ordinaryUserTask
   | .multiInstanceUserTask .. => .multiInstanceUserTask
@@ -209,7 +210,7 @@ theorem childCompensationCompletionOwnerValid_joined (owner : ScopeOccurrenceId)
     exact ⟨wait, member, identity.1.1.symm, identity.1.2.symm, identity.2.symm, valid⟩
   · contradiction
 
-private def completionOwnerValid (program : Program) (owner : ScopeOccurrenceId)
+def completionOwnerValid (program : Program) (owner : ScopeOccurrenceId)
     (facts : CompensationCompletionFacts) (state : RuntimeState) : Bool :=
   match program.compensationActivityRetention with
   | none => true
@@ -249,7 +250,7 @@ inductive CompensationRetentionResult where
   | refused (reason : CompensationRetentionRefusal) (state : RuntimeState)
   deriving Repr, DecidableEq
 
-private def replaceRetentionRegister
+def replaceRetentionRegister
     (target updated : CompensationActivityRetention) :
     List CompensationActivityRetention → List CompensationActivityRetention
   | [] => []

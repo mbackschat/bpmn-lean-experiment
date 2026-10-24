@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 
 /-! # Activity identity issuing-discipline preservation
 
@@ -9,6 +11,8 @@ occurrences. Arming laws remain with their issuer modules. Each proof supplies a
 record or exact predecessor identity, so unchanged counters or collection cardinality cannot justify
 withdrawal followed by reissue.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ActivityIssuingDisciplineConformance
 

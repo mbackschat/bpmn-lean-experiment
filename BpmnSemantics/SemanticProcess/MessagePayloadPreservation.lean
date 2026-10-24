@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.MessagePayload
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.MessagePayload
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Message payload delivery preservation
 
@@ -10,6 +12,8 @@ The payload-bearing Message Catch Event removes one ordinary Message wait, adds 
 and changes only Process-scoped bindings. This module closes that atomic rewrite against the complete
 runtime-state invariant.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

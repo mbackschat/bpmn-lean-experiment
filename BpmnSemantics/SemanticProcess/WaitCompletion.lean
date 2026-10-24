@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.MonitoredScope
-import BpmnSemantics.SemanticProcess.BoundedTask
-import BpmnSemantics.SemanticProcess.Message
-import BpmnSemantics.SemanticProcess.EffectCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.MonitoredScope
+public import BpmnSemantics.SemanticProcess.BoundedTask
+public import BpmnSemantics.SemanticProcess.Message
+public import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! # External wait completion
 
 This module owns how a waiting runtime state advances when its external event arrives: matching a User Task or Timer wait on its full occurrence identity, and routing a matched Timer into the composite wait that owns it instead of completing it directly. It owns no stimulus admission, closure, or public command outcome; an absent result means semantic rejection, while recurring Timer capacity refusal requires whole-command rollback.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -79,10 +83,10 @@ instance (program : Program) (state : RuntimeState) (pair : SelectedMonitoredTas
       unfold NonInterruptingBoundaryTimerBinding
       cases pair.record.body <;> infer_instance
 
-private def selectedMonitoredOnly? (values : List α) : Option α :=
+def selectedMonitoredOnly? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
-private def selectedMonitoredTaskCandidate? (program : Program) (state : RuntimeState)
+def selectedMonitoredTaskCandidate? (program : Program) (state : RuntimeState)
     (record : ActivityOccurrence) : Option SelectedMonitoredTask := do
   let .userTask body := record.body | none
   let task ← selectedMonitoredOnly? (state.waits.filter (taskIdNamesWait body))

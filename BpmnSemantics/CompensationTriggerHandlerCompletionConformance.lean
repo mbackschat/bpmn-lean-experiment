@@ -43,11 +43,11 @@ theorem handler_error_fails_the_process_and_removes_every_live_compensation_regi
       failedState.variables.activities = [] := by
   decide +kernel
 
-private def inheritedListener : EventSubProcessMessageSubscription :=
+def inheritedListener : EventSubProcessMessageSubscription :=
   { id := occurrence "InheritedListener", owner := rootOwner,
     channel := .directMessage ⟨"InheritedMessage"⟩ }
 
-private def populatedFailureBefore : RuntimeState :=
+def populatedFailureBefore : RuntimeState :=
   { triggeredState with
     eventSubProcessMessageSubscriptions := [inheritedListener]
     activityOccurrences :=
@@ -64,10 +64,10 @@ private def populatedFailureBefore : RuntimeState :=
     endOccurrences := 7
     logicalTimeMs := 13 }
 
-private def selectedC : SelectedCompensationHandler :=
+def selectedC : SelectedCompensationHandler :=
   { wait := waitC, trigger := activeTrigger, handler := compensatingHandlerC }
 
-private def expectedPopulatedFailure : RuntimeState :=
+def expectedPopulatedFailure : RuntimeState :=
   { failedState with
     eventSubProcessMessageSubscriptions := [inheritedListener]
     variables :=
@@ -114,15 +114,15 @@ theorem delayed_event_subprocess_context_reaches_the_new_frontier_unchanged :
         [{ name := "argument", value := .string "old" }] := by
   decide +kernel
 
-private def delayedSuccessorBytes : Nat :=
+def delayedSuccessorBytes : Nat :=
   canonicalCompensationExecutionStateUtf8Bytes delayedAfterCState.compensationTriggers
     delayedAfterCState.compensationHandlerEffectWaits
 
-private def delayedCurrentBytes : Nat :=
+def delayedCurrentBytes : Nat :=
   canonicalCompensationExecutionStateUtf8Bytes delayedTriggeredState.compensationTriggers
     delayedTriggeredState.compensationHandlerEffectWaits
 
-private def delayedProgramBelowSuccessor : Program :=
+def delayedProgramBelowSuccessor : Program :=
   { delayedProgram with
     compensationExecution := some
       { delayedExecutionDeclaration with
@@ -158,10 +158,10 @@ theorem handler_failure_is_sound_for_the_declarative_relation :
   apply attemptCompensationHandlerEffectCompletion_sound
   exact handler_error_fails_the_process_and_removes_every_live_compensation_region.1
 
-private def completeBStimulus : Stimulus :=
+def completeBStimulus : Stimulus :=
   .completeEffect ⟨"complete-b"⟩ waitB.id (.success [])
 
-private def failCStimulus : Stimulus :=
+def failCStimulus : Stimulus :=
   .completeEffect ⟨"fail-c"⟩ waitC.id failureResult
 
 theorem command_admission_dispatches_exact_compensation_success_and_failure :
@@ -182,14 +182,14 @@ theorem cross_family_effect_identity_collision_rejects_the_exact_submitted_state
         completeBStimulus).state = effectCollisionState := by
   decide +kernel
 
-private def occurrenceStart (anchor : SemanticFlowNodeOccurrenceAnchor)
+def occurrenceStart (anchor : SemanticFlowNodeOccurrenceAnchor)
     (elementId : String) : UnnumberedFlowNodeOccurrenceStart :=
   { anchor
     processId := program.processId
     elementId := ⟨elementId⟩
     owner := rootOwner }
 
-private def expectedTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+def expectedTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
   { started :=
       [occurrenceStart (.wait waitB.id) "EB",
        occurrenceStart (.compensationTrigger activeTrigger.id) "throw",
@@ -197,7 +197,7 @@ private def expectedTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
        occurrenceStart (.compensationHandler compensatingHandlerC.identity.id) "HC"]
     ended := [] }
 
-private def expectedBSuccessLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+def expectedBSuccessLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
   { started :=
       [occurrenceStart (.compensationHandler compensatingHandlerA.identity.id) "HA"]
     ended :=
@@ -205,7 +205,7 @@ private def expectedBSuccessLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
        { anchor := .compensationHandler compensatingHandlerB.identity.id,
          terminal := .completed }] }
 
-private def expectedCFailureLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
+def expectedCFailureLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
   { started := []
     ended :=
       [{ anchor := .wait waitB.id, terminal := .cancelled },
@@ -224,10 +224,10 @@ theorem trigger_and_completion_lifecycles_preserve_private_pairing_and_public_te
         failCStimulus 0 = some expectedCFailureLifecycle := by
   decide +kernel
 
-private def completeBTrace :=
+def completeBTrace :=
   applyStimulusTracedWithCompensationSnapshots 1 program triggeredState completeBStimulus
 
-private def failCTrace :=
+def failCTrace :=
   applyStimulusTracedWithCompensationSnapshots 1 program triggeredState failCStimulus
 
 private theorem complete_b_trace_has_exact_publication :

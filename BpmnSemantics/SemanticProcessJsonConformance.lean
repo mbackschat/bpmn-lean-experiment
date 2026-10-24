@@ -7,97 +7,97 @@ namespace BpmnSemantics.SemanticProcessJsonConformance
 open BpmnSemantics.SemanticProcessJson
 open BpmnSemantics.SemanticProcess
 
-private def parseRejected (contents : String) : Bool :=
+def parseRejected (contents : String) : Bool :=
   match parseWireJson contents with
   | .ok _ => false
   | .error _ => true
 
-private def variableValueDecodedAs (expected : VariableValue)
+def variableValueDecodedAs (expected : VariableValue)
     (result : Except String VariableValue) : Bool :=
   match result with
   | .ok actual => decide (actual = expected)
   | .error _ => false
 
-private def scenarioRejected (contents : String) : Bool :=
+def scenarioRejected (contents : String) : Bool :=
   match parseWireJson contents >>= decodeScenario with
   | .ok _ => false
   | .error _ => true
 
-private def messageChannelRejected (contents : String) : Bool :=
+def messageChannelRejected (contents : String) : Bool :=
   match parseWireJson contents >>= decodeMessageChannel with
   | .ok _ => false
   | .error _ => true
 
-private def checkedProcessAccepted (contents : String) : Bool :=
+def checkedProcessAccepted (contents : String) : Bool :=
   match parseWireJson contents >>= decodeCheckedProcess with
   | .ok _ => true
   | .error _ => false
 
-private def checkedNodeDocument (node : String) : String :=
+def checkedNodeDocument (node : String) : String :=
   "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[" ++
     node ++ "],\"sequenceFlows\":[]}"
 
-private def programAccepted (contents : String) : Bool :=
+def programAccepted (contents : String) : Bool :=
   match parseWireJson contents >>= decodeProgram with
   | .ok _ => true
   | .error _ => false
 
-private def checkedNodesDecodedAs (expected : List CheckedNode)
+def checkedNodesDecodedAs (expected : List CheckedNode)
     (contents : String) : Bool :=
   match parseWireJson contents >>= decodeCheckedProcess with
   | .ok process => decide (process.nodes = expected)
   | .error _ => false
 
-private def programOperationDocument (operation : String) : String :=
+def programOperationDocument (operation : String) : String :=
   "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[" ++
     operation ++ "]}"
 
-private def programOperationsDecodedAs (expected : List SemanticOperation)
+def programOperationsDecodedAs (expected : List SemanticOperation)
     (contents : String) : Bool :=
   match parseWireJson contents >>= decodeProgram with
   | .ok program => decide (program.operations = expected)
   | .error _ => false
 
-private def scenarioDocumentWithStimulus (stimulus : String) : String :=
+def scenarioDocumentWithStimulus (stimulus : String) : String :=
   "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[" ++
     stimulus ++
     "],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}"
 
-private def scenarioStimuliDecodedAs (expected : List Stimulus)
+def scenarioStimuliDecodedAs (expected : List Stimulus)
     (contents : String) : Bool :=
   match parseWireJson contents >>= decodeScenario with
   | .ok scenario => decide (scenario.stimuli = expected)
   | .error _ => false
 
-private def payloadChannel : MessageChannel :=
+def payloadChannel : MessageChannel :=
   .operationMessage ⟨"interface"⟩ ⟨"operation"⟩ ⟨"message"⟩
 
-private def payloadOutput : DirectCatchEventPayloadOutput :=
+def payloadOutput : DirectCatchEventPayloadOutput :=
   { associationId := "association"
     sourceDataOutputId := "dataOutput"
     sourceDataOutputName := some "Payload"
     targetPropertyId := "property" }
 
-private def payloadSubscription : MessageSubscriptionId :=
+def payloadSubscription : MessageSubscriptionId :=
   { processInstanceId := ⟨"instance"⟩
     elementId := ⟨"catch"⟩
     activation := 1 }
 
-private def correlationPayloadSelector : CorrelationMessagePath :=
+def correlationPayloadSelector : CorrelationMessagePath :=
   { language := correlationScalarPathLanguage, body := "payload" }
 
-private def correlationProcessSelector : CorrelationProcessPropertyPath :=
+def correlationProcessSelector : CorrelationProcessPropertyPath :=
   { language := correlationScalarPathLanguage
     body := "property:processProperty"
     propertyId := "processProperty" }
 
-private def correlationDefinition : ProgramIdentity :=
+def correlationDefinition : ProgramIdentity :=
   { compiler := .bpmnSourceSemanticProcess
     semanticProfile := ⟨"profile"⟩
     sourceId := ⟨"source"⟩
     sourceSha256 := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
 
-private def correlationAddress : CorrelatedMessageAddress :=
+def correlationAddress : CorrelatedMessageAddress :=
   { definition := correlationDefinition
     processId := ⟨"process"⟩
     channel := payloadChannel
@@ -114,7 +114,7 @@ theorem negative_zero_spellings_are_rejected :
       parseRejected "-0e1" = true := by
   native_decide
 
-private def exactWireIntegerAdmissionWitness : IO Unit := do
+def exactWireIntegerAdmissionWitness : IO Unit := do
   unless ["1.0", "1e1", "1E+2", "1.0000000000000001",
       "9007199254740991.1", "1e-400", "1e400", "-1",
       "9007199254740992", "9007199254740993"].all parseRejected do
@@ -134,53 +134,53 @@ private def exactWireIntegerAdmissionWitness : IO Unit := do
 
 #eval exactWireIntegerAdmissionWitness
 
-private def valueDecoded (contents : String) : Except String VariableValue :=
+def valueDecoded (contents : String) : Except String VariableValue :=
   parseWireJson contents >>= decodeVariableValue
 
-private def valueRejected (contents : String) : Bool :=
+def valueRejected (contents : String) : Bool :=
   (valueDecoded contents).toOption.isNone
 
-private def stringJson (text : String) : String := "{\"kind\":\"string\",\"value\":\"" ++ text ++ "\"}"
-private def nullJson : String := "{\"kind\":\"null\"}"
-private def listJson (members : List String) : String :=
+def stringJson (text : String) : String := "{\"kind\":\"string\",\"value\":\"" ++ text ++ "\"}"
+def nullJson : String := "{\"kind\":\"null\"}"
+def listJson (members : List String) : String :=
   "{\"kind\":\"list\",\"value\":[" ++ ",".intercalate members ++ "]}"
-private def mapJson (entries : List (String × String)) : String :=
+def mapJson (entries : List (String × String)) : String :=
   "{\"kind\":\"map\",\"value\":[" ++
     ",".intercalate (entries.map fun (name, value) => "{\"name\":\"" ++ name ++ "\",\"value\":" ++ value ++ "}") ++ "]}"
-private def decimalJson (coefficient : String) (scale : String) : String :=
+def decimalJson (coefficient : String) (scale : String) : String :=
   "{\"kind\":\"decimal\",\"coefficient\":\"" ++ coefficient ++ "\",\"scale\":" ++ scale ++ "}"
 
-private def orderItem : BusinessValue := .map [("quantity", .integer 1), ("sku", .string "A")]
+def orderItem : BusinessValue := .map [("quantity", .integer 1), ("sku", .string "A")]
 
 /-- The capsule's 12-node order: present-null `line2`, two equal items and an exact signed total. -/
-private def businessOrder : BusinessValue :=
+def businessOrder : BusinessValue :=
   .map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
         ("items", .list [orderItem, orderItem]),
         ("total", .decimal 12345 2)]
 
-private def orderItemJson : String :=
+def orderItemJson : String :=
   mapJson [("quantity", "{\"kind\":\"integer\",\"value\":1}"), ("sku", stringJson "A")]
 
-private def businessOrderJson : String :=
+def businessOrderJson : String :=
   mapJson [("address", mapJson [("city", stringJson "Berlin"), ("line2", nullJson)]),
            ("items", listJson [orderItemJson, orderItemJson]),
            ("total", decimalJson "12345" "2")]
 
 /-- Nest `depth` containers around a null leaf; the root container counts as one. -/
-private def nestedListJson : Nat → String
+def nestedListJson : Nat → String
   | 0 => nullJson
   | depth + 1 => listJson [nestedListJson depth]
 
 /-- A root List of `groups` Lists of `members` Nulls has `1 + groups × (1 + members)` nodes. -/
-private def groupedNullsJson (groups members : Nat) : String :=
+def groupedNullsJson (groups members : Nat) : String :=
   listJson (List.replicate groups (listJson (List.replicate members nullJson)))
 
 /-- A root List of sixteen Strings whose canonical encoding is `489 + payload` UTF-8 bytes. -/
-private def sixteenStringsJson (payload : Nat) : String :=
+def sixteenStringsJson (payload : Nat) : String :=
   listJson ((List.replicate 15 (stringJson (String.ofList (List.replicate 1000 'a')))) ++
     [stringJson (String.ofList (List.replicate (payload - 15000) 'a'))])
 
-private def portableBusinessValueWireWitness : IO Unit := do
+def portableBusinessValueWireWitness : IO Unit := do
   unless (valueDecoded businessOrderJson).toOption ==
       some (.map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
         ("items", .list [orderItem, orderItem]), ("total", .decimal 12345 2)]) do
@@ -485,7 +485,7 @@ theorem message_payload_and_correlation_checked_program_and_stimulus_wire_contra
         (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":0,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true := by
   native_decide
 
-private def effectResultAccepted (businessError : Bool) (names : List String) : Bool :=
+def effectResultAccepted (businessError : Bool) (names : List String) : Bool :=
   let patch := Lean.Json.arr (names.map fun name => Lean.Json.mkObj
     [("name", .str name), ("value", Lean.Json.mkObj [("kind", .str "null")])]).toArray
   let result := Lean.Json.mkObj
@@ -519,24 +519,24 @@ theorem effect_bpmnError_canonical_patch_wire_admission :
     effectResultAccepted true ["a", "b"] = true := by
   decide +kernel
 
-private def sequentialScopeNodeFields : List (String × Lean.Json) :=
+def sequentialScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "sequentialMultiInstanceSubProcess"), ("id", .str "mi"),
    ("childScopeId", .str "body"), ("collectionName", .str "items"),
    ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .null)]
 
-private def sequentialScopeEntryFields : List (String × Lean.Json) :=
+def sequentialScopeEntryFields : List (String × Lean.Json) :=
   [("kind", .str "enterSequentialMultiInstanceScope"), ("id", .str "enter"),
    ("origin", Lean.Json.mkObj [("kind", .str "bpmnElement"), ("elementId", .str "mi")]),
    ("input", .str "before"), ("childEntry", .str "first"), ("childScopeId", .str "body"),
    ("normalOutput", .str "after"), ("collectionName", .str "items"),
    ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .str "done")]
 
-private def sequentialScopeCompletionFields : List (String × Lean.Json) :=
+def sequentialScopeCompletionFields : List (String × Lean.Json) :=
   [("kind", .str "completeSequentialMultiInstanceScope"), ("id", .str "complete"),
    ("origin", Lean.Json.mkObj [("kind", .str "bpmnElement"), ("elementId", .str "mi")]),
    ("entryOperationId", .str "enter")]
 
-private def sequentialScopeDecodedNodes (fields : List (String × Lean.Json)) :
+def sequentialScopeDecodedNodes (fields : List (String × Lean.Json)) :
     Option (List CheckedNode) :=
   let identity := Lean.Json.mkObj [("semanticProfile", .str "p"), ("sourceId", .str "s"),
     ("sourceOverlay", .null), ("sourceSha256", .str "x")]
@@ -545,7 +545,7 @@ private def sequentialScopeDecodedNodes (fields : List (String × Lean.Json)) :
     ("sequenceFlowScopes", .arr #[]), ("sequenceFlows", .arr #[]),
     ("nodes", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.nodes)
 
-private def sequentialScopeDecodedOperations (fields : List (String × Lean.Json)) :
+def sequentialScopeDecodedOperations (fields : List (String × Lean.Json)) :
     Option (List SemanticOperation) :=
   let identity := Lean.Json.mkObj [("compiler", .str "bpmn-source-semantic-process"),
     ("semanticProfile", .str "p"), ("sourceId", .str "s"), ("sourceOverlay", .null),

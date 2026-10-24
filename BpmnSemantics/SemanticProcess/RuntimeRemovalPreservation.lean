@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
-import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 
 /-! # Removal-only preservation
 
 Cancellation and Call removal share these consequences of retaining exact records and issuance
 counters. Their owner-liveness and Activity-controller rules remain at the distinct remover owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

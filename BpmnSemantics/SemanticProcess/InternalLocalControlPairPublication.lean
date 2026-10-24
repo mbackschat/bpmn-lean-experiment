@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
-import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
 
 /-! Actual execution and accepted publication for independent local-control pairs under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Each operation keeps
 its assigned transition index in either execution order; finite sorting is a separate obligation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

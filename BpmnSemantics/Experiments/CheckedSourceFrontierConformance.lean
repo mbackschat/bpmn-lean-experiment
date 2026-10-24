@@ -1,11 +1,15 @@
-import BpmnSemantics.Experiments.CheckedSourceFrontier
-import BpmnSemantics.Experiments.CheckedSourceParallelFrontier
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceFrontier
+public import BpmnSemantics.Experiments.CheckedSourceParallelFrontier
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Checked-source frontier witnesses
 
 This module instantiates the single-token and two-token frontier characterizations on the retained parallel checked process. It also retains the node-order discriminators that force the two-token result to be stated up to permutation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceFrontierConformance
 
@@ -16,30 +20,30 @@ open BpmnSemantics.Experiments.CheckedSourceFrontier
 open BpmnSemantics.Experiments.CheckedSourceParallelFrontier
 open BpmnSemantics.Experiments.CheckedSourceSemantics
 
-private def atFork : SourceRuntimeState :=
+def atFork : SourceRuntimeState :=
   { CheckedSourceSemantics.runningStartState parallelInstanceId with
     initiationPending := false
     tokens := [⟨"Flow_StartToFork"⟩] }
 
-private def startToFork : CheckedSequenceFlow :=
+def startToFork : CheckedSequenceFlow :=
   { id := ⟨"Flow_StartToFork"⟩
     sourceId := ⟨"StartEvent_1"⟩
     targetId := ⟨"Gateway_Fork"⟩ }
 
-private def forkNode : CheckedNode :=
+def forkNode : CheckedNode :=
   .parallelGateway ⟨"Gateway_Fork"⟩ .diverging
 
-private def atHalfJoin : SourceRuntimeState :=
+def atHalfJoin : SourceRuntimeState :=
   { CheckedSourceSemantics.runningStartState parallelInstanceId with
     initiationPending := false
     tokens := [⟨"Flow_AToJoin"⟩] }
 
-private def aToJoin : CheckedSequenceFlow :=
+def aToJoin : CheckedSequenceFlow :=
   { id := ⟨"Flow_AToJoin"⟩
     sourceId := ⟨"UserTask_A"⟩
     targetId := ⟨"Gateway_Join"⟩ }
 
-private def joinNode : CheckedNode :=
+def joinNode : CheckedNode :=
   .parallelGateway ⟨"Gateway_Join"⟩ .converging
 
 private theorem premises :
@@ -67,40 +71,40 @@ theorem halfJoinFrontierIsEmpty :
     joinNode wellFormed flowMember nodeMember (by rfl) (by decide +kernel) (by decide +kernel)]
   rfl
 
-private def forkToA : CheckedSequenceFlow :=
+def forkToA : CheckedSequenceFlow :=
   { id := ⟨"Flow_ForkToA"⟩
     sourceId := ⟨"Gateway_Fork"⟩
     targetId := ⟨"UserTask_A"⟩ }
 
-private def forkToB : CheckedSequenceFlow :=
+def forkToB : CheckedSequenceFlow :=
   { id := ⟨"Flow_ForkToB"⟩
     sourceId := ⟨"Gateway_Fork"⟩
     targetId := ⟨"UserTask_B"⟩ }
 
-private def taskA : CheckedNode := .userTask ⟨"UserTask_A"⟩ (some "A")
+def taskA : CheckedNode := .userTask ⟨"UserTask_A"⟩ (some "A")
 
-private def taskB : CheckedNode := .userTask ⟨"UserTask_B"⟩ (some "B")
+def taskB : CheckedNode := .userTask ⟨"UserTask_B"⟩ (some "B")
 
 /-- Immediately after the fork produced both branch-input tokens. -/
-private def atBothBranches : SourceRuntimeState :=
+def atBothBranches : SourceRuntimeState :=
   { atFork with tokens := [⟨"Flow_ForkToA"⟩, ⟨"Flow_ForkToB"⟩] }
 
 /-- Branch A waits at the join while branch B is still at its task input. -/
-private def atJoinAndBranchB : SourceRuntimeState :=
+def atJoinAndBranchB : SourceRuntimeState :=
   { atFork with tokens := [⟨"Flow_AToJoin"⟩, ⟨"Flow_ForkToB"⟩] }
 
 /-- Both join inputs are offered, so one converging gateway is the only target. -/
-private def atReadyJoin : SourceRuntimeState :=
+def atReadyJoin : SourceRuntimeState :=
   { atFork with tokens := [⟨"Flow_AToJoin"⟩, ⟨"Flow_BToJoin"⟩] }
 
 /-- Both branch tokens are present but initiation has not settled, so the Start Event is still enabled alongside them. -/
-private def atBothBranchesPending : SourceRuntimeState :=
+def atBothBranchesPending : SourceRuntimeState :=
   { atBothBranches with initiationPending := true }
 
 /-- Graph-equivalent to the retained parallel process except for node order.
 
 This is a synthetic node-order discriminator, not an admitted source. It keeps `parallelCheckedProcess.identity`, including that fixture's `sourceSha256`, so the order refutations vary node order alone. Two different node lists cannot both be those exact bytes: the retained identity is a deliberately shared fixture value here and asserts nothing about admission. The definition is private to this witness module, is never admitted, executed as a definition of record, or projected into an observation, and no evidence artifact may cite it. -/
-private def reorderedParallelProcess : CheckedProcess :=
+def reorderedParallelProcess : CheckedProcess :=
   { parallelCheckedProcess with nodes := parallelCheckedProcess.nodes.reverse }
 
 private theorem twoTokenPremises :

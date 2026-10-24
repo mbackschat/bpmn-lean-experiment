@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! Retained topology and state fixtures are shared by executable publication probes and their proof owners. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.OpenWaitProjection
-import BpmnSemantics.SemanticProcess.ScenarioAdmission
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.SequentialScopeObservation
+module
+
+public import BpmnSemantics.SemanticProcess.OpenWaitProjection
+public import BpmnSemantics.SemanticProcess.ScenarioAdmission
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 
 /-! # Semantic Process scenario projection
 
 This module owns stable-state projection and answer-free scenario execution over the pure stimulus boundary. Pure admission is owned by [ScenarioAdmission](ScenarioAdmission.lean); lowering, transition meaning and capsule fixtures remain separate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -24,7 +28,7 @@ def projectTokenMultiplicities (program : Program) (state : RuntimeState) :
   program.controlPlaces.map fun place =>
     (place.id, tokenMultiplicity state place.id)
 
-private def commandId : Stimulus → SemanticId
+def commandId : Stimulus → SemanticId
   | .startProcess id _ _ _
   | .triggerMessageStart id _ _ _ _
   | .triggerTimerStart id _ _ _
@@ -39,14 +43,14 @@ private def commandId : Stimulus → SemanticId
   | .cancelIncidentProcess id _ _ => id
 
 /-- The external waits one operation can own, so every public projection reads one inventory. -/
-private structure OwnedWaitDefinitions where
+structure OwnedWaitDefinitions where
   tasks : List UserTaskDefinition := []
   messages : List MessageDefinition := []
   timers : List TimerDefinition := []
   effects : List EffectDefinition := []
 
 /-- Deliberately exhaustive with no wildcard: a new operation variant must decide here which public waits it exposes. A catch-all made a composite family's waits silently invisible to every observation instead of failing to compile. -/
-private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
+def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitUserTask _ _ _ _ task => { tasks := [task] }
   | .awaitDataInputUserTask _ _ _ _ taskId taskName _
   | .awaitDataInputOutputUserTask _ _ _ _ taskId taskName _ _
@@ -104,21 +108,21 @@ private def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .completeScope .. | .completeEventSubProcess ..
   | .triggerCompensation .. | .cancelTransaction .. => {}
 
-private def taskDefinitions (program : Program) : List UserTaskDefinition :=
+def taskDefinitions (program : Program) : List UserTaskDefinition :=
   program.operations.flatMap fun operation => (ownedWaitDefinitions operation).tasks
 
-private def timerDefinitions (program : Program) : List TimerDefinition :=
+def timerDefinitions (program : Program) : List TimerDefinition :=
   program.operations.flatMap fun operation => (ownedWaitDefinitions operation).timers
 
-private def messageDefinitions (program : Program) : List MessageDefinition :=
+def messageDefinitions (program : Program) : List MessageDefinition :=
   program.operations.flatMap fun operation =>
     (ownedWaitDefinitions operation).messages
 
-private def effectDefinitions (program : Program) : List EffectDefinition :=
+def effectDefinitions (program : Program) : List EffectDefinition :=
   program.operations.flatMap fun operation =>
     (ownedWaitDefinitions operation).effects
 
-private def effectElementIds (program : Program) : List NodeId :=
+def effectElementIds (program : Program) : List NodeId :=
   (effectDefinitions program).map (·.elementId) ++
     match program.compensationExecution with
     | none => []
@@ -144,7 +148,7 @@ def incidentWaitMultiplicity (state : RuntimeState) (elementId : NodeId) : Nat :
   (state.effectIncidents.filter fun incident =>
     decide (incident.wait.elementId = elementId)).length
 
-private def insertActiveWaitByElementId (wait : ActiveWait) :
+def insertActiveWaitByElementId (wait : ActiveWait) :
     List ActiveWait → List ActiveWait
   | [] => [wait]
   | candidate :: remaining =>
@@ -153,13 +157,13 @@ private def insertActiveWaitByElementId (wait : ActiveWait) :
       else
         candidate :: insertActiveWaitByElementId wait remaining
 
-private def sortActiveWaitsByElementId : List ActiveWait → List ActiveWait
+def sortActiveWaitsByElementId : List ActiveWait → List ActiveWait
   | [] => []
   | wait :: remaining =>
       insertActiveWaitByElementId wait
         (sortActiveWaitsByElementId remaining)
 
-private def activeWaits (program : Program) (state : RuntimeState) :
+def activeWaits (program : Program) (state : RuntimeState) :
     List ActiveWait :=
   let taskWaits :=
     (taskDefinitions program).filterMap fun task =>
@@ -217,13 +221,13 @@ private def activeWaits (program : Program) (state : RuntimeState) :
     sortActiveWaitsByElementId effectWaits ++
     sortActiveWaitsByElementId incidentWaits
 
-private def openUserTasks (program : Program) (state : RuntimeState) : List OpenUserTask :=
+def openUserTasks (program : Program) (state : RuntimeState) : List OpenUserTask :=
   projectOpenUserTasks (taskDefinitions program) state
 
-private def openTimers (program : Program) (state : RuntimeState) : List OpenTimer :=
+def openTimers (program : Program) (state : RuntimeState) : List OpenTimer :=
   projectOpenTimers (timerDefinitions program) state
 
-private def openMessageSubscriptions (program : Program)
+def openMessageSubscriptions (program : Program)
     (state : RuntimeState) : List OpenMessageSubscription :=
   let ordinary := (messageDefinitions program).flatMap fun message =>
     (state.messageWaits.filter fun wait =>
@@ -237,7 +241,7 @@ private def openMessageSubscriptions (program : Program)
     { id := listener.id, channel := listener.channel : OpenMessageSubscription }
   sortOpenWaitOccurrences (·.id) (ordinary ++ listeners)
 
-private def openEffects (program : Program) (state : RuntimeState) :
+def openEffects (program : Program) (state : RuntimeState) :
     List OpenEffect :=
   let ordinary := (effectDefinitions program).flatMap fun effect =>
     (state.effectWaits.filter fun wait =>
@@ -252,12 +256,12 @@ private def openEffects (program : Program) (state : RuntimeState) :
     { id := wait.id, descriptor := wait.descriptor, arguments := wait.arguments : OpenEffect }
   sortOpenWaitOccurrences (·.id) (ordinary ++ compensation)
 
-private structure SequentialMultiInstanceObservationDefinition where
+structure SequentialMultiInstanceObservationDefinition where
   taskId : TaskDefinitionId
   taskInputName : String
   completionBindingName : String
 
-private def sequentialMultiInstanceObservationDefinitions (program : Program) :
+def sequentialMultiInstanceObservationDefinitions (program : Program) :
     List SequentialMultiInstanceObservationDefinition :=
   program.operations.filterMap fun
     | .awaitSequentialMultiInstanceUserTask _ _ _ task data _ _ _ =>
@@ -267,7 +271,7 @@ private def sequentialMultiInstanceObservationDefinitions (program : Program) :
             completionBindingName := data.output.taskDataOutputId }
     | _ => none
 
-private def openSequentialMultiInstanceIterations
+def openSequentialMultiInstanceIterations
     (definition : SequentialMultiInstanceObservationDefinition)
     (state : RuntimeState) (controller : SequentialMultiInstanceController) :
     List OpenSequentialMultiInstanceIteration :=
@@ -285,7 +289,7 @@ private def openSequentialMultiInstanceIterations
       | _, _ => []
   | _ => []
 
-private def openSequentialMultiInstances (program : Program) (state : RuntimeState) :
+def openSequentialMultiInstances (program : Program) (state : RuntimeState) :
     List OpenSequentialMultiInstance :=
   let definitions := sequentialMultiInstanceObservationDefinitions program
   state.sequentialMultiInstanceControllers.flatMap fun controller =>
@@ -310,12 +314,12 @@ private def openSequentialMultiInstances (program : Program) (state : RuntimeSta
              numberOfTerminatedInstances := 0
              activeIterations }]
 
-private structure ParallelMultiInstanceObservationDefinition where
+structure ParallelMultiInstanceObservationDefinition where
   taskId : TaskDefinitionId
   taskInputName : String
   completionBindingName : String
 
-private def parallelMultiInstanceObservationDefinitions (program : Program) :
+def parallelMultiInstanceObservationDefinitions (program : Program) :
     List ParallelMultiInstanceObservationDefinition :=
   program.operations.filterMap fun
     | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ data _ _ _ _ =>
@@ -325,7 +329,7 @@ private def parallelMultiInstanceObservationDefinitions (program : Program) :
             completionBindingName := data.output.taskDataOutputId }
     | _ => none
 
-private def openParallelMultiInstanceIterations
+def openParallelMultiInstanceIterations
     (definition : ParallelMultiInstanceObservationDefinition)
     (controller : ParallelMultiInstanceController) : List OpenParallelMultiInstanceIteration :=
   indexedParallelMultiInstanceSlots controller |>.filterMap fun indexed =>
@@ -338,7 +342,7 @@ private def openParallelMultiInstanceIterations
             completionBindingName := definition.completionBindingName }
     | _, _ => none
 
-private def openParallelMultiInstances (program : Program) (state : RuntimeState) :
+def openParallelMultiInstances (program : Program) (state : RuntimeState) :
     List OpenParallelMultiInstance :=
   let definitions := parallelMultiInstanceObservationDefinitions program
   state.parallelMultiInstanceControllers.flatMap fun controller =>
@@ -356,7 +360,7 @@ private def openParallelMultiInstances (program : Program) (state : RuntimeState
            numberOfTerminatedInstances := 0
            activeIterations }]
 
-private def openMultiInstances (program : Program) (state : RuntimeState)
+def openMultiInstances (program : Program) (state : RuntimeState)
     (scopes : List OpenSequentialSubProcessMultiInstance) :
     Option (List OpenMultiInstance) :=
   if !hasMultiInstanceDefinitions program then none
@@ -364,7 +368,7 @@ private def openMultiInstances (program : Program) (state : RuntimeState)
     ((openSequentialMultiInstances program state).map .sequential ++
       (openParallelMultiInstances program state).map .parallel ++ scopes.map .sequentialSubProcess)
 
-private def openIncidents (program : Program) (state : RuntimeState) :
+def openIncidents (program : Program) (state : RuntimeState) :
     List OpenEffectIncident :=
   (effectDefinitions program).flatMap fun effect =>
     (state.effectIncidents.filter fun incident =>
@@ -376,7 +380,7 @@ private def openIncidents (program : Program) (state : RuntimeState) :
               descriptor := incident.wait.descriptor
               arguments := incident.wait.arguments } }
 
-private def messageEnabledInteraction? (program : Program) (state : RuntimeState)
+def messageEnabledInteraction? (program : Program) (state : RuntimeState)
     (subscription : OpenMessageSubscription) : Option EnabledInteraction :=
   if (selectEventSubProcessMessageDelivery? program state subscription.id subscription.channel).isSome then
     some (.deliverMessage subscription.id subscription.channel)
@@ -477,12 +481,12 @@ def observeStableState (program : Program) (state : RuntimeState) :
             enabledInteractions := []
             logicalTimeMs := state.logicalTimeMs }
 
-private structure ScenarioExecution where
+structure ScenarioExecution where
   outcome : ScenarioOutcome
   state : RuntimeState
   trace : List CanonicalObservation
 
-private def terminalExecution (program : Program) (outcome : CommandOutcome)
+def terminalExecution (program : Program) (outcome : CommandOutcome)
     (state : RuntimeState) (observation : CanonicalObservation) :
     ScenarioExecution :=
   { outcome := .semantic outcome
@@ -492,7 +496,7 @@ private def terminalExecution (program : Program) (outcome : CommandOutcome)
       | none => [observation]
       | some snapshot => [observation, .state snapshot] }
 
-private def executeStimuli (closureLimit : Nat) (program : Program) :
+def executeStimuli (closureLimit : Nat) (program : Program) :
     RuntimeState → List Stimulus → ScenarioExecution
   | state, [] =>
       { outcome := .semantic .committed

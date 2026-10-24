@@ -1,10 +1,14 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-import BpmnSemantics.SequentialUserTask
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+public import BpmnSemantics.SequentialUserTask
 
 /-! # Flow-node occurrence lifecycle rejection conformance
 
 This module owns the executable fail-closed witnesses for anchor multiplicity and unpublishable commands.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

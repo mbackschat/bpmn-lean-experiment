@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Token storage multiplicity laws
 
 Permutation witnesses separate exact token ownership and multiplicity from insertion order. These low-level laws remain available to start and position validation without importing the aggregate runtime invariant.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

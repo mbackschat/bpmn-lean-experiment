@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TokenStorage
+module
+
+public import BpmnSemantics.SemanticProcess.MessageStart
+public import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Fresh-root Message initiation produces exactly the declared output-token multiplicities. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

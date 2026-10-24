@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.OpenWaitProjection
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.OpenWaitProjection
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 
 /-! Canonical open-wait sorting preserves every occurrence, including multiplicity. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

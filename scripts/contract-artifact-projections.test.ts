@@ -664,7 +664,7 @@ test("binds repeated Sub-Process relationships to the live register", async () =
 /**
  * A scenario's provenance may name a relationship its profile artifact omits only through a recorded substitution:
  * the `SCOPE` artifact's digest is pinned by the immutable cyclic preservation baseline, so the owner accepted naming
- * `CIB-EXT-0021` in the profile README and the Call scenarios instead (repeated, nested and concurrent Calls proposal,
+ * `CIB-EXT-0021` in the profile README and the Call scenarios instead (repeated, nested and concurrent Calls specification,
  * Versioning consequences). The entry also requires the artifact to still omit it, so a re-pin retires the entry.
  */
 const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relationship: string; boundary: string }>> = [

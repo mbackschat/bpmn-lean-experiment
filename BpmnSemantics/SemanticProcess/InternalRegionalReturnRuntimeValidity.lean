@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemovalValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemovalValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 
 /-! Prepared Return preserves the complete runtime predicate by composing the existing
 Call-removal laws. Its Compensation case follows from the declaration restrictions and
 the preparation guard, rather than assuming the successor has empty retained state. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -95,7 +99,7 @@ theorem preparedReturn_preserves_runtimeStateWellFormed (program : Program) (bef
   obtain ⟨checked, fired, afterPosition, afterActivities, afterRaces⟩ :=
     ownershipClosedSelection_preserves_position_and_references program before hosting _ prepared.selection
       snapshots position structural (List.mem_filter.mp (by rw [declared]; simp)).1
-      waitIds activities races closedSelection
+      waitIds activities races (by intro interrupts; simp [operationInterrupts] at interrupts) closedSelection
   obtain ⟨after, firedAgain, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have sameAfter : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked

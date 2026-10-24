@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
 
 /-! Regional removal preserves each surviving parallel controller's complete pending-child and
 lifetime-Timer binding. The operation-wide weighted reverse census is a separate obligation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

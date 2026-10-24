@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Ordinary End preparation reuses token-patch validity and the existing relative End atom from
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

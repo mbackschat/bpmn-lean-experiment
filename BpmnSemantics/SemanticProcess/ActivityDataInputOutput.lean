@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Composed Activity data relations and laws
 
 The runtime owner supplies the atomic evaluators; these relations and laws retain the composed
 Activity contract independently of its module placement.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

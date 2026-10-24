@@ -1,19 +1,23 @@
-import BpmnSemantics.Conformance
+module
+
+public import BpmnSemantics.Conformance
 
 /-! Exact neutral scenario inputs for the bounded parallel fork/join differential lane. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelForkJoinConformance
 
 open BpmnSemantics
 
-private def parallelBpmn : ResourceIdentity :=
+def parallelBpmn : ResourceIdentity :=
   { id := ⟨"parallel-two-user-tasks-process"⟩
     relativePath := "scenarios/parallel-fork-join/process.bpmn"
     sha256 :=
       "e68382dfa9125fbecd6f717578e5ec8bc59a4b33b62671d9794919ec8b52bcc6"
     sourceOverlay := none }
 
-private def parallelObservations : List ObservationKind :=
+def parallelObservations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -25,7 +29,7 @@ private def parallelObservations : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
-private def parallelProvenance : ScenarioProvenance :=
+def parallelProvenance : ScenarioProvenance :=
   { normativeRefs :=
       [ "BPMN 2.0.2 §10.6.4"
       , "BPMN 2.0.2 §13.4.1"
@@ -35,7 +39,7 @@ private def parallelProvenance : ScenarioProvenance :=
       [ "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java"
       , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/ParallelGatewayTest.java#testForkJoin" ] }
 
-private def staleWhileSiblingActiveProvenance : ScenarioProvenance :=
+def staleWhileSiblingActiveProvenance : ScenarioProvenance :=
   { normativeRefs :=
       [ "BPMN 2.0.2 §10.6.4"
       , "BPMN 2.0.2 §10.7.3"
@@ -49,22 +53,22 @@ private def staleWhileSiblingActiveProvenance : ScenarioProvenance :=
       , "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId"
       , "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/ParallelGatewayTest.java#testForkJoin" ] }
 
-private def parallelTaskId (elementId : String) : UserTaskInstanceId :=
+def parallelTaskId (elementId : String) : UserTaskInstanceId :=
   { processInstanceId := ⟨"Instance_1"⟩
     elementId := ⟨elementId⟩
     activation := 1 }
 
-private def startStimulus : Stimulus :=
+def startStimulus : Stimulus :=
   .startProcess
     ⟨"start-process"⟩
     ⟨"Process_ParallelForkJoin"⟩
     ⟨"Instance_1"⟩
     []
 
-private def completionStimulus (commandId elementId : String) : Stimulus :=
+def completionStimulus (commandId elementId : String) : Stimulus :=
   .completeUserTaskInstance ⟨commandId⟩ (parallelTaskId elementId) []
 
-private def parallelScenario (id : String) (completions : List Stimulus) :
+def parallelScenario (id : String) (completions : List Stimulus) :
     Scenario :=
   { kind := .scenario
     id := ⟨id⟩

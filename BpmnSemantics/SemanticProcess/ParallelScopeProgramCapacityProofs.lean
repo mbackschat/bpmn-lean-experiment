@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
-import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 
 /-! # Admitted parallel Program capacity certificates
 
@@ -7,6 +9,8 @@ PMIS-ADMIT-01 retains exact declaration, graph and ordered-spine provenance in
 this proof owner. Runtime admission and capacity selectors remain in Capacity,
 so extending a certificate does not change their import dependencies.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

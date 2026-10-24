@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Message Start Event transition
 
 This module owns the profile-independent Message Start initiation relation and executable state transformation. External trigger admission and profile cardinality remain separate owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

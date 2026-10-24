@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
 This module owns nonempty insertion and complete shared entry-step preservation. The evaluator
 corollary and closing preservation remain downstream and are not imported here.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

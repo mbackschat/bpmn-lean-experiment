@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.CallActivity
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Bounded Called-Process reachability
 
@@ -6,6 +8,8 @@ These laws reason about the executable Call closure used by association validity
 seeds justify its equal-length stopping condition; record sorting and extension preserve reachable
 instances without assuming successor validity or changing the evaluator's fuel policy.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

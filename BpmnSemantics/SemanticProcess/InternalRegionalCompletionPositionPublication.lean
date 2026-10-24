@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 
 /-! Completion publication follows the actual root or child update, including bounded withdrawal.
 Root quiescence establishes empty tokens before terminal cleanup; child completion adds one unit.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

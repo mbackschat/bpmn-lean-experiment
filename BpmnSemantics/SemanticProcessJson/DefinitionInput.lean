@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
-import BpmnSemantics.SemanticProcessJson.Program
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+public import BpmnSemantics.SemanticProcessJson.Program
 
 /-! # Cross-artifact definition-input admission
 
 This module owns the line-oriented input boundary that decodes both definition representations, validates them independently, and requires exact canonical-lowering equality before evaluation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

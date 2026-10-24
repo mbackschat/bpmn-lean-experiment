@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
 
 /-! Scope creation frames the exact Merge bucket through the existing patch footprint. This
 preserves both complete artifacts under the [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

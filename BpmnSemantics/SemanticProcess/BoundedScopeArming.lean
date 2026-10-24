@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.ScopeCompletion
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Sub-Process boundary Timer: arming
 
@@ -22,6 +24,8 @@ Arming writes the `ActivityOccurrence` record, so the deadline is no longer stra
 region goes. The remaining ordinal joins in this family live in `BoundedScope` and are a recorded gap
 in the Lean lane rather than a design choice.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

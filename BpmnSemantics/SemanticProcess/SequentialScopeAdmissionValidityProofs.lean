@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
-import BpmnSemantics.SemanticProcess.TransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -212,7 +216,7 @@ theorem sequentialScope_committed_start_wellFormed (program : Program)
   have lookup : uniqueDefinitionScope? program root.id = some root := by
     simp only [uniqueDefinitionScope?, rootDefinition, rootSource]
   apply (position_iff program instanceId instanceId _ rfl).mpr
-  refine ⟨valid, projection, rfl, ?_, ?_, ?_, ?_⟩
+  refine ⟨valid, projection, by simp [runningStartState, initialState], rfl, ?_, ?_, ?_, ?_⟩
   · simp [lookup, parent, origin]
   · simp [calledProcessAssociationsValid, rootInstanceId?, runningStartState, initialState]
   · intro occurrence member
@@ -257,7 +261,7 @@ theorem sequentialScope_structural_of_position (program : Program) (hosting : Se
     grind
   simp only [flowNodeOccurrenceStructuralProgramValidity, noCalls, List.all_nil, Bool.and_true, List.all_eq_true]
   intro occurrence present
-  obtain ⟨live, definition, lookup, named, positive, parent⟩ := facts.2.2.2.2.2.1 occurrence present
+  obtain ⟨live, definition, lookup, named, positive, parent⟩ := facts.2.2.2.2.2.2.1 occurrence present
   have entry := declared occurrence present definition lookup
   have census : program.definitionScopes.filter
       (fun scope => decide (scope.id = occurrence.id.definitionScopeId)) = [definition] := by

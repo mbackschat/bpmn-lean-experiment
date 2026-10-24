@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
 
 /-! # Exact Transaction entry prefixes
 
 Actual offered transitions select the reader's Start, entry and split in sequence. The one-arm
 prefix selects the other Task. These facts supply the early cases of reachable-phase induction.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

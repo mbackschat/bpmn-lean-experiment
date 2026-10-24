@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Process-instance scope ancestry
 
 Predecessor position validity supplies live parent edges and the static forest rank. Call-association
 reachability transfers the hosting singleton to every called instance before roots are identified.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -181,53 +185,21 @@ theorem calledProcessAssociationsValid_parentless_root_unique (state : RuntimeSt
         exact accepted.2
       have stepUnique : ∀ record ∈ state.calledProcessOccurrences,
           unique record.caller.processInstanceId → unique record.calledRoot.processInstanceId := by
-        intro record recordMember callerUnique
+        intro record recordMember _
         have fields := association.1.1 record recordMember
-        have recordId : record.id.processInstanceId = record.caller.processInstanceId :=
-          of_decide_eq_true fields.1.1.1.1.1.1.1.1
         have notHosting : record.calledRoot.processInstanceId ≠ hosting :=
           of_decide_eq_true fields.1.1.1.1.2
-        have callerCount := of_decide_eq_true fields.1.1.1.1.1.1.2
-        simp only [decide_eq_true_eq] at callerCount
-        obtain ⟨caller, callerSingleton⟩ := List.length_eq_one_iff.mp callerCount
-        have callerFiltered : caller ∈ state.scopeOccurrences.filter fun occurrence =>
-            decide (occurrence.id = record.caller ∧ occurrence.parent.isNone = true) := by
-          rw [callerSingleton]; simp
-        obtain ⟨callerMember, callerFacts⟩ := List.mem_filter.mp callerFiltered
-        simp only [decide_eq_true_eq, Option.isNone_iff_eq_none] at callerFacts
+        have elementCount := of_decide_eq_true fields.1.1.1.1.1.1.1.1.1
         have rootIdentity (root : RuntimeScopeOccurrence) (member : root ∈ state.scopeOccurrences)
             (parentless : root.parent = none)
             (same : root.id.processInstanceId = record.calledRoot.processInstanceId) :
             root.id = record.calledRoot := by
           obtain ⟨other, otherMember, otherRoot⟩ := rootRecord root member parentless
             (same ▸ notHosting)
-          have otherFields := association.1.1 other otherMember
           have sameCall := calledProcessAssociationsValid_called_instance_injective state record other
             running valid recordMember otherMember (by rw [otherRoot, same])
-          have otherId : other.id.processInstanceId = other.caller.processInstanceId :=
-            of_decide_eq_true otherFields.1.1.1.1.1.1.1.1
-          have sameCallerInstance : other.caller.processInstanceId = record.caller.processInstanceId :=
-            otherId.symm.trans ((congrArg (fun id => id.processInstanceId) sameCall.symm).trans recordId)
-          have otherCallerCount := of_decide_eq_true otherFields.1.1.1.1.1.1.2
-          simp only [decide_eq_true_eq] at otherCallerCount
-          obtain ⟨otherCaller, otherCallerSingleton⟩ := List.length_eq_one_iff.mp otherCallerCount
-          have otherCallerFiltered : otherCaller ∈ state.scopeOccurrences.filter fun occurrence =>
-              decide (occurrence.id = other.caller ∧ occurrence.parent.isNone = true) := by
-            rw [otherCallerSingleton]; simp
-          obtain ⟨otherCallerMember, otherCallerFacts⟩ := List.mem_filter.mp otherCallerFiltered
-          simp only [decide_eq_true_eq, Option.isNone_iff_eq_none] at otherCallerFacts
-          have sameCaller : other.caller = record.caller := by
-            rw [← otherCallerFacts.1, ← callerFacts.1]
-            apply callerUnique otherCaller otherCallerMember caller callerMember
-              otherCallerFacts.2 callerFacts.2
-            · simpa [otherCallerFacts.1] using sameCallerInstance
-            · simp [callerFacts.1]
-          have anchorCount := of_decide_eq_true fields.1.2
-          change (state.calledProcessOccurrences.filter fun candidate =>
-            decide (candidate.caller = record.caller) &&
-              decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 at anchorCount
-          have sameRecord : other = record := filter_singleton_members_equal _ _ anchorCount
-            other record otherMember recordMember (by simp [sameCaller, ← sameCall]) (by simp)
+          have sameRecord : other = record := filter_singleton_members_equal _ _ elementCount
+            other record otherMember recordMember (by simp [← sameCall]) (by simp)
           exact otherRoot.symm.trans (congrArg CalledProcessOccurrence.calledRoot sameRecord)
         intro first firstMember second secondMember firstParent secondParent firstId secondId
         exact (rootIdentity first firstMember firstParent firstId).trans
@@ -246,53 +218,33 @@ theorem calledProcessAssociationsValid_parentless_root_unique (state : RuntimeSt
       exact leftUnique left leftMember right rightMember leftParent rightParent rfl sameInstance.symm
     · contradiction
 
-private theorem call_caller_root (state : RuntimeState)
+private theorem call_record_element_unique (state : RuntimeState)
     (valid : calledProcessAssociationsValid state = true)
     (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) :
-    record.id.processInstanceId = record.caller.processInstanceId ∧
-      (∃ caller ∈ state.scopeOccurrences, caller.id = record.caller ∧ caller.parent = none) ∧
-      (state.calledProcessOccurrences.filter fun candidate =>
-        decide (candidate.caller = record.caller) &&
-          decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 := by
+    (state.calledProcessOccurrences.filter fun candidate =>
+      decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 := by
   unfold calledProcessAssociationsValid at valid
   split at valid
   · contradiction
   · split at valid
     · simp only [Bool.and_eq_true, List.all_eq_true] at valid
-      have fields := valid.1.1 record member
-      refine ⟨of_decide_eq_true fields.1.1.1.1.1.1.1.1, ?_, of_decide_eq_true fields.1.2⟩
-      have count := of_decide_eq_true fields.1.1.1.1.1.1.2
-      simp only [decide_eq_true_eq] at count
-      obtain ⟨caller, singleton⟩ := List.length_eq_one_iff.mp count
-      have member : caller ∈ state.scopeOccurrences.filter fun occurrence =>
-          decide (occurrence.id = record.caller ∧ occurrence.parent.isNone = true) := by
-        rw [singleton]; simp
-      obtain ⟨present, facts⟩ := List.mem_filter.mp member
-      simp only [decide_eq_true_eq, Option.isNone_iff_eq_none] at facts
-      exact ⟨caller, present, facts⟩
+      exact of_decide_eq_true (valid.1.1 record member).1.1.1.1.1.1.1.1.1
     · contradiction
 
-private theorem same_called_instance_anchor (state : RuntimeState)
+private theorem same_called_instance_record (state : RuntimeState)
     (instanceId : SemanticId) (running : state.control = .running instanceId)
     (valid : calledProcessAssociationsValid state = true)
     (left right : CalledProcessOccurrence)
     (leftMember : left ∈ state.calledProcessOccurrences)
     (rightMember : right ∈ state.calledProcessOccurrences)
     (same : left.calledRoot.processInstanceId = right.calledRoot.processInstanceId) :
-    left.caller = right.caller ∧ left.id.elementId.value = right.id.elementId.value := by
+    left = right := by
   have sameCall := calledProcessAssociationsValid_called_instance_injective state left right
     running valid leftMember rightMember same
-  obtain ⟨leftId, ⟨leftCaller, leftPresent, leftEq, leftParent⟩, _⟩ :=
-    call_caller_root state valid left leftMember
-  obtain ⟨rightId, ⟨rightCaller, rightPresent, rightEq, rightParent⟩, _⟩ :=
-    call_caller_root state valid right rightMember
-  refine ⟨?_, congrArg (fun id => id.elementId.value) sameCall⟩
-  rw [← leftEq, ← rightEq]
-  apply calledProcessAssociationsValid_parentless_root_unique state instanceId running valid
-    leftCaller rightCaller leftPresent rightPresent leftParent rightParent
-  rw [leftEq, rightEq, ← leftId, ← rightId, sameCall]
+  exact filter_singleton_members_equal _ _ (call_record_element_unique state valid right rightMember)
+    left right leftMember rightMember (by simp [sameCall]) (by simp)
 
-/-- Called-instance seeds are duplicate-free by the actual caller/element census and root uniqueness. -/
+/-- Called-instance seeds are duplicate-free by the one live record per Call element. -/
 theorem calledProcessAssociationsValid_called_instances_nodup (state : RuntimeState)
     (instanceId : SemanticId) (running : state.control = .running instanceId)
     (valid : calledProcessAssociationsValid state = true) :
@@ -301,35 +253,27 @@ theorem calledProcessAssociationsValid_called_instances_nodup (state : RuntimeSt
   intro process
   by_cases member : process ∈ state.calledProcessOccurrences.map (fun record => record.calledRoot.processInstanceId)
   · obtain ⟨record, recordMember, rfl⟩ := List.mem_map.mp member
-    have anchorCount := (call_caller_root state valid record recordMember).2.2
     have included : (state.calledProcessOccurrences.filter fun candidate =>
         decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId)).Sublist
         (state.calledProcessOccurrences.filter fun candidate =>
-          decide (candidate.caller = record.caller) &&
-            decide (candidate.id.elementId.value = record.id.elementId.value)) := by
-      apply List.Sublist.trans (l₂ := (state.calledProcessOccurrences.filter fun candidate =>
-        decide (candidate.caller = record.caller) &&
-          decide (candidate.id.elementId.value = record.id.elementId.value)).filter fun candidate =>
-            decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId))
-      · have equal : (state.calledProcessOccurrences.filter fun candidate =>
-            decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId)) =
-            (state.calledProcessOccurrences.filter fun candidate =>
-              decide (candidate.caller = record.caller) &&
-                decide (candidate.id.elementId.value = record.id.elementId.value)).filter fun candidate =>
-                  decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId) := by
-          rw [List.filter_filter]
-          apply List.filter_congr
-          intro candidate candidateMember
-          by_cases same : candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId
-          · obtain ⟨caller, element⟩ := same_called_instance_anchor state instanceId running valid
-              candidate record candidateMember recordMember same
-            simp [same, caller, element]
-          · simp [same]
-        rw [equal]
-        exact List.Sublist.refl _
-      · exact List.filter_sublist
+          decide (candidate.id.elementId.value = record.id.elementId.value)) := by
+      have equal : (state.calledProcessOccurrences.filter fun candidate =>
+          decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId)) =
+          (state.calledProcessOccurrences.filter fun candidate =>
+            decide (candidate.id.elementId.value = record.id.elementId.value)).filter fun candidate =>
+              decide (candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId) := by
+        rw [List.filter_filter]
+        apply List.filter_congr
+        intro candidate candidateMember
+        by_cases same : candidate.calledRoot.processInstanceId = record.calledRoot.processInstanceId
+        · have equal := same_called_instance_record state instanceId running valid candidate record
+            candidateMember recordMember same
+          simp [same, equal]
+        · simp [same]
+      rw [equal]
+      exact List.filter_sublist
     have bounded := included.length_le
-    rw [anchorCount] at bounded
+    rw [call_record_element_unique state valid record recordMember] at bounded
     simpa only [List.count_eq_length_filter, List.filter_map, List.length_map,
       Function.comp_def, Bool.beq_eq_decide_eq] using bounded
   · simp [List.count_eq_zero_of_not_mem member]

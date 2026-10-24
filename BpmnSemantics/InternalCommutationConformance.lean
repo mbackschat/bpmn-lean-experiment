@@ -1,51 +1,55 @@
-import BpmnSemantics.SemanticProcess.InternalCommutation
-import BpmnSemantics.SemanticProcess.InternalCommutationPublication
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutation
+public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Internal commutation conformance locks -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalCommutationConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def instanceId : SemanticId := ⟨"Instance_InternalCommutation"⟩
+def instanceId : SemanticId := ⟨"Instance_InternalCommutation"⟩
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"Process_InternalCommutation"⟩
     activation := 1 }
 
-private def operationScope (operationId : OperationId) : OperationScopeOwnership :=
+def operationScope (operationId : OperationId) : OperationScopeOwnership :=
   { operationId, scopeId := owner.definitionScopeId }
 
-private def inputPlace (id : ControlPlaceId) : ControlPlace :=
+def inputPlace (id : ControlPlaceId) : ControlPlace :=
   { id, origin := ⟨⟨s!"Flow_{id.value}"⟩⟩ }
 
-private def inputScope (controlPlaceId : ControlPlaceId) :
+def inputScope (controlPlaceId : ControlPlaceId) :
     ControlPlaceScopeOwnership :=
   { controlPlaceId, scopeId := owner.definitionScopeId }
 
-private def userTask : SemanticOperation :=
+def userTask : SemanticOperation :=
   .awaitUserTask ⟨"operation:A_UserTask"⟩ { elementId := ⟨"A_UserTask"⟩ }
     ⟨"place:user-input"⟩ ⟨"place:user-output"⟩
     { id := ⟨"A_UserTask"⟩, name := some "A" }
 
-private def timer : SemanticOperation :=
+def timer : SemanticOperation :=
   .awaitTimer ⟨"operation:B_Timer"⟩ { elementId := ⟨"B_Timer"⟩ }
     ⟨"place:timer-input"⟩ ⟨"place:timer-output"⟩
     { elementId := ⟨"B_Timer"⟩, durationMs := 1000 }
 
-private def userTaskB : SemanticOperation :=
+def userTaskB : SemanticOperation :=
   .awaitUserTask ⟨"operation:B_UserTask"⟩ { elementId := ⟨"B_UserTask"⟩ }
     ⟨"place:user-b-input"⟩ ⟨"place:user-b-output"⟩
     { id := ⟨"B_UserTask"⟩, name := some "B" }
 
-private def userTaskC : SemanticOperation :=
+def userTaskC : SemanticOperation :=
   .awaitUserTask ⟨"operation:C_UserTask"⟩ { elementId := ⟨"C_UserTask"⟩ }
     ⟨"place:user-c-input"⟩ ⟨"place:user-c-output"⟩
     { id := ⟨"C_UserTask"⟩, name := some "C" }
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"internal-commutation-checkpoint"⟩
@@ -62,7 +66,7 @@ private def program : Program :=
       [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:timer-input"⟩]
     operations := [userTask, timer] }
 
-private def state : RuntimeState :=
+def state : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -70,7 +74,7 @@ private def state : RuntimeState :=
       [{ placeId := ⟨"place:user-input"⟩, owner }
       , { placeId := ⟨"place:timer-input"⟩, owner }] }
 
-private def userTaskPairProgram : Program :=
+def userTaskPairProgram : Program :=
   { program with
     operations := [userTask, userTaskB]
     operationScopes := [operationScope userTask.id, operationScope userTaskB.id]
@@ -79,13 +83,13 @@ private def userTaskPairProgram : Program :=
     controlPlaces :=
       [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩] }
 
-private def userTaskPairState : RuntimeState :=
+def userTaskPairState : RuntimeState :=
   { state with
     tokens :=
       [{ placeId := ⟨"place:user-input"⟩, owner }
       , { placeId := ⟨"place:user-b-input"⟩, owner }] }
 
-private def userTaskTripleProgram : Program :=
+def userTaskTripleProgram : Program :=
   { program with
     operations := [userTask, userTaskB, userTaskC]
     operationScopes :=
@@ -98,19 +102,19 @@ private def userTaskTripleProgram : Program :=
       [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩,
         inputPlace ⟨"place:user-c-input"⟩] }
 
-private def userTaskTripleState : RuntimeState :=
+def userTaskTripleState : RuntimeState :=
   { state with
     tokens :=
       [{ placeId := ⟨"place:user-input"⟩, owner }
       , { placeId := ⟨"place:user-b-input"⟩, owner }
       , { placeId := ⟨"place:user-c-input"⟩, owner }] }
 
-private def fireTwo (candidate : Program) (before : RuntimeState)
+def fireTwo (candidate : Program) (before : RuntimeState)
     (first second : SemanticOperation) : Option RuntimeState := do
   let intermediate ← fire? candidate first before
   fire? candidate second intermediate
 
-private def fireThree (candidate : Program) (before : RuntimeState)
+def fireThree (candidate : Program) (before : RuntimeState)
     (first second third : SemanticOperation) : Option RuntimeState := do
   let intermediate ← fire? candidate first before
   let penultimate ← fire? candidate second intermediate
@@ -145,12 +149,12 @@ theorem ordinary_user_task_triple_commutes_under_all_permutations :
         fireThree userTaskTripleProgram userTaskTripleState userTaskC userTaskB userTask := by
   decide +kernel
 
-private def selectiveConflictTaskC : SemanticOperation :=
+def selectiveConflictTaskC : SemanticOperation :=
   .awaitUserTask ⟨"operation:C_UserTask"⟩ { elementId := ⟨"C_UserTask"⟩ }
     ⟨"place:user-input"⟩ ⟨"place:user-c-output"⟩
     { id := ⟨"C_UserTask"⟩, name := some "C" }
 
-private def selectiveConflictProgram : Program :=
+def selectiveConflictProgram : Program :=
   { program with
     operations := [userTask, userTaskB, selectiveConflictTaskC]
     operationScopes :=
@@ -161,7 +165,7 @@ private def selectiveConflictProgram : Program :=
     controlPlaces :=
       [inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩] }
 
-private def selectiveConflictState : RuntimeState :=
+def selectiveConflictState : RuntimeState :=
   { state with
     tokens :=
       [{ placeId := ⟨"place:user-input"⟩, owner }
@@ -179,16 +183,16 @@ theorem selective_later_pair_conflict_is_refused :
         selectiveConflictState [userTask, userTaskB, selectiveConflictTaskC] = false := by
   decide +kernel
 
-private def selectiveConflictStart : SemanticOperation :=
+def selectiveConflictStart : SemanticOperation :=
   .initiate ⟨"operation:0_SelectiveStart"⟩ { elementId := ⟨"SelectiveStart"⟩ }
     ⟨"place:selective-start-to-fork"⟩
 
-private def selectiveConflictFork : SemanticOperation :=
+def selectiveConflictFork : SemanticOperation :=
   .duplicate ⟨"operation:1_SelectiveFork"⟩ { elementId := ⟨"SelectiveFork"⟩ }
     ⟨"place:selective-start-to-fork"⟩
     [⟨"place:user-input"⟩, ⟨"place:user-b-input"⟩]
 
-private def selectiveConflictTraceProgram : Program :=
+def selectiveConflictTraceProgram : Program :=
   { selectiveConflictProgram with
     definitionScopes :=
       [ { id := owner.definitionScopeId, parentScopeId := none
@@ -207,17 +211,17 @@ private def selectiveConflictTraceProgram : Program :=
       [inputPlace ⟨"place:selective-start-to-fork"⟩,
         inputPlace ⟨"place:user-input"⟩, inputPlace ⟨"place:user-b-input"⟩] }
 
-private def selectiveConflictTraceStart : Stimulus :=
+def selectiveConflictTraceStart : Stimulus :=
   .startProcess ⟨"start-selective-conflict"⟩
     ⟨selectiveConflictTraceProgram.processId.value⟩ instanceId []
 
-private def selectiveConflictPreBatchState : RuntimeState :=
+def selectiveConflictPreBatchState : RuntimeState :=
   let started :=
     (runningProgramStartState? selectiveConflictTraceProgram instanceId []).getD initialState
   (runChoices selectiveConflictTraceProgram started
     [selectiveConflictStart.id, selectiveConflictFork.id]).getD initialState
 
-private def selectiveConflictTrace : TracedStimulusResult :=
+def selectiveConflictTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit selectiveConflictTraceProgram initialState
     selectiveConflictTraceStart
 
@@ -233,20 +237,20 @@ theorem selective_later_pair_conflict_restores_command_input_and_selects_nothing
       selectiveConflictTrace.flowNodeOccurrenceLifecycles = [] := by
   decide +kernel
 
-private def calledInstanceId : SemanticId := ⟨"Instance_CalledMessage"⟩
+def calledInstanceId : SemanticId := ⟨"Instance_CalledMessage"⟩
 
-private def calledOwner : ScopeOccurrenceId :=
+def calledOwner : ScopeOccurrenceId :=
   { processInstanceId := calledInstanceId
     definitionScopeId := owner.definitionScopeId
     activation := 2 }
 
-private def calledMessage : SemanticOperation :=
+def calledMessage : SemanticOperation :=
   .awaitMessage ⟨"operation:CalledMessage"⟩ { elementId := ⟨"CalledMessage"⟩ }
     ⟨"place:called-message-input"⟩ ⟨"place:called-message-output"⟩
     { elementId := ⟨"CalledMessage"⟩
       channel := .directMessage ⟨"Message_Called"⟩ }
 
-private def calledMessageProgram : Program :=
+def calledMessageProgram : Program :=
   { program with
     definitionScopes :=
       [{ id := owner.definitionScopeId, parentScopeId := none,
@@ -256,16 +260,16 @@ private def calledMessageProgram : Program :=
     controlPlaceScopes := [inputScope ⟨"place:called-message-input"⟩]
     controlPlaces := [inputPlace ⟨"place:called-message-input"⟩] }
 
-private def calledMessageState : RuntimeState :=
+def calledMessageState : RuntimeState :=
   { state with
     scopeOccurrences :=
       [{ id := owner, parent := none }, { id := calledOwner, parent := some owner }]
     tokens := [{ placeId := ⟨"place:called-message-input"⟩, owner := calledOwner }] }
 
-private def calledMessageAfter : RuntimeState :=
+def calledMessageAfter : RuntimeState :=
   (fire? calledMessageProgram calledMessage calledMessageState).getD initialState
 
-private def calledMessageOccurrence : OccurrenceId :=
+def calledMessageOccurrence : OccurrenceId :=
   { processInstanceId := calledInstanceId, elementId := ⟨"CalledMessage"⟩, activation := 1 }
 
 /-- Ordinary waits under a called owner use that owner's instance in state, footprint, and lifecycle. -/
@@ -279,7 +283,7 @@ theorem called_message_uses_owner_instance_everywhere :
           some [.wait calledMessageOccurrence] := by
   decide +kernel
 
-private def duplicateCompositeDeclarer : SemanticOperation :=
+def duplicateCompositeDeclarer : SemanticOperation :=
   .awaitBoundedUserTask ⟨"operation:CompositeUserTask"⟩
     { elementId := ⟨"CompositeUserTask"⟩ } ⟨"place:composite-input"⟩
     { id := ⟨"A_UserTask"⟩, name := some "composite",
@@ -288,7 +292,7 @@ private def duplicateCompositeDeclarer : SemanticOperation :=
       output := ⟨"place:composite-boundary-output"⟩,
       origin := ⟨⟨"Flow_CompositeBoundary"⟩⟩ }
 
-private def compositeDeclarerProgram : Program :=
+def compositeDeclarerProgram : Program :=
   { program with
     operations := [userTask, duplicateCompositeDeclarer]
     operationScopes :=
@@ -309,12 +313,12 @@ theorem mixed_pair_result_is_canonically_stored :
       ((fireTwo program state userTask timer).getD initialState) = true := by
   decide +kernel
 
-private def collidingTimer : SemanticOperation :=
+def collidingTimer : SemanticOperation :=
   .awaitTimer ⟨"operation:B_CollidingTimer"⟩ { elementId := ⟨"A_UserTask"⟩ }
     ⟨"place:timer-input"⟩ ⟨"place:timer-output"⟩
     { elementId := ⟨"A_UserTask"⟩, durationMs := 1000 }
 
-private def collidingAnchorProgram : Program :=
+def collidingAnchorProgram : Program :=
   { program with
     operations := [userTask, collidingTimer]
     operationScopes := [operationScope userTask.id, operationScope collidingTimer.id] }
@@ -330,7 +334,7 @@ theorem canonical_operation_order_ignores_program_storage :
       canonicalInternalOperations [userTask, timer] := by
   decide +kernel
 
-private def sharedEffectDefinition : EffectDefinition :=
+def sharedEffectDefinition : EffectDefinition :=
   { elementId := ⟨"SharedEffect"⟩
     descriptor :=
       { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
@@ -338,22 +342,22 @@ private def sharedEffectDefinition : EffectDefinition :=
     inputMappings := []
     outputMappings := [] }
 
-private def incidentAnchorTask : SemanticOperation :=
+def incidentAnchorTask : SemanticOperation :=
   .awaitUserTask ⟨"operation:IncidentAnchorTask"⟩ { elementId := ⟨"IncidentAnchor"⟩ }
     ⟨"place:incident-anchor-input"⟩ ⟨"place:incident-anchor-output"⟩
     { id := ⟨"IncidentAnchor"⟩, name := some "incident anchor" }
 
-private def incidentAnchorProgram : Program :=
+def incidentAnchorProgram : Program :=
   { program with
     operations := [incidentAnchorTask]
     operationScopes := [operationScope incidentAnchorTask.id]
     controlPlaceScopes := [inputScope ⟨"place:incident-anchor-input"⟩]
     controlPlaces := [inputPlace ⟨"place:incident-anchor-input"⟩] }
 
-private def incidentAnchorOccurrence : EffectOccurrenceId :=
+def incidentAnchorOccurrence : EffectOccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨"IncidentAnchor"⟩, activation := 1 }
 
-private def incidentAnchorWait : EffectWait :=
+def incidentAnchorWait : EffectWait :=
   { processInstanceId := instanceId
     owner
     elementId := ⟨"IncidentAnchor"⟩
@@ -364,7 +368,7 @@ private def incidentAnchorWait : EffectWait :=
     output := ⟨"place:incident-anchor-effect-output"⟩
     bpmnErrorRoute := none }
 
-private def incidentAnchorState : RuntimeState :=
+def incidentAnchorState : RuntimeState :=
   { state with
     tokens := [{ placeId := ⟨"place:incident-anchor-input"⟩, owner }]
     effectIncidents :=
@@ -381,15 +385,15 @@ theorem incident_anchor_refuses_ordinary_footprint :
       internalTransitionFootprint? incidentAnchorProgram incidentAnchorState incidentAnchorTask = none := by
   decide +kernel
 
-private def leftEffect : SemanticOperation :=
+def leftEffect : SemanticOperation :=
   .awaitEffect ⟨"operation:A_Effect"⟩ { elementId := ⟨"SharedEffect"⟩ }
     ⟨"place:effect-a-input"⟩ ⟨"place:effect-a-output"⟩ sharedEffectDefinition none
 
-private def rightEffect : SemanticOperation :=
+def rightEffect : SemanticOperation :=
   .awaitEffect ⟨"operation:B_Effect"⟩ { elementId := ⟨"SharedEffect"⟩ }
     ⟨"place:effect-b-input"⟩ ⟨"place:effect-b-output"⟩ sharedEffectDefinition none
 
-private def sharedEffectProgram : Program :=
+def sharedEffectProgram : Program :=
   { program with
     operations := [leftEffect, rightEffect]
     operationScopes := [operationScope leftEffect.id, operationScope rightEffect.id]
@@ -398,7 +402,7 @@ private def sharedEffectProgram : Program :=
     controlPlaces :=
       [inputPlace ⟨"place:effect-a-input"⟩, inputPlace ⟨"place:effect-b-input"⟩] }
 
-private def sharedEffectState : RuntimeState :=
+def sharedEffectState : RuntimeState :=
   { state with
     tokens :=
       [{ placeId := ⟨"place:effect-a-input"⟩, owner }
@@ -412,7 +416,7 @@ theorem same_effect_write_write_is_refused :
         [leftEffect, rightEffect] = false := by
   decide +kernel
 
-private def sameEffectLeftFootprint : InternalTransitionFootprint :=
+def sameEffectLeftFootprint : InternalTransitionFootprint :=
   { operationId := leftEffect.id
     kind := .effect
     occurrence :=
@@ -429,7 +433,7 @@ private def sameEffectLeftFootprint : InternalTransitionFootprint :=
       [.publicationPair leftEffect.id
         { processInstanceId := instanceId, elementId := ⟨"SharedEffect"⟩, activation := 1 }] }
 
-private def sameEffectRightFootprint : InternalTransitionFootprint :=
+def sameEffectRightFootprint : InternalTransitionFootprint :=
   { sameEffectLeftFootprint with
     operationId := rightEffect.id
     publications :=
@@ -441,14 +445,14 @@ theorem same_effect_footprints_are_write_write_conflicting :
     footprintsNonInterfering sameEffectLeftFootprint sameEffectRightFootprint = false := by
   decide +kernel
 
-private def distinctEffectDefinition : EffectDefinition :=
+def distinctEffectDefinition : EffectDefinition :=
   { sharedEffectDefinition with elementId := ⟨"DistinctEffect"⟩ }
 
-private def distinctRightEffect : SemanticOperation :=
+def distinctRightEffect : SemanticOperation :=
   .awaitEffect ⟨"operation:B_DistinctEffect"⟩ { elementId := ⟨"DistinctEffect"⟩ }
     ⟨"place:effect-b-input"⟩ ⟨"place:effect-b-output"⟩ distinctEffectDefinition none
 
-private def distinctEffectProgram : Program :=
+def distinctEffectProgram : Program :=
   { sharedEffectProgram with
     operations := [leftEffect, distinctRightEffect]
     operationScopes := [operationScope leftEffect.id, operationScope distinctRightEffect.id] }
@@ -464,10 +468,10 @@ theorem distinct_effect_pair_commutes_exactly :
           initialState) = true := by
   decide +kernel
 
-private def sharedActivationAtom : InternalStateAtom :=
+def sharedActivationAtom : InternalStateAtom :=
   .activation .userTask ⟨"Shared"⟩
 
-private def abstractLeftFootprint : InternalTransitionFootprint :=
+def abstractLeftFootprint : InternalTransitionFootprint :=
   { operationId := ⟨"operation:AbstractLeft"⟩
     kind := .userTask
     occurrence :=
@@ -478,7 +482,7 @@ private def abstractLeftFootprint : InternalTransitionFootprint :=
       [.publicationPair ⟨"operation:AbstractLeft"⟩
         { processInstanceId := instanceId, elementId := ⟨"AbstractLeft"⟩, activation := 1 }] }
 
-private def abstractRightFootprint : InternalTransitionFootprint :=
+def abstractRightFootprint : InternalTransitionFootprint :=
   { operationId := ⟨"operation:AbstractRight"⟩
     kind := .timer
     occurrence :=
@@ -495,7 +499,7 @@ theorem abstract_write_read_is_refused :
     footprintsNonInterfering abstractLeftFootprint abstractRightFootprint = false := by
   decide +kernel
 
-private def unsupported : SemanticOperation :=
+def unsupported : SemanticOperation :=
   .duplicate ⟨"operation:Unsupported"⟩ { elementId := ⟨"Unsupported"⟩ }
     ⟨"place:unsupported-input"⟩ [⟨"place:unsupported-output"⟩]
 
@@ -508,31 +512,31 @@ theorem unsupported_and_non_pair_frontiers_fail_closed :
         state [userTask, timer, unsupported] = false := by
   decide +kernel
 
-private def parallelStart : Stimulus :=
+def parallelStart : Stimulus :=
   .startProcess ⟨"start-internal-commutation"⟩
     ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_InternalCommutationTrace"⟩ []
 
-private def parallelTrace : TracedStimulusResult :=
+def parallelTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit parallelProgram initialState parallelStart
 
-private def parallelArmedA : RuntimeState :=
+def parallelArmedA : RuntimeState :=
   (runChoices parallelProgram parallelAfterFork [parallelTaskAOperation]).getD initialState
 
-private def parallelArmedB : RuntimeState :=
+def parallelArmedB : RuntimeState :=
   (runChoices parallelProgram parallelAfterFork [parallelTaskBOperation]).getD initialState
 
-private def parallelArmedAThenB : RuntimeState :=
+def parallelArmedAThenB : RuntimeState :=
   (runChoices parallelProgram parallelArmedA [parallelTaskBOperation]).getD initialState
 
-private def parallelArmedBThenA : RuntimeState :=
+def parallelArmedBThenA : RuntimeState :=
   (runChoices parallelProgram parallelArmedB [parallelTaskAOperation]).getD initialState
 
-private def pairedTransitionIds : List OperationId :=
+def pairedTransitionIds : List OperationId :=
   (parallelTrace.committedTransitions.drop 3).filterMap fun
     | .internalOperation record => some record.operationId
     | .externalStimulus _ => none
 
-private def pairedLifecycleElements : List NodeId :=
+def pairedLifecycleElements : List NodeId :=
   (parallelTrace.flowNodeOccurrenceLifecycles.drop 3).flatMap fun delta =>
     delta.started.map (·.elementId)
 
@@ -556,11 +560,11 @@ theorem admitted_pair_preserves_enabledness_well_formedness_and_exact_state :
       parallelArmedAThenB = parallelArmedBThenA := by
   decide +kernel
 
-private def parallelTaskASemanticOperation : SemanticOperation :=
+def parallelTaskASemanticOperation : SemanticOperation :=
   (parallelProgram.operations.find? fun operation =>
     decide (operation.id = parallelTaskAOperation)).getD userTask
 
-private def parallelTaskBSemanticOperation : SemanticOperation :=
+def parallelTaskBSemanticOperation : SemanticOperation :=
   (parallelProgram.operations.find? fun operation =>
     decide (operation.id = parallelTaskBOperation)).getD userTaskB
 
@@ -589,12 +593,12 @@ theorem complete_pair_publication_is_order_independent :
     rfl
   · rw [leftEq, rightEq]
 
-private def censusInput : ControlPlaceId := ⟨"place:user-input"⟩
+def censusInput : ControlPlaceId := ⟨"place:user-input"⟩
 
-private def foreignTokenState : RuntimeState :=
+def foreignTokenState : RuntimeState :=
   { state with tokens := addToken state.tokens censusInput calledOwner }
 
-private def censusWriter (place : ControlPlaceId) : InternalTransitionFootprint :=
+def censusWriter (place : ControlPlaceId) : InternalTransitionFootprint :=
   { abstractLeftFootprint with
     reads := []
     writes := [.controlToken calledOwner place, .tokenOwners place]

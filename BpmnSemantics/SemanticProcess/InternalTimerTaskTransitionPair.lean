@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalTimerTaskDataFrames
-import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
-import BpmnSemantics.SemanticProcess.InternalTimerTaskTokenCommutation
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskDataFrames
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskTokenCommutation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
 
 /-! The finite dispatcher consumes the complete Timer-task pair laws for every prepared family.
 No family is admitted through a weaker pair-specific preparation or successor premise. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

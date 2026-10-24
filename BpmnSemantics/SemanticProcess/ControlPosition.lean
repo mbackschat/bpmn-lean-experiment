@@ -1,27 +1,31 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! # Public committed control positions
 
 This module binds the independent public-position projection and delta fold to strict committed-transition replay. Its accepted delta trace must reconstruct the independently projected head from revision zero.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private structure DeltaTraceAccumulator where
+structure DeltaTraceAccumulator where
   state : RuntimeState
   deltas : List PublicControlPositionDelta
 
-private def replayOneTransition? (program : Program) (state : RuntimeState) :
+def replayOneTransition? (program : Program) (state : RuntimeState) :
     CommittedTransition → Option RuntimeState
   | .externalStimulus stimulus =>
       let admission := admitStimulus program state stimulus
       if admission.outcome = .committed then some admission.state else none
   | .internalOperation record => replayInternalTransition? program state record
 
-private def buildPositionDeltas? (program : Program) (expectedInstanceId : SemanticId) :
+def buildPositionDeltas? (program : Program) (expectedInstanceId : SemanticId) :
     RuntimeState → List CommittedTransition → Option DeltaTraceAccumulator
   | state, [] => some { state, deltas := [] }
   | state, transition :: rest => do
@@ -30,7 +34,7 @@ private def buildPositionDeltas? (program : Program) (expectedInstanceId : Seman
       let tail ← buildPositionDeltas? program expectedInstanceId successor rest
       pure { state := tail.state, deltas := delta :: tail.deltas }
 
-private def foldCheckedDeltas (current : PublicControlPosition) :
+def foldCheckedDeltas (current : PublicControlPosition) :
     List PublicControlPositionDelta → Option (List PublicControlPositionDelta)
   | deltas =>
       if foldControlPositionDeltas emptyPublicControlPosition deltas = some current then

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! # Internal commutation occurrence-projection frames
 
 Proves that one prepared ordinary internal arm adds exactly one fresh projected wait occurrence while preserving the existing wait, scope, and called-process projections.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

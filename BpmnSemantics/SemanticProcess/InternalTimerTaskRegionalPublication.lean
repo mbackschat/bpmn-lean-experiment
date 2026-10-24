@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
-import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 
 /-! Regional publication retains its predecessor-selected position and lifecycle deltas.
 The new task is outside the removed region, and its private Timer cannot enter handler withdrawal.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

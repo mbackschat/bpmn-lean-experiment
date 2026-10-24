@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskLocalControl
-import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-import BpmnSemantics.SemanticProcess.InternalEndCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskLocalControl
+public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+public import BpmnSemantics.SemanticProcess.InternalEndCommutation
 
 /-! Exact Merge and ordinary End reuse token-removal frames beside Timer-task arming.
 The Merge choice remains explicit; these laws do not choose between competing offers.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

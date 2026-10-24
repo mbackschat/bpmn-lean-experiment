@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! Shared closed endpoint decoding keeps checked and executable Activity contracts aligned. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeActivityDataInputSource (json : Json) : Except String ActivityDataInputSource := do
+def decodeActivityDataInputSource (json : Json) : Except String ActivityDataInputSource := do
   match ← stringField json "kind" with
   | "property" =>
       requireObjectShape json ["kind", "propertyId"]
@@ -17,7 +21,7 @@ private def decodeActivityDataInputSource (json : Json) : Except String Activity
       pure (.processDataInput (← stringField json "dataInputId"))
   | kind => throw s!"unsupported Activity input source {kind}"
 
-private def decodeActivityDataOutputTarget (json : Json) : Except String ActivityDataOutputTarget := do
+def decodeActivityDataOutputTarget (json : Json) : Except String ActivityDataOutputTarget := do
   match ← stringField json "kind" with
   | "property" =>
       requireObjectShape json ["kind", "propertyId"]

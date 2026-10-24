@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 
 /-! # Repeated-scope preservation and reachability
 
 SMIS-ADMIT-01 connects accepted data and ownership to actual enabled entry and body turnover.
 The low-level constructor relation remains beside its evaluator in SequentialScopeRuntime.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

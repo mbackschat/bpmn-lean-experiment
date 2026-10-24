@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 
 /-! RSI-OWN-01 gives every Activity a live owning scope independently of its body.
 REG-OWN-CLOSE-01 must retain that owner whenever it retains the Activity record. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidity
-import BpmnSemantics.SemanticProcess.ControlPositionContract
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.ControlPositionContract
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! Public position projection and exact delta algebra depend on immutable Program bindings
 and RuntimeState rather than trace execution. This permits predecessor templates and
 actual publication checks to share the existing projection under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -208,14 +212,14 @@ theorem tokenPositionsStrict_insert (position : PublicControlTokenPosition) :
             exact Eq.trans (tokenPositionBefore_key_congr current current candidate existing rfl
               existingKey.symm) (currentBefore existing existingMember)
 
-private def scopePositionBefore (left right : PublicScopePosition) : Bool :=
+def scopePositionBefore (left right : PublicScopePosition) : Bool :=
   if left.id.processInstanceId.value ≠ right.id.processInstanceId.value then
     left.id.processInstanceId.value < right.id.processInstanceId.value
   else if left.id.definitionScopeId.value ≠ right.id.definitionScopeId.value then
     left.id.definitionScopeId.value < right.id.definitionScopeId.value
   else left.id.activation < right.id.activation
 
-private def insertScopePosition? (position : PublicScopePosition) :
+def insertScopePosition? (position : PublicScopePosition) :
     List PublicScopePosition → Option (List PublicScopePosition)
   | [] => some [position]
   | current :: rest =>
@@ -260,13 +264,13 @@ private theorem tokenPositionsStrict_keys_nodup (positions : List PublicControlT
       rw [after] at before
       contradiction
 
-private def scopeOrigin (program : Program)
+def scopeOrigin (program : Program)
     (occurrence : RuntimeScopeOccurrence) : NodeId :=
   match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
   | some scope => scope.originElementId
   | none => ⟨""⟩
 
-private def insertProjectedScopePosition (position : PublicScopePosition) :
+def insertProjectedScopePosition (position : PublicScopePosition) :
     List PublicScopePosition → List PublicScopePosition
   | [] => [position]
   | current :: rest =>
@@ -357,7 +361,7 @@ def controlPositionDelta? (program : Program) (expectedInstanceId : SemanticId)
       enteredScopes := scopeDifference afterPosition.scopes beforePosition.scopes
       exitedScopes := scopeDifference beforePosition.scopes afterPosition.scopes }
 
-private def consumeTokenPosition? (consumed : PublicControlTokenPosition) :
+def consumeTokenPosition? (consumed : PublicControlTokenPosition) :
     List PublicControlTokenPosition → Option (List PublicControlTokenPosition)
   | [] => none
   | current :: rest =>
@@ -367,34 +371,34 @@ private def consumeTokenPosition? (consumed : PublicControlTokenPosition) :
         else some ({ current with multiplicity := current.multiplicity - consumed.multiplicity } :: rest)
       else do pure (current :: (← consumeTokenPosition? consumed rest))
 
-private def consumeTokenPositions? :
+def consumeTokenPositions? :
     List PublicControlTokenPosition → List PublicControlTokenPosition →
       Option (List PublicControlTokenPosition)
   | current, [] => some current
   | current, consumed :: rest => do
       consumeTokenPositions? (← consumeTokenPosition? consumed current) rest
 
-private def produceTokenPositions? (current : List PublicControlTokenPosition) :
+def produceTokenPositions? (current : List PublicControlTokenPosition) :
     List PublicControlTokenPosition → Option (List PublicControlTokenPosition)
   | [] => some current
   | produced :: rest =>
       if produced.multiplicity = 0 then none
       else produceTokenPositions? (insertTokenPosition produced current) rest
 
-private def exitScopePosition? (exited : PublicScopePosition) :
+def exitScopePosition? (exited : PublicScopePosition) :
     List PublicScopePosition → Option (List PublicScopePosition)
   | [] => none
   | current :: rest =>
       if current = exited then some rest
       else do pure (current :: (← exitScopePosition? exited rest))
 
-private def exitScopePositions? :
+def exitScopePositions? :
     List PublicScopePosition → List PublicScopePosition → Option (List PublicScopePosition)
   | current, [] => some current
   | current, exited :: rest => do
       exitScopePositions? (← exitScopePosition? exited current) rest
 
-private def enterScopePositions? (current : List PublicScopePosition) :
+def enterScopePositions? (current : List PublicScopePosition) :
     List PublicScopePosition → Option (List PublicScopePosition)
   | [] => some current
   | entered :: rest => do

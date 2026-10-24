@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
-import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+module
+
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
 
 /-! # Regional removal order facts
 
 Filtering changes adjacency, so the regional removal account needs composition of non-inversion for every retained collection comparator.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

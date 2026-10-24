@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Activity boundary Timer
 
@@ -12,11 +14,13 @@ The retired form joined the two waits by requiring equal activation ordinals und
 Arming on Activity activation is a recorded project interpretation. BPMN 2.0.2 Clause 13.5.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never reached, so only the pre-due firing witness discriminates that instant.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def boundedRunningInstance? (state : RuntimeState) : Option SemanticId :=
+def boundedRunningInstance? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
@@ -86,14 +90,14 @@ def isBoundaryTimerDefinition (program : Program) (elementId : NodeId) : Bool :=
   (boundedTaskOperations program).any fun operation =>
     decide (operation.2.2.elementId = elementId)
 
-private structure BoundedPair where
+structure BoundedPair where
   task : UserTaskWait
   timer : TimerWait
   taskOutput : ControlPlaceId
   timerOutput : ControlPlaceId
 
 /-- Joins one live task wait to its committed definition and deadline. Both waits must exist: a state holding one without the other is invalid rather than a resumption surface, so this refuses instead of repairing it. -/
-private def boundedPairForTask? (program : Program) (state : RuntimeState)
+def boundedPairForTask? (program : Program) (state : RuntimeState)
     (task : UserTaskWait) : Option BoundedPair := do
   let operation ← (boundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.1.id = task.task.id)
@@ -108,7 +112,7 @@ private def boundedPairForTask? (program : Program) (state : RuntimeState)
       taskOutput := operation.2.1.output
       timerOutput := operation.2.2.output }
 
-private def boundedPairForTimer? (program : Program) (state : RuntimeState)
+def boundedPairForTimer? (program : Program) (state : RuntimeState)
     (timer : TimerWait) : Option BoundedPair := do
   let operation ← (boundedTaskOperations program).find? fun candidate =>
     decide (candidate.2.2.elementId = timer.elementId)
@@ -123,7 +127,7 @@ private def boundedPairForTimer? (program : Program) (state : RuntimeState)
       timerOutput := operation.2.2.output }
 
 /-- `AOO-BODY-01` retires the ended Task's record with both waits. Counters stay unchanged because withdrawal must not permit identity reuse. -/
-private def commitVictory (state : RuntimeState) (pair : BoundedPair)
+def commitVictory (state : RuntimeState) (pair : BoundedPair)
     (output : ControlPlaceId) (logicalTimeMs : Nat) : Option RuntimeState :=
   match state.control with
   | .running _ =>

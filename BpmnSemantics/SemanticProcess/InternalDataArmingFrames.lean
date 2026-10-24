@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 
 /-! # Data-arming runtime and projection frames
 
 The predecessor's exact declaration and unattached Activity record preserve every existing wait
 family, including Boundary Timer filtering and Message-boundary pairing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

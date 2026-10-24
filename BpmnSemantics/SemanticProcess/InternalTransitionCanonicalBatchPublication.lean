@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
 
 /-! Actual finite mixed publication uses ranks of complete predecessor templates under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem prepared_transition_canonical_batch_publication (program : Program) (state : RuntimeState)
+theorem prepared_transition_canonical_batch_publication (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId commandId : SemanticId) (first : Nat)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)
@@ -41,7 +45,7 @@ theorem prepared_transition_canonical_batch_publication (program : Program) (sta
 
 /-- Every multiplicity-preserving permutation has the same successful actual publication and raw
 final state; validity and both execution folds are derived from the original preparations. -/
-theorem prepared_transition_canonical_batch_publication_perm (program : Program) (state : RuntimeState)
+theorem prepared_transition_canonical_batch_publication_perm (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (left right : List PreparedInternalTransition) (instanceId commandId : SemanticId) (first : Nat)
     (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)

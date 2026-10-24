@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 
 /-! # Parent-spine continuation credit
 
@@ -8,6 +10,8 @@ parent work and consumes it at the terminal End after parallel return. Wait ingr
 root completion. Each step takes an explicit cursor and its matching source
 operation; the laws preserve token and blocked-wait credit together.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

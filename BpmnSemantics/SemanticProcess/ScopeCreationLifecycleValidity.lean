@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 
 /-! Existing lifecycle owners survive fresh scope insertion under the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 Boundary-Timer classification additionally needs the static exclusion of the new ordinary child.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

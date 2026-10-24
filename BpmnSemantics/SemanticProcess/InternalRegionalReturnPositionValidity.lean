@@ -1,6 +1,9 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 
 /-! # Return continuation position
 
@@ -10,34 +13,42 @@ from cleanup. The continuation still needs its declared static place binding: th
 receives an output identifier rather than a Program.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- Parentless Call endpoints and the unique Process-root census lift exact-root quiescence to
-the complete Process instance, including callers whose identity was not supplied by selection. -/
-theorem quiescent_root_excludes_call_caller (state : RuntimeState) (instanceId : SemanticId)
+/-- Every live occurrence of a Process root's instance lies in that root's subtree, and a quiescent
+root has no child, so exact-root quiescence covers every caller of the instance, including an
+embedded one that Stage B admits (CALLN-FRAME-01). -/
+theorem quiescent_root_excludes_call_caller (program : Program) (state : RuntimeState)
+    (expectedInstanceId instanceId : SemanticId)
     (running : state.control = .running instanceId)
-    (valid : calledProcessAssociationsValid state = true)
+    (position : runtimePositionValid program expectedInstanceId state = true)
     (root : RuntimeScopeOccurrence) (rootMember : root ∈ state.scopeOccurrences)
     (parentless : root.parent = none) (quiescent : scopeQuiescent state root.id = true)
     (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) :
     record.caller.processInstanceId ≠ root.id.processInstanceId := by
   intro same
-  obtain ⟨⟨caller, callerMember, callerId, callerParent⟩, _⟩ :=
-    calledProcessAssociationsValid_parentless_endpoints state valid record member
-  have equal := calledProcessAssociationsValid_parentless_root_unique state instanceId running valid
-    caller root callerMember rootMember callerParent parentless (by rw [callerId, same])
-  have callerRoot : record.caller = root.id := callerId.symm.trans equal
+  have calls := runtimePositionValid_called_associations program expectedInstanceId instanceId state
+    position running
+  obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+    calledProcessAssociationsValid_endpoints state calls record member
+  have inside := runtimePositionValid_same_instance_root_subtree program expectedInstanceId instanceId
+    state position running root caller rootMember callerMember parentless (by rw [callerId, same])
+  have callerRoot : record.caller = root.id :=
+    callerId.symm.trans (quiescent_scope_subtree_identity state root.id caller.id quiescent inside)
   have present : (state.calledProcessOccurrences.any fun candidate => candidate.caller == root.id) = true := by
     exact List.any_eq_true.mpr ⟨record, member, by simp [callerRoot]⟩
   simp [scopeQuiescent, present] at quiescent
 
 /-- A quiescent Process root has no outgoing Call edge, so actual cleanup traversal contains
 only its seed at every fuel bound; normal Return cannot silently include its caller. -/
-theorem quiescent_root_call_closure_membership (state : RuntimeState) (instanceId : SemanticId)
+theorem quiescent_root_call_closure_membership (program : Program) (state : RuntimeState)
+    (expectedInstanceId instanceId : SemanticId)
     (running : state.control = .running instanceId)
-    (valid : calledProcessAssociationsValid state = true)
+    (position : runtimePositionValid program expectedInstanceId state = true)
     (root : RuntimeScopeOccurrence) (rootMember : root ∈ state.scopeOccurrences)
     (parentless : root.parent = none) (quiescent : scopeQuiescent state root.id = true)
     (fuel : Nat) (process : SemanticId) :
@@ -47,7 +58,7 @@ theorem quiescent_root_call_closure_membership (state : RuntimeState) (instanceI
   · apply processInstanceClosureWithin_least _ _ _ (fun candidate => candidate = root.id.processInstanceId)
     · intro candidate member; exact List.mem_singleton.mp member
     · intro record member same
-      exact False.elim (quiescent_root_excludes_call_caller state instanceId running valid
+      exact False.elim (quiescent_root_excludes_call_caller program state expectedInstanceId instanceId running position
         root rootMember parentless quiescent record member same)
   · intro same
     exact processInstanceClosureWithin_seed_subset _ _ _ (by simp [same])
@@ -85,9 +96,9 @@ theorem returnProcessState_preserves_position (program : Program) (before after 
       have outside : record.caller.processInstanceId ∉ processInstanceClosureWithin
           before.calledProcessOccurrences [record.calledRoot.processInstanceId]
           (before.calledProcessOccurrences.length + 1) := by
-        rw [← rootId, quiescent_root_call_closure_membership before instanceId running associations
+        rw [← rootId, quiescent_root_call_closure_membership program before expectedInstanceId instanceId running valid
           root rootMember parentless quiescent]
-        exact quiescent_root_excludes_call_caller before instanceId running associations
+        exact quiescent_root_excludes_call_caller program before expectedInstanceId instanceId running valid
           root rootMember parentless quiescent record recordMember
       apply runtimePositionValid_addToken program expectedInstanceId
         (removeCalledProcessTree before record) callerOutput record.caller

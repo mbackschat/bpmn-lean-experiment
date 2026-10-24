@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 
 /-! # Actual parallel body wait-declaration preservation
 
@@ -6,6 +8,8 @@ RSI-BIND-04 follows actual operation resolution and the admitted family declarer
 census. This preserves hosting-instance provenance without assuming reserved
 preparation or claiming that foreign-instance waits belong to this Program.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 
 /-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the
 retained Activity owners that quiescence alone does not constrain. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -251,7 +255,7 @@ theorem preparedChildComplete_preserves_runtimeStateWellFormed (program : Progra
   obtain ⟨checked, fired, nextPosition, nextActivities, nextRaces⟩ :=
     ownershipClosedSelection_preserves_position_and_references program before hosting _ prepared.selection
       snapshots position structural (List.mem_filter.mp (by rw [declared]; simp)).1
-      waitIds activities races closedSelection
+      waitIds activities races (by intro interrupts; simp [operationInterrupts] at interrupts) closedSelection
   obtain ⟨after, firedAgain, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have equal : checked = after := Option.some.inj (fired.symm.trans firedAgain)
   subst checked

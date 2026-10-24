@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+module
+
+public import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 
@@ -547,7 +551,7 @@ theorem position_guard (program : Program) (analysis : Analysis) (state : Runtim
       · apply Bool.and_eq_true_iff.mpr
         refine ⟨?_, ?_⟩
         · apply Bool.and_eq_true_iff.mpr
-          refine ⟨by simp, ?_⟩
+          refine ⟨by simp [calls], ?_⟩
           with_unfolding_all exact decide_eq_true_iff.mpr rootCount
         · simp [calledProcessAssociationsValid, rootInstanceId?, running, calls, live]
       · change (state.scopeOccurrences.all fun occurrence => exactLiveOccurrence state occurrence.id && _) = true

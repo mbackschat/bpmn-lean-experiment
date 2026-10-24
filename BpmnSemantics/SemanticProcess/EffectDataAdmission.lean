@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.EffectDataMapping
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.EffectDataMapping
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! # Structured effect-data profile admission
 
@@ -13,6 +15,8 @@ The chain vertices, mapping grammar and name policy are `SerialBusinessTask`'s. 
 preamble differs, and it is restated here instead of parameterizing `SerialBusinessTask.analyze`
 because three serial proof modules unfold that definition.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

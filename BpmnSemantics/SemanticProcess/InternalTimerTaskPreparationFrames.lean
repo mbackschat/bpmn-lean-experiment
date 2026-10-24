@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskCommutation
-import BpmnSemantics.SemanticProcess.InternalCommutation
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskCommutation
+public import BpmnSemantics.SemanticProcess.InternalCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Complete Timer-task preparation reads all three issuers and both untagged wait anchors.
 Regional footprint independence supplies their separation and the Activity-association frame.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

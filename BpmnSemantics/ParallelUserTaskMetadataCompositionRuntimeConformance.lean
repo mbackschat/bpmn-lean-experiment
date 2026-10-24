@@ -1,9 +1,13 @@
-import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
+module
+
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 
 /-! # Parallel User Task metadata composition runtime conformance
 
 Proved start, exact sibling preservation, and occurrence-refusal behavior for two concurrent metadata-bearing User Tasks.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 

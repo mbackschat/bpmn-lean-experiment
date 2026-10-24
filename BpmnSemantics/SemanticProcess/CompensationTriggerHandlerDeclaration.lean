@@ -1,58 +1,59 @@
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 
 /-! # Compensation trigger and single-effect handler declaration validity -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def compensationProtocol := "urn:bpmn-lean:effect-protocol:activity-v1"
-private def compensationOperation :=
+def compensationProtocol := "urn:bpmn-lean:effect-protocol:activity-v1"
+def compensationOperation :=
   "urn:bpmn-lean:effect-operation:compensation-single-effect-v1"
 
-private def safeNat (value : Nat) : Bool :=
-  BpmnSemantics.SemanticProcessJson.isSafeWireNat value
-
-private def uniqueDefinitionScope? (program : Program) (id : DefinitionScopeId) :
+def uniqueScopeWithId? (program : Program) (id : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => scope.id == id with
   | [scope] => some scope
   | _ => none
 
-private def subjectElementId? (program : Program) :
+def subjectElementId? (program : Program) :
     CompensationSubjectDefinition → Option NodeId
   | .boundaryActivity subjectElementId _ => some subjectElementId
   | .eventSubProcess parentScopeId _ _ =>
-      (uniqueDefinitionScope? program parentScopeId).map (·.originElementId)
+      (uniqueScopeWithId? program parentScopeId).map (·.originElementId)
 
-private def subjectBefore (program : Program) (left right : CompensationSubjectDefinition) : Bool :=
+def subjectBefore (program : Program) (left right : CompensationSubjectDefinition) : Bool :=
   match subjectElementId? program left, subjectElementId? program right with
   | some leftId, some rightId => decide (leftId.value < rightId.value)
   | _, _ => false
 
-private def subjectsStrictlyOrdered (program : Program) :
+def subjectsStrictlyOrdered (program : Program) :
     List CompensationSubjectDefinition → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       subjectBefore program left right && subjectsStrictlyOrdered program (right :: rest)
 
-private def dependencyBefore (left right : CompensationDependency) : Bool :=
+def dependencyBefore (left right : CompensationDependency) : Bool :=
   if left.predecessorElementId.value = right.predecessorElementId.value then
     decide (left.successorElementId.value < right.successorElementId.value)
   else decide (left.predecessorElementId.value < right.predecessorElementId.value)
 
-private def dependenciesStrictlyOrdered : List CompensationDependency → Bool
+def dependenciesStrictlyOrdered : List CompensationDependency → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       dependencyBefore left right && dependenciesStrictlyOrdered (right :: rest)
 
-private def handlerDescriptorValid (body : SingleEffectCompensationHandlerBody) : Bool :=
+def handlerDescriptorValid (body : SingleEffectCompensationHandlerBody) : Bool :=
   !body.handlerElementId.value.isEmpty && !body.effectElementId.value.isEmpty &&
     body.descriptor.protocol = compensationProtocol &&
     body.descriptor.operation = compensationOperation
 
-private def boundaryTargetValid (program : Program)
+def boundaryTargetValid (program : Program)
     (subjectElementId : NodeId) (body : SingleEffectCompensationHandlerBody) : Bool :=
   match program.compensationActivityRetention with
   | none => false
@@ -64,10 +65,10 @@ private def boundaryTargetValid (program : Program)
             body.input == .empty
       | _ => false
 
-private def eventTargetValid (program : Program) (parentScopeId handlerScopeId : DefinitionScopeId)
+def eventTargetValid (program : Program) (parentScopeId handlerScopeId : DefinitionScopeId)
     (body : SingleEffectCompensationHandlerBody) : Bool :=
   match program.compensationEventSubProcessSnapshots,
-      uniqueDefinitionScope? program handlerScopeId with
+      uniqueScopeWithId? program handlerScopeId with
   | some snapshots, some handlerScope =>
       (snapshots.targets.filter fun target =>
         target.parentScopeId == parentScopeId &&
@@ -80,31 +81,31 @@ private def eventTargetValid (program : Program) (parentScopeId handlerScopeId :
             !sourceName.isEmpty && !argumentName.isEmpty && sourceName != argumentName
   | _, _ => false
 
-private def subjectValid (program : Program) : CompensationSubjectDefinition → Bool
+def subjectValid (program : Program) : CompensationSubjectDefinition → Bool
   | .boundaryActivity subjectElementId body =>
       handlerDescriptorValid body && boundaryTargetValid program subjectElementId body
   | .eventSubProcess parentScopeId handlerScopeId body =>
       handlerDescriptorValid body &&
         eventTargetValid program parentScopeId handlerScopeId body
 
-private def boundarySubjectCount : List CompensationSubjectDefinition → Nat
+def boundarySubjectCount : List CompensationSubjectDefinition → Nat
   | [] => 0
   | .boundaryActivity .. :: rest => boundarySubjectCount rest + 1
   | _ :: rest => boundarySubjectCount rest
 
-private def eventSubjectCount : List CompensationSubjectDefinition → Nat
+def eventSubjectCount : List CompensationSubjectDefinition → Nat
   | [] => 0
   | .eventSubProcess .. :: rest => eventSubjectCount rest + 1
   | _ :: rest => eventSubjectCount rest
 
-private def declaredTargetCountsMatch (program : Program)
+def declaredTargetCountsMatch (program : Program)
     (subjects : List CompensationSubjectDefinition) : Bool :=
   boundarySubjectCount subjects =
       (program.compensationActivityRetention.map (·.targets.length)).getD 0 &&
     eventSubjectCount subjects =
       (program.compensationEventSubProcessSnapshots.map (·.targets.length)).getD 0
 
-private def operationOriginElementId : SemanticOperation → Option NodeId
+def operationOriginElementId : SemanticOperation → Option NodeId
   | .triggerCompensation .. => none
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
@@ -135,23 +136,23 @@ private def operationOriginElementId : SemanticOperation → Option NodeId
   | .completeScope _ origin _ _
   | .completeEventSubProcess _ origin _ => some origin.elementId
 
-private def bodyElementIds : CompensationSubjectDefinition → List NodeId
+def bodyElementIds : CompensationSubjectDefinition → List NodeId
   | .boundaryActivity _ body | .eventSubProcess _ _ body =>
       [body.handlerElementId, body.effectElementId]
 
-private def bodyIdentityValues : CompensationSubjectDefinition → List String
+def subjectBodyIdentityValues : CompensationSubjectDefinition → List String
   | .boundaryActivity _ body | .eventSubProcess _ _ body =>
       [body.handlerElementId.value, body.effectElementId.value].eraseDups
 
-private def bodyIdentityGroupsUnique (forbidden : List String) :
+def bodyIdentityGroupsUnique (forbidden : List String) :
     List String → List CompensationSubjectDefinition → Bool
   | _, [] => true
   | claimed, subject :: rest =>
-      let group := bodyIdentityValues subject
+      let group := subjectBodyIdentityValues subject
       group.all (fun value => !forbidden.contains value && !claimed.contains value) &&
         bodyIdentityGroupsUnique forbidden (claimed ++ group) rest
 
-private def declarationBodyIdentitiesValid (program : Program)
+def declarationBodyIdentitiesValid (program : Program)
     (declaration : CompensationExecutionDeclaration) : Bool :=
   let identities := match program.operations.filter fun operation =>
       operation.id == declaration.triggerOperationId with
@@ -168,7 +169,7 @@ private def declarationBodyIdentitiesValid (program : Program)
           (subjectIds ++ triggerIds) [] declaration.subjects
   | none => false
 
-private def bodyElementsUnavailableToOperations (program : Program)
+def bodyElementsUnavailableToOperations (program : Program)
     (subjects : List CompensationSubjectDefinition) : Bool :=
   let bodyIds := subjects.flatMap bodyElementIds
   program.operations.all fun operation =>
@@ -176,7 +177,7 @@ private def bodyElementsUnavailableToOperations (program : Program)
     | none => true
     | some originId => !bodyIds.contains originId
 
-private def triggerValid (program : Program) (declaration : CompensationExecutionDeclaration) : Bool :=
+def triggerValid (program : Program) (declaration : CompensationExecutionDeclaration) : Bool :=
   match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
   | [.triggerCompensation _ origin definitionScopeId input output] =>
       !origin.elementId.value.isEmpty && definitionScopeId == declaration.definitionScopeId &&
@@ -191,7 +192,7 @@ private def triggerValid (program : Program) (declaration : CompensationExecutio
       | none => false
   | _ => false
 
-private def declarationScopeValid (program : Program)
+def declarationScopeValid (program : Program)
     (declaration : CompensationExecutionDeclaration) : Bool :=
   match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
   | [.triggerCompensation ..] =>
@@ -208,17 +209,17 @@ private def declarationScopeValid (program : Program)
       | none => false
   | _ => false
 
-private def successorIds (dependencies : List CompensationDependency) (id : NodeId) : List NodeId :=
+def successorIds (dependencies : List CompensationDependency) (id : NodeId) : List NodeId :=
   (dependencies.filter fun dependency =>
     dependency.predecessorElementId == id).map (·.successorElementId)
 
-private def reaches (dependencies : List CompensationDependency) : Nat → List NodeId → NodeId → Bool
+def reaches (dependencies : List CompensationDependency) : Nat → List NodeId → NodeId → Bool
   | 0, _, _ => false
   | fuel + 1, frontier, target =>
       frontier.contains target ||
         reaches dependencies fuel (frontier.flatMap (successorIds dependencies)) target
 
-private def dependenciesValid (program : Program) (subjects : List CompensationSubjectDefinition)
+def dependenciesValid (program : Program) (subjects : List CompensationSubjectDefinition)
     (dependencies : List CompensationDependency) : Bool :=
   let subjectIds := subjects.filterMap (subjectElementId? program)
   dependenciesStrictlyOrdered dependencies &&

@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source trigger-binding conformance
 
 Trigger endpoints, trigger scope, and the deliberately dormant handler scope remain independent
 negative decisions.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

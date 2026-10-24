@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 
 /-! # Compensation handler maximal-frontier activation -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -12,7 +16,7 @@ structure CompensationFrontierActivation where
   effectActivations : List EffectActivation
   deriving Repr, DecidableEq
 
-private def waitBefore
+def waitBefore
     (left right : CompensationHandlerEffectWait) : Bool :=
   compensationOccurrenceBefore left.id right.id
 
@@ -20,7 +24,7 @@ def insertCompensationHandlerEffectWait (wait : CompensationHandlerEffectWait)
     (waits : List CompensationHandlerEffectWait) : List CompensationHandlerEffectWait :=
   canonicalInsertBy waitBefore wait waits
 
-private def handlerHasUnfinishedSuccessor (trigger : CompensationTriggerExecution)
+def handlerHasUnfinishedSuccessor (trigger : CompensationTriggerExecution)
     (handler : CompensationHandlerExecution) : Bool :=
   trigger.dependencies.any fun dependency =>
     compensationSubjectMatches dependency.predecessor handler.identity.subject &&
@@ -177,7 +181,7 @@ inductive CompensationFrontierHandlersRefusal (program : Program)
       CompensationFrontierHandlersRefusal program trigger
         (handler :: rest) activations
 
-private def activateHandlers (program : Program) (trigger : CompensationTriggerExecution) :
+def activateHandlers (program : Program) (trigger : CompensationTriggerExecution) :
     List CompensationHandlerExecution → List EffectActivation →
       Option (List CompensationHandlerExecution ×
         List CompensationHandlerEffectWait × List EffectActivation)

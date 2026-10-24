@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! # Parallel Multi-Instance laws
 
@@ -8,6 +10,8 @@ whole-region closure. They state no host scheduling order: the all-policy commut
 accepted order from final slot state, while first-policy lifecycle evidence deliberately retains the
 winner and terminated siblings.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

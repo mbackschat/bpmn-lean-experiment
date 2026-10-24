@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! Actual regional execution supplies the field updates and token actions used by the pair consumer. The facts follow from complete preparation rather than an assumed successor shape. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

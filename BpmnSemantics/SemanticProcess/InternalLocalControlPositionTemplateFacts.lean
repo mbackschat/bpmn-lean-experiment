@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
 
 /-! Static signed-unit templates have canonical positive rows and exact complete-key lookup,
 as required by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

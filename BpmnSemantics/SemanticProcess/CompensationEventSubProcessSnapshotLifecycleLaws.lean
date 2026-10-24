@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Compensation Event Sub-Process snapshot lifecycle laws
 
@@ -7,6 +9,8 @@ Reusable composition laws connect the public snapshot reservation and promotion 
 ordinary and bounded scope operations that consume them. These laws constrain the evaluator's
 state-transforming paths directly; `AttemptProgramStep` remains only an evaluator graph.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

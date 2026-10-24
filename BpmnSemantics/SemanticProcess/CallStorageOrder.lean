@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 
 /-! # Canonical Call record storage
 
 Scope creation sorts its retained Call associations. The runtime collection-order invariant needs
 that sort to establish canonical order, independently of reachability's permutation law.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

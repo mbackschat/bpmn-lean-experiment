@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
-import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
+public import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
 
 /-! Ordinary parent/body execution preserves the SMIS execution certificate. Repeated-body lifecycle and command ingress belong to the separate preservation owner; history and readiness remain above both. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -159,7 +163,7 @@ private theorem smis_effect_arming_waiting (program : Program) (before : Runtime
 
 
 /-- Actual child-owned ordinary preparation advances the whole held certificate and records exactly this body firing. -/
-theorem sequentialScope_body_prepared_certificate (program : Program)
+theorem sequentialScope_body_prepared_certificate (program : Program) [InterruptionInvocationsRooted program]
     (data : SequentialScopeData.Analysis) (root : DefinitionScope) (before : RuntimeState)
     (hosting : SemanticId) (parentFired : List SemanticOperation) (operation : SemanticOperation)
     (bodyOperations : List SemanticOperation) (vertex : StructuredParallelBody.Vertex)

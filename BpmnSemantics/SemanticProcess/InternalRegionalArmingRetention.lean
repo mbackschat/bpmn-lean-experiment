@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 
 /-! Prepared arming freshness and predecessor ownership exclude aliases with the
 regional removal set; complete regional preparation depends on those exclusions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,16 +1,20 @@
-import BpmnSemantics.Experiments.CheckedSourceCoverage
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceCoverage
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Stage 2 structured-admission witnesses
 
 This module owns adversarial executable witnesses for the provisional structured-admission experiment. It does not participate in production source admission.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 
 open BpmnSemantics.SemanticProcess
 
-private def disconnectedProgram : Program :=
+def disconnectedProgram : Program :=
   let scopeId := rootDefinitionScopeId sequentialProgram.processId
   let input : ControlPlace :=
     { id := ⟨"place:DisconnectedInput"⟩
@@ -42,7 +46,7 @@ theorem disconnectedProgramIsRejected :
     programWellFormed disconnectedProgram = false := by
   decide +kernel
 
-private def twoSegmentSource : CheckedProcess :=
+def twoSegmentSource : CheckedProcess :=
   { identity :=
       { semanticProfile := ⟨"checked-source-stage-2"⟩
         sourceId := ⟨"two-segment-source"⟩
@@ -67,7 +71,7 @@ private def twoSegmentSource : CheckedProcess :=
       , { id := ⟨"Flow_Start_A"⟩, sourceId := ⟨"Start"⟩,
           targetId := ⟨"Task_A"⟩ } ] }
 
-private def zeroSegmentSource : CheckedProcess :=
+def zeroSegmentSource : CheckedProcess :=
   { twoSegmentSource with
     identity := { twoSegmentSource.identity with sourceId := ⟨"zero-segment"⟩ }
     nodeScopes := rootNodeScopes twoSegmentSource.processId [⟨"End"⟩, ⟨"Start"⟩]
@@ -79,7 +83,7 @@ private def zeroSegmentSource : CheckedProcess :=
           sourceId := ⟨"Start"⟩
           targetId := ⟨"End"⟩ } ] }
 
-private def disconnectedCycleSource : CheckedProcess :=
+def disconnectedCycleSource : CheckedProcess :=
   { twoSegmentSource with
     identity :=
       { twoSegmentSource.identity with sourceId := ⟨"disconnected-cycle"⟩ }
@@ -104,7 +108,7 @@ private def disconnectedCycleSource : CheckedProcess :=
       , { id := ⟨"Flow_Start_A"⟩, sourceId := ⟨"Start"⟩,
           targetId := ⟨"Task_A"⟩ } ] }
 
-private def twoTimerSource : CheckedProcess :=
+def twoTimerSource : CheckedProcess :=
   { twoSegmentSource with
     identity := { twoSegmentSource.identity with sourceId := ⟨"two-timers"⟩ }
     nodes :=
@@ -133,25 +137,25 @@ theorem secondTimerIsRejected :
     structuredAdmissionDecider twoTimerSource = false := by
   decide +kernel
 
-private def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none) :
+def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none) :
     CheckedNode :=
   .serviceTask ⟨"ServiceTask"⟩
     { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
       operation := "urn:bpmn-lean:effect-operation:probe-v1" }
     [] [] route
 
-private def excludedExclusiveGateway : CheckedNode :=
+def excludedExclusiveGateway : CheckedNode :=
   .exclusiveGateway ⟨"Choice"⟩
     [⟨"Flow_First"⟩, ⟨"Flow_Second"⟩] ⟨"Flow_Default"⟩
 
-private def excludedMessageCatch : CheckedNode :=
+def excludedMessageCatch : CheckedNode :=
   .intermediateCatchMessageEvent ⟨"MessageCatch"⟩
     (.operationMessage ⟨"Interface"⟩ ⟨"Operation"⟩ ⟨"Message"⟩)
 
-private def excludedEmbeddedSubProcess : CheckedNode :=
+def excludedEmbeddedSubProcess : CheckedNode :=
   .embeddedSubProcess ⟨"EmbeddedSubProcess"⟩ ⟨"scope:child"⟩
 
-private def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
+def excludedBoundaryRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"BoundaryError"⟩
     boundaryEventName := none
     attachedToRef := ⟨"ServiceTask"⟩
@@ -199,7 +203,7 @@ theorem embeddedSubProcessRemainsOutsideFrozenExperiment :
       composedNodeSurfaceValid excludedEmbeddedSubProcess = false := by
   decide +kernel
 
-private def threeCycle : List (GraphEdge NodeId) :=
+def threeCycle : List (GraphEdge NodeId) :=
   [ { source := ⟨"A"⟩, target := ⟨"B"⟩ }
   , { source := ⟨"B"⟩, target := ⟨"C"⟩ }
   , { source := ⟨"C"⟩, target := ⟨"A"⟩ } ]
@@ -221,7 +225,7 @@ theorem bothRejectAtVertexFuel :
 theorem boundedSearchCorrectAtTwo :
     acyclicWithin threeCycle 2 = false := by decide +kernel
 
-private def graphPredicateChecks : Bool :=
+def graphPredicateChecks : Bool :=
   let forward : List (GraphEdge NodeId) :=
     [{ source := ⟨"A"⟩, target := ⟨"B"⟩ }]
   let cycle : List (GraphEdge NodeId) :=

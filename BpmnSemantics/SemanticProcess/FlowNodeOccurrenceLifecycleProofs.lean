@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 
 /-! # Flow-node occurrence lifecycle fold-soundness laws
 
@@ -12,6 +14,8 @@ Exactness of the four actual cancellation branches is the separate responsibilit
 [`FlowNodeOccurrenceCancellationProofs`](FlowNodeOccurrenceCancellationProofs.lean), which consumes
 these laws. Concrete executable witnesses remain in the conformance module.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

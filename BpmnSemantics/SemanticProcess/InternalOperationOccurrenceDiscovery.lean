@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! PMIS-SELECT-01 operation/owner discovery and exact resolution. Execution of a resolved occurrence
 belongs to `InternalOperationOccurrence`; this module only decides which occurrences exist and which
 declaration an occurrence names.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

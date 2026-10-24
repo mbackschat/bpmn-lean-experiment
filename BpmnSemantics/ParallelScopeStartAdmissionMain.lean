@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
-import BpmnSemantics.SemanticProcessJson.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! Diagnostic closure bounds over existing checked-source and Start-data wire inputs; this is not command admission. -/
 
-private def runInputs (frontier : Bool) : List String → IO UInt32
+@[expose] public section
+
+def runInputs (frontier : Bool) : List String → IO UInt32
   | [] => pure 0
   | sourcePath :: stimulusPath :: rest => do
       let sourceText ← IO.FS.readFile sourcePath

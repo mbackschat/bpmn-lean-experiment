@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationFrame
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalFrame
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalAlgebra
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationFrame
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalFrame
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalAlgebra
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 
 /-! The complete regional/scope-creation outcome derives both preparations and opposite executions from predecessor facts. Collection algebra supplies literal canonical state equality; the existing publication acceptance laws then apply to all four actual steps. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -227,7 +231,7 @@ private theorem regional_scope_creation_successors_equal (program : Program) (be
   exact equal
 
 /-- Both complete preparations survive, both orders execute to the same canonical state, and all three successor states remain valid. -/
-theorem prepared_regional_scope_creation_pair_commutes (program : Program) (before : RuntimeState)
+theorem prepared_regional_scope_creation_pair_commutes (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation creationOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
     (programValid : programWellFormed program = true)
@@ -267,7 +271,7 @@ theorem prepared_regional_scope_creation_pair_commutes (program : Program) (befo
       creationOperation creation programValid afterValid creationFrame⟩
 
 /-- Actual execution accepts the same per-operation publication at each assigned index in either order. The common state and intermediate validity are consequences of the predecessor preparations. -/
-theorem prepared_regional_scope_creation_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_scope_creation_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation creationOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (creation : PreparedInternalScopeCreation)
     (commandId : SemanticId) (regionalIndex creationIndex : Nat)

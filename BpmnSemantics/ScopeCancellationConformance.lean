@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Regional Activity lifetime regression witnesses
 
@@ -9,18 +11,20 @@ These literal ownership graphs exercise cancellation without claiming new profil
 Called-Process cleanup also supplies exact predecessor membership for the Activity issuing census.
 -/
 
+@[expose] public section
+
 set_option Elab.async false
 
 namespace BpmnSemantics.ScopeCancellationConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def root : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:root"⟩, 1⟩
-private def child : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:child"⟩, 1⟩
-private def activityId : ActivityOccurrenceId := ⟨⟨"Instance"⟩, ⟨"Child"⟩, 1⟩
-private def messageId : OccurrenceId := ⟨⟨"Instance"⟩, ⟨"Message"⟩, 1⟩
+def root : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:root"⟩, 1⟩
+def child : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:child"⟩, 1⟩
+def activityId : ActivityOccurrenceId := ⟨⟨"Instance"⟩, ⟨"Child"⟩, 1⟩
+def messageId : OccurrenceId := ⟨⟨"Instance"⟩, ⟨"Message"⟩, 1⟩
 
-private def attachedMessage : MessageWait :=
+def attachedMessage : MessageWait :=
   { processInstanceId := ⟨"Instance"⟩
     owner := root
     elementId := ⟨"Message"⟩
@@ -28,10 +32,10 @@ private def attachedMessage : MessageWait :=
     channel := .directMessage ⟨"Message"⟩
     output := ⟨"place:handler"⟩ }
 
-private def otherActivationMessage : MessageWait :=
+def otherActivationMessage : MessageWait :=
   { attachedMessage with activation := 2 }
 
-private def sameCoordinatesTimer : TimerWait :=
+def sameCoordinatesTimer : TimerWait :=
   { processInstanceId := ⟨"Instance"⟩
     owner := root
     elementId := ⟨"Message"⟩
@@ -39,7 +43,7 @@ private def sameCoordinatesTimer : TimerWait :=
     deadlineMs := 9000
     output := ⟨"place:timer"⟩ }
 
-private def state : RuntimeState :=
+def state : RuntimeState :=
   { initialState with
     control := .running ⟨"Instance"⟩
     scopeOccurrences := [{ id := root, parent := none }, { id := child, parent := some root }]
@@ -91,9 +95,9 @@ theorem disposition_selects_the_region_occurrence_lifetime :
       (cancelScopeSubtree state child .retain).scopeOccurrences =
         state.scopeOccurrences := by decide +kernel
 
-private def grandchild : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:grandchild"⟩, 1⟩
+def grandchild : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:grandchild"⟩, 1⟩
 
-private def descendantBodyState : RuntimeState :=
+def descendantBodyState : RuntimeState :=
   { state with
     scopeOccurrences := state.scopeOccurrences ++ [{ id := grandchild, parent := some child }]
     activityOccurrences := state.activityOccurrences.map fun occurrence =>
@@ -110,9 +114,9 @@ theorem retained_region_withdraws_removed_descendant_body_and_exact_attachments 
       (cancelScopeSubtree descendantBodyState child .retain).variables.activities =
         state.variables.activities.tail := by decide +kernel
 
-private def otherRoot : ScopeOccurrenceId := ⟨⟨"OtherInstance"⟩, ⟨"scope:root"⟩, 1⟩
+def otherRoot : ScopeOccurrenceId := ⟨⟨"OtherInstance"⟩, ⟨"scope:root"⟩, 1⟩
 
-private def triggerFor (owner : ScopeOccurrenceId) : CompensationTriggerExecution :=
+def triggerFor (owner : ScopeOccurrenceId) : CompensationTriggerExecution :=
   { id := ⟨owner.processInstanceId, ⟨"Throw"⟩, 1⟩
     owner
     output := ⟨"place:afterCompensation"⟩
@@ -125,7 +129,7 @@ private def triggerFor (owner : ScopeOccurrenceId) : CompensationTriggerExecutio
          lifecycle := .compensating none ⟨owner.processInstanceId, ⟨"Effect"⟩, 1⟩ }]
     dependencies := [] }
 
-private def handlerWaitFor (owner : ScopeOccurrenceId) : CompensationHandlerEffectWait :=
+def handlerWaitFor (owner : ScopeOccurrenceId) : CompensationHandlerEffectWait :=
   { id := ⟨owner.processInstanceId, ⟨"Effect"⟩, 1⟩
     triggerId := (triggerFor owner).id
     handlerId := ⟨owner.processInstanceId, ⟨"Handler"⟩, 1⟩
@@ -134,7 +138,7 @@ private def handlerWaitFor (owner : ScopeOccurrenceId) : CompensationHandlerEffe
         operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
     arguments := [] }
 
-private def compensationState : RuntimeState :=
+def compensationState : RuntimeState :=
   { state with
     scopeOccurrences := state.scopeOccurrences ++ [{ id := otherRoot, parent := none }]
     compensationActivityRetentions :=

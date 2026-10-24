@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 
 /-! Complete regional/arming publication composes the actual four steps. Each operation keeps
 its assigned index in either order; successor validity and accepted deltas are derived from
 the original preparations rather than supplied as intermediate assumptions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -30,7 +34,7 @@ private theorem preparedArming_publication_at_index (program : Program) (state :
 
 /-- Both orders execute, retain preparation, preserve validity, and accept the same publication
 for each operation at its assigned index, including nonzero and unequal indices. -/
-theorem prepared_regional_arming_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_arming_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation : SemanticOperation) (regional : PreparedInternalRegional) (arm : PreparedInternalArming)
     (commandId : SemanticId) (regionalIndex armingIndex : Nat)
     (programWF : programWellFormed program = true)

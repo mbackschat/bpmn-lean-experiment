@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
 
 /-! # Parallel Multi-Instance entry order fact
 
 This module isolates the Activity-occurrence comparator fact used by nonempty shared entry preservation so that the preservation owner retains reviewable growth headroom.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

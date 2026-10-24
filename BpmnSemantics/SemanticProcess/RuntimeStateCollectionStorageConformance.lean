@@ -1,23 +1,27 @@
-import BpmnSemantics.ActivityBoundaryTimerFixtures
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
 
 /-! AA-18 separates committed storage admission from the raw evaluator's token and frame laws. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def program : Program := ActivityBoundaryTimerConformance.program
-private def start : Stimulus :=
+def program : Program := ActivityBoundaryTimerConformance.program
+def start : Stimulus :=
   .startProcess ⟨"start-process"⟩ ⟨"Process_ActivityBoundaryTimer"⟩ ⟨"Instance_1"⟩ []
-private def completion : Stimulus :=
+def completion : Stimulus :=
   .completeUserTaskInstance ⟨"complete-bounded-task"⟩ ActivityBoundaryTimerConformance.taskId []
 
-private def duplicateStartCounters : RuntimeState :=
+def duplicateStartCounters : RuntimeState :=
   { initialState with activations :=
     [{ taskId := ⟨"BoundedTask"⟩, count := 5 }, { taskId := ⟨"BoundedTask"⟩, count := 9 }] }
 
-private def duplicateCompletionCounters : RuntimeState :=
+def duplicateCompletionCounters : RuntimeState :=
   { ActivityBoundaryTimerConformance.armedState with activations :=
     [{ taskId := ⟨"BoundedTask"⟩, count := 1 },
       { taskId := ⟨"NormalTask"⟩, count := 5 }, { taskId := ⟨"NormalTask"⟩, count := 9 }] }
@@ -40,7 +44,7 @@ theorem duplicate_counter_completion_is_rejected_without_mutation :
         duplicateCompletionCounters := by
   decide +kernel
 
-private def repeatedTokenUnits : RuntimeState :=
+def repeatedTokenUnits : RuntimeState :=
   { initialState with tokens :=
     [⟨⟨"place:Probe"⟩, ⟨⟨"Instance_1"⟩, ⟨"scope:Probe"⟩, 1⟩⟩,
       ⟨⟨"place:Probe"⟩, ⟨⟨"Instance_1"⟩, ⟨"scope:Probe"⟩, 1⟩⟩] }

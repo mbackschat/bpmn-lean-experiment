@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchAnchorProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchAnchorProofs
 
 /-! # Frozen arming preparation through raw prefixes
 
@@ -6,6 +8,8 @@ PMIS-SELECT-01 rechecks frozen writes after earlier reserved members.
 Population and input frames below connect the actual preparer to the
 certificate's token, anchor and local-frame separation without execution premises.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

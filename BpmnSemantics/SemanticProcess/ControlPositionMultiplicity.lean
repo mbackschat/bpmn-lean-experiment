@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ControlPosition
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! Public token multiplicity counts private token units, as required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def positionMass (positions : List PublicControlTokenPosition)
+def positionMass (positions : List PublicControlTokenPosition)
     (target : PublicControlTokenPosition) : Nat :=
   (positions.map fun position =>
     if sameTokenPosition target position then position.multiplicity else 0).sum

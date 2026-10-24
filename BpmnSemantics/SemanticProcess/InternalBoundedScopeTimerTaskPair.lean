@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeDataPair
-import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeDataPair
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
 
 /-! Joint Timer and Activity reads are separated before either operation executes, as required by
 the [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

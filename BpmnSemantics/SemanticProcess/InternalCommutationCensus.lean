@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Internal commutation census
 
 This module classifies every current operation and RuntimeState field under the reviewed final-closure account. Classification enables no transition and supplies no footprint by itself.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

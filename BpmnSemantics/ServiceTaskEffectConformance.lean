@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # BpmnSemantics.ServiceTaskEffectConformance — exact effect-intent locks
 
 These checks own the direct Lean account for the admitted success-only Service Task effect slice. They establish checked-source lowering, effect activation and observation, exact completion, full-identity refusal, and the nearest accept-any-result non-law without importing a host retry or Activity model.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ServiceTaskEffectConformance
 
@@ -168,7 +172,7 @@ theorem wrong_effect_activation_is_rejected :
     { effectId with activation := 2 } (.success []) 0 (by decide +kernel)
 
 /-- Executable wrong account: accepting an arbitrary result would advance even when no effect occurrence was ever activated. -/
-private def acceptAnyEffectResult (state : RuntimeState)
+def acceptAnyEffectResult (state : RuntimeState)
     (owner : ScopeOccurrenceId) (output : ControlPlaceId) : RuntimeState :=
   { state with tokens := addToken state.tokens output owner }
 

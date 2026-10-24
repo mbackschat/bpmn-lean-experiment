@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Repeated-scope dispatch contract
 
 The same four-case account must drive actual operation execution; these equations detect an unwired or misrouted dispatcher.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

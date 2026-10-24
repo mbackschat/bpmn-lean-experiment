@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
-import BpmnSemantics.SemanticProcess.ParallelScopeData
-import BpmnSemantics.SemanticProcess.WaitCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! PMIS-DATA-01 admits selected command data and routes exact live waits through the existing scoped writers. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 

@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 
 /-! Return publication binds the selected Call cleanup to the prepared occurrence region.
 Quiescence protects the caller; continuation insertion preserves existing output multiplicity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -62,7 +66,7 @@ theorem returnProcessState_regional_position_delta (program : Program) (before a
         exact (List.mem_filter.mp member).1
       have prepared : deriveInternalOccurrenceRegion? before root.id = some region := by simpa only [rootId] using derived
       have singleton := quiescent_prepared_region_singleton before root.id region prepared quiescent
-      have different := quiescent_root_excludes_call_caller before hosting running associations root rootMember parentless
+      have different := quiescent_root_excludes_call_caller program before hosting hosting running valid root rootMember parentless
         quiescent retained recordMember
       have outside : region.contains retained.caller = false := by
         simp only [InternalOccurrenceRegion.contains, singleton, List.contains_cons, List.contains_nil, Bool.or_false,

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
-import BpmnSemantics.WireNatural
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.WireNatural
 
 /-! Complete predecessor preparations for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

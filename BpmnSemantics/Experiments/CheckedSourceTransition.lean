@@ -1,9 +1,13 @@
-import BpmnSemantics.Experiments.CheckedSourceState
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceState
 
 /-! # Checked-source transitions
 
 This module owns the provisional checked-node relation, executable selector, stimulus admission, and bounded closure. It is written directly in BPMN checked-graph vocabulary and does not depend on Semantic Process lowering or execution.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceSemantics
 

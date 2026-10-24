@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.ValueDomain
+module
+
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Structured Human Work profile topology
 
@@ -8,29 +10,31 @@ End branches required by the structured Human Work profile. It excludes Product 
 content, which have no semantic authority.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def exactSet [DecidableEq α] (actual expected : List α) : Bool :=
+def exactSet [DecidableEq α] (actual expected : List α) : Bool :=
   actual.length = expected.length &&
     expected.all (fun value => decide (value ∈ actual)) &&
     decide expected.Nodup
 
-private def checkedFlow? (source : CheckedProcess) (id : SequenceFlowId) :
+def checkedFlow? (source : CheckedProcess) (id : SequenceFlowId) :
     Option CheckedSequenceFlow :=
   source.sequenceFlows.find? fun flow => decide (flow.id = id)
 
-private def checkedStringEqualsCondition : Option CheckedCondition → Bool
+def checkedStringEqualsCondition : Option CheckedCondition → Bool
   | some condition =>
       match parseSimpleBooleanExpression condition.body with
       | some (.stringEquals _ _) => true
       | _ => false
   | none => false
 
-private def isStringEqualsExpression : SimpleBooleanExpression → Bool
+def isStringEqualsExpression : SimpleBooleanExpression → Bool
   | .stringEquals _ _ => true
   | _ => false
 
-private def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool :=
+def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool :=
   match source.nodes.filterMap fun
       | .noneStartEvent id => some id
       | _ => none,
@@ -65,7 +69,7 @@ private def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool 
       | _, _, _ => false
   | _, _, _, _ => false
 
-private def programStructuredHumanWorkTopology (program : Program) : Bool :=
+def programStructuredHumanWorkTopology (program : Program) : Bool :=
   match program.operations.filterMap fun
       | .initiate _ _ output => some output
       | _ => none,

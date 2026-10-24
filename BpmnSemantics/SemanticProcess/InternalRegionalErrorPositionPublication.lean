@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 
 /-! Error publication follows the actual child cancellation and parent continuation.
 The parent lies outside the derived region, including when its output bucket is populated.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -16,7 +20,7 @@ open BpmnSemantics
 theorem regionalChild_parent_outside (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (root : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId)
     (region : InternalOccurrenceRegion)
-    (valid : runtimePositionValid program hosting before = true)
+    (valid : runtimePositionValid program hosting before = true) [CallersParentless before]
     (running : before.control = .running hosting)
     (member : root ∈ before.scopeOccurrences) (parentEq : root.parent = some parent)
     (derived : deriveInternalOccurrenceRegion? before root.id = some region) :
@@ -31,7 +35,7 @@ theorem regionalChild_parent_outside (program : Program) (before : RuntimeState)
 theorem interruptScope_regional_position_delta (program : Program) (before : RuntimeState)
     (hosting : SemanticId) (root : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId)
     (output : ControlPlaceId) (region : InternalOccurrenceRegion)
-    (valid : runtimePositionValid program hosting before = true)
+    (valid : runtimePositionValid program hosting before = true) [CallersParentless before]
     (running : before.control = .running hosting)
     (member : root ∈ before.scopeOccurrences) (parentEq : root.parent = some parent)
     (derived : deriveInternalOccurrenceRegion? before root.id = some region)
@@ -98,7 +102,7 @@ theorem regionalSelection_error_execution (program : Program) (before after : Ru
           · contradiction
       · contradiction
 
-theorem preparedError_position_delta (program : Program) (before : RuntimeState)
+theorem preparedError_position_delta (program : Program) [InvocationsInProcessRoots program] (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (error : ErrorReference) (handler : InterruptingErrorHandler) (prepared : PreparedInternalRegional)
     (found : prepareInternalRegional? program before (.throwError id origin input error handler) = some prepared) :
@@ -123,6 +127,7 @@ theorem preparedError_position_delta (program : Program) (before : RuntimeState)
     split at projected
     · assumption
     · contradiction
+  haveI := CallersParentless.of_rooted program before hosting hosting valid runningState
   have positionsExact : positions =
       { controlTokens := projectTokens program before.tokens, scopes := projectScopes program before.scopeOccurrences } := by
     simpa [projectControlPosition?, valid] using projected.symm

@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
-import BpmnSemantics.SemanticProcess.GraphReachability
-import BpmnSemantics.SemanticProcess.CallActivityAdmission
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.OperationControlPlaces
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+public import BpmnSemantics.SemanticProcess.GraphReachability
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.OperationControlPlaces
 
 /-! # Fuel-bounded graph validation
 
 This module owns small executable graph predicates shared by checked-source proof experiments and standalone Semantic Process validation. Production validators derive fuel from the finite admitted vertex set; discriminating witnesses may deliberately underfuel a search. Graph search never participates in a semantic transition.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -24,7 +28,7 @@ def producers (operations : List SemanticOperation)
     else
       none
 
-private def consumers (operations : List SemanticOperation)
+def consumers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
     if (operationInputPlaces operation).contains place then
@@ -32,27 +36,17 @@ private def consumers (operations : List SemanticOperation)
     else
       none
 
-private def placeEdges (program : Program) : List (GraphEdge OperationId) :=
+def placeEdges (program : Program) : List (GraphEdge OperationId) :=
   program.controlPlaces.flatMap fun place =>
     (producers program.operations place.id).flatMap fun producer =>
       (consumers program.operations place.id).map fun consumer =>
         { source := producer, target := consumer }
 
-private def operationScope? (program : Program) (operationId : OperationId) :
-    Option DefinitionScopeId :=
-  (program.operationScopes.find? fun ownership =>
-    decide (ownership.operationId = operationId)).map (·.scopeId)
-
-private def placeScope? (program : Program) (placeId : ControlPlaceId) :
-    Option DefinitionScopeId :=
-  (program.controlPlaceScopes.find? fun ownership =>
-    decide (ownership.controlPlaceId = placeId)).map (·.scopeId)
-
-private def definitionScope? (program : Program) (scopeId : DefinitionScopeId) :
+def firstDefinitionScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   program.definitionScopes.find? fun scope => decide (scope.id = scopeId)
 
-private def placesOwnedBy (program : Program) (places : List ControlPlaceId)
+def placesOwnedBy (program : Program) (places : List ControlPlaceId)
     (scopeId : DefinitionScopeId) : Bool :=
   places.all fun place => placeScope? program place == some scopeId
 
@@ -64,15 +58,15 @@ def operationRespectsScopes (program : Program)
   | some owner =>
       match operation with
       | .initiate _ _ output =>
-          (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+          (firstDefinitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program [output] owner
       | .initiateMessage _ _ _ outputs =>
-          (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+          (firstDefinitionScope? program owner).any (·.parentScopeId.isNone) &&
             placesOwnedBy program outputs owner
       | .enterParallelMultiInstanceScope _ origin input childEntry childScopeId output _ _ _ _
       | .enterSequentialMultiInstanceScope _ origin input childEntry childScopeId output _ _ _ _ =>
           placesOwnedBy program [input, output] owner && placesOwnedBy program [childEntry] childScopeId &&
-            (definitionScope? program childScopeId).any fun scope =>
+            (firstDefinitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner && scope.originElementId == origin.elementId
       | .completeSequentialMultiInstanceScope _ _ entryId =>
           program.operations.any fun
@@ -87,7 +81,7 @@ def operationRespectsScopes (program : Program)
       | .enterScope _ _ input childEntry childScopeId =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] childScopeId &&
-            (definitionScope? program childScopeId).any fun scope =>
+            (firstDefinitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner
       -- Same scope contract as the ordinary entry, plus the boundary route: the deadline's output is
       -- token-carrying and lands in the *parent*, so it is owner-scoped while the child entry is not.
@@ -98,28 +92,28 @@ def operationRespectsScopes (program : Program)
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] childScopeId &&
             placesOwnedBy program [boundaryTimer.output] owner &&
-            (definitionScope? program childScopeId).any fun scope =>
+            (firstDefinitionScope? program childScopeId).any fun scope =>
               scope.parentScopeId == some owner
       | .invokeProcess _ _ input _ calledRoot childEntry _ _ =>
           placesOwnedBy program [input] owner &&
             placesOwnedBy program [childEntry] calledRoot
       | .returnProcess id _ _ calledRoot callerOutput _ =>
-          -- CALLN-ADMIT-01: the caller output lies in the Process root that holds the paired invocation.
+          -- CALLN-ADMIT-01: the caller output lies in the scope that holds the paired invocation, a
+          -- Process root or, under Stage B, an embedded scope; pairing places that scope outside the
+          -- called root's tree.
           calledRoot = owner &&
-            (definitionScope? program owner).any (·.parentScopeId.isNone) &&
+            (firstDefinitionScope? program owner).any (·.parentScopeId.isNone) &&
             match program.operations.filter (fun candidate => match candidate with
                 | .invokeProcess _ _ _ _ _ _ returned _ => decide (returned = id)
                 | _ => false) with
             | [invoke] =>
                 match operationScope? program invoke.id with
-                | some caller =>
-                    (definitionScope? program caller).any (·.parentScopeId.isNone) &&
-                      placesOwnedBy program [callerOutput] caller
+                | some caller => placesOwnedBy program [callerOutput] caller
                 | none => false
             | _ => false
       | .completeScope _ _ scopeId parentOutput =>
           scopeId = owner &&
-            match definitionScope? program scopeId with
+            match firstDefinitionScope? program scopeId with
             | none => false
             | some scope =>
                 match scope.parentScopeId, parentOutput with
@@ -134,15 +128,15 @@ def operationRespectsScopes (program : Program)
           scopeId = owner && placesOwnedBy program [input] owner
       | .cancelTransaction _ _ scopeId input output _ =>
           scopeId = owner && placesOwnedBy program [input] owner &&
-            match (definitionScope? program owner).bind (·.parentScopeId) with
+            match (firstDefinitionScope? program owner).bind (·.parentScopeId) with
             | some parent =>
-                (definitionScope? program parent).any (·.parentScopeId.isNone) &&
+                (firstDefinitionScope? program parent).any (·.parentScopeId.isNone) &&
                   placesOwnedBy program [output] parent
             | none => false
       | .throwError _ _ input _ handler =>
           handler.attachedScopeId = owner &&
             placesOwnedBy program [input] owner &&
-            match definitionScope? program owner with
+            match firstDefinitionScope? program owner with
             | some scope =>
                 match scope.parentScopeId with
                 | some parent => placesOwnedBy program [handler.output] parent
@@ -175,7 +169,7 @@ def scopedOwnershipComplete (program : Program)
       program.controlPlaces.map (·.id) &&
     program.operations.all (operationRespectsScopes program entryRootId)
 
-private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
+def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     Option OperationId :=
   program.operations.findSome? fun
     | .completeParallelMultiInstanceScope id _ _
@@ -186,7 +180,7 @@ private def completionId? (program : Program) (scopeId : DefinitionScopeId) :
         if candidate = scopeId then some id else none
     | _ => none
 
-private def completionEdges (program : Program) : List (GraphEdge OperationId) :=
+def completionEdges (program : Program) : List (GraphEdge OperationId) :=
   program.operations.filterMap fun
     | .reachNoneEnd id _ _ => do
         let scopeId ← operationScope? program id
@@ -200,7 +194,7 @@ private def completionEdges (program : Program) : List (GraphEdge OperationId) :
         else none
     | _ => none
 
-private def parallelMultiInstanceCompletionEdges (program : Program) :
+def parallelMultiInstanceCompletionEdges (program : Program) :
     List (GraphEdge OperationId) :=
   program.operations.filterMap fun
     | .completeParallelMultiInstanceUserTask id _ entryOperationId _ _ =>
@@ -208,7 +202,7 @@ private def parallelMultiInstanceCompletionEdges (program : Program) :
     | _ => none
 
 /-- IMES-ARM-01 and IMES-CLOSE-01 contribute reachability dependencies, never token-producing ports. -/
-private def messageHandlerEdges (program : Program) : List (GraphEdge OperationId) :=
+def messageHandlerEdges (program : Program) : List (GraphEdge OperationId) :=
   program.interruptingMessageEventSubProcesses.flatMap fun declaration =>
     match program.operations.findSome? (fun | .initiate id _ _ => some id | _ => none),
         consumers program.operations declaration.childEntry,
@@ -218,12 +212,12 @@ private def messageHandlerEdges (program : Program) : List (GraphEdge OperationI
         [{ source := start, target := entry }, { source := handlerCompletion, target := parentCompletion }]
     | _, _, _, _ => []
 
-private def programEdges (program : Program) : List (GraphEdge OperationId) :=
+def programEdges (program : Program) : List (GraphEdge OperationId) :=
   messageHandlerEdges program ++ placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
     (callCompletionPairs program).map fun pair =>
       { source := pair.1, target := pair.2 }
 
-private def isInvocation (program : Program) (operationId : OperationId) : Bool :=
+def isInvocation (program : Program) (operationId : OperationId) : Bool :=
   program.operations.any fun
     | .invokeProcess id .. => id == operationId
     | _ => false
@@ -231,7 +225,7 @@ private def isInvocation (program : Program) (operationId : OperationId) : Bool 
 /-- The control order the graph policy judges: each call stands as an edge from its invocation to its
 paired return, because a body called from two sites joins both sites' paths through it; reachability
 keeps `programEdges` through the body (CALLN-ADMIT-01). -/
-private def programOrderEdges (program : Program) : List (GraphEdge OperationId) :=
+def programOrderEdges (program : Program) : List (GraphEdge OperationId) :=
   messageHandlerEdges program ++ (placeEdges program).filter (fun edge => !isInvocation program edge.source) ++
     completionEdges program ++ parallelMultiInstanceCompletionEdges program ++
     program.operations.filterMap fun
@@ -301,7 +295,7 @@ theorem directed_cycle_survives_program_resumption_cut
     directed_path_survives_program_resumption_cut program fullEdges vertices
       path avoids⟩
 
-private def programGraphPolicyValid (program : Program)
+def programGraphPolicyValid (program : Program)
     (edges : List (GraphEdge OperationId)) (fuel : Nat) : Bool :=
   match profileGraphPolicy? program.identity.semanticProfile.value with
   | some .acyclic => acyclicClosed edges fuel
@@ -314,7 +308,7 @@ private def programGraphPolicyValid (program : Program)
           | _ => false)) fuel
   | none => false
 
-private def initiateIds (operations : List SemanticOperation) :
+def initiateIds (operations : List SemanticOperation) :
     List OperationId :=
   operations.filterMap fun
     | .initiate id _ _ => some id
@@ -322,7 +316,7 @@ private def initiateIds (operations : List SemanticOperation) :
     | .initiateTimer id _ _ _ => some id
     | _ => none
 
-private def rootCompletionIds (program : Program) : List OperationId :=
+def rootCompletionIds (program : Program) : List OperationId :=
   match programEntryRootScopeId? program with
   | none => []
   | some root => program.operations.filterMap fun
@@ -338,7 +332,7 @@ other element as its host, misattributing every occurrence the transition create
 does not enter the scope. The unbounded `enterScope` family is deliberately left as it was: neither
 target binds its origin today, so widening that here would make the two encodings disagree in the
 opposite direction. -/
-private def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
+def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
   program.operations.all fun operation =>
     match operation with
     | .enterBoundedScope _ origin _ _ childScopeId _
@@ -349,7 +343,7 @@ private def boundedScopeEntryOriginsOwnTheirScopes (program : Program) : Bool :=
         | none => false
     | _ => true
 
-private def parallelMultiInstancePairsShareScope (program : Program) : Bool :=
+def parallelMultiInstancePairsShareScope (program : Program) : Bool :=
   program.operations.all fun entry =>
     match ParallelMultiInstanceArm.ofOperation? entry with
     | none => true
@@ -755,7 +749,7 @@ theorem programGraphWellFormed_completion_binding (program : Program)
   · contradiction
   · simp only [Bool.and_eq_true] at respects
     have completion := respects.2
-    unfold definitionScope? at completion
+    unfold firstDefinitionScope? at completion
     split at completion
     · contradiction
     · rename_i definition found

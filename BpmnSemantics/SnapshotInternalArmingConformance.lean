@@ -10,11 +10,11 @@ namespace BpmnSemantics.SnapshotInternalArmingConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def processId : ProcessId := ⟨"P"⟩
-private def instanceId : SemanticId := ⟨"i"⟩
-private def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
+def processId : ProcessId := ⟨"P"⟩
+def instanceId : SemanticId := ⟨"i"⟩
+def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
 
-private def ordinary : List SemanticOperation :=
+def ordinary : List SemanticOperation :=
   [ .awaitUserTask ⟨"a"⟩ { elementId := ⟨"a"⟩ } ⟨"a0"⟩ ⟨"a1"⟩ { id := ⟨"a"⟩, name := none }
   , .awaitMessage ⟨"b"⟩ { elementId := ⟨"b"⟩ } ⟨"b0"⟩ ⟨"b1"⟩
       { elementId := ⟨"b"⟩, channel := .directMessage ⟨"b"⟩ }
@@ -33,7 +33,7 @@ private def ordinary : List SemanticOperation :=
         descriptor := { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := "urn:bpmn-lean:effect-operation:probe-v1" },
         inputMappings := [], outputMappings := [] } none ]
 
-private def operations : List SemanticOperation := ordinary ++
+def operations : List SemanticOperation := ordinary ++
   [ .duplicate ⟨"g"⟩ { elementId := ⟨"g"⟩ } ⟨"z0"⟩
       [⟨"a0"⟩, ⟨"b0"⟩, ⟨"c0"⟩, ⟨"d0"⟩, ⟨"e0"⟩, ⟨"f0"⟩]
   , .synchronize ⟨"h"⟩ { elementId := ⟨"h"⟩ }
@@ -42,11 +42,11 @@ private def operations : List SemanticOperation := ordinary ++
   , .initiate ⟨"j"⟩ { elementId := ⟨"j"⟩ } ⟨"z0"⟩
   , .completeScope ⟨"k"⟩ { elementId := ⟨"P"⟩ } (rootDefinitionScopeId processId) none ]
 
-private def places : List ControlPlace :=
+def places : List ControlPlace :=
   ["a0", "a1", "b0", "b1", "c0", "c1", "d0", "d1", "e0", "e1", "f0", "f1", "z0", "z1"].map
     fun name => { id := ⟨name⟩, origin := { elementId := ⟨name⟩ } }
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"parallel-fork-join-draft"⟩
@@ -66,7 +66,7 @@ private def program : Program :=
       { targets := [{ parentScopeId := rootDefinitionScopeId processId, handlerScopeId := ⟨"scope:Z"⟩ }],
         maxRecords := 1, maxCanonicalBytes := 4096 } }
 
-private def ready : RuntimeState :=
+def ready : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -75,7 +75,7 @@ private def ready : RuntimeState :=
     variables := { process := { bindings := [{ name := "v", value := .string "x" }] }, activities := [], processInterfaces := [], scopes := [] }
     compensationParentContextRetentions := [.provisional { id := owner, parent := none } ⟨"scope:Z"⟩] }
 
-private def prepared : List PreparedInternalArming :=
+def prepared : List PreparedInternalArming :=
   (prepareSnapshotArmingBatch? program ready ordinary).getD []
 
 theorem six_family_predecessor_is_valid :
@@ -116,11 +116,11 @@ theorem duplicate_operation_refuses_batching :
     (prepareSnapshotArmingBatch? program ready (ordinary ++ ordinary)).isNone = true := by
   decide +kernel
 
-private def sourceStart : Stimulus :=
+def sourceStart : Stimulus :=
   .startProcess ⟨"s"⟩ ⟨CompensationSourceLoweringConformance.expectedProgram.processId.value⟩ ⟨"i"⟩
     [{ name := "Property_TravelDetails", value := .string "trip" }]
 
-private def sourceTrace : TracedStimulusResult :=
+def sourceTrace : TracedStimulusResult :=
   applyStimulusTracedWithCompensationSnapshots 4 CompensationSourceLoweringConformance.expectedProgram
     initialState sourceStart
 

@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 
 /-! # Regional dependency atoms
 
@@ -7,6 +9,8 @@ The snapshot atom extension and its 2026-09-01 resource measurements in CAPSULE-
 keep additional families outside the legacy inductive. Regional preparation follows that boundary
 while retaining owner facts for legacy wait and local-data keys that do not themselves carry a scope.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -109,19 +113,19 @@ def regionalStateFootprintsIndependent (left right : InternalRegionalStateFootpr
     regionalAtomListsDisjoint right.writes left.reads &&
     regionalAtomListsDisjoint left.writes right.writes
 
-private def lexBefore [DecidableEq α] (before : α → α → Bool) : List α → List α → Bool
+def lexBefore [DecidableEq α] (before : α → α → Bool) : List α → List α → Bool
   | [], [] => false
   | [], _ :: _ => true
   | _ :: _, [] => false
   | left :: lefts, right :: rights => if left = right then lexBefore before lefts rights else before left right
 
-private def bodyRank : ActivityBody → Nat
+def bodyRank : ActivityBody → Nat
   | .userTask _ => 0
   | .parallelUserTasks .. => 1
   | .childScope _ => 2
   | .parallelChildScopes .. => 3
 
-private def bodyBefore (left right : ActivityBody) : Bool :=
+def bodyBefore (left right : ActivityBody) : Bool :=
   if bodyRank left ≠ bodyRank right then bodyRank left < bodyRank right
   else match left, right with
     | .userTask left, .userTask right => occurrenceBefore left right
@@ -137,7 +141,7 @@ private def bodyBefore (left right : ActivityBody) : Bool :=
           else left.item < right.item) (left :: lefts) (right :: rights)
     | _, _ => false
 
-private def handlerBefore : ActivityHandler → ActivityHandler → Bool
+def commutationHandlerBefore : ActivityHandler → ActivityHandler → Bool
   | .timer left, .timer right | .message left, .message right => occurrenceBefore left right
   | .timer _, .message _ => true
   | .message _, .timer _ => false
@@ -149,9 +153,9 @@ def regionalActivityAssociationBefore (left right : ActivityOccurrence) : Bool :
   else if left.owner ≠ right.owner then scopeBefore left.owner right.owner
   else if left.body ≠ right.body then bodyBefore left.body right.body
   else if left.attachedHandlers.length ≠ right.attachedHandlers.length then left.attachedHandlers.length < right.attachedHandlers.length
-  else lexBefore handlerBefore left.attachedHandlers right.attachedHandlers
+  else lexBefore commutationHandlerBefore left.attachedHandlers right.attachedHandlers
 
-private def regionalAtomRank : InternalRegionalStateAtom → Nat
+def regionalAtomRank : InternalRegionalStateAtom → Nat
   | .ordinary _ => 0
   | .owned .. => 1
   | .activityAssociation _ => 2

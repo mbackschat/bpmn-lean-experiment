@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.CallActivityIdentity
-import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
-import BpmnSemantics.SemanticProcess.CallInstanceClosure
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivityIdentity
+public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+public import BpmnSemantics.SemanticProcess.CallInstanceClosure
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Called-Process Call Activity runtime semantics
 
 This module owns the hidden caller/called association, exact invocation and normal-return transitions, and their declarative soundness boundary. Called-instance identity is owned by `CallActivityIdentity`; source QName resolution, public observation, and Temporal hosting remain outside this module.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -40,7 +44,7 @@ def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   | .cancelled instanceId => some instanceId
   | .notStarted | .failed .. => none
 
-private def sameCallIdentity (record : CalledProcessOccurrence)
+def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
 
@@ -53,12 +57,17 @@ def calledProcessAssociationsValid (state : RuntimeState) : Bool :=
           decide (occurrence.parent.isNone &&
             occurrence.id.processInstanceId = hostingInstanceId) with
       | [hostingRoot] =>
+          -- One live record per Call element, as invocation freshness keeps it; a parentless caller
+          -- used to imply it through the per-caller anchor below (CALLN-FRAME-01).
           let recordsValid := state.calledProcessOccurrences.all fun record =>
+              (state.calledProcessOccurrences.filter fun candidate =>
+                decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 &&
               record.id.processInstanceId = record.caller.processInstanceId &&
               record.id.activation > 0 &&
+              -- Stage B admits an embedded caller, so the caller is any one live occurrence; runtime
+              -- well-formedness binds its definition scope to the invocation's (CALLN-FRAME-01).
               (state.scopeOccurrences.filter fun occurrence =>
-                decide (occurrence.id = record.caller &&
-                  occurrence.parent.isNone)).length = 1 &&
+                decide (occurrence.id = record.caller)).length = 1 &&
               record.calledRoot.processInstanceId =
                 deriveCalledProcessInstanceId record.caller.processInstanceId
                   ⟨record.id.elementId.value⟩ record.id.activation &&
@@ -125,13 +134,24 @@ theorem fresh_instance_ne_hosting (state : RuntimeState) (hosting calledInstance
   rw [List.length_eq_zero_iff.mp fresh] at present
   contradiction
 
-/-- Call associations inspect only parentless scope occurrences; deleting child scopes leaves
-their endpoint censuses and the unchanged Call graph's reachability intact. -/
+private theorem all_congr_mem {α : Type} {values : List α} {left right : α → Bool}
+    (same : ∀ value ∈ values, left value = right value) : values.all left = values.all right := by
+  apply Bool.eq_iff_iff.mpr
+  simp only [List.all_eq_true]
+  exact ⟨fun holds value member => same value member ▸ holds value member,
+    fun holds value member => (same value member).symm ▸ holds value member⟩
+
+/-- Call associations inspect parentless scope occurrences and each record's caller occurrence, which
+Stage B lets be embedded (CALLN-FRAME-01); deleting child scopes that hold no caller leaves their
+censuses and the unchanged Call graph's reachability intact. -/
 theorem calledProcessAssociationsValid_parentless_frame (before after : RuntimeState)
     (controlFrame : after.control = before.control)
     (rootsFrame : after.scopeOccurrences.filter (·.parent.isNone) =
       before.scopeOccurrences.filter (·.parent.isNone))
-    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences) :
+    (callsFrame : after.calledProcessOccurrences = before.calledProcessOccurrences)
+    (callersFrame : ∀ record ∈ before.calledProcessOccurrences,
+      after.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = record.caller)) =
+        before.scopeOccurrences.filter (fun occurrence => decide (occurrence.id = record.caller))) :
     calledProcessAssociationsValid after = calledProcessAssociationsValid before := by
   have rootIdentity : rootInstanceId? after = rootInstanceId? before := by
     simp [rootInstanceId?, controlFrame]
@@ -179,7 +199,37 @@ theorem calledProcessAssociationsValid_parentless_frame (before after : RuntimeS
       rw [census]
       split
       · simp only [endpoints, callsFrame, rootsValid]
+        congr 1
+        congr 1
+        exact all_congr_mem fun record member => by rw [callersFrame record member]
       · rfl
+
+/-- Association validity exposes each record's one caller occurrence, which Stage B lets be embedded
+(CALLN-FRAME-01), and its parentless called root. -/
+theorem calledProcessAssociationsValid_endpoints (state : RuntimeState)
+    (valid : calledProcessAssociationsValid state = true)
+    (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences) :
+    (∃ caller ∈ state.scopeOccurrences, caller.id = record.caller) ∧
+      (∃ root ∈ state.scopeOccurrences, root.id = record.calledRoot ∧ root.parent = none) := by
+  unfold calledProcessAssociationsValid at valid
+  split at valid
+  · contradiction
+  · split at valid
+    · simp only [Bool.and_eq_true, List.all_eq_true] at valid
+      have fields := valid.1.1 record member
+      constructor
+      · obtain ⟨caller, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true fields.1.1.1.1.1.1.2)
+        have present : caller ∈ [caller] := List.mem_singleton_self _
+        rw [← singleton] at present
+        obtain ⟨present, identity⟩ := List.mem_filter.mp present
+        exact ⟨caller, present, by simpa using identity⟩
+      · obtain ⟨root, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true fields.2)
+        have present : root ∈ [root] := List.mem_singleton_self _
+        rw [← singleton] at present
+        obtain ⟨present, fields⟩ := List.mem_filter.mp present
+        simp only [Bool.and_eq_true, decide_eq_true_eq, Option.isNone_iff_eq_none] at fields
+        exact ⟨root, present, fields⟩
+    · contradiction
 
 /-- Valid Call records that mint the same called Process identity have the same Call anchor. -/
 theorem calledProcessAssociationsValid_called_instance_injective (state : RuntimeState)
@@ -205,9 +255,9 @@ theorem calledProcessAssociationsValid_called_instance_injective (state : Runtim
         have leftValid := valid.1.1 left leftMember
         have rightValid := valid.1.1 right rightMember
         have leftIdProcess : left.id.processInstanceId = left.caller.processInstanceId :=
-          of_decide_eq_true leftValid.1.1.1.1.1.1.1.1
+          of_decide_eq_true leftValid.1.1.1.1.1.1.1.1.2
         have rightIdProcess : right.id.processInstanceId = right.caller.processInstanceId :=
-          of_decide_eq_true rightValid.1.1.1.1.1.1.1.1
+          of_decide_eq_true rightValid.1.1.1.1.1.1.1.1.2
         have leftDerived : left.calledRoot.processInstanceId =
             deriveCalledProcessInstanceId left.caller.processInstanceId
               ⟨left.id.elementId.value⟩ left.id.activation :=
@@ -277,8 +327,9 @@ def invokeProcessState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (returnOperationId : OperationId) : Option RuntimeState :=
   match onlyTokenOwner? state input, rootInstanceId? state with
   | some caller, some _ =>
-      -- Association validity places every parentless root, and so the parentless caller checked
-      -- below, in the hosting instance or under a live record: the callers CALLN-INVOKE-01 admits.
+      -- Association validity places every parentless root in the hosting instance or under a live
+      -- record, so the caller checked below is a live scope occurrence of one of those instances, as
+      -- CALLN-INVOKE-01 admits.
       if calledProcessAssociationsValid state then
         if (state.tokens.filter fun token =>
             decide (token.placeId = input && token.owner = caller)).length = 1 then
@@ -287,7 +338,7 @@ def invokeProcessState? (state : RuntimeState) (origin : BpmnElementOrigin)
             match state.scopeOccurrences.filter fun occurrence =>
                 decide (occurrence.id = caller) with
             | [callerRoot] =>
-                if callerRoot.id = caller && callerRoot.parent.isNone then
+                if callerRoot.id = caller then
                   let activation := callActivationCount state origin.elementId + 1
                   let calledInstanceId :=
                     deriveCalledProcessInstanceId caller.processInstanceId
@@ -368,7 +419,7 @@ def returnProcessState? (state : RuntimeState) (id : OperationId)
     | _ => none
   else none
 
-/-- Declarative invocation with explicit root ownership, fresh association, derived identity, and exact state update. -/
+/-- Declarative invocation with an explicit caller occurrence, fresh association, derived identity, and exact state update. -/
 inductive InvokeProcessStep : RuntimeState → BpmnElementOrigin →
     ControlPlaceId → ProcessId → DefinitionScopeId → ControlPlaceId →
     OperationId → RuntimeState → Prop where
@@ -384,7 +435,6 @@ inductive InvokeProcessStep : RuntimeState → BpmnElementOrigin →
       (uniqueCallerRoot : before.scopeOccurrences.filter (fun occurrence =>
         decide (occurrence.id = caller)) = [callerRoot])
       (callerRootIdentity : callerRoot.id = caller)
-      (callerRootIsRoot : callerRoot.parent = none)
       (nextActivation : activation = callActivationCount before origin.elementId + 1)
       (calledRootExact : calledRoot =
         { processInstanceId := deriveCalledProcessInstanceId
@@ -482,53 +532,49 @@ theorem invokeProcessState_sound (before after : RuntimeState)
                         | mk callerRootId parent =>
                             by_cases callerIdentity : callerRootId = caller
                             · subst callerRootId
-                              cases parent with
-                              | some parentId =>
-                                simp [freshCall] at result
-                              | none =>
-                                let activation := callActivationCount before
-                                  origin.elementId + 1
-                                let calledRoot : ScopeOccurrenceId :=
-                                  { processInstanceId := deriveCalledProcessInstanceId
-                                      caller.processInstanceId origin.elementId activation
-                                    definitionScopeId := calledRootScopeId
-                                    activation := 1 }
-                                let record : CalledProcessOccurrence :=
-                                  { id :=
-                                      { processInstanceId := caller.processInstanceId
-                                        elementId := ⟨origin.elementId.value⟩
-                                        activation }
-                                    caller
-                                    calledProcessId
-                                    calledRoot
-                                    returnOperationId }
-                                by_cases freshScopes : (before.scopeOccurrences.filter fun occurrence =>
-                                    decide (occurrence.id.processInstanceId =
-                                      calledRoot.processInstanceId)).length = 0
-                                · by_cases freshRecord :
-                                      (before.calledProcessOccurrences.filter fun candidate =>
-                                        decide (candidate.id = record.id ||
-                                          candidate.calledRoot.processInstanceId =
-                                            calledRoot.processInstanceId)).length = 0
-                                  · simp [freshCall, freshScopes, activation,
-                                        calledRoot] at result
-                                    cases result.2.2
-                                    exact .permitted before origin input calledProcessId
-                                      calledRootScopeId calledEntry returnOperationId caller
-                                      rootInstance
-                                      { id := caller, parent := none }
-                                      activation calledRoot record ownedEq rootEq
-                                      associations oneInput freshCall callerRootsEq
-                                      rfl rfl rfl rfl rfl freshScopes freshRecord
-                                  · simp [freshCall, freshScopes, activation,
-                                        calledRoot] at result
-                                    exfalso
-                                    apply freshRecord
-                                    simpa [List.length_eq_zero_iff,
-                                      activation, calledRoot,
-                                      record] using result.2.1
+                              let activation := callActivationCount before
+                                origin.elementId + 1
+                              let calledRoot : ScopeOccurrenceId :=
+                                { processInstanceId := deriveCalledProcessInstanceId
+                                    caller.processInstanceId origin.elementId activation
+                                  definitionScopeId := calledRootScopeId
+                                  activation := 1 }
+                              let record : CalledProcessOccurrence :=
+                                { id :=
+                                    { processInstanceId := caller.processInstanceId
+                                      elementId := ⟨origin.elementId.value⟩
+                                      activation }
+                                  caller
+                                  calledProcessId
+                                  calledRoot
+                                  returnOperationId }
+                              by_cases freshScopes : (before.scopeOccurrences.filter fun occurrence =>
+                                  decide (occurrence.id.processInstanceId =
+                                    calledRoot.processInstanceId)).length = 0
+                              · by_cases freshRecord :
+                                    (before.calledProcessOccurrences.filter fun candidate =>
+                                      decide (candidate.id = record.id ||
+                                        candidate.calledRoot.processInstanceId =
+                                          calledRoot.processInstanceId)).length = 0
                                 · simp [freshCall, freshScopes, activation,
                                       calledRoot] at result
+                                  cases result.2.2
+                                  exact .permitted before origin input calledProcessId
+                                    calledRootScopeId calledEntry returnOperationId caller
+                                    rootInstance
+                                    { id := caller, parent := parent }
+                                    activation calledRoot record ownedEq rootEq
+                                    associations oneInput freshCall callerRootsEq
+                                    rfl rfl rfl rfl freshScopes freshRecord
+                                · simp [freshCall, freshScopes, activation,
+                                      calledRoot] at result
+                                  exfalso
+                                  apply freshRecord
+                                  simpa [List.length_eq_zero_iff,
+                                    activation, calledRoot,
+                                    record] using result.2.1
+                              · simp [freshCall, freshScopes, activation,
+                                    calledRoot] at result
                             · simp [freshCall, callerIdentity] at result
               · simp [freshCall] at result
             · simp at result

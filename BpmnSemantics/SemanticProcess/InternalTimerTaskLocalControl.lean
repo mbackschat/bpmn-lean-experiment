@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 
 /-! Timer-task arming and local control share only token dependencies. Complete regional
 separation protects the full place census and every selected-join readiness bucket.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

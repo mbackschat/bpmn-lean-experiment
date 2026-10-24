@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputCompletionRuntimeStatePreservation
-import BpmnSemantics.ActivityDataInputOutputAdmissionConformance
-import BpmnSemantics.ActivityDataInputOutputRefusalConformance
-import BpmnSemantics.ActivityDataInputOutputProjectionConformance
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputCompletionRuntimeStatePreservation
+public import BpmnSemantics.ActivityDataInputOutputAdmissionConformance
+public import BpmnSemantics.ActivityDataInputOutputRefusalConformance
+public import BpmnSemantics.ActivityDataInputOutputProjectionConformance
 
 /-! # Composed Activity data-input/output conformance
 
@@ -11,6 +13,8 @@ copy, completion, routing, cleanup, and refusal laws remain in
 [ActivityDataInputOutput](SemanticProcess/ActivityDataInputOutput.lean); the two imported preservation
 owners prove aggregate runtime well-formedness. These checks bind the laws to the source identities.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 

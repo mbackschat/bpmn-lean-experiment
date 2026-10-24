@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 
 /-! # Pre-entry parent frontier exclusivity
 
@@ -9,6 +11,8 @@ incidence to exclude competing native occurrences before parallel entry. The
 result includes pending Start, parent prelude work and entry, and requires no
 reservation or successful collective preparation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

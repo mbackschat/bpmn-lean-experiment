@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCounterGrowthProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCounterGrowthProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
 
 /-! # Cumulative parallel command counter bounds
 
@@ -9,6 +11,8 @@ Completion ingress and retirement never allocate Human or Service ordinals or
 End occurrences. Each body record contributes at most one, so command boundaries
 cannot reset the credit needed to establish reservation headroom.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

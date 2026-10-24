@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.Data
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.Data
 
 /-! Public User Task and Timer occurrences are projected independently of scenario admission and execution. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -14,7 +18,7 @@ local data.
 Read from the committed Activity record and its occurrence-owned scope only. A scope of any other
 cardinality answers `none` rather than a truncated collection, because publishing part of an InputSet
 would present partial data as the complete selection. -/
-private def selectedTaskInputs? (state : RuntimeState) (wait : UserTaskWait) :
+def selectedTaskInputs? (state : RuntimeState) (wait : UserTaskWait) :
     Option (List VariableBinding) := do
   let record ← activityOccurrenceForTaskWait? state.activityOccurrences wait
   let bindings ← activityOccurrenceVariableBindings state.variables

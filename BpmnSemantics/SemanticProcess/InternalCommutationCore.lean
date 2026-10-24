@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Internal commutation footprint and prepared-patch core
 
 Defines the bounded internal-arm representation, exact preparation algorithm, raw patch application, and public transition-footprint classifier used by the commutation proof layers.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -216,21 +220,21 @@ def publicationRank : InternalPublicationAtom → Nat
   | .correlationCandidate .. => 2
   | .publicationPair .. => 3
 
-private def sourceOverlayBefore (left right : Option SourceOverlayIdentity) : Bool :=
+def sourceOverlayBefore (left right : Option SourceOverlayIdentity) : Bool :=
   match left, right with
   | none, some _ => true
   | some left, some right =>
       if left.id ≠ right.id then left.id.value < right.id.value else left.sha256 < right.sha256
   | _, _ => false
 
-private def programIdentityBefore (left right : ProgramIdentity) : Bool :=
+def programIdentityBefore (left right : ProgramIdentity) : Bool :=
   if left.semanticProfile ≠ right.semanticProfile then
     left.semanticProfile.value < right.semanticProfile.value
   else if left.sourceId ≠ right.sourceId then left.sourceId.value < right.sourceId.value
   else if left.sourceSha256 ≠ right.sourceSha256 then left.sourceSha256 < right.sourceSha256
   else sourceOverlayBefore left.sourceOverlay right.sourceOverlay
 
-private def messageChannelBefore (left right : MessageChannel) : Bool :=
+def messageChannelBefore (left right : MessageChannel) : Bool :=
   match left, right with
   | .operationMessage leftInterface leftOperation leftMessage,
       .operationMessage rightInterface rightOperation rightMessage =>
@@ -241,7 +245,7 @@ private def messageChannelBefore (left right : MessageChannel) : Bool :=
   | .directMessage left, .directMessage right => left.value < right.value
   | .directMessage .., .operationMessage .. => false
 
-private def correlatedAddressBefore
+def correlatedAddressBefore
     (left right : CorrelatedMessageAddress) : Bool :=
   if left.definition ≠ right.definition then programIdentityBefore left.definition right.definition
   else if left.processId ≠ right.processId then left.processId.value < right.processId.value
@@ -629,7 +633,7 @@ def footprintsNonInterfering (left right : InternalTransitionFootprint) : Bool :
 
 open InternalCommutation
 
-private def operationBefore (left right : SemanticOperation) : Bool := left.id.value < right.id.value
+def operationBefore (left right : SemanticOperation) : Bool := left.id.value < right.id.value
 
 def canonicalInternalOperations (operations : List SemanticOperation) : List SemanticOperation := sortBy operationBefore operations
 

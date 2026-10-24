@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationScopeProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProgramValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationMessageValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationScopeProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationMessageValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 
 /-! The complete child-cancellation projector follows from predecessor validity and
 closed reference retention. Component filters preserve the original canonical order
 and anchor multiplicity; no successor projection or validity is assumed. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -17,7 +21,7 @@ open BpmnSemantics
 theorem cancelScopeSubtree_child_open_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (current : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (unique : attachedMessagesUnambiguous state = true)

@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.ScopeStorageOrder
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Transaction split-state validity
 
@@ -10,6 +12,8 @@ The admitted Transaction roles and nonempty instance identity derive complete ru
 the exact open child occurrence at the split. The cancellation capsule's retained child register and
 canonical scope/token identities supply the base case required by the existing arming laws.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 
 /-! Complete preparation preservation under the declared scope-creation footprints from the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

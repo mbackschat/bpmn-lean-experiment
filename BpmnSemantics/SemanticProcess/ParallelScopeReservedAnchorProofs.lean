@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
 
 /-! # Actual reservation anchor uniqueness
 
@@ -9,11 +11,13 @@ Together these facts make the actual reservation result's wait anchors unique
 before collective batch acceptance, without a runtime-reachability premise.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics ParallelScopeStart
 
-private def ReservedArmDeclared (program : Program) (arm : InternalArmingPatch) : Prop :=
+def ReservedArmDeclared (program : Program) (arm : InternalArmingPatch) : Prop :=
   match arm.write with
   | .userTask wait => ∃ id origin input output,
       SemanticOperation.awaitUserTask id origin input output wait.task ∈ program.operations
@@ -54,7 +58,7 @@ private theorem declared_human_effect_keys (program : Program) (analysis : Progr
     humanOrigin effectOrigin humanInput humanOutput effectInput effectOutput human.task effect route humanMember effectMember
   simpa only [elementEq] using separate
 
-private def ReservedSlotsBounded (state : RuntimeState) (reserved : List InternalOccurrencePatch) : Prop :=
+def ReservedSlotsBounded (state : RuntimeState) (reserved : List InternalOccurrencePatch) : Prop :=
   ∀ arm, .arm arm ∈ reserved → match arm.write with
     | .userTask wait => wait.activation ≤ activationCount state wait.task.id +
         reservedCohortSize reserved .userTask wait.task.id.value

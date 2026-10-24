@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 
 /-! # Completion continuation position
 
@@ -8,6 +10,8 @@ Scope quiescence protects the parents and token owners retained by normal comple
 continuation's declared static place binding is separate from the raw completion selector,
 which receives only a scope identifier and optional output identifier.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -80,7 +84,7 @@ theorem quiescent_child_removal_preserves_position (program : Program) (before :
       by_cases same : occurrence.id = owner <;> simp [same, different]
     simpa only [exactLiveOccurrence, census] using live
   apply runtimePositionValid_scope_removal_frame program expectedInstanceId instanceId before after
-    valid running rfl List.filter_sublist _ rfl _ (List.Sublist.refl _) _
+    valid running rfl List.filter_sublist _ rfl _ _ (List.Sublist.refl _) _
   · change (before.scopeOccurrences.filter _).filter _ = _
     rw [List.filter_filter]
     apply List.filter_congr
@@ -92,6 +96,17 @@ theorem quiescent_child_removal_preserves_position (program : Program) (before :
       have equal : occurrence = root := (List.mem_singleton.mp selected).trans rootEq.symm
       cases shape : root.parent <;> simp_all
     · simp [same]
+  · intro record recordMember
+    have different : record.caller ≠ root.id := by
+      intro same
+      have present : (before.calledProcessOccurrences.any fun candidate => candidate.caller == root.id) = true :=
+        List.any_eq_true.mpr ⟨record, recordMember, by simp [same]⟩
+      simp [scopeQuiescent, present] at quiescent
+    change (before.scopeOccurrences.filter _).filter _ = _
+    rw [List.filter_filter]
+    apply List.filter_congr
+    intro occurrence _
+    by_cases same : occurrence.id = record.caller <;> simp [same, different]
   · intro occurrence present parent parentEq
     have prior := (List.mem_filter.mp present).1
     obtain ⟨_, definition, _, _, binding⟩ := runtimePositionValid_scope_parent_binding

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.ServiceTaskEffectConformance
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.ServiceTaskEffectConformance
 
 /-! # Service Task incident and retry conformance
 
 This module owns the proved laws for one literal-generation Service Task effect incident and its one exact retry. It does not define CIB, Temporal, cancellation, or general BPMN fault meaning.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ServiceTaskIncidentRetryConformance
 

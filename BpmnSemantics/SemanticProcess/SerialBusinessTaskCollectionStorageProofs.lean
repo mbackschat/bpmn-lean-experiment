@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
-import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! Serial and mixed-task root frontiers admit unique ordered committed collections.
 Generic completion dispatch names the storage premise; reached consumers derive it from
 the transported root and issuance frame plus their exact frontier position. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 

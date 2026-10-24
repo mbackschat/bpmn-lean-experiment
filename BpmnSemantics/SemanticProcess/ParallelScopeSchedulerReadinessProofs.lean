@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchArmingProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.ParallelScopeProgress
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchArmingProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgress
 
 /-! # Reserved parallel batch readiness at scheduler selection
 
@@ -12,6 +14,8 @@ prefixes, because the accounting histories permit ingress between replay steps.
 Application readiness, reachable-frontier classification and publication acceptance
 remain separate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

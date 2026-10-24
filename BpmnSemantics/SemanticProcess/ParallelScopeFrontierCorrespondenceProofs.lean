@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
-import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+public import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
 
 /-! PMIS-SELECT-01 discovery traversals retain the same exact operation/owner offers.
 The bridge compares their canonical alternatives without choosing an execution or weakening
 the failed-wait and duplicate-alternative guards.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def occurrenceAlternative (pair : InternalOperationOccurrence × RuntimeState) :
+def occurrenceAlternative (pair : InternalOperationOccurrence × RuntimeState) :
     InternalAlternative := .operationOccurrence pair.1.operationId pair.1.owner
 
 private theorem mapM_success (values : List α) (f : α → Option (List β)) (pieces : List (List β))
@@ -295,7 +299,7 @@ theorem deriveInternalOccurrenceFrontier_length_le_population (program : Program
     (fun left right : SemanticOperation => left.id.value < right.id.value) program.operations).length_eq
   simpa only [sortedLength] using bound
 
-private def selectedDiscovery (program : Program) (state : RuntimeState)
+def selectedDiscovery (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : InternalExecutionFrontier :=
   match operation, state.control with
   | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation

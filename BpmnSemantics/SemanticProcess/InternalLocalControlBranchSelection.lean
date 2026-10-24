@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+module
+
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Local-control branch preparation
 
 This owner retains the evaluated condition reads required by the complete-preparation frame in [the Internal Commutation proposal](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

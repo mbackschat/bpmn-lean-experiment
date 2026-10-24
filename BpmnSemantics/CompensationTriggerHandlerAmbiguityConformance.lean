@@ -14,16 +14,16 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 
-private def pendingB : CompensationHandlerExecution :=
+def pendingB : CompensationHandlerExecution :=
   { compensatingHandlerB with lifecycle := .pending (some restoredContext) }
 
-private def secondA : CompensationHandlerExecution :=
+def secondA : CompensationHandlerExecution :=
   { pendingHandlerA with identity :=
       { id := occurrence "HA" 2
         subject := .boundaryActivity { activityOccurrence "A" with activation := 2 }
         handlerElementId := ⟨"HA"⟩ } }
 
-private def secondB : CompensationHandlerExecution :=
+def secondB : CompensationHandlerExecution :=
   { identity :=
       { id := occurrence "HB" 2
         subject := .eventSubProcess { parentB with activation := 2 }
@@ -32,18 +32,18 @@ private def secondB : CompensationHandlerExecution :=
       [{ owner := rootOwner, bindings := [{ name := "frozen", value := .string "old" }] },
        { owner := { parentB with activation := 2 }, bindings := [] }] }) }
 
-private def pendingState : RuntimeState :=
+def pendingState : RuntimeState :=
   { activeState with
     compensationTriggers := [{ activeTrigger with handlers := [pendingHandlerA, pendingB] }]
     compensationHandlerEffectWaits := [] }
 
-private def withHandlers (handlers : List CompensationHandlerExecution)
+def withHandlers (handlers : List CompensationHandlerExecution)
     (dependencies : List CompensationOccurrenceDependency := activeTrigger.dependencies) : RuntimeState :=
   { pendingState with compensationTriggers := [{ activeTrigger with handlers, dependencies }] }
 
-private def missingOwner : ScopeOccurrenceId := { rootOwner with activation := 2 }
+def missingOwner : ScopeOccurrenceId := { rootOwner with activation := 2 }
 
-private def missingOwnerState : RuntimeState :=
+def missingOwnerState : RuntimeState :=
   { pendingState with compensationTriggers :=
       [{ activeTrigger with owner := missingOwner, handlers :=
         [pendingHandlerA,
@@ -85,15 +85,15 @@ theorem unique_partial_selection_omits_only_the_missing_edge :
       occurrenceDependencies program executionDeclaration [] = [] := by
   decide +kernel
 
-private def selectedA : SelectedCompensationSubject :=
+def selectedA : SelectedCompensationSubject :=
   { definition := .boundaryActivity ⟨"A"⟩ (boundaryBody "HA")
     occurrence := subjectA
     restoredContext := none }
 
-private def selectedA2 : SelectedCompensationSubject :=
+def selectedA2 : SelectedCompensationSubject :=
   { selectedA with occurrence := secondA.identity.subject }
 
-private def selectedB : SelectedCompensationSubject :=
+def selectedB : SelectedCompensationSubject :=
   { definition := .eventSubProcess ⟨"scope:B"⟩ ⟨"scope:HB"⟩ eventBody
     occurrence := subjectB
     restoredContext := some restoredContext }

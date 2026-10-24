@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.TokenStorage
+module
+
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Laws of the occurrence-addressed merge-target scope operations: the entry and completion frames of CEA-ISOLATE-01 and
 the evaluator-to-relation bridge into `OperationStep`. The bridge is a dispatcher and constructor-selection
 check, because each relation arm's premise is the evaluator's own result; the semantic content sits in the
 freshness, factoring, refusal and frame laws of `ScopeOccurrenceEntry` and `ScopeCompletion`. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

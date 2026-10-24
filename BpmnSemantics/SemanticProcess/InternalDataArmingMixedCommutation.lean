@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 
 /-! # Exact mixed data and ordinary arming commutation
 
 The Activity supplement commutes with ordinary updates through separate counter domains and
 discriminated local owners, even when the Effect and Activity occurrence coordinates coincide.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

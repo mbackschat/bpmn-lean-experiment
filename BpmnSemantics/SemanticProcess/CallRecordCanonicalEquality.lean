@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.CallStorageOrder
+module
+
+public import BpmnSemantics.SemanticProcess.CallStorageOrder
 
 /-! Exact canonical Call storage requires the unique caller/element anchors of the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 The comparator omits retained payload fields, so permutation and order alone are insufficient.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

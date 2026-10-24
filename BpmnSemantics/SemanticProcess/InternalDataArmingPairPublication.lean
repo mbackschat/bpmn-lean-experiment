@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
 
 /-! # Accepted mixed and data-pair publication
 
 One admitted predecessor supplies every preparation, intermediate invariant, evaluator step, and
 accepted publication. Canonical numbering follows only after complete publications agree.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

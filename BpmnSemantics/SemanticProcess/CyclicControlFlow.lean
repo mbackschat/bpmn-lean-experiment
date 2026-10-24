@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Exclusive Merge runtime semantics
 
 This module owns the declarative and executable state transition for the resumption-bounded cycle profile's Exclusive Merge. The relation permits one pass-through for each offered token occurrence. The executable evaluator implements the deterministic unique-offer subset selected by this profile and deliberately leaves multi-offer selection incomplete.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def tokenUsesMergeInput (inputs : List ControlPlaceId)
+def tokenUsesMergeInput (inputs : List ControlPlaceId)
     (token : ControlToken) : Bool :=
   inputs.contains token.placeId
 

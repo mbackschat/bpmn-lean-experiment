@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.GraphValidation
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+module
+
+public import BpmnSemantics.SemanticProcess.GraphValidation
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Checked BPMN graph validation
 
 This module owns topology-independent reachability, co-reachability, and cycle rejection for the production checked graph. `normalizedFlowSource` remains scoped to the inline Service Task boundary route, where the boundary event is source metadata rather than a checked runtime node. Explicit boundary nodes contribute a separate parent-local exceptional edge from the Activity they attach to, keyed on attachment rather than on trigger kind.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def checkedNodeId : CheckedNode → NodeId
+def checkedNodeId : CheckedNode → NodeId
   | .noneStartEvent id
   | .messageStartEvent id _
   | .timerStartEvent id _
@@ -46,7 +50,7 @@ private def checkedNodeId : CheckedNode → NodeId
   | .terminateEndEvent id
   | .noneEndEvent id => id
 
-private def normalizedFlowSource (nodes : List CheckedNode)
+def normalizedFlowSource (nodes : List CheckedNode)
     (sourceId : NodeId) : NodeId :=
   if nodes.any fun node => decide (checkedNodeId node = sourceId) then
     sourceId
@@ -71,26 +75,26 @@ def checkedSequenceFlowScopeId? (source : CheckedProcess)
   (source.sequenceFlowScopes.find? fun ownership =>
     decide (ownership.sequenceFlowId = flowId)).map (·.scopeId)
 
-private def scopedNodes (source : CheckedProcess) (scopeId : DefinitionScopeId) :
+def scopedNodes (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedNode :=
   source.nodes.filter fun node =>
     checkedNodeScopeId? source (checkedNodeId node) == some scopeId &&
       !source.interruptingMessageEventSubProcesses.any (fun declaration =>
         declaration.parentScopeId == scopeId && declaration.elementId == node.id)
 
-private def scopedFlows (source : CheckedProcess) (scopeId : DefinitionScopeId) :
+def scopedFlows (source : CheckedProcess) (scopeId : DefinitionScopeId) :
     List CheckedSequenceFlow :=
   source.sequenceFlows.filter fun flow =>
     checkedSequenceFlowScopeId? source flow.id == some scopeId
 
-private def checkedEdges (source : CheckedProcess)
+def checkedEdges (source : CheckedProcess)
     (flows : List CheckedSequenceFlow) : List (GraphEdge NodeId) :=
   flows.map fun flow =>
     { source := normalizedFlowSource source.nodes flow.sourceId
       target := flow.targetId }
 
 /-- Keyed on attachment, not on trigger kind: every boundary Event is reachable only through the Activity it is attached to, so a family added here without its edge would leave its own node unreachable. -/
-private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
+def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .cancelBoundaryEvent id attachedToRef _
   | .boundaryErrorEvent id attachedToRef _ _
   | .timerBoundaryEvent id attachedToRef _ _ _
@@ -115,17 +119,17 @@ private def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .errorEndEvent .. | .terminateEndEvent ..
   | .noneEndEvent .. => none
 
-private def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
+def exceptionalEdges (nodes : List CheckedNode) : List (GraphEdge NodeId) :=
   nodes.filterMap attachedBoundaryHost?
 
-private def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
+def checkedStartIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .noneStartEvent id => some id
     | .messageStartEvent id _ => some id
     | .timerStartEvent id _ => some id
     | _ => none
 
-private def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
+def checkedEndIds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .cancelEndEvent id => some id
     | .errorEndEvent id _ => some id
@@ -166,7 +170,7 @@ def checkedResumptionCutEdges (nodes : List CheckedNode)
     (edges : List (GraphEdge NodeId)) : List (GraphEdge NodeId) :=
   edges.filter fun edge => !checkedEdgeIsResumptionContinuation nodes edge
 
-private def checkedGraphPolicyValid (source : CheckedProcess)
+def checkedGraphPolicyValid (source : CheckedProcess)
     (nodes : List CheckedNode) (edges : List (GraphEdge NodeId))
     (fuel : Nat) : Bool :=
   match profileGraphPolicy? source.identity.semanticProfile.value with
@@ -181,7 +185,7 @@ private def checkedGraphPolicyValid (source : CheckedProcess)
   | none => false
 
 /-- Finite per-scope graph progress backstop independent of any complete model topology. -/
-private def checkedScopeGraphWellFormed (source : CheckedProcess)
+def checkedScopeGraphWellFormed (source : CheckedProcess)
     (scope : DefinitionScope) : Bool :=
   let nodes := scopedNodes source scope.id
   let nodeIds := nodes.map checkedNodeId

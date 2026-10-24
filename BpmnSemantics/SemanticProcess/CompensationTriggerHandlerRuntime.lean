@@ -1,20 +1,16 @@
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! # Compensation trigger and handler runtime validity -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-private def safeNat (value : Nat) : Bool :=
-  BpmnSemantics.SemanticProcessJson.isSafeWireNat value
-
-private def canonicalArrayUtf8Bytes (measure : α → Nat) : List α → Nat
-  | [] => 2
-  | first :: rest =>
-      rest.foldl (fun total value => total + measure value + 1) (measure first) + 2
 
 def canonicalOccurrenceIdUtf8Bytes (id : OccurrenceId) : Nat :=
   "{\"activation\":".utf8ByteSize + (toString id.activation).utf8ByteSize +
@@ -23,7 +19,7 @@ def canonicalOccurrenceIdUtf8Bytes (id : OccurrenceId) : Nat :=
       canonicalJsonStringUtf8Bytes id.processInstanceId.value +
     "}".utf8ByteSize
 
-private def canonicalCompensationSubjectUtf8Bytes : CompensationSubjectOccurrence → Nat
+def canonicalCompensationSubjectUtf8Bytes : CompensationSubjectOccurrence → Nat
   | .boundaryActivity activity =>
       "{\"activity\":".utf8ByteSize + canonicalActivityOccurrenceIdUtf8Bytes activity +
         ",\"kind\":\"boundaryActivity\"}".utf8ByteSize
@@ -31,12 +27,12 @@ private def canonicalCompensationSubjectUtf8Bytes : CompensationSubjectOccurrenc
       "{\"kind\":\"eventSubProcess\",\"parent\":".utf8ByteSize +
         canonicalScopeOccurrenceIdUtf8Bytes parent + "}".utf8ByteSize
 
-private def canonicalOptionalSnapshotUtf8Bytes :
+def canonicalOptionalSnapshotUtf8Bytes :
     Option CompensationParentContextSnapshot → Nat
   | none => "null".utf8ByteSize
   | some snapshot => canonicalCompensationParentContextSnapshotUtf8Bytes snapshot
 
-private def canonicalCompensationHandlerUtf8Bytes
+def canonicalCompensationHandlerUtf8Bytes
     (handler : CompensationHandlerExecution) : Nat :=
   let identity := handler.identity
   match handler.lifecycle with
@@ -73,7 +69,7 @@ where
         canonicalCompensationSubjectUtf8Bytes identity.subject +
       "}".utf8ByteSize
 
-private def canonicalCompensationDependencyUtf8Bytes
+def canonicalCompensationDependencyUtf8Bytes
     (dependency : CompensationOccurrenceDependency) : Nat :=
   "{\"predecessor\":".utf8ByteSize +
       canonicalCompensationSubjectUtf8Bytes dependency.predecessor +
@@ -81,7 +77,7 @@ private def canonicalCompensationDependencyUtf8Bytes
       canonicalCompensationSubjectUtf8Bytes dependency.successor +
     "}".utf8ByteSize
 
-private def canonicalCompensationTriggerUtf8Bytes
+def canonicalCompensationTriggerUtf8Bytes
     (trigger : CompensationTriggerExecution) : Nat :=
   let lifecycle := match trigger.lifecycle with
     | .active => "active"
@@ -97,12 +93,12 @@ private def canonicalCompensationTriggerUtf8Bytes
     ",\"owner\":".utf8ByteSize + canonicalScopeOccurrenceIdUtf8Bytes trigger.owner +
     "}".utf8ByteSize
 
-private def canonicalEffectDescriptorUtf8Bytes (descriptor : EffectDescriptor) : Nat :=
+def canonicalEffectDescriptorUtf8Bytes (descriptor : EffectDescriptor) : Nat :=
   "{\"operation\":".utf8ByteSize + canonicalJsonStringUtf8Bytes descriptor.operation +
     ",\"protocol\":".utf8ByteSize + canonicalJsonStringUtf8Bytes descriptor.protocol +
     "}".utf8ByteSize
 
-private def canonicalCompensationHandlerWaitUtf8Bytes
+def canonicalCompensationHandlerWaitUtf8Bytes
     (wait : CompensationHandlerEffectWait) : Nat :=
   "{\"arguments\":".utf8ByteSize +
       canonicalVariableBindingsUtf8Bytes wait.arguments +
@@ -126,20 +122,16 @@ def compensationOccurrenceBefore (left right : OccurrenceId) : Bool :=
     else decide (left.elementId.value < right.elementId.value)
   else decide (left.processInstanceId.value < right.processInstanceId.value)
 
-private def strictlyOrdered (before : α → α → Bool) : List α → Bool
+def strictlyOrderedBy (before : α → α → Bool) : List α → Bool
   | [] | [_] => true
-  | left :: right :: rest => before left right && strictlyOrdered before (right :: rest)
+  | left :: right :: rest => before left right && strictlyOrderedBy before (right :: rest)
 
-private def occurrenceIdValid (id : OccurrenceId) : Bool :=
+def occurrenceIdValid (id : OccurrenceId) : Bool :=
   !id.processInstanceId.value.isEmpty && !id.elementId.value.isEmpty &&
     id.activation > 0 && safeNat id.activation
 
-private def activityOccurrenceIdValid (id : ActivityOccurrenceId) : Bool :=
+def activityOccurrenceIdValid (id : ActivityOccurrenceId) : Bool :=
   !id.processInstanceId.value.isEmpty && !id.activityElementId.value.isEmpty &&
-    id.activation > 0 && safeNat id.activation
-
-private def scopeOccurrenceIdValid (id : ScopeOccurrenceId) : Bool :=
-  !id.processInstanceId.value.isEmpty && !id.definitionScopeId.value.isEmpty &&
     id.activation > 0 && safeNat id.activation
 
 def compensationSubjectMatches (left right : CompensationSubjectOccurrence) : Bool :=
@@ -148,7 +140,7 @@ def compensationSubjectMatches (left right : CompensationSubjectOccurrence) : Bo
   | .eventSubProcess left, .eventSubProcess right => left == right
   | _, _ => false
 
-private def compensationSubjectValid : CompensationSubjectOccurrence → Bool
+def compensationSubjectValid : CompensationSubjectOccurrence → Bool
   | .boundaryActivity activity => activityOccurrenceIdValid activity
   | .eventSubProcess parent => scopeOccurrenceIdValid parent
 
@@ -169,14 +161,14 @@ def CompensationSubjectDefinition.body :
     CompensationSubjectDefinition → SingleEffectCompensationHandlerBody
   | .boundaryActivity _ body | .eventSubProcess _ _ body => body
 
-private def occurrenceDefinitionId? (program : Program) :
+def occurrenceDefinitionId? (program : Program) :
     CompensationSubjectOccurrence → Option NodeId
   | .boundaryActivity activity => some ⟨activity.activityElementId.value⟩
   | .eventSubProcess parent =>
       (program.definitionScopes.find? fun scope =>
         scope.id == parent.definitionScopeId).map (·.originElementId)
 
-private def handlersForDefinition (program : Program)
+def handlersForDefinition (program : Program)
     (handlers : List CompensationHandlerExecution) (elementId : NodeId) :
     List CompensationHandlerExecution :=
   handlers.filter fun handler =>
@@ -204,7 +196,7 @@ def expectedCompensationDependencies (program : Program)
           reason := .sequenceFlow }
     | _, _ => none
 
-private def restoredContextMatchesInput (body : SingleEffectCompensationHandlerBody)
+def restoredContextMatchesInput (body : SingleEffectCompensationHandlerBody)
     (triggerOwner : ScopeOccurrenceId) (subject : CompensationSubjectOccurrence)
     (restoredContext : Option CompensationParentContextSnapshot) : Bool :=
   match body.input, subject, restoredContext with
@@ -218,7 +210,7 @@ private def restoredContextMatchesInput (body : SingleEffectCompensationHandlerB
         (processFrame.bindings.filter fun binding => binding.name == sourceName).length = 1
   | _, _, _ => false
 
-private def handlerMatchesDeclaration (program : Program) (triggerOwner : ScopeOccurrenceId)
+def handlerMatchesDeclaration (program : Program) (triggerOwner : ScopeOccurrenceId)
     (handler : CompensationHandlerExecution) : Bool :=
   match compensationSubjectDefinitionForOccurrence? program handler.identity.subject with
   | none => false
@@ -234,15 +226,15 @@ private def handlerMatchesDeclaration (program : Program) (triggerOwner : ScopeO
             restoredContextMatchesInput body triggerOwner handler.identity.subject restoredContext
         | .compensated | .failed | .terminated => true
 
-private def handlerIdentityBefore
+def handlerIdentityBefore
     (left right : CompensationHandlerExecution) : Bool :=
   compensationOccurrenceBefore left.identity.id right.identity.id
 
-private def handlerIdentityUnique (handlers : List CompensationHandlerExecution)
+def handlerIdentityUnique (handlers : List CompensationHandlerExecution)
     (handler : CompensationHandlerExecution) : Bool :=
   (handlers.filter fun candidate => candidate.identity.id == handler.identity.id).length = 1
 
-private def handlerSubjectUnique (handlers : List CompensationHandlerExecution)
+def handlerSubjectUnique (handlers : List CompensationHandlerExecution)
     (handler : CompensationHandlerExecution) : Bool :=
   (handlers.filter fun candidate =>
     compensationSubjectMatches candidate.identity.subject handler.identity.subject).length = 1
@@ -315,7 +307,7 @@ def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
         trigger.id.processInstanceId == trigger.owner.processInstanceId &&
         trigger.owner.definitionScopeId == declaration.definitionScopeId &&
         trigger.output == output &&
-        strictlyOrdered handlerIdentityBefore trigger.handlers &&
+        strictlyOrderedBy handlerIdentityBefore trigger.handlers &&
         trigger.handlers.all (handlerIdentityUnique trigger.handlers) &&
         trigger.handlers.all (handlerSubjectUnique trigger.handlers) &&
         trigger.handlers.all (handlerMatchesDeclaration program trigger.owner) &&
@@ -324,15 +316,15 @@ def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
         triggerLifecycleValid (match operation with | .cancelTransaction .. => true | _ => false) state trigger
   | _ => false
 
-private def triggerIdentityBefore
+def triggerIdentityBefore
     (left right : CompensationTriggerExecution) : Bool :=
   compensationOccurrenceBefore left.id right.id
 
-private def triggerIdentityUnique (triggers : List CompensationTriggerExecution)
+def triggerIdentityUnique (triggers : List CompensationTriggerExecution)
     (trigger : CompensationTriggerExecution) : Bool :=
   (triggers.filter fun candidate => candidate.id == trigger.id).length = 1
 
-private def handlerArgumentsMatch (body : SingleEffectCompensationHandlerBody)
+def handlerArgumentsMatch (body : SingleEffectCompensationHandlerBody)
     (trigger : CompensationTriggerExecution) (handler : CompensationHandlerExecution)
     (arguments : List VariableBinding) : Bool :=
   match handler.lifecycle with
@@ -351,7 +343,7 @@ private def handlerArgumentsMatch (body : SingleEffectCompensationHandlerBody)
         | _, _, _ => false
   | _ => false
 
-private def waitMatchesHandler (program : Program)
+def waitMatchesHandler (program : Program)
     (triggers : List CompensationTriggerExecution)
     (wait : CompensationHandlerEffectWait) : Bool :=
   match triggers.filter fun trigger => trigger.id == wait.triggerId with
@@ -370,15 +362,15 @@ private def waitMatchesHandler (program : Program)
       | _ => false
   | _ => false
 
-private def waitIdentityBefore
+def waitIdentityBefore
     (left right : CompensationHandlerEffectWait) : Bool :=
   compensationOccurrenceBefore left.id right.id
 
-private def waitIdentityUnique (waits : List CompensationHandlerEffectWait)
+def waitIdentityUnique (waits : List CompensationHandlerEffectWait)
     (wait : CompensationHandlerEffectWait) : Bool :=
   (waits.filter fun candidate => candidate.id == wait.id).length = 1
 
-private def handlerHasOneWait (waits : List CompensationHandlerEffectWait)
+def handlerHasOneWait (waits : List CompensationHandlerEffectWait)
     (trigger : CompensationTriggerExecution) (handler : CompensationHandlerExecution) : Bool :=
   match handler.lifecycle with
   | .compensating _ effectId =>
@@ -386,12 +378,12 @@ private def handlerHasOneWait (waits : List CompensationHandlerEffectWait)
         wait.handlerId == handler.identity.id && wait.id == effectId).length = 1
   | _ => true
 
-private def waitCollidesWithOrdinaryState (state : RuntimeState)
+def waitCollidesWithOrdinaryState (state : RuntimeState)
     (wait : CompensationHandlerEffectWait) : Bool :=
   (state.effectWaits.any (effectIdNamesWait wait.id))
     || state.effectIncidents.any fun incident => effectIdNamesWait wait.id incident.wait
 
-private def controlLifecycleValid (program : Program) (state : RuntimeState) : Bool :=
+def controlLifecycleValid (program : Program) (state : RuntimeState) : Bool :=
   match state.control with
   | .notStarted =>
       state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty
@@ -409,11 +401,11 @@ def compensationExecutionStateValid (program : Program) (state : RuntimeState) :
     | none =>
         state.compensationTriggers.isEmpty && state.compensationHandlerEffectWaits.isEmpty
     | some declaration =>
-        strictlyOrdered triggerIdentityBefore state.compensationTriggers &&
+        strictlyOrderedBy triggerIdentityBefore state.compensationTriggers &&
           state.compensationTriggers.all (triggerIdentityUnique state.compensationTriggers) &&
           activeCompensationTriggerOwnersUnique state &&
           state.compensationTriggers.all (triggerMatchesDeclaration program state declaration) &&
-          strictlyOrdered waitIdentityBefore state.compensationHandlerEffectWaits &&
+          strictlyOrderedBy waitIdentityBefore state.compensationHandlerEffectWaits &&
           state.compensationHandlerEffectWaits.all
             (waitIdentityUnique state.compensationHandlerEffectWaits) &&
           state.compensationHandlerEffectWaits.all
@@ -543,7 +535,7 @@ theorem compensationExecutionStateValid_empty (program : Program) (state : Runti
       have capacity := compensationExecutionDeclarationValid_minimumBytes
         program declaration present declarationValid
       rcases control with notStarted | ⟨instanceId, running⟩ <;>
-        simp [compensationExecutionStateValid, strictlyOrdered, activeCompensationTriggerOwnersUnique,
+        simp [compensationExecutionStateValid, strictlyOrderedBy, activeCompensationTriggerOwnersUnique,
           canonicalCompensationExecutionStateUtf8Bytes, canonicalArrayUtf8Bytes,
           controlLifecycleValid, *]
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalOwnership
-import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalOwnership
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 
 /-! The subscription account publishes both Message-host anchors atomically. Regional cleanup
 preserves its complete predecessor-selected publication through the actual two-anchor projection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

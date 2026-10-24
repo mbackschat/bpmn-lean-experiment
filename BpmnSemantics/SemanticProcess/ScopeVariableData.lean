@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Occurrence-owned embedded scope data
 
 SMIS-DATA-01 fixes pre-entry Process evaluation, present-null shadowing and nearest-existing writes.
 These storage operations establish no body lifecycle, source admission or command-policy claim.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -36,7 +40,7 @@ def initializeScopeVariables? (variables : ScopedVariables) (owner : ScopeOccurr
       (canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
         { owner, bindings := mergeProcessVariableBindings [] bindings } variables.scopes) }
 
-private def readScopeScalar? (bindings : List VariableBinding) (name : String) :
+def readScopeScalar? (bindings : List VariableBinding) (name : String) :
     Option VariableValue :=
   match bindings.filter (·.name == name) with
   | [binding] => if scopeVariableScalar binding.value then some binding.value else none

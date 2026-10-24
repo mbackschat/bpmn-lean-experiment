@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Compensation Event Sub-Process snapshot commutation atoms
 
@@ -7,6 +9,8 @@ only ordinary wait-arming operations. Entry, completion, Error, Timer interrupti
 therefore remain fail-closed in `internalTransitionFootprint?`; a later proof may compose these atoms
 with their complete operation footprints without changing their identity account.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -22,7 +26,7 @@ inductive CompensationSnapshotStateAtom where
 
 namespace CompensationSnapshotInternalCommutation
 
-private def runtimeScopeOccurrenceBefore
+def runtimeScopeOccurrenceBefore
     (left right : RuntimeScopeOccurrence) : Bool :=
   if left.id ≠ right.id then InternalCommutation.scopeBefore left.id right.id
   else
@@ -32,14 +36,14 @@ private def runtimeScopeOccurrenceBefore
         InternalCommutation.scopeBefore leftParent rightParent
     | _, _ => false
 
-private def atomRank : CompensationSnapshotStateAtom → Nat
+def atomRank : CompensationSnapshotStateAtom → Nat
   | .ordinary atom =>
       let rank := InternalCommutation.stateAtomRank atom
       if rank < 7 then rank else rank + 2
   | .compensationParentContextCapacity => 7
   | .compensationParentContextRetention _ => 8
 
-private def atomBefore
+def atomBefore
     (left right : CompensationSnapshotStateAtom) : Bool :=
   if atomRank left ≠ atomRank right then atomRank left < atomRank right
   else
@@ -51,7 +55,7 @@ private def atomBefore
         runtimeScopeOccurrenceBefore left right
     | _, _ => false
 
-private def canonicalAtomSet
+def canonicalAtomSet
     (atoms : List CompensationSnapshotStateAtom) : List CompensationSnapshotStateAtom :=
   InternalCommutation.sortBy atomBefore atoms.eraseDups
 

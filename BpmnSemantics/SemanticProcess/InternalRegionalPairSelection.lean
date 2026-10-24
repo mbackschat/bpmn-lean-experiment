@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairWithdrawalFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairQuiescence
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairWithdrawalFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairQuiescence
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 
 /-! The complete regional selector combines protected censuses, quiescence, and bounded-handler withdrawal. These frames preserve its exact selected artifact before rebuilding preparation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -39,7 +43,7 @@ theorem returning_record_member (program : Program) (state : RuntimeState)
 
 /-- The second selector survives an actual independent regional step. Every filter,
 withdrawal and token-owner query is derived from the two complete predecessor preparations. -/
-theorem regionalSelection_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem regionalSelection_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

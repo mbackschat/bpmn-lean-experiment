@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! # Error definition admission and lowering
 
 This module owns exact-code resolution of one interrupting boundary Error handler for a throwing embedded Sub-Process scope. It validates the source-level handler relationship and lowers that already-resolved relationship into the Semantic Process operation payload; runtime propagation remains in `ErrorPropagation`.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def attachedChildScope? (source : CheckedProcess)
+def attachedChildScope? (source : CheckedProcess)
     (attachedToRef : NodeId) : Option DefinitionScopeId :=
   source.nodes.findSome? fun
     | .embeddedSubProcess id childScopeId =>
@@ -51,7 +55,7 @@ def errorReferenceValid (error : ErrorReference) : Bool :=
     !error.errorElementId.value.isEmpty &&
     !error.code.isEmpty
 
-private def directHandlerMatches (source : CheckedProcess)
+def directHandlerMatches (source : CheckedProcess)
     (throwingScopeId : DefinitionScopeId) (error : ErrorReference) :
     CheckedNode → Bool
   | .boundaryErrorEvent id attachedToRef caught outputFlowId =>

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 
 /-! The template's sort retains each resolved place once, with strict public flow order under
 the alias refusal rule in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

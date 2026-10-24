@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
-import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
-import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
 
 /-! Accepted lifecycle publication for the prepared child and Call operations in the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 Predecessor validity, projection, and preparation determine the successor projection and actual
 candidate acceptance; independent pairs retain those results in either execution order.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

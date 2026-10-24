@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalEndCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndCommutation
 
 /-! End/local-control commutation reuses token-patch algebra. Selected-join preparation also
 protects every competing record's readiness bucket, beyond the selected owner's input. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

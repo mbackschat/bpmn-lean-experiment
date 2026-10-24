@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Parallel Multi-Instance lowering
 
 Family-shaped construction of the paired entry and external child-completion operations. The root
 lowerer still owns graph traversal, scope lookup, and canonical sorting.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

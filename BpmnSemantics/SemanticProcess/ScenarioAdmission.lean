@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
-import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.MessageStartAdmission
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -19,7 +23,7 @@ def hasMultiInstanceDefinitions (program : Program) : Bool :=
     | .enterSequentialMultiInstanceScope .. | .enterParallelMultiInstanceScope .. => true
     | _ => false
 
-private def requiredObservations (program : Program) : List ObservationKind :=
+def scenarioRequiredObservations (program : Program) : List ObservationKind :=
   let baseline :=
     [ .deployment
   , .commandResults
@@ -34,7 +38,7 @@ private def requiredObservations (program : Program) : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
-private def isProcessStartStimulus : Stimulus → Bool
+def isProcessStartStimulus : Stimulus → Bool
   | .startProcess .. | .triggerMessageStart .. | .triggerTimerStart .. => true
   | .completeUserTaskInstance .. | .deliverMessage .. | .deliverPayloadMessage ..
   | .deliverCorrelatedPayloadMessage ..
@@ -50,13 +54,13 @@ def stimulusSequenceSupported : List Stimulus → Bool
       remaining.all fun stimulus => !isProcessStartStimulus stimulus
   | _ => false
 
-private def firstStimulusMatchesProgram (program : Program) :
+def firstStimulusMatchesProgram (program : Program) :
     List Stimulus → Bool
   | stimulus :: _ => startStimulusMatchesProgram program stimulus
   | [] => false
 
 /-- Business-task scenario support requires the same initial data as TypeScript support admission; command refusal remains a separate outcome. -/
-private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : List Stimulus) : Bool :=
+def businessTaskScenarioStartAdmitted (program : Program) (stimuli : List Stimulus) : Bool :=
   if program.identity.semanticProfile != serialBusinessTaskProfileId &&
       program.identity.semanticProfile != mixedTaskControlFlowProfileId &&
       program.identity.semanticProfile != mixedTaskBusinessErrorProfileId then true
@@ -70,14 +74,14 @@ private def businessTaskScenarioStartAdmitted (program : Program) (stimuli : Lis
 
 /-- NSD-AVAILABLE-01: a supported scenario starts with a Process Start carrying every scope-chain-required
 name, as TypeScript scenario support requires; any other first stimulus is unsupported under the profile. -/
-private def nestedScopeScenarioStartAdmitted (program : Program) : Stimulus → Bool
+def nestedScopeScenarioStartAdmitted (program : Program) : Stimulus → Bool
   | .startProcess _ _ instanceId bindings =>
       !nestedScopeDataProgram program ||
         (!instanceId.value.isEmpty && NestedScopeData.startBindingsAdmitted program bindings)
   | _ => !nestedScopeDataProgram program
 
 /-- CDATA-RESUME-01 and COMPSTART-DATA-01 require the selected initializing data before a supported scenario can enter its first Process. -/
-private def scenarioStartDataAdmitted (program : Program) : Stimulus → Bool
+def scenarioStartDataAdmitted (program : Program) : Stimulus → Bool
   | .startProcess _ _ instanceId bindings =>
       (program.identity.semanticProfile != callDataCheckpointProfileId ||
         callDataStartBindingsAdmitted program bindings) &&
@@ -85,7 +89,7 @@ private def scenarioStartDataAdmitted (program : Program) : Stimulus → Bool
   | _ => true
 
 /-- SMI/PMI completion kinds remain separate from declaration-bound task results; see SMI-ADMIT-01 and PMI-REFUSE-01. -/
-private def scenarioProcessDataBindingsSupported (profile : ProfileId) (surface : ProcessDataIngress)
+def scenarioProcessDataBindingsSupported (profile : ProfileId) (surface : ProcessDataIngress)
     (bindings : List VariableBinding) : Bool :=
   if surface == .userTaskCompletion &&
       (profile == sequentialMultiInstanceUserTaskProfileId || profile == parallelMultiInstanceUserTaskProfileId) then
@@ -95,7 +99,7 @@ private def scenarioProcessDataBindingsSupported (profile : ProfileId) (surface 
   else processDataBindingsAdmitted profile surface bindings
 
 /-- The mapped profiles' frozen external-domain declarations and SBT-RESULT-01 select kinds, while mapping names/cardinality remain command refusals. -/
-private def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : List VariableBinding) : Bool :=
+def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : List VariableBinding) : Bool :=
   if profile.value == "cibseven-2.0.0-mapped-success-service-task-draft" then
     bindings.all fun binding => match binding.value with | .string _ => true | _ => false
   else if profile.value == "cibseven-2.0.0-mapped-boundary-error-service-task-draft" ||
@@ -109,7 +113,7 @@ private def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : Li
   else bindings.isEmpty
 
 /-- Whole-scenario support scans every stimulus independently of execution; supported-domain wrong names, occurrences and result sets remain executable negative commands. -/
-private def scenarioStimulusDomainSupported (program : Program) (stimulus : Stimulus) : Bool :=
+def scenarioStimulusDomainSupported (program : Program) (stimulus : Stimulus) : Bool :=
   let profile := program.identity.semanticProfile
   match stimulus with
     | .startProcess _ _ _ bindings =>
@@ -146,6 +150,6 @@ def supportsScenario (program : Program) (scenario : Scenario) : Bool :=
         scenario.bpmn.id = program.identity.sourceId &&
         scenario.bpmn.sha256 = program.identity.sourceSha256 &&
         scenario.bpmn.sourceOverlay = program.identity.sourceOverlay &&
-        scenario.observations = requiredObservations program)
+        scenario.observations = scenarioRequiredObservations program)
 
 end BpmnSemantics.SemanticProcess

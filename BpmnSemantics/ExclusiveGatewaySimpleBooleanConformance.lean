@@ -10,11 +10,11 @@ namespace BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def firstOutput : ControlPlaceId := ⟨"place:Flow_First"⟩
-private def secondOutput : ControlPlaceId := ⟨"place:Flow_Second"⟩
-private def defaultOutput : ControlPlaceId := ⟨"place:Flow_Default"⟩
+def firstOutput : ControlPlaceId := ⟨"place:Flow_First"⟩
+def secondOutput : ControlPlaceId := ⟨"place:Flow_Second"⟩
+def defaultOutput : ControlPlaceId := ⟨"place:Flow_Default"⟩
 
-private def candidate (flowId : String) (condition : SimpleBooleanExpression) :
+def candidate (flowId : String) (condition : SimpleBooleanExpression) :
     ConditionalCandidate :=
   { condition
     output := ⟨"place:" ++ flowId⟩

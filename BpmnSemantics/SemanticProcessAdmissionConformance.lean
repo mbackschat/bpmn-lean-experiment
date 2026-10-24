@@ -1,23 +1,27 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # BpmnSemantics.SemanticProcessAdmissionConformance: admission and lowering contract checks
 
 These checks own the generic checked-graph admission, program validation, profile capability, definition binding, and canonical lowering fixtures. Runtime closure and evaluator checks remain in `SemanticProcessConformance` so each kernel-decided lane has an independent build boundary.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcessConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def emptyCheckedGraph : CheckedProcess :=
+def emptyCheckedGraph : CheckedProcess :=
   { sequentialCheckedProcess with nodes := [], sequenceFlows := [] }
 
-private def flowlessCheckedGraph : CheckedProcess :=
+def flowlessCheckedGraph : CheckedProcess :=
   { sequentialCheckedProcess with sequenceFlows := [] }
 
-private def danglingCheckedGraph : CheckedProcess :=
+def danglingCheckedGraph : CheckedProcess :=
   { sequentialCheckedProcess with
     nodes := []
     sequenceFlows :=
@@ -57,12 +61,12 @@ theorem parallel_program_is_well_formed :
 theorem timer_user_task_program_is_well_formed :
     programWellFormed timerUserTaskCompositionProgram = true := by decide +kernel
 
-private def sharedIdentityUserTask : SemanticOperation :=
+def sharedIdentityUserTask : SemanticOperation :=
   .awaitUserTask ⟨"operation:Shared_User"⟩ { elementId := ⟨"Shared_Wait"⟩ }
     ⟨"place:User_Input"⟩ ⟨"place:User_Output"⟩
     { id := ⟨"Shared_Wait"⟩, name := none }
 
-private def sharedIdentityTimer : SemanticOperation :=
+def sharedIdentityTimer : SemanticOperation :=
   .awaitTimer ⟨"operation:Shared_Timer"⟩ { elementId := ⟨"Shared_Wait"⟩ }
     ⟨"place:Timer_Input"⟩ ⟨"place:Timer_Output"⟩
     { elementId := ⟨"Shared_Wait"⟩, durationMs := 1000 }

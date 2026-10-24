@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Activity data-output conformance
 
@@ -15,12 +17,14 @@ expectation below would also hold under a name-merged completion if those ids ag
 inequality is what makes these witnesses discriminating rather than merely true.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ActivityDataOutputConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def decisionDirectOutput : DirectActivityDataOutput :=
+def decisionDirectOutput : DirectActivityDataOutput :=
   { associationId := "DataOutputAssociation_Decision"
     sourceDataOutputId := "DataOutput_Decision"
     sourceDataOutputName := some "Underwriting decision"
@@ -32,10 +36,10 @@ theorem declaredOutputAndAssociatedPropertyAreDistinct :
     decisionDirectOutput.sourceDataOutputId ≠ decisionDirectOutput.target.id := by
   decide +kernel
 
-private def underwritingProcessId : ProcessId :=
+def underwritingProcessId : ProcessId :=
   ⟨"Process_ActivityDataOutputUnderwriting"⟩
 
-private def underwritingCheckedProcess : CheckedProcess :=
+def underwritingCheckedProcess : CheckedProcess :=
   { identity :=
       { semanticProfile := activityDataOutputUserTaskProfileId
         sourceId := ⟨"activity-data-output-user-task"⟩
@@ -60,16 +64,16 @@ private def underwritingCheckedProcess : CheckedProcess :=
           sourceId := ⟨"UserTask_Decide"⟩
           targetId := ⟨"EndEvent_Recorded"⟩ } ] }
 
-private def underwritingProgram : Program :=
+def underwritingProgram : Program :=
   lowerCheckedProcess underwritingCheckedProcess
 
-private def underwritingInstanceId : SemanticId :=
+def underwritingInstanceId : SemanticId :=
   ⟨"ActivityDataOutputInstance_1"⟩
 
 /-- A checked process identical to the registered one except that the declared `DataOutput` and its
 target `Property` share one identity. No BPMN document can express this, because both ends are
 `xsd:ID`, so admission of the lowered Program is the only boundary that can refuse it. -/
-private def mergedIdentityCheckedProcess : CheckedProcess :=
+def mergedIdentityCheckedProcess : CheckedProcess :=
   { underwritingCheckedProcess with
     nodes :=
       [ .noneEndEvent ⟨"EndEvent_Recorded"⟩
@@ -91,37 +95,37 @@ theorem mergedOutputAndPropertyIdentityIsStructurallyRejected :
 
 /-- The only start this capsule registers: no Process data at all, which is exactly the state in
 which the sibling input model creates neither a task nor an Activity record. -/
-private def startUnderwriting : Stimulus :=
+def startUnderwriting : Stimulus :=
   .startProcess ⟨"start-underwriting"⟩ ⟨underwritingProcessId.value⟩
     underwritingInstanceId []
 
-private def started : StimulusResult :=
+def started : StimulusResult :=
   applyStimulus scenarioClosureLimit underwritingProgram initialState startUnderwriting
 
-private def decideTaskInstanceId : UserTaskInstanceId :=
+def decideTaskInstanceId : UserTaskInstanceId :=
   { processInstanceId := underwritingInstanceId
     elementId := ⟨"UserTask_Decide"⟩
     activation := 1 }
 
-private def decideActivityOwner : LocalDataOwner :=
+def decideActivityOwner : LocalDataOwner :=
   .activityOccurrence
     { processInstanceId := underwritingInstanceId
       activityElementId := ⟨"UserTask_Decide"⟩
       activation := 1 }
 
-private def complete (commandId : String)
+def complete (commandId : String)
     (submittedValues : List VariableBinding) : Stimulus :=
   .completeUserTaskInstance ⟨commandId⟩ decideTaskInstanceId submittedValues
 
-private def decideApproved : Stimulus :=
+def decideApproved : Stimulus :=
   complete "decide-approved" [{ name := decisionDirectOutput.sourceDataOutputId
                                 value := .string "approved" }]
 
-private def decideNull : Stimulus :=
+def decideNull : Stimulus :=
   complete "decide-null" [{ name := decisionDirectOutput.sourceDataOutputId
                             value := .null }]
 
-private def observed (result : StimulusResult) : Option StateObservation :=
+def observed (result : StimulusResult) : Option StateObservation :=
   observeStableState underwritingProgram result.state
 
 theorem tokenAloneActivatesWithNoProcessBinding :
@@ -156,7 +160,7 @@ theorem activeTaskPublishesNoInputCollection :
            inputs := none }] := by
   decide +kernel
 
-private def approved : StimulusResult :=
+def approved : StimulusResult :=
   applyStimulus scenarioClosureLimit underwritingProgram started.state decideApproved
 
 /-- `ADOUTPUT-ROUTE-01`. The value reaches the Property the association names, and the submitted
@@ -183,7 +187,7 @@ theorem completedProcessPublishesTheWrittenProperty :
              value := .string "approved" }]) := by
   decide +kernel
 
-private def nullDecided : StimulusResult :=
+def nullDecided : StimulusResult :=
   applyStimulus scenarioClosureLimit underwritingProgram started.state decideNull
 
 /-- A supplied explicit null makes the single required output available exactly as a String does, so
@@ -250,7 +254,7 @@ theorem wrongActivationPreservesTheActiveState :
         ambiguousInternalChoice := false } := by
   decide +kernel
 
-private def repeatedOutputDeclarations (count : Nat) : Program :=
+def repeatedOutputDeclarations (count : Nat) : Program :=
   { underwritingProgram with
     operations := underwritingProgram.operations.flatMap fun operation =>
       match operation with

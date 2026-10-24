@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 
 /-! # Actual parallel-body lifetime firing accounting
 
@@ -7,6 +9,8 @@ PMIS-ENTER-01 supplies the body credit boundary. Actual lifetime port accounting
 and admitted dependency order bound each declaration's exact-owner firing count;
 these laws do not require the independent frontier-locality proof closure.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -369,13 +373,11 @@ theorem ContinuationCommandHistory.enabled_body_firing_count_zero
   have member : operation ∈ child := by
     rw [childEq]
     simpa only [owned, childScope] using population
-  have completionMember : completion ∈ child := by
-    have present : completion ∈ child.filter (fun operation => match operation with
-        | .completeParallelMultiInstanceScope .. => true | _ => false) := by rw [completionEq]; simp
-    exact (List.mem_filter.mp present).1
+  -- Derived from `completionEq` rather than restated: a module gives a restated `match` its own private
+  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  have present := completionEq ▸ List.mem_singleton_self completion
+  have completionMember : completion ∈ child := (List.mem_filter.mp present).1
   have completionKind : completion.kind = .completeParallelMultiInstanceScope := by
-    have present : completion ∈ child.filter (fun operation => match operation with
-        | .completeParallelMultiInstanceScope .. => true | _ => false) := by rw [completionEq]; simp
     have selected := (List.mem_filter.mp present).2
     cases completion <;> simp_all [SemanticOperation.kind]
   have different : operation.id ≠ completion.id := by

@@ -1,4 +1,6 @@
-import BpmnSemantics.Experiments.CheckedSourceScenario
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceScenario
 
 /-! # Direct checked-graph token game
 

@@ -18,28 +18,28 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private inductive Creator where
+inductive Creator where
   | child
   | called
   deriving DecidableEq
 
-private def scopeA : DefinitionScopeId := ⟨"scope:A"⟩
-private def scopeB : DefinitionScopeId := ⟨"scope:B"⟩
-private def rootScope : DefinitionScopeId := ⟨"scope:Root"⟩
+def scopeA : DefinitionScopeId := ⟨"scope:A"⟩
+def scopeB : DefinitionScopeId := ⟨"scope:B"⟩
+def rootScope : DefinitionScopeId := ⟨"scope:Root"⟩
 
-private def definition (kind : Creator) (scope : DefinitionScopeId)
+def definition (kind : Creator) (scope : DefinitionScopeId)
     (element : NodeId) (process : ProcessId) : DefinitionScope :=
   match kind with
   | .child => { id := scope, parentScopeId := some rootScope, originElementId := element }
   | .called => { id := scope, parentScopeId := none, originElementId := ⟨process.value⟩ }
 
-private def creatorNode (kind : Creator) (element : NodeId)
+def creatorNode (kind : Creator) (element : NodeId)
     (scope : DefinitionScopeId) (process : ProcessId) : CheckedNode :=
   match kind with
   | .child => .embeddedSubProcess element scope
   | .called => .callActivity element process
 
-private def checked (left right : Creator) : CheckedProcess :=
+def checked (left right : Creator) : CheckedProcess :=
   { identity :=
       { semanticProfile := ⟨"bpmn-2.0.2-called-process-call-activity-draft"⟩
         sourceId := ⟨"constructed-scope-creation-frame"⟩
@@ -86,12 +86,12 @@ private def checked (left right : Creator) : CheckedProcess :=
        { id := ⟨"f07"⟩, sourceId := ⟨"G_StartA"⟩, targetId := ⟨"H_EndA"⟩ },
        { id := ⟨"f08"⟩, sourceId := ⟨"I_StartB"⟩, targetId := ⟨"J_EndB"⟩ }] }
 
-private def program (left right : Creator) : Program := lowerCheckedProcess (checked left right)
+def program (left right : Creator) : Program := lowerCheckedProcess (checked left right)
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := ⟨"frame-instance"⟩, definitionScopeId := rootScope, activation := 1 }
 
-private def before : RuntimeState :=
+def before : RuntimeState :=
   { initialState with
     control := .running owner.processInstanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -103,7 +103,7 @@ private def before : RuntimeState :=
       { placeId := flowControlPlaceId ⟨"f03"⟩, owner }]
     logicalTimeMs := 42 }
 
-private def preparation (program : Program) (state : RuntimeState) (element : NodeId) :
+def preparation (program : Program) (state : RuntimeState) (element : NodeId) :
     Option PreparedInternalScopeCreation := do
   let operation ← program.operations.find? fun operation =>
     match operation with
@@ -111,19 +111,19 @@ private def preparation (program : Program) (state : RuntimeState) (element : No
     | _ => false
   prepareInternalScopeCreation? program state operation
 
-private def pairPreconditions (program : Program) : Bool :=
+def pairPreconditions (program : Program) : Bool :=
   match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
   | some left, some right => localControlStateFootprintsNonInterfering left.footprint right.footprint
   | _, _ => false
 
-private def pairFrames (program : Program) : Bool :=
+def pairFrames (program : Program) : Bool :=
   match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
   | some left, some right =>
       preparation program (right.selection.apply before) ⟨"C_Left"⟩ == some left &&
         preparation program (left.selection.apply before) ⟨"D_Right"⟩ == some right
   | _, _ => false
 
-private def pairCommutes (program : Program) : Bool :=
+def pairCommutes (program : Program) : Bool :=
   match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
   | some left, some right =>
       let leftThenRight := right.selection.apply (left.selection.apply before)
@@ -181,7 +181,7 @@ theorem child_call_complete_states_commute_and_remain_valid :
 theorem call_call_complete_states_commute_and_remain_valid :
     pairCommutes (program .called .called) = true := by decide +kernel
 
-private def positionPublicationMatches (program : Program) (state : RuntimeState)
+def positionPublicationMatches (program : Program) (state : RuntimeState)
     (element : NodeId) : Bool :=
   match preparation program state element with
   | none => false
@@ -196,7 +196,7 @@ theorem call_creation_publishes_exact_position_delta :
     positionPublicationMatches (program .called .called) before ⟨"C_Left"⟩ = true := by
   decide +kernel
 
-private def repeatedInput : RuntimeState :=
+def repeatedInput : RuntimeState :=
   { before with tokens := addToken before.tokens (flowControlPlaceId ⟨"f02"⟩) owner }
 
 theorem repeated_child_input_retains_one_token_and_publishes_one_consumption :
@@ -288,7 +288,7 @@ theorem call_issuance_change_alters_the_complete_preparation :
          next.isSome && next != some prepared) = true := by
   decide +kernel
 
-private def lifecyclePublicationMatches (program : Program) (state : RuntimeState)
+def lifecyclePublicationMatches (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalScopeCreation) (index : Nat) : Bool :=
   let after := prepared.selection.apply state
   prepared.publicationTemplate.lifecycle.started.length == 1 &&
@@ -296,7 +296,7 @@ private def lifecyclePublicationMatches (program : Program) (state : RuntimeStat
     flowNodeOccurrenceDeltaForOperation? program state after prepared.selection.operation
       ⟨"scope-frame-command"⟩ index == some prepared.publicationTemplate.lifecycle
 
-private def pairLifecycleMatches (program : Program) : Bool :=
+def pairLifecycleMatches (program : Program) : Bool :=
   match preparation program before ⟨"C_Left"⟩, preparation program before ⟨"D_Right"⟩ with
   | some left, some right =>
       let afterLeft := left.selection.apply before
@@ -323,7 +323,7 @@ theorem child_call_lifecycle_is_accepted_in_both_orders :
 theorem call_call_lifecycle_is_accepted_in_both_orders :
     pairLifecycleMatches (program .called .called) = true := by decide +kernel
 
-private def alteredLifecycleRefused (program : Program) : Bool :=
+def alteredLifecycleRefused (program : Program) : Bool :=
   match preparation program before ⟨"C_Left"⟩ with
   | none => false
   | some prepared =>

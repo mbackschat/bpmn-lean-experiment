@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletionLaws
-import BpmnSemantics.SemanticProcess.CallDataStateLaws
-import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletionLaws
+public import BpmnSemantics.SemanticProcess.CallDataStateLaws
+public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Semantic Process external execution
 
 This module owns reusable full-occurrence-identity refusal laws over `ExecutionRuntime` states. Bounded closure and the pure `applyStimulus` boundary are owned by `TransitionTrace`; external command admission, wait completion, scenario projection, and capsule fixtures remain separate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 
 /-! # Fresh scope insertion and existing ownership
 
 The scope-creation validity proof needs singleton lookups to survive insertion, not merely
 membership. These laws preserve the existing ownership checks without assuming successor validity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

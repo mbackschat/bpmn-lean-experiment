@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Actual parallel body retirement accounting
 
@@ -6,6 +8,8 @@ PMIS-END-01 exchanges the parent's blocked continuation while disposing body
 occurrences. The scope census is a decreasing resource independently of token
 credit; this law does not assert whole-command phase correspondence or progress.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

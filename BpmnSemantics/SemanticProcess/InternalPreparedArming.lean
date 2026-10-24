@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 
 /-! Complete retained preparations implement the predecessor-only finite-batch classification account. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

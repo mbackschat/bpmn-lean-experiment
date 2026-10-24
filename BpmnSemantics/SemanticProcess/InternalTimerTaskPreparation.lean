@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! Timer-task preparation retains both waits and their Activity association before execution.
 The regional atom vocabulary already represents attached-handler conflicts; no new atom domain is
 needed for the [complete outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

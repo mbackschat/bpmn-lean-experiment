@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import BpmnSemantics.SemanticProcess.InternalEndPreparation
-import BpmnSemantics.SemanticProcess.InternalMergePreparation
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -142,7 +146,7 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
 instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
   cases left <;> cases right <;> unfold PreparedInternalTransition.Independent <;> infer_instance
 
-private def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState)
+def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   match internalLocalControlOrigin? operation with
   | some _ =>
@@ -153,13 +157,13 @@ private def prepareOrdinaryInternalTransition? (program : Program) (state : Runt
       | some _ => (prepareInternalScopeCreation? program state operation).map .scopeCreation
       | none => (prepareInternalArming? program state operation).map .arming
 
-private def prepareTimerTaskInternalTransition? (program : Program) (state : RuntimeState)
+def prepareTimerTaskInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition := do
   let contract ← timerTaskContract? operation
   let patch ← prepareInternalTimerTaskContract? program state contract
   some (.timerTask contract patch)
 
-private def prepareMessageTaskInternalTransition? (program : Program) (state : RuntimeState)
+def prepareMessageTaskInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   if subscriptionPreparationAdmitted program then do
     let contract ← messageTaskContract? operation
@@ -167,7 +171,7 @@ private def prepareMessageTaskInternalTransition? (program : Program) (state : R
     some (.messageTask contract patch)
   else none
 
-private def prepareBoundedScopeInternalTransition? (program : Program) (state : RuntimeState)
+def prepareBoundedScopeInternalTransition? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option PreparedInternalTransition :=
   if subscriptionPreparationAdmitted program then do
     let contract ← boundedScopeContract? operation

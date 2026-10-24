@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+module
+
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! # Sequential Multi-Instance laws
 
@@ -37,6 +39,8 @@ show that an armed outer Timer at the start discharges that assumption. Readines
 the start state; this module does not derive it from Start or from any scheduler, and it claims no
 human-completion fairness, Timer-delivery fairness, or unconditional liveness.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

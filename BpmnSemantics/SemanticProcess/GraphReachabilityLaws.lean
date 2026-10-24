@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.GraphValidation
+module
+
+public import BpmnSemantics.SemanticProcess.GraphValidation
 
 /-! # Graph-reachability laws
 
 This module relates executable bounded search and saturation certificates to declarative paths. It does not participate in semantic transitions.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.TerminateEndEventFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.TerminateEndEventFixtures
 
 /-! # Terminate End Event conformance
 
@@ -7,6 +9,8 @@ This module owns the direct Lean witnesses for containing-scope termination. The
 parent work live while removing the selected child region, and the root witness reuses the same
 operation shape without a parent continuation.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -16,38 +20,38 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.TerminateEndEventFixtures
 
-private def instanceId : SemanticId := ⟨"TerminateInstance"⟩
+def instanceId : SemanticId := ⟨"TerminateInstance"⟩
 
-private def rootOwner : ScopeOccurrenceId :=
+def rootOwner : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:Process_Terminate"⟩
     activation := 1 }
 
-private def childOwner : ScopeOccurrenceId :=
+def childOwner : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:SubProcess_Terminate"⟩
     activation := 1 }
 
-private def descendantOwner : ScopeOccurrenceId :=
+def descendantOwner : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:Descendant"⟩
     activation := 1 }
 
-private def calledInstanceId : SemanticId := ⟨"CalledTerminateInstance"⟩
+def calledInstanceId : SemanticId := ⟨"CalledTerminateInstance"⟩
 
-private def calledRootOwner : ScopeOccurrenceId :=
+def calledRootOwner : ScopeOccurrenceId :=
   { processInstanceId := calledInstanceId
     definitionScopeId := ⟨"scope:CalledRoot"⟩
     activation := 1 }
 
-private def siblingWait : UserTaskWait :=
+def siblingWait : UserTaskWait :=
   { processInstanceId := instanceId
     owner := childOwner
     task := { id := ⟨"Sibling"⟩, name := some "Sibling" }
     activation := 1
     output := ⟨"place:SiblingToEnd"⟩ }
 
-private def cancelledActivity : ActivityOccurrence :=
+def cancelledActivity : ActivityOccurrence :=
   { processInstanceId := instanceId
     activityElementId := ⟨"ChildSequentialMultiInstance"⟩
     activation := 1
@@ -58,7 +62,7 @@ private def cancelledActivity : ActivityOccurrence :=
         activation := 1 }
     attachedHandlers := [] }
 
-private def unrelatedActivity : ActivityOccurrence :=
+def unrelatedActivity : ActivityOccurrence :=
   { processInstanceId := instanceId
     activityElementId := ⟨"RootSequentialMultiInstance"⟩
     activation := 1
@@ -69,28 +73,28 @@ private def unrelatedActivity : ActivityOccurrence :=
         activation := 1 }
     attachedHandlers := [] }
 
-private def cancelledController : SequentialMultiInstanceController :=
+def cancelledController : SequentialMultiInstanceController :=
   { processInstanceId := instanceId
     activityElementId := cancelledActivity.activityElementId
     activation := cancelledActivity.activation
     snapshot := ["cancelled"]
     outputSlots := [] }
 
-private def unrelatedController : SequentialMultiInstanceController :=
+def unrelatedController : SequentialMultiInstanceController :=
   { processInstanceId := instanceId
     activityElementId := unrelatedActivity.activityElementId
     activation := unrelatedActivity.activation
     snapshot := ["unrelated"]
     outputSlots := [] }
 
-private def calledController : SequentialMultiInstanceController :=
+def calledController : SequentialMultiInstanceController :=
   { processInstanceId := calledInstanceId
     activityElementId := ⟨"CalledSequentialMultiInstance"⟩
     activation := 1
     snapshot := ["called"]
     outputSlots := [] }
 
-private def cancelledParallelController : ParallelMultiInstanceController :=
+def cancelledParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := instanceId
         activityElementId := ⟨cancelledActivity.activityElementId.value⟩
@@ -98,7 +102,7 @@ private def cancelledParallelController : ParallelMultiInstanceController :=
     snapshot := ["cancelled"]
     slots := [] }
 
-private def unrelatedParallelController : ParallelMultiInstanceController :=
+def unrelatedParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := instanceId
         activityElementId := ⟨unrelatedActivity.activityElementId.value⟩
@@ -106,7 +110,7 @@ private def unrelatedParallelController : ParallelMultiInstanceController :=
     snapshot := ["unrelated"]
     slots := [] }
 
-private def calledParallelController : ParallelMultiInstanceController :=
+def calledParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := calledInstanceId
         activityElementId := ⟨"CalledParallelMultiInstance"⟩
@@ -213,7 +217,7 @@ theorem incomplete_regional_cancellation_leaves_sibling_live :
         ⟨"place:Flow_TriggerTerminate"⟩).waits := by
   decide +kernel
 
-private def controllerCancellationState : RuntimeState :=
+def controllerCancellationState : RuntimeState :=
   { nestedCounterexampleState with
     activityOccurrences := [cancelledActivity, unrelatedActivity]
     sequentialMultiInstanceControllers :=
@@ -297,7 +301,7 @@ theorem lowered_terminate_operation_is_exact :
         ⟨"place:Flow_TriggerTerminate"⟩ childScopeId] := by
   decide +kernel
 
-private def crossScopeTerminateProgram : Program :=
+def crossScopeTerminateProgram : Program :=
   { program with
     operations := program.operations.map fun operation =>
       if operation =
@@ -320,10 +324,10 @@ theorem root_program_is_generic_not_profile_registered :
       programProfileCapabilitiesValid rootSyntheticProgram = false := by
   decide +kernel
 
-private def exactTerminateId : OperationId := ⟨"operation:I_Terminate"⟩
-private def exactTerminateOrigin : BpmnElementOrigin :=
+def exactTerminateId : OperationId := ⟨"operation:I_Terminate"⟩
+def exactTerminateOrigin : BpmnElementOrigin :=
   { elementId := ⟨"I_Terminate"⟩ }
-private def exactTerminateInput : ControlPlaceId :=
+def exactTerminateInput : ControlPlaceId :=
   ⟨"place:Flow_TriggerTerminate"⟩
 
 def nestedTerminatedState : RuntimeState :=
@@ -409,23 +413,23 @@ theorem global_cancellation_is_wrong_for_nested_terminate :
     nestedTerminatedState.waits.length = 1 ∧ globallyCancelled.waits = [] := by
   decide +kernel
 
-private def zeroTokenState : RuntimeState :=
+def zeroTokenState : RuntimeState :=
   { nestedCounterexampleState with
     tokens := nestedCounterexampleState.tokens.filter fun token =>
       token.placeId ≠ exactTerminateInput }
 
-private def multipleTokenState : RuntimeState :=
+def multipleTokenState : RuntimeState :=
   { nestedCounterexampleState with
     tokens :=
       { placeId := exactTerminateInput, owner := childOwner } ::
         nestedCounterexampleState.tokens }
 
-private def wrongOwnerState : RuntimeState :=
+def wrongOwnerState : RuntimeState :=
   { nestedCounterexampleState with
     tokens :=
       [{ placeId := exactTerminateInput, owner := rootOwner }] }
 
-private def staleOwnerState : RuntimeState :=
+def staleOwnerState : RuntimeState :=
   { nestedCounterexampleState with
     scopeOccurrences := nestedCounterexampleState.scopeOccurrences.filter fun occurrence =>
       occurrence.id ≠ childOwner }

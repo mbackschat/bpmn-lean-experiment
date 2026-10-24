@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Runtime-state identity bound
 
 This module owns the implemented, consumer-required part of `RSI-BOUND-01`. It is separate from the
 aggregate predicate because one numeric relation spans otherwise independent runtime collections.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

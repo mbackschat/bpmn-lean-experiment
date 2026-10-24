@@ -15,12 +15,12 @@ namespace BpmnSemantics.InternalScopeCreationValidityConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def childOwner : ScopeOccurrenceId :=
+def childOwner : ScopeOccurrenceId :=
   { processInstanceId := EmbeddedSubProcessCompletionConformance.instanceId
     definitionScopeId := EmbeddedSubProcessCompletionConformance.rootScopeId
     activation := 1 }
 
-private def childBefore : RuntimeState :=
+def childBefore : RuntimeState :=
   { initialState with
     control := .running childOwner.processInstanceId
     scopeOccurrences := [{ id := childOwner, parent := none }]
@@ -30,12 +30,12 @@ private def childBefore : RuntimeState :=
     tokens := [{ placeId := flowControlPlaceId ⟨"Flow_OuterStartToScope"⟩, owner := childOwner }]
     logicalTimeMs := 42 }
 
-private def callOwner : ScopeOccurrenceId :=
+def callOwner : ScopeOccurrenceId :=
   { processInstanceId := CallActivityConformance.callerInstanceId
     definitionScopeId := CallActivityConformance.callerScopeId
     activation := 1 }
 
-private def callBefore : RuntimeState :=
+def callBefore : RuntimeState :=
   { initialState with
     control := .running callOwner.processInstanceId
     scopeOccurrences := [{ id := callOwner, parent := none }]
@@ -44,19 +44,19 @@ private def callBefore : RuntimeState :=
     tokens := [{ placeId := flowControlPlaceId ⟨"F1_CallerStartCall"⟩, owner := callOwner }]
     logicalTimeMs := 42 }
 
-private def childPrepared? : Option PreparedInternalScopeCreation := do
+def childPrepared? : Option PreparedInternalScopeCreation := do
   let operation ← EmbeddedSubProcessCompletionConformance.program.operations.find? fun
     | .enterScope .. => true
     | _ => false
   prepareInternalScopeCreation? EmbeddedSubProcessCompletionConformance.program childBefore operation
 
-private def callPrepared? : Option PreparedInternalScopeCreation := do
+def callPrepared? : Option PreparedInternalScopeCreation := do
   let operation ← CallActivityConformance.program.operations.find? fun
     | .invokeProcess .. => true
     | _ => false
   prepareInternalScopeCreation? CallActivityConformance.program callBefore operation
 
-private def admittedPreparationValid (program : Program) (instanceId : SemanticId)
+def admittedPreparationValid (program : Program) (instanceId : SemanticId)
     (before : RuntimeState) (prepared : Option PreparedInternalScopeCreation) : Bool :=
   programWellFormed program && runtimeStateWellFormed program instanceId before &&
     match prepared with

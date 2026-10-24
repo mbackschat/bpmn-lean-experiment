@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! # Sequential Multi-Instance well-formedness preservation
 
@@ -22,6 +24,8 @@ That agreement is what makes the two removing rewrites provable at all: a contro
 `SMI-COMPLETE-01` or `SMI-CANCEL-01` differs from the removed controller on the triple, so it cannot
 have named the removed record either, and its own record survives with it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

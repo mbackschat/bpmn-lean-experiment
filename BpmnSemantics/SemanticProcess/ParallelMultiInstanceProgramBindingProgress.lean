@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
 
 /-! # Parallel Multi-Instance progress Program binding
 
@@ -11,11 +13,13 @@ closure, evaluator lifting, complete runtime-state well-formedness, and host beh
 this module.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def progressWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
+def progressWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
@@ -126,7 +130,7 @@ private theorem length_filter_map (values : List α) (project : α → β)
   | cons value rest ih =>
       by_cases selected : predicate (project value) = true <;> simp [selected, ih]
 
-private def progressedParallelRecord (record : ActivityOccurrence)
+def progressedParallelRecord (record : ActivityOccurrence)
     (first : UserTaskInstanceId) (rest : List UserTaskInstanceId)
     (candidate : ActivityOccurrence) : ActivityOccurrence :=
   if sameActivityOccurrence candidate record then

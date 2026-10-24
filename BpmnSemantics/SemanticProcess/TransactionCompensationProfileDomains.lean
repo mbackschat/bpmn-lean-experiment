@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Existing profile capability counts discharge the root-only Compensation proof domain
 without adding a premise to their public preservation guarantees. -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def isCompensationOperation : SemanticOperation → Bool
+def isCompensationOperation : SemanticOperation → Bool
   | .triggerCompensation .. | .cancelTransaction .. => true
   | _ => false
 

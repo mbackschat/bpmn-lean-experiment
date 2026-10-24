@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
 
 /-! Return's independent projection guards follow from predecessor validators and the
 actual cleanup. Message-boundary record retention uses the independent reverse record census;
 each surviving Activity must retain its exact Task body. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

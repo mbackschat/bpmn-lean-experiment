@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.ValueDomain
+module
+
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! SPC-AVAILABLE-01 binds starts to the independently computed input requirements. SPC-COMMAND-01 prevents the profile's scalar completion domain from granting ordinary tasks a Process-data write. Composed completion retains its existing declaration-bound output validation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

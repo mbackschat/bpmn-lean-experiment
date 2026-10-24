@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Child-owned Transaction lowering -/
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 /-- The new declaration selects the child register; existing root Compensation lowering remains separate. -/

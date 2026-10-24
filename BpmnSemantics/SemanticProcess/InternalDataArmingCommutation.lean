@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Exact data-arming patch commutation
 
 Fixed patches share one predecessor while task and Activity issuers retain independent counters.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 
 /-! # Flow-node occurrence cancellation exactness laws
 
@@ -12,6 +14,8 @@ Fold soundness between an accepted delta and the independent open-occurrence pro
 separate responsibility of [`FlowNodeOccurrenceLifecycleProofs`](FlowNodeOccurrenceLifecycleProofs.lean),
 which this module consumes. Concrete executable witnesses remain in the conformance module.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

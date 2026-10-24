@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 
 /-! Data arming commutes with cancellation outside its owner. Actual preparation supplies
 the fresh Activity identity, so cancellation cannot discard the newly copied local binding.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

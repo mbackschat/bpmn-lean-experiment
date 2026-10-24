@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
-import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
 
 /-! Completion removes a child-scope Activity, never a Multi-Instance task body.
 REG-OWN-CLOSE-01 keeps the lifetime Timers of surviving task bodies. The existing
 tuple correspondence laws then preserve both directions of each Multi-Instance binding. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

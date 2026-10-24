@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
-import BpmnSemantics.SemanticProcess.MergeTargetOperations
-import BpmnSemantics.SemanticProcess.OccurrenceReservationState
-import BpmnSemantics.SemanticProcess.ParallelScopeData
-import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
-import BpmnSemantics.SemanticProcess.TransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+public import BpmnSemantics.SemanticProcess.MergeTargetOperations
+public import BpmnSemantics.SemanticProcess.OccurrenceReservationState
+public import BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! PMIS-SELECT-01: exact occurrence execution over the discovery in `InternalOperationOccurrenceDiscovery`,
 which CEA-OCCUR-01 and CEA-QUIESCE-01 reuse for merge-target scope operations. This changing execution
 boundary stays separate from the established alternative-order proof closure.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -198,7 +202,7 @@ def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
           | _, _ => false
       | _, _ => false
 
-private def occurrenceCounterBase? (state : RuntimeState) (operation : SemanticOperation) : Option Nat := do
+def occurrenceCounterBase? (state : RuntimeState) (operation : SemanticOperation) : Option Nat := do
   let (element, counters) ← match operation with
     | .awaitUserTask _ _ _ _ task => some (task.id.value, state.activations.map fun counter =>
         (counter.taskId.value, counter.count))
@@ -610,7 +614,7 @@ private theorem occurrenceApplicationRunning (program : Program) (before after :
   | running instanceId => exact ⟨instanceId, rfl⟩
   | _ => simp [applyInternalOperationOccurrence?, control] at applied
 
-private def singletonArmingPatch (program : Program) (before : RuntimeState)
+def singletonArmingPatch (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId) (input : ControlPlaceId)
     (write : InternalArmingWrite) : InternalArmingPatch :=
   { operation, definition := program.identity, processId := program.processId,

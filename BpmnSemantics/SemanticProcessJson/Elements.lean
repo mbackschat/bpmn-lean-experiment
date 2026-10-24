@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Semantic-element wire decoders shared by both definition representations
 
 A checked BPMN graph and a Semantic Process program describe the same data-mapping, effect, error, and
 scope elements, so these decoders have exactly two callers and one meaning. They are public because
 that sharing crosses a module boundary, not because the wire shape is an extension point. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
@@ -120,5 +124,47 @@ def decodeDefinitionScope (json : Json) : Except String DefinitionScope := do
         (← decodeOptionalString (← field json "parentScopeId")).map
           DefinitionScopeId.mk
       originElementId := ⟨← stringField json "originElementId"⟩ }
+
+def decodeDirectCatchEventPayloadOutput (json : Json) :
+    Except String DirectCatchEventPayloadOutput := do
+  requireObjectShape json
+    ["associationId", "sourceDataOutputId", "sourceDataOutputName", "targetPropertyId"]
+  pure
+    { associationId := ← stringField json "associationId"
+      sourceDataOutputId := ← stringField json "sourceDataOutputId"
+      sourceDataOutputName := ← decodeOptionalString (← field json "sourceDataOutputName")
+      targetPropertyId := ← stringField json "targetPropertyId" }
+
+def decodeSequentialMultiInstanceInput (json : Json) :
+    Except String SequentialMultiInstanceInputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "collectionItemDefinitionId", "dataObjectId",
+      "dataObjectReferenceId", "inputDataItemId", "itemAssociationId",
+      "loopDataInputId", "scalarItemDefinitionId", "taskDataInputId"]
+  pure
+    { collectionItemDefinitionId := ← stringField json "collectionItemDefinitionId"
+      scalarItemDefinitionId := ← stringField json "scalarItemDefinitionId"
+      dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      loopDataInputId := ← stringField json "loopDataInputId"
+      inputDataItemId := ← stringField json "inputDataItemId"
+      taskDataInputId := ← stringField json "taskDataInputId"
+      collectionAssociationId := ← stringField json "collectionAssociationId"
+      itemAssociationId := ← stringField json "itemAssociationId" }
+
+def decodeSequentialMultiInstanceOutput (json : Json) :
+    Except String SequentialMultiInstanceOutputDefinition := do
+  requireObjectShape json
+    ["collectionAssociationId", "dataObjectId", "dataObjectReferenceId",
+      "itemAssociationId", "loopDataOutputId", "outputDataItemId",
+      "taskDataOutputId"]
+  pure
+    { dataObjectId := ← stringField json "dataObjectId"
+      dataObjectReferenceId := ← stringField json "dataObjectReferenceId"
+      taskDataOutputId := ← stringField json "taskDataOutputId"
+      outputDataItemId := ← stringField json "outputDataItemId"
+      loopDataOutputId := ← stringField json "loopDataOutputId"
+      itemAssociationId := ← stringField json "itemAssociationId"
+      collectionAssociationId := ← stringField json "collectionAssociationId" }
 
 end BpmnSemantics.SemanticProcessJson

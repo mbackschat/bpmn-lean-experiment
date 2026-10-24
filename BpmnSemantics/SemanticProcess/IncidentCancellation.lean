@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.Incident
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.Incident
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Semantic Process incident cancellation
 
@@ -10,6 +12,8 @@ This module owns root derivation, exact incident-gated Process cancellation, and
 relation. It uses the shared destructive cleanup only after the successor profile and submitted public
 identities select one hosting root.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -23,7 +27,7 @@ def incidentCancellationRoot? (state : RuntimeState)
   | [root] => some root.id
   | _ => none
 
-private def exactIncident? (state : RuntimeState)
+def exactIncident? (state : RuntimeState)
     (incidentId : EffectIncidentId) : Option SemanticEffectIncident :=
   match state.effectIncidents.filter (effectIncidentMatches incidentId) with
   | [incident] => some incident

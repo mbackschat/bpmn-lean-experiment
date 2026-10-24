@@ -1,13 +1,17 @@
-import BpmnSemantics.SubProcessBoundaryTimerConformance
-import BpmnSemantics.SubProcessErrorPropagationConformance
-import BpmnSemantics.TerminateEndEventFixtures
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+module
+
+public import BpmnSemantics.SubProcessBoundaryTimerConformance
+public import BpmnSemantics.SubProcessErrorPropagationConformance
+public import BpmnSemantics.TerminateEndEventFixtures
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Separating states for the cancellation projection obligation. The existing bounded
 scope fixture supplies an actually armed state; each mutation removes only Activity
 ownership evidence, retaining its child scope and parent-owned deadline. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness
 

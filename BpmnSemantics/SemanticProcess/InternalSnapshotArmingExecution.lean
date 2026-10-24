@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 
 /-! Complete ordinary frontiers derive prefix refusal absence and canonical publication equality in the actual snapshot batch runner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -45,7 +49,7 @@ private theorem snapshot_cancellation_stays_disabled (program : Program) (state 
                 CompensationTriggerAttempt.applied _ else .refused .invalidState) = .disabled _ at disabled
               split at disabled <;> contradiction
 
-private def SnapshotRefusableDisabled (program : Program) (state : RuntimeState) :
+def SnapshotRefusableDisabled (program : Program) (state : RuntimeState) :
     SemanticOperation → Prop
   | operation@(.enterScope _ _ input entry scope) =>
       program.compensationEventSubProcessSnapshots.isSome = true →
@@ -90,7 +94,7 @@ private theorem snapshot_refusable_disabled_frame (program : Program) (state : R
       exact fun declared => snapshot_cancellation_stays_disabled program state arm patch
         selected.1 _ (disabled declared)
 
-private def SnapshotNotRefused : InternalOperationAttempt → Prop
+def SnapshotNotRefused : InternalOperationAttempt → Prop
   | .refused _ _ => False
   | .disabled _ | .applied _ => True
 

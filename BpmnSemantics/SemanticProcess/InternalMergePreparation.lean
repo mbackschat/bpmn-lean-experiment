@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
-import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.TransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! Exact Merge selection reuses owned token patches and publication provenance under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

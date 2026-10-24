@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! Shared executable fixtures retain the conformance declaration bodies without importing their proofs. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EventBasedGatewayConformance
 

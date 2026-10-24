@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Parallel User Task metadata composition fixtures
 
 Shared exact-process and runtime fixtures for the proved composition checkpoint over the existing balanced two-branch Parallel Gateway control account and passive User Task assignment/form metadata.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 
@@ -95,7 +99,7 @@ def compositionCheckedProcess : CheckedProcess :=
 def compositionProgram : Program :=
   lowerCheckedProcess compositionCheckedProcess
 
-private def eraseCheckedMetadata (source : CheckedProcess) : CheckedProcess :=
+def eraseCheckedMetadata (source : CheckedProcess) : CheckedProcess :=
   { source with
     identity :=
       { source.identity with semanticProfile := ⟨"parallel-fork-join-draft"⟩ }

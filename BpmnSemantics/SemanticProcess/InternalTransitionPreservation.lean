@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
-import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
 
 /-! The existing finite-prefix contract derives single-step validity, projectability, control,
 and evaluator correspondence from complete preparation; no successor certificate is assumed. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -53,7 +57,7 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
         (by simp) (by simp) (by simp) (by simp) readOnly
       simpa only [PreparedInternalTransition.apply, applied, Option.getD_some] using frame.1
 
-theorem prepared_transition_preserves (program : Program) (state : RuntimeState)
+theorem prepared_transition_preserves (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : PreparedInternalTransition) (instanceId : SemanticId)
     (programValid : programWellFormed program = true)
     (stateValid : runtimeStateWellFormed program instanceId state = true)

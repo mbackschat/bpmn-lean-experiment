@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! # Retained Activity lifetime under regional cancellation
 
@@ -6,6 +8,8 @@ AOO-BODY-01 survives actual cancellation for retained records. AOO-OWN-01 preser
 body census, while AOO-ATTACH-01/02 prevent another withdrawn Activity from taking a retained
 record's tagged handler. The selected root's retain/remove disposition changes neither argument.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

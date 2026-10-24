@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 
 /-! Prepared scope entry retains the existing root-only Compensation laws: the approved
 Transaction shape excludes another child creation while its retention declaration is selected. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

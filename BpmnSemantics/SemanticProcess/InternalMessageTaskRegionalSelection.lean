@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 
 /-! The joined Message-host insertion preserves regional selection outside its live owner.
 Message insertion preserves the existing Timer census and exact child-Activity lookup.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -9,7 +9,7 @@ namespace BpmnSemantics.InclusiveGatewayPairingConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def region (label input output key : String) : List SemanticOperation :=
+def region (label input output key : String) : List SemanticOperation :=
   [ .synchronizeSelected ⟨label ++ "J"⟩ { elementId := ⟨label ++ "J"⟩ }
       [⟨label ++ "1"⟩, ⟨label ++ "2"⟩, ⟨label ++ "3"⟩] ⟨output⟩ key
   , .selectMany ⟨label ++ "S"⟩ { elementId := ⟨label ++ "S"⟩ } ⟨input⟩
@@ -20,7 +20,7 @@ private def region (label input output key : String) : List SemanticOperation :=
       { output := ⟨label ++ "3"⟩, expectedJoinInput := ⟨label ++ "3"⟩,
         origin := { elementId := ⟨label ++ "3"⟩ } } key ]
 
-private def pairedProgram (secondKey thirdKey : String) : Program :=
+def pairedProgram (secondKey thirdKey : String) : Program :=
   let processId : ProcessId := ⟨"P"⟩
   let operations := region "A" "A0" "B0" "A" ++ region "B" "B0" "C0" secondKey ++
     region "C" "C0" "D0" thirdKey ++

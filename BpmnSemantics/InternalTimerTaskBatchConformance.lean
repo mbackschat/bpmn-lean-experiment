@@ -1,20 +1,24 @@
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
 
 /-! A deadline-bound review runs beside an independent review and a standalone Timer.
 These constructed Program frontiers bind both Timer-task variants to finite batching;
 they establish no additional checked-source or registered-profile reachability. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalTimerTaskBatchConformance
 
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def instanceId : SemanticId := ⟨"deadline-review-1"⟩
-private def processId : ProcessId := ActivityBoundaryTimerConformance.program.processId
-private def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
+def instanceId : SemanticId := ⟨"deadline-review-1"⟩
+def processId : ProcessId := ActivityBoundaryTimerConformance.program.processId
+def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
 
-private def task (kind : InternalTimerTaskKind) : InternalTimerTaskContract :=
+def task (kind : InternalTimerTaskKind) : InternalTimerTaskContract :=
   { kind, operationId := ⟨"operation:BoundedTask"⟩, origin := { elementId := ⟨"BoundedTask"⟩ },
     input := ⟨"place:Flow_Start"⟩,
     task := { id := ⟨"BoundedTask"⟩, name := some "Bounded work", output := ⟨"place:Flow_Normal"⟩ },
@@ -23,20 +27,20 @@ private def task (kind : InternalTimerTaskKind) : InternalTimerTaskContract :=
       output := ⟨"place:Flow_Boundary"⟩,
       origin := { elementId := ⟨"Flow_Boundary"⟩ } } }
 
-private def ordinary : SemanticOperation :=
+def ordinary : SemanticOperation :=
   .awaitUserTask ⟨"operation:IndependentReview"⟩ { elementId := ⟨"IndependentReview"⟩ }
     ⟨"place:Flow_Independent"⟩ ⟨"place:Flow_Independent_End"⟩
     { id := ⟨"IndependentReview"⟩, name := some "Independent review" }
 
-private def timer : SemanticOperation :=
+def timer : SemanticOperation :=
   .awaitTimer ⟨"operation:Reminder"⟩ { elementId := ⟨"Reminder"⟩ }
     ⟨"place:Flow_Reminder"⟩ ⟨"place:Flow_Reminder_End"⟩
     { elementId := ⟨"Reminder"⟩, durationMs := 1000 }
 
-private def frontier (kind : InternalTimerTaskKind) : List SemanticOperation :=
+def frontier (kind : InternalTimerTaskKind) : List SemanticOperation :=
   [(task kind).operation, ordinary, timer]
 
-private def program (kind : InternalTimerTaskKind) : Program :=
+def program (kind : InternalTimerTaskKind) : Program :=
   let base := ActivityBoundaryTimerConformance.program
   let places := BpmnSemantics.SemanticProcess.sortBy (fun left right : ControlPlace => decide (left.id.value < right.id.value))
     (base.controlPlaces ++ ["Flow_Entry", "Flow_Independent", "Flow_Independent_End",
@@ -65,7 +69,10 @@ private def program (kind : InternalTimerTaskKind) : Program :=
     operationScopes := operations.map fun operation =>
       { operationId := operation.id, scopeId := rootDefinitionScopeId processId } }
 
-private def ready : RuntimeState :=
+instance (kind : InternalTimerTaskKind) : InterruptionInvocationsRooted (program kind) :=
+  .of_check (program kind) (by cases kind <;> decide +kernel)
+
+def ready : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -77,7 +84,7 @@ private def ready : RuntimeState :=
     activityActivations := [{ taskId := ⟨"BoundedTask"⟩, count := 7 }]
     logicalTimeMs := 321 }
 
-private def prepared (kind : InternalTimerTaskKind) : List PreparedInternalTransition :=
+def prepared (kind : InternalTimerTaskKind) : List PreparedInternalTransition :=
   (prepareInternalTransitionBatch? (program kind) ready (frontier kind)).getD []
 
 theorem complete_predecessor_frontier (kind : InternalTimerTaskKind) :
@@ -118,7 +125,7 @@ theorem independent_issuers_and_private_deadline (kind : InternalTimerTaskKind) 
         opened.map (·.elementId.value))) = some ["BoundedTask", "IndependentReview", "Reminder"] := by
   cases kind <;> decide +kernel
 
-private def staleStates : List RuntimeState :=
+def staleStates : List RuntimeState :=
   [ { ready with logicalTimeMs := 322 }
   , { ready with activations := [{ taskId := ⟨"BoundedTask"⟩, count := 3 }] }
   , { ready with timerActivations := [{ elementId := ⟨"Deadline"⟩, count := 6 }] }
@@ -131,7 +138,7 @@ theorem stale_preparations_refuse_execution (kind : InternalTimerTaskKind) :
           (applyPreparedInternalTransition? (program kind) state)).isNone) = true := by
   cases kind <;> decide +kernel
 
-private def start : Stimulus := .startProcess ⟨"start-review"⟩ ⟨processId.value⟩ instanceId []
+def start : Stimulus := .startProcess ⟨"start-review"⟩ ⟨processId.value⟩ instanceId []
 
 theorem complete_command_publishes_only_the_task_and_standalone_timer (kind : InternalTimerTaskKind) :
     let result := applyStimulusTraced 5 (program kind) initialState start

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCompletion
 
 /-! Regional retirement and joined Message-host insertion commute from predecessor preparations.
 The selected admission binds actual completion and Terminate execution, including continuations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

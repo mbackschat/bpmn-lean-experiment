@@ -1,9 +1,13 @@
-import BpmnSemantics.MessageStartConformanceFixtures
+module
+
+public import BpmnSemantics.MessageStartConformanceFixtures
 
 /-! # Message Start Event closure conformance
 
 This proof slice is kept separate so independent kernel-decided Message Start obligations do not accumulate in one near-cap elaboration process.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MessageStartConformance
 

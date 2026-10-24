@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
 /-! Message-host arming preserves the existing runtime predicate from complete raw preparation.
 The independent issuer and attachment obligations remain separate from public projection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

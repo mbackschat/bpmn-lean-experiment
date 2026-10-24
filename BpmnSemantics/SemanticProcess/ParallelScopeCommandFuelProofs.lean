@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandSuccessProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntimePositionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandSuccessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntimePositionProofs
 
 /-! # Parallel command fuel sufficiency
 
@@ -7,6 +9,8 @@ Actual committed admission at a reachable command boundary derives its accepted
 capacity, which pays for scheduler work including Start initiation and terminal
 completion. Publication completeness remains a separate obligation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

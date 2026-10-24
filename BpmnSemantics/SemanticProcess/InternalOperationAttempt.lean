@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Refusable internal operation attempts
 
@@ -7,6 +9,8 @@ The closed attempt result and snapshot-successor validator are shared by the int
 dispatcher and its lifecycle proofs. Keeping the validator beside the result type prevents the
 dispatcher from accumulating proof-facing infrastructure.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Flow-node occurrence Program-validity core
 
 This module owns the shared owner-binding primitive and the structural scope and Call Activity correspondence used by flow-node occurrence Program validity. Wait-family and private Boundary Timer validation remain in `FlowNodeOccurrenceWaitProgramValidity`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -63,7 +67,7 @@ def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOcc
               origin.elementId = definition.originElementId
         | _ => false).length = 1
 
-private def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
+def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) : Bool :=
   match program.definitionScopes.filter fun scope =>
       decide (scope.id = occurrence.id.definitionScopeId) with
@@ -86,7 +90,7 @@ private def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
         | _, _, _ => false
   | _ => false
 
-private def callRecordValid (program : Program) (state : RuntimeState)
+def callRecordValid (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Bool :=
   occurrenceOwnerValid state record.id.processInstanceId record.caller
       ⟨record.id.elementId.value⟩ record.id.activation &&
@@ -121,13 +125,9 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
   have count := valid.2 record member
   simp only [callRecordValid, Bool.and_eq_true] at count
   obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true count.2)
-  have selected : operation ∈ program.operations.filter (fun operation =>
-      if !operationOwnedBy program operation record.caller then false
-      else match operation with
-      | .invokeProcess _ origin _ process root _ returned _ =>
-          origin.elementId.value = record.id.elementId.value && process = record.calledProcessId &&
-            root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
-      | _ => false) := by rw [singleton]; simp
+  -- Derived from `singleton` rather than restated: a module gives a restated `match` its own private
+  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  have selected := singleton ▸ List.mem_singleton_self operation
   obtain ⟨present, fields⟩ := List.mem_filter.mp selected
   split at fields
   · contradiction

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalEndCommutation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndCommutation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 
 /-! End commutes with child-scope creation and Call invocation when both consumed and created
 token places are separate. Existing scope-selection laws retain issuance and owner freshness. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

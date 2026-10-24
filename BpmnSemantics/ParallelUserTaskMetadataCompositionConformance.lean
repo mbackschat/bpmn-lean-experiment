@@ -1,6 +1,8 @@
-import BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance
-import BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance
-import BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance
+module
+
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance
 
 /-! # Parallel User Task metadata composition conformance
 

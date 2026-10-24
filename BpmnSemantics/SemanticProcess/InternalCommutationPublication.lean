@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
-import BpmnSemantics.SemanticProcess.InternalCommutation
-import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+public import BpmnSemantics.SemanticProcess.InternalCommutation
+public import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
 
 /-! # Internal commutation publication
 
 This module proves that the exact accepted transition, lifecycle, logical-time, and public-position records of a classified pair are independent of execution order before canonical pair numbering.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -22,10 +26,10 @@ structure NumberedInternalPublicationPair where
   transitionIndex : Nat
   publication : AcceptedInternalPublicationPair
 
-private def acceptedPairBefore (left right : AcceptedInternalPublicationPair) : Bool :=
+def acceptedPairBefore (left right : AcceptedInternalPublicationPair) : Bool :=
   publicationPairBefore left.pair right.pair
 
-private def insertAcceptedPair (pair : AcceptedInternalPublicationPair) :
+def insertAcceptedPair (pair : AcceptedInternalPublicationPair) :
     List AcceptedInternalPublicationPair → List AcceptedInternalPublicationPair
   | [] => [pair]
   | current :: rest =>
@@ -239,7 +243,7 @@ theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
   · simp [canonicalAcceptedInternalPublicationPairs, insertAcceptedPair, forward, backward,
       before, String.lt_asymm before]
 
-private def acceptedOperationIdBefore (left right : AcceptedInternalPublicationPair) : Bool :=
+def acceptedOperationIdBefore (left right : AcceptedInternalPublicationPair) : Bool :=
   left.pair.footprint.operationId.value < right.pair.footprint.operationId.value
 
 private theorem insertAcceptedPair_eq_id_insert (inserted : AcceptedInternalPublicationPair)

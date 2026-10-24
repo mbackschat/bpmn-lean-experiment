@@ -1,42 +1,46 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.BoundedScopeArming
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.BoundedTask
-import BpmnSemantics.SemanticProcess.EventBasedGateway
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
-import BpmnSemantics.SemanticProcess.TerminateEnd
-import BpmnSemantics.SemanticProcess.MonitoredTask
-import BpmnSemantics.SemanticProcess.MonitoredScope
-import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.CallDataTransfer
-import BpmnSemantics.SemanticProcess.CallVariableMapping
-import BpmnSemantics.SemanticProcess.CyclicControlFlow
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.TransactionCancellation
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.MessageBoundedTask
-import BpmnSemantics.SemanticProcess.MessageMonitoredTask
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
-import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
-import BpmnSemantics.SemanticProcess.MergeTargetOperations
-import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
-import BpmnSemantics.SemanticProcess.TransitionStates
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.BoundedScopeArming
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.BoundedTask
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.MessageStart
+public import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.TerminateEnd
+public import BpmnSemantics.SemanticProcess.MonitoredTask
+public import BpmnSemantics.SemanticProcess.MonitoredScope
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.ActivityDataOutput
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CallDataTransfer
+public import BpmnSemantics.SemanticProcess.CallVariableMapping
+public import BpmnSemantics.SemanticProcess.CyclicControlFlow
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.TransactionCancellation
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.MessageBoundedTask
+public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+public import BpmnSemantics.SemanticProcess.MergeTargetOperations
+public import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
+public import BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! # Semantic Process internal transitions
 
 This module owns the declarative internal-operation relation, the executable evaluator, and their soundness bridge. Runtime representation and pure state transformations remain in `RuntimeState`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -311,7 +315,7 @@ inductive OperationStep (program : Program) :
       (transition : EventSubProcessCompletionStep program before scopeId origin.elementId after) :
       OperationStep program (.completeEventSubProcess id origin scopeId) before after
 
-private def fireWithoutCompensationSnapshots? (program : Program)
+def fireWithoutCompensationSnapshots? (program : Program)
     (operation : SemanticOperation)
     (state : RuntimeState) :
     Option RuntimeState :=

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 
 /-! AOO-CANCEL-01 makes every Activity claiming a surviving Timer survive with it.
 These exact census frames include malformed populations and both root dispositions;
 they use the actual removal filters, not an assumed successor invariant. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

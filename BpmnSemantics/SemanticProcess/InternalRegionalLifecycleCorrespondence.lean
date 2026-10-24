@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Regional cancellation templates agree with the evaluator's predecessor lifecycle selector.
 The correspondence uses live projection ownership and the exact derived region, not a supplied mask.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

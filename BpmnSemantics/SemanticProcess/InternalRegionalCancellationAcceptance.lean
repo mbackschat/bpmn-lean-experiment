@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationOpenProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalHostingCancellationProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
-import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalHostingCancellationProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
+public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 
 /-! Cancellation acceptance connects the independently projected raw successor to the
 prepared lifecycle fold. Exact predecessor anchors identify each removed occurrence;
 instantaneous Error and Boundary events retain the existing candidate account. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -42,7 +46,7 @@ theorem regionalCancellation_removal_filter (program : Program) (state : Runtime
   apply Bool.eq_iff_iff.mpr
   simp [or_comm]
 
-theorem preparedError_accepted_lifecycle (program : Program) (before : RuntimeState)
+theorem preparedError_accepted_lifecycle (program : Program) [InvocationsInProcessRoots program] (before : RuntimeState)
     (commandId : SemanticId) (transitionIndex : Nat)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (error : ErrorReference) (handler : InterruptingErrorHandler) (prepared : PreparedInternalRegional)
@@ -68,6 +72,7 @@ theorem preparedError_accepted_lifecycle (program : Program) (before : RuntimeSt
     split at positioned
     · assumption
     · contradiction
+  haveI := CallersParentless.of_rooted program before hosting hosting valid running
   obtain ⟨after, fired, applied⟩ := prepareInternalRegional_executes program before _ prepared found
   have result : throwErrorState? before input error handler = some after := by
     simp only [fire?, snapshots] at fired
@@ -118,7 +123,7 @@ theorem selectedTerminateOwner_hosting (program : Program) (before : RuntimeStat
   repeat' first | (solve | simp_all) | split at selected
   all_goals cases selected; simp_all
 
-theorem preparedTerminate_accepted_lifecycle (program : Program) (before : RuntimeState)
+theorem preparedTerminate_accepted_lifecycle (program : Program) [InvocationsInProcessRoots program] (before : RuntimeState)
     (commandId : SemanticId) (transitionIndex : Nat)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (definition : DefinitionScopeId)
     (prepared : PreparedInternalRegional)
@@ -146,6 +151,7 @@ theorem preparedTerminate_accepted_lifecycle (program : Program) (before : Runti
     split at positioned
     · assumption
     · contradiction
+  haveI := CallersParentless.of_rooted program before hosting hosting valid running
   have cancellationClosed : regionalOwnershipClosed before
       (cancellationReferenceRetention before prepared.selection.root.id .retain) = true := by
     simpa only [regionalSelectionReferenceRetention, kind] using closed

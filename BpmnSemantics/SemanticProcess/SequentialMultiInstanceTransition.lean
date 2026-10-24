@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 
 /-! # Sequential Multi-Instance transitions
 
@@ -23,6 +25,8 @@ observation, no occurrence projection, no scenario stimulus, and no claim of com
 determinism across unspecified schedules. Soundness in one direction is what the bridges prove, and an
 evaluator that refused every input would satisfy all three of them.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

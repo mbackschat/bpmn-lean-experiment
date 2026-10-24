@@ -1,11 +1,15 @@
-import BpmnSemantics.MessageStartConformance
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.MessageStartConformance
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Timer Start Event conformance
 
 This module owns the exact standards-only Timer Start fixture and its proved admission, lowering, transition, identity-refusal, closure, observation, and scenario-ordering laws. It covers one top-level `PT1S` Timer Start Event followed by one User Task and one None End Event. Schedule lifecycle, recurring timers, time-date and time-cycle forms, payload, Event Sub-Process starts, and host identity remain outside this account.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -128,7 +132,7 @@ def trigger : Stimulus :=
     instanceId
     ⟨startEventId.value⟩
 
-private def requiredObservations : List ObservationKind :=
+def timerStartRequiredObservations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -140,7 +144,7 @@ private def requiredObservations : List ObservationKind :=
   , .enabledInteractions
   , .logicalTime ]
 
-private def scenarioForProgram (candidate : Program) (stimuli : List Stimulus) :
+def scenarioForProgram (candidate : Program) (stimuli : List Stimulus) :
     Scenario :=
   { kind := .scenario
     id := ⟨"timer-start-pairing"⟩
@@ -151,7 +155,7 @@ private def scenarioForProgram (candidate : Program) (stimuli : List Stimulus) :
         sha256 := candidate.identity.sourceSha256
         sourceOverlay := candidate.identity.sourceOverlay }
     stimuli
-    observations := requiredObservations
+    observations := timerStartRequiredObservations
     provenance :=
       { normativeRefs := []
         cibRevision := "not-applicable"
@@ -180,7 +184,7 @@ def waitingState : RuntimeState :=
     waits := [exactWait]
     activations := [{ taskId := exactWait.task.id, count := 1 }] }
 
-private def comparisonProgramIdentity (profile sourceId digest : String) :
+def comparisonProgramIdentity (profile sourceId digest : String) :
     ProgramIdentity :=
   { expectedProgram.identity with
     semanticProfile := ⟨profile⟩
@@ -229,10 +233,10 @@ def noneWaitingState : RuntimeState :=
 def messageWaitingState : RuntimeState :=
   (applyStimulus 2 messageComparisonProgram initialState messageTrigger).state
 
-private def normalizeOccurrenceId (id : OccurrenceId) : OccurrenceId :=
+def normalizeOccurrenceId (id : OccurrenceId) : OccurrenceId :=
   { id with processInstanceId := ⟨"NormalizedInstance"⟩ }
 
-private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteraction
+def normalizeEnabledInteraction : EnabledInteraction → EnabledInteraction
   | .completeUserTaskInstance id =>
       .completeUserTaskInstance (normalizeOccurrenceId id)
   | .deliverMessage id channel =>
@@ -248,7 +252,7 @@ private def normalizeEnabledInteraction : EnabledInteraction → EnabledInteract
       .cancelIncidentProcess ⟨"NormalizedInstance"⟩
         { incidentId with effectId := normalizeOccurrenceId incidentId.effectId }
 
-private def normalizeObservation (observation : StateObservation) :
+def normalizeObservation (observation : StateObservation) :
     StateObservation :=
   { observation with
     instanceId := ⟨"NormalizedInstance"⟩
@@ -388,7 +392,7 @@ theorem production_closure_limit_is_exact_and_sufficient :
     scenarioClosureLimit = 8 ∧ 2 ≤ scenarioClosureLimit := by
   decide +kernel
 
-private def rejectedExactly (candidateProgram : Program)
+def rejectedExactly (candidateProgram : Program)
     (state : RuntimeState) (stimulus : Stimulus) : Bool :=
   decide (applyStimulus scenarioClosureLimit candidateProgram state stimulus =
     { outcome := .rejected

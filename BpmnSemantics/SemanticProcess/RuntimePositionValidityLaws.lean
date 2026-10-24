@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidity
-import BpmnSemantics.SemanticProcess.TokenStorage
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Local token removal and insertion preserve runtime position under exact owner and place bindings. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

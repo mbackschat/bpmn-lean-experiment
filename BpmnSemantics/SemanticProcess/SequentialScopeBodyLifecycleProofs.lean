@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeTransition
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeTransition
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish position and identity for successful individual body creation and retirement below aggregate validity and history transport. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -76,7 +80,7 @@ theorem sequentialScope_entry_preserves_position (program : Program) (hosting : 
   obtain ⟨occurrence, member, same⟩ := List.any_eq_true.mp parentPresent
   have same : occurrence.id = parent := by simpa using same
   have facts := (position_iff program hosting hosting before running).mp position
-  obtain ⟨live, _, _, named, _⟩ := facts.2.2.2.2.2.1 occurrence member
+  obtain ⟨live, _, _, named, _⟩ := facts.2.2.2.2.2.2.1 occurrence member
   rw [same] at live named
   obtain ⟨items, _, entered⟩ := Option.bind_eq_some_iff.mp entered
   cases items with
@@ -118,7 +122,7 @@ theorem sequentialScope_completion_preserves_position (program : Program) (hosti
   have parent := (sequentialScope_bound_controller_progress entry before binding bound).2.2
   have facts := (position_iff program hosting hosting before running).mp position
   obtain ⟨bodyLive, definition, lookup, named, _, parentBinding⟩ :=
-    facts.2.2.2.2.2.1 binding.body body.2.2.1
+    facts.2.2.2.2.2.2.1 binding.body body.2.2.1
   rw [parent] at parentBinding
   cases static : definition.parentScopeId with
   | none => simp only [static] at parentBinding
@@ -477,7 +481,7 @@ theorem sequentialScope_position_scope_keys (program : Program) (hosting : Seman
   intro owner
   by_cases present : owner ∈ state.scopeOccurrences.map (·.id)
   · obtain ⟨occurrence, member, identity⟩ := List.mem_map.mp present
-    have live := (facts.2.2.2.2.2.1 occurrence member).1
+    have live := (facts.2.2.2.2.2.2.1 occurrence member).1
     have census := of_decide_eq_true live
     change (state.scopeOccurrences.filter (fun candidate => decide (candidate.id = occurrence.id))).length = 1 at census
     apply Nat.le_of_eq

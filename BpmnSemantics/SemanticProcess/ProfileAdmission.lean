@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+module
+
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Semantic profile admission consequences
 
 Counts live in `ProfileCardinalities` and selection in `ProfileShapeCatalog`; this module
 retains the stable theorem surface consumed by runtime-preservation proofs.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

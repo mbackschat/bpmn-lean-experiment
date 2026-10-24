@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 
 /-! Ordinary arming preserves unavailable refusable operations: consuming a token adds an owned wait, so scope completion cannot become newly enabled. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

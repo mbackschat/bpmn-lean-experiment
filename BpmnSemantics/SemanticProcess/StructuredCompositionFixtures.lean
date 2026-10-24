@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! Separately authored checked and Program graphs make lowering equality a useful discriminator for serial Activity data handoff, rather than constructing one representation from the other. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
 

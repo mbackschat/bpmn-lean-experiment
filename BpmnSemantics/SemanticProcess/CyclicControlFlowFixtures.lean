@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Representative resumption-bounded cycle fixtures
 
 This module owns the reviewed root-scope User Task cycle, its independently lowered program, finite stimuli, and hostile graph/state witnesses. It contains no conformance claims.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -315,7 +319,7 @@ def cyclicOldProfileProgram : Program :=
         semanticProfile :=
           ⟨"bpmn-2.0.2-simple-boolean-exclusive-gateway-draft"⟩ } }
 
-private def genericMergeProgram (branchPlaces : List ControlPlace) : Program :=
+def genericMergeProgram (branchPlaces : List ControlPlace) : Program :=
   let entry : ControlPlace :=
     { id := ⟨"place:Entry"⟩, origin := ⟨⟨"Flow_Entry"⟩⟩ }
   let mergeReview : ControlPlace :=

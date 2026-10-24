@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ValueDomain
+module
+
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Portable handoff profile admission
 
@@ -10,6 +12,8 @@ Properties. Both source and Program sides project onto the structured-compositio
 role check serves both; business identifiers never select behavior.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open StructuredComposition
@@ -17,7 +21,7 @@ open StructuredComposition
 /-- The first task's source Property when the four vertices form the serial handoff: the first task
 reads `pIn` and writes `pMid`, the second reads `pMid` and writes `pOut`, and the three Properties are
 distinct, so the second task always reads the value the first one wrote. -/
-private def serialHandoffChain (start first second finish : Vertex) : Option String :=
+def serialHandoffChain (start first second finish : Vertex) : Option String :=
   match first.reads, first.writes, second.reads, second.writes with
   | some pIn, some pMid, some secondSource, some pOut =>
       if start.outputs == [first.id] && first.outputs == [second.id] &&

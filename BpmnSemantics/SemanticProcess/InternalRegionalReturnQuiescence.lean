@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 
 /-! A prepared quiescent Return region contains only its called root. Actual Call-tree
 cleanup therefore preserves every wait, token, branch, and race population; Activity
 records retain their independent owner-removal mask rather than an assumed empty census. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

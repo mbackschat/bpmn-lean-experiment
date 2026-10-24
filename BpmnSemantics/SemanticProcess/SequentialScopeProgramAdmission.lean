@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 
 /-! SMIS-ADMIT-01 selects the complete mixed-body contract; generic graph validation remains a separate admission conjunct. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeProgram
 

@@ -1,12 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
-import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 
 /-! # Activity-data activation runtime-state preservation
 
@@ -14,6 +16,8 @@ Activating a data User Task inserts one joined wait, Activity record, and Activi
 scope while preserving the aggregate runtime-state predicate. Exact declaration uniqueness keeps
 the inserted Activity disjoint from every existing Multi-Instance controller's binding.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

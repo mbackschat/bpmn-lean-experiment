@@ -205,7 +205,7 @@ def completionClosureChoices : List OperationId :=
   , ⟨"operation:End_Approved"⟩
   , ⟨"operation:complete-scope:scope:Process_ExpenseExceptionReview"⟩ ]
 
-private def metadataFormPhysicallyAbsent (metadata : UserTaskMetadata) : Bool :=
+def metadataFormPhysicallyAbsent (metadata : UserTaskMetadata) : Bool :=
   match optionalField (encodeUserTaskMetadata metadata) "form" with
   | .ok none => true
   | _ => false

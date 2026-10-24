@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.TokenPatchLaws
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-import BpmnSemantics.SemanticProcess.TokenPatch
+module
+
+public import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+public import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! Token patches preserve active Transaction quiescence only when their produced owners
 are separate. Actual input tokens supply that separation for existing local-control callers. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

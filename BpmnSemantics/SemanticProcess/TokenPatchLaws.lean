@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.TokenPatch
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! Token patches preserve canonical storage order and commute when their produced and consumed units are disjoint. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

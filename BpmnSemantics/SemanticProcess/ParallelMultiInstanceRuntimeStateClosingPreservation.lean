@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingProgressPreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingRoutePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingProgressPreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingRoutePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! # Parallel Multi-Instance closing preservation
 
@@ -13,6 +15,8 @@ Scope boundary: closing-step composition and evaluator lifting only. Entry prese
 semantic account, TypeScript realization, command traces, host behavior, and umbrella imports remain
 outside this module.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

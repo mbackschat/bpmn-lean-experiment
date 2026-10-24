@@ -1,7 +1,11 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 
 /-! # Compensation handler failure cancellation conformance -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerCancellationConformance
 
@@ -9,7 +13,7 @@ open BpmnSemantics
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 open BpmnSemantics.SemanticProcess
 
-private def selectedC : SelectedCompensationHandler :=
+def selectedC : SelectedCompensationHandler :=
   { wait := waitC, trigger := activeTrigger, handler := compensatingHandlerC }
 
 theorem handler_failure_evaluator_realizes_the_complete_declarative_cancellation :
@@ -24,10 +28,10 @@ theorem handler_failure_evaluator_realizes_the_complete_declarative_cancellation
   rw [exactState] at sound
   exact sound
 
-private def delayedSelectedC : SelectedCompensationHandler :=
+def delayedSelectedC : SelectedCompensationHandler :=
   { wait := delayedWaitC, trigger := delayedActiveTrigger, handler := compensatingHandlerC }
 
-private def delayedFailedState : RuntimeState :=
+def delayedFailedState : RuntimeState :=
   compensationFailureSuccessor delayedTriggeredState delayedSelectedC
     "compensation-rejected" (some "downstream rejected the reversal")
 

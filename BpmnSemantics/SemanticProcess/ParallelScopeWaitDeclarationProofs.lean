@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! # Parallel scope wait-declaration preservation
 
 RSI-BIND-04 must survive PMIS entry and retirement so later issuance can use
 retained declaration provenance rather than assume reservation freshness.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

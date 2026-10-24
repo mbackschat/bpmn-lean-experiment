@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 
 /-! # Repeated-scope transition laws
 
 SMIS-ENTER-01 distinguishes zero-item continuation from any issuance of Activity, scope or data identities.
 These local laws do not replace the capsule's admitted-source reachability and progress obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

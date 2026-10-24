@@ -1,26 +1,30 @@
-import BpmnSemantics.SemanticProcess.ProfileCardinalities
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
-import BpmnSemantics.SemanticProcess.EffectDataAdmission
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
-import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
-import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
-import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
-import BpmnSemantics.SemanticProcess.CallDataAdmission
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ProfileCardinalities
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
+public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+public import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Semantic profile shape catalog
 
 This module selects profile capabilities and the closed graph policy shared by the two independently implemented graph validators. Cardinality calculations are owned by `ProfileCardinalities`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -286,11 +290,11 @@ def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
         synchronizes := 1, compensationTriggers := 1, ends := 2 })
   else none
 
-private def configuredTaskDescriptorValid (descriptor : EffectDescriptor) : Bool :=
+def configuredTaskDescriptorValid (descriptor : EffectDescriptor) : Bool :=
   descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
     descriptor.operation = "urn:bpmn-lean:effect-operation:probe-v1"
 
-private def checkedUserTaskMetadataValid (profile : ProfileId)
+def checkedUserTaskMetadataValid (profile : ProfileId)
     (nodes : List CheckedNode) : Bool :=
   nodes.all fun
     | .userTask _ _ metadata =>
@@ -310,7 +314,7 @@ private def checkedUserTaskMetadataValid (profile : ProfileId)
           metadata.isNone
     | _ => true
 
-private def programUserTaskMetadataValid (profile : ProfileId)
+def programUserTaskMetadataValid (profile : ProfileId)
     (operations : List SemanticOperation) : Bool :=
   operations.all fun
     | .awaitUserTask _ _ _ _ task =>
@@ -330,12 +334,12 @@ private def programUserTaskMetadataValid (profile : ProfileId)
           task.metadata.isNone
     | _ => true
 
-private def exactPortSet [DecidableEq α] (actual expected : List α) : Bool :=
+def exactPortSet [DecidableEq α] (actual expected : List α) : Bool :=
   actual.length = expected.length &&
     expected.all (fun port => decide (port ∈ actual)) &&
     decide expected.Nodup
 
-private def exactBalancedTwoBranchTopology [DecidableEq α]
+def exactBalancedTwoBranchTopology [DecidableEq α]
     [DecidableEq β] (connectors : List β)
     (start split leftTask rightTask join finish : α)
     (startOutputs splitInputs splitOutputs leftInputs leftOutputs
@@ -353,21 +357,21 @@ private def exactBalancedTwoBranchTopology [DecidableEq α]
           [startOutput, leftInput, rightInput, leftOutput, rightOutput, joinOutput]
   | _, _, _, _, _, _, _, _ => false
 
-private def checkedIncomingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
+def checkedIncomingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.targetId = nodeId then some flow.id else none
 
-private def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
+def checkedOutgoingPorts (source : CheckedProcess) (nodeId : NodeId) : List SequenceFlowId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.sourceId = nodeId then some flow.id else none
 
-private def checkedOnlyOutgoingFlow? (source : CheckedProcess) (nodeId : NodeId) :
+def checkedOnlyOutgoingFlow? (source : CheckedProcess) (nodeId : NodeId) :
     Option CheckedSequenceFlow :=
   match source.sequenceFlows.filter fun flow => decide (flow.sourceId = nodeId) with
   | [flow] => if flow.condition.isNone then some flow else none
   | _ => none
 
-private def checkedActivityBoundaryMessageTopologyValid (source : CheckedProcess) : Bool :=
+def checkedActivityBoundaryMessageTopologyValid (source : CheckedProcess) : Bool :=
   if source.identity.semanticProfile = activityBoundaryMessageProfileId then
     match source.nodes.filterMap (fun | .noneStartEvent id => some id | _ => none),
         source.nodes.filterMap (fun
@@ -397,11 +401,11 @@ private def checkedActivityBoundaryMessageTopologyValid (source : CheckedProcess
     | _, _, _, _ => false
   else true
 
-private def parallelTopologyProfile (profile : ProfileId) : Bool :=
+def parallelTopologyProfile (profile : ProfileId) : Bool :=
   profile.value = "parallel-fork-join-draft" ||
     profile = parallelUserTaskMetadataCheckpointProfileId
 
-private def checkedParallelTopologyValid (source : CheckedProcess) : Bool :=
+def checkedParallelTopologyValid (source : CheckedProcess) : Bool :=
   if parallelTopologyProfile source.identity.semanticProfile then
     match source.nodes.filterMap fun
         | .noneStartEvent id => some id
@@ -431,7 +435,7 @@ private def checkedParallelTopologyValid (source : CheckedProcess) : Bool :=
     | _, _, _, _, _ => false
   else true
 
-private def programParallelTopologyValid (program : Program) : Bool :=
+def programParallelTopologyValid (program : Program) : Bool :=
   if parallelTopologyProfile program.identity.semanticProfile then
     match program.operations.filterMap fun
         | .initiate id origin output => some (id, origin.elementId, output)
@@ -462,7 +466,7 @@ private def programParallelTopologyValid (program : Program) : Bool :=
     | _, _, _, _, _ => false
   else true
 
-private def programActivityBoundaryMessageTopologyValid (program : Program) : Bool :=
+def programActivityBoundaryMessageTopologyValid (program : Program) : Bool :=
   if program.identity.semanticProfile = activityBoundaryMessageProfileId then
     match program.operations.filterMap (fun | .initiate _ _ output => some output | _ => none),
         program.operations.filterMap (fun
@@ -485,13 +489,13 @@ private def programActivityBoundaryMessageTopologyValid (program : Program) : Bo
     | _, _, _, _ => false
   else true
 
-private def exactUncheckedEdge (source : CheckedProcess)
+def exactUncheckedEdge (source : CheckedProcess)
     (sourceId targetId : NodeId) : Bool :=
   source.sequenceFlows.any fun flow =>
     decide (flow.sourceId = sourceId && flow.targetId = targetId) &&
       flow.condition.isNone
 
-private def configuredTaskCheckedPayloadValid (source : CheckedProcess) : Bool :=
+def configuredTaskCheckedPayloadValid (source : CheckedProcess) : Bool :=
   if source.identity.semanticProfile = configuredTaskCheckpointProfileId then
     match source.nodes.filterMap fun
         | .noneStartEvent id => some id
@@ -540,20 +544,20 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
     some .acyclic
   else none
 
-private def propertyInput (input : DirectActivityDataInput) : Bool :=
+def propertyInput (input : DirectActivityDataInput) : Bool :=
   match input.source with | .property _ => true | .processDataInput _ => false
 
-private def propertyOutput (output : DirectActivityDataOutput) : Bool :=
+def propertyOutput (output : DirectActivityDataOutput) : Bool :=
   match output.target with | .property _ => true | .processDataOutput _ => false
 
-private def checkedPropertyEndpoints : CheckedNode → Bool
+def checkedPropertyEndpoints : CheckedNode → Bool
   | .callActivity _ _ data => decide (data = .empty)
   | .dataInputUserTask _ _ input => propertyInput input
   | .dataOutputUserTask _ _ output => propertyOutput output
   | .dataInputOutputUserTask _ _ input output => propertyInput input && propertyOutput output
   | _ => true
 
-private def operationPropertyEndpoints : SemanticOperation → Bool
+def operationPropertyEndpoints : SemanticOperation → Bool
   | .invokeProcess _ _ _ _ _ _ _ data | .returnProcess _ _ _ _ _ data => decide (data = .empty)
   | .awaitDataInputUserTask _ _ _ _ _ _ input => propertyInput input
   | .awaitDataOutputUserTask _ _ _ _ _ _ output => propertyOutput output
@@ -614,7 +618,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
     checkedExactShapeValid source || (NestedScopeControl.checkedAnalysis source).isSome
   else checkedExactShapeValid source
 
-private def operationPayloadCapabilitiesValid (profile : String)
+def operationPayloadCapabilitiesValid (profile : String)
     (operations : List SemanticOperation) : Bool :=
   if profile = "bpmn-2.0.2-message-start-event-draft" then
     operations.all fun

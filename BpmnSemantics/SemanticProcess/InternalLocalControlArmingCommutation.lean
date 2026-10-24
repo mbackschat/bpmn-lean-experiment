@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
 
 /-! Mixed prepared pairs use the equality-keyed state footprint selected in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private def armingPatch : PreparedInternalArming → InternalArmingPatch
+def armingPatch : PreparedInternalArming → InternalArmingPatch
   | .ordinary _ patch => patch
   | .data _ patch => patch.arm
 

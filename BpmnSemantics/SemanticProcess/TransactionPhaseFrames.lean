@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.WaitCompletion
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.WaitCompletion
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 
 /-! # Transaction inactive collections and live-scope control
 
@@ -12,6 +14,8 @@ separately because live-scope control is vacuous after terminal scope removal. T
 assert runtime validity nor assume a successor phase; initialization and command/prefix induction
 own their establishment.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

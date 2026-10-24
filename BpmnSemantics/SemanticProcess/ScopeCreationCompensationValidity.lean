@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
-import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+public import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 
 /-! Fresh scope insertion preserves the exact Compensation ownership checks required by the
 [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

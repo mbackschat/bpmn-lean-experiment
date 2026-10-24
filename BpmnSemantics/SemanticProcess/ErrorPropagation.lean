@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Interrupting Sub-Process Error propagation
 
 This module owns reusable regional-interruption laws and the nearest synthetic negative witness for the direct catch-only Error profile. The admitted program fixture and artifact equality remain in the capsule conformance module; these laws deliberately range over runtime state without depending on one topology.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -43,29 +47,29 @@ theorem interruptScope_preserves_unrelated_user_wait
   simp [interruptScope, cancelScopeSubtree, present, unrelated,
     outsideCalledTree]
 
-private def instanceId : SemanticId := ⟨"ErrorInstance"⟩
+def instanceId : SemanticId := ⟨"ErrorInstance"⟩
 
-private def rootId : ScopeOccurrenceId :=
+def rootId : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:Process_Error" ⟩
     activation := 1 }
 
-private def childId : ScopeOccurrenceId :=
+def childId : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:SubProcess_Error" ⟩
     activation := 1 }
 
-private def descendantId : ScopeOccurrenceId :=
+def descendantId : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:SyntheticDescendant" ⟩
     activation := 1 }
 
-private def errorReference : ErrorReference :=
+def errorReference : ErrorReference :=
   { errorDefinitionId := ⟨"ErrorDefinition_Throw"⟩
     errorElementId := ⟨"Error_ScopedFailure"⟩
     code := "ScopedFailure" }
 
-private def errorHandler : InterruptingErrorHandler :=
+def errorHandler : InterruptingErrorHandler :=
   { attachedScopeId := childId.definitionScopeId
     code := "ScopedFailure"
     output := ⟨"place:BoundaryToRecover"⟩
@@ -75,12 +79,12 @@ private def errorHandler : InterruptingErrorHandler :=
         errorElementId := ⟨"Error_ScopedFailure"⟩
         sequenceFlowId := ⟨"BoundaryToRecover"⟩ } }
 
-private def childEffectId : EffectOccurrenceId :=
+def childEffectId : EffectOccurrenceId :=
   { processInstanceId := instanceId
     elementId := ⟨"SyntheticChildEffect"⟩
     activation := 1 }
 
-private def syntheticState : RuntimeState :=
+def syntheticState : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences :=
@@ -139,7 +143,7 @@ private def syntheticState : RuntimeState :=
     scopeActivations := [{ scopeId := ⟨"HistoryScope"⟩, count := 2 }]
     endOccurrences := 1 }
 
-private def syntheticInterrupted : RuntimeState :=
+def syntheticInterrupted : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := rootId, parent := none }]

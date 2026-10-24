@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # BpmnSemantics.NonInterruptingBoundaryTimerConformance — non-interrupting boundary Timer locks
 
@@ -13,6 +15,8 @@ The armed observation is where the recorded interpretation is visible, exactly a
 
 The admitted `cancelActivity` set is the exact inverse of the sibling profile's, so the two profiles cannot admit each other's source. That inversion is checked here at the checked-graph boundary, before lowering, because the disposition is a checked-source value rather than a consequence of the operation it produces.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.NonInterruptingBoundaryTimerConformance
 
@@ -85,7 +89,7 @@ theorem no_interrupting_operation_is_lowered :
     (boundedTaskOperations program).length = 0 := by decide +kernel
 
 /-- The same graph with the disposition flipped, keeping every other byte of the admitted source. -/
-private def interruptingDisposition : CheckedProcess :=
+def interruptingDisposition : CheckedProcess :=
   { checkedProcess with
     nodes := checkedProcess.nodes.map fun
       | .timerBoundaryEvent id attachedToRef _ durationLiteral outputFlowId =>
@@ -98,7 +102,7 @@ theorem interrupting_disposition_is_refused_under_this_profile :
     checkedWellFormed interruptingDisposition = false := by decide +kernel
 
 /-- Redirects only the deadline's attachment, keeping every other byte of the admitted source. -/
-private def misattachedDeadline : CheckedProcess :=
+def misattachedDeadline : CheckedProcess :=
   { checkedProcess with
     nodes := checkedProcess.nodes.map fun
       | .timerBoundaryEvent id _ interruption durationLiteral outputFlowId =>
@@ -160,7 +164,7 @@ theorem monitored_commands_preserve_exact_activity_lifetime :
   decide +kernel
 
 /-- Constructed frame control, outside profile reachability: other Task/Timer activations and a same-coordinate Message attachment remain distinct. -/
-private def unrelatedActivitySurvives : Bool :=
+def unrelatedActivitySurvives : Bool :=
   match armedState.activityOccurrences.head? with
   | none => false
   | some record =>
@@ -252,7 +256,7 @@ def bothBranchesLive : RuntimeState :=
   (applyStimulus scenarioClosureLimit program afterSpawn
     (.completeUserTaskInstance ⟨"complete-monitored-task"⟩ taskId [])).state
 
-private def completionOf (elementId : String) (commandId : String) :
+def completionOf (elementId : String) (commandId : String) :
     Stimulus :=
   .completeUserTaskInstance ⟨commandId⟩
     { processInstanceId := instanceId

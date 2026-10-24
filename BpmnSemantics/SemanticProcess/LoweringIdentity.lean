@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Canonical lowering identity
 
 This module owns the shared identifier mapping from checked BPMN nodes and Sequence Flows to Semantic Process operations and control places.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

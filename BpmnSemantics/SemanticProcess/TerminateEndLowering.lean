@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! # Terminate End lowering
 
@@ -8,9 +10,11 @@ operation origin, and the checked containing definition scope becomes the termin
 continuation output is synthesized here.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def terminateIncomingPlace? (source : CheckedProcess) (id : NodeId) :
+def terminateIncomingPlace? (source : CheckedProcess) (id : NodeId) :
     Option ControlPlaceId :=
   match source.sequenceFlows.filter fun flow => decide (flow.targetId = id) with
   | [flow] => some ⟨"place:" ++ flow.id.value⟩

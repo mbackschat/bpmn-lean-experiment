@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
 
 /-! # Disjoint token keys of reserved parallel members
 
@@ -8,6 +10,8 @@ For one owner, admitted single-producer/single-consumer incidence separates like
 ports, and actual output freshness separates produced ports from ready inputs.
 These facts precede collective batch acceptance.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

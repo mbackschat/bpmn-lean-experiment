@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReservedTokenProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservedAnchorProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservedTokenProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservedAnchorProofs
 
 /-! # Complete ordinary frontier acceptance
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 checks the complete reservation against one predecessor. Actual
 reachability and admission discharge its collision, identity and numeric gates;
 the ordinary-frontier classification remains an explicit boundary.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

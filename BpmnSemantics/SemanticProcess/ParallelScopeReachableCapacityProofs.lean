@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ParallelScopePopulationCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
-import BpmnSemantics.SemanticProcess.ParallelScopeCollectionStorageProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
-import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+public import BpmnSemantics.SemanticProcess.ParallelScopeCollectionStorageProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 
 /-! Actual reachability supplies storage, reservation and population evidence; a later command's admission is not a capacity premise. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -339,7 +343,7 @@ private theorem effect_completion_capacity (program : Program) (analysis : Progr
       (start_capacity_data_frame program analysis analyzed _ _ capacity start data preserved)
       preserved rfl rfl rfl rfl rfl
 
-private def RunningCapacity (program : Program) (state : RuntimeState) : Prop :=
+def RunningCapacity (program : Program) (state : RuntimeState) : Prop :=
   ∀ instanceId, state.control = .running instanceId →
     committedStateCollectionAdmitted state = true → occurrenceReservationStateValid state = true →
       ∃ capacity, programStateCapacity program state = some capacity

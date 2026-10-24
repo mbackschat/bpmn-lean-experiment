@@ -23,24 +23,24 @@ open BpmnSemantics.SemanticProcess
 def descriptor (name : String) : EffectDescriptor :=
   { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := name }
 
-private def scope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
+def scope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
 
-private def literal (target value : String) : VariableMapping :=
+def literal (target value : String) : VariableMapping :=
   { target, expression := .stringLiteral value }
 
-private def enclosing (target name : String) : VariableMapping :=
+def enclosing (target name : String) : VariableMapping :=
   { target, expression := .enclosingVariable name }
 
-private def fromLocal (target name : String) : VariableMapping :=
+def fromLocal (target name : String) : VariableMapping :=
   { target, expression := .localVariable name }
 
-private def owned (scopeName : String) (ids : List String) : List NodeScopeOwnership :=
+def owned (scopeName : String) (ids : List String) : List NodeScopeOwnership :=
   ids.map fun id => { nodeId := ⟨id⟩, scopeId := scope scopeName }
 
-private def flowsIn (scopeName : String) (ids : List String) : List SequenceFlowScopeOwnership :=
+def flowsIn (scopeName : String) (ids : List String) : List SequenceFlowScopeOwnership :=
   ids.map fun id => { sequenceFlowId := ⟨id⟩, scopeId := scope scopeName }
 
-private def flow (id source target : String) : CheckedSequenceFlow :=
+def flow (id source target : String) : CheckedSequenceFlow :=
   { id := ⟨id⟩, sourceId := ⟨source⟩, targetId := ⟨target⟩ }
 
 /-- Order approval: its `status` starts from the Process `initialStatus`, and four outputs publish its
@@ -66,17 +66,17 @@ def complianceRecord : ScopeLocalData :=
     localInputs := [literal "checkResult" "pending-check", enclosing "reviewer" "status"]
     localOutputs := [fromLocal "status" "checkResult"] }
 
-private def checkCompliance : CheckedNode :=
+def checkCompliance : CheckedNode :=
   .serviceTask ⟨"KS"⟩ (descriptor "checkCompliance")
     [enclosing "limit" "limit", enclosing "reviewer" "reviewer", enclosing "risk" "riskClass",
      enclosing "status" "status"]
     [fromLocal "checkResult" "checkResult", fromLocal "note" "note"] none
 
-private def approveOrder : CheckedNode :=
+def approveOrder : CheckedNode :=
   .serviceTask ⟨"OS"⟩ (descriptor "approveOrder") [enclosing "limit" "limit", enclosing "order" "order"]
     [] none
 
-private def publishOrder : CheckedNode :=
+def publishOrder : CheckedNode :=
   .serviceTask ⟨"R"⟩ (descriptor "publishOrder")
     [enclosing "approvedOrder" "approvedOrder", enclosing "auditStatus" "auditStatus",
      enclosing "finalDecision" "finalDecision", enclosing "finalStatus" "finalStatus",
@@ -120,7 +120,7 @@ def checked : CheckedProcess := checkedWith [creditRecord, complianceRecord, ord
 
 def program : Program := lowerCheckedProcess checked
 
-private def item (sku : String) : BusinessValue :=
+def item (sku : String) : BusinessValue :=
   .map [("quantity", .integer 2), ("sku", .string sku)]
 
 /-- Two equal line items, a nested address with a present null and a negative scale-two total. -/
@@ -139,7 +139,7 @@ def approvalId : EffectOccurrenceId := ⟨⟨"I"⟩, ⟨"OS"⟩, 1⟩
 def publishId : EffectOccurrenceId := ⟨⟨"I"⟩, ⟨"R"⟩, 1⟩
 def reviewId : UserTaskInstanceId := { processInstanceId := ⟨"I"⟩, elementId := ⟨"CU"⟩, activation := 1 }
 
-private def start (bindings : List VariableBinding) : StimulusResult :=
+def start (bindings : List VariableBinding) : StimulusResult :=
   applyStimulus 8 program initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"I"⟩ bindings)
 
 def started : StimulusResult := start (startBindings (.string "low"))
@@ -149,7 +149,7 @@ def checkedCompliance : StimulusResult :=
     (.success [{ name := "checkResult", value := .string "compliant" },
                { name := "note", value := .string "checked" }]))
 
-private def review (patch : List VariableBinding) : StimulusResult :=
+def review (patch : List VariableBinding) : StimulusResult :=
   applyStimulus 8 program checkedCompliance.state (.completeUserTaskInstance ⟨"review"⟩ reviewId patch)
 
 def reviewPatch : List VariableBinding :=
@@ -164,10 +164,10 @@ def approved : StimulusResult :=
 def published : StimulusResult :=
   applyStimulus 8 program approved.state (.completeEffect ⟨"publish"⟩ publishId (.success []))
 
-private def frameNames (state : RuntimeState) : List String :=
+def frameNames (state : RuntimeState) : List String :=
   state.variables.scopes.map (·.owner.definitionScopeId.value)
 
-private def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
+def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
   result.outcome == .rejected && result.state == before
 
 theorem purchase_order_definition_is_admitted :

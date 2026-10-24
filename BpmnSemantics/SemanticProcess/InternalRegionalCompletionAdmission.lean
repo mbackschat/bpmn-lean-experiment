@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalContinuationAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalContinuationAdmission
 
 /-! # Completion admission and runtime position
 
@@ -7,6 +9,8 @@ Checked graph ownership binds a child continuation to its static parent. The lif
 and declared Call census distinguish the hosting root from a parentless called root before
 ordinary or bounded completion changes runtime control.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,7 +1,11 @@
+module
+
 /-! # BpmnSemantics.Experiments.SemanticRepresentations — bounded architecture candidates
 
 This module tests whether small, serializable data types can preserve source provenance, compiled scope relations, edge-arrival identity, runtime instances, and command closure without importing CIB Seven or Temporal representations. The types are experiment-local candidates, not an approved BPMN IR or execution semantics.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.SemanticRepresentations
 
@@ -109,7 +113,7 @@ inductive CompileError where
   | missingAttachment (nodeId : ElementId) (attachedTo : ElementId)
   deriving Repr, DecidableEq
 
-private def firstDuplicate? : List String → Option String
+def firstDuplicate? : List String → Option String
   | [] => none
   | value :: rest =>
       if rest.contains value then
@@ -117,17 +121,17 @@ private def firstDuplicate? : List String → Option String
       else
         firstDuplicate? rest
 
-private def hasNode (document : SourceDocument) (id : ElementId) : Bool :=
+def hasNode (document : SourceDocument) (id : ElementId) : Bool :=
   document.nodes.any fun node => node.id == id
 
-private def compileKind : SourceNodeKind → ExecutableNodeKind
+def compileKind : SourceNodeKind → ExecutableNodeKind
   | .noneStart => .noneStart
   | .userTask => .userTask
   | .noneEnd => .noneEnd
   | .parallelGateway => .parallelGateway
   | .boundaryTimer => .boundaryTimer
 
-private def compileNode (document : SourceDocument) (node : SourceNode) :
+def compileNode (document : SourceDocument) (node : SourceNode) :
     Except CompileError ExecutableNode := do
   match node.attachedTo with
   | some attachedTo =>
@@ -142,7 +146,7 @@ private def compileNode (document : SourceDocument) (node : SourceNode) :
           eventScope := node.attachedTo.getD node.parentScope }
       origin := .source node.id }
 
-private def compileFlow (document : SourceDocument) (flow : SourceFlow) :
+def compileFlow (document : SourceDocument) (flow : SourceFlow) :
     Except CompileError ExecutableFlow := do
   if !hasNode document flow.sourceRef then
     throw (.missingFlowSource flow.id flow.sourceRef)
@@ -164,10 +168,10 @@ def compile (document : SourceDocument) : Except CompileError ExecutableModel :=
       nodes := ← document.nodes.mapM (compileNode document)
       flows := ← document.flows.mapM (compileFlow document) }
 
-private def location (line : Nat) : SourceLocation :=
+def location (line : Nat) : SourceLocation :=
   { resource := "process.bpmn", line, column := 3 }
 
-private def preserved (documentation : Option String := none) : PreservedSourceData :=
+def preserved (documentation : Option String := none) : PreservedSourceData :=
   { documentation
     extensionAttributes := []
     diagramBounds := none }
@@ -204,7 +208,7 @@ def sequentialSource : SourceDocument :=
           targetRef := "End_None"
           xmlOrder := 0 } ] }
 
-private def compiledSequential? : Option ExecutableModel :=
+def compiledSequential? : Option ExecutableModel :=
   match compile sequentialSource with
   | .ok model => some model
   | .error _ => none
@@ -267,7 +271,7 @@ def edgeProvenanceJoinReady (incoming : List FlowId) (gatewayId : ElementId)
     tokens.any fun token =>
       token.nodeId == gatewayId && token.arrivedVia == some flowId
 
-private def duplicateLeftArrivals : List ArrivalToken :=
+def duplicateLeftArrivals : List ArrivalToken :=
   [ { id := "Token_1"
       nodeId := "Join"
       scopeInstanceId := "Scope_1"
@@ -362,26 +366,26 @@ def initialState : RuntimeState :=
     tokens := []
     userTaskWaits := [] }
 
-private def findNode? (model : ExecutableModel) (id : ElementId) : Option ExecutableNode :=
+def findNode? (model : ExecutableModel) (id : ElementId) : Option ExecutableNode :=
   model.nodes.find? fun node => node.id == id
 
-private def firstNodeOfKind? (model : ExecutableModel)
+def firstNodeOfKind? (model : ExecutableModel)
     (kind : ExecutableNodeKind) : Option ExecutableNode :=
   model.nodes.find? fun node => node.kind == kind
 
-private def firstOutgoing? (model : ExecutableModel)
+def firstOutgoing? (model : ExecutableModel)
     (source : ElementId) : Option ExecutableFlow :=
   model.flows.find? fun flow => flow.source == source
 
-private def replaceToken (tokens : List RuntimeToken) (replacement : RuntimeToken) :
+def replaceToken (tokens : List RuntimeToken) (replacement : RuntimeToken) :
     List RuntimeToken :=
   tokens.map fun token =>
     if token.id == replacement.id then replacement else token
 
-private def removeToken (tokens : List RuntimeToken) (id : String) : List RuntimeToken :=
+def removeToken (tokens : List RuntimeToken) (id : String) : List RuntimeToken :=
   tokens.filter fun token => token.id != id
 
-private def routeToken (model : ExecutableModel) (state : RuntimeState)
+def routeToken (model : ExecutableModel) (state : RuntimeState)
     (token : RuntimeToken) : Option (RuntimeState × MicroEvent) := do
   let flow ← firstOutgoing? model token.nodeId
   let moved :=
@@ -444,7 +448,7 @@ def closeInternal : Nat → ExecutableModel → RuntimeState → ClosureResult
             microtrace := event :: rest.microtrace
             hitBound := rest.hitBound }
 
-private def closureOutcome (closure : ClosureResult) : SpikeCommandOutcome :=
+def closureOutcome (closure : ClosureResult) : SpikeCommandOutcome :=
   if closure.hitBound then .internalStepBoundExceeded else .committed
 
 /-- External stimuli are serialized at a command boundary and then closed to the next stable state. -/
@@ -496,7 +500,7 @@ def applyStimulus (fuel : Nat) (model : ExecutableModel) (state : RuntimeState)
                 microtrace :=
                   .userTaskWaitCompleted wait.elementId token.id :: closure.microtrace }
 
-private def sequentialStartResult? : Option SpikeCommandResult :=
+def sequentialStartResult? : Option SpikeCommandResult :=
   compiledSequential?.map fun model => applyStimulus 8 model initialState .start
 
 /-- One command contains internal flow and wait-creation microsteps, then stops at a stable external wait. -/

@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationLaws
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 
 /-! # Data-arming execution and transition record
 
 The complete predecessor preparation supplies the actual evaluator and committed record. The
 legacy evaluator retains its existing snapshot-declaration boundary.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

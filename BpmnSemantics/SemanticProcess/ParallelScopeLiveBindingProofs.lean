@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
 
 /-! # Live parallel-body binding provenance
 
@@ -6,6 +8,8 @@ PMIS-SELECT-01 entry binds every issued body. Actual task writes and body steps
 retain binding; retirement removes its target and preserves surviving siblings.
 The existing command history connects these laws without assuming future progress.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

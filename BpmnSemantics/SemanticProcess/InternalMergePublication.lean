@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
-import BpmnSemantics.SemanticProcess.InternalMergePreparation
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
 
 /-! Retained Merge records bind the exact offered bucket used by strict replay, as required by the
 [complete-frontier outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

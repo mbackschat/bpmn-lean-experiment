@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 
 /-! # Regional predecessor footprints
 
@@ -7,6 +9,8 @@ The selected Internal Commutation account protects region membership, continuati
 global population censuses, bounded deadlines, and every actually withdrawn Activity association.
 No successor state supplies a dependency.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -33,7 +37,7 @@ def regionalCensusWrites (state : RuntimeState) (region : InternalOccurrenceRegi
   (state.selectedBranchSets.filter (fun record => region.contains record.owner)).map (fun record =>
     .ordinary (.selectedBranchOwners record.selectionKey))
 
-private def boundedWithdrawalAtoms : InternalCompletionWithdrawal → List InternalRegionalStateAtom
+def boundedWithdrawalAtoms : InternalCompletionWithdrawal → List InternalRegionalStateAtom
   | .unbounded => []
   | .bounded record deadline =>
       [.activityAssociation record,

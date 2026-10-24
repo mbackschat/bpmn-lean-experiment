@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Scalar Call state validity
 
@@ -8,6 +10,8 @@ CDATA-OWNER-01 and CDATA-OUTPUT-01 require exact owned interface storage and a t
 phase boundary. The checkpoint composes this family predicate with the unchanged generic invariant;
 input snapshots and caller frames remain two-state obligations in the transfer laws.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -32,12 +36,12 @@ def callDataTaskValid (program : Program) (state : RuntimeState)
         (state.scopeOccurrences.filter fun scope => scope.id == task.owner && scope.parent.isNone).length == 1
   | _, _ => false
 
-private def exactScalarPort (bindings : List VariableBinding) (port : String) : Bool :=
+def exactScalarPort (bindings : List VariableBinding) (port : String) : Bool :=
   match bindings with
   | [binding] => binding.name == port && processInterfaceScalar binding.value
   | _ => false
 
-private def callDataRecordValid (program : Program) (state : RuntimeState)
+def callDataRecordValid (program : Program) (state : RuntimeState)
     (data : ScalarCallData) (host : SemanticId) (record : CalledProcessOccurrence) : Bool :=
   match program.operations.filter (fun
       | .invokeProcess _ origin _ _ _ _ returned _ =>

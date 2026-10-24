@@ -31,7 +31,7 @@ def directOutput : DirectCatchEventPayloadOutput :=
     targetPropertyId := "Property_ShipmentManifest" }
 
 /-- Start, the payload catch *Manifest received*, *Review manifest*, End. -/
-private def checkedUnder (profile : ProfileId) : CheckedProcess :=
+def checkedUnder (profile : ProfileId) : CheckedProcess :=
   { identity :=
       { semanticProfile := profile
         sourceId := ⟨"shipment-manifest-intake"⟩
@@ -56,7 +56,7 @@ def program : Program := lowerCheckedProcess checked
 
 def closedProgram : Program := lowerCheckedProcess (checkedUnder messagePayloadCatchProfileId)
 
-private def parcel (reference : String) (kilograms : Nat) : BusinessValue :=
+def parcel (reference : String) (kilograms : Nat) : BusinessValue :=
   .map [("reference", .string reference), ("weightKg", .integer kilograms)]
 
 /-- Two equal parcels then a different one, a negative scale-two Decimal, a nested Map with a present
@@ -73,10 +73,10 @@ def subscriptionId : MessageSubscriptionId :=
 def taskId : UserTaskInstanceId :=
   { processInstanceId := ⟨"I"⟩, elementId := ⟨"T"⟩, activation := 1 }
 
-private def start (target : Program) : StimulusResult :=
+def start (target : Program) : StimulusResult :=
   applyStimulus 8 target initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"I"⟩ [])
 
-private def deliver (target : Program) (before : RuntimeState) (payload : VariableValue) :
+def deliver (target : Program) (before : RuntimeState) (payload : VariableValue) :
     StimulusResult :=
   applyStimulus 8 target before (.deliverPayloadMessage ⟨"deliver"⟩ subscriptionId channel payload)
 
@@ -87,7 +87,7 @@ def delivered : StimulusResult := deliver program waiting.state manifest
 def completed : StimulusResult :=
   applyStimulus 8 program delivered.state (.completeUserTaskInstance ⟨"review"⟩ taskId [])
 
-private def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
+def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
   result.outcome == .rejected && result.state == before
 
 theorem shipment_manifest_definition_is_admitted :

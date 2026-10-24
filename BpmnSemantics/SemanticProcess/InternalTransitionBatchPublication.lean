@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionBatch
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
 
 /-! Every mixed execution prefix publishes its original prepared value under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private theorem prepared_transition_templates_after_step (program : Program) (state : RuntimeState)
+private theorem prepared_transition_templates_after_step (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (step : PreparedInternalTransition) (queries : List PreparedInternalTransition)
     (instanceId : SemanticId) (programWF : programWellFormed program = true)
     (beforeWF : runtimeStateWellFormed program instanceId state = true)
@@ -34,7 +38,7 @@ private theorem prepared_transition_templates_after_step (program : Program) (st
 
 /-- Every actual prefix publication equals its complete original template at the assigned index.
 Canonical assignment is supplied after sorting; this theorem does not infer indices from execution order. -/
-theorem prepared_transition_batch_publications (program : Program) (state : RuntimeState)
+theorem prepared_transition_batch_publications (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
     (prepared : List PreparedInternalTransition) (instanceId commandId : SemanticId)
     (indexForOperation : OperationId → Nat)
     (programWF : programWellFormed program = true)

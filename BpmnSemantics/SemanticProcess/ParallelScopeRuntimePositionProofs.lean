@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
+public import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 
 /-! Actual PMIS reachability must establish token/place bindings before command
 publication can consume runtime position validity. Occurrence publication alone
 does not constrain the control-token population. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -47,7 +51,7 @@ private theorem start_position (program : Program) (analysis : ProgramAnalysis)
   simp only [runningProgramStartState?, selected, bind, Option.bind_some, pure, Option.some.injEq] at started
   subst state
   apply (position_iff program hosting hosting _ rfl).mpr
-  refine ⟨wellFormed, projection, rfl, ?_, ?_, ?_, ?_⟩
+  refine ⟨wellFormed, projection, by simp [runningStartState, initialState], rfl, ?_, ?_, ?_, ?_⟩
   · simp [rootLookup, rootParent, rootOrigin]
   · simp [calledProcessAssociationsValid, rootInstanceId?, runningStartState, initialState]
   · intro occurrence member
@@ -357,6 +361,7 @@ private theorem cancel_child_position (program : Program) (hosting : SemanticId)
     (running : state.control = .running hosting) (noCalls : state.calledProcessOccurrences = [])
     (child : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id = target → occurrence.parent ≠ none) :
     runtimePositionValid program hosting (cancelScopeSubtree state target .remove) = true := by
+  haveI := CallersParentless.of_no_calls state noCalls
   by_cases present : ∃ occurrence ∈ state.scopeOccurrences, occurrence.id = target
   · obtain ⟨occurrence, member, same⟩ := present
     simpa only [same] using cancelScopeSubtree_child_preserves_position program state hosting hosting
@@ -473,7 +478,7 @@ private theorem retirement_position (program : Program) (hosting : SemanticId)
           intro iteration member occurrence survived same
           exact children iteration (retained.subset member) occurrence (List.mem_filter.mp survived).1 same)
 
-private def PositionInvariant (program : Program) (state : RuntimeState) : Prop :=
+def PositionInvariant (program : Program) (state : RuntimeState) : Prop :=
   ∀ instanceId, state.control = .running instanceId → runtimePositionValid program instanceId state = true
 
 private theorem owned_port_binding (program : Program) (analysis : ProgramAnalysis)

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 
 /-! Activity-data arming and bounded child entry preserve separate issuers, body claims, and
 complete preparation under the [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistration
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistration
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! Declarative registration and its executable soundness bridge. Local laws establish exact listener
 issuance, dormant handler state and execution frames, without claiming universal reachable-state preservation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

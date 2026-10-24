@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlCommutation
 
 /-! Regional execution reuses the local patch account for exact Merge. Complete preparations,
 valid intermediate state, and cancellation equality follow from predecessor facts under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

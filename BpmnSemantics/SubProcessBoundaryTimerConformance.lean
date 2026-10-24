@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # BpmnSemantics.SubProcessBoundaryTimerConformance — interrupting Sub-Process boundary Timer locks
 
@@ -9,6 +11,8 @@ These checks own the direct Lean account for the admitted interrupting Sub-Proce
 
 The family differs from the Activity boundary Timer in the fact that gives it its own capsule: the cancelled Activity is a *scope*, so interruption arrives from outside a region that may hold its own live work, and the deadline must be withdrawn by quiescent completion rather than left for a later firing. The deadline is owned by the parent occurrence, so regional cancellation does not reach it and both arms must consume it explicitly.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SubProcessBoundaryTimerConformance
 
@@ -300,7 +304,7 @@ theorem each_victory_makes_its_sibling_ineligible :
       lateChildTaskResult.state = deadlineVictoryState := by decide +kernel
 
 /-- The same graph with only the deadline's disposition flipped. -/
-private def nonInterruptingDeadline : CheckedProcess :=
+def nonInterruptingDeadline : CheckedProcess :=
   { checkedProcess with
     nodes := checkedProcess.nodes.map fun
       | .timerBoundaryEvent id attachedToRef _ durationLiteral outputFlowId =>

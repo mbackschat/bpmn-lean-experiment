@@ -17,9 +17,9 @@ namespace BpmnSemantics.SequentialScopeGraphConformance
 open SemanticProcess
 open SemanticProcess.InternalCommutation
 
-private def origin (value : String) : BpmnElementOrigin := { elementId := ⟨value⟩ }
+def origin (value : String) : BpmnElementOrigin := { elementId := ⟨value⟩ }
 
-private def operations : List SemanticOperation :=
+def operations : List SemanticOperation :=
   [ .initiate ⟨"start"⟩ (origin "Start") ⟨"incoming"⟩
   , .enterSequentialMultiInstanceScope ⟨"enter"⟩ (origin "Batch")
       ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none
@@ -29,9 +29,9 @@ private def operations : List SemanticOperation :=
   , .reachNoneEnd ⟨"end"⟩ (origin "End") ⟨"outgoing"⟩
   , .completeScope ⟨"root-complete"⟩ (origin "P") ⟨"root"⟩ none ]
 
-private def places : List String := ["incoming", "outgoing", "body-in", "body-out"]
+def places : List String := ["incoming", "outgoing", "body-in", "body-out"]
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"cibseven-2.2.0-embedded-subprocess-completion-draft"⟩
@@ -50,7 +50,7 @@ private def program : Program :=
     controlPlaces := places.map fun place => { id := ⟨place⟩, origin := { elementId := ⟨place⟩ } }
     operations }
 
-private def replacing (id : String) (replacement : SemanticOperation) : Program :=
+def replacing (id : String) (replacement : SemanticOperation) : Program :=
   { program with operations := operations.map fun operation => if operation.id.value == id then replacement else operation }
 
 theorem paired_repeated_scope_graph_is_admitted : programGraphWellFormed program = true := by decide +kernel
@@ -84,12 +84,12 @@ theorem repeated_scope_requires_unique_completion : programGraphWellFormed { pro
     operations := operations ++ [.completeSequentialMultiInstanceScope ⟨"duplicate"⟩ (origin "Batch") ⟨"enter"⟩],
     operationScopes := program.operationScopes ++ [{ operationId := ⟨"duplicate"⟩, scopeId := ⟨"body"⟩ }] } = false := by decide +kernel
 
-private def injectedScopeControllerState : RuntimeState :=
+def injectedScopeControllerState : RuntimeState :=
   { initialState with sequentialScopeControllers := [{
     id := { processInstanceId := ⟨"P-instance"⟩, activityElementId := ⟨"Batch"⟩, activation := 1 }
     total := 2, completed := 0, currentItem := "invoice" }] }
 
-private def scopeEntry (element : String) : SemanticOperation :=
+def scopeEntry (element : String) : SemanticOperation :=
   .enterSequentialMultiInstanceScope ⟨"enter-batch"⟩ { elementId := ⟨element⟩ }
     ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none
 
@@ -111,9 +111,9 @@ theorem scope_controller_declaration_ignores_unrelated_operations :
       operations := [scopeEntry "Other", scopeEntry "Batch"] }
       injectedScopeControllerState = true := by decide +kernel
 
-private def projectionParent : ScopeOccurrenceId := ⟨⟨"invoice-batch"⟩, ⟨"root"⟩, 1⟩
-private def projectionBody : ScopeOccurrenceId := ⟨projectionParent.processInstanceId, ⟨"body"⟩, 1⟩
-private def projectionEntered : RuntimeState :=
+def projectionParent : ScopeOccurrenceId := ⟨⟨"invoice-batch"⟩, ⟨"root"⟩, 1⟩
+def projectionBody : ScopeOccurrenceId := ⟨projectionParent.processInstanceId, ⟨"body"⟩, 1⟩
+def projectionEntered : RuntimeState :=
   { initialState with
     control := .running projectionParent.processInstanceId,
     scopeOccurrences := [{ id := projectionParent, parent := none },
@@ -127,11 +127,11 @@ private def projectionEntered : RuntimeState :=
       id := ⟨projectionParent.processInstanceId, ⟨"Batch"⟩, 1⟩,
       total := 2, completed := 0, currentItem := "INV-01" }],
     variables := { initialState.variables with scopes := [{ owner := projectionBody, bindings := [⟨"status", .null⟩] }] } }
-private def projectionTask (name : String) (owner : ScopeOccurrenceId) : UserTaskWait :=
+def projectionTask (name : String) (owner : ScopeOccurrenceId) : UserTaskWait :=
   { processInstanceId := projectionParent.processInstanceId, owner,
     task := { id := ⟨name⟩, name := none }, activation := 1, output := ⟨"body-out"⟩ }
 
-private def controllerValidationState : RuntimeState :=
+def controllerValidationState : RuntimeState :=
   { projectionEntered with variables := { projectionEntered.variables with
       process := { bindings := [⟨"items", .stringList ["INV-01", "INV-02"]⟩] } } }
 
@@ -152,11 +152,11 @@ theorem repeated_scope_state_requires_exact_controller_ownership :
       (controllerValidationState.sequentialScopeControllers.map (fun controller =>
         { controller with id := { controller.id with activation := 2 } })) } = false := by decide +kernel
 
-private def projectionEffect (name : String) (owner : ScopeOccurrenceId) : EffectWait :=
+def projectionEffect (name : String) (owner : ScopeOccurrenceId) : EffectWait :=
   { processInstanceId := projectionParent.processInstanceId, owner, elementId := ⟨name⟩,
     activation := 1, descriptor := ⟨"test", "validateInvoice"⟩, arguments := [], outputMappings := [],
     output := ⟨"body-out"⟩, bpmnErrorRoute := none }
-private def projectionWaiting : RuntimeState :=
+def projectionWaiting : RuntimeState :=
   { projectionEntered with
     tokens := [], waits := [projectionTask "Zulu" projectionBody,
       projectionTask "Alpha" projectionBody, projectionTask "Other" projectionParent],
@@ -187,30 +187,30 @@ theorem repeated_scope_projection_refuses_duplicate_or_foreign_interactions :
     sequentialScopeProgress? program { projectionWaiting with waits :=
       [{ projectionTask "Alpha" projectionBody with processInstanceId := ⟨"foreign"⟩ }] } = none := by cbv
 
-private def dataRead (target name : String) : VariableMapping := ⟨target, .enclosingVariable name⟩
+def dataRead (target name : String) : VariableMapping := ⟨target, .enclosingVariable name⟩
 
-private def dataEntry (inputs : List VariableMapping) : SemanticOperation :=
+def dataEntry (inputs : List VariableMapping) : SemanticOperation :=
   .enterSequentialMultiInstanceScope ⟨"enter"⟩ (origin "Batch") ⟨"in"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"out"⟩
     "items" "item" inputs (some "stop")
 
-private def dataEffect (inputs outputs : List VariableMapping) : SemanticOperation :=
+def dataEffect (inputs outputs : List VariableMapping) : SemanticOperation :=
   .awaitEffect ⟨"service"⟩ (origin "Validate") ⟨"body-in"⟩ ⟨"body-out"⟩
     { elementId := ⟨"Validate"⟩,
       descriptor := ⟨"urn:bpmn-lean:effect-protocol:activity-v1", "validate"⟩,
       inputMappings := inputs, outputMappings := outputs } none
 
-private def dataProgram (inputs : List VariableMapping := [dataRead "local" "seed"])
+def dataProgram (inputs : List VariableMapping := [dataRead "local" "seed"])
     (scope : String := "body") : Program :=
   { program with
     identity := { program.identity with semanticProfile := ⟨"cibseven-2.2.0-sequential-multi-instance-subprocess-draft"⟩ }
     operations := [dataEntry inputs, dataEffect [dataRead "a" "item", dataRead "b" "local", dataRead "c" "account"] []]
     operationScopes := [⟨⟨"enter"⟩, ⟨"root"⟩⟩, ⟨⟨"service"⟩, ⟨scope⟩⟩] }
 
-private def dataBindings : List VariableBinding :=
+def dataBindings : List VariableBinding :=
   [⟨"account", .null⟩, ⟨"items", .stringList ["first", "second"]⟩,
     ⟨"seed", .string "ready"⟩, ⟨"stop", .boolean false⟩]
 
-private def dataAnalysis : SequentialScopeData.Analysis :=
+def dataAnalysis : SequentialScopeData.Analysis :=
   { entry :=
       { id := ⟨"enter"⟩, elementId := ⟨"Batch"⟩, input := ⟨"in"⟩,
         childEntry := ⟨"body-in"⟩, childScopeId := ⟨"body"⟩, normalOutput := ⟨"out"⟩,
@@ -272,7 +272,7 @@ theorem repeated_scope_body_literals_preserve_java_trim_semantics :
     SequentialScopeData.bodyMappingsValid [] [⟨"local", .stringLiteral " pending"⟩] = false ∧
     SequentialScopeData.bodyMappingsValid [] [⟨"local", .stringLiteral ""⟩] = false := by decide +kernel
 
-private def parallelBody (width : Nat) (separateEnds : Bool := false) : List StructuredParallelBody.Vertex :=
+def parallelBody (width : Nat) (separateEnds : Bool := false) : List StructuredParallelBody.Vertex :=
   let tasks := (List.range width).map fun index => "task" ++ toString index
   [⟨"start", .start, ["fork"]⟩, ⟨"fork", .fork, tasks⟩] ++
     tasks.mapIdx (fun index id => ⟨id, .task, [if separateEnds then "end" ++ toString index else "join"]⟩) ++
@@ -300,10 +300,10 @@ theorem repeated_scope_parallel_topology_refuses_cycles_and_partial_joins :
     StructuredParallelBody.analyze ((parallelBody 3).map fun vertex =>
       if vertex.id == "task0" then { vertex with outputs := ["after"] } else vertex) = none := by decide +kernel
 
-private def controlProgram : Program :=
+def controlProgram : Program :=
   { program with identity := { program.identity with semanticProfile := ⟨"cibseven-2.2.0-sequential-multi-instance-subprocess-draft"⟩ } }
 
-private def nestedParallelBody : List StructuredParallelBody.Vertex :=
+def nestedParallelBody : List StructuredParallelBody.Vertex :=
   ((parallelBody 2).map fun vertex => if vertex.id == "task0" then
     { vertex with kind := .fork, outputs := ["left", "right"] } else vertex) ++
       [⟨"left", .task, ["innerJoin"]⟩, ⟨"right", .task, ["innerJoin"]⟩, ⟨"innerJoin", .join, ["join"]⟩]
@@ -329,7 +329,7 @@ theorem repeated_scope_control_composes_entry_turnover_and_parent_continuation :
     SequentialScopeControl.maximumBurst ⟨6, 2, 2⟩ 0 0 = 9 ∧
     SequentialScopeControl.maximumBurst ⟨5, 2, 2⟩ 40 40 = 8 := by decide +kernel
 
-private def mixedProgram : Program :=
+def mixedProgram : Program :=
   { controlProgram with
     identity := { controlProgram.identity with sourceOverlay := some { id := ⟨"handlers"⟩, sha256 := "private-overlay" } }
     operations := (controlProgram.operations.map fun operation => match operation with
@@ -366,7 +366,7 @@ theorem repeated_scope_start_dispatch_refuses_missing_collection_and_identity :
     (admitStimulus mixedProgram initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"instance"⟩ [])).outcome = .rejected ∧
     (admitStimulus mixedProgram initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨""⟩ [⟨"items", .stringList []⟩])).outcome = .rejected := by decide +kernel
 
-private def canonicalProgram : Program :=
+def canonicalProgram : Program :=
   let controlPlaces := ["body-in", "body-out", "effect-out", "incoming", "outgoing"].filterMap fun id =>
     mixedProgram.controlPlaces.find? (·.id.value == id)
   let operations := ["child-end", "complete", "effect", "end", "enter", "root-complete", "start", "task"].filterMap fun id =>
@@ -384,7 +384,7 @@ theorem repeated_scope_canonical_program_is_structurally_admitted :
     programWellFormed canonicalProgram = true ∧
     programProfileCapabilitiesValid canonicalProgram = true := by decide +kernel
 
-private def repeatedScenario : Scenario :=
+def repeatedScenario : Scenario :=
   { kind := .scenario, id := ⟨"invoice-batch"⟩, profile := canonicalProgram.identity.semanticProfile
     bpmn := {
       id := canonicalProgram.identity.sourceId, relativePath := "invoice-batch.bpmn"
@@ -401,7 +401,7 @@ theorem repeated_scope_scenario_requires_progress_observation_and_start_data :
     supportsScenario canonicalProgram { repeatedScenario with
       stimuli := [.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"instance"⟩ []] } = false := by decide +kernel
 
-private def checkedSource : CheckedProcess :=
+def checkedSource : CheckedProcess :=
   let nodes : List CheckedNode :=
     [.sequentialMultiInstanceSubProcess ⟨"Batch"⟩ ⟨"body"⟩ "items" "item" [] none,
      .noneStartEvent ⟨"BodyStart"⟩, .noneEndEvent ⟨"ChildEnd"⟩, .noneEndEvent ⟨"End"⟩,
@@ -428,7 +428,7 @@ theorem repeated_scope_checked_source_admission_reaches_valid_lowering :
     programWellFormed (lowerCheckedProcess checkedSource) = true ∧
     programProfileCapabilitiesValid (lowerCheckedProcess checkedSource) = true := by decide +kernel
 
-private def parentServiceSource : CheckedProcess :=
+def parentServiceSource : CheckedProcess :=
   { checkedSource with
     nodes := checkedSource.nodes ++ [.serviceTask ⟨"Publish"⟩
       ⟨"urn:bpmn-lean:effect-protocol:activity-v1", "publishBatch"⟩ [] [] none]
@@ -456,7 +456,7 @@ theorem repeated_scope_checked_analysis_ignores_declaration_order :
       nodes := checkedSource.nodes.reverse, nodeScopes := checkedSource.nodeScopes.reverse,
       sequenceFlows := checkedSource.sequenceFlows.reverse } = SequentialScopeChecked.analyze checkedSource := by decide +kernel
 
-private def delayedJoinProgram : Program :=
+def delayedJoinProgram : Program :=
   let changed := canonicalProgram.operations.map fun operation => match operation with
     | .enterSequentialMultiInstanceScope id origin input childEntry scope output collection item _ condition =>
         .enterSequentialMultiInstanceScope id origin input childEntry scope output collection item
@@ -482,19 +482,19 @@ private def delayedJoinProgram : Program :=
     controlPlaceScopes := places.map fun id =>
       { controlPlaceId := ⟨id⟩, scopeId := ⟨if ["incoming", "outgoing"].contains id then "root" else "body"⟩ } }
 
-private def delayedJoinStart : Stimulus :=
+def delayedJoinStart : Stimulus :=
   .startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"instance"⟩
     [⟨"items", .stringList ["first", "second"]⟩, ⟨"seed", .string "initial"⟩]
 
-private def delayedJoinEffect : Stimulus :=
+def delayedJoinEffect : Stimulus :=
   .completeEffect ⟨"complete-effect"⟩ ⟨⟨"instance"⟩, ⟨"Validate"⟩, 1⟩ (.success [⟨"result", .null⟩])
 
-private def delayedJoinHuman : Stimulus :=
+def delayedJoinHuman : Stimulus :=
   .completeUserTaskInstance ⟨"complete-review"⟩ ⟨⟨"instance"⟩, ⟨"Review"⟩, 1⟩ []
 
-private def delayedJoinStarted := applyStimulus scenarioClosureLimit delayedJoinProgram initialState delayedJoinStart
-private def delayedJoinArrived := applyStimulus scenarioClosureLimit delayedJoinProgram delayedJoinStarted.state delayedJoinEffect
-private def delayedJoinTurnedOver := applyStimulus scenarioClosureLimit delayedJoinProgram delayedJoinArrived.state delayedJoinHuman
+def delayedJoinStarted := applyStimulus scenarioClosureLimit delayedJoinProgram initialState delayedJoinStart
+def delayedJoinArrived := applyStimulus scenarioClosureLimit delayedJoinProgram delayedJoinStarted.state delayedJoinEffect
+def delayedJoinTurnedOver := applyStimulus scenarioClosureLimit delayedJoinProgram delayedJoinArrived.state delayedJoinHuman
 
 theorem delayed_join_witness_has_full_program_and_profile_admission :
     programWellFormed delayedJoinProgram = true ∧ SequentialScopeProgram.admitted delayedJoinProgram = true ∧
@@ -538,7 +538,7 @@ theorem delayed_join_actual_start_first_entry_has_body_port_accounting :
         (admitStimulus delayedJoinProgram initialState delayedJoinStart).state) _
     (by decide +kernel) (by decide +kernel) (by decide +kernel)
 
-private def delayedJoinEntry : SequentialScopeEntry :=
+def delayedJoinEntry : SequentialScopeEntry :=
   ⟨⟨"enter"⟩, ⟨"Batch"⟩, ⟨"incoming"⟩, ⟨"body-in"⟩, ⟨"body"⟩, ⟨"outgoing"⟩,
     "items", "item", [⟨"status", .enclosingVariable "seed"⟩], none⟩
 
@@ -554,7 +554,7 @@ theorem delayed_join_actual_start_establishes_execution_certificate :
     delayed_join_witness_has_full_program_and_profile_admission.2.1 (by decide +kernel)
     delayed_join_actual_start_first_entry_has_body_port_accounting.1
 
-private def delayedJoinEntered : RuntimeState :=
+def delayedJoinEntered : RuntimeState :=
   let raw := (admitStimulus delayedJoinProgram initialState delayedJoinStart).state
   let initiated := (fire? delayedJoinProgram (.initiate ⟨"start"⟩ (origin "Start") ⟨"incoming"⟩) raw).getD raw
   ((enterSequentialScopeResult? delayedJoinEntry initiated ⟨⟨"instance"⟩, ⟨"root"⟩, 1⟩).map (·.state)).getD initiated
@@ -622,7 +622,7 @@ theorem delayed_join_earlier_completion_leaves_its_owned_arrival :
       delayedJoinArrived.state.tokens = [⟨⟨"effect-out"⟩, ⟨⟨"instance"⟩, ⟨"body"⟩, 1⟩⟩] ∧
       delayedJoinArrived.state.waits.length = 1 ∧ delayedJoinArrived.state.effectWaits = [] := by decide +kernel
 
-private def delayedJoinQuietBody : RuntimeState :=
+def delayedJoinQuietBody : RuntimeState :=
   let completed := (admitStimulus delayedJoinProgram delayedJoinArrived.state delayedJoinHuman).state
   let joined := (fire? delayedJoinProgram
     (.synchronize ⟨"join"⟩ (origin "Join") [⟨"body-out"⟩, ⟨"effect-out"⟩] ⟨"join-out"⟩) completed).getD completed

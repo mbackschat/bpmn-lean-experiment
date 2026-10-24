@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.BoundedScopeArming
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.InternalOperationAttempt
+module
+
+public import BpmnSemantics.SemanticProcess.BoundedScopeArming
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.InternalOperationAttempt
 
 /-! # Compensation Event Sub-Process snapshot-aware scope transitions -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -96,11 +100,11 @@ def finishRootCompletion (successor : RuntimeState)
   | none => purgeCompensationParentContextForRoot successor occurrence disposition
   | some _ => successor
 
-private def scopeOccurrenceIsLive (state : RuntimeState)
+def scopeOccurrenceIsLive (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Bool :=
   state.scopeOccurrences.any fun occurrence => occurrence.id == owner
 
-private def keepAfterUnsuccessfulScopeRemoval (successor : RuntimeState)
+def keepAfterUnsuccessfulScopeRemoval (successor : RuntimeState)
     (retention : CompensationParentContextRetention) : Bool :=
   match retention with
   | .provisional parent _ =>

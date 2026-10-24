@@ -1,9 +1,13 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source reference-binding conformance
 
 Endpoint, dependency direction, and effect identity remain independent negative decisions.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

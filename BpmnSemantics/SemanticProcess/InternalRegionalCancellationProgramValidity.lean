@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 
 /-! Cancellation preserves immutable Program correspondence by retaining each surviving
 owner census. The selected child may itself survive; singleton preservation handles that
 case without requiring it to lie outside its own cancellation region. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -11,7 +15,7 @@ open BpmnSemantics
 
 theorem cancelScopeSubtree_child_structural_program_validity (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (prior : flowNodeOccurrenceStructuralProgramValidity program state = true) :
@@ -85,7 +89,7 @@ theorem cancelScopeSubtree_program_validity_of_structural (program : Program) (s
 
 theorem cancelScopeSubtree_child_program_validity (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (prior : flowNodeOccurrenceProgramValidity program state = true)

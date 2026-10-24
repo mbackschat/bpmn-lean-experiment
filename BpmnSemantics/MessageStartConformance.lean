@@ -1,7 +1,9 @@
-import BpmnSemantics.MessageStartAdmissionConformance
-import BpmnSemantics.MessageStartClosureConformance
-import BpmnSemantics.MessageStartIdentityConformance
-import BpmnSemantics.MessageStartScenarioConformance
+module
+
+public import BpmnSemantics.MessageStartAdmissionConformance
+public import BpmnSemantics.MessageStartClosureConformance
+public import BpmnSemantics.MessageStartIdentityConformance
+public import BpmnSemantics.MessageStartScenarioConformance
 
 /-! # Message Start Event conformance
 

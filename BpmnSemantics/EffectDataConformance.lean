@@ -19,25 +19,25 @@ open BpmnSemantics.SemanticProcess
 def descriptor (name : String) : EffectDescriptor :=
   { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := name }
 
-private def identity (profile : ProfileId) : SourceIdentity :=
+def identity (profile : ProfileId) : SourceIdentity :=
   { semanticProfile := profile, sourceId := ⟨"credit"⟩
     sourceSha256 := "0000000000000000000000000000000000000000000000000000000000000001"
     sourceOverlay := some {
       id := ⟨"handlers"⟩
       sha256 := "0000000000000000000000000000000000000000000000000000000000000002" } }
 
-private def assess : CheckedNode :=
+def assess : CheckedNode :=
   .serviceTask ⟨"C"⟩ (descriptor "assessCredit")
     [{ target := "applicant", expression := .enclosingVariable "applicantRef" }]
     [{ target := "assessment", expression := .localVariable "assessment" }] none
 
-private def notify : CheckedNode :=
+def notify : CheckedNode :=
   .serviceTask ⟨"D"⟩ (descriptor "notifyApplicant")
     [{ target := "assessment", expression := .enclosingVariable "assessment" }]
     [{ target := "receipt", expression := .localVariable "receipt" }] none
 
 /-- Start, assess, notify, End. -/
-private def chain (profile : ProfileId) : CheckedProcess :=
+def chain (profile : ProfileId) : CheckedProcess :=
   { identity := identity profile, processId := ⟨"P"⟩
     definitionScopes := [rootDefinitionScope ⟨"P"⟩]
     nodeScopes := rootNodeScopes ⟨"P"⟩ [⟨"A"⟩, ⟨"C"⟩, ⟨"D"⟩, ⟨"F"⟩]
@@ -53,7 +53,7 @@ def checked : CheckedProcess := chain portableEffectDataProfileId
 def program : Program := lowerCheckedProcess checked
 
 /-- The same chain with a User Task between Start and the assessment. -/
-private def withHumanTask (profile : ProfileId) : CheckedProcess :=
+def withHumanTask (profile : ProfileId) : CheckedProcess :=
   { chain profile with
     nodeScopes := rootNodeScopes ⟨"P"⟩ [⟨"A"⟩, ⟨"B"⟩, ⟨"C"⟩, ⟨"D"⟩, ⟨"F"⟩]
     sequenceFlowScopes := rootSequenceFlowScopes ⟨"P"⟩ [⟨"f1"⟩, ⟨"f2"⟩, ⟨"f3"⟩, ⟨"f4"⟩]
@@ -77,15 +77,15 @@ def applicant : List VariableBinding := [{ name := "applicantRef", value := .str
 def assessId : EffectOccurrenceId := ⟨⟨"I"⟩, ⟨"C"⟩, 1⟩
 def notifyId : EffectOccurrenceId := ⟨⟨"I"⟩, ⟨"D"⟩, 1⟩
 
-private def start (bindings : List VariableBinding) : StimulusResult :=
+def start (bindings : List VariableBinding) : StimulusResult :=
   applyStimulus 8 program initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"I"⟩ bindings)
 
 def started : StimulusResult := start applicant
 
-private def completeAssess (patch : List VariableBinding) : StimulusResult :=
+def completeAssess (patch : List VariableBinding) : StimulusResult :=
   applyStimulus 8 program started.state (.completeEffect ⟨"assess"⟩ assessId (.success patch))
 
-private def assessmentPatch (value : VariableValue) : List VariableBinding :=
+def assessmentPatch (value : VariableValue) : List VariableBinding :=
   [{ name := "assessment", value }]
 
 def assessed : StimulusResult := completeAssess (assessmentPatch assessment)
@@ -94,7 +94,7 @@ def completed : StimulusResult :=
   applyStimulus 8 program assessed.state
     (.completeEffect ⟨"notify"⟩ notifyId (.success [{ name := "receipt", value := .map [("ok", .boolean true)] }]))
 
-private def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
+def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
   result.outcome == .rejected && result.state == before
 
 theorem credit_chain_admitted_with_one_required_start_property :

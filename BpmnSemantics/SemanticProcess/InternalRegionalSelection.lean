@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 
 /-! # Regional predecessor selection
 
 The Internal Commutation preparation retains exact Return, Complete, Error, and Terminate
 occurrences before deriving removal masks. Selection performs no runtime transition.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

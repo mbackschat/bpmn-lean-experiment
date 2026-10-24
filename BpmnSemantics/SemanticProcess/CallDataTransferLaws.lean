@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.CallDataTransfer
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataTransfer
+public import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 
 /-! Scalar Call snapshots preserve caller and callee inputs beyond the local constructor-selection bridges. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

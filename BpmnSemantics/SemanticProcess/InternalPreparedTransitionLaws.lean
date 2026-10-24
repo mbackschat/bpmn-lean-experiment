@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Prepared-transition independence is symmetric across the supported transition variants. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

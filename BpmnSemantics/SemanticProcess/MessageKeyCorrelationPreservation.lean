@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-import BpmnSemantics.SemanticProcess.ProfileAdmission
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+public import BpmnSemantics.SemanticProcess.ProfileAdmission
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Message key-correlation preservation laws
 
@@ -11,6 +13,8 @@ This module states the quantified state-frame laws of exact target delivery. Com
 `runtimeStateWellFormed` preservation additionally depends on the correlated operation's graph and
 wait-declaration cases, which are integrated by their existing exhaustive owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

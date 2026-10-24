@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
 
 /-! # Correlated-message internal commutation projections
 
 Proves the occurrence-projection facts specific to one prepared correlated Message catch arm.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

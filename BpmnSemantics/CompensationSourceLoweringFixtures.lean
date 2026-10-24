@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
 
 /-! # Compensation source lowering fixtures
 
 Independent checked, Program, and JSON fixtures shared by the responsibility-split conformance
 owners for the owner-approved source checkpoint.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 
@@ -160,7 +164,7 @@ def checkedProcess : CheckedProcess :=
     sequenceFlows
     compensation := some checkedCompensation }
 
-private def place (flowId : String) : ControlPlace :=
+def place (flowId : String) : ControlPlace :=
   { id := ⟨"place:" ++ flowId⟩, origin := { elementId := ⟨flowId⟩ } }
 
 def controlPlaces : List ControlPlace :=
@@ -280,7 +284,7 @@ def expectedProgram : Program :=
         limits :=
           { maxTriggers := 1, maxHandlers := 3, maxCanonicalBytes := 20480 } } }
 
-private def replaceEventSubject
+def replaceEventSubject
     (program : Program) (body : SingleEffectCompensationHandlerBody) : Program :=
   match program.compensationExecution with
   | none => program
@@ -381,12 +385,12 @@ def checkedAccepted (json : Lean.Json) : Bool :=
   | .ok _ => true
   | .error _ => false
 
-private def descriptorJson : Lean.Json :=
+def descriptorJson : Lean.Json :=
   Lean.Json.mkObj
     [ ("protocol", .str descriptor.protocol)
     , ("operation", .str descriptor.operation) ]
 
-private def inputJson (restored : Bool) : Lean.Json :=
+def inputJson (restored : Bool) : Lean.Json :=
   if restored then
     Lean.Json.mkObj
       [ ("kind", .str "directRestoredProcessBinding")
@@ -395,7 +399,7 @@ private def inputJson (restored : Bool) : Lean.Json :=
   else
     Lean.Json.mkObj [("kind", .str "empty")]
 
-private def bodyJson (handler effect kind : String) (restored : Bool) : Lean.Json :=
+def bodyJson (handler effect kind : String) (restored : Bool) : Lean.Json :=
   Lean.Json.mkObj
     [ ("kind", .str kind)
     , ("handlerElementId", .str handler)
@@ -403,7 +407,7 @@ private def bodyJson (handler effect kind : String) (restored : Bool) : Lean.Jso
     , ("descriptor", descriptorJson)
     , ("input", inputJson restored) ]
 
-private def eventSubjectJson (bodyKind : String) : Lean.Json :=
+def eventSubjectJson (bodyKind : String) : Lean.Json :=
   Lean.Json.mkObj
     [ ("kind", .str "eventSubProcess")
     , ("parentElementId", .str arrangeSubProcessId.value)
@@ -411,7 +415,7 @@ private def eventSubjectJson (bodyKind : String) : Lean.Json :=
     , ("handlerScopeId", .str handlerScopeId.value)
     , ("body", bodyJson eventHandlerId.value eventEffectId.value bodyKind true) ]
 
-private def boundarySubjectJson
+def boundarySubjectJson
     (subject boundary handler : String) : Lean.Json :=
   Lean.Json.mkObj
     [ ("kind", .str "boundaryActivity")
@@ -419,7 +423,7 @@ private def boundarySubjectJson
     , ("boundaryEventElementId", .str boundary)
     , ("body", bodyJson handler handler "singleEffect" false) ]
 
-private def dependencyJson (reason : String) : Lean.Json :=
+def dependencyJson (reason : String) : Lean.Json :=
   Lean.Json.mkObj
     [ ("predecessorElementId", .str reserveTaskId.value)
     , ("successorElementId", .str arrangeSubProcessId.value)
@@ -450,7 +454,7 @@ def compensationJson
         , ("maxCanonicalBytes", .num executionBytes) ]) ]
   Lean.Json.mkObj (if includeExtra then fields ++ [("extra", .bool true)] else fields)
 
-private def sourceIdentityJson (semanticProfile : String) : Lean.Json :=
+def sourceIdentityJson (semanticProfile : String) : Lean.Json :=
   Lean.Json.mkObj
     [ ("semanticProfile", .str semanticProfile)
     , ("sourceId", .str "s")

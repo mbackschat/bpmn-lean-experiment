@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Mapped-success Service Task data and mapping locks
 
 These checks own the direct Lean account for the exact string-only mapped-success capsule. They establish independent checked-source normalization, committed effect arguments, typed local-patch validation, Process-scope output mapping, exact state preservation on refusal, and the nearest accept-unvalidated-patch non-law.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MappedSuccessConformance
 
@@ -108,7 +112,7 @@ def effectWait : EffectWait :=
 def waitingState : RuntimeState :=
   singletonEffectWaitingState effectWait
 
-private def observations : List ObservationKind :=
+def observations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -388,7 +392,7 @@ theorem duplicate_patch_is_rejected :
     (by decide +kernel)
 
 /-- Executable wrong account: the host writes the Worker's local patch directly into Process scope instead of applying the admitted output mapping. -/
-private def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState :=
+def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState :=
   { state with
     effectWaits := []
     tokens := addToken state.tokens effectWait.output effectWait.owner

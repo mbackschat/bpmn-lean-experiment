@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! CEA-OCCUR-01 and CEA-QUIESCE-01: the scope operations of a merge target, which alone take the
 occurrence-addressed path in the embedded completion profile. The entry is the `enterScope` fed by a
@@ -7,6 +9,8 @@ continuation, so a root completion is never a merge target and cannot match the 
 arm. Every other scope
 operation keeps its definition-addressed path and its prepared batches. The predicate is Program-static,
 so a Program without a merge region keeps its exact execution. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

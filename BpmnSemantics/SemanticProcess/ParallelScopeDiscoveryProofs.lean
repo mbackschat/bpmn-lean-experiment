@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeInputMultiplicityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeInputMultiplicityProofs
 
 /-! # Total discovery for reachable parallel scopes
 
@@ -8,6 +10,8 @@ and actual command provenance provide unique declarations and live owners;
 reachable wait readiness supplies native arming when an input token is present.
 This does not assume successful reservation of the complete frontier.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

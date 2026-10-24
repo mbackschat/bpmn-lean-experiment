@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Regional removal agreement
 
 Occurrence-region traversal and cancellation use different graphs. These laws connect their
 least closures while preserving directed Calls and the existing population-fuel evaluators.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

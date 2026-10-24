@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.BoundedScopeArming
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
+public import BpmnSemantics.SemanticProcess.ActivityDataOutput
+public import BpmnSemantics.SemanticProcess.BoundedScopeArming
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Activity-counter canonical insertion witnesses
 
@@ -9,14 +11,16 @@ Each formerly prepending writer must retain an earlier element's high-water mark
 later element in raw storage order. Task and Activity issuance remain separate.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ActivityActivationOrderConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance"⟩, definitionScopeId := ⟨"process"⟩, activation := 1 }
 
-private def state : RuntimeState :=
+def state : RuntimeState :=
   { initialState with
     control := .running owner.processInstanceId
     tokens := [{ placeId := ⟨"input"⟩, owner }]
@@ -27,27 +31,27 @@ private def state : RuntimeState :=
                    activities := []
                    processInterfaces := [], scopes := [] } }
 
-private def boundary : BoundaryTimerArm :=
+def boundary : BoundaryTimerArm :=
   { elementId := ⟨"deadline"⟩, durationMs := 1000, output := ⟨"expired"⟩,
     origin := ⟨⟨"Flow_Expired"⟩⟩ }
 
-private def expected : List TaskActivation :=
+def expected : List TaskActivation :=
   [{ taskId := ⟨"a"⟩, count := 7 }, { taskId := ⟨"z"⟩, count := 3 }]
 
-private def boundedAfter : RuntimeState :=
+def boundedAfter : RuntimeState :=
   activateBoundedUserTask state owner.processInstanceId owner ⟨"input"⟩
     { id := ⟨"z"⟩, name := none, output := ⟨"output"⟩ } boundary
 
-private def scopeAfter : RuntimeState :=
+def scopeAfter : RuntimeState :=
   armScopeDeadline state owner ⟨⟨"z"⟩⟩
     { owner with definitionScopeId := ⟨"scope:z"⟩, activation := 4 } boundary
 
-private def inputAfter : Option RuntimeState :=
+def inputAfter : Option RuntimeState :=
   activateDataInputUserTask? state ⟨"input"⟩ ⟨"output"⟩ ⟨"z"⟩ none
     { associationId := "association", source := .property "source",
       targetDataInputId := "input-value", targetDataInputName := none }
 
-private def outputAfter : Option RuntimeState :=
+def outputAfter : Option RuntimeState :=
   activateDataOutputUserTask? state ⟨"input"⟩ ⟨"output"⟩ ⟨"z"⟩ none
 
 theorem activity_counter_insertion_preserves_marks_and_separate_issuers :

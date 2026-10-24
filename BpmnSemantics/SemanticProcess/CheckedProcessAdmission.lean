@@ -1,34 +1,38 @@
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.ErrorDefinition
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcess.ErrorDefinition
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Checked-process structural admission
 
 This module owns checked-process admission by composing representation-specific identity, scope ownership, reference, arity, mapping, Error-handler, and profile-capability rules with the topology predicate from `CheckedGraphValidation`. It does not lower or validate Semantic Process programs.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def incomingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat :=
+def incomingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat :=
   (flows.filter fun flow => decide (flow.targetId = id)).length
 
-private def outgoingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat :=
+def outgoingCount (flows : List CheckedSequenceFlow) (id : NodeId) : Nat :=
   (flows.filter fun flow => decide (flow.sourceId = id)).length
 
-private def nodeExists (nodes : List CheckedNode) (id : NodeId) : Bool :=
+def nodeExists (nodes : List CheckedNode) (id : NodeId) : Bool :=
   nodes.any fun node => decide (node.id = id)
 
-private def scopeExists (scopes : List DefinitionScope)
+def scopeExists (scopes : List DefinitionScope)
     (scopeId : DefinitionScopeId) : Bool :=
   scopes.any fun scope => decide (scope.id = scopeId)
 
-private def flowSourceScopeId? (source : CheckedProcess)
+def flowSourceScopeId? (source : CheckedProcess)
     (flow : CheckedSequenceFlow) : Option DefinitionScopeId :=
   match checkedNodeScopeId? source flow.sourceId with
   | some scopeId => some scopeId
@@ -48,7 +52,7 @@ private def flowSourceScopeId? (source : CheckedProcess)
             else none
         | _ => none
 
-private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
+def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
   let roots := source.definitionScopes.filter (·.parentScopeId.isNone)
   let entryRoots := roots.filter fun root =>
     root.originElementId.value = source.processId.value
@@ -108,7 +112,7 @@ private def checkedDefinitionScopesValid (source : CheckedProcess) : Bool :=
       | [root] => root.originElementId.value = source.processId.value
       | _ => false
 
-private def checkedOwnershipValid (source : CheckedProcess) : Bool :=
+def sourceOwnershipValid (source : CheckedProcess) : Bool :=
   strictlySortedStrings (source.nodeScopes.map fun ownership =>
       ownership.nodeId.value) &&
     strictlySortedStrings (source.sequenceFlowScopes.map fun ownership =>
@@ -125,7 +129,7 @@ private def checkedOwnershipValid (source : CheckedProcess) : Bool :=
       scopeId = flowSourceScopeId? source flow &&
         scopeId = checkedNodeScopeId? source flow.targetId
 
-private def wellFormedCheckedBpmnErrorRoute (serviceId : NodeId) :
+def wellFormedCheckedBpmnErrorRoute (serviceId : NodeId) :
     Option CheckedBpmnErrorRoute → Bool
   | some route =>
       nonempty route.boundaryEventId.value &&
@@ -136,13 +140,13 @@ private def wellFormedCheckedBpmnErrorRoute (serviceId : NodeId) :
         nonempty route.outputFlowId.value
   | none => false
 
-private def checkedConditionValid : Option CheckedCondition → Bool
+def sourceConditionValid : Option CheckedCondition → Bool
   | some condition =>
       condition.language = simpleBooleanExpressionLanguage &&
         (parseSimpleBooleanExpression condition.body).isSome
   | none => false
 
-private def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
+def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
     (id : NodeId) (candidateFlowIds : List SequenceFlowId)
     (defaultFlowId : SequenceFlowId) (variableArity : Bool := false) : Bool :=
   (if variableArity then !candidateFlowIds.isEmpty else candidateFlowIds.length = 2) &&
@@ -151,19 +155,19 @@ private def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
     candidateFlowIds.all fun candidateId =>
       match flows.find? fun flow => decide (flow.id = candidateId) with
       | some flow =>
-          flow.sourceId = id && checkedConditionValid flow.condition
+          flow.sourceId = id && sourceConditionValid flow.condition
       | none => false
     &&
     match flows.find? fun flow => decide (flow.id = defaultFlowId) with
     | some flow => flow.sourceId = id && flow.condition.isNone
     | none => false
 
-private def checkedInclusiveGatewayValid (flows : List CheckedSequenceFlow)
+def checkedInclusiveGatewayValid (flows : List CheckedSequenceFlow)
     (id : NodeId) (candidateFlowIds : List SequenceFlowId)
     (defaultFlowId : SequenceFlowId) : Bool :=
   checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
 
-private def inclusiveBranchReachesJoin (source : CheckedProcess)
+def inclusiveBranchReachesJoin (source : CheckedProcess)
     (splitId joinId : NodeId) (flowId : SequenceFlowId) : Bool :=
   match source.sequenceFlows.find? fun flow => decide (flow.id = flowId) with
   | none => false
@@ -178,7 +182,7 @@ private def inclusiveBranchReachesJoin (source : CheckedProcess)
                 | _ => false
           | _ => false
 
-private def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
+def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
   source.nodes.all fun
     | .inclusiveGatewayDiverging splitId candidates defaultFlow =>
         match source.nodes.filter fun
@@ -196,7 +200,7 @@ private def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
           | _ => false
     | _ => true
 
-private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool :=
+def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool :=
   source.nodes.all fun
     | .eventBasedGateway gatewayId =>
         let outgoing := source.sequenceFlows.filter fun flow =>
@@ -219,7 +223,7 @@ private def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool 
         | _ => false
     | _ => true
 
-private def checkedNodeArityValid (serial repeatable mixed businessError variableMerge : Bool) (dormantHandlers : List NodeId)
+def checkedNodeArityValid (serial repeatable mixed businessError variableMerge : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
   | .noneStartEvent id =>
@@ -460,7 +464,7 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
     lowercaseHexSha256 source.identity.sourceSha256 &&
     nonempty source.processId.value &&
     checkedDefinitionScopesValid source &&
-    checkedOwnershipValid source &&
+    sourceOwnershipValid source &&
     strictlySortedStrings (source.nodes.map fun node => node.id.value) &&
     strictlySortedStrings (source.sequenceFlows.map fun flow => flow.id.value) &&
     source.nodes.all (fun node => nonempty node.id.value) &&

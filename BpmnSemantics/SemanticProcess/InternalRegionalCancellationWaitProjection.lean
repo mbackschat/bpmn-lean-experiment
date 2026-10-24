@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 
 /-! Cancellation compares public anchors only after private Timer classification.
 The predecessor projection supplies the cross-family identity census needed to preserve
 unrelated waits with the same raw identity as a private deadline (RHP-PRIVATE-01).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -204,7 +208,7 @@ private theorem cancellation_wait_mapM (program : Program) (state : RuntimeState
     (values : List α) (owner : α → ScopeOccurrenceId) (element : α → NodeId)
     (activation : α → Nat) (identity : α → OccurrenceId) (withdrawn : α → Bool)
     (entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (projected : values.mapM (fun value => waitStart? program state (owner value)
@@ -264,7 +268,7 @@ theorem cancelScopeSubtree_public_timers (program : Program) (state : RuntimeSta
 theorem cancelScopeSubtree_child_wait_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (current entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (waitValid : flowNodeOccurrenceWaitProgramValidity program state = true)

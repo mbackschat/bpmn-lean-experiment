@@ -18,7 +18,7 @@ def profileId : ProfileId :=
 
 def processId : ProcessId := ⟨"Process_Inclusive"⟩
 
-private def condition (body : String) : Option CheckedCondition :=
+def condition (body : String) : Option CheckedCondition :=
   some { language := simpleBooleanExpressionLanguage, body }
 
 def checkedProcess : CheckedProcess :=
@@ -105,7 +105,7 @@ def program : Program :=
 
 def instanceId : SemanticId := ⟨"inclusive-instance"⟩
 
-private def present (name : String) : VariableBinding :=
+def present (name : String) : VariableBinding :=
   { name, value := .null }
 
 def start (variables : List VariableBinding) : Stimulus :=
@@ -143,7 +143,7 @@ def bothBThenA : StimulusResult :=
   applyStimulus scenarioClosureLimit program bothAfterB.state
     (completeTask "Task_A")
 
-private def swapExpectedInputs : SemanticOperation → SemanticOperation
+def swapExpectedInputs : SemanticOperation → SemanticOperation
   | .selectMany id origin input [first, second] defaultBranch selectionKey =>
       .selectMany id origin input
         [{ first with expectedJoinInput := second.expectedJoinInput },
@@ -218,16 +218,16 @@ theorem longest_start_closure_is_four_steps :
         false := by
   decide +kernel
 
-private def bothSplitState : RuntimeState :=
+def bothSplitState : RuntimeState :=
   (runChoices program
     (admitStimulus program initialState (start [present "takeA", present "takeB"])).state
     [⟨"operation:Start"⟩, ⟨"operation:Split"⟩]).getD initialState
 
-private def activatedAThenB : RuntimeState :=
+def activatedAThenB : RuntimeState :=
   (runChoices program bothSplitState
     [⟨"operation:Task_A"⟩, ⟨"operation:Task_B"⟩]).getD initialState
 
-private def activatedBThenA : RuntimeState :=
+def activatedBThenA : RuntimeState :=
   (runChoices program bothSplitState
     [⟨"operation:Task_B"⟩, ⟨"operation:Task_A"⟩]).getD initialState
 

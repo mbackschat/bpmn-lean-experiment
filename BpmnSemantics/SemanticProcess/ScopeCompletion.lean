@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Normal scope completion
 
@@ -10,6 +12,8 @@ Ordinary scopes use this completion rewrite. Sequential Multi-Instance bodies re
 predicate with their paired repetition policy in `SequentialScopeRuntime`; a body ending must not also
 emit the ordinary parent continuation (SMIS-END-01).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -61,7 +61,7 @@ def rootAndChildCompleted : StimulusResult :=
 
 open _root_.BpmnSemantics.CompensationEventSubProcessSnapshotConformance
 
-private def rootAndChildStartedValue : StimulusResult :=
+def rootAndChildStartedValue : StimulusResult :=
   { outcome := .committed
     state :=
       { initialState with
@@ -108,13 +108,13 @@ private def rootAndChildStartedValue : StimulusResult :=
 private theorem rootAndChildStarted_eq : rootAndChildStarted = rootAndChildStartedValue := by
   decide +kernel
 
-private def promotedChild : CompensationParentContextRetention :=
+def promotedChild : CompensationParentContextRetention :=
   .promoted childOccurrence
     CompensationEventSubProcessSnapshotAdmissionConformance.handlerScopeId
     { frames := [{ owner := rootOccurrence.id, bindings := [] },
                  { owner := childOccurrence.id, bindings := [] }] }
 
-private def rootAndChildChildCompletedValue : StimulusResult :=
+def rootAndChildChildCompletedValue : StimulusResult :=
   { rootAndChildStartedValue with
     state :=
       { rootAndChildStartedValue.state with
@@ -140,7 +140,7 @@ private theorem rootAndChildChildCompleted_eq :
   rw [rootAndChildStarted_eq]
   decide +kernel
 
-private def rootAndChildCompletedValue : StimulusResult :=
+def rootAndChildCompletedValue : StimulusResult :=
   { rootAndChildChildCompletedValue with
     state :=
       { rootAndChildChildCompletedValue.state with
@@ -180,7 +180,7 @@ def unselectedRootCompleted : StimulusResult :=
     CompensationEventSubProcessSnapshotAdmissionConformance.program childCompletionResult.state
     (.completeUserTaskInstance ⟨"complete-unselected-root"⟩ afterScopeTaskId [])
 
-private def unselectedStartedValue : StimulusResult :=
+def unselectedStartedValue : StimulusResult :=
   { rootAndChildStartedValue with
     state := { rootAndChildStartedValue.state with
       compensationParentContextRetentions :=
@@ -190,7 +190,7 @@ private def unselectedStartedValue : StimulusResult :=
 private theorem unselectedStarted_eq : startResult = unselectedStartedValue := by
   decide +kernel
 
-private def unselectedChildCompletedValue : StimulusResult :=
+def unselectedChildCompletedValue : StimulusResult :=
   { rootAndChildChildCompletedValue with
     state := { rootAndChildChildCompletedValue.state with
       compensationParentContextRetentions := [promotedChild] } }
@@ -201,7 +201,7 @@ private theorem unselectedChildCompleted_eq :
   rw [unselectedStarted_eq]
   decide +kernel
 
-private def unselectedRootCompletedValue : StimulusResult :=
+def unselectedRootCompletedValue : StimulusResult :=
   { rootAndChildCompletedValue with
     state := { rootAndChildCompletedValue.state with
       compensationParentContextRetentions := [] } }

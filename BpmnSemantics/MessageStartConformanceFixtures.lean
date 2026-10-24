@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Message Start Event conformance fixtures
 
 This module owns the exact standards-only Message Start fixture shared by the independently elaborated admission, closure, identity-refusal, and scenario-ordering proof modules.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MessageStartConformance
 
@@ -150,7 +154,7 @@ def trigger : Stimulus :=
     ⟨startEventId.value⟩
     channel
 
-private def requiredObservations : List ObservationKind :=
+def messageStartRequiredObservations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -173,7 +177,7 @@ def scenarioForProgram (candidate : Program) (stimuli : List Stimulus) :
         sha256 := candidate.identity.sourceSha256
         sourceOverlay := candidate.identity.sourceOverlay }
     stimuli
-    observations := requiredObservations
+    observations := messageStartRequiredObservations
     provenance :=
       { normativeRefs := []
         cibRevision := "not-applicable"

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnScopeCallProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnScopeCallProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
 
 /-! Accepted Return publication composes actual cleanup, all independent projection
 guards, and exact Scope/Call/wait populations. The ending removes only the selected
 Call anchor; canonical order and anchor uniqueness come from predecessor projection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -53,8 +57,8 @@ theorem preparedReturn_open_projection (program : Program) (before : RuntimeStat
       · contradiction
     have scopeAfterEq := (quiescent_return_scope_projection program before after expected hosting record root output
       position running priorCalls selectedMember parentless census scopes actual).trans scopeEq
-    have callAfterEq := quiescent_return_call_projection program before after hosting record root output callEntries
-      running priorCalls selectedMember rootMember rootId parentless quiet actual callEq
+    have callAfterEq := quiescent_return_call_projection program before after expected hosting record root output callEntries
+      position running priorCalls selectedMember rootMember rootId parentless quiet actual callEq
     obtain ⟨waitAfter, waitApplied, waitFrame⟩ :=
       preparedReturn_wait_projection program before expected id origin process definition output prepared valid found
     have sameWaits : waitAfter = after := Option.some.inj (waitApplied.symm.trans applied)

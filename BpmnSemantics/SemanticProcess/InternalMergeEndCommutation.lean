@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-import BpmnSemantics.SemanticProcess.InternalEndLocalControlCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+public import BpmnSemantics.SemanticProcess.InternalEndLocalControlCommutation
 
 /-! Exact Merge reuses End's local patch laws without inheriting the unique-owner selector.
 The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome)
 keeps the End input census separate from the chosen Merge bucket.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

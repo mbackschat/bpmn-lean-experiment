@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 
 /-! Regional selection reads control state, time, and owner censuses. Existing removal frames preserve those reads under regional footprint independence. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Exact parent ancestry
 
 The unchanged parent walker reaches the least directed parent closure. Its population bound is
 derived from strict growth of reached live IDs, so cycles require no acyclicity assumption.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -100,11 +104,11 @@ theorem occurrenceInSubtreeWithin_least (occurrences : List RuntimeScopeOccurren
               (occurrenceParent_some_edge occurrences candidate parent found)
         · simp
 
-private abbrev reached (occurrences : List RuntimeScopeOccurrence) (root : ScopeOccurrenceId)
+abbrev reached (occurrences : List RuntimeScopeOccurrence) (root : ScopeOccurrenceId)
     (fuel : Nat) : List ScopeOccurrenceId :=
   (occurrences.map (·.id)).filter fun value => occurrenceInSubtreeWithin occurrences root value fuel
 
-private abbrev stable (occurrences : List RuntimeScopeOccurrence) (root : ScopeOccurrenceId)
+abbrev stable (occurrences : List RuntimeScopeOccurrence) (root : ScopeOccurrenceId)
     (fuel : Nat) : Prop :=
   ∀ candidate ∈ occurrences.map (·.id),
     occurrenceInSubtreeWithin occurrences root candidate (fuel + 1) = true →

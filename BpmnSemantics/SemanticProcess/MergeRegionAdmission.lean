@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! CEA-ADMIT-01 merge-region recognition for the embedded completion profile. The structured-body
 analysis has no merge vertex, because a task vertex has one input and every vertex with several inputs is a
 join, so a region `fork → branches → merge → target → after → End` is recognized here and contracted to one
 task vertex before that analysis runs. The scan has no quantified certificate; each retained model and
 refusal fixes it by kernel decision. It carries no runtime or serialized authority. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.MergeRegion
 

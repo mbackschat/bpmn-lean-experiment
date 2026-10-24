@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Internal commutation transition-record bridge
 
 Proves that one admitted prepared ordinary arm has the exact committed transition record selected by its immutable Program and runtime owner.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # Flow-node occurrence Process-identity proofs
 
 Connects immutable definition-scope Process identity with the runtime owner identity already checked by flow-node occurrence projection. The production selectors remain in their owning modules.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -27,7 +31,7 @@ private theorem length_filter_strict_mono {values : List α} {left right : α �
   rw [← equal, List.mem_filter] at accepted
   exact accepted.2
 
-private noncomputable def graphReachesBool (edges : List (GraphEdge α))
+noncomputable def graphReachesBool (edges : List (GraphEdge α))
     (source target : α) : Bool :=
   letI := Classical.propDecidable
   decide (GraphReaches edges source target)

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
+module
+
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
 
 /-! Declarative Message interruption with evaluator soundness, exact regional withdrawal and context
 frames. These local laws do not assert admission or execution of unselected cross-family compositions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

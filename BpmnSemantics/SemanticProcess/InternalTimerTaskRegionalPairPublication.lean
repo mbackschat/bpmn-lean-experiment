@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
-import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! Both regional/Timer-task orders accept the same per-operation publication at assigned indices.
 The retained Timer-task preparation fixes its Process identity and task-only lifecycle template. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-theorem prepared_regional_timer_task_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_timer_task_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (operation : SemanticOperation) (regional : PreparedInternalRegional)
     (contract : InternalTimerTaskContract) (patch : InternalTimerTaskPatch)
     (commandId : SemanticId) (regionalIndex taskIndex : Nat)

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Configured Task lowering
 
@@ -6,6 +8,8 @@ This module owns the endpoint-only specialization from a distinct configured che
 existing neutral effect operation. Admission supplies the one input, one output, containing scope,
 and exact Probe descriptor.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

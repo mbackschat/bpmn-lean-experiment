@@ -1,30 +1,34 @@
-import BpmnSemantics.SemanticProcessJson.InternalAlternative
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcessJson.Scenario
-import BpmnSemantics.SemanticProcessJson.Publication
+module
+
+public import BpmnSemantics.SemanticProcessJson.InternalAlternative
+public import BpmnSemantics.SemanticProcessJson.Program
+public import BpmnSemantics.SemanticProcessJson.Scenario
+public import BpmnSemantics.SemanticProcessJson.Publication
 
 /-! Answer-free private scheduling witnesses use the same Program, stimulus and directives in both
 interpreters. This test entrypoint does not add a profile or engine API contract.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.InternalChoiceScheduleJsonMain
 
 open Lean BpmnSemantics SemanticProcess SemanticProcessJson SemanticProcess.InternalCommutation
 
-private def decodeDirective (json : Json) : Except String InternalChoiceDirective := do
+def decodeDirective (json : Json) : Except String InternalChoiceDirective := do
   requireObjectShape json ["ordinal", "alternatives", "selected"]
   pure { ordinal := ← decodeSafeNat (← field json "ordinal")
          alternatives := ← decodeArray decodeInternalAlternative (← field json "alternatives")
          selected := ← decodeInternalAlternative (← field json "selected") }
 
-private def outcomeName : CommandOutcome → String
+def outcomeName : CommandOutcome → String
   | .committed => "committed"
   | .rolledBack => "rolledBack"
   | .rejected => "rejected"
   | .semanticFailure => "semanticFailure"
   | .unsupported => "unsupported"
 
-private def failureName : InternalChoiceScheduleFailure → String
+def failureName : InternalChoiceScheduleFailure → String
   | .scheduleForbiddenForMode => "scheduleForbiddenForMode"
   | .missingDirective => "missingDirective"
   | .ordinalMismatch => "ordinalMismatch"
@@ -32,14 +36,14 @@ private def failureName : InternalChoiceScheduleFailure → String
   | .selectedAlternativeMissing => "selectedAlternativeMissing"
   | .unusedDirective => "unusedDirective"
 
-private def statusName : ProcessControl → String
+def statusName : ProcessControl → String
   | .notStarted => "notStarted"
   | .running _ => "running"
   | .completed _ => "completed"
   | .cancelled _ => "cancelled"
   | .failed .. => "failed"
 
-private def evaluate (json : Json) : Except String Json := do
+def evaluate (json : Json) : Except String Json := do
   requireObjectShape json ["id", "program", "stimulus", "schedule", "limit"]
   let id ← stringField json "id"
   let program ← decodeProgram (← field json "program")

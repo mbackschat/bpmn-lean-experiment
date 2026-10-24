@@ -1,25 +1,29 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! ESL-RETAIN finite ownership witnesses distinguish retaining a subscribed child body from
 removing its contents. These constructed states exercise cleanup, not broader source admission. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SubscribedScopeCancellationConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def root : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:root"⟩, 1⟩
-private def child : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:child"⟩, 1⟩
-private def reminder : OccurrenceId := ⟨⟨"Instance"⟩, ⟨"Reminder"⟩, 3⟩
-private def timer : TimerWait :=
+def root : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:root"⟩, 1⟩
+def child : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:child"⟩, 1⟩
+def reminder : OccurrenceId := ⟨⟨"Instance"⟩, ⟨"Reminder"⟩, 3⟩
+def timer : TimerWait :=
   { processInstanceId := root.processInstanceId, owner := root, elementId := ⟨"Reminder"⟩,
     activation := 3, deadlineMs := 3000, output := ⟨"place:reminder"⟩ }
-private def message (owner : ScopeOccurrenceId) (activation : Nat) : MessageWait :=
+def message (owner : ScopeOccurrenceId) (activation : Nat) : MessageWait :=
   { processInstanceId := root.processInstanceId, owner, elementId := ⟨"Handler"⟩, activation,
     channel := .directMessage ⟨"Handler"⟩, output := ⟨"place:handled"⟩ }
-private def record : ActivityOccurrence :=
+def record : ActivityOccurrence :=
   { processInstanceId := root.processInstanceId, activityElementId := ⟨"Child"⟩,
     activation := 7, owner := root, body := .childScope child, attachedHandlers := [.timer reminder] }
-private def state : RuntimeState :=
+def state : RuntimeState :=
   { initialState with
     control := .running root.processInstanceId
     scopeOccurrences := [{ id := root, parent := none }, { id := child, parent := some root }]

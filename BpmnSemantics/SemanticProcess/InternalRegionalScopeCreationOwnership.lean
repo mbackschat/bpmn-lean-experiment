@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 
 /-! Independent scope creation retains its new scope under the regional removal mask. Exact arbitrary-owner classifiers preserve all reference and local-data masks, including historical owners and attached-handler withdrawals. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,40 +1,44 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Bounded Transaction source and Program admission
 
 The Transaction cancellation capsule selects two finite Task chains by role. Neither reader compares a model with fixture identities or gives the profile a different transition meaning.
 -/
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 abbrev transactionCancellationCheckpointProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-transaction-cancellation-checkpoint-draft"⟩
 
-private def only? (xs : List α) : Option α :=
+def only? (xs : List α) : Option α :=
   match xs with | [x] => some x | _ => none
 
-private def exactSet [DecidableEq α] (xs ys : List α) : Bool :=
+def isNodupPermutation [DecidableEq α] (xs ys : List α) : Bool :=
   decide xs.Nodup && decide ys.Nodup && xs.length == ys.length && xs.all ys.contains
 
-private def descriptorValid (body : CheckedCompensationBody) : Bool :=
+def transactionDescriptorValid (body : CheckedCompensationBody) : Bool :=
   body.input == .empty && body.handlerElementId == body.effectElementId &&
     body.descriptor.protocol == "urn:bpmn-lean:effect-protocol:activity-v1" &&
     body.descriptor.operation == "urn:bpmn-lean:effect-operation:compensation-single-effect-v1"
 
-private def nodeOwner? (s : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
+def uniqueNodeOwner? (s : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
   (only? (s.nodeScopes.filter (·.nodeId == id))).map (·.scopeId)
 
-private def outgoing (s : CheckedProcess) (id : NodeId) : List CheckedSequenceFlow :=
+def outgoing (s : CheckedProcess) (id : NodeId) : List CheckedSequenceFlow :=
   s.sequenceFlows.filter (·.sourceId == id)
 
-private def next? (s : CheckedProcess) (id : NodeId) : Option NodeId :=
+def next? (s : CheckedProcess) (id : NodeId) : Option NodeId :=
   (only? (outgoing s id)).map (·.targetId)
 
-private def checkedChain (s : CheckedProcess) (child : DefinitionScopeId) :
+def checkedChain (s : CheckedProcess) (child : DefinitionScopeId) :
     Nat → NodeId → Option (List NodeId × NodeId)
   | 0, _ => none
   | fuel + 1, id => do
       let node ← only? (s.nodes.filter (·.id == id))
-      if nodeOwner? s id != some child then none else
+      if uniqueNodeOwner? s id != some child then none else
       match node with
       | .userTask _ _ none =>
           let next ← next? s id
@@ -54,8 +58,8 @@ def transactionCancellationCheckedGraph (s : CheckedProcess) : Bool := Id.run do
     | .cancelBoundaryEvent .. => true | _ => false) | return false
   let some (.cancelEndEvent cancel) := only? (s.nodes.filter fun
     | .cancelEndEvent .. => true | _ => false) | return false
-  let rootNodes := s.nodes.filter (fun n => nodeOwner? s n.id == some root.id)
-  let childNodes := s.nodes.filter (fun n => nodeOwner? s n.id == some child.id)
+  let rootNodes := s.nodes.filter (fun n => uniqueNodeOwner? s n.id == some root.id)
+  let childNodes := s.nodes.filter (fun n => uniqueNodeOwner? s n.id == some child.id)
   let some (.noneStartEvent rootStart) := only? (rootNodes.filter fun
     | .noneStartEvent .. => true | _ => false) | return false
   let some (.noneStartEvent childStart) := only? (childNodes.filter fun
@@ -79,21 +83,21 @@ def transactionCancellationCheckedGraph (s : CheckedProcess) : Bool := Id.run do
     s.sequenceFlows.map (·.id.value) ++ [compensationBoundary.value, body.handlerElementId.value]
   return s.identity.semanticProfile == transactionCancellationCheckpointProfileId &&
     s.identity.sourceOverlay.isNone && s.compensation.isNone &&
-    exactSet s.definitionScopes [root, child] &&
+    isNodupPermutation s.definitionScopes [root, child] &&
     root.originElementId.value == s.processId.value && root.id.value == "scope:" ++ s.processId.value &&
     child.id.value == "scope:" ++ transaction.value && child.id == childId &&
     child.parentScopeId == some root.id && child.originElementId == transaction &&
     method == "##Compensate" && attached == transaction &&
     d.definitionScopeId == child.id && d.triggerElementId == cancel &&
-    exactSet (rootNodes.map (·.id)) [rootStart, transaction, boundary, ack, normalEnd, ackEnd] &&
-    exactSet rootEnds [normalEnd, ackEnd] &&
-    exactSet (childNodes.map (·.id)) ([childStart, split, cancel, childEnd] ++ tasks) &&
+    isNodupPermutation (rootNodes.map (·.id)) [rootStart, transaction, boundary, ack, normalEnd, ackEnd] &&
+    isNodupPermutation rootEnds [normalEnd, ackEnd] &&
+    isNodupPermutation (childNodes.map (·.id)) ([childStart, split, cancel, childEnd] ++ tasks) &&
     s.nodes.length == rootNodes.length + childNodes.length &&
-    exactSet (s.nodeScopes.map (·.nodeId)) (s.nodes.map (·.id)) &&
-    exactSet (s.sequenceFlowScopes.map (·.sequenceFlowId)) (s.sequenceFlows.map (·.id)) &&
+    isNodupPermutation (s.nodeScopes.map (·.nodeId)) (s.nodes.map (·.id)) &&
+    isNodupPermutation (s.sequenceFlowScopes.map (·.sequenceFlowId)) (s.sequenceFlows.map (·.id)) &&
     s.sequenceFlows.all (fun f => f.condition.isNone &&
-      nodeOwner? s f.sourceId == nodeOwner? s f.targetId &&
-      ((only? (s.sequenceFlowScopes.filter (·.sequenceFlowId == f.id))).map (·.scopeId)) == nodeOwner? s f.sourceId) &&
+      uniqueNodeOwner? s f.sourceId == uniqueNodeOwner? s f.targetId &&
+      ((only? (s.sequenceFlowScopes.filter (·.sequenceFlowId == f.id))).map (·.scopeId)) == uniqueNodeOwner? s f.sourceId) &&
     next? s rootStart == some transaction && next? s boundary == some ack &&
     (only? (outgoing s boundary)).map (·.id) == some output && next? s childStart == some split &&
     s.nodes.all (fun n =>
@@ -101,9 +105,9 @@ def transactionCancellationCheckedGraph (s : CheckedProcess) : Bool := Id.run do
         (if [rootStart, childStart, boundary].contains n.id then 0 else 1)) &&
     ([normalEnd, ackEnd, cancel, childEnd].all fun id => (outgoing s id).isEmpty) &&
     !lt.isEmpty && !rt.isEmpty && lt.length ≤ 2 && rt.length ≤ 2 &&
-    exactSet [le, re] [cancel, childEnd] && exactSet (lt ++ rt) tasks &&
+    isNodupPermutation [le, re] [cancel, childEnd] && isNodupPermutation (lt ++ rt) tasks &&
     s.sequenceFlows.length == tasks.length + 7 && ordinaryTasks.contains eligible &&
-    descriptorValid body && identities.all nonempty && decide identities.Nodup &&
+    transactionDescriptorValid body && identities.all nonempty && decide identities.Nodup &&
     d.retentionLimits == { maxRecords := 1, maxCanonicalBytes := 4096 } &&
     d.executionLimits == { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 20480 }
 
@@ -113,27 +117,27 @@ def transactionSourceAbsent (s : CheckedProcess) : Bool :=
     | .transactionSubProcess .. | .cancelEndEvent .. | .cancelBoundaryEvent .. => false
     | _ => true
 
-private def opOwner? (p : Program) (id : OperationId) : Option DefinitionScopeId :=
+def opOwner? (p : Program) (id : OperationId) : Option DefinitionScopeId :=
   (only? (p.operationScopes.filter (·.operationId == id))).map (·.scopeId)
 
-private def placeOwner? (p : Program) (id : ControlPlaceId) : Option DefinitionScopeId :=
+def uniquePlaceOwner? (p : Program) (id : ControlPlaceId) : Option DefinitionScopeId :=
   (only? (p.controlPlaceScopes.filter (·.controlPlaceId == id))).map (·.scopeId)
 
-private def input? : SemanticOperation → Option ControlPlaceId
+def input? : SemanticOperation → Option ControlPlaceId
   | .enterScope _ _ input _ _ | .awaitUserTask _ _ input _ _
   | .duplicate _ _ input _ | .cancelTransaction _ _ _ input _ _
   | .reachNoneEnd _ _ input => some input
   | _ => none
 
-private def consumer? (p : Program) (place : ControlPlaceId) : Option SemanticOperation :=
+def transactionConsumer? (p : Program) (place : ControlPlaceId) : Option SemanticOperation :=
   only? (p.operations.filter (fun op => input? op == some place))
 
-private def programChain (p : Program) (child : DefinitionScopeId) :
+def programChain (p : Program) (child : DefinitionScopeId) :
     Nat → ControlPlaceId → Option (List SemanticOperation × List ControlPlaceId)
   | 0, _ => none
   | fuel + 1, place => do
-      if placeOwner? p place != some child then none else
-      let op ← consumer? p place
+      if uniquePlaceOwner? p place != some child then none else
+      let op ← transactionConsumer? p place
       if opOwner? p op.id != some child then none else
       match op with
       | .awaitUserTask _ _ _ output task =>
@@ -143,7 +147,7 @@ private def programChain (p : Program) (child : DefinitionScopeId) :
       | .reachNoneEnd .. | .cancelTransaction .. => pure ([op], [place])
       | _ => none
 
-private def canonicalOperation (op : SemanticOperation) : Bool :=
+def canonicalOperation (op : SemanticOperation) : Bool :=
   match op with
   | .completeScope id origin scope _ =>
       id.value == "operation:complete-scope:" ++ scope.value && nonempty origin.elementId.value
@@ -162,8 +166,8 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
   let some child := only? (p.definitionScopes.filter (·.parentScopeId.isSome)) | return false
   let some start@(.initiate _ _ first) := only? (p.operations.filter fun
     | .initiate .. => true | _ => false) | return false
-  let some entry@(.enterScope _ transaction _ childEntry childId) := consumer? p first | return false
-  let some split@(.duplicate _ _ _ outputs) := consumer? p childEntry | return false
+  let some entry@(.enterScope _ transaction _ childEntry childId) := transactionConsumer? p first | return false
+  let some split@(.duplicate _ _ _ outputs) := transactionConsumer? p childEntry | return false
   let [left, right] := outputs | return false
   let some cancel@(.cancelTransaction cancelId _ cancelScope _ cancelOutput cancelBoundary) := only? (p.operations.filter fun
     | .cancelTransaction .. => true | _ => false) | return false
@@ -171,9 +175,9 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
     | .completeScope _ _ scope _ => scope == root.id | _ => false) | return false
   let some childComplete@(.completeScope _ childOrigin _ (some normalOutput)) := only? (p.operations.filter fun
     | .completeScope _ _ scope _ => scope == child.id | _ => false) | return false
-  let some normalEnd@(.reachNoneEnd ..) := consumer? p normalOutput | return false
-  let some ack@(.awaitUserTask _ _ _ ackOutput _) := consumer? p cancelOutput | return false
-  let some ackEnd@(.reachNoneEnd ..) := consumer? p ackOutput | return false
+  let some normalEnd@(.reachNoneEnd ..) := transactionConsumer? p normalOutput | return false
+  let some ack@(.awaitUserTask _ _ _ ackOutput _) := transactionConsumer? p cancelOutput | return false
+  let some ackEnd@(.reachNoneEnd ..) := transactionConsumer? p ackOutput | return false
   let some (lo, lp) := programChain p child.id 3 left | return false
   let some (ro, rp) := programChain p child.id 3 right | return false
   let some retention := p.compensationActivityRetention | return false
@@ -200,21 +204,21 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
   return p.identity.semanticProfile == transactionCancellationCheckpointProfileId &&
     p.identity.compiler == .bpmnSourceSemanticProcess && p.identity.sourceOverlay.isNone &&
     p.internalSchedulingMode == .rejectObservableChoice &&
-    exactSet p.definitionScopes [root, child] &&
+    isNodupPermutation p.definitionScopes [root, child] &&
     root.id.value == "scope:" ++ p.processId.value && root.originElementId.value == p.processId.value &&
     child.id.value == "scope:" ++ transaction.elementId.value && child.id == childId &&
     child.parentScopeId == some root.id && child.originElementId == transaction.elementId &&
     rootOrigin.elementId == root.originElementId && childOrigin.elementId == child.originElementId &&
     cancelScope == child.id &&
-    exactSet p.operations visited && p.operations.all canonicalOperation &&
-    exactSet (p.operationScopes.map (·.operationId)) (p.operations.map (·.id)) &&
+    isNodupPermutation p.operations visited && p.operations.all canonicalOperation &&
+    isNodupPermutation (p.operationScopes.map (·.operationId)) (p.operations.map (·.id)) &&
     ([start, entry, rootComplete, normalEnd, ack, ackEnd].all fun op => opOwner? p op.id == some root.id) &&
     opOwner? p split.id == some child.id && opOwner? p childComplete.id == some child.id &&
-    exactSet (p.controlPlaces.map (·.id)) places &&
-    exactSet (p.controlPlaceScopes.map (·.controlPlaceId)) places &&
+    isNodupPermutation (p.controlPlaces.map (·.id)) places &&
+    isNodupPermutation (p.controlPlaceScopes.map (·.controlPlaceId)) places &&
     p.controlPlaces.all (fun place => place.id.value == "place:" ++ place.origin.elementId.value) &&
-    ([first, normalOutput, cancelOutput, ackOutput].all fun place => placeOwner? p place == some root.id) &&
-    placeOwner? p childEntry == some child.id &&
+    ([first, normalOutput, cancelOutput, ackOutput].all fun place => uniquePlaceOwner? p place == some root.id) &&
+    uniquePlaceOwner? p childEntry == some child.id &&
     2 ≤ ordinaryBranch.length && ordinaryBranch.length ≤ 3 &&
     2 ≤ cancelBranch.length && cancelBranch.length ≤ 3 &&
     (taskIds ordinaryBranch).contains eligible.value && !(taskIds cancelBranch).contains eligible.value &&
@@ -234,12 +238,12 @@ namespace TransactionProgramRoles
 
 /-- These projections expose the admission reader's roles without a second graph traversal. -/
 def operationOwner? := opOwner?
-def controlPlaceOwner? := placeOwner?
+def controlPlaceOwner? := uniquePlaceOwner?
 def operationInput? := input?
-def soleConsumer? := consumer?
+def soleConsumer? := transactionConsumer?
 def taskChain? := programChain
 def unique? := @only?
-def exactInventory := @exactSet
+def exactInventory := @isNodupPermutation
 def canonical := canonicalOperation
 
 def endsNormally (operations : List SemanticOperation) : Bool :=

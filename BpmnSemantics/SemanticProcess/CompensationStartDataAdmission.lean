@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
-import BpmnSemantics.SemanticProcess.ValueDomain
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Compensation checkpoint start-data admission
 
 This module projects the exact activation-one promoted snapshot and first compensation frontier before start. It derives every identity from the immutable Program and reuses the production snapshot, trigger, frontier, and canonical-byte constructors.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -18,14 +22,14 @@ structure CompensationStartCapacityProjection where
   executionCanonicalBytes : Nat
   deriving Repr, DecidableEq
 
-private def restoredSourceNames : List CompensationSubjectDefinition → List String
+def restoredSourceNames : List CompensationSubjectDefinition → List String
   | [] => []
   | subject :: rest =>
       match subject.body.input with
       | .empty => restoredSourceNames rest
       | .restoredProcessBinding sourceName _ => sourceName :: restoredSourceNames rest
 
-private def eventSubjectRetentions? (program : Program) (root : ScopeOccurrenceId)
+def eventSubjectRetentions? (program : Program) (root : ScopeOccurrenceId)
     (bindings : List VariableBinding) :
     List CompensationSubjectDefinition → Option (List CompensationParentContextRetention)
   | [] => some []
@@ -43,7 +47,7 @@ private def eventSubjectRetentions? (program : Program) (root : ScopeOccurrenceI
       let remaining ← eventSubjectRetentions? program root bindings rest
       pure (.promoted parent handlerScopeId snapshot :: remaining)
 
-private def selectedProjectedSubjects? (instanceId : SemanticId)
+def selectedProjectedSubjects? (instanceId : SemanticId)
     (retentions : List CompensationParentContextRetention) :
     List CompensationSubjectDefinition → Option (List SelectedCompensationSubject)
   | [] => some []
@@ -68,7 +72,7 @@ private def selectedProjectedSubjects? (instanceId : SemanticId)
            occurrence := .eventSubProcess retention.1.id
            restoredContext := some retention.2 } :: remaining)
 
-private def compensationTriggerOperation? (program : Program)
+def compensationTriggerOperation? (program : Program)
     (declaration : CompensationExecutionDeclaration) : Option SemanticOperation :=
   match program.operations.filter fun operation => operation.id == declaration.triggerOperationId with
   | [operation@(.triggerCompensation ..)] => some operation

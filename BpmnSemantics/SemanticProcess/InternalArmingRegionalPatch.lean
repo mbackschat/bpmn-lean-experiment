@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
-import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+public import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
 
 /-! Exact pair equality requires canonical list order, including continuation-token
 insertion and owner-filtered cancellation, rather than equality of memberships. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

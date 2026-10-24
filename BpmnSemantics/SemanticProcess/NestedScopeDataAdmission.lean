@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.EffectDataAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Nested scope-data profile admission
 
@@ -12,6 +14,8 @@ availability scan needs; the walk is analysis evidence, never serialized executa
 
 Mapping grammar, name policy and literal bounds are `SerialBusinessTask`'s and `EffectData`'s.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -27,6 +31,11 @@ def declarationLimit : Nat := 8
 
 /-- User Tasks admitted on a called Process's serial path (CVM-ADMIT-01). -/
 def calledTaskLimit : Nat := 3
+
+/-- CALLN-ADMIT-01's Stage B: up to two Calls, each on the root path or at most two Sub-Processes deep. -/
+def callLimit : Nat := 2
+
+def callDepthLimit : Nat := 2
 
 inductive Kind where
   | start
@@ -114,44 +123,47 @@ def calledPathValid (vertices : List Vertex) (visited : List String) : Bool :=
   kinds.length == visited.length && 1 ≤ tasks && tasks ≤ calledTaskLimit &&
     kinds.all fun kind => kind == .start || kind == .human || kind == .finish
 
-/-- Walks one scope's serial path from `id`, returning its accesses and every visited vertex.
-Recursion depth is bounded by `fuel`, which the caller sets above the vertex count. -/
+/-- Walks one scope's serial path from `id`, returning its accesses, the caller tree's visited
+vertices, each once, and every called body's vertices, once per call site. Recursion depth is
+bounded by `fuel`, which the caller sets above the vertex count. -/
 def walk (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List DefinitionScope) :
-    Nat → Nat → List (List String) → String → String → Option (List Access × List String)
+    Nat → Nat → List (List String) → String → String →
+      Option (List Access × List String × List String)
   | 0, _, _, _, _ => none
   | fuel + 1, depth, frames, scope, id => do
       let v ← StructuredComposition.unique? (vertices.filter (·.id == id))
       if v.scope != scope then none else
       match v.kind, v.outputs with
-      | .finish, [] => some ([], [v.id])
+      | .finish, [] => some ([], [v.id], [])
       | .start, [next] | .human, [next] => do
-          let (accesses, visited) ← walk vertices records scopes fuel depth frames scope next
-          some (accesses, v.id :: visited)
+          let (accesses, visited, called) ← walk vertices records scopes fuel depth frames scope next
+          some (accesses, v.id :: visited, called)
       | .service, [next] => do
-          let (accesses, visited) ← walk vertices records scopes fuel depth frames scope next
+          let (accesses, visited, called) ← walk vertices records scopes fuel depth frames scope next
           some (v.reads.map (Access.read · frames) ++ v.writes.map (Access.write · frames) ++ accesses,
-            v.id :: visited)
+            v.id :: visited, called)
       | .subProcess child entry origin, [next] => do
           if depth ≥ depthLimit || !childScopeValid scopes scope child origin then none else do
           let inputs := ((recordOf records child).map (·.localInputs)).getD []
           let outputs := ((recordOf records child).map (·.localOutputs)).getD []
-          let (inner, innerVisited) ←
+          let (inner, innerVisited, innerCalled) ←
             walk vertices records scopes fuel (depth + 1) (inputs.map (·.target) :: frames) child entry
-          let (accesses, visited) ← walk vertices records scopes fuel depth frames scope next
+          let (accesses, visited, called) ← walk vertices records scopes fuel depth frames scope next
           some ((readNames inputs).map (Access.read · frames) ++ inner ++
               outputs.map (fun mapping => Access.write mapping.target frames) ++ accesses,
-            v.id :: innerVisited ++ visited)
-      -- CVM-ADMIT-01 keeps the Call on the root path (depth 0): the internal-batch and cancellation
-      -- proofs rest on Call callers being Process roots, and lifting that premise is PC-SCOPE-05's.
-      -- The called instance has no parent scope, so its walk starts with no enclosing frame.
+            v.id :: innerVisited ++ visited, innerCalled ++ called)
+      -- CALLN-ADMIT-01's Stage B: a Call on the root path or at most `callDepthLimit` Sub-Processes
+      -- deep. Its inputs read and its outputs write along the enclosing `frames`, so a Call inside a
+      -- Sub-Process resolves through that Sub-Process's chain (CALLN-FRAME-01). The called instance
+      -- has no parent scope, so its walk starts with no enclosing frame (CVM-ISOLATE-01).
       | .call calledScope entry calledProcess inputs outputs, [next] => do
-          if depth != 0 || !calledScopeValid scopes calledScope calledProcess then none else do
-          let (_, innerVisited) ← walk vertices records scopes fuel depth [] calledScope entry
+          if depth > callDepthLimit || !calledScopeValid scopes calledScope calledProcess then none else do
+          let (_, innerVisited, _) ← walk vertices records scopes fuel depth [] calledScope entry
           if !calledPathValid vertices innerVisited then none else do
-          let (accesses, visited) ← walk vertices records scopes fuel depth frames scope next
+          let (accesses, visited, called) ← walk vertices records scopes fuel depth frames scope next
           some ((readNames inputs).map (Access.callInput · frames) ++
               outputs.map (fun mapping => Access.callOutput mapping.target frames) ++ accesses,
-            v.id :: innerVisited ++ visited)
+            v.id :: visited, innerVisited ++ called)
       | _, _ => none
 
 /-- NSD-AVAILABLE-01: a read is available when an enclosing frame declares it or an earlier definite
@@ -181,8 +193,9 @@ def optionalCallNames : List Access → List String → List String
       optionalCallNames rest (if frames.any (·.contains name) then produced else name :: produced)
   | .read .. :: rest, produced => optionalCallNames rest produced
 
-/-- Every vertex is visited exactly once from the root's entry, the scope list holds the root, one
-child per Sub-Process and one called root per Call (at most one), and every record keys a
+/-- Every caller vertex is visited exactly once from the root's entry and every called vertex is
+walked from some Call, the two disjoint; the scope list holds the root, one child per Sub-Process and
+one called root for the Calls, at most `callLimit` of one called definition; and every record keys a
 Sub-Process scope. -/
 def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List DefinitionScope)
     (root entry : String) (handlers : List String) : Option Analysis := do
@@ -192,17 +205,21 @@ def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : L
   let calls := vertices.filterMap fun v => match v.kind with
     | .call calledScope _ _ inputs outputs => some (calledScope, inputs, outputs)
     | _ => none
+  let calledScopes := (calls.map (·.1)).eraseDups
   let roots := (scopes.filter (·.parentScopeId.isNone)).map (·.id.value)
-  if !(scopes.length == children.length + calls.length + 1 && !children.isEmpty && calls.length ≤ 1 &&
-      roots.length == calls.length + 1 && roots.contains root &&
+  if !(scopes.length == children.length + calledScopes.length + 1 && !children.isEmpty &&
+      calls.length ≤ callLimit && calledScopes.length ≤ 1 &&
+      roots.length == calledScopes.length + 1 && roots.contains root &&
       calls.all (fun (calledScope, inputs, outputs) =>
         calledScope != root && variableMappingsValid inputs outputs && callMappingsAdmitted handlers inputs outputs) &&
       strictlySortedStrings (records.map (·.scopeId.value)) &&
       records.all (fun record => children.contains record.scopeId.value && recordValid handlers record))
   then none
   else do
-    let (accesses, visited) ← walk vertices records scopes (vertices.length + 1) 0 [] root entry
-    if visited.length != vertices.length || visited.eraseDups.length != visited.length then none
+    let (accesses, visited, called) ← walk vertices records scopes (vertices.length + 1) 0 [] root entry
+    let calledVertices := called.eraseDups
+    if visited.eraseDups.length != visited.length || visited.any calledVertices.contains ||
+        visited.length + calledVertices.length != vertices.length then none
     else some { accesses, required := (requiredReads accesses []).eraseDups,
                 optional := if calls.isEmpty then none else some (optionalCallNames accesses []).eraseDups }
 
@@ -228,18 +245,18 @@ def serviceValid (handlers : List String) (descriptor : EffectDescriptor)
 
 /-- `CheckedGraphValidation` owns the general lookup but sits above the profile catalog; this one also
 refuses a node with more than one owner. -/
-private def checkedNodeScope? (source : CheckedProcess) (nodeId : NodeId) : Option DefinitionScopeId := do
+def dataCheckedNodeScope? (source : CheckedProcess) (nodeId : NodeId) : Option DefinitionScopeId := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId
 
-private def checkedStart? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
+def checkedStart? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
   StructuredComposition.unique? (source.nodes.filterMap fun node => match node with
-    | .noneStartEvent id => if checkedNodeScope? source id == some scope then some id else none
+    | .noneStartEvent id => if dataCheckedNodeScope? source id == some scope then some id else none
     | _ => none)
 
 def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Vertex := do
   let id := node.id.value
-  let scope ← checkedNodeScope? source node.id
+  let scope ← dataCheckedNodeScope? source node.id
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
   let handlers := SerialBusinessTask.checkedHandlers source
   match node with
@@ -277,12 +294,12 @@ def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
     analyze (← source.nodes.mapM (checkedVertex? source)) source.scopeLocalData source.definitionScopes
       root.id.value entry.value (SerialBusinessTask.checkedHandlers source)
 
-private def operationScope? (program : Program) (operation : SemanticOperation) : Option String := do
+def dataOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique?
     (program.operationScopes.filter (·.operationId == operation.id))
   return owner.scopeId.value
 
-private def childCompletion? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId :=
+def childCompletion? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId :=
   match program.operations.filter (fun op => match op with
       | .completeScope _ _ scopeId _ => scopeId == child
       | _ => false) with
@@ -301,7 +318,7 @@ def consumer? (program : Program) (place : ControlPlaceId) : Option String := do
 
 def operationVertex? (program : Program) (operation : SemanticOperation) : Option Vertex := do
   let id := operation.id.value
-  let scope ← operationScope? program operation
+  let scope ← dataOperationScope? program operation
   let consumer := consumer? program
   let handlers := SerialBusinessTask.programHandlers program
   match operation with

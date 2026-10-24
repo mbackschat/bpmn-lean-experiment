@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalRetention
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalRetention
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
 
 /-! The new Activity references its jointly inserted task and Message, which the regional mask retains.
 Existing retained locals keep their exact record census because preparation forbids Activity aliases.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

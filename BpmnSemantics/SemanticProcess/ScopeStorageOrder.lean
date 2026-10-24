@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Scope occurrence and remaining activation-counter order laws
 
@@ -6,6 +8,8 @@ Scope insertion uses the complete owner key already used by tokens. Counter repl
 every other key and its high-water value. These collection laws are prerequisites for regional
 preparation, not a proof that any regional transition can already enter a production batch.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

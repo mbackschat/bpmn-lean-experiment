@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 
 /-! Mixed local-control and arming read frames follow the complete predecessor account in the
 [Internal Commutation proposal](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

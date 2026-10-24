@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 
 /-! # Structural frames of actual parallel command replay
 
 PMIS-END-01 uses actual replay provenance and the shared root frame independently
 of pre-entry reachability and graph-progress proof consumers.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

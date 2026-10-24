@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
 
 /-! # Complete frontier member reservation
 
@@ -6,6 +8,8 @@ PMIS-SELECT-01 reserves every discovered occurrence against one predecessor.
 Discovery supplies actual native applications and bounds every partial cohort;
 reservation totality must precede the independent collective acceptance checks.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

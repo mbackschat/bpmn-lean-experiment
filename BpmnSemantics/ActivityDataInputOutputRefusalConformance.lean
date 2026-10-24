@@ -1,10 +1,14 @@
-import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
+module
+
+public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 
 /-! # Composed Activity data-input/output refusal conformance
 
 Whole-state and direct-transition refusal decisions over the shared claim fixture. The separate
 owner prevents malformed-state reductions from accumulating with successful lifetime proofs.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -13,7 +17,7 @@ namespace BpmnSemantics.ActivityDataInputOutputConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def withExtraComposedDeclarations (count : Nat) : Program :=
+def withExtraComposedDeclarations (count : Nat) : Program :=
   { claimProgram with
     operations := claimProgram.operations ++
       (List.replicate count (claimProgram.operations.filter fun
@@ -60,11 +64,11 @@ theorem twoOutputsRefuseWithExactStatePreservation :
       refused active := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
-private def copiedScope : ActivityVariableScope :=
+def copiedScope : ActivityVariableScope :=
   { owner := .activityOccurrence claimActivityOwner
     bindings := [{ name := claimDirectInput.targetDataInputId, value := summary.value }] }
 
-private def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
+def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
   { active with variables := { active.variables with activities := scopes } }
 
 /-- `ADIO-SCOPE-01` and `ADIO-REFUSE-01`: two scopes for one Activity cannot be resolved by order. -/
@@ -96,25 +100,25 @@ theorem booleanLocalValueRefusesWithExactStatePreservation :
       refused (withLocalScopes [malformed]) := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
-private def foreignClaimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_foreign"⟩
+def foreignClaimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_foreign"⟩
 
-private def wrongClaimScopeOwner : ScopeOccurrenceId :=
+def wrongClaimScopeOwner : ScopeOccurrenceId :=
   { processInstanceId := claimInstanceId
     definitionScopeId := ⟨"scope:wrong"⟩
     activation := 1 }
 
-private def wrongOutputActive : RuntimeState :=
+def wrongOutputActive : RuntimeState :=
   { active with
     waits := active.waits.map fun wait =>
       { wait with output := ⟨"place:Flow_ClaimReceived_Assess"⟩ } }
 
-private def wrongStaticScopeActive : RuntimeState :=
+def wrongStaticScopeActive : RuntimeState :=
   { active with
     waits := active.waits.map fun wait => { wait with owner := wrongClaimScopeOwner }
     activityOccurrences := active.activityOccurrences.map fun record =>
       { record with owner := wrongClaimScopeOwner } }
 
-private def wrongWaitProcessActive : RuntimeState :=
+def wrongWaitProcessActive : RuntimeState :=
   { active with
     waits := active.waits.map fun wait => { wait with processInstanceId := foreignClaimInstanceId }
     activityOccurrences := active.activityOccurrences.map fun record =>
@@ -124,7 +128,7 @@ private def wrongWaitProcessActive : RuntimeState :=
             elementId := ⟨"UserTask_AssessClaim"⟩
             activation := 1 } } }
 
-private def wrongRecordProcessActive : RuntimeState :=
+def wrongRecordProcessActive : RuntimeState :=
   { active with
     activityOccurrences := active.activityOccurrences.map fun record =>
       { record with processInstanceId := foreignClaimInstanceId }

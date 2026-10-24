@@ -12,9 +12,9 @@ import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 namespace BpmnSemantics.ParallelScopeGraphConformance
 open SemanticProcess
 
-private def origin (value : String) : BpmnElementOrigin := { elementId := ⟨value⟩ }
+def origin (value : String) : BpmnElementOrigin := { elementId := ⟨value⟩ }
 
-private def operations : List SemanticOperation :=
+def operations : List SemanticOperation :=
   [ .initiate ⟨"start"⟩ (origin "Start") ⟨"incoming"⟩
   , .enterParallelMultiInstanceScope ⟨"enter"⟩ (origin "Batch")
       ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none
@@ -24,9 +24,9 @@ private def operations : List SemanticOperation :=
   , .reachNoneEnd ⟨"end"⟩ (origin "End") ⟨"outgoing"⟩
   , .completeScope ⟨"root-complete"⟩ (origin "P") ⟨"root"⟩ none ]
 
-private def places : List String := ["incoming", "outgoing", "body-in", "body-out"]
+def places : List String := ["incoming", "outgoing", "body-in", "body-out"]
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"cibseven-2.2.0-parallel-multi-instance-subprocess-draft"⟩
@@ -45,7 +45,7 @@ private def program : Program :=
     controlPlaces := places.map fun place => { id := ⟨place⟩, origin := { elementId := ⟨place⟩ } }
     operations }
 
-private def replacing (id : String) (replacement : SemanticOperation) : Program :=
+def replacing (id : String) (replacement : SemanticOperation) : Program :=
   { program with operations := operations.map fun operation => if operation.id.value == id then replacement else operation }
 
 theorem parallel_source_graph_policy_does_not_admit_execution :
@@ -86,7 +86,7 @@ theorem parallel_completion_cannot_bind_sequential_entry : programGraphWellForme
     (replacing "enter" (.enterSequentialMultiInstanceScope ⟨"enter"⟩ (origin "Batch")
       ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none)) = false := by decide +kernel
 
-private def checkedParallel : CheckedProcess :=
+def checkedParallel : CheckedProcess :=
   { identity :=
       { semanticProfile := program.identity.semanticProfile
         sourceId := program.identity.sourceId
@@ -124,7 +124,7 @@ theorem checked_parallel_lowering_keeps_pair_and_data :
   · decide +kernel
   · decide +kernel
 
-private def checkedMixed : CheckedProcess :=
+def checkedMixed : CheckedProcess :=
   { checkedParallel with
     identity := { checkedParallel.identity with sourceOverlay := some { id := ⟨"handlers"⟩, sha256 := "private-overlay" } }
     nodes := checkedParallel.nodes ++ [.serviceTask ⟨"Validate"⟩
@@ -141,7 +141,7 @@ theorem private_checked_admission_retains_both_task_kinds_and_execution_refusal 
     ParallelScopeChecked.admitted checkedParallel = false ∧
     programProfileCapabilitiesValid (lowerCheckedProcess checkedMixed) = false := by decide +kernel
 
-private def startBindings (count : Nat) : List VariableBinding :=
+def startBindings (count : Nat) : List VariableBinding :=
   [⟨"done", .boolean false⟩, ⟨"items", .stringList (List.replicate count "same")⟩, ⟨"seed", .null⟩]
 
 theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
@@ -150,7 +150,7 @@ theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 17) = none ∧
     ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none := by decide +kernel
 
-private def rawCapacityProgram : Program :=
+def rawCapacityProgram : Program :=
   lowerCheckedProcess { checkedMixed with
     definitionScopes := checkedMixed.definitionScopes.reverse
     identity := { checkedMixed.identity with
@@ -183,7 +183,7 @@ theorem private_raw_parallel_capacity_checks_the_original_decoded_program :
       startEventId := ⟨"ChildStart"⟩, channel := .operationMessage ⟨"I"⟩ ⟨"O"⟩ ⟨"M"⟩,
       childEntry := ⟨"body-in"⟩ }] } (startBindings 2) = none := by decide +kernel
 
-private def commandWaitingState? : Option RuntimeState := do
+def commandWaitingState? : Option RuntimeState := do
   let started := admitStimulus rawCapacityProgram initialState
     (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 2))
   if started.outcome != .committed then none else pure ()
@@ -198,7 +198,7 @@ private def commandWaitingState? : Option RuntimeState := do
   let body ← entered.scopeOccurrences.find? (fun scope => scope.id.definitionScopeId == entry.childScopeId)
   InternalCommutation.applyInternalOperationOccurrence? rawCapacityProgram entered ⟨task.id, body.id⟩
 
-private def commandResume? (change : RuntimeState → RuntimeState) : Option (CommandOutcome × Option Nat) := do
+def commandResume? (change : RuntimeState → RuntimeState) : Option (CommandOutcome × Option Nat) := do
   let waiting ← commandWaitingState?
   let [wait] := waiting.waits | none
   let state := change waiting
@@ -207,25 +207,25 @@ private def commandResume? (change : RuntimeState → RuntimeState) : Option (Co
   pure ((admitStimulus rawCapacityProgram state stimulus).outcome,
     (ParallelScopeStart.programStateCapacity rawCapacityProgram state).map (·.closureBound))
 
-private def strayScopeFrame (state : RuntimeState) : RuntimeState :=
+def strayScopeFrame (state : RuntimeState) : RuntimeState :=
   { state with variables := { state.variables with scopes := state.variables.scopes ++
     [⟨⟨⟨"invoices"⟩, ⟨"stray"⟩, 1⟩, []⟩] } }
 
-private def strayController (state : RuntimeState) : RuntimeState :=
+def strayController (state : RuntimeState) : RuntimeState :=
   { state with parallelScopeControllers := state.parallelScopeControllers ++
     [⟨⟨⟨"invoices"⟩, ⟨"stray"⟩, 1⟩, 1, 0⟩] }
 
-private def unissuedHumanWait (state : RuntimeState) : RuntimeState :=
+def unissuedHumanWait (state : RuntimeState) : RuntimeState :=
   { state with activations := state.activations.map fun row => { row with count := 0 } }
 
-private def cyclicParent (state : RuntimeState) : RuntimeState :=
+def cyclicParent (state : RuntimeState) : RuntimeState :=
   { state with scopeOccurrences := state.scopeOccurrences.map fun scope =>
     if scope.parent.isNone then { scope with parent := some scope.id } else scope }
 
 theorem private_parallel_resumption_uses_real_scoped_waits :
     commandResume? id = some (.committed, some 12) := by decide +kernel
 
-private def duplicateStorageCounters : List (RuntimeState → RuntimeState) :=
+def duplicateStorageCounters : List (RuntimeState → RuntimeState) :=
   [ fun state => { state with activations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
   , fun state => { state with messageActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
   , fun state => { state with timerActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
@@ -250,18 +250,18 @@ theorem private_parallel_start_capacity_refuses_all_duplicate_storage_counter_ke
           (admitStimulus rawCapacityProgram state start).state == state) = true := by
   decide +kernel
 
-private def assertRejectedResumption (name : String)
+def assertRejectedResumption (name : String)
     (variants : List (String × (RuntimeState → RuntimeState))) : IO Unit := do
   let actual := variants.map fun (label, change) => (label, commandResume? change)
   IO.println s!"{name}: {repr actual}"
   unless actual.all (fun result => result.2 == some (.rejected, none)) do
     throw (IO.userError s!"{name}: corrupted resumption was admitted")
 
-private def private_parallel_resumption_refuses_unrelated_population_rows : IO Unit :=
+def private_parallel_resumption_refuses_unrelated_population_rows : IO Unit :=
   assertRejectedResumption "private_parallel_resumption_refuses_unrelated_population_rows"
     [("stray-frame", strayScopeFrame), ("stray-controller", strayController)]
 
-private def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : IO Unit :=
+def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : IO Unit :=
   assertRejectedResumption "private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents"
     [("unissued-human", unissuedHumanWait), ("cyclic-parent", cyclicParent)]
 
@@ -273,7 +273,7 @@ theorem private_frontier_population_retains_serial_task_capacity :
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 16) = some ⟨16, 16⟩ ∧
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 17) = none := by decide +kernel
 
-private def nestedFrontier : List StructuredParallelBody.Vertex :=
+def nestedFrontier : List StructuredParallelBody.Vertex :=
   [⟨"start", .start, ["outer"]⟩, ⟨"outer", .fork, ["inner", "c"]⟩,
    ⟨"inner", .fork, ["a", "b"]⟩, ⟨"a", .task, ["innerJoin"]⟩, ⟨"b", .task, ["innerJoin"]⟩,
    ⟨"innerJoin", .join, ["join"]⟩, ⟨"c", .task, ["join"]⟩, ⟨"join", .join, ["d"]⟩,
@@ -286,12 +286,12 @@ theorem weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima :
     ParallelScopeStart.boundedFrontier 129 64 = none ∧
     ParallelScopeStart.boundedFrontier 128 65 = none := by decide +kernel
 
-private def parallelScopeNodeFields : List (String × Lean.Json) :=
+def parallelScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),
    ("childScopeId", .str "body"), ("collectionName", .str "items"),
    ("itemName", .str "item"), ("bodyInputs", .arr #[]), ("completionBooleanName", .null)]
 
-private def decodedNodes (fields : List (String × Lean.Json)) : Option (List CheckedNode) :=
+def decodedNodes (fields : List (String × Lean.Json)) : Option (List CheckedNode) :=
   let identity := Lean.Json.mkObj [("semanticProfile", .str "p"), ("sourceId", .str "s"),
     ("sourceOverlay", .null), ("sourceSha256", .str "x")]
   (SemanticProcessJson.decodeCheckedProcess (Lean.Json.mkObj [

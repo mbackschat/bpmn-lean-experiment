@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
-import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
-import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
+public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
+public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Transaction execution-phase invariant
 
 Exact initialization prefixes lead to the continuation invariant. Its live-scope, ownership and
 inactive-family facts are derived locally; no constructor assumes a frontier bound or runtime validity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

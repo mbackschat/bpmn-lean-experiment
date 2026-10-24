@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
 
 /-! # Parallel command scheduler success
 
@@ -6,6 +8,8 @@ Actual committed command provenance supplies discovery, selection and execution
 readiness through terminal completion. Fuel sufficiency and complete publication
 are separate obligations; this owner excludes the other scheduler failures.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

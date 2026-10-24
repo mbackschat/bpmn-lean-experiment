@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
 
 /-! # Declared Human and Service anchor freshness
 
@@ -6,6 +8,8 @@ PMIS-ADMIT-01 excludes Message and Timer declarations and separates Human from
 Service source keys. RSI-BIND-04 applies those facts to hosting-instance waits;
 the reservation bounds then exclude any ordinal above the issuing family's counter.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

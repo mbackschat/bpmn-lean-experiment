@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! SPC-CONTINUE-01 follows the actual evaluator from a committed start through internal steps and accepted or rejected User Task completions. Admission excludes foreign operation families; the control-unit bound is derived at start and preserved across those transitions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 

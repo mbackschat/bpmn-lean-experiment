@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.EventBasedGatewayFixtures
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.EventBasedGatewayFixtures
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Event-Based Gateway conformance
 
 This module owns the exact finite Message/Timer deferred-choice fixture and its checked semantic facts. It does not generalize to other trigger sets, repeated races, or simultaneous host readiness.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EventBasedGatewayConformance
 
@@ -135,7 +139,7 @@ theorem every_source_flow_is_classified_exactly_once :
       controlCount + configurationCount = 1 := by
   decide +kernel
 
-private def swapConfigurationOrigins : SemanticOperation → SemanticOperation
+def swapConfigurationOrigins : SemanticOperation → SemanticOperation
   | .awaitEventRace id origin input message timer =>
       .awaitEventRace id origin input
         { message with configurationOrigin := timer.configurationOrigin }
@@ -145,7 +149,7 @@ private def swapConfigurationOrigins : SemanticOperation → SemanticOperation
 def swappedConfigurationProgram : Program :=
   { program with operations := program.operations.map swapConfigurationOrigins }
 
-private def swapEventRaceOutputs : SemanticOperation → SemanticOperation
+def swapEventRaceOutputs : SemanticOperation → SemanticOperation
   | .awaitEventRace id origin input message timer =>
       .awaitEventRace id origin input
         { message with output := timer.output }
@@ -155,7 +159,7 @@ private def swapEventRaceOutputs : SemanticOperation → SemanticOperation
 def swappedOutputProgram : Program :=
   { program with operations := program.operations.map swapEventRaceOutputs }
 
-private def replaceEventRaceOrigin : SemanticOperation → SemanticOperation
+def replaceEventRaceOrigin : SemanticOperation → SemanticOperation
   | .awaitEventRace id _ input message timer =>
       .awaitEventRace id { elementId := ⟨"WrongEventGateway"⟩ } input message timer
   | operation => operation

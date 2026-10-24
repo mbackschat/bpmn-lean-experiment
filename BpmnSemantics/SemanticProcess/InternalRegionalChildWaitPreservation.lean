@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 
 /-! Complete wait-family preservation for child completion uses the existing validators.
 The selected withdrawal and quiescence discharge Timer-host and live-owner frames. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

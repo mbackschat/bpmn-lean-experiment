@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 
 /-! # Internal commutation open-projection preservation
 
 Combines the prepared-arm runtime preservation and occurrence-projector frame laws, leaving the
 public classifier and two-order commutation theorem in `InternalCommutation`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

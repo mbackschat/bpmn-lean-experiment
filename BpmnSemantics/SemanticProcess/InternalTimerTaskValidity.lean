@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 
 /-! Timer-task validity derives the inserted task's declaration from complete predecessor
 preparation; the shared User Task insertion law keeps the family census in its existing owner.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

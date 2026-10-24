@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.ProfileAdmission
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.ProfileAdmission
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 
 /-! # Composed Activity-data completion runtime-state preservation
 
 Completing the joined User Task removes one wait, Activity record, and Activity-local input scope,
 routes its output binding, and preserves the aggregate runtime-state predicate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -20,7 +24,7 @@ private theorem all_erase [BEq α] [LawfulBEq α] (predicate : α → Bool)
     List.all_eq_true.mp valid value (List.mem_of_mem_erase member)
 
 
-private def completionLexStep [DecidableEq α] (less : α → α → Bool)
+def completionLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then less left right else rest
 
@@ -74,7 +78,7 @@ private theorem completionLexStep_compose [DecidableEq α] (less : α → α →
             contradiction
         exact asymm a c (trans a b c ab bc)
 
-private def completionStringBefore (left right : String) : Bool := decide (left < right)
+def completionStringBefore (left right : String) : Bool := decide (left < right)
 
 private theorem completionString_total (left right : String) :
     left ≠ right → left < right ∨ right < left := by
@@ -98,7 +102,7 @@ private theorem completionStringBefore_trans (a b c : String) :
   simp only [completionStringBefore, decide_eq_true_eq]
   exact String.lt_trans
 
-private def completionTripleBefore (process element : α → String) (activation : α → Nat)
+def completionTripleBefore (process element : α → String) (activation : α → Nat)
     (left right : α) : Bool :=
   completionLexStep completionStringBefore (process left) (process right)
     (completionLexStep completionStringBefore (element left) (element right)

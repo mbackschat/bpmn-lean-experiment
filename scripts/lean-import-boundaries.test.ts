@@ -543,12 +543,21 @@ test("maintained executable roots have no declaration-based proof dependencies",
   assert.deepEqual(executableProofImportEdges(sources, roots), []);
 });
 
+/** Adds an import to a real library module, which a header form may only follow inside its `module` header. */
+function withImport(source: string, imported: string | undefined): string {
+  if (imported === undefined) return source;
+  const header = "module\n";
+  assert.ok(source.startsWith(header), "every library module opens with its module header");
+  return `${header}public import ${imported}\n${source.slice(header.length)}`;
+}
+
 test("declaration-based isolation detects real non-PMIS direct and indirect dependencies", () => {
   const runtime = "BpmnSemantics.SemanticProcess.ExecutionRuntime";
   const proof = "BpmnSemantics.SemanticProcess.CallDataStateLaws";
   const sources = ["ExecutionRuntime", "Scenario", "CallDataStateLaws"].map((name) => ({
     path: `BpmnSemantics/SemanticProcess/${name}.lean`,
-    source: `${name === "ExecutionRuntime" ? `import ${proof}\n` : name === "Scenario" ? `import ${runtime}\n` : ""}${readFileSync(`BpmnSemantics/SemanticProcess/${name}.lean`, "utf8")}`,
+    source: withImport(readFileSync(`BpmnSemantics/SemanticProcess/${name}.lean`, "utf8"),
+      name === "ExecutionRuntime" ? proof : name === "Scenario" ? runtime : undefined),
   }));
   const edge = `${runtime} -> ${proof}`;
   assert.deepEqual(executableProofImportEdges(sources, [runtime]), [edge]);
@@ -561,7 +570,7 @@ test("declaration-based isolation covers the existing private source runner", ()
   const roots = maintainedExecutableRoots(readFileSync("lakefile.toml", "utf8"));
   const sources = readWorktreeSources(worktreeLeanSourceFiles()).map((source) =>
     moduleName(source.path) === runner
-      ? { ...source, source: `import ${proof}\n${source.source}` }
+      ? { ...source, source: withImport(source.source, proof) }
       : source,
   );
   assert.deepEqual(executableProofImportEdges(sources, roots), [`${runner} -> ${proof}`]);

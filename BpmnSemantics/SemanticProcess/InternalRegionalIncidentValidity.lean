@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! Regional cleanup must retain an incident's suspended wait and exact local-data owner together.
 The incident validator requires a singleton local scope and excludes an open wait with the same
 identity, so arbitrary sublist retention alone cannot establish its preservation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

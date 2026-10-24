@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.ScopeCompletion
-import BpmnSemantics.SemanticProcess.ScopeVariableData
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.CollectionOrder
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.ScopeVariableData
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! PMIS-ENTER-01, PMIS-END-01 and PMIS-CANCEL-01: atomic population entry and exact quiescent retirement. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -69,7 +73,7 @@ def enterParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
             parallelScopeControllers := issued.parallelScopeControllers ++
               [⟨⟨parent.processInstanceId, ⟨entry.elementId.value⟩, activation⟩, items.length, 0⟩] }
 
-private def parallelRuntimeActivityId (record : ActivityOccurrence) : ActivityOccurrenceId :=
+def parallelRuntimeActivityId (record : ActivityOccurrence) : ActivityOccurrenceId :=
   ⟨record.processInstanceId, ⟨record.activityElementId.value⟩, record.activation⟩
 
 /-- Exact ownership and one local frame are required for every body, including nonselected siblings. -/
@@ -82,7 +86,7 @@ def parallelScopeBodyBound (entry : ParallelScopeEntry) (state : RuntimeState)
         (activityBodyScopeClaims candidate.body).contains scope).length = 1)
   | _ => false
 
-private def parallelCompletionCondition? (entry : ParallelScopeEntry) (state : RuntimeState) : Option Bool := do
+def parallelCompletionCondition? (entry : ParallelScopeEntry) (state : RuntimeState) : Option Bool := do
   match entry.completionBooleanName with
   | none => some false
   | some name =>

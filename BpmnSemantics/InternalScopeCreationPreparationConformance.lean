@@ -11,10 +11,10 @@ namespace BpmnSemantics.InternalScopeCreationPreparationConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def root : ScopeOccurrenceId :=
+def root : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance"⟩, definitionScopeId := ⟨"process"⟩, activation := 1 }
 
-private def before : RuntimeState :=
+def before : RuntimeState :=
   { initialState with
     control := .running root.processInstanceId
     scopeOccurrences := [{ id := root, parent := none }]
@@ -24,21 +24,21 @@ private def before : RuntimeState :=
     callActivations := [{ elementId := ⟨"call"⟩, count := 9 }]
     logicalTimeMs := 42 }
 
-private def childOperation : SemanticOperation :=
+def childOperation : SemanticOperation :=
   .enterScope ⟨"enter"⟩ ⟨⟨"subprocess"⟩⟩ ⟨"input"⟩ ⟨"entry"⟩ ⟨"child"⟩
 
-private def callOperation : SemanticOperation :=
+def callOperation : SemanticOperation :=
   .invokeProcess ⟨"invoke"⟩ ⟨⟨"call"⟩⟩ ⟨"input"⟩ ⟨"callee"⟩
     ⟨"called-root"⟩ ⟨"entry"⟩ ⟨"return"⟩
 
-private def childDefinition : DefinitionScope :=
+def childDefinition : DefinitionScope :=
   { id := ⟨"child"⟩, parentScopeId := some root.definitionScopeId,
     originElementId := ⟨"subprocess"⟩ }
 
-private def calledDefinition : DefinitionScope :=
+def calledDefinition : DefinitionScope :=
   { id := ⟨"called-root"⟩, parentScopeId := none, originElementId := ⟨"callee"⟩ }
 
-private def programFor (operation : SemanticOperation) (created : DefinitionScope) : Program :=
+def programFor (operation : SemanticOperation) (created : DefinitionScope) : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"constructed"⟩
@@ -58,17 +58,17 @@ private def programFor (operation : SemanticOperation) (created : DefinitionScop
         { id := ⟨"entry"⟩, origin := ⟨⟨"entry-flow"⟩⟩ }]
     operations := [operation] }
 
-private def childProgram := programFor childOperation childDefinition
-private def callProgram := programFor callOperation calledDefinition
+def childProgram := programFor childOperation childDefinition
+def callProgram := programFor callOperation calledDefinition
 
-private def childId : ScopeOccurrenceId :=
+def childId : ScopeOccurrenceId :=
   { root with definitionScopeId := childDefinition.id, activation := 10 }
 
-private def calledId : ScopeOccurrenceId :=
+def calledId : ScopeOccurrenceId :=
   { processInstanceId := deriveCalledProcessInstanceId root.processInstanceId ⟨"call"⟩ 10,
     definitionScopeId := calledDefinition.id, activation := 1 }
 
-private def applyPrepared (program : Program) (state : RuntimeState)
+def applyPrepared (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option RuntimeState := do
   let prepared ← prepareInternalScopeCreation? program state operation
   applyPreparedInternalScopeCreation? program state prepared
@@ -127,7 +127,7 @@ theorem footprints_protect_censuses_parentage_and_the_exact_issuance_domain :
             calledRoot := calledId, returnOperationId := ⟨"return"⟩ })) = some true := by
   decide +kernel
 
-private def alteredPreparations (prepared : PreparedInternalScopeCreation) :=
+def alteredPreparations (prepared : PreparedInternalScopeCreation) :=
   [ { prepared with runtimeInstanceId := ⟨"other"⟩ }
   , { prepared with footprint := { reads := [], writes := [] } }
   , { prepared with publicationTemplate :=

@@ -1,9 +1,13 @@
-import BpmnSemantics.Experiments.CheckedSourceChain
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceChain
 
 /-! # Whole-process checked-source coverage
 
 This module relates successful structured decomposition to graph-derived Start, End, chain, node-coverage, and Sequence-Flow-coverage facts. Parser state remains private proof plumbing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

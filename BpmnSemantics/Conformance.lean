@@ -1,12 +1,16 @@
-import BpmnSemantics.Contract
-import BpmnSemantics.Scenario
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.Contract
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # BpmnSemantics.Conformance — profile-independent contract locks
 
 These facts lock only distinctions required directly by the architecture handoff.
 They are not evidence of BPMN or CIB Seven compatibility.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 
 /-! The joined Timer-task insertion preserves regional selection outside its live owner.
 Fresh Timer identities preserve the exact deadline census used by bounded scope completion.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

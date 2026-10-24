@@ -10,31 +10,31 @@ namespace BpmnSemantics.ScopeCreationMixedBatchConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private inductive Creator where
+inductive Creator where
   | child
   | called
   deriving DecidableEq
 
-private def processId : ProcessId := ⟨"Root"⟩
-private def instanceId : SemanticId := ⟨"mixed-review-4711"⟩
-private def commandId : SemanticId := ⟨"start-mixed-review"⟩
-private def rootScope : DefinitionScopeId := ⟨"scope:Root"⟩
-private def legalScope : DefinitionScopeId := ⟨"scope:Legal"⟩
-private def owner : ScopeOccurrenceId :=
+def processId : ProcessId := ⟨"Root"⟩
+def instanceId : SemanticId := ⟨"mixed-review-4711"⟩
+def commandId : SemanticId := ⟨"start-mixed-review"⟩
+def rootScope : DefinitionScopeId := ⟨"scope:Root"⟩
+def legalScope : DefinitionScopeId := ⟨"scope:Legal"⟩
+def owner : ScopeOccurrenceId :=
   { processInstanceId := instanceId, definitionScopeId := rootScope, activation := 1 }
 
-private def legalDefinition : Creator → DefinitionScope
+def legalDefinition : Creator → DefinitionScope
   | .child =>
       { id := legalScope, parentScopeId := some rootScope,
         originElementId := ⟨"D_LegalScope"⟩ }
   | .called =>
       { id := legalScope, parentScopeId := none, originElementId := ⟨"Legal"⟩ }
 
-private def legalNode : Creator → CheckedNode
+def legalNode : Creator → CheckedNode
   | .child => .embeddedSubProcess ⟨"D_LegalScope"⟩ legalScope
   | .called => .callActivity ⟨"D_LegalScope"⟩ ⟨"Legal"⟩
 
-private def checked (kind : Creator) : CheckedProcess :=
+def checked (kind : Creator) : CheckedProcess :=
   { identity :=
       { semanticProfile := ⟨"bpmn-2.0.2-called-process-call-activity-draft"⟩
         sourceId := ⟨"constructed-mixed-scope-review"⟩
@@ -98,12 +98,12 @@ private def checked (kind : Creator) : CheckedProcess :=
        { id := ⟨"f12"⟩, sourceId := ⟨"J_LegalStart"⟩, targetId := ⟨"K_LegalReview"⟩ },
        { id := ⟨"f13"⟩, sourceId := ⟨"K_LegalReview"⟩, targetId := ⟨"L_LegalEnd"⟩ }] }
 
-private def program (kind : Creator) : Program := lowerCheckedProcess (checked kind)
+def program (kind : Creator) : Program := lowerCheckedProcess (checked kind)
 
-private def start : Stimulus :=
+def start : Stimulus :=
   .startProcess commandId ⟨processId.value⟩ instanceId []
 
-private def beforeMixed (kind : Creator) : RuntimeState :=
+def beforeMixed (kind : Creator) : RuntimeState :=
   (do
     let initiation ← (program kind).operations.find? (fun (op : SemanticOperation) =>
       op.id == (⟨"operation:A_Start"⟩ : OperationId))
@@ -112,7 +112,7 @@ private def beforeMixed (kind : Creator) : RuntimeState :=
     let initiated ← fire? (program kind) initiation (admitStimulus (program kind) initialState start).state
     fire? (program kind) fork initiated).getD initialState
 
-private def mixedOperations (kind : Creator) : List SemanticOperation :=
+def mixedOperations (kind : Creator) : List SemanticOperation :=
   (program kind).operations.filter fun op =>
     [⟨"operation:C_Checks"⟩, ⟨"operation:D_LegalScope"⟩, ⟨"operation:G_Deadline"⟩].contains op.id
 
@@ -131,7 +131,7 @@ theorem reached_frontier_contains_three_independent_preparations (kind : Creator
         (mixedOperations kind)).map List.length = some 3 := by
   cases kind <;> decide +kernel
 
-private def trace (kind : Creator) : TracedStimulusResult :=
+def trace (kind : Creator) : TracedStimulusResult :=
   applyStimulusTraced 8 (program kind) initialState start
 
 theorem committed_start_closes_the_mixed_scope_frontier (kind : Creator) :
@@ -140,7 +140,7 @@ theorem committed_start_closes_the_mixed_scope_frontier (kind : Creator) :
       (trace kind).result.ambiguousInternalChoice = false := by
   cases kind <;> decide +kernel
 
-private def legalOwner : Creator → ScopeOccurrenceId
+def legalOwner : Creator → ScopeOccurrenceId
   | .child =>
       { processInstanceId := instanceId, definitionScopeId := legalScope, activation := 1 }
   | .called =>

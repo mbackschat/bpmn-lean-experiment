@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! # Parallel Sub-Process completion publication
 
 PMIS-END-01, PMIS-EARLY-01 and PMIS-PUBLIC-01 derive completion terminals from one exact predecessor body and its validated population. Regional cancellation is supplied by the lifecycle owner; this module neither evaluates a runtime successor nor compares before/after collections.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def completionCondition? (entry : ParallelScopeEntry) (before : RuntimeState) : Option Bool := do
+def completionCondition? (entry : ParallelScopeEntry) (before : RuntimeState) : Option Bool := do
   match entry.completionBooleanName with
   | none => some false
   | some name =>

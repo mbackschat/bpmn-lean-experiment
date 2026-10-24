@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Engine-population scenarios
 
@@ -7,6 +9,8 @@ correlation across the Lean interpreter, the TypeScript semantic core, and Tempo
 executes each Process independently until its correlated wait, matches the complete candidate
 population once, and delivers only the exact retained unique candidate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EnginePopulationScenario
 
@@ -92,14 +96,14 @@ structure EnginePopulationResult where
   ingressOrdinals : List EnginePopulationIngressOrdinal
   deriving Repr, DecidableEq
 
-private structure ProcessExecution where
+structure ProcessExecution where
   definitionId : SemanticId
   program : Program
   instanceId : SemanticId
   state : RuntimeState
   deriving Repr, DecidableEq
 
-private def resourceIdentityValid (resource : ResourceIdentity) : Bool :=
+def resourceIdentityValid (resource : ResourceIdentity) : Bool :=
   !resource.id.value.isEmpty && !resource.relativePath.isEmpty &&
     lowercaseHexSha256 resource.sha256 &&
     match resource.sourceOverlay with
@@ -107,7 +111,7 @@ private def resourceIdentityValid (resource : ResourceIdentity) : Bool :=
     | some overlay =>
         !overlay.id.value.isEmpty && lowercaseHexSha256 overlay.sha256
 
-private def programMatchesResource (profile : ProfileId)
+def programMatchesResource (profile : ProfileId)
     (resource : ResourceIdentity) (program : Program) : Bool :=
   programWellFormed program && programProfileCapabilitiesValid program &&
     program.identity.semanticProfile = profile &&
@@ -115,7 +119,7 @@ private def programMatchesResource (profile : ProfileId)
     program.identity.sourceSha256 = resource.sha256 &&
     program.identity.sourceOverlay = resource.sourceOverlay
 
-private def exactProgramBinding? (profile : ProfileId)
+def exactProgramBinding? (profile : ProfileId)
     (resource : ResourceIdentity) (bindings : List (SemanticId × Program)) :
     Option Program :=
   match bindings.filter fun binding => binding.1 = resource.id with
@@ -124,7 +128,7 @@ private def exactProgramBinding? (profile : ProfileId)
       else none
   | _ => none
 
-private def definitionsAndBindingsAgree (scenario : EnginePopulationScenario)
+def definitionsAndBindingsAgree (scenario : EnginePopulationScenario)
     (bindings : List (SemanticId × Program)) : Bool :=
   scenario.definitions.length = bindings.length &&
     decide (scenario.definitions.map fun resource => resource.id.value).Nodup &&
@@ -135,7 +139,7 @@ private def definitionsAndBindingsAgree (scenario : EnginePopulationScenario)
     (bindings.all fun binding =>
       (scenario.definitions.filter fun resource => resource.id = binding.1).length = 1)
 
-private def publicationProgramBindingAgrees (scenario : EnginePopulationScenario)
+def publicationProgramBindingAgrees (scenario : EnginePopulationScenario)
     (bindings : List (SemanticId × Program)) : Bool :=
   match scenario.publications with
   | [publication] =>
@@ -150,7 +154,7 @@ private def publicationProgramBindingAgrees (scenario : EnginePopulationScenario
       | _ => false
   | _ => false
 
-private def programForDefinition? (scenario : EnginePopulationScenario)
+def programForDefinition? (scenario : EnginePopulationScenario)
     (bindings : List (SemanticId × Program)) (definitionId : SemanticId) :
     Option Program := do
   let resource ← match scenario.definitions.filter fun definition =>
@@ -159,7 +163,7 @@ private def programForDefinition? (scenario : EnginePopulationScenario)
     | _ => none
   exactProgramBinding? scenario.profile resource bindings
 
-private def stimulusCommandId : Stimulus → SemanticId
+def populationStimulusCommandId : Stimulus → SemanticId
   | .startProcess commandId _ _ _
   | .triggerMessageStart commandId _ _ _ _
   | .triggerTimerStart commandId _ _ _
@@ -173,12 +177,12 @@ private def stimulusCommandId : Stimulus → SemanticId
   | .retryIncident commandId _
   | .cancelIncidentProcess commandId _ _ => commandId
 
-private def scenarioCommandIds (scenario : EnginePopulationScenario) : List String :=
+def scenarioCommandIds (scenario : EnginePopulationScenario) : List String :=
   scenario.instances.flatMap (fun processInstance =>
-      processInstance.stimuli.map fun stimulus => (stimulusCommandId stimulus).value) ++
+      processInstance.stimuli.map fun stimulus => (populationStimulusCommandId stimulus).value) ++
     scenario.publications.map fun publication => publication.commandId.value
 
-private def publicationShapeValid (scenario : EnginePopulationScenario) : Bool :=
+def publicationShapeValid (scenario : EnginePopulationScenario) : Bool :=
   match scenario.publications with
   | [publication] =>
       publication.kind = .publishCorrelatedPayloadMessage &&
@@ -192,13 +196,13 @@ private def publicationShapeValid (scenario : EnginePopulationScenario) : Bool :
               publication.address.definition.sourceOverlay).length = 1
   | _ => false
 
-private def provenanceValid (provenance : ScenarioProvenance) : Bool :=
+def provenanceValid (provenance : ScenarioProvenance) : Bool :=
   !provenance.normativeRefs.isEmpty &&
     provenance.normativeRefs.all (fun reference => !reference.isEmpty) &&
     !provenance.cibRevision.isEmpty &&
     provenance.cibRefs.all (fun reference => !reference.isEmpty)
 
-private def scenarioShapeValid (scenario : EnginePopulationScenario) : Bool :=
+def scenarioShapeValid (scenario : EnginePopulationScenario) : Bool :=
   scenario.kind = .enginePopulationScenario &&
     scenario.id.value != "" && scenario.profile = messageKeyCorrelationProfileId &&
     (scenario.definitions.length = 1 || scenario.definitions.length = 2) &&
@@ -215,11 +219,11 @@ private def scenarioShapeValid (scenario : EnginePopulationScenario) : Bool :=
     (scenarioCommandIds scenario).all (fun id => !id.isEmpty) &&
     decide (scenarioCommandIds scenario).Nodup
 
-private def committedResult (result : StimulusResult) : Bool :=
+def committedResult (result : StimulusResult) : Bool :=
   result.outcome = .committed && !result.internalStepBoundExceeded &&
     !result.ambiguousInternalChoice
 
-private def initializeInstance? (scenario : EnginePopulationScenario)
+def initializeInstance? (scenario : EnginePopulationScenario)
     (bindings : List (SemanticId × Program))
     (processInstance : EnginePopulationInstance) : Option ProcessExecution := do
   let program ← programForDefinition? scenario bindings processInstance.definitionId
@@ -244,7 +248,7 @@ private def initializeInstance? (scenario : EnginePopulationScenario)
           state := initialized.state }
   | _ => none
 
-private def initializeInstances? (scenario : EnginePopulationScenario)
+def initializeInstances? (scenario : EnginePopulationScenario)
     (bindings : List (SemanticId × Program)) :
     List EnginePopulationInstance → Option (List ProcessExecution)
   | [] => some []
@@ -253,7 +257,7 @@ private def initializeInstances? (scenario : EnginePopulationScenario)
       let rest ← initializeInstances? scenario bindings remaining
       some (execution :: rest)
 
-private def candidates? :
+def candidates? :
     List ProcessExecution → Option (List CorrelatedMessageCandidate)
   | [] => some []
   | execution :: remaining => do
@@ -261,7 +265,7 @@ private def candidates? :
       let rest ← candidates? remaining
       some (candidate :: rest)
 
-private def deliverUnique? (publication : EnginePopulationPublication)
+def deliverUnique? (publication : EnginePopulationPublication)
     (selected : CorrelatedMessageCandidate) :
     List ProcessExecution → Option (List ProcessExecution × Bool)
   | [] => some ([], false)
@@ -289,7 +293,7 @@ private def deliverUnique? (publication : EnginePopulationPublication)
       if targetsSelected && rest.2 then none
       else some (updated :: rest.1, targetsSelected || rest.2)
 
-private def insertExecutionByInstanceId (execution : ProcessExecution) :
+def insertExecutionByInstanceId (execution : ProcessExecution) :
     List ProcessExecution → List ProcessExecution
   | [] => [execution]
   | candidate :: remaining =>
@@ -297,12 +301,12 @@ private def insertExecutionByInstanceId (execution : ProcessExecution) :
         execution :: candidate :: remaining
       else candidate :: insertExecutionByInstanceId execution remaining
 
-private def canonicalExecutions : List ProcessExecution → List ProcessExecution
+def canonicalExecutions : List ProcessExecution → List ProcessExecution
   | [] => []
   | execution :: remaining =>
       insertExecutionByInstanceId execution (canonicalExecutions remaining)
 
-private def finalStates? (executions : List ProcessExecution) :
+def finalStates? (executions : List ProcessExecution) :
     Option (List StateObservation) :=
   (canonicalExecutions executions).mapM fun execution =>
     observeStableState execution.program execution.state

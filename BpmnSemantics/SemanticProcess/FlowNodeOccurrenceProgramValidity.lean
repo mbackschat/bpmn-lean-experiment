@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 
 /-! # Flow-node occurrence Program validity
 
 This module composes structural, wait-family, selected-branch, and event-race correspondence for lifecycle projection. It also owns exact Message-boundary host/subscription pairing. Other family validators and the private Boundary Timer matcher remain at their lower owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

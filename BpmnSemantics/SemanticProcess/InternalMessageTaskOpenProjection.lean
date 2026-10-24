@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskPairProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPairProjection
 
 /-! ESL-OWN-01 inserts the Task and subscription anchors in one projection step.
 The half-inserted state is not a publication boundary; freshness applies to both starts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

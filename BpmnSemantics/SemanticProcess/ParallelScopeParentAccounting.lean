@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Actual lifetime parent continuation accounting
 
@@ -7,6 +9,8 @@ PMIS-END-01 exchanges the pending outer continuation for a parent token. This
 accounting uses the existing replay history and does not assert published phase
 correspondence or parent at-most-once execution.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

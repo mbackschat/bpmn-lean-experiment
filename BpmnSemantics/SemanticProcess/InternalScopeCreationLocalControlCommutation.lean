@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 
 /-! Mixed scope creation and local control retain distinct parent and created token owners under
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

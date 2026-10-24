@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Root-scope fixture construction
 
 This module owns reusable constructors for root definition ownership, root runtime ownership, and root-owned control tokens. It deliberately contains no retained model, scenario runner, profile admission, lowering, or conformance claim.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

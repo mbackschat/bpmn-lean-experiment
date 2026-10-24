@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation trigger disabled and refusal soundness -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 
 /-! # Compensation handler completion soundness -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

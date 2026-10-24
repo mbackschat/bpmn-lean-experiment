@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalEndPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Complete End preparations survive disjoint input removal. The relative counter commutes
 without reading its predecessor value; the input census still protects single-unit selection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

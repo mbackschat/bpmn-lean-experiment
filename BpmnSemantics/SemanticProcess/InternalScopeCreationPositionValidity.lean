@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 
 /-! Runtime-position preservation for complete scope-creation preparations under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -49,6 +53,7 @@ def PositionFacts (program : Program) (expected hosting : SemanticId)
     decide (candidate.origin = place.origin)).length = 1) &&
     program.definitionScopes.all fun scope => (program.definitionScopes.filter fun candidate =>
       decide (candidate.originElementId = scope.originElementId)).length = 1) = true ∧
+  (∀ record ∈ state.calledProcessOccurrences, callRecordDeclared program record = true) ∧
   hosting = expected ∧
   (state.scopeOccurrences.filter fun occurrence =>
     match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
@@ -71,7 +76,8 @@ theorem position_iff (program : Program) (expected hosting : SemanticId)
       program.definitionScopes.all fun scope => (program.definitionScopes.filter fun candidate =>
         decide (candidate.originElementId = scope.originElementId)).length = 1) && (match state.control with
     | .notStarted => state.scopeOccurrences.isEmpty && state.tokens.isEmpty
-    | .running instanceId => instanceId = expected &&
+    | .running instanceId => state.calledProcessOccurrences.all (callRecordDeclared program) &&
+        instanceId = expected &&
         (state.scopeOccurrences.filter fun occurrence =>
           match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
           | none => false
@@ -111,6 +117,7 @@ theorem position_iff (program : Program) (expected hosting : SemanticId)
   rw [running]
   unfold PositionFacts
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq, and_assoc]
+  apply and_congr_right; intro _
   apply and_congr_right; intro _
   apply and_congr_right; intro _
   apply and_congr_right; intro _
@@ -204,14 +211,15 @@ theorem position_insert (program : Program) (expected hosting : SemanticId)
       ¬ Hosting program hosting scope inserted)
     (calls : ∀ occurrence ∈ before.scopeOccurrences, ∀ scope,
       Called after scope occurrence ↔ Called before scope occurrence)
-    (associations : calledProcessAssociationsValid after = true) :
+    (associations : calledProcessAssociationsValid after = true)
+    (declaredAfter : ∀ record ∈ after.calledProcessOccurrences, callRecordDeclared program record = true) :
     PositionFacts program expected hosting after := by
   have live (owner : ScopeOccurrenceId) (old : exactLiveOccurrence before owner = true) :
       exactLiveOccurrence after owner = true := by
     have preserved := exactLiveOccurrence_insertScopeOccurrence_preserves before inserted owner fresh old
     simpa only [exactLiveOccurrence, scopes] using preserved
-  obtain ⟨wf, bindings, expectedEq, count, _, oldScopes, oldTokens⟩ := valid
-  refine ⟨wf, bindings, expectedEq, ?_, associations, ?_, ?_⟩
+  obtain ⟨wf, bindings, _, expectedEq, count, _, oldScopes, oldTokens⟩ := valid
+  refine ⟨wf, bindings, declaredAfter, expectedEq, ?_, associations, ?_, ?_⟩
   · rw [scopes]
     simp only [insertScopeOccurrence, length_filter_canonicalInsertBy]
     have excluded : (match uniqueDefinitionScope? program inserted.id.definitionScopeId with
@@ -397,11 +405,12 @@ theorem selectedScopeCreation_preserves_runtimePositionValid
     (checks : internalScopeCreationPredecessorChecks program state operation selected origin scope = true)
     (position : internalScopeCreationPositionDelta? program selected = some delta)
     (callSeparated : ∀ record, selected.kind = .called record →
-      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId) :
+      selected.created.id.definitionScopeId ≠ selected.owner.definitionScopeId)
+    (callDeclared : ∀ record, selected.kind = .called record → callRecordDeclared program record = true) :
     runtimePositionValid program instanceId (selected.apply state) = true := by
   have facts := (position_iff program instanceId hosting state running).mp valid
   have calls := selectInternalScopeCreation_preserves_callAssociations state operation selected
-    selection facts.2.2.2.2.1 callSeparated
+    selection facts.2.2.2.2.2.1 callSeparated
   obtain ⟨_, matching, _, _, nonempty, _⟩ :=
     internalScopeCreationPredecessorChecks_facts program state operation selected origin scope checks
   obtain ⟨_, produced, declared, _, outputFound, declaredFound, _, origins, _⟩ :=
@@ -426,6 +435,18 @@ theorem selectedScopeCreation_preserves_runtimePositionValid
     · exact created.2
     · exact selection_calls_frame state operation selected selection
     · exact calls
+    · intro record member
+      cases kind : selected.kind with
+      | child =>
+          simp only [inserted, InternalScopeCreationSelection.apply, kind] at member
+          exact facts.2.2.1 record member
+      | called added =>
+          simp only [inserted, InternalScopeCreationSelection.apply, kind] at member
+          rcases List.mem_cons.mp ((sortCallRecords_perm (added :: state.calledProcessOccurrences)).subset member)
+            with same | old
+          · subst same
+            exact callDeclared _ kind
+          · exact facts.2.2.1 record old
   let removed : RuntimeState := { inserted with tokens := removeToken state.tokens selected.input selected.owner }
   have removedValid : runtimePositionValid program instanceId removed = true :=
     runtimePositionValid_tokens_sublist_frame program instanceId inserted removed insertedValid
@@ -450,12 +471,15 @@ theorem prepareInternalScopeCreation_preserves_runtimePositionValid
     runtimePositionValid program instanceId (prepared.selection.apply state) = true := by
   have callSeparated := prepareInternalScopeCreation_called_definition_ne_owner
     program state operation prepared
+  have callDeclared := prepareInternalScopeCreation_called_record_declared
+    program state operation prepared
   obtain ⟨selected, hosting, ownerRecord, origin, scope, start, delta, selection, running,
     _, _, ownerExact, _, definition, checks, _, position, rfl⟩ :=
     prepareInternalScopeCreation_facts program state operation prepared found
   exact selectedScopeCreation_preserves_runtimePositionValid program state operation selected
     instanceId hosting ownerRecord origin scope delta valid selection running ownerExact definition checks
     position (fun record kind => callSeparated record programWF found kind)
+    (fun record kind => callDeclared record programWF found kind)
 
 /-- Population issuance reuses fresh child insertion independently of the single-input
 selection restriction; PMIS-ENTER-01 creates successive siblings at one definition. -/
@@ -489,7 +513,16 @@ theorem runtimePositionValid_insert_child_frame (program : Program) (expected ho
       rw [scopes]
       exact filter_canonicalInsertBy_rejected scopeOccurrenceBefore (·.parent.isNone)
         created before.scopeOccurrences (by simp [parented])
-    rw [calledProcessAssociationsValid_parentless_frame before after control roots calls]
-    exact facts.2.2.2.2.1
+    rw [calledProcessAssociationsValid_parentless_frame before after control roots calls (by
+      intro record member
+      obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+        calledProcessAssociationsValid_endpoints before facts.2.2.2.2.2.1 record member
+      rw [scopes]
+      exact filter_canonicalInsertBy_rejected scopeOccurrenceBefore _ created before.scopeOccurrences (by
+        simpa [← callerId] using (fresh caller callerMember).symm))]
+    exact facts.2.2.2.2.2.1
+  · intro record member
+    rw [calls] at member
+    exact facts.2.2.1 record member
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

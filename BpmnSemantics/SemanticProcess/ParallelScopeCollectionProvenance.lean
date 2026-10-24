@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
-import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+public import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
 
 /-! # Parallel subprocess collection provenance
 
@@ -8,6 +10,8 @@ values through actual body/retirement replay and admitted wait commands, so a
 collection captured at entry can be traced back to Start without assuming that
 an arbitrary stored Service wait has the admitted declaration's output mappings.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

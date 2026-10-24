@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.EffectDataAdmission
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Structured effect-data command boundary
 
@@ -11,6 +13,8 @@ callers stay the scalar definitions, and the `_scalar` theorems pin the `scalar`
 guard is a separate predicate rather than a fourth profile in `serialBusinessCommandAdmitted`, whose
 conjunction shape is projected positionally by the serial and mixed-task proofs.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! Regional publication retains predecessor positions, open anchors, and instantaneous identities.
 Command and transition numbering are assigned only when the retained template is instantiated.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

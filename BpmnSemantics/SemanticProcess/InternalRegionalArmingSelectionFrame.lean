@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 
 /-! Regional selection observes quiescence and exact predecessor withdrawal records.
 An independent arming patch creates work outside the selected region. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

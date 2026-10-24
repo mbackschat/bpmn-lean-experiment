@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+module
+
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
 
 /-! # Passive Process interface data
 
@@ -7,6 +9,8 @@ The Call data boundary selects a complete scope occurrence before examining port
 These laws cover caller-Property and Activity-local preservation and distinguish unavailable output
 from an available null. They establish no invocation, return, admission, or reachability claim.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

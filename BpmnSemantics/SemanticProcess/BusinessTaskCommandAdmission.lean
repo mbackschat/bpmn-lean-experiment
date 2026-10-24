@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! SBT-REFUSE-01 and MBERR-REFUSE-01 require complete declaration/wait/local ownership checks before any public command can mutate a business-task state. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

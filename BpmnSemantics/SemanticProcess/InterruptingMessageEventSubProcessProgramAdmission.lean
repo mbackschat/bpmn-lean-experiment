@@ -1,39 +1,43 @@
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
 
 /-! Independent IL admission for IMES-ARM-01 and IMES-CLOSE-01. Exact operation, port and scope
 partitions distinguish a declaration-triggered handler from an ordinary entered child with a continuation. -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def operationOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
+def uniqueOperationOwner? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
   match program.operationScopes.filter (fun ownership => ownership.operationId == id) with
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def placeOwner? (program : Program) (id : ControlPlaceId) : Option DefinitionScopeId :=
+def placeOwner? (program : Program) (id : ControlPlaceId) : Option DefinitionScopeId :=
   match program.controlPlaceScopes.filter (fun ownership => ownership.controlPlaceId == id) with
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def taskPorts (operations : List SemanticOperation) : List (ControlPlaceId × ControlPlaceId) :=
+def taskPorts (operations : List SemanticOperation) : List (ControlPlaceId × ControlPlaceId) :=
   operations.filterMap fun
     | .awaitUserTask _ origin input output task =>
         if task.metadata.isNone && task.id.value == origin.elementId.value then some (input, output) else none
     | _ => none
 
-private def endInputs (operations : List SemanticOperation) : List ControlPlaceId :=
+def endInputs (operations : List SemanticOperation) : List ControlPlaceId :=
   operations.filterMap fun | .reachNoneEnd _ _ input => some input | _ => none
 
-private def distinctNonempty (ids : List String) : Bool :=
+def distinctNonempty (ids : List String) : Bool :=
   ids.all nonempty && ids.eraseDups.length == ids.length
 
-private def flowNodeOrigins (operations : List SemanticOperation) : List String :=
+def flowNodeOrigins (operations : List SemanticOperation) : List String :=
   operations.filterMap fun
     | .initiate _ origin _ | .duplicate _ origin _ _
     | .awaitUserTask _ origin _ _ _ | .reachNoneEnd _ origin _ => some origin.elementId.value
     | _ => none
 
-private def declarationScopesValid (program : Program)
+def declarationScopesValid (program : Program)
     (declaration : InterruptingMessageEventSubProcessDeclaration) : Bool :=
   match program.definitionScopes.filter (fun scope => scope.id == declaration.parentScopeId),
       program.definitionScopes.filter (fun scope => scope.id == declaration.handlerScopeId) with
@@ -44,12 +48,12 @@ private def declarationScopesValid (program : Program)
         child.parentScopeId == some parent.id && child.originElementId == declaration.elementId
   | _, _ => false
 
-private def withdrawalProgramTopology (program : Program)
+def withdrawalProgramTopology (program : Program)
     (declaration : InterruptingMessageEventSubProcessDeclaration) : Bool :=
   let parent := declaration.parentScopeId
   let child := declaration.handlerScopeId
-  let parentOps := program.operations.filter fun operation => operationOwner? program operation.id == some parent
-  let childOps := program.operations.filter fun operation => operationOwner? program operation.id == some child
+  let parentOps := program.operations.filter fun operation => uniqueOperationOwner? program operation.id == some parent
+  let childOps := program.operations.filter fun operation => uniqueOperationOwner? program operation.id == some child
   let starts := parentOps.filterMap fun | .initiate _ _ output => some output | _ => none
   let forks := parentOps.filterMap fun | .duplicate _ _ input outputs => some (input, outputs) | _ => none
   let parentCompletions := parentOps.filterMap fun
@@ -103,7 +107,7 @@ def completeEventSubProcessOperationWellFormed (program : Program)
   nonempty id.value && nonempty origin.elementId.value && nonempty scopeId.value &&
     match program.interruptingMessageEventSubProcesses.filter (fun declaration => declaration.handlerScopeId == scopeId) with
     | [declaration] =>
-        origin.elementId == declaration.elementId && operationOwner? program id == some scopeId &&
+        origin.elementId == declaration.elementId && uniqueOperationOwner? program id == some scopeId &&
           placeOwner? program declaration.childEntry == some scopeId &&
           match program.definitionScopes.filter (fun scope => scope.id == scopeId) with
           | [scope] => scope.parentScopeId == some declaration.parentScopeId && scope.originElementId == origin.elementId

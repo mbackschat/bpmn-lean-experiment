@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Complete preparation frames retain the child selector, all issuance domains, and publication.
 The [complete-family outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census)
 must derive these read equalities from footprint separation for each mixed operation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

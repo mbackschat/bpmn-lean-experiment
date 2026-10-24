@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationSelection
 
 /-! The child graph and joint deadline preserve independent regional selection. Child-position
 validity is derived from complete bounded preparation before using the shared scope-query laws.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

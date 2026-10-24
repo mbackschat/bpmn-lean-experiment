@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.SemanticProcess.ClosureLimit
-import BpmnSemantics.SemanticProcess.ContinuationMarking
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.ClosureLimit
+public import BpmnSemantics.SemanticProcess.ContinuationMarking
 
 /-! SMIS-ADMIT-01 composes body bursts with the outer lifecycle; generic graph and data admission remain separate conjuncts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeControl
 

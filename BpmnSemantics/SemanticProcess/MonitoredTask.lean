@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 
 /-! # Non-interrupting boundary Timer
 
@@ -15,11 +17,13 @@ What changed is the join itself. The deadline is now reached through the [Activi
 Arming on Activity activation is the recorded project interpretation shared with the sibling family, so only the pre-due firing witness discriminates that instant.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def monitoredRunningInstance? (state : RuntimeState) : Option SemanticId :=
+def monitoredRunningInstance? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
@@ -107,7 +111,7 @@ def MonitoredPairing (program : Program) (task : UserTaskWait)
     operation.2.2.output = timerOutput
 
 /-- `AOO-ATTACH-01` withdraws only the consumed Timer attachment, preserving Message tags and every other occurrence. -/
-private def detachConsumedTimer (timer : TimerWait) (record : ActivityOccurrence) :
+def detachConsumedTimer (timer : TimerWait) (record : ActivityOccurrence) :
     ActivityOccurrence :=
   { record with attachedHandlers := record.attachedHandlers.filter fun
       | .timer occurrence => !timerIdNamesWait occurrence timer
@@ -172,7 +176,7 @@ inductive MonitoredCompletionStep (program : Program) :
           activityOccurrences := before.activityOccurrences.filter (!recordBodyNamesWait task ·)
           tokens := addToken before.tokens taskOutput task.owner }
 
-private structure MonitoredTask where
+structure MonitoredTask where
   task : UserTaskWait
   timer : Option TimerWait
   taskOutput : ControlPlaceId
@@ -180,7 +184,7 @@ private structure MonitoredTask where
   timerElementId : NodeId
 
 /-- The one-sided join: the deadline is looked up but never required. -/
-private def monitoredTaskForTask? (program : Program) (state : RuntimeState)
+def monitoredTaskForTask? (program : Program) (state : RuntimeState)
     (task : UserTaskWait) : Option MonitoredTask := do
   let operation ← (monitoredTaskOperations program).find? fun candidate =>
     decide (candidate.2.1.id = task.task.id)
@@ -198,7 +202,7 @@ private def monitoredTaskForTask? (program : Program) (state : RuntimeState)
       timerElementId := operation.2.2.elementId }
 
 /-- The spawn direction requires the host, unlike the completion direction: a live deadline whose Activity is gone would have been withdrawn by that Activity's completion, so its absence is a wrong-identity refusal rather than a reachable state. -/
-private def monitoredTaskForTimer? (program : Program) (state : RuntimeState)
+def monitoredTaskForTimer? (program : Program) (state : RuntimeState)
     (timer : TimerWait) : Option MonitoredTask := do
   let operation ← (monitoredTaskOperations program).find? fun candidate =>
     decide (candidate.2.2.elementId = timer.elementId)

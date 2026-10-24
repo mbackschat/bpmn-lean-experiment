@@ -11,10 +11,10 @@ namespace BpmnSemantics.ScopeStorageOrderConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def root : ScopeOccurrenceId :=
+def root : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance"⟩, definitionScopeId := ⟨"process"⟩, activation := 1 }
 
-private def before : RuntimeState :=
+def before : RuntimeState :=
   { initialState with
     control := .running root.processInstanceId
     scopeOccurrences := [{ id := root, parent := none }]
@@ -27,14 +27,14 @@ private def before : RuntimeState :=
     eventRaceActivations := [{ elementId := ⟨"a-race"⟩, count := 2 },
       { elementId := ⟨"z-race"⟩, count := 9 }] }
 
-private def enter (state : RuntimeState) (key : String) : Option RuntimeState :=
+def enter (state : RuntimeState) (key : String) : Option RuntimeState :=
   enterScopeState? state ⟨key ++ "-input"⟩ ⟨key ++ "-entry"⟩ ⟨key ++ "-child"⟩
 
-private def enterPair (first second : String) : Option RuntimeState := do
+def enterPair (first second : String) : Option RuntimeState := do
   let middle ← enter before first
   enter middle second
 
-private def child (key : String) (activation : Nat) : RuntimeScopeOccurrence :=
+def child (key : String) (activation : Nat) : RuntimeScopeOccurrence :=
   { id := { root with definitionScopeId := ⟨key ++ "-child"⟩, activation },
     parent := some root }
 
@@ -50,11 +50,11 @@ theorem scope_entry_stores_equal_raw_state_in_both_orders :
           { scopeId := ⟨"process"⟩, count := 1 }, { scopeId := ⟨"z-child"⟩, count := 10 }] := by
   decide +kernel
 
-private def invoke (state : RuntimeState) (key : String) : Option RuntimeState :=
+def invoke (state : RuntimeState) (key : String) : Option RuntimeState :=
   invokeProcessState? state ⟨⟨key ++ "-call"⟩⟩ ⟨key ++ "-input"⟩
     ⟨key ++ "-process"⟩ ⟨key ++ "-called-root"⟩ ⟨key ++ "-entry"⟩ ⟨key ++ "-return"⟩
 
-private def invokePair (first second : String) : Option RuntimeState := do
+def invokePair (first second : String) : Option RuntimeState := do
   let middle ← invoke before first
   invoke middle second
 
@@ -68,14 +68,14 @@ theorem call_invocation_stores_equal_raw_state_and_preserves_other_marks :
       (invokePair "a" "z").map (·.scopeActivations) = some before.scopeActivations := by
   decide +kernel
 
-private def armRace (state : RuntimeState) (key : String) : Option RuntimeState :=
+def armRace (state : RuntimeState) (key : String) : Option RuntimeState :=
   armEventRaceState? state ⟨⟨key ++ "-race"⟩⟩ ⟨key ++ "-input"⟩
     { elementId := ⟨key ++ "-message"⟩, channel := .directMessage ⟨key⟩,
       output := ⟨key ++ "-message-out"⟩, configurationOrigin := ⟨⟨key ++ "-message-flow"⟩⟩ }
     { elementId := ⟨key ++ "-timer"⟩, durationMs := 20, output := ⟨key ++ "-timer-out"⟩,
       configurationOrigin := ⟨⟨key ++ "-timer-flow"⟩⟩ }
 
-private def armRacePair (first second : String) : Option RuntimeState := do
+def armRacePair (first second : String) : Option RuntimeState := do
   let middle ← armRace before first
   armRace middle second
 

@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryEvaluatorPreservation
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryEvaluatorPreservation
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 
 /-! # Parallel Multi-Instance shared runtime-state closing selection
 
@@ -7,6 +9,8 @@ Completion and deadline interruption each select exactly one admitted Parallel M
 controller and region. This module proves those exact selection facts for the production completion
 and Timer lookups. It owns no rewrite-preservation or evaluator-lifting result.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

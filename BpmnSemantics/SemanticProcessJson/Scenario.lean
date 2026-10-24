@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessJson.Elements
+module
+
+public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Scenario JSON admission
 
 This module owns strict decoding of the current answer-free scenario document. It does not decode definition artifacts or execute scenarios.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
@@ -14,7 +18,7 @@ def admitEffectIncidentGeneration (generation : Nat) : Except String Nat :=
   if generation = 1 then pure generation
   else throw "effect incident generation must be 1"
 
-private def decodeEffectIncidentId (json : Json) : Except String EffectIncidentId := do
+def decodeEffectIncidentId (json : Json) : Except String EffectIncidentId := do
   requireObjectShape json ["effectId", "generation"]
   let generation ← admitEffectIncidentGeneration
     (← decodeSafeNat (← field json "generation"))
@@ -143,7 +147,7 @@ def decodeStimulus (json : Json) : Except String Stimulus := do
           (← decodeEffectIncidentId (← field json "incidentId")))
   | _ => throw s!"unsupported scenario stimulus {kind}"
 
-private def decodeObservationKind (json : Json) :
+def decodeObservationKind (json : Json) :
     Except String ObservationKind := do
   match ← json.getStr? with
   | "deployment" => pure .deployment

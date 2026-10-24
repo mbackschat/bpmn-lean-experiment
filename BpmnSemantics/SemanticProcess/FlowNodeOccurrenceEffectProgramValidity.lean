@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! # Flow-node occurrence Effect Program validity
 
 This module owns immutable-Program correspondence for Effect waits and incidents together with the private exact bijection between Effect occurrences and Effect-owned local variable scopes. It does not define Effect execution or incident transitions.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 open FlowNodeOccurrenceProgramValidity.Internal
 
-private def effectWaitValid (program : Program) (state : RuntimeState)
+def effectWaitValid (program : Program) (state : RuntimeState)
     (wait : EffectWait) : Bool :=
   occurrenceOwnerValid state wait.processInstanceId wait.owner wait.elementId wait.activation &&
     (program.operations.filter fun operation =>
@@ -24,7 +28,7 @@ private def effectWaitValid (program : Program) (state : RuntimeState)
             route = wait.bpmnErrorRoute
       | _ => false).length = 1
 
-private def effectLocalScopesExact (state : RuntimeState) : Bool :=
+def effectLocalScopesExact (state : RuntimeState) : Bool :=
   let waits := state.effectWaits ++ state.effectIncidents.map (·.wait)
   waits.all (fun wait =>
       (waits.filter fun candidate => decide
@@ -365,6 +369,9 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
       _ = 1 := by simpa [effectWaitDeclarers] using congrArg List.length declarers
   have newValid : effectWaitValid program after wait = true := by
     simp_all [effectWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
+    -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
+    -- private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    exact operationCount
   simp only [flowNodeOccurrenceEffectProgramValidity, Bool.and_eq_true] at prior ⊢
   obtain ⟨⟨waits, incidents⟩, localScopes⟩ := prior
   have waitsAfter : after.effectWaits.all (effectWaitValid program after) = true := by

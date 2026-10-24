@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 
 /-! Scope projection follows actual cancellation retention. A retained selected child
 still projects through its surviving parent; the shared position ancestry theorem
 establishes that parent lookup is unchanged. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -12,7 +16,7 @@ open BpmnSemantics
 theorem cancelScopeSubtree_child_scope_projection (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (projected : (state.scopeOccurrences.filter (·.parent.isSome)).mapM
@@ -55,7 +59,7 @@ theorem cancelScopeSubtree_child_scope_projection (program : Program) (state : R
 theorem cancelScopeSubtree_child_call_projection_filtered (program : Program) (state : RuntimeState)
     (expected hosting : SemanticId) (root : RuntimeScopeOccurrence) (disposition : SelectedScopeDisposition)
     (entries : List OpenSemanticFlowNodeOccurrence)
-    (valid : runtimePositionValid program expected state = true)
+    (valid : runtimePositionValid program expected state = true) [CallersParentless state]
     (running : state.control = .running hosting)
     (rootMember : root ∈ state.scopeOccurrences) (child : root.parent ≠ none)
     (projected : state.calledProcessOccurrences.mapM (callStart? program state) = some entries) :

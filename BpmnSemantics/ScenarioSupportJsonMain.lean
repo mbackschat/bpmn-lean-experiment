@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.ScenarioAdmission
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcessJson.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.ScenarioAdmission
+public import BpmnSemantics.SemanticProcessJson.Program
+public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! Scenario support over one `{program, scenario}` wire object per path; inputs contain no expected results.
 `unsupportedResultExact` holds when a supported scenario needs no check, or an unsupported one runs to exactly the
 deployment-unsupported result. -/
+
+@[expose] public section
 
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
 

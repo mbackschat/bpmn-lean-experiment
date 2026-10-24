@@ -1,7 +1,11 @@
-import BpmnSemantics.InternalRegionalCancellationProjectionConformance
+module
+
+public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
 
 /-! RHP-HANDLER-01 keeps the handler-publication reductions in a separate kernel process
 from the cancellation projection witnesses to respect the fixed 3 GiB validation bound. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness
 

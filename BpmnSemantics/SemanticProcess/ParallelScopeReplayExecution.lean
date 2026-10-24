@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Executable selected parallel command replay
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 reuses exact-owner application after actual command admission.
 Operational replay is kept below its accounting and graph certificates so the
 private publication runner does not import those proof dependencies.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

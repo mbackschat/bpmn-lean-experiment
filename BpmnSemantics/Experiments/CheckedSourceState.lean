@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Checked-source runtime state
 
 This module owns the direct checked-graph state and token operations used by the provisional checked-source experiment. Tokens retain BPMN Sequence Flow identity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceSemantics
 

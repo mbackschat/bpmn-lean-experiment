@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 
 /-! REG-OWN-FRAME-01 needs Call masks computed from the actual cancellation successor.
 Predecessor region disjointness protects both endpoints of every reachable Call edge, so the
 retained graph's own fuel computes the same forward closure without successor-validity premises. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

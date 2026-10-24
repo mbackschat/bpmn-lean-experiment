@@ -1,26 +1,30 @@
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! IMES-ARM/TRIGGER/EXPIRE state phases for the bounded application-withdrawal account.
 The family predicate adds listener lifetime and interruption constraints to the unchanged generic invariant. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def scopeCount? (state : RuntimeState) (scope : DefinitionScopeId) : Option Nat :=
+def scopeCount? (state : RuntimeState) (scope : DefinitionScopeId) : Option Nat :=
   match state.scopeActivations.filter (·.scopeId == scope) with
   | [] => some 0
   | [counter] => some counter.count
   | _ => none
 
-private def messageCount? (state : RuntimeState) (element : NodeId) : Option Nat :=
+def messageCount? (state : RuntimeState) (element : NodeId) : Option Nat :=
   match state.messageActivations.filter (·.elementId == element) with
   | [] => some 0
   | [counter] => some counter.count
   | _ => none
 
-private def unselectedWorkAbsent (state : RuntimeState) : Bool :=
+def unselectedWorkAbsent (state : RuntimeState) : Bool :=
   state.messageWaits.isEmpty && state.timerWaits.isEmpty && state.effectWaits.isEmpty &&
     state.effectIncidents.isEmpty && state.selectedBranchSets.isEmpty && state.eventRaces.isEmpty &&
     state.calledProcessOccurrences.isEmpty && state.variables.process.bindings.isEmpty &&

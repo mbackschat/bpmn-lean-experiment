@@ -1,16 +1,20 @@
-import BpmnSemantics.MessageStartConformanceFixtures
+module
+
+public import BpmnSemantics.MessageStartConformanceFixtures
 
 /-! # Message Start Event identity conformance
 
 This proof slice is kept separate so independent kernel-decided Message Start obligations do not accumulate in one near-cap elaboration process.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.MessageStartConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def rejectedExactly (candidateProgram : Program)
+def rejectedExactly (candidateProgram : Program)
     (state : RuntimeState) (stimulus : Stimulus) : Bool :=
   decide (applyStimulus scenarioClosureLimit candidateProgram state stimulus =
     { outcome := .rejected

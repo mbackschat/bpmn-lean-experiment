@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.TokenStorage
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Canonical token order laws
 
 The complete place and owner key orders token units without collapsing multiplicity. Permutation and canonical order together recover exact stored equality; mixed insertion/removal laws therefore require an ordered predecessor.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

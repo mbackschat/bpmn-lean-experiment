@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitProjection
 
 /-! The actual child-completion projection removes exactly the completed scope anchor.
 All admission predicates and component projections come from predecessor validity and
 the selected evaluator; canonical filtering preserves the predecessor anchor census. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

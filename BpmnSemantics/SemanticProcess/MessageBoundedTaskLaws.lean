@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-import BpmnSemantics.SemanticProcess.MessageBoundedTask
-import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+public import BpmnSemantics.SemanticProcess.MessageBoundedTask
+public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 
 /-! # Interrupting Activity boundary Message laws
 
@@ -10,6 +12,8 @@ the conditional finality of both withdrawn wait identities. The latter keeps the
 runtime well-formedness and wait-identity uniqueness hypotheses; preservation of those hypotheses
 across all reachable transitions is intentionally not claimed here.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

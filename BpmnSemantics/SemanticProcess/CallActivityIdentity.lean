@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Called-Process Call Activity identity
 
 This module owns the byte-stable called-instance identity encoding and its injectivity laws. It does not own runtime associations, invocation or return transitions, source QName resolution, public observation, or Temporal hosting.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def calledProcessIdentityPrefix (callerId : SemanticId)
+def calledProcessIdentityPrefix (callerId : SemanticId)
     (callActivityId : NodeId) : String :=
   "call:" ++ toString callerId.value.utf8ByteSize ++ ":" ++ callerId.value ++
     ":" ++ toString callActivityId.value.utf8ByteSize ++ ":" ++
@@ -28,7 +32,7 @@ private theorem natToString_injective : Function.Injective (toString : Nat → S
   have decoded := congrArg (fun value => Nat.ofDigitChars 10 value 0) digits
   simpa [Nat.ofDigitChars_ten_toDigits] using decoded
 
-private def lengthFrame (value suffix : String) : String :=
+def lengthFrame (value suffix : String) : String :=
   toString value.utf8ByteSize ++ ":" ++ value ++ suffix
 
 private theorem colon_absent_from_nat_string (value : Nat) :

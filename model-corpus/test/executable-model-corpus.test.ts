@@ -41,10 +41,10 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 70);
-  assert.equal(report.retainedModels, 63);
+  assert.equal(report.models.length, 71);
+  assert.equal(report.retainedModels, 64);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 63);
+  assert.equal(report.acceptedModels, 64);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 12);
   assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
@@ -78,6 +78,7 @@ test("binds every retained and external model to exact local evidence", async ()
       "concurrent-activations-audit-interleaved-and-stale",
       "concurrent-activations-intake-reverse-assessments",
       "repeated-nested-calls-natural-order",
+      "repeated-nested-calls-guarantor-verified",
       "subprocess-error-propagation-trigger-first",
       "timer-user-task-composition",
       "intermediate-catch-message",
@@ -541,7 +542,7 @@ test("corpus compilation preserves exact scenario overlays and rejects incomplet
       await t.test(`${caseId}: exact identity and bytes reach the production compiler`, async () => {
         await writeFile(scenarioPath, JSON.stringify(scenario));
         const report = await inspect(selectedCases, true);
-        assert.equal(report.acceptedModels, 63);
+        assert.equal(report.acceptedModels, 64);
       });
       await t.test(`${caseId}: declared identity requires its selected path`, async () => {
         await assert.rejects(inspect(pipelineCases), /source overlay.*path/i);

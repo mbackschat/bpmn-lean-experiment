@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Operation control places
 
 The token-carrying input and output places of each Semantic Process operation, shared by graph validation and its scope consequences. A place listed here is one the operation reads or produces in a committed run; scope ownership of those places is decided by graph validation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

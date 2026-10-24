@@ -16,6 +16,7 @@ Exactly one stable work ID is active. Required maps govern routing.
 
 1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is accepted; advance `PC-DATA-03` surface by surface through consuming amendments; the handoff and effect-data amendments are closed. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
 
+
 ### Deferred checkpoints
 
 2. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Public registration is independently accepted; complete qualification and capsule closure remain open.
@@ -47,6 +48,15 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-23 | not-met | Refusal/ambiguity contract changes remain held. | — | — |
 | AA-24 | not-met | No progress-law change is selected; the deferred actual-Start guarantee and satisfiability witness remain open. | Preserve the delayed-Join/turnover discriminator. | [Exact progress claim and limits](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 
+### Lean build follow-ups
+
+[Migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) owns the steps; this list owns the class repairs found in step 3.
+
+- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
+- Before step 4: a fast guard that fails when a public declaration can win unqualified resolution over another of the same short name.
+- At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each.
+- After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
+
 ### Scheduled delivery batches
 
 Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md).
@@ -76,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Stage B of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md) in batch 2 of the [batch order](#scheduled-delivery-batches); Stage A's checkpoint was accepted at `f6933b64`. `PC-SCOPE-01`/`02` keep their recorded remainders and Multi-Instance closure stays held at qualification.
+Current task: landing of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md), closure-approved on 2026-10-24, batch 2 of the [batch order](#scheduled-delivery-batches); then [migration step 3](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: Stage B's Lean lift, with its kernel and closed-world edits batched into one complete rebuild at its start ([migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order): step 3 follows Stage B).
+Deliverable: `PC-SCOPE-05` and migration step 3 on `main`.
 
-Acceptance blockers: the Lean premise lift across its 21 consumer modules; registration (scenarios, pipeline cases, mutations, corpus row) waits for it, because pipeline cases need Lean–TypeScript agreement.
+Acceptance blockers: green hosted checks for step 3's branch; a green dependency-security check through the approved routine zod 4.4.3 → 4.6.6 upgrade, admissible after 2026-10-25 16:18 UTC. Routine fast-uri 3.1.9 (moderate advisories, below the gate) is admissible after 2026-11-02 23:05 UTC.
 
-Current result: Stage B's TypeScript core and host admission are committed. The [Call fixture pilot](lean-resource-costs/ELABORATION-AND-FIXTURES-LEDGER.md#call-fixture-pilot-2026-10-23) cut six modules from 425.0 s to 10.9 s. Guards read the module-system syntax. The kernel types are Lean modules with exposed public bodies and public helpers (`2f881290`, hosted complete rebuild green).
+Current result: `PC-SCOPE-05` is closure-approved and green on `3f457ad4`. Step 3 is committed: the library is modules, 97 evaluating fixture files stay plain; the complete container build and `BpmnConformance` are green and 131 cost rows re-measured. Two performance findings must close before the next coverage family adds pipeline cases: every Temporal run executes serially since `ec3ff2b3` (an absent effect schedule maps to `null`, but the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
-Effort budget: 14 hours of root Lean time for the lift, the capsule's bound; the kernel conversion used under one of its eight hours.
+Effort budget: 2 hours for the upgrade and landing; step 3's renewed 4 hours from 12:05 UTC.
 
-Next action: transcribe Stage B's well-formedness, association and called-root mapping changes into Lean, then lift the proofs.
+Next action: push step 3's branch and read its hosted checks; after 2026-10-25 16:18 UTC upgrade zod, push the branch and land on green checks for the exact SHA.
 
-Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
+Oracle: a landing commit whose hosted checks are not all green, or a zod version younger than 14 days.
 
-Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
+Stop if the upgrade needs a security exception, another dependency change, or a gate change. Existing runtime/release holds remain open.

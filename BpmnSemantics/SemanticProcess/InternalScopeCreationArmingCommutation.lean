@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 
 /-! Exact mixed scope/arming commutation uses the distinct consumed and created owners required
 by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

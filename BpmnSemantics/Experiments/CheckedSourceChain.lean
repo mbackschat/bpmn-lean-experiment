@@ -1,9 +1,13 @@
-import BpmnSemantics.Experiments.CheckedSourceDecomposition
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceDecomposition
 
 /-! # Declarative checked-source chains
 
 This module owns the graph-derived segment and chain relations plus executable-tail-parser soundness for the provisional structured-admission experiment.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

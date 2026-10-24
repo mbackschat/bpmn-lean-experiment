@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.CallReachability
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.CallReachability
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 
 /-! Open lifecycle projection through the actual scope-creation patch from the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 Successful old lookups remain exact; the newly created owner intentionally gains a lookup and anchor.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

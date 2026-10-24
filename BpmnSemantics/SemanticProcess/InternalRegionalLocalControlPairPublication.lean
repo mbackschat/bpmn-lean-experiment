@@ -1,15 +1,19 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlCommutation
-import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalChildCompletionRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalRootCompletionRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnOpenProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlCommutation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildCompletionRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalRootCompletionRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
 
 /-! Pair publication uses the same predecessor-selected templates and assigned transition
 indices in either execution order. Acceptance is proved against each actual successor. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -32,7 +36,14 @@ structure RegionalExecutionPublication (program : Program) (before after : Runti
     some prepared.publicationTemplate.positionDelta
   logicalTime : before.logicalTimeMs = prepared.publicationTemplate.logicalTimeMs
 
-theorem preparedRegional_preserves_runtimeStateWellFormed (program : Program) (before : RuntimeState)
+theorem prepareInternalRegional_operation_declared (program : Program) (before : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+    (found : prepareInternalRegional? program before operation = some prepared) :
+    operation ∈ program.operations :=
+  (List.mem_filter.mp (by rw [(prepareInternalRegional_facts program before operation prepared found).2.1]; simp)).1
+
+theorem preparedRegional_preserves_runtimeStateWellFormed (program : Program) [InterruptionInvocationsRooted program]
+    (before : RuntimeState)
     (instanceId : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program instanceId before = true)
     (found : prepareInternalRegional? program before operation = some prepared) :
@@ -48,15 +59,18 @@ theorem preparedRegional_preserves_runtimeStateWellFormed (program : Program) (b
       | none => exact preparedRootComplete_preserves_runtimeStateWellFormed program before instanceId id origin definition prepared valid found
       | some output => exact preparedChildComplete_preserves_runtimeStateWellFormed program before instanceId id origin definition output prepared valid found
   | throwError id origin input error handler =>
+      haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedError_preserves_runtimeStateWellFormed program before instanceId id origin input error handler prepared valid found
   | terminateScope id origin input definition =>
+      haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedTerminate_preserves_runtimeStateWellFormed program before instanceId id origin input definition prepared valid found
   | _ =>
       have selected := (ownershipClosedSelection_facts program before _ prepared.selection
         (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1
       simp [selectInternalRegional?] at selected
 
-theorem preparedRegional_accepted_lifecycle (program : Program) (before : RuntimeState)
+theorem preparedRegional_accepted_lifecycle (program : Program) [InterruptionInvocationsRooted program]
+    (before : RuntimeState)
     (instanceId commandId : SemanticId) (transitionIndex : Nat)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (programWF : programWellFormed program = true)
@@ -85,15 +99,18 @@ theorem preparedRegional_accepted_lifecycle (program : Program) (before : Runtim
           exact preparedChildComplete_accepted_lifecycle program before commandId transitionIndex
             id origin definition output prepared programWF identities found
   | throwError id origin input error handler =>
+      haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedError_accepted_lifecycle program before commandId transitionIndex id origin input error handler prepared unique found
   | terminateScope id origin input definition =>
+      haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedTerminate_accepted_lifecycle program before commandId transitionIndex id origin input definition prepared unique owners found
   | _ =>
       have selected := (ownershipClosedSelection_facts program before _ prepared.selection
         (prepareInternalRegional_facts program before _ prepared found).2.2.2.1).1
       simp [selectInternalRegional?] at selected
 
-theorem prepareInternalRegional_execution_publication (program : Program) (before : RuntimeState)
+theorem prepareInternalRegional_execution_publication (program : Program) [InterruptionInvocationsRooted program]
+    (before : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)
     (instanceId commandId : SemanticId) (transitionIndex : Nat)
     (programWF : programWellFormed program = true)
@@ -111,7 +128,9 @@ theorem prepareInternalRegional_execution_publication (program : Program) (befor
   have samePublished : publishedAfter = after := Option.some.inj (publishedApplied.symm.trans applied)
   subst publishedAfter
   obtain ⟨hosting, positionedAfter, running, positionedApplied, positioned⟩ :=
-    preparedRegional_position_delta program before operation prepared found
+    preparedRegional_position_delta program before operation prepared
+      (InterruptionInvocationsRooted.declared program operation (prepareInternalRegional_operation_declared program before operation prepared
+        found)) found
   have samePosition : positionedAfter = after := Option.some.inj (positionedApplied.symm.trans applied)
   subst positionedAfter
   have positionBefore : runtimePositionValid program instanceId before = true := by
@@ -133,7 +152,7 @@ theorem prepareInternalRegional_execution_publication (program : Program) (befor
 
 /-- Both execution orders preserve full validity and accept the original operation-specific
 record, lifecycle, position, and time. Each operation keeps its assigned publication index. -/
-theorem prepared_regional_local_control_pair_execution_publication (program : Program) (before : RuntimeState)
+theorem prepared_regional_local_control_pair_execution_publication (program : Program) [InterruptionInvocationsRooted program] (before : RuntimeState)
     (regionalOperation localOperation : SemanticOperation)
     (regional : PreparedInternalRegional) (control : PreparedInternalLocalControl)
     (commandId : SemanticId) (regionalIndex localIndex : Nat)

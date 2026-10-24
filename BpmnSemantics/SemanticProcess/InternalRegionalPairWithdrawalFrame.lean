@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
 
 /-! Bounded completion withdraws a parent-owned Activity and deadline outside its child region. Explicit Activity and Timer reads protect that selection where root disjointness alone would be insufficient. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

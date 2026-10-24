@@ -141,7 +141,7 @@ theorem actual_automatic_closure_ends_in_selected_reachability
   exact arbitrary_actual_internal_trace_preserves_selected_reachability
     before after operations reachable trace
 
-private def cyclicClosureRank (operationId : OperationId) : Nat :=
+def cyclicClosureRank (operationId : OperationId) : Nat :=
   if operationId = ⟨"operation:Start"⟩ ∨
       operationId = ⟨"operation:Choice"⟩ then 0
   else if operationId = ⟨"operation:Merge"⟩ ∨

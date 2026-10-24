@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
 
 /-! # Reachable Human and Service input multiplicity
 
@@ -8,6 +10,8 @@ and actual lifetime firing accounting supply child and returned-parent cases.
 Token multiplicity follows from token-or-wait credit, independently of any future
 application, reservation or successful frontier discovery.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

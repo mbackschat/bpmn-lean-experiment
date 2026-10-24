@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 
 /-! Regional removal preserves occurrence uniqueness through sublists. Membership inclusion is
 insufficient for RSI-UNIQ-02 because it forgets multiplicity; the symbolic duplicate witness separates
 that weaker premise without assuming successor validity. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

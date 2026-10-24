@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
 
 /-! # Declaration provenance along actual parallel-scope histories
 
 RSI-BIND-04 is established by Start and carried through actual successful
 execution, so later reservation proofs need not assume provenance at every step.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

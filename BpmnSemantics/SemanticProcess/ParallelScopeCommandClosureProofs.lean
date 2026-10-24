@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierTotalityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierTotalityProofs
 
 /-! PMIS-SELECT-01 composes phase-local selection laws through actual command boundaries. Committed ingress and the exact retirement prefix supply their premises; arbitrary interleaved replay history is insufficient. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.ProfileAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Parallel Multi-Instance evaluator soundness and invariant preservation
 
@@ -9,6 +11,8 @@ Each executable evaluator is a checked realization of the corresponding declarat
 The post-state invariant check is part of fail-closed evaluation, never a repair: a candidate that
 does not satisfy the complete applicable invariant is refused before it can become committed state.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

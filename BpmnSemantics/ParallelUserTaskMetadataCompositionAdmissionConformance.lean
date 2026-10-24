@@ -1,27 +1,31 @@
-import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
+module
+
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 
 /-! # Parallel User Task metadata composition admission conformance
 
 Proved exact profile identity, structural admission, task-to-metadata binding, metadata erasure, negative profile boundaries, and data-value admission for the composition checkpoint.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def eraseOperationMetadata : SemanticOperation → SemanticOperation
+def eraseOperationMetadata : SemanticOperation → SemanticOperation
   | .awaitUserTask id origin input output task =>
       .awaitUserTask id origin input output { task with metadata := none }
   | operation => operation
 
-private def eraseProgramMetadata (program : Program) : Program :=
+def eraseProgramMetadata (program : Program) : Program :=
   { program with
     identity :=
       { program.identity with semanticProfile := ⟨"parallel-fork-join-draft"⟩ }
     operations := program.operations.map eraseOperationMetadata }
 
-private def exactTaskMetadataPairing (source : CheckedProcess) : Bool :=
+def exactTaskMetadataPairing (source : CheckedProcess) : Bool :=
   source.nodes.contains
       (.userTask ⟨"UserTask_ContentReview"⟩
         (some "Review content") (some contentMetadata)) &&
@@ -29,7 +33,7 @@ private def exactTaskMetadataPairing (source : CheckedProcess) : Bool :=
       (.userTask ⟨"UserTask_RiskReview"⟩
         (some "Review risk") (some riskMetadata))
 
-private def missingRiskMetadataProcess : CheckedProcess :=
+def missingRiskMetadataProcess : CheckedProcess :=
   { compositionCheckedProcess with
     nodes := compositionCheckedProcess.nodes.map fun
       | .userTask id name metadata =>
@@ -37,7 +41,7 @@ private def missingRiskMetadataProcess : CheckedProcess :=
           else .userTask id name metadata
       | node => node }
 
-private def swappedMetadataProcess : CheckedProcess :=
+def swappedMetadataProcess : CheckedProcess :=
   { compositionCheckedProcess with
     nodes := compositionCheckedProcess.nodes.map fun
       | .userTask id name _ =>
@@ -47,7 +51,7 @@ private def swappedMetadataProcess : CheckedProcess :=
             .userTask id name (some contentMetadata)
       | node => node }
 
-private def oldProfileComposition : CheckedProcess :=
+def oldProfileComposition : CheckedProcess :=
   { compositionCheckedProcess with
     identity :=
       { compositionCheckedProcess.identity with

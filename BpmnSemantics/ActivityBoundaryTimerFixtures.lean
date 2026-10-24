@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! The boundary-Timer fixture is shared by executable rejection probes and its conformance proofs. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ActivityBoundaryTimerConformance
 

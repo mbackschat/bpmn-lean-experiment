@@ -1,7 +1,7 @@
 /**
  * The core journey of the retained guarantor loan (CALLN-FRAME-01, CALLN-INVOKE-01, CALLN-RETURN-01,
  * CALLN-IDENTITY-01, CALLN-REFUSE-01 for Stage B). Frame contents are runtime-only, so this test reads committed state
- * directly; the oracle is the repeated, nested and concurrent Calls proposal's Stage B rules over the Call variable
+ * directly; the oracle is the repeated, nested and concurrent Calls specification's Stage B rules over the Call variable
  * mapping account.
  */
 import assert from "node:assert/strict";

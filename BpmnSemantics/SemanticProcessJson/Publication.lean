@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Committed execution publication JSON
 
 This module owns one-way JSON projection for cross-target evidence: unnumbered committed transition records, control positions, and semantic occurrence lifecycles. The scenario runner supplies its canonical stimulus encoder for complete command schedules; the standalone parallel witness retains its manual-Start encoder. Private occurrence anchors are diagnostic evidence, never public Product 1 identities. Revisioning, state observation, and Temporal facts remain outside this owner.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson.Publication
 
@@ -15,15 +19,15 @@ open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcessJson
 open Lean
 
-private def jsonArray (values : List Json) : Json :=
+def jsonArray (values : List Json) : Json :=
   .arr values.toArray
 
-private def variableBindingJson (binding : VariableBinding) : Json :=
+def variableBindingJson (binding : VariableBinding) : Json :=
   Json.mkObj
     [ ("name", toJson binding.name)
     , ("value", encodeVariableValue binding.value) ]
 
-private def manualStartStimulusJson? : Stimulus → Option Json
+def manualStartStimulusJson? : Stimulus → Option Json
   | .startProcess commandId processId instanceId initialVariables =>
       some <| Json.mkObj
         [ ("kind", toJson "startProcess")
@@ -34,7 +38,7 @@ private def manualStartStimulusJson? : Stimulus → Option Json
             jsonArray (initialVariables.map variableBindingJson)) ]
   | _ => none
 
-private def operationKindJson : SemanticOperationKind → Option Json
+def operationKindJson : SemanticOperationKind → Option Json
   | .initiate => some (toJson "initiate")
   | .initiateMessage => some (toJson "initiateMessage")
   | .initiateTimer => some (toJson "initiateTimer")
@@ -80,17 +84,17 @@ private def operationKindJson : SemanticOperationKind → Option Json
   | .triggerCompensation => some (toJson "triggerCompensation")
   | .cancelTransaction => some (toJson "cancelTransaction")
 
-private def scopeOccurrenceIdJson (id : ScopeOccurrenceId) : Json :=
+def scopeOccurrenceIdJson (id : ScopeOccurrenceId) : Json :=
   Json.mkObj
     [ ("processInstanceId", toJson id.processInstanceId.value)
     , ("definitionScopeId", toJson id.definitionScopeId.value)
     , ("activation", toJson id.activation) ]
 
-private def optionalScopeOccurrenceIdJson : Option ScopeOccurrenceId → Json
+def optionalScopeOccurrenceIdJson : Option ScopeOccurrenceId → Json
   | none => .null
   | some id => scopeOccurrenceIdJson id
 
-private def originJson (origin : BpmnElementOrigin) : Json :=
+def originJson (origin : BpmnElementOrigin) : Json :=
   Json.mkObj
     [ ("kind", toJson "bpmnElement")
     , ("elementId", toJson origin.elementId.value) ]
@@ -104,7 +108,7 @@ def internalTransitionJson (record : InternalTransitionRecord) : Option Json := 
     , ("origin", originJson record.origin)
     , ("owner", scopeOccurrenceIdJson record.owner) ]
 
-private def committedTransitionJson? (encodeStimulus : Stimulus → Option Json) :
+def committedTransitionJson? (encodeStimulus : Stimulus → Option Json) :
     CommittedTransition → Option Json
   | .externalStimulus stimulus => do
       pure <| Json.mkObj
@@ -112,13 +116,13 @@ private def committedTransitionJson? (encodeStimulus : Stimulus → Option Json)
         , ("stimulus", ← encodeStimulus stimulus) ]
   | .internalOperation record => internalTransitionJson record
 
-private def tokenPositionJson (position : PublicControlTokenPosition) : Json :=
+def tokenPositionJson (position : PublicControlTokenPosition) : Json :=
   Json.mkObj
     [ ("sequenceFlowId", toJson position.sequenceFlowId.value)
     , ("owner", scopeOccurrenceIdJson position.owner)
     , ("multiplicity", toJson position.multiplicity) ]
 
-private def scopePositionJson (position : PublicScopePosition) : Json :=
+def scopePositionJson (position : PublicScopePosition) : Json :=
   Json.mkObj
     [ ("id", scopeOccurrenceIdJson position.id)
     , ("parent", optionalScopeOccurrenceIdJson position.parent)
@@ -131,12 +135,12 @@ def positionDeltaJson (delta : PublicControlPositionDelta) : Json :=
     , ("enteredScopes", jsonArray (delta.enteredScopes.map scopePositionJson))
     , ("exitedScopes", jsonArray (delta.exitedScopes.map scopePositionJson)) ]
 
-private def currentPositionJson (position : PublicControlPosition) : Json :=
+def currentPositionJson (position : PublicControlPosition) : Json :=
   Json.mkObj
     [ ("controlTokens", jsonArray (position.controlTokens.map tokenPositionJson))
     , ("scopes", jsonArray (position.scopes.map scopePositionJson)) ]
 
-private def transitionSuccessor? (program : Program) (state : RuntimeState) :
+def transitionSuccessor? (program : Program) (state : RuntimeState) :
     CommittedTransition → Option RuntimeState
   | .externalStimulus stimulus =>
       let admission := admitStimulusWithCompensationSnapshots program state stimulus
@@ -146,7 +150,7 @@ private def transitionSuccessor? (program : Program) (state : RuntimeState) :
       then replayInternalTransitionWithCompensationSnapshots? program state record
       else ParallelScopeReplay.internalTransition? program state record
 
-private def transitionRecordJson? (program : Program) (instanceId : SemanticId)
+def transitionRecordJson? (program : Program) (instanceId : SemanticId)
     (encodeStimulus : Stimulus → Option Json)
     (before : RuntimeState) (transition : CommittedTransition) :
     Option (Json × RuntimeState) := do
@@ -160,7 +164,7 @@ private def transitionRecordJson? (program : Program) (instanceId : SemanticId)
         , ("positionDelta", positionDeltaJson delta) ]
     , successor )
 
-private def transitionRecordsJson? (program : Program) (instanceId : SemanticId) :
+def transitionRecordsJson? (program : Program) (instanceId : SemanticId) :
     (Stimulus → Option Json) → RuntimeState → List CommittedTransition → Option (List Json × RuntimeState)
   | _, state, [] => some ([], state)
   | encodeStimulus, state, transition :: remaining => do
@@ -191,11 +195,11 @@ def committedExecutionPublicationJson? (closureLimit : Nat) (program : Program)
   tracedExecutionPublicationJson? program instanceId initial
     (applyStimulusTracedWithCompensationSnapshots closureLimit program initial stimulus)
 
-private def occurrenceIdJson (id : OccurrenceId) : Json :=
+def occurrenceIdJson (id : OccurrenceId) : Json :=
   Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
     ("elementId", toJson id.elementId.value), ("activation", toJson id.activation)]
 
-private def anchorJson : SemanticFlowNodeOccurrenceAnchor → Json
+def anchorJson : SemanticFlowNodeOccurrenceAnchor → Json
   | .wait id => Json.mkObj [("kind", toJson "wait"), ("id", occurrenceIdJson id)]
   | .scope id => Json.mkObj [("kind", toJson "scope"), ("id", scopeOccurrenceIdJson id)]
   | .callActivity id => Json.mkObj [("kind", toJson "callActivity"), ("id", occurrenceIdJson id)]
@@ -218,7 +222,7 @@ def occurrenceDeltaJson (delta : UnnumberedFlowNodeOccurrenceDelta) : Json :=
         | .completed => "completed"
         | .cancelled => "cancelled")]))]
 
-private def projectionRejectionsJson
+def projectionRejectionsJson
     (cases : List (String × Program × SemanticId × RuntimeState)) : Json :=
   Json.mkObj <| cases.map fun (label, program, instanceId, state) =>
     (label, toJson (projectControlPosition? program instanceId state).isNone)
@@ -229,7 +233,7 @@ Separate from `projectionRejectionsJson` because the two decide different propos
 whether a state projects, this one whether the account admits it at all. A state can fail either
 without failing the other, so folding them into one section would let a disagreement in one hide
 behind agreement in the other. -/
-private def wellFormednessRejectionsJson
+def wellFormednessRejectionsJson
     (cases : List (String × Program × SemanticId × RuntimeState)) : Json :=
   Json.mkObj <| cases.map fun (label, program, instanceId, state) =>
     (label, toJson (!runtimeStateWellFormed program instanceId state))

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Ordinary embedded Sub-Process completion conformance
 
 This module owns the direct Lean account for one ordinary embedded Sub-Process. A child scope starts once, retains both parallel User Task occurrences, refuses early scope completion after only one child End Event, resumes the parent only after child quiescence, and then completes through the outer User Task and None End Event.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EmbeddedSubProcessCompletionConformance
 
@@ -145,7 +149,7 @@ def afterBThenA : StimulusResult :=
 def completed : StimulusResult :=
   applyStimulus scenarioClosureLimit program afterAThenB.state completeAfterScope
 
-private def taskObservation (id : UserTaskInstanceId) (name : String) :
+def taskObservation (id : UserTaskInstanceId) (name : String) :
     OpenUserTask :=
   { id, name := some name, state := .active }
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 
 /-! # Called-tree position preservation
 
@@ -6,6 +8,8 @@ Call cleanup removes a forward-closed set of Process instances. Retained endpoin
 Call censuses, and reachability in the smaller graph must be derived from predecessor validity;
 keeping the old traversal fuel or assuming successor association validity would miss that boundary.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -185,20 +189,31 @@ theorem removeCalledProcessTree_preserves_call_associations (state : RuntimeStat
           change keep record = true at kept
           have keptFields := kept
           simp only [keep, Bool.and_eq_true, Bool.not_eq_true', Bool.eq_false_iff, ne_eq, List.contains_iff_mem] at keptFields
-          have callerCensus := scopeCensus record.caller (·.parent.isNone) keptFields.1.2
+          have callerCensus := scopeCensus record.caller (fun _ => true) keptFields.1.2
+          simp only [Bool.and_true] at callerCensus
           have targetCensus := scopeCensus record.calledRoot (·.parent.isNone) keptFields.2
+          have elementCensus := retained_singleton_census state.calledProcessOccurrences keep
+            (fun candidate => decide (candidate.id.elementId.value = record.id.elementId.value))
+            record oldMember (by simp) (of_decide_eq_true fields.1.1.1.1.1.1.1.1.1) kept
           have anchorCensus := retained_singleton_census state.calledProcessOccurrences keep
             (fun candidate => decide (candidate.caller = record.caller) &&
               decide (candidate.id.elementId.value = record.id.elementId.value))
             record oldMember (by simp) (of_decide_eq_true fields.1.2) kept
           simp only [Bool.decide_and, Bool.decide_eq_true] at fields ⊢
           rw [callerCensus, targetCensus]
-          refine ⟨⟨fields.1.1, ?_⟩, fields.2⟩
-          change decide (((state.calledProcessOccurrences.filter keep).filter
-            (fun candidate => decide (candidate.caller = record.caller) &&
-              decide (candidate.id.elementId.value = record.id.elementId.value))).length = 1) = true
-          rw [anchorCensus]
-          exact fields.1.2
+          obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨element, process⟩, positive⟩, caller⟩, derived⟩, notHosting⟩, separated⟩,
+            activation⟩, anchor⟩, target⟩ := fields
+          refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨?_, process⟩, positive⟩, caller⟩, derived⟩, notHosting⟩, separated⟩,
+            activation⟩, ?_⟩, target⟩
+          · change decide (((state.calledProcessOccurrences.filter keep).filter
+              (fun candidate => decide (candidate.id.elementId.value = record.id.elementId.value))).length = 1) = true
+            rw [elementCensus]
+            exact element
+          · change decide (((state.calledProcessOccurrences.filter keep).filter
+              (fun candidate => decide (candidate.caller = record.caller) &&
+                decide (candidate.id.elementId.value = record.id.elementId.value))).length = 1) = true
+            rw [anchorCensus]
+            exact anchor
         · intro occurrence member
           obtain ⟨oldMember, kept⟩ := List.mem_filter.mp member
           have outside : occurrence.id.processInstanceId ∉ removed := by
@@ -251,6 +266,7 @@ theorem removeCalledProcessTree_preserves_position (program : Program) (state : 
     apply removeCalledProcessTree_preserves_call_census state selected calls selectedMember occurrence.id
     simpa only [Bool.not_eq_true', Bool.eq_false_iff, ne_eq, List.contains_iff_mem] using kept
   · exact removeCalledProcessTree_preserves_call_associations state instanceId selected running calls selectedMember
+  · exact fun _ member => (List.mem_filter.mp member).1
   · intro occurrence member parent parentEq
     obtain ⟨prior, kept⟩ := List.mem_filter.mp member
     obtain ⟨_, definition, _, _, binding⟩ := runtimePositionValid_scope_parent_binding

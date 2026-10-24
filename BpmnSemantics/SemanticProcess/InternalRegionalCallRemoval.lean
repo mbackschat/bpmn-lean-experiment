@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Prepared regions and actual Call cleanup
 
@@ -7,6 +9,8 @@ Call return removes a directed Process-instance tree. The Internal Commutation a
 records exact scope-occurrence regions; predecessor ownership connects these two deletion masks.
 Quiescence separately constrains the region selected by a normal completion or Return.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

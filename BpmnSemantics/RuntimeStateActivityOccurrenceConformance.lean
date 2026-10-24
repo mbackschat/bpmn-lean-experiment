@@ -1,4 +1,6 @@
-import BpmnSemantics.RuntimeStateWellFormedFixtures
+module
+
+public import BpmnSemantics.RuntimeStateWellFormedFixtures
 
 /-! # Runtime-state Activity occurrence negative fixtures
 
@@ -6,6 +8,8 @@ This module owns the kernel-decided Activity occurrence fixtures separately from
 Multi-Instance controller reductions so the independent proof families do not accumulate in one
 kernel target under the repository's hard 3 GiB Lean measurement bound.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -83,20 +87,20 @@ theorem disagreeing_activity_counter_is_admitted :
     runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
   decide +kernel
 
-private def ownerA : ScopeOccurrenceId :=
+def ownerA : ScopeOccurrenceId :=
   { processInstanceId := instanceId, definitionScopeId := ⟨"scope:A"⟩, activation := 1 }
 
-private def ownerB : ScopeOccurrenceId :=
+def ownerB : ScopeOccurrenceId :=
   { processInstanceId := instanceId, definitionScopeId := ⟨"scope:B"⟩, activation := 1 }
 
-private def ownedTaskId : OccurrenceId :=
+def ownedTaskId : OccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨"Task"⟩, activation := 1 }
 
-private def ownedTaskWait (owner : ScopeOccurrenceId) : UserTaskWait :=
+def ownedTaskWait (owner : ScopeOccurrenceId) : UserTaskWait :=
   { processInstanceId := instanceId, task := { id := ⟨"Task"⟩, name := none }
     activation := 1, owner, output := ⟨"out"⟩ }
 
-private def ownershipState (body : ActivityBody) (waits : List UserTaskWait) : RuntimeState :=
+def ownershipState (body : ActivityBody) (waits : List UserTaskWait) : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := ownerA, parent := none }, { id := ownerB, parent := some ownerA }]
@@ -133,10 +137,10 @@ theorem task_owner_agreement_preserves_child_scope_identity :
       decide (ownerA = ownerB) = false := by
   decide +kernel
 
-private def scopeIteration (activation index : Nat) : ParallelScopeIteration :=
+def scopeIteration (activation index : Nat) : ParallelScopeIteration :=
   { scope := { ownerB with activation }, loopCounter := index, item := "applicant" }
 
-private def parallelScopeState : RuntimeState :=
+def parallelScopeState : RuntimeState :=
   { ownershipState (.parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 2]) [] with
     scopeOccurrences := [{ id := ownerA, parent := none },
       { id := ownerB, parent := some ownerA },
@@ -165,7 +169,7 @@ theorem parallel_scope_membership_refuses_duplicate_identity_and_index :
           { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 0] } } = false := by
   decide +kernel
 
-private def parallelController : ParallelScopeController :=
+def parallelController : ParallelScopeController :=
   { id := { processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1 }
     total := 3, completed := 1 }
 

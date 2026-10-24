@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 
 /-! # Logical time of admitted parallel histories
 
@@ -6,6 +8,8 @@ PMIS-ADMIT-01 admits no clock-advancing ingress. Actual Start fixes logical time
 at zero and every admitted internal or completion step preserves it, supplying
 the safe logical-time gate required by PMIS-SELECT-01 reservation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

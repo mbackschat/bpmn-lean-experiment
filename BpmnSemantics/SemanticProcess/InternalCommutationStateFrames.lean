@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.InternalCommutationProjection
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Internal commutation state-frame proofs
 
 Collects the collection-order, owner, position, activation, declaration, and identity frames shared by the runtime-preservation and final commutation proofs.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

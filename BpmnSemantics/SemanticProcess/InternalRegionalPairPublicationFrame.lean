@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 
 /-! A preparation frame must preserve the publication template as well as readiness. Canonical positions and lifecycle populations assemble the unchanged complete regional artifact from predecessor facts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -178,7 +182,7 @@ theorem regionalNonCancellingLifecycle_frame (program : Program) (before after :
           (regionalSelection_root_member program after operation selected selectedAfter) child
         cases op : selected.operation <;> simp only [regionalLifecycleTemplate?, op, kind, parent, oldCount, newCount, ↓reduceIte]
 
-theorem regionalPublicationTemplate_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem regionalPublicationTemplate_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)
@@ -247,7 +251,7 @@ theorem regionalPublicationTemplate_after_independent_regional (program : Progra
 
 /-- The full predecessor-selected artifact survives the other regional operation.
 The reverse direction is the same theorem with symmetric independence. -/
-theorem prepareInternalRegional_after_independent_regional (program : Program) (before after : RuntimeState)
+theorem prepareInternalRegional_after_independent_regional (program : Program) [InterruptionInvocationsRooted program] (before after : RuntimeState)
     (hosting : SemanticId) (leftOperation rightOperation : SemanticOperation)
     (left right : PreparedInternalRegional)
     (valid : runtimeStateWellFormed program hosting before = true)

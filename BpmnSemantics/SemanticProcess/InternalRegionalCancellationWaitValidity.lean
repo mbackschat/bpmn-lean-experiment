@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationTimerFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationTimerFrames
 
 /-! Cancellation retains the complete owner and Event Race censuses of surviving waits.
 Together with AOO-JOIN-03's Activity-host frames, these laws preserve wait correspondence;
 the Effect-local bijection is a separate obligation at the composition boundary. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

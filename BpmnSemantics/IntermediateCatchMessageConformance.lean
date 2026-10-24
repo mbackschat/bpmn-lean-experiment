@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Intermediate Catch Message conformance
 
 This module closes the payload-free direct-address Message capsule over one Message-then-User-Task Process and the reverse mechanism order. It owns the exact checked sources, lowering locks, separating refusals, bounded-closure witnesses, and stable public observations. CIB Message compatibility, payloads, name or business-key routing, modeled throw, Collaboration, and Message Flow are outside this account.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.IntermediateCatchMessageConformance
 

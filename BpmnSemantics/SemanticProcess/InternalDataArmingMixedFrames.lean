@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationPreservation
-import BpmnSemantics.SemanticProcess.InternalCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationPreservation
+public import BpmnSemantics.SemanticProcess.InternalCommutation
 
 /-! # Complete mixed data and ordinary arming frames
 
 One predecessor and footprint separation determine both complete re-preparations. The
 Activity supplement preserves ordinary reads through the discriminated local-owner contract.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
 
 /-! Timer-task and Activity-data arming retain separate task and Activity issuers.
 The complete preparations also protect both untagged wait anchors and Activity body ownership.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

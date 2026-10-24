@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
-import BpmnSemantics.SemanticProcess.WaitActivation
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+public import BpmnSemantics.SemanticProcess.WaitActivation
 
 /-! Ordinary wait changes preserve Compensation execution when exact owner separation
 and retained identity provenance follow from the predecessor state. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

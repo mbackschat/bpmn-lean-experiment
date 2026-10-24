@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.NestedScopeData
-import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
-import BpmnSemantics.SemanticProcess.WaitCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! # Nested scope-data command writes
 
@@ -12,6 +14,8 @@ chain of the completed wait's owner (`NSD-WRITE-01`) instead of merging into Pro
 completion patch may name only frame-declared names on that chain (`NSD-TASK-01`), which is a
 profile admission restriction: CIB would create a root binding for an undeclared name.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -40,13 +44,21 @@ def patchUtf8Bytes? (patch : List VariableBinding) : Option Nat := do
 def patchByteLimit : Nat := 16384
 
 /-- The names declared on the owner's chain; at a called root, CVM-TASK-01 adds the output sources,
-which the callee may set before return although no input copied them. -/
-def declaredNames (program : Program) (variables : ScopedVariables) (owner : ScopeOccurrenceId) :
+which the callee may set before return although no input copied them. The sources are those of the
+Call whose live record created this instance's called root (CALLN-FRAME-01). -/
+def declaredNames (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId) :
     List String :=
   let chain := definitionChain program.definitionScopes owner.definitionScopeId
   let framed := chain.flatMap fun scopeId =>
-    (framesOf variables.scopes owner.processInstanceId scopeId).flatMap fun frame => frame.bindings.map (·.name)
-  let sources := match calledRootOf? program chain >>= calledRootMappings? program with
+    (framesOf state.variables.scopes owner.processInstanceId scopeId).flatMap fun frame =>
+      frame.bindings.map (·.name)
+  let mappings := calledRootOf? program chain >>= fun scopeId =>
+    match state.scopeOccurrences.filter (fun occurrence =>
+        occurrence.parent.isNone && occurrence.id.processInstanceId == owner.processInstanceId &&
+          occurrence.id.definitionScopeId == scopeId) with
+    | [root] => calledRootMappings? program state.calledProcessOccurrences root.id
+    | _ => none
+  let sources := match mappings with
     | some (_, outputs) => outputs.filterMap fun mapping => match mapping.expression with
         | .localVariable name => some name
         | _ => none
@@ -55,10 +67,10 @@ def declaredNames (program : Program) (variables : ScopedVariables) (owner : Sco
 
 /-- NSD-TASK-01: distinct names in canonical order, each declared on the owner's chain, each an
 admitted `SingletonBusinessItem`, and the whole patch within one value allowance. -/
-def patchAdmitted (program : Program) (variables : ScopedVariables) (owner : ScopeOccurrenceId)
+def patchAdmitted (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (patch : List VariableBinding) : Bool :=
   strictlySortedStrings (patch.map (·.name)) &&
-    patch.all (fun binding => (declaredNames program variables owner).contains binding.name &&
+    patch.all (fun binding => (declaredNames program state owner).contains binding.name &&
       EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value) &&
     (patchUtf8Bytes? patch).any (· ≤ patchByteLimit)
 
@@ -74,7 +86,7 @@ def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserT
     (values : List VariableBinding) : Option RuntimeState := do
   let [wait] := state.waits.filter (taskIdNamesWait taskId) | none
   if (programAnalysis program).isNone || wait.processInstanceId != wait.owner.processInstanceId ||
-      !patchAdmitted program state.variables wait.owner values then none
+      !patchAdmitted program state wait.owner values then none
   else
     let successor ← completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId
     let variables ← writeAll? program successor.variables wait.owner.processInstanceId

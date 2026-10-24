@@ -18,6 +18,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "concurrent-activations-intake-reverse-assessments",
   "repeated-nested-calls-natural-order",
   "repeated-nested-calls-reverse-order-stale-and-cross-addressed",
+  "repeated-nested-calls-guarantor-verified",
+  "repeated-nested-calls-guarantor-absent",
   "subprocess-error-propagation-trigger-first",
   "subprocess-error-propagation-sibling-first",
   "subprocess-error-propagation-stale-sibling-after-error",

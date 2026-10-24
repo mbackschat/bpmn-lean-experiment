@@ -1,8 +1,12 @@
-import BpmnSemantics.EnginePopulationScenarioJson
-import BpmnSemantics.SemanticProcessJson.DefinitionInput
-import BpmnSemantics.SemanticProcessJson.Observation
+module
+
+public import BpmnSemantics.EnginePopulationScenarioJson
+public import BpmnSemantics.SemanticProcessJson.DefinitionInput
+public import BpmnSemantics.SemanticProcessJson.Observation
 
 /-! Canonical JSON-lines emitter for admitted engine-population scenarios. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EnginePopulationScenarioJsonMain
 
@@ -14,14 +18,14 @@ open Lean
 
 open BpmnSemantics.SemanticProcessJson.Observation
 
-private def resourceIdentityJson (resource : ResourceIdentity) : Json :=
+def resourceIdentityJson (resource : ResourceIdentity) : Json :=
   Json.mkObj
     [ ("id", toJson resource.id.value)
     , ("relativePath", toJson resource.relativePath)
     , ("sha256", toJson resource.sha256)
     , ("sourceOverlay", sourceOverlayIdentityJson resource.sourceOverlay) ]
 
-private def initializationStimulusJson : Stimulus → Option Json
+def initializationStimulusJson : Stimulus → Option Json
   | .startProcess commandId processId instanceId initialVariables =>
       some <| Json.mkObj
         [ ("kind", toJson "startProcess")
@@ -39,13 +43,13 @@ private def initializationStimulusJson : Stimulus → Option Json
         , ("payload", encodeVariableValue payload) ]
   | _ => none
 
-private def instanceJson? (processInstance : EnginePopulationInstance) : Option Json := do
+def instanceJson? (processInstance : EnginePopulationInstance) : Option Json := do
   let stimuli ← processInstance.stimuli.mapM initializationStimulusJson
   some <| Json.mkObj
     [ ("definitionId", toJson processInstance.definitionId.value)
     , ("stimuli", jsonArray stimuli) ]
 
-private def publicationJson (publication : EnginePopulationPublication) : Json :=
+def publicationJson (publication : EnginePopulationPublication) : Json :=
   Json.mkObj
     [ ("kind", toJson "publishCorrelatedPayloadMessage")
     , ("commandId", toJson publication.commandId.value)
@@ -53,13 +57,13 @@ private def publicationJson (publication : EnginePopulationPublication) : Json :
     , ("payload", Json.mkObj
         [("kind", toJson "string"), ("value", toJson publication.payload.value)]) ]
 
-private def provenanceJson (provenance : ScenarioProvenance) : Json :=
+def provenanceJson (provenance : ScenarioProvenance) : Json :=
   Json.mkObj
     [ ("normativeRefs", toJson provenance.normativeRefs)
     , ("cibRevision", toJson provenance.cibRevision)
     , ("cibRefs", toJson provenance.cibRefs) ]
 
-private def scenarioJson? (scenario : EnginePopulationScenario) : Option Json := do
+def scenarioJson? (scenario : EnginePopulationScenario) : Option Json := do
   let instances ← scenario.instances.mapM instanceJson?
   some <| Json.mkObj
     [ ("kind", toJson "enginePopulationScenario")
@@ -77,30 +81,30 @@ private def scenarioJson? (scenario : EnginePopulationScenario) : Option Json :=
         , ("cib", .null) ])
     , ("provenance", provenanceJson scenario.provenance) ]
 
-private def targetJson (target : EnginePopulationTarget) : Json :=
+def targetJson (target : EnginePopulationTarget) : Json :=
   Json.mkObj
     [ ("processInstanceId", toJson target.processInstanceId.value)
     , ("subscriptionId", occurrenceIdJson target.subscriptionId) ]
 
-private def publicationOutcomeJson : EnginePopulationPublicationOutcome → Json
+def publicationOutcomeJson : EnginePopulationPublicationOutcome → Json
   | .committed target =>
       Json.mkObj [("kind", toJson "committed"), ("target", targetJson target)]
   | .rejectedNoMatch => Json.mkObj [("kind", toJson "rejectedNoMatch")]
   | .rejectedAmbiguous => Json.mkObj [("kind", toJson "rejectedAmbiguous")]
 
-private def publicationResultJson
+def publicationResultJson
     (result : EnginePopulationPublicationResult) : Json :=
   Json.mkObj
     [ ("commandId", toJson result.commandId.value)
     , ("ingressOrdinal", toJson result.ingressOrdinal)
     , ("outcome", publicationOutcomeJson result.outcome) ]
 
-private def ingressOrdinalJson (ordinal : EnginePopulationIngressOrdinal) : Json :=
+def ingressOrdinalJson (ordinal : EnginePopulationIngressOrdinal) : Json :=
   Json.mkObj
     [ ("commandId", toJson ordinal.commandId.value)
     , ("ingressOrdinal", toJson ordinal.ingressOrdinal) ]
 
-private def resultJson (result : EnginePopulationResult) : Json :=
+def resultJson (result : EnginePopulationResult) : Json :=
   Json.mkObj
     [ ("kind", toJson "enginePopulationResult")
     , ("scenarioId", toJson result.scenarioId.value)
@@ -110,7 +114,7 @@ private def resultJson (result : EnginePopulationResult) : Json :=
     , ("ingressOrdinals",
         jsonArray (result.ingressOrdinals.map ingressOrdinalJson)) ]
 
-private def readDefinitionInputs (path : System.FilePath) :
+def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do
   let contents ← IO.FS.readFile path
   let lines := (contents.splitOn "\n").filter fun line => !line.isEmpty
@@ -119,7 +123,7 @@ private def readDefinitionInputs (path : System.FilePath) :
     | .ok input => pure input
     | .error message => throw (IO.userError message)
 
-private def readScenario (path : System.FilePath) :
+def readScenario (path : System.FilePath) :
     IO EnginePopulationScenario := do
   let contents ← IO.FS.readFile path
   match decodeEnginePopulationScenarioDocument contents with
@@ -127,13 +131,13 @@ private def readScenario (path : System.FilePath) :
   | .error message =>
       throw (IO.userError s!"invalid engine population scenario {path}: {message}")
 
-private def bindingsForScenario (inputs : List DefinitionInput)
+def bindingsForScenario (inputs : List DefinitionInput)
     (scenario : EnginePopulationScenario) :
     List (SemanticId × BpmnSemantics.SemanticProcess.Program) :=
   (inputs.filter fun input => input.scenarioId = scenario.id).map fun input =>
     (input.checkedProcess.identity.sourceId, input.semanticProcess)
 
-private def resultRecordJson? (inputs : List DefinitionInput)
+def resultRecordJson? (inputs : List DefinitionInput)
     (scenario : EnginePopulationScenario) : Option Json := do
   let scenarioJson ← scenarioJson? scenario
   let result ← runEnginePopulationScenario scenario

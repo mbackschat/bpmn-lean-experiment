@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Structured Inclusive Gateway runtime
 
 This module owns the occurrence-local selected-branch record and the split/join state transformations for the bounded structured Inclusive Gateway profile. Public observation deliberately excludes the record; scope completion and interruption still treat it as owned live state.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def insertPlace (place : ControlPlaceId) :
+def insertPlace (place : ControlPlaceId) :
     List ControlPlaceId → List ControlPlaceId
   | [] => [place]
   | candidate :: rest =>
@@ -20,7 +24,7 @@ def canonicalControlPlaceOrder : List ControlPlaceId → List ControlPlaceId
   | [] => []
   | place :: rest => insertPlace place (canonicalControlPlaceOrder rest)
 
-private def sameSelectionOwner (owner : ScopeOccurrenceId) (key : String)
+def sameSelectionOwner (owner : ScopeOccurrenceId) (key : String)
     (record : SelectedBranchSet) : Bool :=
   decide (record.owner = owner && record.selectionKey = key)
 

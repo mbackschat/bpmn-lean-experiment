@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
-import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
+public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 
 /-! Ordinary waits preserve complete bounded-entry preparation. The shared child-entry laws
 handle token populations; regional separation additionally protects the joined deadline.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

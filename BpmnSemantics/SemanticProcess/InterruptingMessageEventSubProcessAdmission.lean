@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! Structural admission for the bounded application-withdrawal graph. The dormant handler is identified
 by declaration and ownership, never by a fixture name; generic artifact and profile admission remain separate. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -10,33 +14,33 @@ open BpmnSemantics
 abbrev interruptingMessageEventSubProcessProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-interrupting-message-event-subprocess-draft"⟩
 
-private def nodeOwner? (source : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
+def nodeOwner? (source : CheckedProcess) (id : NodeId) : Option DefinitionScopeId :=
   match source.nodeScopes.filter (fun ownership => ownership.nodeId == id) with
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def flowOwner? (source : CheckedProcess) (id : SequenceFlowId) : Option DefinitionScopeId :=
+def flowOwner? (source : CheckedProcess) (id : SequenceFlowId) : Option DefinitionScopeId :=
   match source.sequenceFlowScopes.filter (fun ownership => ownership.sequenceFlowId == id) with
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def ordinaryTasks (nodes : List CheckedNode) : List NodeId :=
+def ordinaryTasks (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .userTask id _ none => some id
     | _ => none
 
-private def noneEnds (nodes : List CheckedNode) : List NodeId :=
+def noneEnds (nodes : List CheckedNode) : List NodeId :=
   nodes.filterMap fun
     | .noneEndEvent id => some id
     | _ => none
 
-private def between (source : CheckedProcess) (sourceId targetId : NodeId) : List CheckedSequenceFlow :=
+def between (source : CheckedProcess) (sourceId targetId : NodeId) : List CheckedSequenceFlow :=
   source.sequenceFlows.filter (fun flow => flow.sourceId == sourceId && flow.targetId == targetId)
 
-private def exactEdge (source : CheckedProcess) (sourceId targetId : NodeId) : Bool :=
+def exactEdge (source : CheckedProcess) (sourceId targetId : NodeId) : Bool :=
   (between source sourceId targetId).length == 1
 
-private def withdrawalTopology (source : CheckedProcess)
+def withdrawalTopology (source : CheckedProcess)
     (declaration : CheckedInterruptingMessageEventSubProcess) : Bool :=
   let parentNodes := source.nodes.filter fun node => nodeOwner? source node.id == some declaration.parentScopeId
   let childNodes := source.nodes.filter fun node => nodeOwner? source node.id == some declaration.handlerScopeId

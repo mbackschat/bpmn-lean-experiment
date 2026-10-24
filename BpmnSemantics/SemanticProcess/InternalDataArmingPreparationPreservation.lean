@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 
 /-! # Data-arming preparation preservation
 
 The predecessor-selected copy and both independent issuers survive the other task's six-field
 update. Complete preparation, including association freshness, is reconstructed from those reads.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

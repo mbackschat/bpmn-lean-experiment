@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 
 /-! Bounded entry's child insertion uses the ordinary scope-position law. The joined Timer and
 Activity preserve that position while retaining their separate validity obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -192,7 +196,7 @@ theorem prepareInternalBoundedScope_preserves_child_runtime
   have result := selectedScopeCreation_preserves_runtimeStateWellFormed program domain instanceId state
     contract.entryOperation entry hosting ownerRecord contract.origin definition delta
     valid entryFound control snapshots ownerExact definitionFound checks position (fun entry declared => (separation entry declared).1)
-    (by intro record called; simp [child] at called)
+    (by intro record called; simp [child] at called) (by intro record called; simp [child] at called)
   simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] using result
 
@@ -212,7 +216,7 @@ theorem prepareInternalBoundedScope_preserves_child_position
   have childPosition := selectedScopeCreation_preserves_runtimePositionValid program state
     contract.entryOperation entry instanceId hosting ownerRecord contract.origin definition delta
     valid entryFound control ownerExact definitionFound checks position
-    (by intro record called; simp [child] at called)
+    (by intro record called; simp [child] at called) (by intro record called; simp [child] at called)
   simpa only [makeInternalBoundedScopePreparation, makeInternalBoundedScopeSelection,
     InternalScopeCreationSelection.apply, child] using childPosition
 

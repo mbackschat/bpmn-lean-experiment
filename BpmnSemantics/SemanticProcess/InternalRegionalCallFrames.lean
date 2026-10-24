@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 
 /-! REG-OWN-FRAME-01 requires re-derived Call masks, not just closure under a fixed mask.
 Disjoint forward closures preserve every reachable Call edge, including the selected-ID filter;
 the filtered graph is evaluated with its own record-count fuel. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -26,9 +30,9 @@ theorem calledProcessAssociationsValid_same_id_same_target (state : RuntimeState
       have leftFields := valid.1.1 left leftMember
       have rightFields := valid.1.1 right rightMember
       have leftId : left.id.processInstanceId = left.caller.processInstanceId :=
-        of_decide_eq_true leftFields.1.1.1.1.1.1.1.1
+        of_decide_eq_true leftFields.1.1.1.1.1.1.1.1.2
       have rightId : right.id.processInstanceId = right.caller.processInstanceId :=
-        of_decide_eq_true rightFields.1.1.1.1.1.1.1.1
+        of_decide_eq_true rightFields.1.1.1.1.1.1.1.1.2
       have leftTarget : left.calledRoot.processInstanceId =
           deriveCalledProcessInstanceId left.caller.processInstanceId
             ⟨left.id.elementId.value⟩ left.id.activation :=

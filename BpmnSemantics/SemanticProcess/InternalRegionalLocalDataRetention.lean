@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 
 /-! ADINPUT-SCOPE-01 and ADIO-SCOPE-01 require retained Activity-local data to keep its exact
 live Activity owner. This private preparation condition leaves the global Effect-only predicate
 and the raw regional cleanup operations unchanged. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 
 /-! # Actual parallel reservation owner bounds
 
@@ -6,6 +8,8 @@ PMIS-ENTER-01 starts the child counter at zero and admits at most sixteen items.
 Its issued scope ordinal census therefore supplies reservation's owner bounds;
 actual continuation history retains those identities without allocating scopes.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

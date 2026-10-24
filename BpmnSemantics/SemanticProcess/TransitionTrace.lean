@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.TransitionRecord
-import BpmnSemantics.SemanticProcess.ClosureLimit
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionRecord
+public import BpmnSemantics.SemanticProcess.ClosureLimit
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
 
 /-! # Committed semantic transition traces
 
 This module owns the revision-free trace produced at the external evaluator boundary. It records the exact admitted stimulus and the metadata of each operation selected by bounded internal closure. The trace never changes `RuntimeState`, and strict replay resolves and checks an operation before firing it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -31,7 +35,7 @@ def stableStateResumable (state : RuntimeState) : Bool :=
   | .completed _ | .cancelled _ => true
   | .failed .. => false
 
-private def prependLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
+def prependLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
     (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
     Option (List UnnumberedFlowNodeOccurrenceDelta) := do
   pure ((← head) :: (← tail))
@@ -60,7 +64,7 @@ def publicationPairBefore (left right : InternalPublicationPair) : Bool :=
     else
       leftOccurrence.activation < rightOccurrence.activation
 
-private def canonicalPublicationPair :
+def canonicalPublicationPair :
     InternalPublicationPair → List InternalPublicationPair → List InternalPublicationPair
   | pair, [] => [pair]
   | pair, current :: rest =>
@@ -184,13 +188,13 @@ structure ScheduledTracedStimulusResult where
   flowNodeOccurrenceLifecycles : List UnnumberedFlowNodeOccurrenceDelta
   deriving Repr, DecidableEq
 
-private structure EvaluatedStimulus where
+structure EvaluatedStimulus where
   result : StimulusResult
   scheduleFailure : Option InternalCommutation.InternalChoiceScheduleFailure := none
   candidateTransitions : Option (List CommittedTransition)
   candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
 
-private def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
+def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus)
     (schedule : InternalCommutation.InternalChoiceSchedule) : EvaluatedStimulus :=
   let admission := admitStimulus program state stimulus
@@ -232,7 +236,7 @@ private def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
         candidateTransitions := none
         candidateLifecycles := none }
 
-private def evaluateStimulus (closureLimit : Nat) (program : Program)
+def evaluateStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
   evaluateStimulusScheduled closureLimit program state stimulus []
 
@@ -260,7 +264,7 @@ private theorem evaluateStimulusScheduled_failure_is_atomic
             simp_all [StimulusResult.ofScheduledClosure]
   all_goals simp [outcomeEq] at failed
 
-private def replayCheckedTransitions (program : Program) (initial result : RuntimeState) :
+def replayCheckedTransitions (program : Program) (initial result : RuntimeState) :
     Option (List CommittedTransition) → List CommittedTransition
   | some candidate =>
       if ParallelScopeReplay.committedTransitions? program initial candidate = some result then candidate else []
@@ -279,14 +283,14 @@ private theorem replayCheckedTransitions_sound (program : Program)
       · simp [replayCheckedTransitions, replays]
       · simp [replayCheckedTransitions, replays] at published
 
-private def publishEvaluatedTransitions (program : Program) (initial : RuntimeState)
+def publishEvaluatedTransitions (program : Program) (initial : RuntimeState)
     (evaluated : EvaluatedStimulus) : List CommittedTransition :=
   match evaluated.result.outcome with
   | .committed => replayCheckedTransitions program initial evaluated.result.state
       evaluated.candidateTransitions
   | .rolledBack | .rejected | .semanticFailure | .unsupported => []
 
-private def publishEvaluatedLifecycles (program : Program) (initial : RuntimeState)
+def publishEvaluatedLifecycles (program : Program) (initial : RuntimeState)
     (evaluated : EvaluatedStimulus) : List UnnumberedFlowNodeOccurrenceDelta :=
   let transitions := publishEvaluatedTransitions program initial evaluated
   match evaluated.candidateLifecycles with

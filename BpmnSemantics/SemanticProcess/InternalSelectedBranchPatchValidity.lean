@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+public import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 
 /-! Selected-record validity for the approved
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -50,7 +54,10 @@ theorem InternalSelectedBranchPatch.preserves_hiddenRecordDeclarationsValid (pro
   intro record equality
   have counted : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
-      | _ => false).length = 1) = true := by simp [inserted record equality]
+      | _ => false).length = 1) = true :=
+    -- A term, checked up to unfolding: `inserted` carries the statement's matcher and this restatement
+    -- this proof's private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    decide_eq_true (inserted record equality)
   refine Eq.trans ?_ counted
   apply congrArg (fun operations : List SemanticOperation => decide (operations.length = 1))
   apply List.filter_congr
@@ -250,7 +257,9 @@ theorem selectedBranchSet_insert_invalid_declarer_count_refused (program : Progr
       (InternalSelectedBranchPatch.insert record).apply state.selectedBranchSets } = false := by
   have countFalse : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
-      | _ => false).length = 1) = false := by simp [invalid]
+      | _ => false).length = 1) = false :=
+    -- A term, checked up to unfolding, for the matcher split (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    decide_eq_false invalid
   simp only [hiddenRecordDeclarationsValid, InternalSelectedBranchPatch.apply,
     insertSelectedBranchSetCanonical_eq_canonicalInsertBy, all_canonicalInsertBy]
   apply Bool.and_eq_false_iff.mpr

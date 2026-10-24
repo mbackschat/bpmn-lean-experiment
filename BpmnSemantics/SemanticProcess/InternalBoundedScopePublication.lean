@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 
 /-! Bounded Sub-Process arming publishes its child start and control-position delta through the
 existing acceptance boundary; the attached deadline remains private under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

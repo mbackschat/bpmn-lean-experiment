@@ -1,10 +1,14 @@
-import BpmnSemantics.ActivityBoundaryTimerFixtures
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
 
 /-! # Runtime-state well-formedness fixtures
 
 This module owns the shared boundary-Timer program, instance, reachable state, and ordinary malformed
 states used by the independent runtime-state well-formedness proof leaves.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

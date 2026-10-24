@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! ESL-OWN-01 requires atomic Task/Message/Activity preparation for source-reachable mixed
 frontiers. The existing tagged association footprint protects all three independent issuers;
 the Message anchor joins the Task anchor in the retained publication template. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

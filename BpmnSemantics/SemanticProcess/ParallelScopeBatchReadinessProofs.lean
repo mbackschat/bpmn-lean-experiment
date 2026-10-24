@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TokenPatchLaws
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+module
+
+public import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Parallel batch reservation provenance
 
@@ -8,6 +10,8 @@ PMIS-SELECT-01 freezes slots using the preceding members of the same cohort.
 The trace below retains the actual reservation calls and their accumulators;
 it supplies provenance for prefix revalidation without assuming application succeeds.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

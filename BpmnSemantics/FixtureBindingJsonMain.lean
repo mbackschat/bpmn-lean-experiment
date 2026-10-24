@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcessJson.DefinitionInput
-import BpmnSemantics.SemanticProcessJson.Scenario
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
-import BpmnSemantics.UserTaskInteractionConformance
-import BpmnSemantics.ParallelForkJoinConformance
+module
+
+public import BpmnSemantics.SemanticProcessJson.DefinitionInput
+public import BpmnSemantics.SemanticProcessJson.Scenario
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+public import BpmnSemantics.UserTaskInteractionConformance
+public import BpmnSemantics.ParallelForkJoinConformance
 
 /-! Exact external-input binding for concrete conformance fixtures. Synthetic countermodels,
 generic laws, and arbitrary-schedule theorems have no corresponding Scenario input here.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FixtureBindingJsonMain
 
@@ -16,20 +20,20 @@ open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcessJson
 open Lean
 
-private def sequentialScenarios : List Scenario :=
+def sequentialScenarios : List Scenario :=
   [ UserTaskInteractionConformance.successfulScenario
   , UserTaskInteractionConformance.wrongActivationScenario
   , UserTaskInteractionConformance.staleCompletionScenario ]
 
-private def parallelScenarios : List Scenario :=
+def parallelScenarios : List Scenario :=
   [ ParallelForkJoinConformance.aThenBScenario
   , ParallelForkJoinConformance.bThenAScenario
   , ParallelForkJoinConformance.staleAWhileBActiveScenario ]
 
-private def expectedScenarios : List Scenario :=
+def expectedScenarios : List Scenario :=
   sequentialScenarios ++ parallelScenarios
 
-private def expectedDefinitions : List DefinitionInput :=
+def expectedDefinitions : List DefinitionInput :=
   (sequentialScenarios.map fun scenario =>
     { scenarioId := scenario.id
       checkedProcess := sequentialCheckedProcess
@@ -42,12 +46,12 @@ private def expectedDefinitions : List DefinitionInput :=
      checkedProcess := cyclicCheckedProcess
      semanticProcess := cyclicProgram }]
 
-private def decoded (value : Except String α) : IO α :=
+def decoded (value : Except String α) : IO α :=
   match value with
   | .ok result => pure result
   | .error message => throw (IO.userError message)
 
-private def requireIdentities (kind : String) (expected actual : List String) :
+def requireIdentities (kind : String) (expected actual : List String) :
     IO Unit := do
   let mut seen : List String := []
   for id in actual do
@@ -61,7 +65,7 @@ private def requireIdentities (kind : String) (expected actual : List String) :
     if !actual.contains id then
       throw (IO.userError s!"missing {kind} identity: {id}")
 
-private def checkDefinition (input : DefinitionInput) : IO Unit := do
+def checkDefinition (input : DefinitionInput) : IO Unit := do
   let some expected := expectedDefinitions.find? (·.scenarioId == input.scenarioId)
     | throw (IO.userError s!"unknown definition identity: {input.scenarioId.value}")
   if input.checkedProcess ≠ expected.checkedProcess then
@@ -69,7 +73,7 @@ private def checkDefinition (input : DefinitionInput) : IO Unit := do
   if input.semanticProcess ≠ expected.semanticProcess then
     throw (IO.userError s!"Program fixture mismatch: {input.scenarioId.value}")
 
-private def checkScenario (scenario : Scenario) : IO Unit := do
+def checkScenario (scenario : Scenario) : IO Unit := do
   let some expected := expectedScenarios.find? (·.id == scenario.id)
     | throw (IO.userError s!"unknown Scenario identity: {scenario.id.value}")
   if scenario ≠ expected then

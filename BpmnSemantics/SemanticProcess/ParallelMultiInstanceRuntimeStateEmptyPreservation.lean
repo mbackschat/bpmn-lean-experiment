@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Empty parallel Multi-Instance runtime-state preservation
 
@@ -8,6 +10,8 @@ The zero-item entry route closes the Activity atomically without creating a cont
 composes that route's existing conjunct laws into the complete runtime-state invariant while keeping
 the reusable Parallel Multi-Instance preservation owner below its reviewability ceiling.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

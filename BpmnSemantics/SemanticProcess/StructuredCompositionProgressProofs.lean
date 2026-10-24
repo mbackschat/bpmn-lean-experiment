@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.StructuredCompositionCompletionAvailabilityProofs
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredCompositionCompletionAvailabilityProofs
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 
 /-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. Discovery also requires the selected profile because `ordinaryExecutionFrontier` and `mergeExecutionFrontier` dispatch by profile while structural analysis remains profile-independent. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.RuntimeStateWellFormedFixtures
+module
+
+public import BpmnSemantics.RuntimeStateWellFormedFixtures
 
 /-! # Runtime-state well-formedness successor negatives
 
 This module owns the kernel-decided counter, identity-issuing, and logical-time successor witnesses
 without importing the ordinary invariant or event-race reduction families.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

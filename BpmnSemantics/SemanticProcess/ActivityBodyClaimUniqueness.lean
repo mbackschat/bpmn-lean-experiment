@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Activity body-claim uniqueness
 
@@ -10,11 +12,13 @@ The predicate depends only on the ordered body projection. Activity identity, bo
 controller binding, and host order are independent obligations and are not inferred here.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def exactListsOverlap [DecidableEq α] (left right : List α) : Bool :=
+def exactListsOverlap [DecidableEq α] (left right : List α) : Bool :=
   left.any fun leftClaim => right.any fun rightClaim => decide (leftClaim = rightClaim)
 
 private theorem exactListsOverlap_comm [DecidableEq α] (left right : List α) :

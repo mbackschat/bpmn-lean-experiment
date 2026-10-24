@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 
 /-! # Hosting-root termination position
 
@@ -7,6 +9,8 @@ The admitted Terminate selector binds its owner to the hosting Process. Cancelli
 reaches every live child and called instance, retains the hosting root, and leaves ordinary
 completion responsible for the terminal control change.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -30,8 +34,8 @@ theorem calledInstanceClosure_hosting_covers_calls (program : Program) (state : 
   have direct (record : CalledProcessOccurrence) (member : record ∈ state.calledProcessOccurrences)
       (callerHost : record.caller.processInstanceId = instanceId) :
       record.calledRoot.processInstanceId ∈ calledInstanceClosure state root.id := by
-    obtain ⟨⟨caller, callerMember, callerId, _⟩, _⟩ :=
-      calledProcessAssociationsValid_parentless_endpoints state calls record member
+    obtain ⟨⟨caller, callerMember, callerId⟩, _⟩ :=
+      calledProcessAssociationsValid_endpoints state calls record member
     have inside := runtimePositionValid_same_instance_root_subtree program expectedInstanceId instanceId
       state valid running root caller rootMember callerMember parentless (by rw [callerId, callerHost, hosting])
     have callerInside : occurrenceInSubtree state.scopeOccurrences root.id record.caller = true := by
@@ -200,6 +204,8 @@ theorem cancelScopeSubtree_hosting_preserves_position (program : Program) (state
   · simp only [calledProcessAssociationsValid, rootInstanceId?, cancelScopeSubtree_preserves_control,
       running, fields.1, fields.2.2]
     simp [parentless, hosting]
+  · intro record member
+    simp [fields.2.2] at member
   · intro occurrence member parent parentEq
     rw [fields.1] at member
     rw [List.mem_singleton.mp member, parentless] at parentEq
@@ -214,7 +220,7 @@ its End-history increment changes neither control nor ownership. -/
 theorem terminateScopeState_preserves_position (program : Program) (before after : RuntimeState)
     (expectedInstanceId : SemanticId) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (scopeId : DefinitionScopeId)
-    (valid : runtimePositionValid program expectedInstanceId before = true)
+    (valid : runtimePositionValid program expectedInstanceId before = true) [CallersParentless before]
     (result : terminateScopeState? program before id origin input scopeId = some after) :
     runtimePositionValid program expectedInstanceId after = true := by
   have step := terminateScopeState_sound program before after id origin input scopeId result

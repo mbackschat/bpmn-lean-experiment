@@ -37,11 +37,33 @@ export function changedScenario(context: DomainContext, suffix: string, stimuli:
   return { ...context.scenario, id: `${context.scenario.id}-${suffix}`, stimuli };
 }
 
+/**
+ * The schedules whose shape a profile-specific builder below reads. Without a pin, the first registered case of the
+ * profile is its representative, so registering another case of the profile earlier silently re-selected the schedule
+ * a builder relies on (the guarantor loan displaced the purchase order on 2026-10-24).
+ */
+const pinnedRepresentatives: ReadonlyArray<readonly [string, string]> = [
+  [SemanticProfileId.MessagePayloadCatch, "message-payload-catch-supplied-scalar"],
+  [SemanticProfileId.CallActivityDataBoundaries, "call-data-supplier-string"],
+  [SemanticProfileId.Compensation, "compensation-success-b-c-a"],
+  [SemanticProfileId.PortableBusinessValuesHandoff, "portable-handoff-order-nested"],
+  [SemanticProfileId.PortableBusinessEffectData, "effect-data-credit-assessed"],
+  [SemanticProfileId.PortableBusinessMessagePayload, "portable-message-payload-manifest-delivered"],
+  [SemanticProfileId.NestedEmbeddedScopeData, "nested-scope-data-order-approved"],
+  [SemanticProfileId.MappedSuccessServiceTask, "mapped-success-service-task"],
+  [SemanticProfileId.EmbeddedSubProcessCompletion, "embedded-subprocess-completion-a-then-b"],
+];
+
 /** One retained answer-free schedule per registered profile, plus the correlated population schedule for Message key correlation. */
 export async function selectedProfileContexts(): Promise<ReadonlyMap<string, DomainContext>> {
   const contexts = await loadAndCompileCases(pipelineCases);
   const selected = new Map<string, DomainContext>();
   for (const context of contexts) if (!selected.has(context.scenario.profile)) selected.set(context.scenario.profile, context);
+  for (const [profile, id] of pinnedRepresentatives) {
+    const pinned = contexts.find(({ scenario }) => scenario.id === id);
+    assert.ok(pinned !== undefined && pinned.scenario.profile === profile, `${id} must be registered under ${profile}`);
+    selected.set(profile, pinned);
+  }
   const population = (await loadMessageKeyCorrelationPopulationCases()).find(input => input.scenario.id === "message-key-correlation-unique")!;
   const definition = population.definitions[0]!;
   const source = population.scenario.definitions[0]!;

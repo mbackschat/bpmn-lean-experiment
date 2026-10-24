@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
-import BpmnSemantics.SemanticProcess.InternalLocalControlSelectionFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlSelectionFrames
 
 /-! Complete preparation frames use the exact predecessor dependencies retained by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

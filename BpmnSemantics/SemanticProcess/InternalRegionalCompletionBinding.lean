@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+module
+
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 
 /-! # Bounded completion declaration binding
 
 Checked graph admission gives each control place one producer. A projected boundary output
 therefore identifies its declaring operation independently of Activity-to-Program completeness.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

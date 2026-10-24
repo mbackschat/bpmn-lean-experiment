@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
-import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+public import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
 
 /-! # Parallel command phase provenance
 
@@ -9,6 +11,8 @@ The broader accounting history remains separate from actual reachability; this
 certificate supplies its premises without claiming future scheduling or publication
 success. Pending initiation is explicit and accepts no completion ingress.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics InternalCommutation ParallelScopeReplay

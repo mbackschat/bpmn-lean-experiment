@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 
 /-! # Reserved arming replay of parallel scope bodies
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 reserved arming: token patches leave reservation validity unchang
 arming retains its exact selection and readiness gates and matches ordinary occurrence execution. These facts
 depend on no replay history, so they stay separate from the structural frames in `ParallelScopeReplayFrames`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Timer Start Event lowering
 
 This module owns endpoint-derived Timer Start fan-out and exact `PT1S` normalization. Checked admission establishes the selected source shape before this total projection is used.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

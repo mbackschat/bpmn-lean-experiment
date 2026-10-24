@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+module
+
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
 
 /-! MBERR-MAP-01 and MBERR-DATA-01 connect primitive occurrence-owned Error completion to the shared continuation invariant. The successor and its data are derived from exact local-result validity, not supplied as successful-completion premises. Public admission and actual-Start preservation remain separate assembly obligations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

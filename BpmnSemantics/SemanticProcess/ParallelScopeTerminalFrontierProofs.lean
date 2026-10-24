@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
 
 /-! # Root completion in an actual parallel frontier
 
@@ -7,6 +9,8 @@ lifetime scope sublist. Native root completion supplies quiescence and completed
 initiation; admission identifies the sole parent completion. No empty-population
 or successful-preparation premise substitutes for those execution facts.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

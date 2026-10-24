@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Compensation trigger and handler flow-node occurrences
 
@@ -9,32 +11,34 @@ so a handler whose body has a distinct element contributes both its handler anch
 anchor without inventing a second semantic operation.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def compensationTriggerStart (program : Program) (origin : BpmnElementOrigin)
+def compensationTriggerStart (program : Program) (origin : BpmnElementOrigin)
     (trigger : CompensationTriggerExecution) : UnnumberedFlowNodeOccurrenceStart :=
   { anchor := .compensationTrigger trigger.id
     processId := program.processId
     elementId := origin.elementId
     owner := trigger.owner }
 
-private def compensationHandlerStart (program : Program) (owner : ScopeOccurrenceId)
+def compensationHandlerStart (program : Program) (owner : ScopeOccurrenceId)
     (handler : CompensationHandlerExecution) : UnnumberedFlowNodeOccurrenceStart :=
   { anchor := .compensationHandler handler.identity.id
     processId := program.processId
     elementId := handler.identity.handlerElementId
     owner }
 
-private def compensationEffectStart (program : Program) (owner : ScopeOccurrenceId)
+def compensationEffectStart (program : Program) (owner : ScopeOccurrenceId)
     (effectId : EffectOccurrenceId) : UnnumberedFlowNodeOccurrenceStart :=
   { anchor := .wait effectId
     processId := program.processId
     elementId := ⟨effectId.elementId.value⟩
     owner }
 
-private def activeCompensationHandlerStarts (program : Program) (owner : ScopeOccurrenceId) :
+def activeCompensationHandlerStarts (program : Program) (owner : ScopeOccurrenceId) :
     List CompensationHandlerExecution → List UnnumberedFlowNodeOccurrenceStart
   | [] => []
   | handler :: rest =>
@@ -46,7 +50,7 @@ private def activeCompensationHandlerStarts (program : Program) (owner : ScopeOc
             else compensationEffectStart program owner effectId :: tail
       | .pending _ | .compensated | .failed | .terminated => tail
 
-private def activeCompensationTriggerStarts (program : Program)
+def activeCompensationTriggerStarts (program : Program)
     (operation : SemanticOperation) :
     List CompensationTriggerExecution → List UnnumberedFlowNodeOccurrenceStart
   | [] => []
@@ -60,7 +64,7 @@ private def activeCompensationTriggerStarts (program : Program)
           activeCompensationHandlerStarts program trigger.owner trigger.handlers ++ tail
       | _, _ => tail
 
-private def declaredCompensationTriggerOperation? (program : Program) :
+def declaredCompensationTriggerOperation? (program : Program) :
     Option SemanticOperation := do
   let declaration ← program.compensationExecution
   match program.operations.filter fun operation =>
@@ -140,7 +144,7 @@ theorem projectOpenCompensationFlowNodeOccurrences_nonTransition (program : Prog
 
 The approved checkpoint forbids profile admission, while lifecycle fold checking still requires the
 same runtime correspondence checks as the independently written TypeScript open-set projector. -/
-private def projectOpenOrdinaryFlowNodeOccurrencesForCompensation? (program : Program)
+def projectOpenOrdinaryFlowNodeOccurrencesForCompensation? (program : Program)
     (state : RuntimeState) : Option (List OpenSemanticFlowNodeOccurrence) :=
   match state.control with
   | .running _ => do
@@ -163,7 +167,7 @@ def projectOpenFlowNodeOccurrencesWithCompensation? (program : Program)
   let projected := sortFlowNodeOccurrenceStarts (ordinary ++ compensation)
   if projected.map (·.anchor) |>.Nodup then some projected else none
 
-private def compensationHandlerTerminalEnds (handler : CompensationHandlerExecution)
+def compensationHandlerTerminalEnds (handler : CompensationHandlerExecution)
     (terminal : FlowNodeOccurrenceTerminalKind) : List UnnumberedFlowNodeOccurrenceEnd :=
   match handler.lifecycle with
   | .compensating _ effectId =>
@@ -172,13 +176,13 @@ private def compensationHandlerTerminalEnds (handler : CompensationHandlerExecut
         else [{ anchor := .wait effectId, terminal }]
   | .pending _ | .compensated | .failed | .terminated => []
 
-private def pendingBefore (handlers : List CompensationHandlerExecution)
+def pendingBefore (handlers : List CompensationHandlerExecution)
     (id : OccurrenceId) : Bool :=
   match handlers.filter fun handler => decide (handler.identity.id = id) with
   | [{ lifecycle := .pending _, .. }] => true
   | _ => false
 
-private def newlyActiveCompensationHandlerStarts (program : Program)
+def newlyActiveCompensationHandlerStarts (program : Program)
     (owner : ScopeOccurrenceId) (before : List CompensationHandlerExecution) :
     List CompensationHandlerExecution → List UnnumberedFlowNodeOccurrenceStart
   | [] => []
@@ -193,7 +197,7 @@ private def newlyActiveCompensationHandlerStarts (program : Program)
           else tail
       | .pending _ | .compensated | .failed | .terminated => tail
 
-private def compensationTriggerLifecycle? (program : Program) (before after : RuntimeState)
+def compensationTriggerLifecycle? (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
     (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta :=
@@ -214,7 +218,7 @@ private def compensationTriggerLifecycle? (program : Program) (before after : Ru
   | _ => none
 
 /-- TXC-CANCEL-01 publishes interruption from the selected pre-state region and eligibility. -/
-private def transactionCancellationLifecycle? (program : Program) (before after : RuntimeState)
+def transactionCancellationLifecycle? (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
     (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
@@ -242,7 +246,7 @@ private def transactionCancellationLifecycle? (program : Program) (before after 
   let instant := instantaneousFlowNodeOccurrenceDelta commandId transitionIndex identities
   pure (canonicalFlowNodeOccurrenceDelta (started ++ instant.started) (ended ++ instant.ended))
 
-private def transactionCompletionLifecycle? (program : Program) (before : RuntimeState)
+def transactionCompletionLifecycle? (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (trigger afterTrigger : CompensationTriggerExecution)
     (handler : CompensationHandlerExecution) (result : EffectExecutionResult)
     (commandId : SemanticId) (transitionIndex : Nat) :
@@ -264,7 +268,7 @@ private def transactionCompletionLifecycle? (program : Program) (before : Runtim
       pure (canonicalFlowNodeOccurrenceDelta [] (current.map fun occurrence =>
         { anchor := occurrence.anchor, terminal := .cancelled }))
 
-private def compensationCompletionLifecycle? (program : Program) (before after : RuntimeState)
+def compensationCompletionLifecycle? (program : Program) (before after : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
     (commandId : SemanticId) (transitionIndex : Nat) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
@@ -307,7 +311,7 @@ private def compensationCompletionLifecycle? (program : Program) (before after :
           compensationHandlerTerminalEnds candidate .cancelled
       pure (canonicalFlowNodeOccurrenceDelta [] ended)
 
-private def acceptCompensationFlowNodeOccurrenceCandidate? (program : Program)
+def acceptCompensationFlowNodeOccurrenceCandidate? (program : Program)
     (before after : RuntimeState) (candidate : UnnumberedFlowNodeOccurrenceDelta) :
     Option UnnumberedFlowNodeOccurrenceDelta := do
   let openBefore ← projectOpenFlowNodeOccurrencesWithCompensation? program before

@@ -1,4 +1,6 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source admission and lowering conformance
 
@@ -6,6 +8,8 @@ The exact checked graph, independently authored Program, profile admission, lowe
 cross-artifact definition binding remain separate kernel decisions so no compound fixture term can
 consume the complete memory allowance.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

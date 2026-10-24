@@ -1,5 +1,7 @@
-import BpmnSemantics.RuntimeStateWellFormedEventRaceFixtures
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.RuntimeStateWellFormedEventRaceFixtures
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Runtime-state well-formedness event-race negatives
 
@@ -7,6 +9,8 @@ This module owns the kernel-decided hidden Event-Based Gateway record refusal, i
 attribution check, and the reachable positive race state independently of the ordinary and successor
 reduction families.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

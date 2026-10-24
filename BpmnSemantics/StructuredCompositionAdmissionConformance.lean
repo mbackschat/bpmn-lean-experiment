@@ -27,7 +27,7 @@ theorem serial_start_requires_only_invoice : (StructuredComposition.programAnaly
 theorem serial_automatic_burst_is_two : (StructuredComposition.programAnalysis serialProgram).map (·.maximumBurst) =
     some 2 := by decide +kernel
 
-private def aliasInput (input : DirectActivityDataInput) (variant : Nat) : DirectActivityDataInput :=
+def aliasInput (input : DirectActivityDataInput) (variant : Nat) : DirectActivityDataInput :=
   match variant with
   | 0 => { input with targetDataInputId := "AssessInput" }
   | 2 => { input with associationId := "Assess" }
@@ -36,10 +36,10 @@ private def aliasInput (input : DirectActivityDataInput) (variant : Nat) : Direc
   | 5 => { input with source := .property "InvoiceProcess" }
   | _ => input
 
-private def aliasOutput (output : DirectActivityDataOutput) (variant : Nat) : DirectActivityDataOutput :=
+def aliasOutput (output : DirectActivityDataOutput) (variant : Nat) : DirectActivityDataOutput :=
   if variant == 1 then { output with sourceDataOutputId := "AssessOutput" } else output
 
-private def aliasedChecked (variant : Nat) : CheckedProcess :=
+def aliasedChecked (variant : Nat) : CheckedProcess :=
   { serialChecked with nodes := serialChecked.nodes.map fun node =>
       match node with
       | .dataInputOutputUserTask id name input output =>
@@ -48,7 +48,7 @@ private def aliasedChecked (variant : Nat) : CheckedProcess :=
           else node
       | _ => node }
 
-private def aliasedProgram (variant : Nat) : Program :=
+def aliasedProgram (variant : Nat) : Program :=
   { serialProgram with operations := serialProgram.operations.map fun operation =>
       match operation with
       | .awaitDataInputOutputUserTask id origin input output task name directInput directOutput =>
@@ -70,7 +70,7 @@ theorem program_cross_task_and_cross_role_aliases_rejected :
     ([0, 1, 2, 3, 4, 5].map fun variant => programProfileCapabilitiesValid (aliasedProgram variant)) =
       [false, false, false, false, false, false] := by decide +kernel
 
-private def branched (allWrite : Bool) : List StructuredComposition.Vertex :=
+def branched (allWrite : Bool) : List StructuredComposition.Vertex :=
   [ { id := "start", kind := .start, outputs := ["choice"] }
   , { id := "choice", kind := .choice, outputs := ["approve", "reject", "manual"] }
   , { id := "approve", kind := .task, outputs := ["merge"]
@@ -95,7 +95,7 @@ theorem every_branch_write_establishes_availability : (StructuredComposition.ana
 theorem declaration_reversal_preserves_requirements : (StructuredComposition.analyze (branched false).reverse).map (·.required) =
     some ["Decision", "Invoice"] := by decide +kernel
 
-private def nestedRegion : Nat → String → List StructuredComposition.Vertex
+def nestedRegion : Nat → String → List StructuredComposition.Vertex
   | 0, _ => []
   | depth + 1, next =>
       let split := "split" ++ toString (depth + 1)
@@ -104,7 +104,7 @@ private def nestedRegion : Nat → String → List StructuredComposition.Vertex
       [ { id := split, kind := .choice, outputs := [merge, merge, inner] }
       , { id := merge, kind := .merge, outputs := [next] } ] ++ nestedRegion depth merge
 
-private def nested (depth : Nat) : List StructuredComposition.Vertex :=
+def nested (depth : Nat) : List StructuredComposition.Vertex :=
   [{ id := "start", kind := .start, outputs := ["split" ++ toString depth] }] ++
     nestedRegion depth "task" ++
     [{ id := "task", kind := .task, outputs := ["end"] },
@@ -116,7 +116,7 @@ theorem nested_empty_regions_reach_exact_bound : (StructuredComposition.analyze 
 theorem one_deeper_region_exceeds_bound : (StructuredComposition.analyze (nested 4)).map (·.maximumBurst) =
     some (scenarioClosureLimit + 2) := by decide +kernel
 
-private def nineStep : List StructuredComposition.Vertex := (nested 3).map fun vertex =>
+def nineStep : List StructuredComposition.Vertex := (nested 3).map fun vertex =>
   if vertex.id == "split3" then { vertex with outputs := ["task", "merge3", "split2"] }
   else if vertex.id == "merge3" then { vertex with outputs := ["end"] }
   else if vertex.id == "task" then { vertex with outputs := ["merge3"] }
@@ -132,7 +132,7 @@ theorem exact_nine_step_route_exceeds_admission_limit :
 theorem private_profile_refuses_explicit_scheduling : programProfileCapabilitiesValid
     { serialProgram with internalSchedulingMode := .requireChoiceSchedule } = false := by decide +kernel
 
-private def crossing : List StructuredComposition.Vertex :=
+def crossing : List StructuredComposition.Vertex :=
   [ { id := "start", kind := .start, outputs := ["outer"] }
   , { id := "outer", kind := .choice, outputs := ["inner", "a", "b"] }
   , { id := "inner", kind := .choice, outputs := ["c", "d", "e"] }

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
-import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+public import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 
 /-! Prepared origins bind public multiplicities to private places under the alias refusal rule in
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

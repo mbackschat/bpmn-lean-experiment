@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.TransactionExecutionPhases
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionExecutionPhases
 
 /-! # Complete Transaction reachable-frontier classification
 
@@ -6,11 +8,13 @@ The actual admission and command/prefix induction derive the only multi-operatio
 other reached prefix has at most one offered transition, with transition multiplicity preserved.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics TransactionProgramRoles InternalCommutation
 
-private def appliedOperation : InternalOperationAttempt → Option SemanticOperation
+def appliedOperation : InternalOperationAttempt → Option SemanticOperation
   | .applied step => some step.operation
   | _ => none
 

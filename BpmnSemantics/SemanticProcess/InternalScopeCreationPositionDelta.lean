@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! Scope-creation position templates bind both differently owned token units and the entered scope
 to immutable provenance under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
