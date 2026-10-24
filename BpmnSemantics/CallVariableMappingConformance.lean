@@ -126,9 +126,9 @@ def loan_definition_is_admitted : Bool := decide <|
 def serviceCalledTask : CheckedNode :=
   .serviceTask ⟨"QU"⟩ { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := "collect" } [] [] none
 
-/-- CVM-ADMIT-01: a Call inside the review Sub-Process is PC-SCOPE-05's placement and is refused. -/
-def call_inside_a_sub_process_is_refused : Bool := decide <|
-    (analysisOf (checkedWith true "Q" inputs outputs collectDocument)).isNone = true
+/-- CALLN-ADMIT-01, Stage B: a Call on the serial path of the review Sub-Process is admitted under this profile. -/
+def call_inside_a_sub_process_is_admitted : Bool := decide <|
+    (analysisOf (checkedWith true "Q" inputs outputs collectDocument)).isSome = true
 
 /-- CVM-ADMIT-01: a called Process with a Service Task is refused. -/
 def called_service_task_is_refused : Bool := decide <|
@@ -255,7 +255,7 @@ def unset_output_source_overwrites_with_null : Bool := decide <|
 /-- Every check of this module, named for the executable driver's failure report. -/
 def checks : List (String × Bool) := [
   ("loan_definition_is_admitted", loan_definition_is_admitted),
-  ("call_inside_a_sub_process_is_refused", call_inside_a_sub_process_is_refused),
+  ("call_inside_a_sub_process_is_admitted", call_inside_a_sub_process_is_admitted),
   ("called_service_task_is_refused", called_service_task_is_refused),
   ("call_of_the_caller_is_refused", call_of_the_caller_is_refused),
   ("call_of_an_absent_process_is_refused", call_of_an_absent_process_is_refused),

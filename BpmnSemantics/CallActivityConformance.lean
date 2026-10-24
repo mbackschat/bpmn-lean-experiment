@@ -301,21 +301,30 @@ private def alternateHostingRootId : ScopeOccurrenceId :=
     definitionScopeId := ⟨"scope:AlternateHostingRoot"⟩
     activation := 1 }
 
+private def childCallerId : ScopeOccurrenceId :=
+  { processInstanceId := callerInstanceId
+    definitionScopeId := ⟨"scope:Caller_Child"⟩
+    activation := 1 }
+
+private def childCallerRecord? : Option CalledProcessOccurrence :=
+  calledWaiting.state.calledProcessOccurrences.head?.map ({ · with caller := childCallerId })
+
 private def childCallerState : RuntimeState :=
-  match calledWaiting.state.calledProcessOccurrences with
-  | [record] =>
+  match calledWaiting.state.calledProcessOccurrences, childCallerRecord? with
+  | [record], some moved =>
       { calledWaiting.state with
         scopeOccurrences :=
-          { id := alternateHostingRootId, parent := none } ::
-            calledWaiting.state.scopeOccurrences.map fun occurrence =>
-              if occurrence.id = record.caller then
-                { occurrence with parent := some alternateHostingRootId }
-              else occurrence }
-  | _ => calledWaiting.state
+          calledWaiting.state.scopeOccurrences ++ [{ id := childCallerId, parent := some record.caller }]
+        calledProcessOccurrences := [moved] }
+  | _, _ => calledWaiting.state
 
-def child_caller_with_one_hosting_root_is_nonresumable : Bool := decide <|
-    calledProcessAssociationsValid childCallerState = false ∧
-      fire? program returnOperation childCallerState = none
+/-- CALLN-FRAME-01: Stage B admits an embedded caller, so association validity accepts a record whose caller is a
+live child occurrence; the record's declaration instead binds the caller to the scope holding its invocation,
+which this child's scope is not, so the state is ill-formed. -/
+def call_record_caller_is_bound_to_its_invocation_scope : Bool := decide <|
+    calledProcessAssociationsValid childCallerState = true ∧
+      (childCallerRecord?.map (callRecordDeclared program)) = some false ∧
+      runtimeStateWellFormed program callerInstanceId childCallerState = false
 
 private def duplicateHostingRootState : RuntimeState :=
   { calledWaiting.state with
@@ -431,7 +440,7 @@ def checks : List (String × Bool) := [
   ("duplicate_called_root_with_one_otherwise_valid_disables_return", duplicate_called_root_with_one_otherwise_valid_disables_return),
   ("zero_activation_record_is_nonresumable_and_has_no_return", zero_activation_record_is_nonresumable_and_has_no_return),
   ("called_scope_alias_is_nonresumable_and_has_no_return", called_scope_alias_is_nonresumable_and_has_no_return),
-  ("child_caller_with_one_hosting_root_is_nonresumable", child_caller_with_one_hosting_root_is_nonresumable),
+  ("call_record_caller_is_bound_to_its_invocation_scope", call_record_caller_is_bound_to_its_invocation_scope),
   ("duplicate_hosting_root_with_one_valid_original_is_nonresumable", duplicate_hosting_root_with_one_valid_original_is_nonresumable),
   ("duplicate_identity_definition_with_one_otherwise_valid_is_rejected", duplicate_identity_definition_with_one_otherwise_valid_is_rejected),
   ("duplicate_called_process_identity_with_one_valid_root_is_rejected", duplicate_called_process_identity_with_one_valid_root_is_rejected),
