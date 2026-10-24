@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
-import BpmnSemantics.SemanticProcess.TransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

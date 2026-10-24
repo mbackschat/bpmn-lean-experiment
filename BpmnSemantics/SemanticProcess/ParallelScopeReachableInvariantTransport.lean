@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 
 /-! Actual PMIS command boundaries and internal prefixes share one invariant
 transport. Handlers consume predecessor invariants and actual evaluator results;
 rejected and rolled-back commands retain the predecessor. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

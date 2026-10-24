@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! SMIS-ADMIT-01 connects task-barrier cuts and exact graph conservation to the admitted automatic-step bounds. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredParallelBody
 

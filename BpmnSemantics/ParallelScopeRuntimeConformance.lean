@@ -11,14 +11,14 @@ namespace BpmnSemantics.ParallelScopeRuntimeConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def probeParent : ScopeOccurrenceId := ⟨⟨"applicants"⟩, ⟨"root"⟩, 1⟩
-private def probeBody (activation : Nat) : ScopeOccurrenceId := ⟨⟨"applicants"⟩, ⟨"body"⟩, activation⟩
-private def probeOther : ActivityOccurrence :=
+def probeParent : ScopeOccurrenceId := ⟨⟨"applicants"⟩, ⟨"root"⟩, 1⟩
+def probeBody (activation : Nat) : ScopeOccurrenceId := ⟨⟨"applicants"⟩, ⟨"body"⟩, activation⟩
+def probeOther : ActivityOccurrence :=
   { processInstanceId := ⟨"applicants"⟩, activityElementId := ⟨"Other"⟩, activation := 1,
     owner := probeParent, body := .childScope ⟨⟨"applicants"⟩, ⟨"other"⟩, 1⟩, attachedHandlers := [] }
-private def probeEntry : ParallelScopeEntry :=
+def probeEntry : ParallelScopeEntry :=
   ⟨⟨"enter"⟩, ⟨"Checks"⟩, ⟨"in"⟩, ⟨"check"⟩, ⟨"body"⟩, ⟨"out"⟩, "applicants", "applicant", [], some "approved"⟩
-private def probeReady : RuntimeState :=
+def probeReady : RuntimeState :=
   { initialState with
     control := .running ⟨"applicants"⟩,
     scopeOccurrences := [⟨probeParent, none⟩, ⟨⟨⟨"applicants"⟩, ⟨"other"⟩, 1⟩, some probeParent⟩],
@@ -26,12 +26,12 @@ private def probeReady : RuntimeState :=
     scopeActivations := [⟨⟨"body"⟩, 4⟩],
     variables := { emptyScopedVariables with process := { bindings :=
       [⟨"applicants", .stringList ["same", "same"]⟩, ⟨"approved", .boolean false⟩] } } }
-private def probeActive : RuntimeState := (enterParallelScope? probeEntry probeReady probeParent).getD initialState
-private def probeSettled : RuntimeState :=
+def probeActive : RuntimeState := (enterParallelScope? probeEntry probeReady probeParent).getD initialState
+def probeSettled : RuntimeState :=
   { probeActive with tokens := probeActive.tokens.filter (·.owner != probeBody 5) }
-private def probeRetired : RuntimeState := (completeParallelScope? probeEntry probeSettled (probeBody 5)).getD initialState
+def probeRetired : RuntimeState := (completeParallelScope? probeEntry probeSettled (probeBody 5)).getD initialState
 
-private def probePairedProgram : Program :=
+def probePairedProgram : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"private-parallel-binding"⟩
@@ -68,7 +68,7 @@ theorem parallel_retirement_identity_and_sibling_fixture :
     probeRetired.variables.scopes.map (·.owner) = [probeBody 6] ∧
     parallelScopeControllersConsistent probeRetired = true := by decide +kernel
 
-private def probeEarly : RuntimeState :=
+def probeEarly : RuntimeState :=
   { probeSettled with variables := { probeSettled.variables with process := { bindings :=
     [⟨"applicants", .stringList ["same", "same"]⟩, ⟨"approved", .boolean true⟩] } } }
 
@@ -89,17 +89,17 @@ theorem parallel_natural_completion_fixture :
 
 open InternalCommutation
 
-private def occurrenceProgram : Program :=
+def occurrenceProgram : Program :=
   { probePairedProgram with
     operations := [.reachNoneEnd ⟨"end"⟩ ⟨⟨"End"⟩⟩ ⟨"in"⟩],
     operationScopes := [⟨⟨"end"⟩, ⟨"body"⟩⟩] }
-private def occurrenceState : RuntimeState :=
+def occurrenceState : RuntimeState :=
   { initialState with
     control := .running ⟨"applicants"⟩,
     scopeOccurrences := [⟨probeBody 1, some probeParent⟩, ⟨probeBody 2, some probeParent⟩],
     tokens := [⟨⟨"in"⟩, probeBody 1⟩, ⟨⟨"in"⟩, probeBody 2⟩] }
-private def occurrenceCandidate (n : Nat) : InternalOperationOccurrence := ⟨⟨"end"⟩, probeBody n⟩
-private def occurrenceEnded : RuntimeState :=
+def occurrenceCandidate (n : Nat) : InternalOperationOccurrence := ⟨⟨"end"⟩, probeBody n⟩
+def occurrenceEnded : RuntimeState :=
   { occurrenceState with tokens := [⟨⟨"in"⟩, probeBody 2⟩], endOccurrences := 1 }
 
 theorem exact_operation_occurrence_discovery_fixture :
@@ -124,11 +124,11 @@ theorem exact_operation_occurrence_frontier_fixture :
     (deriveInternalOccurrenceFrontier? occurrenceProgram occurrenceEnded).map (List.map Prod.fst) =
       some [occurrenceCandidate 2] := by decide +kernel
 
-private def occurrenceFork : Program :=
+def occurrenceFork : Program :=
   { occurrenceProgram with operations := [.duplicate ⟨"end"⟩ ⟨⟨"Fork"⟩⟩ ⟨"in"⟩ [⟨"left"⟩, ⟨"right"⟩]] }
-private def occurrenceForked : RuntimeState :=
+def occurrenceForked : RuntimeState :=
   (applyInternalOperationOccurrence? occurrenceFork occurrenceState (occurrenceCandidate 2)).getD initialState
-private def occurrenceJoin : Program :=
+def occurrenceJoin : Program :=
   { occurrenceProgram with operations := [.synchronize ⟨"end"⟩ ⟨⟨"Join"⟩⟩ [⟨"left"⟩, ⟨"right"⟩] ⟨"out"⟩] }
 
 theorem exact_operation_occurrence_fork_join_fixture :
@@ -139,14 +139,14 @@ theorem exact_operation_occurrence_fork_join_fixture :
       { occurrenceState with tokens := ⟨⟨"in"⟩, probeBody 1⟩ :: occurrenceState.tokens }
       (occurrenceCandidate 1) = none := by decide +kernel
 
-private def occurrenceTask : Program :=
+def occurrenceTask : Program :=
   { occurrenceProgram with operations := [.awaitUserTask ⟨"end"⟩ ⟨⟨"End"⟩⟩ ⟨"in"⟩ ⟨"out"⟩
       { id := ⟨"Review"⟩, name := some "Review application" }] }
-private def occurrenceTaskBefore : RuntimeState :=
+def occurrenceTaskBefore : RuntimeState :=
   { occurrenceState with activations := [⟨⟨"Review"⟩, 7⟩] }
-private def occurrenceTaskOne : RuntimeState :=
+def occurrenceTaskOne : RuntimeState :=
   (applyInternalOperationOccurrence? occurrenceTask occurrenceTaskBefore (occurrenceCandidate 2)).getD initialState
-private def occurrenceTaskBoth : RuntimeState :=
+def occurrenceTaskBoth : RuntimeState :=
   (applyInternalOperationOccurrence? occurrenceTask occurrenceTaskOne (occurrenceCandidate 1)).getD initialState
 
 theorem exact_operation_occurrence_task_arming_fixture :
@@ -158,8 +158,8 @@ theorem exact_operation_occurrence_task_arming_fixture :
     occurrenceTaskBoth.activations = [⟨⟨"Review"⟩, 9⟩] ∧ occurrenceTaskBoth.tokens = [] ∧
     occurrenceTaskBoth.variables = occurrenceTaskBefore.variables := by decide +kernel
 
-private def occurrenceTimerDefinition : TimerDefinition := ⟨⟨"Reminder"⟩, 1000⟩
-private def occurrenceTimers : RuntimeState :=
+def occurrenceTimerDefinition : TimerDefinition := ⟨⟨"Reminder"⟩, 1000⟩
+def occurrenceTimers : RuntimeState :=
   let first := activateTimer occurrenceState ⟨"applicants"⟩ (probeBody 2) ⟨"in"⟩ ⟨"out"⟩ occurrenceTimerDefinition
   activateTimer first ⟨"applicants"⟩ (probeBody 1) ⟨"in"⟩ ⟨"out"⟩ occurrenceTimerDefinition
 
@@ -178,27 +178,27 @@ theorem exact_occurrence_frontier_refuses_unhandled_operations :
       { occurrenceProgram with operations := occurrenceProgram.operations ++ [.mergeExclusive ⟨"merge"⟩ ⟨⟨"Merge"⟩⟩ [⟨"in"⟩] ⟨"out"⟩] }
       occurrenceState = none := by decide +kernel
 
-private def effectInput (name : String) : VariableMapping := ⟨name, .enclosingVariable name⟩
-private def scopedEffect : EffectDefinition :=
+def effectInput (name : String) : VariableMapping := ⟨name, .enclosingVariable name⟩
+def scopedEffect : EffectDefinition :=
   { elementId := ⟨"Check"⟩,
     descriptor := ⟨"urn:bpmn-lean:effect-protocol:activity-v1", "checkApplication"⟩,
     inputMappings := [effectInput "applicant", effectInput "status", effectInput "tenant"], outputMappings := [] }
-private def effectProgram : Program :=
+def effectProgram : Program :=
   { probePairedProgram with
     operations := probePairedProgram.operations ++
       [.awaitEffect ⟨"check"⟩ ⟨⟨"Check"⟩⟩ ⟨"check"⟩ ⟨"done"⟩ scopedEffect none],
     operationScopes := probePairedProgram.operationScopes ++ [⟨⟨"check"⟩, ⟨"body"⟩⟩] }
-private def effectReady : RuntimeState :=
+def effectReady : RuntimeState :=
   { probeReady with variables := { emptyScopedVariables with process := { bindings :=
     [⟨"applicant", .string "wrong-process-item"⟩, ⟨"applicants", .stringList ["A", "B"]⟩, ⟨"approved", .boolean false⟩,
      ⟨"status", .string "wrong-process-status"⟩, ⟨"tenant", .string "acme"⟩] } } }
-private def effectActive : RuntimeState :=
+def effectActive : RuntimeState :=
   let active := (enterParallelScope? probeEntry effectReady probeParent).getD initialState
   { active with variables := { active.variables with scopes := active.variables.scopes.map fun frame =>
     { frame with bindings := [⟨"status", .null⟩] } } }
-private def expectedEffectInputs (item : String) : List VariableBinding :=
+def expectedEffectInputs (item : String) : List VariableBinding :=
   [⟨"applicant", .string item⟩, ⟨"status", .null⟩, ⟨"tenant", .string "acme"⟩]
-private def armEffect (state : RuntimeState) (activation : Nat) : Option RuntimeState :=
+def armEffect (state : RuntimeState) (activation : Nat) : Option RuntimeState :=
   InternalCommutation.applyInternalOperationOccurrence? effectProgram state ⟨⟨"check"⟩, probeBody activation⟩
 
 #eval show IO Unit from do
@@ -221,7 +221,7 @@ theorem parallel_effect_missing_population_refuses_fixture :
       scopes := effectActive.variables.scopes.filter (·.owner != probeBody 6) } } 5 = none ∧
     armEffect effectActive 7 = none := by decide +kernel
 
-private def resultProgram : Program :=
+def resultProgram : Program :=
   { effectProgram with operations := probePairedProgram.operations ++ [
     .awaitEffect ⟨"check"⟩ ⟨⟨"Check"⟩⟩ ⟨"check"⟩ ⟨"done"⟩
       { scopedEffect with outputMappings := [⟨"status", .localVariable "result"⟩] } none] }
@@ -257,7 +257,7 @@ private def resultProgram : Program :=
     unless (completeParallelScopeUserTask? effectProgram human humanId [⟨name, .null⟩]).isNone do
       throw (IO.userError "parallel human result: protected name accepted")
 
-private def lifecycleProgram : Program :=
+def lifecycleProgram : Program :=
   { effectProgram with
     operations := effectProgram.operations ++ [.reachNoneEnd ⟨"end"⟩ ⟨⟨"End"⟩⟩ ⟨"done"⟩],
     operationScopes := effectProgram.operationScopes ++ [⟨⟨"end"⟩, ⟨"body"⟩⟩] }
@@ -295,7 +295,7 @@ private def lifecycleProgram : Program :=
           state.endOccurrences == count do
         throw (IO.userError "parallel lifecycle: cleanup or parent continuation mismatch")
 
-private def cohortProgram : Program :=
+def cohortProgram : Program :=
   { lifecycleProgram with
     definitionScopes := [⟨⟨"root"⟩, none, ⟨"applicants"⟩⟩, ⟨⟨"body"⟩, some ⟨"root"⟩, ⟨"Checks"⟩⟩],
     identity := { lifecycleProgram.identity with
@@ -303,7 +303,7 @@ private def cohortProgram : Program :=
     controlPlaces := [⟨⟨"check"⟩, ⟨⟨"CheckInput"⟩⟩⟩],
     controlPlaceScopes := [⟨⟨"check"⟩, ⟨"body"⟩⟩] }
 
-private def entryPublicationFixtureValid (count : Nat) : Bool := Id.run do
+def entryPublicationFixtureValid (count : Nat) : Bool := Id.run do
   let some operation := cohortProgram.operations.find? (·.id == ⟨"enter"⟩) | return false
   let bindings := effectReady.variables.process.bindings.map fun binding => if binding.name == "applicants" then
     ⟨"applicants", .stringList (List.replicate count "same")⟩ else binding
@@ -329,15 +329,15 @@ private def entryPublicationFixtureValid (count : Nat) : Bool := Id.run do
 theorem parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures :
     [0, 1, 2, 16].all entryPublicationFixtureValid = true := by decide +kernel
 
-private def completionPublicationOperation : SemanticOperation :=
+def completionPublicationOperation : SemanticOperation :=
   .completeParallelMultiInstanceScope ⟨"complete"⟩ ⟨⟨"Checks"⟩⟩ ⟨"enter"⟩
 
-private def completionPublicationEntryOperation : SemanticOperation :=
+def completionPublicationEntryOperation : SemanticOperation :=
   .enterParallelMultiInstanceScope probeEntry.id ⟨probeEntry.elementId⟩ probeEntry.input probeEntry.childEntry
     probeEntry.childScopeId probeEntry.normalOutput probeEntry.collectionName probeEntry.itemName
     probeEntry.bodyInputs probeEntry.completionBooleanName
 
-private def completionPublicationDelta (activation : Nat) : UnnumberedFlowNodeOccurrenceDelta :=
+def completionPublicationDelta (activation : Nat) : UnnumberedFlowNodeOccurrenceDelta :=
   { started := [], ended := [{ anchor := .scope (probeBody activation), terminal := .completed }] }
 
 theorem parallel_partial_retirement_publishes_only_exact_completed_body :
@@ -353,7 +353,7 @@ theorem parallel_natural_exhaustion_publishes_completed_body_even_with_true_cond
       completionPublicationOperation (probeBody 6) ⟨"retire"⟩ 1 =
       some (completionPublicationDelta 6) := by decide +kernel
 
-private def retirementPublicationOperations : List SemanticOperation :=
+def retirementPublicationOperations : List SemanticOperation :=
   [ completionPublicationOperation,
     .awaitEffect ⟨"effect"⟩ ⟨⟨"Check"⟩⟩ ⟨"effect-in"⟩ ⟨"effect-out"⟩
       { scopedEffect with inputMappings := [] } none,
@@ -367,10 +367,10 @@ private def retirementPublicationOperations : List SemanticOperation :=
     .initiate ⟨"start"⟩ ⟨⟨"Start"⟩⟩ ⟨"in"⟩,
     .awaitUserTask ⟨"unrelated"⟩ ⟨⟨"OtherReview"⟩⟩ ⟨"out"⟩ ⟨"finished"⟩ ⟨⟨"OtherReview"⟩, none, none⟩ ]
 
-private def retirementPublicationPlaces : List String :=
+def retirementPublicationPlaces : List String :=
   ["check", "done", "effect-in", "effect-out", "finished", "human-in", "human-out", "in", "out"]
 
-private def retirementPublicationProgram : Program :=
+def retirementPublicationProgram : Program :=
   { cohortProgram with
     identity := { cohortProgram.identity with sourceSha256 := String.ofList (List.replicate 64 'a') },
     definitionScopes := cohortProgram.definitionScopes.reverse,
@@ -382,7 +382,7 @@ private def retirementPublicationProgram : Program :=
     controlPlaceScopes := retirementPublicationPlaces.map fun place =>
       ⟨⟨place⟩, ⟨if ["in", "out", "finished"].contains place then "root" else "body"⟩⟩ }
 
-private def retirementPublicationBefore : RuntimeState :=
+def retirementPublicationBefore : RuntimeState :=
   let base := { probeEarly with
     tokens := [],
     scopeOccurrences := probeEarly.scopeOccurrences.filter (·.id.definitionScopeId != ⟨"other"⟩),
@@ -392,16 +392,16 @@ private def retirementPublicationBefore : RuntimeState :=
     { scopedEffect with inputMappings := [] } none
   activateUserTask effect ⟨"applicants"⟩ probeParent ⟨"out"⟩ ⟨"finished"⟩ ⟨⟨"OtherReview"⟩, none, none⟩
 
-private def retirementPublicationAfter : RuntimeState :=
+def retirementPublicationAfter : RuntimeState :=
   (completeParallelScope? probeEntry retirementPublicationBefore (probeBody 5)).getD initialState
 
-private def retirementPublicationDelta : UnnumberedFlowNodeOccurrenceDelta :=
+def retirementPublicationDelta : UnnumberedFlowNodeOccurrenceDelta :=
   { started := [], ended := [
       ⟨.wait ⟨⟨"applicants"⟩, ⟨"Check"⟩, 1⟩, .cancelled⟩,
       ⟨.wait ⟨⟨"applicants"⟩, ⟨"Review"⟩, 1⟩, .cancelled⟩,
       ⟨.scope (probeBody 5), .completed⟩, ⟨.scope (probeBody 6), .cancelled⟩ ] }
 
-private def retirementCandidate (program : Program) (before after : RuntimeState)
+def retirementCandidate (program : Program) (before after : RuntimeState)
     (owner : ScopeOccurrenceId := probeBody 5) : Option UnnumberedFlowNodeOccurrenceDelta :=
   candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after
     completionPublicationOperation owner ⟨"retire"⟩ 0
@@ -518,7 +518,7 @@ theorem parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bi
         (List.range count).map (fun index => (index + 5, index + 1)) do
       throw (IO.userError "human cohort changed owner-to-slot assignment")
 
-private def decodeChoiceWire (text : String) :=
+def decodeChoiceWire (text : String) :=
   SemanticProcessJson.parseWireJson text >>= SemanticProcessJson.decodeInternalAlternative
 
 #eval show IO Unit from do

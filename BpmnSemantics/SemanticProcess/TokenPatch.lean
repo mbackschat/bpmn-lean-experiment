@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! Token-producing local control requires finite removal/insertion laws over exact canonical storage.
 The patch retains token units rather than a successor collection, preserving unrelated multiplicity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.RuntimeState
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! # Semantic Process effect completion
 
 This module owns external effect-occurrence matching, successful typed result routing, the executable completion transition, and its declarative soundness bridge. Command admission and internal closure remain in `Execution`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

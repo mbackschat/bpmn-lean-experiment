@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
 
 /-! # Service input admission and availability
 
@@ -7,6 +9,8 @@ PMIS-DATA-01 separates child-local and captured-item reads from Process data
 required before Start, including empty collections. These proofs connect that
 immutable analysis to lookup and preserve scalar availability through accepted writes.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

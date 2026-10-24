@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcess.Execution
+module
+
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.Execution
 
 /-! # BpmnSemantics.SequentialUserTask — sequential capsule witnesses
 
 This module names the current sequential capsule's inputs, states, and laws over the generic Semantic Process semantics. It contains no topology-specific representation or evaluator.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SequentialUserTask
 

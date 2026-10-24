@@ -113,16 +113,16 @@ theorem successful_start_and_rejected_repeat_keep_both_flags_false :
           internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by
   decide +kernel
 
-private def emittedStart : List CommittedTransition :=
+def emittedStart : List CommittedTransition :=
   (applyStimulusTraced scenarioClosureLimit parallelProgram initialState
     parallelStart).committedTransitions
 
-private def swappedTaskRecords : List CommittedTransition :=
+def swappedTaskRecords : List CommittedTransition :=
   match emittedStart with
   | [external, start, fork, taskA, taskB] => [external, start, fork, taskB, taskA]
   | records => records
 
-private def swappedDependentRecords : List CommittedTransition :=
+def swappedDependentRecords : List CommittedTransition :=
   match emittedStart with
   | [external, start, fork, taskA, taskB] => [external, fork, start, taskA, taskB]
   | records => records

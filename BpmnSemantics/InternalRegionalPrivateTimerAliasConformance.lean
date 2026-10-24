@@ -1,8 +1,12 @@
-import BpmnSemantics.InternalRegionalCancellationProjectionConformance
+module
+
+public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
 
 /-! Private Timer identities are family-tagged internally but public wait anchors are not.
 These constructed Program/state witnesses check cancellation without claiming profile reachability.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation.PrivateTimerAliasWitness
 

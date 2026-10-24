@@ -74,7 +74,7 @@ theorem controller_binding_rejects_a_different_declared_task :
     entered?.map (runtimeStateWellFormed renamedTaskProgram instanceId) = some false := by
   decide +kernel
 
-private def sequentialMultiInstanceOperationIds : List OperationId :=
+def sequentialMultiInstanceOperationIds : List OperationId :=
   program.operations.filterMap fun
     | .awaitSequentialMultiInstanceUserTask id .. => some id
     | _ => none

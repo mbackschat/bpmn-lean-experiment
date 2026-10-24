@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
 
 /-! # Repeated-body local input availability
 
@@ -6,6 +8,8 @@ PMIS-DATA-01 distinguishes a present scalar local, including null, from an absen
 local eligible for Process fallback. Population ownership alone does not certify
 the stored values; initialization and nearest-scope writes own that invariant.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -274,7 +278,7 @@ namespace ParallelScopeLocalData
 
 open InternalCommutation ParallelScopeReplay
 
-private abbrev Valid (names : List String) (state : RuntimeState) : Prop :=
+abbrev Valid (names : List String) (state : RuntimeState) : Prop :=
   ParallelScopeLocalsValid names state.variables
 
 variable {names : List String}

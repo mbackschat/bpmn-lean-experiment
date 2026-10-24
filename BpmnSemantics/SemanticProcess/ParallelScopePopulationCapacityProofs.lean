@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
-import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 
 /-! Population capacity follows actual entry and retirement, so command composition need not assume successor capacity. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

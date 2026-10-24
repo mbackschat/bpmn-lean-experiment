@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import BpmnSemantics.SemanticProcess.TransitionAttempt
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+public import BpmnSemantics.SemanticProcess.TransitionAttempt
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
 
 /-! # Compensation attempt-aware transition trace
 
@@ -11,11 +13,13 @@ declaration-free evaluator so legacy kernel fixtures do not import the compensat
 its reduction cost.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def snapshotUniqueOperation? (program : Program) (id : OperationId) :
+def snapshotUniqueOperation? (program : Program) (id : OperationId) :
     Option SemanticOperation :=
   match program.operations.filter fun operation => decide (operation.id = id) with
   | [operation] => some operation
@@ -42,7 +46,7 @@ def replayInternalTransitionsWithCompensationSnapshots (program : Program) :
       replayInternalTransitionsWithCompensationSnapshots program successor rest
   | _, .externalStimulus _ :: _ => none
 
-private def replayCommittedTransitionsForDeclaredCompensationSnapshots (program : Program)
+def replayCommittedTransitionsForDeclaredCompensationSnapshots (program : Program)
     (initial : RuntimeState) : List CommittedTransition → Option RuntimeState
   | .externalStimulus stimulus :: rest =>
       let admission := admitStimulusWithCompensationSnapshots program initial stimulus
@@ -63,7 +67,7 @@ def enabledInternalOperationCountWithCompensationSnapshots
     (program : Program) (state : RuntimeState) : Nat :=
   (snapshotInternalTransitionFrontier program state).transitions.length
 
-private structure SnapshotClosureTraceResult where
+structure SnapshotClosureTraceResult where
   state : RuntimeState
   hitBound : Bool
   ambiguousChoice : Bool
@@ -71,16 +75,16 @@ private structure SnapshotClosureTraceResult where
   lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
   refusal : Option InternalOperationRefusal
 
-private def prependSnapshotRecord (head : Option InternalTransitionRecord)
+def prependSnapshotRecord (head : Option InternalTransitionRecord)
     (tail : Option (List InternalTransitionRecord)) : Option (List InternalTransitionRecord) := do
   pure ((← head) :: (← tail))
 
-private def prependSnapshotLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
+def prependSnapshotLifecycle (head : Option UnnumberedFlowNodeOccurrenceDelta)
     (tail : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
     Option (List UnnumberedFlowNodeOccurrenceDelta) := do
   pure ((← head) :: (← tail))
 
-private def prependSnapshotPublicationPairs
+def prependSnapshotPublicationPairs
     (heads : Option (List InternalPublicationPair))
     (records : Option (List InternalTransitionRecord))
     (lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)) :
@@ -93,7 +97,7 @@ private def prependSnapshotPublicationPairs
         some (ordered.map (·.lifecycle) ++ lifecycles))
   | _, _, _ => (none, none)
 
-private def closeSupportedTracedWithCompensationSnapshots :
+def closeSupportedTracedWithCompensationSnapshots :
     Nat → Program → SemanticId → Nat → RuntimeState → SnapshotClosureTraceResult
   | 0, program, _, _, state =>
       let frontier := snapshotInternalTransitionFrontier program state
@@ -160,7 +164,7 @@ decreasing_by
   all_goals apply Nat.lt_succ_of_le
   all_goals first | exact Nat.le_refl _ | exact Nat.sub_le _ _
 
-private structure SnapshotEvaluatedStimulus where
+structure SnapshotEvaluatedStimulus where
   result : StimulusResult
   candidateTransitions : Option (List CommittedTransition)
   candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
@@ -268,7 +272,7 @@ private theorem snapshotClosure_success_is_stable
                   (transitionIndex + (first :: second :: remaining).length) result.state
           · intro _ impossible; contradiction
 
-private def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
+def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
     (program : Program) (state : RuntimeState) (stimulus : Stimulus) :
     SnapshotEvaluatedStimulus :=
   let admission := admitStimulusWithCompensationSnapshots program state stimulus
@@ -335,7 +339,7 @@ private theorem evaluateStimulusWithCompensationSnapshots_failure_rolls_back
           simp_all [StimulusResult.ofClosure]
   all_goals simp [outcomeEq] at failed
 
-private def replayCheckedSnapshotTransitions (program : Program)
+def replayCheckedSnapshotTransitions (program : Program)
     (initial result : RuntimeState) :
     Option (List CommittedTransition) → List CommittedTransition
   | some candidate =>
@@ -357,14 +361,14 @@ private theorem replayCheckedSnapshotTransitions_sound (program : Program)
       · simp [replayCheckedSnapshotTransitions, replays]
       · simp [replayCheckedSnapshotTransitions, replays] at published
 
-private def publishSnapshotTransitions (program : Program) (initial : RuntimeState)
+def publishSnapshotTransitions (program : Program) (initial : RuntimeState)
     (evaluated : SnapshotEvaluatedStimulus) : List CommittedTransition :=
   match evaluated.result.outcome with
   | .committed => replayCheckedSnapshotTransitions program initial evaluated.result.state
       evaluated.candidateTransitions
   | .rolledBack | .rejected | .semanticFailure | .unsupported => []
 
-private def publishSnapshotLifecycles (program : Program) (initial : RuntimeState)
+def publishSnapshotLifecycles (program : Program) (initial : RuntimeState)
     (evaluated : SnapshotEvaluatedStimulus) : List UnnumberedFlowNodeOccurrenceDelta :=
   let transitions := publishSnapshotTransitions program initial evaluated
   match evaluated.candidateLifecycles with

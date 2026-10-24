@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
-import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+public import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 
 /-! # Transaction continuation after initial arming
 
@@ -8,6 +10,8 @@ The admitted acyclic branches never return a token to scope entry or the initial
 completion introduces one token from a stable wait; Task arming and None End consume it. These
 profile-local facts supply the linear continuation part of the command-boundary induction.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

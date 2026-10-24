@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
-import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
+public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! The arming publication keeps its predecessor-selected start and time across an independent
 regional execution. Only the surviving arming owner needs a Process lookup frame.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

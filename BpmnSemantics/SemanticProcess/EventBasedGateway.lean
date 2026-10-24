@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Event-Based Gateway race semantics
 
 This module owns atomic Message/Timer race arming, the hidden occurrence association, winner selection, and the declarative relations that constrain those executable transformations. It does not choose between jointly ready host events; callers provide one explicit semantic stimulus at a time.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -14,7 +18,7 @@ def eventRaceRunningInstance? (state : RuntimeState) : Option SemanticId :=
   | .running instanceId => some instanceId
   | _ => none
 
-private def nodeActivationCount (activations : List (NodeId × Nat))
+def nodeActivationCount (activations : List (NodeId × Nat))
     (elementId : NodeId) : Nat :=
   (activations.find? fun activation => decide (activation.1 = elementId))
     |>.map (·.2) |>.getD 0
@@ -46,7 +50,7 @@ def eventRaceBefore (left right : EventRace) : Bool :=
     left.owner.definitionScopeId.value < right.owner.definitionScopeId.value
   else left.owner.activation < right.owner.activation
 
-private def insertEventRaceCanonical (race : EventRace) :
+def insertEventRaceCanonical (race : EventRace) :
     List EventRace → List EventRace
   | [] => [race]
   | current :: rest =>

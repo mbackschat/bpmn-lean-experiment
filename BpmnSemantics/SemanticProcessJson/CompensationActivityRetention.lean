@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Compensation Activity retention wire decoding
 
@@ -6,12 +8,14 @@ Strict decoding for the optional hidden Program declaration. Operation and root 
 semantic validation performed after the complete Program is available.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeBoundaryCompensationTarget (json : Json) :
+def decodeBoundaryCompensationTarget (json : Json) :
     Except String BoundaryCompensationTarget := do
   requireObjectShape json
     ["activityElementId", "boundaryEventElementId", "compensationActivityElementId"]
@@ -21,7 +25,7 @@ private def decodeBoundaryCompensationTarget (json : Json) :
       compensationActivityElementId :=
         ⟨← decodeNonemptyStringField json "compensationActivityElementId"⟩ }
 
-private def decodeCompensationActivityRetentionDeclaration (json : Json) :
+def decodeCompensationActivityRetentionDeclaration (json : Json) :
     Except String CompensationActivityRetentionDeclaration := do
   requireObjectShape json ["definitionScopeId", "limits", "targets"]
   let limits ← field json "limits"

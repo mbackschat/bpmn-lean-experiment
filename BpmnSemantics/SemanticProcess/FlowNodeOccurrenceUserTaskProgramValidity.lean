@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! # User Task wait Program validity
 
@@ -7,12 +9,14 @@ aggregate exposes frame and insertion facts to `FlowNodeOccurrenceWaitProgramVal
 without duplicating that account in the other wait-family proofs.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 open FlowNodeOccurrenceProgramValidity.Internal
 
-private def userTaskWaitValid (program : Program) (state : RuntimeState)
+def userTaskWaitValid (program : Program) (state : RuntimeState)
     (wait : UserTaskWait) : Bool :=
   occurrenceOwnerValid state wait.processInstanceId wait.owner ⟨wait.task.id.value⟩ wait.activation &&
     (program.operations.filter fun operation =>

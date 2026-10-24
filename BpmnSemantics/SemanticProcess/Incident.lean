@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.EffectCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! # Semantic Process effect incidents
 
 This module owns the private incident association, the one literal-generation report and retry relations, and their executable transitions. It preserves the complete suspended effect wait and does not define host failure, CIB identity, cancellation, or general BPMN fault meaning.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

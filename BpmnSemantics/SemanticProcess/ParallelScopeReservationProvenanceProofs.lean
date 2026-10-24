@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Admitted reservation identity provenance
 
@@ -8,6 +10,8 @@ PMIS-ADMIT-01 separates source identities across Human and Service declarations.
 Reservation validity alone does not bind arbitrary retained waits to those
 declarations; these laws supply the Program side of that reachable-state obligation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 
@@ -197,11 +201,11 @@ end BpmnSemantics.SemanticProcess.ParallelScopeStart
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def collisionOwner : ScopeOccurrenceId := ⟨⟨"instance"⟩, ⟨"root"⟩, 1⟩
-private def collisionTask : UserTaskDefinition := ⟨⟨"shared"⟩, none, none⟩
-private def timerCollisionState : RuntimeState := { initialState with
+def collisionOwner : ScopeOccurrenceId := ⟨⟨"instance"⟩, ⟨"root"⟩, 1⟩
+def collisionTask : UserTaskDefinition := ⟨⟨"shared"⟩, none, none⟩
+def timerCollisionState : RuntimeState := { initialState with
   timerWaits := [⟨⟨"instance"⟩, collisionOwner, ⟨"shared"⟩, 1, 0, ⟨"output"⟩⟩] }
-private def humanCollisionState : RuntimeState := { initialState with
+def humanCollisionState : RuntimeState := { initialState with
   waits := [⟨⟨"instance"⟩, collisionOwner, collisionTask, 1, ⟨"output"⟩, none⟩]
   activations := [⟨⟨"shared"⟩, 1⟩] }
 

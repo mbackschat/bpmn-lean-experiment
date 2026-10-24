@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Flow-node occurrence lifecycle delta conformance
 
 This module owns the generic executable laws for folding flow-node occurrence starts and terminals.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

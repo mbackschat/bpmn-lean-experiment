@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.TransactionReachableClassification
-import BpmnSemantics.SemanticProcess.TransactionInitialBatch
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionReachableClassification
+public import BpmnSemantics.SemanticProcess.TransactionInitialBatch
 
 /-! # Selected Transaction scheduling guarantee
 
@@ -7,6 +9,8 @@ Complete admitted-grammar reachability derives the only parallel frontier and it
 The existing finite-batch theorem then supplies complete-state and canonical paired-publication equality
 for every permutation of that frontier, with no assumed successor validity or preparation premise.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

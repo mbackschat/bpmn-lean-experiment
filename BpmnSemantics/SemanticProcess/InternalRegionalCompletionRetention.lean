@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.MonitoredScope
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.MonitoredScope
 
 /-! REG-OWN-CLOSE-01 uses completion's selected root/child mask and exact deadline withdrawal.
 The bounded evaluator's Timer erase requires predecessor identity uniqueness. ESL-CLOSE monitored
 completion instead supplies exact child-body and optional Timer censuses, including the consumed
 one-shot case, which derive retention masks without assuming successor validity. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

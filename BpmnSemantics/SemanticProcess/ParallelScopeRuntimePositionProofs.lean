@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
+public import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 
 /-! Actual PMIS reachability must establish token/place bindings before command
 publication can consume runtime position validity. Occurrence publication alone
 does not constrain the control-token population. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -474,7 +478,7 @@ private theorem retirement_position (program : Program) (hosting : SemanticId)
           intro iteration member occurrence survived same
           exact children iteration (retained.subset member) occurrence (List.mem_filter.mp survived).1 same)
 
-private def PositionInvariant (program : Program) (state : RuntimeState) : Prop :=
+def PositionInvariant (program : Program) (state : RuntimeState) : Prop :=
   ∀ instanceId, state.control = .running instanceId → runtimePositionValid program instanceId state = true
 
 private theorem owned_port_binding (program : Program) (analysis : ProgramAnalysis)

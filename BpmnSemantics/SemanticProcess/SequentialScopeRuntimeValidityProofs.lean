@@ -1,16 +1,20 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
-import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
-import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
+public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 
 /-! SMIS-ADMIT-01 retains full runtime validity and actual projectability for successful individual transitions through admission and lifecycle contracts, below certificate preservation and scheduler transport. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics InternalCommutation
 
-private theorem sequentialScope_entry_declarations_count (operations : List SemanticOperation)
+theorem sequentialScope_entry_declarations_count (operations : List SemanticOperation)
     (element : String) :
     (operations.filter fun
       | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _ =>

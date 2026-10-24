@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Direct Activity data output
 
@@ -10,11 +12,13 @@ BPMN 2.0.2 Clause 10.4.1 places an Activity's output Data Associations after its
 Availability of the single required output is decided entirely by the command's shape in this slice, so the fill and the requirement fail together. They are kept as separate steps regardless, because the association is what routes the value: the submitted name identifies the `DataOutput` inside the Activity and the association alone decides which Process `Property` receives it.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def dataOutputRunningInstance? (state : RuntimeState) :
+def dataOutputRunningInstance? (state : RuntimeState) :
     Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId

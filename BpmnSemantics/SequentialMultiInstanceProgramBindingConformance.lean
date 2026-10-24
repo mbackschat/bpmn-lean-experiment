@@ -90,7 +90,7 @@ def profileLimits : SequentialMultiInstanceLimits :=
     maximumItemUtf8Bytes := 512
     maximumCanonicalCollectionUtf8Bytes := 8192 }
 
-private def ordinaryTaskWithSequentialTaskIdentity : SemanticOperation :=
+def ordinaryTaskWithSequentialTaskIdentity : SemanticOperation :=
   .awaitUserTask ⟨"operation:Ordinary_Review"⟩ { elementId := ⟨"UserTask_Review"⟩ }
     ⟨"place:Ordinary_Input"⟩ ⟨"place:Ordinary_Output"⟩
     { id := ⟨"UserTask_Review"⟩, name := some "Ordinary review" }
@@ -130,7 +130,7 @@ theorem exact_root_operation_multiset_is_preserved :
       kinds.count .completeScope, kinds.length) = (1, 1, 1, 2, 1, 6) := by
   decide +kernel
 
-private def mapSequentialMultiInstanceOperation
+def mapSequentialMultiInstanceOperation
     (rewrite : SequentialMultiInstanceDataDefinition →
       SequentialMultiInstanceDataDefinition) : Program :=
   { program with
@@ -349,10 +349,10 @@ theorem public_timer_dispatches_to_multi_instance_interruption_before_ordinary_t
         ["DataObjectReference_InputItems"], 5000) := by
   decide +kernel
 
-private def submittedResult (result : String) : List VariableBinding :=
+def submittedResult (result : String) : List VariableBinding :=
   [{ name := "DataOutput_CurrentResult", value := .string result }]
 
-private def rejectedWithExactState (before : RuntimeState) (stimulus : Stimulus) : Bool :=
+def rejectedWithExactState (before : RuntimeState) (stimulus : Stimulus) : Bool :=
   let result := applyStimulus scenarioClosureLimit program before stimulus
   decide (result.outcome = .rejected ∧ result.state = before ∧
     result.internalStepBoundExceeded = false ∧ result.ambiguousInternalChoice = false)

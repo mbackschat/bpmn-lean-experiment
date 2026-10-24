@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
 
 /-! Bounded entry and ordinary child/Call creation share complete scope-selection laws under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 The retained Activity and deadline add no reads to ordinary scope creation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

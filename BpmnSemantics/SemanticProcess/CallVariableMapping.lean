@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CallDataTransfer
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataTransfer
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # CIB Call variable mappings
 
@@ -10,6 +12,8 @@ return reads every output from that frame before the called tree is disposed and
 NSD-WRITE-01 from the Call's enclosing occurrence. An absent source copies a present null, as CIB's
 `VariableScope.getVariable` returns null for an unset name; a refused read disables the step.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

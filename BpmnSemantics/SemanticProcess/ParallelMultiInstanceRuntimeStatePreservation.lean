@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
+public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 
@@ -10,6 +12,8 @@ empty-entry preservation case. Separate Entry and Closing owners complete nonemp
 preservation. The upstream owner retains evaluator soundness, admitted-Program account extraction,
 and exact-state refusal.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -667,7 +671,7 @@ theorem parallelEntry_projection_declares_timer (operation : SemanticOperation)
   rw [← projects]
   simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, timerWaitDeclarationKey]
 
-private theorem parallelProjection_filter_eq_nil_of_filterMap_eq_nil
+theorem parallelProjection_filter_eq_nil_of_filterMap_eq_nil
     (operations : List SemanticOperation) (taskId : TaskDefinitionId)
     (empty : operations.filterMap ParallelMultiInstanceArm.ofOperation? = []) :
     operations.filter (fun operation =>

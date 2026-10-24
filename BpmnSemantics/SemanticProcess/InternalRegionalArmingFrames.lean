@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 
 /-! Regional/arming frames reuse the owner-aware footprint and exact regional observation
 filters. The consumed token's complete place census protects preparation across cancellation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

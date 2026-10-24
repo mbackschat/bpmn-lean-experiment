@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 
 /-! Complete SMI bindings survive whole-called-instance removal because controller identity,
 Activity identity, and the owned task/Timer pair agree on the deciding Process instance.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

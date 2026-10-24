@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
 
 /-! # Parallel Multi-Instance terminal Program binding
 
@@ -11,11 +13,13 @@ runtime-state well-formedness, result selection, Timer scheduling, evaluator lif
 behavior remain outside this module.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def terminalWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
+def terminalWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }

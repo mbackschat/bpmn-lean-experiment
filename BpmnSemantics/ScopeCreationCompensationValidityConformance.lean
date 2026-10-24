@@ -14,19 +14,19 @@ namespace BpmnSemantics.ScopeCreationCompensationValidityConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def insertScope (state : RuntimeState) (scope : RuntimeScopeOccurrence) : RuntimeState :=
+def insertScope (state : RuntimeState) (scope : RuntimeScopeOccurrence) : RuntimeState :=
   { state with scopeOccurrences := insertScopeOccurrence scope state.scopeOccurrences }
 
-private def parentlessCount (state : RuntimeState) (owner : ScopeOccurrenceId) : Nat :=
+def parentlessCount (state : RuntimeState) (owner : ScopeOccurrenceId) : Nat :=
   (state.scopeOccurrences.filter fun scope => decide (scope.id = owner) && scope.parent.isNone).length
 
 namespace Retention
 
 open BpmnSemantics.CompensationActivityRetentionConformance
 
-private def freshChild : RuntimeScopeOccurrence := { id := childOwner, parent := some owner }
+def freshChild : RuntimeScopeOccurrence := { id := childOwner, parent := some owner }
 
-private def duplicateWithParent : RuntimeState :=
+def duplicateWithParent : RuntimeState :=
   insertScope stateAfterFirst { id := owner, parent := some owner }
 
 theorem completed_work_survives_fresh_scope_insertion :
@@ -49,9 +49,9 @@ namespace Execution
 
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 
-private def freshChild : RuntimeScopeOccurrence := { id := parentB, parent := some rootOwner }
+def freshChild : RuntimeScopeOccurrence := { id := parentB, parent := some rootOwner }
 
-private def duplicateRoot : RuntimeState :=
+def duplicateRoot : RuntimeState :=
   insertScope activeState { id := rootOwner, parent := none }
 
 theorem active_handler_frontier_survives_fresh_scope_insertion :

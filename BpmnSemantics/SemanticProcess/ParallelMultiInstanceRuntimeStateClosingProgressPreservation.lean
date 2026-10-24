@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingProgress
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingProgress
 
 /-! # Parallel Multi-Instance progress runtime-state preservation
 
@@ -12,14 +14,11 @@ Scope boundary: the `.progresses` completion arm only. Terminal closure, Timer i
 evaluator lifting, host behavior, and any change to the semantic account remain downstream.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-private def parallelWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
-  { processInstanceId := wait.processInstanceId
-    elementId := ⟨wait.task.id.value⟩
-    activation := wait.activation }
 
 private theorem pending_after_progress_subset_and_ne
     (slots : List ParallelMultiInstanceSlot) (target : UserTaskInstanceId) (result : String) :
@@ -103,10 +102,10 @@ private theorem removeParallelChildWaits_lookup_of_ne (waits : List UserTaskWait
   · simp only [Bool.not_eq_true] at names
     simp [names]
 
-private def activityOrderKey (record : ActivityOccurrence) : String × String × Nat :=
+def activityOrderKey (record : ActivityOccurrence) : String × String × Nat :=
   (record.processInstanceId.value, record.activityElementId.value, record.activation)
 
-private def activityOrderKeyBefore (left right : String × String × Nat) : Bool :=
+def activityOrderKeyBefore (left right : String × String × Nat) : Bool :=
   if left.1 ≠ right.1 then left.1 < right.1
   else if left.2.1 ≠ right.2.1 then left.2.1 < right.2.1
   else left.2.2 < right.2.2

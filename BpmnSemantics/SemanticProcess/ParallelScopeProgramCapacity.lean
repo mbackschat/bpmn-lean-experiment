@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-import BpmnSemantics.SemanticProcess.OccurrenceReservationState
-import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+public import BpmnSemantics.SemanticProcess.OccurrenceReservationState
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! PMIS-ADMIT-01 binds private command capacity to the original decoded Program and its retained collection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

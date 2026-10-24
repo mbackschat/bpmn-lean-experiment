@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 
 /-! The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice)
 normalizes only singleton operations independent of every alternative. Presentation order supplies no choice.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

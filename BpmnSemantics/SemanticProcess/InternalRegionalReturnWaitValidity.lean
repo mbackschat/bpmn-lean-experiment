@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnEffectValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnEffectValidity
 
 /-! Return removes one parentless scope and its owned Activities. Surviving Timer and
 Message waits retain their exact candidate censuses, including rejected candidates;
 the parentless root cannot be a bounded-scope Timer host. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

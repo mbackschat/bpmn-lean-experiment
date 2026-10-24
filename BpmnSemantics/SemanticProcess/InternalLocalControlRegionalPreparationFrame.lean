@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 
 /-! Complete local-control preparation survives an independent regional execution. The frame
 includes competing selected-join populations, exact token buckets, and index-free publication. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

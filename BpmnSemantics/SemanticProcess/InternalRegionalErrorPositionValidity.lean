@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 
 /-! # Error continuation position
 
@@ -6,6 +8,8 @@ The selected interrupting Error removes a child region and emits a continuation 
 The parent must survive the actual cancellation mask, and checked admission must bind the
 handler output to that same parent's definition scope.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Parallel Multi-Instance conformance
 
@@ -10,6 +12,8 @@ These foundation witnesses bind the two distinct operation surfaces, their exact
 indexed controller partition. Parallel entry cannot be represented by the sequential operation with
 a different schedule, and command-addressed child completion cannot be treated as an internal entry.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelMultiInstanceConformance
 
@@ -75,7 +79,7 @@ def completionForAnotherOutput : SemanticOperation :=
   .completeParallelMultiInstanceUserTask ⟨"operation:UserTask_Review:complete"⟩ operationOrigin
     ⟨"operation:UserTask_Review"⟩ ⟨"UserTask_Review"⟩ ⟨"place:Other"⟩
 
-private def ordinaryTaskWithParallelTaskIdentity : SemanticOperation :=
+def ordinaryTaskWithParallelTaskIdentity : SemanticOperation :=
   .awaitUserTask ⟨"operation:Ordinary_Review"⟩ operationOrigin
     ⟨"place:Ordinary_Input"⟩ ⟨"place:Ordinary_Output"⟩
     { id := ⟨"UserTask_Review"⟩, name := some "Ordinary review" }
@@ -267,7 +271,7 @@ def processId : ProcessId := ⟨"Process_ParallelMultiInstanceReview"⟩
 
 def rootScopeId : DefinitionScopeId := ⟨"scope:Process_ParallelMultiInstanceReview"⟩
 
-private def programOperations : List SemanticOperation :=
+def programOperations : List SemanticOperation :=
   [ .reachNoneEnd ⟨"operation:EndEvent_Completed"⟩
       { elementId := ⟨"EndEvent_Completed"⟩ } ⟨"place:Flow_Review_Completed"⟩
   , .reachNoneEnd ⟨"operation:EndEvent_Interrupted"⟩
@@ -284,7 +288,7 @@ private def programOperations : List SemanticOperation :=
   , .completeScope ⟨"operation:complete-scope:scope:Process_ParallelMultiInstanceReview"⟩
       { elementId := ⟨"Process_ParallelMultiInstanceReview"⟩ } rootScopeId none ]
 
-private def programControlPlaces : List ControlPlace :=
+def programControlPlaces : List ControlPlace :=
   [ { id := ⟨"place:Flow_Escalation_End"⟩
       origin := { elementId := ⟨"Flow_Escalation_End"⟩ } }
   , { id := ⟨"place:Flow_Review_Completed"⟩
@@ -355,7 +359,7 @@ def thirdFirstTrace : TracedStimulusResult :=
 def firstFirstTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit program sharedEnteredFirst firstFirstStimulus
 
-private def expectedWaitEnd (id : UserTaskInstanceId)
+def expectedWaitEnd (id : UserTaskInstanceId)
     (terminal : FlowNodeOccurrenceTerminalKind) : UnnumberedFlowNodeOccurrenceEnd :=
   { anchor := .wait id, terminal }
 
@@ -389,10 +393,10 @@ theorem shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law :
         firstFirstTrace.flowNodeOccurrenceLifecycles := by
   decide +kernel
 
-private def escapeClassCollection : List String :=
+def escapeClassCollection : List String :=
   ["\"", "\\", "\u0008", "\u0001"]
 
-private def escapeClassResult : String :=
+def escapeClassResult : String :=
   "\"\\\u0008\u0001"
 
 /-- Parallel entry uses the shared canonical JSON measure and counts quote, backslash, named-control,

@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Typed BPMN Error and interrupting boundary conformance
 
 This module owns the direct Lean account for the exact mapped boundary-Error capsule. The profile-scoped CIB mapping rule applies a validated pre-error local patch through the committed output mapping before local cleanup and boundary routing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MappedBoundaryErrorConformance
 

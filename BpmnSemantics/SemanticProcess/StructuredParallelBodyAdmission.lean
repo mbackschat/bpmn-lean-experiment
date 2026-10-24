@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.GraphReachability
+module
+
+public import BpmnSemantics.SemanticProcess.GraphReachability
 
 /-! SMIS-ADMIT-01 recognizes serial/paired regions and separate Ends, then counts task-cut automatic bursts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredParallelBody
 
@@ -38,7 +42,7 @@ def aritiesValid (vertices : List Vertex) : Bool :=
       | .join => inputs ≥ 2 && outputs == 1
       | .finish => inputs == 1 && outputs == 0
 
-private def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
+def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
   | 0, pending => if pending.isEmpty then some [] else none
   | fuel + 1, pending => do
       if pending.isEmpty then return []
@@ -426,25 +430,25 @@ structure FrontierCapacity where
   effects : Nat := 0
   deriving Repr, DecidableEq
 
-private def serialCapacity (left right : FrontierCapacity) : FrontierCapacity :=
+def serialCapacity (left right : FrontierCapacity) : FrontierCapacity :=
   ⟨max left.waits right.waits, max left.effects right.effects⟩
 
-private def parallelCapacity (left right : FrontierCapacity) : FrontierCapacity :=
+def parallelCapacity (left right : FrontierCapacity) : FrontierCapacity :=
   ⟨left.waits + right.waits, left.effects + right.effects⟩
 
-private structure WeightedVertex where
+structure WeightedVertex where
   id : String
   kind : Kind
   outputs : List (String × FrontierCapacity)
   weight : FrontierCapacity := {}
 
-private def replaceWeighted (vertices : List WeightedVertex) (removed replacement : String)
+def replaceWeighted (vertices : List WeightedVertex) (removed replacement : String)
     (weight : FrontierCapacity) : List WeightedVertex :=
   vertices.map fun vertex => { vertex with outputs := vertex.outputs.map fun (id, prior) =>
     if id == removed then (replacement, serialCapacity prior weight) else (id, prior) }
 
 /-- PMIS-ADMIT-01: task elimination takes serial maxima; paired branches add independent frontier capacities. -/
-private def contractWeighted (vertices : List WeightedVertex) (vertex : WeightedVertex) : Option (List WeightedVertex) := do
+def contractWeighted (vertices : List WeightedVertex) (vertex : WeightedVertex) : Option (List WeightedVertex) := do
   match vertex.kind with
   | .task =>
       let [(next, width)] := vertex.outputs | none
@@ -468,7 +472,7 @@ private def contractWeighted (vertices : List WeightedVertex) (vertex : Weighted
       else none
   | _ => none
 
-private def reduceWeighted : Nat → List WeightedVertex → Option FrontierCapacity
+def reduceWeighted : Nat → List WeightedVertex → Option FrontierCapacity
   | 0, _ => none
   | fuel + 1, vertices => do
       if vertices.length == 2 then

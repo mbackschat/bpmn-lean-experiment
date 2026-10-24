@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalEndPreparation
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 
 /-! Prepared End selections preserve runtime-state validity through the local token update. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

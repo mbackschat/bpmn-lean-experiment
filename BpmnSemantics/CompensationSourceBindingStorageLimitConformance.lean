@@ -1,9 +1,13 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source storage-limit binding conformance
 
 Retention and snapshot record and byte limits remain four separately reduced binding obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

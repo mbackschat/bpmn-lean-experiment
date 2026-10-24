@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.CallActivityIdentity
-import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
-import BpmnSemantics.SemanticProcess.CallInstanceClosure
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivityIdentity
+public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+public import BpmnSemantics.SemanticProcess.CallInstanceClosure
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Called-Process Call Activity runtime semantics
 
 This module owns the hidden caller/called association, exact invocation and normal-return transitions, and their declarative soundness boundary. Called-instance identity is owned by `CallActivityIdentity`; source QName resolution, public observation, and Temporal hosting remain outside this module.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -40,7 +44,7 @@ def rootInstanceId? (state : RuntimeState) : Option SemanticId :=
   | .cancelled instanceId => some instanceId
   | .notStarted | .failed .. => none
 
-private def sameCallIdentity (record : CalledProcessOccurrence)
+def sameCallIdentity (record : CalledProcessOccurrence)
     (caller : ScopeOccurrenceId) (elementId : NodeId) : Bool :=
   record.caller = caller && record.id.elementId.value = elementId.value
 

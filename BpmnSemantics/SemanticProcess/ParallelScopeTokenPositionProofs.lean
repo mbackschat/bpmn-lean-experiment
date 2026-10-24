@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 
 /-! # Admitted token-patch position totality
 
@@ -10,6 +12,8 @@ structural place keys. Resolved same-scope ports therefore pass every immutable
 origin check of local-control position construction, independently of token
 availability, successful preparation, or a future publication.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

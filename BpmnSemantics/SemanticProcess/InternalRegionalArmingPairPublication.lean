@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 
 /-! Complete regional/arming publication composes the actual four steps. Each operation keeps
 its assigned index in either order; successor validity and accepted deltas are derived from
 the original preparations rather than supplied as intermediate assumptions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

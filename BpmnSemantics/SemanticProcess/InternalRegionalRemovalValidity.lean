@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
-import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
+public import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 
 /-! # Regional removal validity
 
@@ -7,6 +9,8 @@ Scope cancellation filters live work while retaining issuance counters and immut
 bindings. These laws preserve the corresponding runtime conjuncts and exact surviving-owner
 censuses, independently of the selected scope's retain/remove disposition.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

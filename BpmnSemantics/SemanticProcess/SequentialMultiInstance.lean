@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Sequential Multi-Instance outer controller
 
@@ -21,6 +23,8 @@ carries by construction.
 Scope boundary: representation and its canonical order. It adds no BPMN capability, no operation
 kind, no admission rule, and no public observation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

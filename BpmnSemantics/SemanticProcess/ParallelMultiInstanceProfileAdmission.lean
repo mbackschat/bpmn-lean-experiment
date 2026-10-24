@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Multi-Instance profile-family admission
 
@@ -8,6 +10,8 @@ This owner keeps the distinct sequential and parallel closed-sum arms from leaki
 profile. The parallel profile additionally fixes its checked completion expression and exact paired
 entry/completion operation payload.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -29,7 +33,7 @@ def programSequentialMultiInstanceProfileMatches (program : Program) : Bool :=
     | _ => false) ==
       decide (program.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId)
 
-private def exactParallelCheckedNode : CheckedNode → Bool
+def exactParallelCheckedNode : CheckedNode → Bool
   | .parallelMultiInstanceUserTask _ _ _ _ condition _ boundaryTimer =>
       condition.language = simpleBooleanExpressionLanguage &&
         condition.body = "stringEquals(completionPolicy,\"first\")" &&

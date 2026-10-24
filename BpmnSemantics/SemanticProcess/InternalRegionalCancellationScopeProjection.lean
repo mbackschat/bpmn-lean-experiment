@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 
 /-! Scope projection follows actual cancellation retention. A retained selected child
 still projects through its surviving parent; the shared position ancestry theorem
 establishes that parent lookup is unchanged. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

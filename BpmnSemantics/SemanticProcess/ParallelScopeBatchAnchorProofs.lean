@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-import BpmnSemantics.SemanticProcess.InternalCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+public import BpmnSemantics.SemanticProcess.InternalCommutation
 
 /-! # Frozen batch anchor and local-frame preservation
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 reserves distinct public anchors before raw application.
 These laws reuse that certificate to preserve later members' anchor reads;
 they do not assume that a prefix revalidates or applies successfully.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

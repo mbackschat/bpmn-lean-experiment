@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.TransactionBranchPhases
-import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionBranchPhases
+public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Transaction command admission and continuation
 
 The complete admitted operation inventory excludes the alternative Task dispatchers. This connects
 ordinary command admission to the retention-aware completion law used by the continuation proof.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

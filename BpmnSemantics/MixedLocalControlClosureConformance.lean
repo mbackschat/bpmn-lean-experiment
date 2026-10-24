@@ -1,44 +1,48 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! A concurrent document review witnesses production closure over a local fork, human review, and a deadline. The selected account is [Internal Commutation](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). These kernel-decided facts cover this structurally admitted Program and its actual Start command, not checked XML admission, a generalized closure-fuel theorem, or scheduled choice. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MixedLocalControlClosureConformance
 
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def processId : ProcessId := ⟨"Process_ConcurrentReview"⟩
-private def instanceId : SemanticId := ⟨"review-4711"⟩
-private def commandId : SemanticId := ⟨"start-concurrent-review"⟩
-private def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
+def processId : ProcessId := ⟨"Process_ConcurrentReview"⟩
+def instanceId : SemanticId := ⟨"review-4711"⟩
+def commandId : SemanticId := ⟨"start-concurrent-review"⟩
+def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
 
-private def place (name : String) : ControlPlaceId := ⟨"place:Flow_" ++ name⟩
+def place (name : String) : ControlPlaceId := ⟨"place:Flow_" ++ name⟩
 
-private def task (name : String) : SemanticOperation :=
+def task (name : String) : SemanticOperation :=
   .awaitUserTask ⟨"operation:Task_" ++ name⟩ { elementId := ⟨"Task_" ++ name⟩ }
     (place name) (place (name ++ "_Done"))
     { id := ⟨"Task_" ++ name⟩, name := some name }
 
-private def initiation : SemanticOperation :=
+def initiation : SemanticOperation :=
   .initiate ⟨"operation:Start"⟩ { elementId := ⟨"Start"⟩ } (place "Start")
 
-private def fork : SemanticOperation :=
+def fork : SemanticOperation :=
   .duplicate ⟨"operation:Fork"⟩ { elementId := ⟨"Fork"⟩ }
     (place "Start") [place "Checks", place "Deadline", place "Legal"]
 
-private def checks : SemanticOperation :=
+def checks : SemanticOperation :=
   .duplicate ⟨"operation:Fork_Checks"⟩ { elementId := ⟨"Fork_Checks"⟩ }
     (place "Checks") [place "Content", place "Risk"]
 
-private def deadline : SemanticOperation :=
+def deadline : SemanticOperation :=
   .awaitTimer ⟨"operation:Timer_Deadline"⟩ { elementId := ⟨"Timer_Deadline"⟩ }
     (place "Deadline") (place "Deadline_Done")
     { elementId := ⟨"Timer_Deadline"⟩, durationMs := 1000 }
 
-private def operations : List SemanticOperation :=
+def operations : List SemanticOperation :=
   [ .reachNoneEnd ⟨"operation:End"⟩ { elementId := ⟨"End"⟩ } (place "End")
   , fork, checks
   , .synchronize ⟨"operation:Join"⟩ { elementId := ⟨"Join"⟩ }
@@ -48,12 +52,12 @@ private def operations : List SemanticOperation :=
   , .completeScope ⟨"operation:complete-scope:scope:Process_ConcurrentReview"⟩
       { elementId := ⟨"Process_ConcurrentReview"⟩ } (rootDefinitionScopeId processId) none ]
 
-private def places : List ControlPlace :=
+def places : List ControlPlace :=
   ["Checks", "Content", "Content_Done", "Deadline", "Deadline_Done", "End",
     "Legal", "Legal_Done", "Risk", "Risk_Done", "Start"].map fun name =>
       { id := place name, origin := { elementId := ⟨"Flow_" ++ name⟩ } }
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"bpmn-2.0.2-timer-user-task-composition-draft"⟩
@@ -69,10 +73,10 @@ private def program : Program :=
     controlPlaces := places
     operations }
 
-private def start : Stimulus :=
+def start : Stimulus :=
   .startProcess commandId ⟨processId.value⟩ instanceId []
 
-private def beforeMixed : RuntimeState :=
+def beforeMixed : RuntimeState :=
   ((fire? program initiation (admitStimulus program initialState start).state).bind
     (fire? program fork)).getD initialState
 
@@ -88,7 +92,7 @@ theorem reached_frontier_contains_three_independent_preparations :
         [checks, task "Legal", deadline]).map List.length = some 3 := by
   decide +kernel
 
-private def trace : TracedStimulusResult :=
+def trace : TracedStimulusResult :=
   applyStimulusTraced 7 program initialState start
 
 theorem committed_start_closes_the_local_control_frontier :

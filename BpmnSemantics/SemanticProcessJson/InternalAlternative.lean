@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 
 /-! Exact private choice identities are decoded separately from execution and publication. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeTransition
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeTransition
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish position and identity for successful individual body creation and retirement below aggregate validity and history transport. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

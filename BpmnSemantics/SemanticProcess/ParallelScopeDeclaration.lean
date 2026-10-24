@@ -1,14 +1,13 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 
 /-! PMIS-END-01 binds each parallel body completion to one immutable entry and forbids competing source identities. -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics
-
-private def operationScope? (program : Program) (operationId : OperationId) :
-    Option DefinitionScopeId :=
-  (program.operationScopes.find? fun ownership =>
-    decide (ownership.operationId = operationId)).map (·.scopeId)
 
 /-- PMIS-END-01 keeps the continuation on the entry; completion carries only its binding. -/
 def parallelScopeContinuation? (operations : List SemanticOperation)

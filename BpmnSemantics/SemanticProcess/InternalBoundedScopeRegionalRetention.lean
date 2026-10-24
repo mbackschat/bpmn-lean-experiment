@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
 
 /-! Independent bounded entry leaves the regional classifiers unchanged even for historical IDs.
 Both the parent-owned Activity and its child body must stay outside the removal region.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

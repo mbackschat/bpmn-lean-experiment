@@ -1,29 +1,33 @@
-import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Checked Compensation source lowering -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def rootScopeId (source : CheckedProcess) : DefinitionScopeId :=
+def loweredRootScopeId (source : CheckedProcess) : DefinitionScopeId :=
   (source.definitionScopes.find? fun scope =>
     scope.parentScopeId.isNone &&
       scope.originElementId.value = source.processId.value).map (fun scope => scope.id)
     |>.getD ⟨""⟩
 
-private def lowerInput : CheckedCompensationInput → CompensationHandlerInput
+def lowerInput : CheckedCompensationInput → CompensationHandlerInput
   | .empty => .empty
   | .directRestoredProcessBinding sourcePropertyId targetDataInputId =>
       .restoredProcessBinding sourcePropertyId targetDataInputId
 
-private def lowerBody (body : CheckedCompensationBody) :
+def lowerBody (body : CheckedCompensationBody) :
     SingleEffectCompensationHandlerBody :=
   { handlerElementId := body.handlerElementId
     effectElementId := body.effectElementId
     descriptor := body.descriptor
     input := lowerInput body.input }
 
-private def lowerRetentionTarget? : CheckedCompensationSubject →
+def lowerRetentionTarget? : CheckedCompensationSubject →
     Option BoundaryCompensationTarget
   | .boundaryActivity subjectElementId boundaryEventElementId body =>
       some
@@ -32,20 +36,20 @@ private def lowerRetentionTarget? : CheckedCompensationSubject →
           compensationActivityElementId := body.handlerElementId }
   | .eventSubProcess .. => none
 
-private def lowerSnapshotTarget? : CheckedCompensationSubject →
+def lowerSnapshotTarget? : CheckedCompensationSubject →
     Option CompensationEventSubProcessSnapshotTarget
   | .eventSubProcess _ parentScopeId handlerScopeId _ =>
       some { parentScopeId, handlerScopeId }
   | .boundaryActivity .. => none
 
-private def lowerSubject : CheckedCompensationSubject →
+def lowerSubject : CheckedCompensationSubject →
     CompensationSubjectDefinition
   | .boundaryActivity subjectElementId _ body =>
       .boundaryActivity subjectElementId (lowerBody body)
   | .eventSubProcess _ parentScopeId handlerScopeId body =>
       .eventSubProcess parentScopeId handlerScopeId (lowerBody body)
 
-private def lowerDependency
+def lowerDependency
     (dependency : CheckedCompensationDependency) : CompensationDependency :=
   { predecessorElementId := dependency.predecessorElementId
     successorElementId := dependency.successorElementId }
@@ -53,7 +57,7 @@ private def lowerDependency
 def lowerCheckedCompensationActivityRetention
     (source : CheckedProcess) : Option CompensationActivityRetentionDeclaration :=
   source.compensation.map fun declaration =>
-    { definitionScopeId := rootScopeId source
+    { definitionScopeId := loweredRootScopeId source
       targets := declaration.subjects.filterMap lowerRetentionTarget?
       maxRecords := declaration.retentionLimits.maxRecords
       maxCanonicalBytes := declaration.retentionLimits.maxCanonicalBytes }
@@ -68,7 +72,7 @@ def lowerCheckedCompensationSnapshots
 def lowerCheckedCompensationExecution
     (source : CheckedProcess) : Option CompensationExecutionDeclaration :=
   source.compensation.map fun declaration =>
-    { definitionScopeId := rootScopeId source
+    { definitionScopeId := loweredRootScopeId source
       triggerOperationId := nodeOperationId declaration.triggerElementId
       subjects := declaration.subjects.map lowerSubject
       dependencies := declaration.dependencies.map lowerDependency
@@ -81,7 +85,7 @@ def lowerGlobalSynchronousCompensationThrow
     (source : CheckedProcess) (id : NodeId)
     (input output : ControlPlaceId) : SemanticOperation :=
   .triggerCompensation (nodeOperationId id) { elementId := id }
-    (rootScopeId source) input output
+    (loweredRootScopeId source) input output
 
 def checkedScopeIsCompensationDormant
     (source : CheckedProcess) (scope : DefinitionScope) : Bool :=

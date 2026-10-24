@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 
 /-! # Transaction single-token frontier cardinality
 
@@ -8,6 +10,8 @@ The admitted sole consumer and phase barriers constrain actual attempted operati
 filtering those attempts preserve multiplicity, so the conclusion covers the production frontier,
 not merely a set of enabled operation identities. Reachability must still establish the phase facts.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

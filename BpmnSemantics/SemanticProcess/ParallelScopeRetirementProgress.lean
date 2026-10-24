@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
-import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
 
 /-! # Progress after parallel subprocess retirement
 
@@ -8,6 +10,8 @@ PMIS-CANCEL-01 removes remaining bodies on early completion; only final completi
 issues the parent continuation. These laws connect cancellation to the actual
 retirement cut rather than assuming a later successful scheduler step.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

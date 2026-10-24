@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalActivityValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalActivityValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! # Regional controller lifetime preservation
 
@@ -9,6 +11,8 @@ Cancellation withdraws a controller by its Activity identity, before any record 
 inspected. Consequently every matching record of a surviving controller remains in the exact
 lookup census. These laws provide the controller side of regional program-binding preservation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

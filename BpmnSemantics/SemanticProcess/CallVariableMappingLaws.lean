@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CallVariableMapping
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
+module
+
+public import BpmnSemantics.SemanticProcess.CallVariableMapping
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 
 /-! # Call variable mapping laws
 
@@ -9,6 +11,8 @@ Isolation is a property of every state reachable while a call is live, which no 
 covers, so it is stated over arbitrary scoped variables: resolution from a called-owned scope never
 reads or writes the hosting Process binding and never selects a frame of another instance.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
-import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
 
 /-! Complete regional preparation observes lifecycle publication as well as state.
 The arming frame therefore preserves the accepted projection, not only readiness. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.CallInstanceClosure
-import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.CallInstanceClosure
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! # Scope-subtree cancellation
 
@@ -13,6 +15,8 @@ selected occurrence may be retained for immediate normal completion or removed f
 boundary route. Activation counters, Process variables, End history, and logical time are never
 cancellation targets.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -65,12 +69,12 @@ def calledInstanceClosure (state : RuntimeState)
   occurrenceInSubtree state.scopeOccurrences root owner ||
     (calledInstanceClosure state root).contains owner.processInstanceId
 
-private def effectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
+def cancelledEffectOccurrenceId (wait : EffectWait) : EffectOccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
 
-private def keepScopeOccurrence (disposition : SelectedScopeDisposition)
+def keepScopeOccurrence (disposition : SelectedScopeDisposition)
     (root : ScopeOccurrenceId) (cancelled : ScopeOccurrenceId → Bool)
     (occurrence : RuntimeScopeOccurrence) : Bool :=
   match disposition with
@@ -166,7 +170,7 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
                   activityElementId := ⟨record.activityElementId.value⟩
                   activation := record.activation } activity) &&
             !(cancelledEffects.any fun wait =>
-              activityScopeMatches (effectOccurrenceId wait) activity) &&
+              activityScopeMatches (cancelledEffectOccurrenceId wait) activity) &&
             !(cancelledIncidents.any fun incident =>
               activityScopeMatches incident.id.effectId activity) } }
 

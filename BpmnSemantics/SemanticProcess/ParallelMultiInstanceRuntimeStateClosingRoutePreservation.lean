@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingTerminalPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingTerminalPreservation
 
 /-! # Parallel Multi-Instance closing-route preservation
 
@@ -9,6 +11,8 @@ terminal owner.
 Scope boundary: route selection and result-publication framing only. The shared terminal proof,
 progress, evaluator lifting, command traces, host behavior, and semantic account remain outside.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

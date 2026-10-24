@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.NestedScopeData
-import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
-import BpmnSemantics.SemanticProcess.WaitCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! # Nested scope-data command writes
 
@@ -12,6 +14,8 @@ chain of the completed wait's owner (`NSD-WRITE-01`) instead of merging into Pro
 completion patch may name only frame-declared names on that chain (`NSD-TASK-01`), which is a
 profile admission restriction: CIB would create a root binding for an undeclared name.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

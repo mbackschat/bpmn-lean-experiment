@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcessJson.Elements
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Strict checked Compensation source decoding -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeInput (json : Json) : Except String CheckedCompensationInput := do
+def decodeInput (json : Json) : Except String CheckedCompensationInput := do
   match ← stringField json "kind" with
   | "empty" =>
       requireObjectShape json ["kind"]
@@ -20,7 +24,7 @@ private def decodeInput (json : Json) : Except String CheckedCompensationInput :
         (← decodeNonemptyStringField json "targetDataInputId"))
   | kind => throw s!"unsupported checked Compensation input {kind}"
 
-private def decodeBody (json : Json) : Except String CheckedCompensationBody := do
+def decodeBody (json : Json) : Except String CheckedCompensationBody := do
   requireObjectShape json
     ["descriptor", "effectElementId", "handlerElementId", "input", "kind"]
   expectStringField json "kind" "singleEffect"
@@ -35,7 +39,7 @@ private def decodeBody (json : Json) : Except String CheckedCompensationBody := 
       descriptor
       input := ← decodeInput (← field json "input") }
 
-private def decodeSubject (json : Json) : Except String CheckedCompensationSubject := do
+def decodeSubject (json : Json) : Except String CheckedCompensationSubject := do
   match ← stringField json "kind" with
   | "boundaryActivity" =>
       requireObjectShape json
@@ -54,7 +58,7 @@ private def decodeSubject (json : Json) : Except String CheckedCompensationSubje
         (← decodeBody (← field json "body")))
   | kind => throw s!"unsupported checked Compensation subject {kind}"
 
-private def decodeDependency (json : Json) :
+def decodeDependency (json : Json) :
     Except String CheckedCompensationDependency := do
   requireObjectShape json
     ["predecessorElementId", "reason", "successorElementId"]
@@ -64,7 +68,7 @@ private def decodeDependency (json : Json) :
       successorElementId := ⟨← decodeNonemptyStringField json "successorElementId"⟩
       reason := .sequenceFlow }
 
-private def decodeRetentionLimits (json : Json) :
+def decodeRetentionLimits (json : Json) :
     Except String CheckedCompensationRetentionLimits := do
   requireObjectShape json ["maxCanonicalBytes", "maxRecords"]
   let maxRecords ← decodeSafeNat (← field json "maxRecords")
@@ -73,7 +77,7 @@ private def decodeRetentionLimits (json : Json) :
     throw "checked Compensation retention limits must be exactly 2/4096"
   pure { maxRecords, maxCanonicalBytes }
 
-private def decodeSnapshotLimits (json : Json) :
+def decodeSnapshotLimits (json : Json) :
     Except String CheckedCompensationSnapshotLimits := do
   requireObjectShape json ["maxCanonicalBytes", "maxRecords"]
   let maxRecords ← decodeSafeNat (← field json "maxRecords")
@@ -82,7 +86,7 @@ private def decodeSnapshotLimits (json : Json) :
     throw "checked Compensation snapshot limits must be exactly 1/8192"
   pure { maxRecords, maxCanonicalBytes }
 
-private def decodeExecutionLimits (json : Json) :
+def decodeExecutionLimits (json : Json) :
     Except String CheckedCompensationExecutionLimits := do
   requireObjectShape json ["maxCanonicalBytes", "maxHandlers", "maxTriggers"]
   let maxTriggers ← decodeSafeNat (← field json "maxTriggers")

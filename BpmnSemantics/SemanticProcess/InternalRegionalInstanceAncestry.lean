@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Process-instance scope ancestry
 
 Predecessor position validity supplies live parent edges and the static forest rank. Call-association
 reachability transfers the hosting singleton to every called instance before roots are identified.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

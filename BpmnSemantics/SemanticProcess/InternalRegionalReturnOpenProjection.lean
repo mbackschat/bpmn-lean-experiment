@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnScopeCallProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnScopeCallProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
 
 /-! Accepted Return publication composes actual cleanup, all independent projection
 guards, and exact Scope/Call/wait populations. The ending removes only the selected
 Call anchor; canonical order and anchor uniqueness come from predecessor projection. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

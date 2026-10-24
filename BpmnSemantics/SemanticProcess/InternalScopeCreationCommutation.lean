@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+public import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
 
 /-! Exact complete-state commutation of prepared child and Call creation from the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

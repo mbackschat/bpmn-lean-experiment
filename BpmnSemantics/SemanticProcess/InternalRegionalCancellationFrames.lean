@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCallFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCallFrames
 
 /-! REG-OWN-FRAME-01 preserves cancellation ownership through exact owner reachability and
 monotone handler retention. Removing an Activity can erase its handler claim, so equality of
 every re-derived target mask would demand a false invariant. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

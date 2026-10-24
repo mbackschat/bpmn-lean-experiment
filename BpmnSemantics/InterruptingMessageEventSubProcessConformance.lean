@@ -22,23 +22,23 @@ namespace BpmnSemantics.InterruptingMessageEventSubProcessConformance
 
 open Lean SemanticProcess SemanticProcessJson
 
-private def channel : MessageChannel := .operationMessage ⟨"WithdrawalInterface"⟩ ⟨"Withdraw"⟩ ⟨"WithdrawalMessage"⟩
+def channel : MessageChannel := .operationMessage ⟨"WithdrawalInterface"⟩ ⟨"Withdraw"⟩ ⟨"WithdrawalMessage"⟩
 
-private def channelJson : Json := Json.mkObj [
+def channelJson : Json := Json.mkObj [
   ("kind", toJson "operationMessage"), ("interfaceId", toJson "WithdrawalInterface"),
   ("interfaceOperationId", toJson "Withdraw"), ("messageId", toJson "WithdrawalMessage")]
 
-private def declarationFields : List (String × Json) := [
+def declarationFields : List (String × Json) := [
   ("parentScopeId", toJson "scope:Application"), ("handlerScopeId", toJson "scope:Withdrawal"),
   ("elementId", toJson "Withdrawal"), ("startEventId", toJson "WithdrawalStart"), ("channel", channelJson)]
 
-private def checkedDeclarationJson : Json := Json.mkObj (declarationFields ++ [
+def checkedDeclarationJson : Json := Json.mkObj (declarationFields ++ [
   ("interruption", toJson "interrupting"), ("childEntryFlowId", toJson "HandlerEntry")])
 
-private def programDeclarationJson : Json := Json.mkObj (declarationFields ++ [
+def programDeclarationJson : Json := Json.mkObj (declarationFields ++ [
   ("childEntry", toJson "place:HandlerEntry")])
 
-private def expectedCheckedDeclaration : CheckedInterruptingMessageEventSubProcess := {
+def expectedCheckedDeclaration : CheckedInterruptingMessageEventSubProcess := {
   parentScopeId := ⟨"scope:Application"⟩
   handlerScopeId := ⟨"scope:Withdrawal"⟩
   elementId := ⟨"Withdrawal"⟩
@@ -47,7 +47,7 @@ private def expectedCheckedDeclaration : CheckedInterruptingMessageEventSubProce
   interruption := .interrupting
   childEntryFlowId := ⟨"HandlerEntry"⟩ }
 
-private def expectedProgramDeclaration : InterruptingMessageEventSubProcessDeclaration := {
+def expectedProgramDeclaration : InterruptingMessageEventSubProcessDeclaration := {
   parentScopeId := ⟨"scope:Application"⟩
   handlerScopeId := ⟨"scope:Withdrawal"⟩
   elementId := ⟨"Withdrawal"⟩
@@ -55,27 +55,27 @@ private def expectedProgramDeclaration : InterruptingMessageEventSubProcessDecla
   channel
   childEntry := ⟨"place:HandlerEntry"⟩ }
 
-private def identityFields : List (String × Json) := [
+def identityFields : List (String × Json) := [
   ("semanticProfile", toJson "bpmn-2.0.2-interrupting-message-event-subprocess-draft"),
   ("sourceId", toJson "withdrawal-wire"), ("sourceOverlay", .null),
   ("sourceSha256", toJson "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
 
-private def declarationField (value : Option Json) : List (String × Json) :=
+def declarationField (value : Option Json) : List (String × Json) :=
   value.toList.map fun value => ("interruptingMessageEventSubProcesses", value)
 
-private def checkedJson (value : Option Json) : Json := Json.mkObj ([
+def checkedJson (value : Option Json) : Json := Json.mkObj ([
   ("kind", toJson "checkedProcess"), ("identity", Json.mkObj identityFields),
   ("processId", toJson "Application"), ("definitionScopes", .arr #[]), ("nodeScopes", .arr #[]),
   ("sequenceFlowScopes", .arr #[]), ("nodes", .arr #[]), ("sequenceFlows", .arr #[])] ++ declarationField value)
 
-private def programJson (value : Option Json) : Json := Json.mkObj ([
+def programJson (value : Option Json) : Json := Json.mkObj ([
   ("kind", toJson "semanticProcess"),
   ("identity", Json.mkObj (("compiler", toJson "bpmn-source-semantic-process") :: identityFields)),
   ("processId", toJson "Application"), ("internalSchedulingMode", toJson "rejectObservableChoice"),
   ("definitionScopes", .arr #[]), ("operationScopes", .arr #[]), ("controlPlaceScopes", .arr #[]),
   ("controlPlaces", .arr #[]), ("operations", .arr #[])] ++ declarationField value)
 
-private def checkedApplication : CheckedProcess := {
+def checkedApplication : CheckedProcess := {
   identity := {
     semanticProfile := ⟨"bpmn-2.0.2-interrupting-message-event-subprocess-draft"⟩
     sourceId := ⟨"application-withdrawal"⟩
@@ -109,7 +109,7 @@ private def checkedApplication : CheckedProcess := {
         ⟨"scope:Withdrawal"⟩ else ⟨"scope:Application"⟩ }
   interruptingMessageEventSubProcesses := [expectedCheckedDeclaration] }
 
-private def ordinarySource : CheckedProcess := {
+def ordinarySource : CheckedProcess := {
   identity := { checkedApplication.identity with semanticProfile := ⟨"cibseven-2.2.0-user-task-process-data-draft"⟩ }
   processId := ⟨"Application"⟩
   definitionScopes := [{ id := ⟨"scope:Application"⟩, parentScopeId := none, originElementId := ⟨"Application"⟩ }]
@@ -124,7 +124,7 @@ theorem complete_checked_admission_preserves_ordinary_profile :
     checkedWellFormed ordinarySource = true := by
   decide +kernel
 
-private def ordinaryStartPrograms : List Program :=
+def ordinaryStartPrograms : List Program :=
   let ordinary := lowerCheckedProcess ordinarySource
   [ordinary, { ordinary with identity := { ordinary.identity with
     semanticProfile := structuredCompositionCheckpointProfileId } }]
@@ -169,7 +169,7 @@ theorem complete_lowering_retains_declaration_and_token_free_completion :
         { elementId := ⟨"Withdrawal"⟩ } ⟨"scope:Withdrawal"⟩) = true := by
   decide +kernel
 
-private def applicationProgram : Program := lowerCheckedProcess checkedApplication
+def applicationProgram : Program := lowerCheckedProcess checkedApplication
 
 theorem program_profile_admits_independently_validated_withdrawal_graph :
     programProfileCapabilitiesValid applicationProgram = true := by
@@ -353,20 +353,20 @@ theorem program_decoder_refuses_checked_entry_representation :
     (decodeProgram (programJson (some (.arr #[checkedDeclarationJson])))).isOk = false := by
   decide +kernel
 
-private def applicationRoot : RuntimeScopeOccurrence := {
+def applicationRoot : RuntimeScopeOccurrence := {
   id := { processInstanceId := ⟨"application"⟩, definitionScopeId := ⟨"scope:Application"⟩, activation := 1 }
   parent := none }
 
-private def withdrawalHandler : RuntimeScopeOccurrence := {
+def withdrawalHandler : RuntimeScopeOccurrence := {
   id := { processInstanceId := ⟨"application"⟩, definitionScopeId := ⟨"scope:Withdrawal"⟩, activation := 1 }
   parent := some applicationRoot.id }
 
-private def quiescentHandlerState : RuntimeState := { initialState with
+def quiescentHandlerState : RuntimeState := { initialState with
   control := .running ⟨"application"⟩
   scopeOccurrences := [applicationRoot, withdrawalHandler]
   endOccurrences := 2 }
 
-private def handlerCompletion : SemanticOperation :=
+def handlerCompletion : SemanticOperation :=
   .completeEventSubProcess ⟨"operation:complete-event-subprocess:scope:Withdrawal"⟩
     ⟨⟨"Withdrawal"⟩⟩ ⟨"scope:Withdrawal"⟩
 
@@ -393,10 +393,10 @@ theorem handler_completion_refuses_parent_as_handler :
         ⟨"scope:Application"⟩) ⟨"invalid-completion"⟩ 1 = none := by
   decide +kernel
 
-private def startApplication : Stimulus :=
+def startApplication : Stimulus :=
   .startProcess ⟨"start-application"⟩ ⟨"Application"⟩ ⟨"application"⟩ []
 
-private def withdrawalListener : EventSubProcessMessageSubscription := {
+def withdrawalListener : EventSubProcessMessageSubscription := {
   id := { processInstanceId := ⟨"application"⟩, elementId := ⟨"WithdrawalStart"⟩, activation := 1 }
   owner := applicationRoot.id
   channel }
@@ -414,10 +414,10 @@ theorem external_start_refuses_nonpristine_state :
     admission.outcome = .rejected ∧ admission.state = before := by
   decide +kernel
 
-private def startedApplication : RuntimeState :=
+def startedApplication : RuntimeState :=
   (admitStimulus applicationProgram initialState startApplication).state
 
-private def unregisteredRoot : RuntimeState := { initialState with
+def unregisteredRoot : RuntimeState := { initialState with
   control := .running ⟨"application"⟩
   initiationPending := true
   scopeOccurrences := [applicationRoot]
@@ -457,11 +457,11 @@ theorem family_validity_refuses_listener_on_predecessor_profile :
   decide +kernel
 
 
-private def ordinaryTaskOwner : ScopeOccurrenceId := ⟨⟨"instance"⟩, ⟨"scope:InvoiceProcess"⟩, 1⟩
-private def ordinaryTaskWait : UserTaskWait := {
+def ordinaryTaskOwner : ScopeOccurrenceId := ⟨⟨"instance"⟩, ⟨"scope:InvoiceProcess"⟩, 1⟩
+def ordinaryTaskWait : UserTaskWait := {
   processInstanceId := ⟨"instance"⟩, owner := ordinaryTaskOwner
   task := { id := ⟨"Notify"⟩, name := none }, activation := 1, output := ⟨"place:d"⟩ }
-private def ordinaryTaskWithForeignListener : RuntimeState := {
+def ordinaryTaskWithForeignListener : RuntimeState := {
   initialState with
   control := .running ⟨"instance"⟩
   waits := [ordinaryTaskWait]
@@ -503,13 +503,13 @@ theorem foreign_listener_refuses_every_ordinary_completion_without_mutation
   simp [admitStimulus, callDataRuntimeStateValid, interruptingMessageEventSubProcessStateValid,
     serialProgram, profile, ordinaryTaskWithForeignListener]
 
-private def waitingReview : RuntimeState := (do
+def waitingReview : RuntimeState := (do
   let initiated ← step applicationProgram startedApplication (nodeOperationId ⟨"Start"⟩)
   let forked ← step applicationProgram initiated (nodeOperationId ⟨"Fork"⟩)
   let first ← step applicationProgram forked (nodeOperationId ⟨"CheckA"⟩)
   step applicationProgram first (nodeOperationId ⟨"CheckB"⟩)).getD initialState
 
-private def withdrawApplication : Stimulus :=
+def withdrawApplication : Stimulus :=
   .deliverMessage ⟨"withdraw-application"⟩ withdrawalListener.id channel
 
 theorem explicit_start_choices_arm_both_ordinary_tasks :
@@ -530,7 +530,7 @@ theorem external_delivery_interrupts_both_tasks_and_enters_only_handler :
         ⟨"application"⟩ admission.state = true := by
   decide +kernel
 
-private def triggeredApplication : RuntimeState :=
+def triggeredApplication : RuntimeState :=
   (admitStimulus applicationProgram waitingReview withdrawApplication).state
 
 theorem dormant_listener_creates_no_executing_handler :
@@ -566,17 +566,17 @@ theorem handler_projection_refuses_orphaned_handler :
       { triggeredApplication with scopeOccurrences := [withdrawalHandler] } = none := by
   decide +kernel
 
-private def handlerWaiting : RuntimeState :=
+def handlerWaiting : RuntimeState :=
   (step applicationProgram triggeredApplication (nodeOperationId ⟨"Handler"⟩)).getD initialState
 
-private def handlerCompleted : RuntimeState :=
+def handlerCompleted : RuntimeState :=
   (admitStimulus applicationProgram handlerWaiting
     (.completeUserTaskInstance ⟨"finish-handler"⟩ ⟨⟨"application"⟩, ⟨"Handler"⟩, 1⟩ [])).state
 
-private def handlerQuiescent : RuntimeState :=
+def handlerQuiescent : RuntimeState :=
   (step applicationProgram handlerCompleted (nodeOperationId ⟨"HandlerEnd"⟩)).getD initialState
 
-private def handlerClosed : RuntimeState :=
+def handlerClosed : RuntimeState :=
   (step applicationProgram handlerQuiescent handlerCompletion.id).getD initialState
 
 theorem handler_task_projects_under_its_executing_scope :
@@ -594,13 +594,13 @@ theorem handler_completion_lifecycle_matches_its_independent_open_projection :
         { started := [], ended := [{ anchor := .scope withdrawalHandler.id, terminal := .completed }] } := by
   decide +kernel
 
-private def scheduledStart : TracedStimulusResult :=
+def scheduledStart : TracedStimulusResult :=
   applyStimulusTraced 8 applicationProgram initialState startApplication
 
-private def scheduledWithdrawal : TracedStimulusResult :=
+def scheduledWithdrawal : TracedStimulusResult :=
   applyStimulusTraced 8 applicationProgram scheduledStart.result.state withdrawApplication
 
-private def scheduledHandlerCompletion : TracedStimulusResult :=
+def scheduledHandlerCompletion : TracedStimulusResult :=
   applyStimulusTraced 8 applicationProgram scheduledWithdrawal.result.state
     (.completeUserTaskInstance ⟨"finish-handler"⟩ ⟨⟨"application"⟩, ⟨"Handler"⟩, 1⟩ [])
 
@@ -644,7 +644,7 @@ theorem triggered_parent_publishes_only_handler_ingress :
         [.completeUserTaskInstance ⟨⟨"application"⟩, ⟨"Handler"⟩, 1⟩] := by
   decide +kernel
 
-private def completeTask (name : String) : Stimulus :=
+def completeTask (name : String) : Stimulus :=
   .completeUserTaskInstance ⟨"complete:" ++ name⟩ ⟨⟨"application"⟩, ⟨name⟩, 1⟩ []
 
 theorem initial_parallel_frontier_is_complete_and_both_arm_orders_agree :
@@ -658,7 +658,7 @@ theorem initial_parallel_frontier_is_complete_and_both_arm_orders_agree :
         some waitingReview := by
   decide +kernel
 
-private def refusesExactly (before : RuntimeState) (stimulus : Stimulus) : Bool :=
+def refusesExactly (before : RuntimeState) (stimulus : Stimulus) : Bool :=
   let result := applyStimulusTraced 8 applicationProgram before stimulus
   result.result.outcome == .rejected && result.result.state == before &&
     result.committedTransitions.isEmpty && result.flowNodeOccurrenceLifecycles.isEmpty
@@ -675,7 +675,7 @@ theorem invalid_deliveries_and_cancelled_tasks_preserve_state_without_publicatio
         (refusesExactly handlerWaiting)) = true := by
   decide +kernel
 
-private def fitsOrRollsBack (before : RuntimeState) (stimulus : Stimulus) (fuel : Nat) : Bool :=
+def fitsOrRollsBack (before : RuntimeState) (stimulus : Stimulus) (fuel : Nat) : Bool :=
   let atBound := applyStimulusTraced fuel applicationProgram before stimulus
   let short := applyStimulusTraced (fuel - 1) applicationProgram before stimulus
   atBound.result.outcome == .committed && atBound.committedTransitions.length == fuel + 1 &&
@@ -690,7 +690,7 @@ theorem startup_delivery_and_handler_completion_have_exact_atomic_fuel_bounds :
       fitsOrRollsBack handlerWaiting (completeTask "Handler") 3 = true := by
   decide +kernel
 
-private def checkedCommandSequence (program : Program) :
+def checkedCommandSequence (program : Program) :
     RuntimeState → List (Stimulus × Nat) → Option RuntimeState
   | state, [] => some state
   | state, (stimulus, steps) :: rest => do
@@ -705,7 +705,7 @@ private def checkedCommandSequence (program : Program) :
       if replayCommittedTransitions program state result.committedTransitions != some result.result.state then none
       checkedCommandSequence program result.result.state rest
 
-private def completeSchedules : List (List (Stimulus × Nat)) :=
+def completeSchedules : List (List (Stimulus × Nat)) :=
   [[(completeTask "CheckA", 1), (completeTask "CheckB", 2)],
    [(completeTask "CheckB", 1), (completeTask "CheckA", 2)],
    [(withdrawApplication, 1), (completeTask "Handler", 3)],

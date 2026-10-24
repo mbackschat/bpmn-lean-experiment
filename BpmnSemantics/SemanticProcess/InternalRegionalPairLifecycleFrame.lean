@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
-import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
 
 /-! Cancellation publication depends on projected anchors and live handler classification, including private Timers. Exact retained populations preserve that template without assuming publication acceptance. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

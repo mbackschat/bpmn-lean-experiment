@@ -1,9 +1,13 @@
-import BpmnSemantics.Experiments.CheckedSourceTransition
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceTransition
 
 /-! # Checked-source scenario execution
 
 This module owns observation and scenario execution for the provisional direct checked-source account.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceSemantics
 

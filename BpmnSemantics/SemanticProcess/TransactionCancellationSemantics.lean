@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 
 /-! # Transaction cancellation relations
 
@@ -6,6 +8,8 @@ TXC-CANCEL-01 selects retained sources before regional withdrawal. The declarati
 an empty cancellation join from a capacity-checked handler frontier; TXC-FAIL-01 retains the existing
 whole-Process failure disposition rather than asserting a regional frame for failure.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

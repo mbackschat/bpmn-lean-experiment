@@ -62,17 +62,17 @@ def transactionCheckedSource (namePrefix : String) (long : Bool) : CheckedProces
         retentionLimits := { maxRecords := 1, maxCanonicalBytes := 4096 }
         executionLimits := { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 20480 } } }
 
-private def misplaced (s : CheckedProcess) (withdraw : String) : CheckedProcess :=
+def misplaced (s : CheckedProcess) (withdraw : String) : CheckedProcess :=
   { s with transactionCancellation := s.transactionCancellation.map fun d =>
     { d with subject := match d.subject with
       | .boundaryActivity _ boundary body => .boundaryActivity ⟨withdraw⟩ boundary body
       | other => other } }
 
 -- StrictJson uses an opaque parser implementation; these byte-level checks are runtime evidence.
-private def declarationWire : String :=
+def declarationWire : String :=
   "{\"definitionScopeId\":\"scope:tx\",\"triggerElementId\":\"cancel\",\"subject\":{\"kind\":\"boundaryActivity\",\"subjectElementId\":\"reserve\",\"boundaryEventElementId\":\"undoBoundary\",\"body\":{\"kind\":\"singleEffect\",\"handlerElementId\":\"undo\",\"effectElementId\":\"undo\",\"descriptor\":{\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\",\"operation\":\"urn:bpmn-lean:effect-operation:compensation-single-effect-v1\"},\"input\":{\"kind\":\"empty\"}}},\"retentionLimits\":{\"maxRecords\":1,\"maxCanonicalBytes\":4096},\"executionLimits\":{\"maxTriggers\":1,\"maxHandlers\":1,\"maxCanonicalBytes\":20480}}"
 
-private def declarationAccepted (wire : String) : Bool :=
+def declarationAccepted (wire : String) : Bool :=
   match parseWireJson wire >>= decodeCheckedTransaction with
   | .ok _ => true
   | .error _ => false
@@ -90,7 +90,7 @@ private def declarationAccepted (wire : String) : Bool :=
   unless (declarationAccepted (declarationWire.replace "empty" "directRestoredProcessBinding")) == false do
     throw (IO.userError "Transaction strict decoder: reject restored handler input")
 
-private def nodeWireAccepted (node : String) : Bool :=
+def nodeWireAccepted (node : String) : Bool :=
   let wire := "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[" ++ node ++ "],\"sequenceFlows\":[]}"
   match parseWireJson wire >>= decodeCheckedProcess with
   | .ok _ => true

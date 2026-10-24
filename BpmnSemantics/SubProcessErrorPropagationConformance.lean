@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Embedded Sub-Process Error propagation conformance
 
 This module owns the direct Lean account for one exact-code Error End caught by the single interrupting boundary Error on its directly enclosing embedded Sub-Process. It locks both child-command orders, regional sibling cancellation, the unreachable normal route, exact stale refusal, recovery completion, and the deliberate internal End-history difference behind one equal public recovery observation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SubProcessErrorPropagationConformance
 
@@ -152,7 +156,7 @@ def completed : StimulusResult :=
   applyStimulus scenarioClosureLimit program triggerFirst.state
     (completeTask "complete-recover" "UserTask_Recover")
 
-private def taskObservation (elementId name : String) : OpenUserTask :=
+def taskObservation (elementId name : String) : OpenUserTask :=
   { id := taskId elementId, name := some name, state := .active }
 
 def recoveryObservation : StateObservation :=

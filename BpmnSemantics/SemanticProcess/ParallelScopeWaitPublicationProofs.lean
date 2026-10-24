@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
-import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+public import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
 
 /-! PMIS entry, completion and retirement preserve the full wait projection
 contract, including the Service wait/local-data bijection. Declaration provenance
 alone does not establish the fields and identities that lifecycle publication reads. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 

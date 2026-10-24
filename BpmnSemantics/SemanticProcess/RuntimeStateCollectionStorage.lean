@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.EventBasedGateway
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.SequentialMultiInstance
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 
 /-! RSI-ORDER-01 separates committed unique-key storage from raw evaluator frame laws.
 Lean tokens are a unit bag: repeated equal tokens encode positive multiplicity, unlike
 TypeScript's one bucket per key. Their canonical order is checked without deduplication.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 
 /-! # Activity-local frame provenance for parallel scopes
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 checks an Activity-occurrence frame before Human arming. Actual
 PMIS execution creates only Effect-local frames; entry initializes scope data
 and retirement or completion can only remove existing local frames.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

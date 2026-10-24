@@ -1,10 +1,14 @@
-import BpmnSemantics.SequentialUserTask
-import BpmnSemantics.SemanticProcess.Execution
+module
+
+public import BpmnSemantics.SequentialUserTask
+public import BpmnSemantics.SemanticProcess.Execution
 
 /-! # BpmnSemantics.UserTaskCompletionDataConformance — exact completion-patch locks
 
 This module owns the selected CIB Seven completion-data extension over the existing exact User Task occurrence. It checks atomic Process-variable merge, enabledness independence, bounded outgoing closure, and complete variable-state preservation on refusal.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.UserTaskCompletionDataConformance
 

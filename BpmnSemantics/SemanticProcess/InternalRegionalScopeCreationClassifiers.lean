@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationGraph
-import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationGraph
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
 
 /-! Regional ownership guards also inspect historical identities. Parent ancestry and Call reachability must therefore retain their answers for arbitrary IDs, beyond the live members of the prepared region. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

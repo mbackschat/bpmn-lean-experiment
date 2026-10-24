@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.TransactionCommandPhases
-import BpmnSemantics.SemanticProcess.TransactionScopePhases
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCommandPhases
+public import BpmnSemantics.SemanticProcess.TransactionScopePhases
 
 /-! # Transaction phase preservation
 
 The complete role inventory connects actual attempted operations to the local continuation laws.
 Scope shape and leaf ownership exclude a normal parent completion beside live child work.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

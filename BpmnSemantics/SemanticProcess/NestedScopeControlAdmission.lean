@@ -1,7 +1,9 @@
-import BpmnSemantics.CheckedProcessContract
-import BpmnSemantics.SemanticProcess.MergeRegionAdmission
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+module
+
+public import BpmnSemantics.CheckedProcessContract
+public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! NSC-ADMIT-01 for the embedded completion profile. Each definition scope's body is projected to the
 reviewed structured-body analysis, a Sub-Process appearing in its parent as a task vertex, so
@@ -13,6 +15,8 @@ and their per-arrival bursts are composed here.
 CALLN-ADMIT-01 adds Process-root Calls: a Call is a task vertex of the caller root whose called Process
 body, a serial chain, is expanded once per call site below it, so the burst composition and the task
 bound see the call tree exactly as a Sub-Process tree. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeControl
 
@@ -325,7 +329,7 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
         let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans expandedFuel root.id.value)
         if maximum ≤ scenarioClosureLimit then some maximum else none
 
-private def checkedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
+def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId.value
 
@@ -349,17 +353,17 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) :
   return (⟨id, kind, outputs⟩, child)
 
 /-- The parentless definition scope of the Process a Call names. -/
-private def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option String := do
+def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option String := do
   let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == calledProcessId.value)
   return root.id.value
 
 def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
   if !(source.sequenceFlows.all fun flow => flow.condition.isNone &&
-      (checkedScope? source flow.sourceId).isSome && checkedScope? source flow.sourceId == checkedScope? source flow.targetId)
+      (controlCheckedScope? source flow.sourceId).isSome && controlCheckedScope? source flow.sourceId == controlCheckedScope? source flow.targetId)
   then none
   else source.definitionScopes.mapM fun scope => do
-    let members := source.nodes.filter fun node => checkedScope? source node.id == some scope.id.value
+    let members := source.nodes.filter fun node => controlCheckedScope? source node.id == some scope.id.value
     let projected ← members.mapM (checkedVertex? source)
     let calls ← members.filterMapM fun node => match node with
       | .callActivity id calledProcessId _ => (calledRoot? source calledProcessId).map fun root => some (id.value, root)
@@ -373,10 +377,10 @@ def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
 
 /-- NSC-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted largest closure. -/
 def checkedAnalysis (source : CheckedProcess) : Option Nat := do
-  if !(source.nodes.all fun node => (checkedScope? source node.id).isSome) then none
+  if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
   else analyze source.definitionScopes (← (← checkedBodies source).mapM contractBody)
 
-private def operationScope? (program : Program) (operation : SemanticOperation) : Option String := do
+def controlOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique? (program.operationScopes.filter (·.operationId == operation.id))
   return owner.scopeId.value
 
@@ -389,24 +393,24 @@ def operationInputs : SemanticOperation → List ControlPlaceId
 /-- The unique same-scope operation consuming `place`. -/
 def consumer? (program : Program) (scope : String) (place : ControlPlaceId) : Option String := do
   let consumer ← StructuredComposition.unique? (program.operations.filter fun op => (operationInputs op).contains place)
-  if operationScope? program consumer == some scope then some consumer.id.value else none
+  if controlOperationScope? program consumer == some scope then some consumer.id.value else none
 
-private def parentOutput? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId := do
+def controlParentOutput? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId := do
   let completion ← StructuredComposition.unique? (program.operations.filter fun op => match op with
     | .completeScope _ _ scopeId _ => scopeId == child
     | _ => false)
   match completion with
   | .completeScope _ _ _ (some output) =>
-      if operationScope? program completion == some child.value then some output else none
+      if controlOperationScope? program completion == some child.value then some output else none
   | _ => none
 
 /-- The caller output of the one empty-data return an invocation names, owned by its called root. -/
-private def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOperationId : OperationId) :
+def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOperationId : OperationId) :
     Option ControlPlaceId := do
   let returned ← StructuredComposition.unique? (program.operations.filter (·.id == returnOperationId))
   match returned with
   | .returnProcess _ _ _ root output .empty =>
-      if root == calledRoot && operationScope? program returned == some calledRoot.value then some output else none
+      if root == calledRoot && controlOperationScope? program returned == some calledRoot.value then some output else none
   | _ => none
 
 def isCallReturn : SemanticOperation → Bool
@@ -429,7 +433,7 @@ def operationVertex? (program : Program) (scope : String) (operation : SemanticO
   | .mergeExclusive _ _ _ output => return (⟨id, .merge, ← follow [output]⟩, none)
   | .reachNoneEnd .. => return (⟨id, .vertex .finish, []⟩, none)
   | .enterScope _ _ _ _ child =>
-      return (⟨id, .vertex .task, ← follow [← parentOutput? program child]⟩, some child.value)
+      return (⟨id, .vertex .task, ← follow [← controlParentOutput? program child]⟩, some child.value)
   | .invokeProcess _ _ _ _ calledRoot calledEntry returnOperationId .empty => do
       let output ← callerOutput? program calledRoot returnOperationId
       let _ ← consumer? program calledRoot.value calledEntry
@@ -440,7 +444,7 @@ def programBodies (program : Program) : Option (List RawBody) := do
   let operations := program.operations.filter fun op => !StructuredComposition.isScopeCompletion op && !isCallReturn op
   program.definitionScopes.mapM fun scope => do
     let members ← (operations.filterM fun op => do
-      return (← operationScope? program op) == scope.id.value)
+      return (← controlOperationScope? program op) == scope.id.value)
     let projected ← members.mapM (operationVertex? program scope.id.value)
     let entries ← operations.filterMapM fun op => match op with
       | .enterScope _ _ _ childEntry child =>
@@ -486,7 +490,7 @@ def programAnalysis (program : Program) : Option Nat := do
         (invocations.filter fun op => match op with
           | .invokeProcess _ _ _ _ _ _ returnOperationId _ => returnOperationId == returned.id
           | _ => false).length == 1) &&
-      program.operations.all fun op => (operationScope? program op).isSome) then none
+      program.operations.all fun op => (controlOperationScope? program op).isSome) then none
   else analyze program.definitionScopes (← (← programBodies program).mapM contractBody)
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl

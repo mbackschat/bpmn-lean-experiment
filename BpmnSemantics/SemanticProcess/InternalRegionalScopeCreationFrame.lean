@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
-import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 
 /-! Complete regional preparation survives independent scope creation with the same selected region, dependencies, and publication payload. The new projected start is excluded by the original region; existing handler withdrawals retain their exact classifiers. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

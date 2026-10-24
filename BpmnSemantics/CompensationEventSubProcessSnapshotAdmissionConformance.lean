@@ -1,10 +1,14 @@
-import BpmnSemantics.SubProcessBoundaryTimerConformance
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+module
+
+public import BpmnSemantics.SubProcessBoundaryTimerConformance
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Compensation Event Sub-Process snapshot structural admission
 
 This module checks the narrow dormant-handler exception selected by the approved snapshot proposal. The standalone raw graph validator continues to reject a scope with no entry or completion operation; only complete Program admission may derive the exact dormant handler from a valid hidden declaration.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source execution-limit binding conformance
 
 Trigger-count, handler-count, and canonical-byte limits remain three separately reduced binding
 obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

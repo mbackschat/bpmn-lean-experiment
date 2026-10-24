@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Cross-artifact definition binding
 
 This module owns the proof-facing predicate used by conformance facts to combine independent checked-process and Semantic Process validation with profile capability and exact canonical-lowering equality. Runtime JSON input admission remains in `SemanticProcessJson.DefinitionInput`, and neither representation-specific validator depends on the other representation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

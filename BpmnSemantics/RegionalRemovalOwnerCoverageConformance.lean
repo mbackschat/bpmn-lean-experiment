@@ -17,12 +17,12 @@ namespace BpmnSemantics.RegionalRemovalOwnerCoverageConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def semanticInstanceId : SemanticId := ⟨"Coverage"⟩
-private def root : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"A"⟩, 1⟩
-private def child : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"B"⟩, 1⟩
-private def leaf : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"C"⟩, 1⟩
+def semanticInstanceId : SemanticId := ⟨"Coverage"⟩
+def root : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"A"⟩, 1⟩
+def child : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"B"⟩, 1⟩
+def leaf : ScopeOccurrenceId := ⟨semanticInstanceId, ⟨"C"⟩, 1⟩
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := terminateEndCheckpointProfileId
@@ -63,21 +63,21 @@ private def program : Program :=
        { operationId := ⟨"H"⟩, scopeId := ⟨"A"⟩ },
        { operationId := ⟨"I"⟩, scopeId := ⟨"A"⟩ }] }
 
-private def listener (owner : ScopeOccurrenceId) : EventSubProcessMessageSubscription :=
+def listener (owner : ScopeOccurrenceId) : EventSubProcessMessageSubscription :=
   { id := ⟨owner.processInstanceId, ⟨"Listener:" ++ owner.definitionScopeId.value⟩, owner.activation⟩
     owner, channel := .directMessage ⟨"Message"⟩ }
 
-private def activity (owner : ScopeOccurrenceId) (name : String) : ActivityOccurrence :=
+def activity (owner : ScopeOccurrenceId) (name : String) : ActivityOccurrence :=
   { processInstanceId := owner.processInstanceId, activityElementId := ⟨name⟩, activation := 1
     owner, body := .userTask ⟨owner.processInstanceId, ⟨name⟩, 1⟩, attachedHandlers := [] }
 
-private def sequential (owner : ScopeOccurrenceId) (name : String) : SequentialScopeController :=
+def sequential (owner : ScopeOccurrenceId) (name : String) : SequentialScopeController :=
   { id := ⟨owner.processInstanceId, ⟨name⟩, 1⟩, total := 2, completed := 0, currentItem := name }
 
-private def parallel (owner : ScopeOccurrenceId) (name : String) : ParallelScopeController :=
+def parallel (owner : ScopeOccurrenceId) (name : String) : ParallelScopeController :=
   { id := ⟨owner.processInstanceId, ⟨name⟩, 1⟩, total := 2, completed := 0 }
 
-private def populated (before : RuntimeState) (removed surviving : ScopeOccurrenceId) : RuntimeState :=
+def populated (before : RuntimeState) (removed surviving : ScopeOccurrenceId) : RuntimeState :=
   { before with
     eventSubProcessMessageSubscriptions := [listener removed, listener surviving]
     activityOccurrences := [activity removed "Gone", activity surviving "Stay"]
@@ -88,21 +88,21 @@ private def populated (before : RuntimeState) (removed surviving : ScopeOccurren
       processInterfaces := [{ owner := removed, inputs := [], outputs := [] },
         { owner := surviving, inputs := [], outputs := [] }] } }
 
-private abbrev expectedOwners (after : RuntimeState) (surviving : ScopeOccurrenceId) : Prop :=
+abbrev expectedOwners (after : RuntimeState) (surviving : ScopeOccurrenceId) : Prop :=
   after.eventSubProcessMessageSubscriptions = [listener surviving] ∧
     after.variables.scopes = [{ owner := surviving, bindings := [] }] ∧
     after.variables.processInterfaces = [{ owner := surviving, inputs := [], outputs := [] }] ∧
     after.sequentialScopeControllers = [sequential surviving "Stay"] ∧
     after.parallelScopeControllers = [parallel surviving "Stay"]
 
-private def ownerChecks (after : RuntimeState) (surviving : ScopeOccurrenceId) : List Bool :=
+def ownerChecks (after : RuntimeState) (surviving : ScopeOccurrenceId) : List Bool :=
   [decide (after.eventSubProcessMessageSubscriptions = [listener surviving]),
    decide (after.variables.scopes = [{ owner := surviving, bindings := [] }]),
    decide (after.variables.processInterfaces = [{ owner := surviving, inputs := [], outputs := [] }]),
    decide (after.sequentialScopeControllers = [sequential surviving "Stay"]),
    decide (after.parallelScopeControllers = [parallel surviving "Stay"])]
 
-private def regionalBefore : RuntimeState :=
+def regionalBefore : RuntimeState :=
   populated { initialState with
     control := .running semanticInstanceId
     scopeOccurrences := [{ id := root, parent := none }, { id := child, parent := some root },
@@ -111,7 +111,7 @@ private def regionalBefore : RuntimeState :=
     endOccurrences := 7
     logicalTimeMs := 13 } leaf root
 
-private def region : InternalOccurrenceRegion := { root := child, members := [child, leaf] }
+def region : InternalOccurrenceRegion := { root := child, members := [child, leaf] }
 
 theorem populated_regional_agreement_premises_are_satisfiable :
     runtimePositionValid program semanticInstanceId regionalBefore = true ∧
@@ -126,13 +126,13 @@ theorem actual_terminate_preserves_each_populated_outside_owner :
         decide (after.scopeOccurrences = [{ id := root, parent := none }, { id := child, parent := some root }]) &&
         decide (after.endOccurrences = 8 ∧ after.logicalTimeMs = 13)) = some true := by decide +kernel
 
-private def callerRoot : ScopeOccurrenceId :=
+def callerRoot : ScopeOccurrenceId :=
   ⟨CallActivityConformance.callerInstanceId, CallActivityConformance.callerScopeId, 1⟩
-private def calledRoot : ScopeOccurrenceId :=
+def calledRoot : ScopeOccurrenceId :=
   ⟨CallActivityConformance.calledInstanceId, CallActivityConformance.calledScopeId, 1⟩
-private def calledBefore : RuntimeState :=
+def calledBefore : RuntimeState :=
   populated CallActivityConformance.calledWaiting.state calledRoot callerRoot
-private def call : CalledProcessOccurrence :=
+def call : CalledProcessOccurrence :=
   { id := ⟨CallActivityConformance.callerInstanceId, ⟨"B_Call"⟩, 1⟩
     caller := callerRoot, calledProcessId := CallActivityConformance.calledProcessId
     calledRoot, returnOperationId := ⟨"operation:return-process:B_Call"⟩ }
@@ -150,7 +150,7 @@ theorem no_op_removal_disagrees_with_each_populated_boundary :
       (selectedTerminateOwner? program regionalBefore ⟨"F"⟩ ⟨⟨"Terminate"⟩⟩ ⟨"P3"⟩ ⟨"B"⟩).map
         (fun _ => ownerChecks regionalBefore root) = some [false, false, false, false, false] := by decide +kernel
 
-private def wrongOwnerRemoval (before : RuntimeState) (inside : ScopeOccurrenceId → Bool) : RuntimeState :=
+def wrongOwnerRemoval (before : RuntimeState) (inside : ScopeOccurrenceId → Bool) : RuntimeState :=
   let wronglyRetained := before.activityOccurrences.filter fun record => inside record.owner
   let names := fun (id : ActivityOccurrenceId) => wronglyRetained.any fun record =>
     id.processInstanceId == record.processInstanceId &&

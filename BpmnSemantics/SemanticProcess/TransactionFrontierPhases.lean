@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.WaitCompletion
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
-import BpmnSemantics.SemanticProcess.TransactionProgramRoles
-import BpmnSemantics.SemanticProcess.TokenStorage
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.WaitCompletion
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
+public import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction scope barriers between frontier phases
 
@@ -12,6 +14,8 @@ then keeps an active child-owned Compensation trigger. These exact-owned facts r
 scope completion independently of operation ordering. Reachability must derive these facts; the
 lemmas here do not assume or establish a complete reachable-frontier classification.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

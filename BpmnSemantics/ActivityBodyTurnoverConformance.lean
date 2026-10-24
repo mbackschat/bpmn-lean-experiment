@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-import BpmnSemantics.ActivityBoundaryTimerConformance
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+public import BpmnSemantics.ActivityBoundaryTimerConformance
 
 /-! # Activity body turnover fixtures
 
@@ -17,6 +19,8 @@ this account retired read as a pair. After one replacement the body is at `2` wh
 the Activity stay at `1`. That divergence is the whole point of the record, and stating it as a
 decided fact is what stops it from being only a described one.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ActivityBodyTurnoverConformance
 

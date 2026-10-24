@@ -1,10 +1,14 @@
-import BpmnSemantics.RuntimeStateWellFormedFixtures
+module
+
+public import BpmnSemantics.RuntimeStateWellFormedFixtures
 
 /-! # Runtime-state well-formedness invariant negatives
 
 This module owns the kernel-decided ordinary invariant refusals and their sibling-conjunct
 attribution checks without importing the event-race or successor reduction families.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -44,7 +48,7 @@ theorem unordered_activations_fail_order_with_ownership_intact :
     canonicalCollectionOrder unorderedActivationsState = false ∧
       waitOwnersLive unorderedActivationsState = true := by decide +kernel
 
-private def unorderedActivityCounters : RuntimeState :=
+def unorderedActivityCounters : RuntimeState :=
   { armedState with activityActivations :=
       [{ taskId := ⟨"z-counter"⟩, count := 1 }, { taskId := ⟨"a-counter"⟩, count := 1 }] }
 
@@ -62,7 +66,7 @@ theorem not_started_with_pending_initiation_fails_lifecycle :
       waitIdentitiesUnique notStartedWithPendingInitiationState = true ∧
       canonicalCollectionOrder notStartedWithPendingInitiationState = true := by decide +kernel
 
-private def notStartedWithActivityData : RuntimeState :=
+def notStartedWithActivityData : RuntimeState :=
   { initialState with variables :=
       { initialState.variables with activities :=
         [{ owner := .activityOccurrence
@@ -76,12 +80,12 @@ theorem not_started_with_activity_data_fails_only_lifecycle :
       waitOwnersLive notStartedWithActivityData = true := by
   decide +kernel
 
-private def orphanCompensationTrigger : CompensationTriggerExecution :=
+def orphanCompensationTrigger : CompensationTriggerExecution :=
   { id := { processInstanceId := instanceId, elementId := ⟨"throw"⟩, activation := 1 }
     owner := { processInstanceId := instanceId, definitionScopeId := ⟨"missing"⟩, activation := 1 }
     output := ⟨"out"⟩, lifecycle := .active, handlers := [], dependencies := [] }
 
-private def orphanCompensationWait : CompensationHandlerEffectWait :=
+def orphanCompensationWait : CompensationHandlerEffectWait :=
   { id := { processInstanceId := instanceId, elementId := ⟨"effect"⟩, activation := 1 }
     triggerId := orphanCompensationTrigger.id
     handlerId := { processInstanceId := instanceId, elementId := ⟨"handler"⟩, activation := 1 }

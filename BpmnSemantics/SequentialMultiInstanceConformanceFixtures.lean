@@ -17,7 +17,7 @@ open BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 Resolved from the record's own body rather than from a written identity, so the chain cannot drift away
 from the turnover that produced it; the stale-identity refusal below supplies the other direction. -/
-private def completeInner (state? : Option RuntimeState) (value : String) : Option RuntimeState := do
+def completeInner (state? : Option RuntimeState) (value : String) : Option RuntimeState := do
   let arm ← arm?
   let state ← state?
   let record ← state.activityOccurrences.head?

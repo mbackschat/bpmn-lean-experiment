@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Activity occurrence ownership
 
@@ -17,6 +19,8 @@ operation kind, and no public observation, and it states nothing about preservat
 well-formedness conjuncts across transition arms, which remains the runtime-state invariant's
 deliberately open lane.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

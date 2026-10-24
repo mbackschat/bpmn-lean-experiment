@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! Root completion retires the sole quiescent scope. The predecessor's preparation
 and ownership closure rule out stranded work; successful Compensation history survives
 the control change through the terminal lifecycle proof. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

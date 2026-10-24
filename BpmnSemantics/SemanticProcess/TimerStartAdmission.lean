@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.TimerStart
+module
+
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Timer Start Event external admission
 
 This module owns exact resolved Timer Start admission against the registered profile and its single admitted IL start operation. It creates no runtime Timer and performs no scheduling.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

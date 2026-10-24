@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.ScopeCompletion
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! Quiescent scope completion has no live descendant or called-root closure to remove. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

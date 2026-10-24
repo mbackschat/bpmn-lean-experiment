@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! # Parallel Multi-Instance FlowNode occurrence lifecycle
 
@@ -7,6 +9,8 @@ Family-local E2 lifecycle facts distinguish the accepted winner from siblings te
 Timer closure. They deliberately retain no host order. Shared E1/E2 publication maps this closed
 semantic delta into the repository-wide occurrence contract during integration.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -65,7 +69,7 @@ def parallelEntryFlowNodeStarts? (program : Program) (operation : SemanticOperat
       decide (firstActivation ≤ wait.activation && wait.activation ≤ finalActivation)
   waits.mapM (candidateUserTaskStart? program operation owner)
 
-private def parallelWaitEnd (id : OccurrenceId)
+def parallelWaitEnd (id : OccurrenceId)
     (terminal : FlowNodeOccurrenceTerminalKind) : UnnumberedFlowNodeOccurrenceEnd :=
   { anchor := .wait id, terminal }
 

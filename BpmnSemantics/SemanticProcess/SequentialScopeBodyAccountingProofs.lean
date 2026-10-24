@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeBodyLifecycleProofs
-import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeBodyLifecycleProofs
+public import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish actual body birth, retirement and fresh-body conservation, including current-body population and parent credit, below certificate preservation and history transport. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

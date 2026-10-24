@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
 
 /-! Actual finite mixed publication uses ranks of complete predecessor templates under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
-import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 
 /-! The existing prepared-publication template covers Timer-task arming without a new wire shape.
 Acceptance checks the actual transition record, task-only lifecycle, and consumed-token position.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

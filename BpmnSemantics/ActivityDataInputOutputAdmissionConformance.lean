@@ -1,10 +1,14 @@
-import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
+module
+
+public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 
 /-! # Composed Activity data-input/output admission conformance
 
 Exact start-binding and ready-input decisions for the claim-assessment profile. These decisions are
 separate from completion and lifetime reductions to preserve the fixed build-memory boundary.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -24,7 +28,7 @@ theorem extraStartBindingRefusesWithExactStatePreservation :
       refused initialState := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
-private def readyWithInput (value : VariableValue) : RuntimeState :=
+def readyWithInput (value : VariableValue) : RuntimeState :=
   let ready := (runStart startWithoutSummary).state
   { ready with
     variables := { ready.variables with process :=

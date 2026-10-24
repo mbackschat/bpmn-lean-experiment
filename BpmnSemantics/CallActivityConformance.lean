@@ -1,11 +1,15 @@
-import BpmnSemantics.CallActivityConformanceFixtures
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.CallActivityConformanceFixtures
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Bounded called-Process Call Activity conformance
 
 This module owns the exact two-Process fixture, the 3/3/2 closure witnesses, distinct called identity, paired invocation/return facts, and nearest malformed-association refusals. It does not claim external QName resolution, data mapping, recursion, or host Child Workflow behavior.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -14,7 +18,7 @@ namespace BpmnSemantics.CallActivityConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def taskObservation (id : UserTaskInstanceId) (name : String) :
+def taskObservation (id : UserTaskInstanceId) (name : String) :
     OpenUserTask :=
   { id, name := some name, state := .active }
 
@@ -86,7 +90,7 @@ def nonempty_start_data_is_rejected_with_exact_preservation : Bool := decide <|
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false }
 
-private def registeredNonCallStringStartProfileInvokeReuseProgram : Program :=
+def registeredNonCallStringStartProfileInvokeReuseProgram : Program :=
   { program with
     identity :=
       { program.identity with
@@ -102,7 +106,7 @@ def registered_non_call_string_start_profile_reusing_invoke_does_not_inherit_emp
     result.outcome = .committed ∧
       result.state.variables.process.bindings = initialVariables
 
-private def unregisteredNonCallProfileInvokeReuseProgram : Program :=
+def unregisteredNonCallProfileInvokeReuseProgram : Program :=
   { program with
     identity :=
       { program.identity with semanticProfile := ⟨"non-call-invoke-reuse"⟩ } }
@@ -133,35 +137,35 @@ def caller_identity_cannot_complete_called_task : Bool := decide <|
         { calledTaskId with processInstanceId := callerInstanceId } [])).outcome =
       .rejected
 
-private def returnOperation : SemanticOperation :=
+def returnOperation : SemanticOperation :=
   .returnProcess ⟨"operation:return-process:B_Call"⟩
     { elementId := ⟨"B_Call"⟩ } calledProcessId calledScopeId
     ⟨"place:F2_CallCallerTask"⟩
 
-private def unrelatedInstanceId : SemanticId := ⟨"UnrelatedInstance"⟩
+def unrelatedInstanceId : SemanticId := ⟨"UnrelatedInstance"⟩
 
-private def calledController : SequentialMultiInstanceController :=
+def calledController : SequentialMultiInstanceController :=
   { processInstanceId := calledInstanceId
     activityElementId := ⟨"CalledSequentialMultiInstance"⟩
     activation := 1
     snapshot := ["called"]
     outputSlots := [] }
 
-private def callerController : SequentialMultiInstanceController :=
+def callerController : SequentialMultiInstanceController :=
   { processInstanceId := callerInstanceId
     activityElementId := ⟨"CallerSequentialMultiInstance"⟩
     activation := 1
     snapshot := ["caller"]
     outputSlots := [] }
 
-private def unrelatedController : SequentialMultiInstanceController :=
+def unrelatedController : SequentialMultiInstanceController :=
   { processInstanceId := unrelatedInstanceId
     activityElementId := ⟨"UnrelatedSequentialMultiInstance"⟩
     activation := 1
     snapshot := ["unrelated"]
     outputSlots := [] }
 
-private def calledParallelController : ParallelMultiInstanceController :=
+def calledParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := calledInstanceId
         activityElementId := ⟨"CalledParallelMultiInstance"⟩
@@ -169,7 +173,7 @@ private def calledParallelController : ParallelMultiInstanceController :=
     snapshot := ["called"]
     slots := [] }
 
-private def callerParallelController : ParallelMultiInstanceController :=
+def callerParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := callerInstanceId
         activityElementId := ⟨"CallerParallelMultiInstance"⟩
@@ -177,7 +181,7 @@ private def callerParallelController : ParallelMultiInstanceController :=
     snapshot := ["caller"]
     slots := [] }
 
-private def unrelatedParallelController : ParallelMultiInstanceController :=
+def unrelatedParallelController : ParallelMultiInstanceController :=
   { id :=
       { processInstanceId := unrelatedInstanceId
         activityElementId := ⟨"UnrelatedParallelMultiInstance"⟩
@@ -185,7 +189,7 @@ private def unrelatedParallelController : ParallelMultiInstanceController :=
     snapshot := ["unrelated"]
     slots := [] }
 
-private def controllerReturnReadyState : RuntimeState :=
+def controllerReturnReadyState : RuntimeState :=
   { calledWaiting.state with
     waits := []
     sequentialMultiInstanceControllers :=
@@ -194,7 +198,7 @@ private def controllerReturnReadyState : RuntimeState :=
       [calledParallelController, callerParallelController, unrelatedParallelController]
     activityActivations := [{ taskId := ⟨"HistoryActivity"⟩, count := 8 }] }
 
-private def controllerReturnResult? : Option RuntimeState :=
+def controllerReturnResult? : Option RuntimeState :=
   returnProcessState? controllerReturnReadyState
     ⟨"operation:return-process:B_Call"⟩ { elementId := ⟨"B_Call"⟩ }
     calledProcessId calledScopeId ⟨"place:F2_CallCallerTask"⟩
@@ -230,7 +234,7 @@ def called_return_withdraws_exact_controller : Bool := decide <|
       (controllerReturnResult?.getD initialState).logicalTimeMs =
         controllerReturnReadyState.logicalTimeMs
 
-private def duplicateIdentityRecordState : RuntimeState :=
+def duplicateIdentityRecordState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
   | [record] =>
       { calledWaiting.state with
@@ -245,7 +249,7 @@ def duplicate_identity_record_with_one_otherwise_valid_disables_return : Bool :=
     calledProcessAssociationsValid duplicateIdentityRecordState = false ∧
       fire? program returnOperation duplicateIdentityRecordState = none
 
-private def duplicateCalledRootState : RuntimeState :=
+def duplicateCalledRootState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
   | [record] =>
       { calledWaiting.state with
@@ -258,7 +262,7 @@ def duplicate_called_root_with_one_otherwise_valid_disables_return : Bool := dec
     calledProcessAssociationsValid duplicateCalledRootState = false ∧
       fire? program returnOperation duplicateCalledRootState = none
 
-private def zeroActivationRecordState : RuntimeState :=
+def zeroActivationRecordState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
   | [record] =>
       let zeroId := { record.id with activation := 0 }
@@ -277,7 +281,7 @@ def zero_activation_record_is_nonresumable_and_has_no_return : Bool := decide <|
     calledProcessAssociationsValid zeroActivationRecordState = false ∧
       fire? program returnOperation zeroActivationRecordState = none
 
-private def aliasedCalledScopeState : RuntimeState :=
+def aliasedCalledScopeState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences with
   | [record] =>
       let aliasedRoot :=
@@ -296,20 +300,20 @@ def called_scope_alias_is_nonresumable_and_has_no_return : Bool := decide <|
     calledProcessAssociationsValid aliasedCalledScopeState = false ∧
       fire? program returnOperation aliasedCalledScopeState = none
 
-private def alternateHostingRootId : ScopeOccurrenceId :=
+def alternateHostingRootId : ScopeOccurrenceId :=
   { processInstanceId := callerInstanceId
     definitionScopeId := ⟨"scope:AlternateHostingRoot"⟩
     activation := 1 }
 
-private def childCallerId : ScopeOccurrenceId :=
+def childCallerId : ScopeOccurrenceId :=
   { processInstanceId := callerInstanceId
     definitionScopeId := ⟨"scope:Caller_Child"⟩
     activation := 1 }
 
-private def childCallerRecord? : Option CalledProcessOccurrence :=
+def childCallerRecord? : Option CalledProcessOccurrence :=
   calledWaiting.state.calledProcessOccurrences.head?.map ({ · with caller := childCallerId })
 
-private def childCallerState : RuntimeState :=
+def childCallerState : RuntimeState :=
   match calledWaiting.state.calledProcessOccurrences, childCallerRecord? with
   | [record], some moved =>
       { calledWaiting.state with
@@ -326,7 +330,7 @@ def call_record_caller_is_bound_to_its_invocation_scope : Bool := decide <|
       (childCallerRecord?.map (callRecordDeclared program)) = some false ∧
       runtimeStateWellFormed program callerInstanceId childCallerState = false
 
-private def duplicateHostingRootState : RuntimeState :=
+def duplicateHostingRootState : RuntimeState :=
   { calledWaiting.state with
     scopeOccurrences :=
       { id := alternateHostingRootId, parent := none } ::
@@ -336,7 +340,7 @@ def duplicate_hosting_root_with_one_valid_original_is_nonresumable : Bool := dec
     calledProcessAssociationsValid duplicateHostingRootState = false ∧
       fire? program returnOperation duplicateHostingRootState = none
 
-private def duplicateInvokeProgram : Program :=
+def duplicateInvokeProgram : Program :=
   match program.operations.find? fun
       | .invokeProcess .. => true
       | _ => false with
@@ -346,7 +350,7 @@ private def duplicateInvokeProgram : Program :=
 def duplicate_identity_definition_with_one_otherwise_valid_is_rejected : Bool := decide <|
     callOperationsPaired duplicateInvokeProgram = false
 
-private def duplicateCalledRootProgram : Program :=
+def duplicateCalledRootProgram : Program :=
   { program with
     definitionScopes :=
       { id := ⟨"scope:WrongCalled"⟩
@@ -356,7 +360,7 @@ private def duplicateCalledRootProgram : Program :=
 def duplicate_called_process_identity_with_one_valid_root_is_rejected : Bool := decide <|
     callOperationsPaired duplicateCalledRootProgram = false
 
-private def wrongCalledEntryProgram : Program :=
+def wrongCalledEntryProgram : Program :=
   { program with
     operations := program.operations.map fun
       | .invokeProcess id origin input calledProcess calledRoot _ returned _ =>
@@ -367,7 +371,7 @@ private def wrongCalledEntryProgram : Program :=
 def target_root_entry_permutation_fails_binding : Bool := decide <|
     definitionBindingValid checkedProcess wrongCalledEntryProgram = false
 
-private def wrongCalledRootProgram : Program :=
+def wrongCalledRootProgram : Program :=
   { program with
     operations := program.operations.map fun
       | .invokeProcess id origin input calledProcess _ calledEntry returned _ =>
@@ -380,7 +384,7 @@ def wrong_target_root_is_rejected : Bool := decide <|
     callOperationsPaired wrongCalledRootProgram = false ∧
       definitionBindingValid checkedProcess wrongCalledRootProgram = false
 
-private def wrongReturnOwnerProgram : Program :=
+def wrongReturnOwnerProgram : Program :=
   { program with
     operationScopes := program.operationScopes.map fun owner =>
       if owner.operationId = ⟨"operation:return-process:B_Call"⟩ then
@@ -391,7 +395,7 @@ def wrong_return_owner_is_rejected : Bool := decide <|
     callOperationsPaired wrongReturnOwnerProgram = false ∧
       definitionBindingValid checkedProcess wrongReturnOwnerProgram = false
 
-private def wrongReturnPairProgram : Program :=
+def wrongReturnPairProgram : Program :=
   { program with
     operations := program.operations.map fun
       | .invokeProcess id origin input calledProcess calledRoot calledEntry _ _ =>
@@ -408,7 +412,7 @@ def stale_called_completion_preserves_exact_state : Bool := decide <|
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false }
 
-private def orphanCalledRootState : RuntimeState :=
+def orphanCalledRootState : RuntimeState :=
   { calledWaiting.state with calledProcessOccurrences := [] }
 
 def orphan_called_root_is_nonresumable : Bool := decide <|

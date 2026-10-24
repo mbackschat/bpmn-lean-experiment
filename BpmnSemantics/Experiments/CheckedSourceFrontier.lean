@@ -1,5 +1,7 @@
-import BpmnSemantics.Experiments.CheckedSourceTransition
-import BpmnSemantics.Experiments.CheckedSourceGraph
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceTransition
+public import BpmnSemantics.Experiments.CheckedSourceGraph
 
 /-! # Shared checked-source frontier laws and single-token frontiers
 
@@ -9,6 +11,8 @@ This module owns two things. First, the frontier laws that are independent of ho
 
 Nothing here depends on structured decomposition or parser state.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceFrontier
 

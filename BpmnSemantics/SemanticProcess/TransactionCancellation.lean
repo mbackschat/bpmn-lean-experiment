@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Transaction cancellation and the compensation join
 
 TXC-CANCEL-01 selects retained completed work before regional cleanup. The selected child stays live
 while compensation runs; TXC-JOIN-01 releases the direct-parent Cancel route only after quiescence.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -181,7 +185,7 @@ theorem compensationCompletionRoute_none_refuses (program : Program) (before : R
   rw [absent] at selected
   contradiction
 
-private def checkedCancellation (program : Program) (state : RuntimeState) :
+def checkedCancellation (program : Program) (state : RuntimeState) :
     CompensationTriggerAttempt :=
   if compensationTriggerHandlerStateValid program state then .applied state
   else .refused .invalidState

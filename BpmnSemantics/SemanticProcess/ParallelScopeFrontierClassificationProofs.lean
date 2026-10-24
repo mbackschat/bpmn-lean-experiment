@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 
 /-! # Admitted Fork and Join scope classification
 
@@ -8,6 +10,8 @@ root and one repeated child definition. A resolved Fork or Join with a declared
 owner therefore belongs to the child; the existing ancestry check supplies that
 declaration premise before preparation without assuming a successor.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

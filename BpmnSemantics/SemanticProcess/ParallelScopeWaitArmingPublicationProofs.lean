@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeStructuralPublicationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeExcludedWaitProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
-import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeStructuralPublicationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeExcludedWaitProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+public import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
 
 /-! PMIS native and reserved arming use the ordinary publication insertion laws.
 Actual command and prefix history establish full Program correspondence at Running
 states. Scoped input evaluation supplies the Service snapshot, and atomic refusal
 retains the predecessor; no successful projection or publication is assumed. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -286,7 +290,7 @@ theorem ParallelScopeInternalPrefixReachable.batch_wait_program_validity
   intro successor member
   exact (transported successor member).1
 
-private def WaitPublicationInvariant (program : Program) (state : RuntimeState) : Prop :=
+def WaitPublicationInvariant (program : Program) (state : RuntimeState) : Prop :=
   (state.messageWaits = [] ∧ state.timerWaits = [] ∧ state.effectIncidents = []) ∧
     (state.selectedBranchSets = [] ∧ state.eventRaces = []) ∧
     ∀ instanceId, state.control = .running instanceId →

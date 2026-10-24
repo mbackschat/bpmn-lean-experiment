@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalEndCommutation
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalEndCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 
 /-! End/regional frames preserve complete predecessor artifacts through token removal and
 ownership-closed regional execution. Protected owner, input and control reads exclude removal
 of the End's context; the derived region and its publication retain their original values. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

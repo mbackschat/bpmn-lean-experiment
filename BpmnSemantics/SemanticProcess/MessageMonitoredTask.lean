@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.MessageBoundedTask
+module
+
+public import BpmnSemantics.SemanticProcess.MessageBoundedTask
 
 /-! ESL-MESSAGE-01 and ESL-CLOSE-01 select a persistent Message subscription and exact host
 completion. Only atomic arming is shared with the interrupting family; definition selection and
 both lifetime transitions are separate, without changing the Program or runtime representation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -98,10 +102,10 @@ instance (program : Program) (state : RuntimeState) (pair : MessageMonitoredPair
   unfold MessageMonitoredBinding MessageMonitoredCensus MessageMonitoredDefinitionBinding
   infer_instance
 
-private def monitoredOnly? (values : List α) : Option α :=
+def monitoredOnly? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
-private def messageMonitoredCandidate? (program : Program) (state : RuntimeState)
+def messageMonitoredCandidate? (program : Program) (state : RuntimeState)
     (record : ActivityOccurrence) : Option MessageMonitoredPair := do
   let definition ← monitoredOnly? ((messageMonitoredTaskDefinitions program).filter fun definition =>
     decide (definition.task.id.value = record.activityElementId.value))

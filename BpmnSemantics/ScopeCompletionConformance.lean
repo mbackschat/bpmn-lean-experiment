@@ -1,11 +1,15 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Compensation ownership at the scope-completion boundary
 
 An active trigger blocks its exact owner even before a frontier owns an effect wait. Ordinary
 tokens are absent from these witnesses so they cannot mask an omitted Compensation conjunct.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -14,7 +18,7 @@ namespace BpmnSemantics.ScopeCompletionConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 
-private def pendingOnlyState : RuntimeState :=
+def pendingOnlyState : RuntimeState :=
   { activeState with
     compensationTriggers :=
       [{ activeTrigger with handlers := [pendingHandlerA], dependencies := [] }]

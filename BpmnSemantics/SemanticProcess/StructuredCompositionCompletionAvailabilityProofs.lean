@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
+module
+
+public import BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
 
 /-! Exact task lifetime and declaration ownership provide concrete admitted completion commands.
 Reached completion availability derives committed collection storage from the existing execution,
 control-unit and lifecycle invariants; arbitrary-state construction names storage as a premise. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 

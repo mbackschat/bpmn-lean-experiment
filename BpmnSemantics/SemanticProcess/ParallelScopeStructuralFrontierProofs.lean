@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeTerminalFrontierProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchAcceptanceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeTerminalFrontierProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchAcceptanceProofs
 
 /-! # Structural operations in actual parallel frontiers
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 distinguishes ordinary independent body work from structural scop
 transitions. Actual Start and entry provenance exclude a second initiation or
 entry, without treating an accounting history as atomic-command reachability.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

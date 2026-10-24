@@ -1,19 +1,20 @@
-import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Compensation Event Sub-Process parent-context snapshots
 
 This module owns the approved pure runtime account for reserving, promoting, validating, measuring, and purging hidden parent-context snapshots. Transition integration remains with the operation-family owners.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-
-private def safeNat (value : Nat) : Bool :=
-  BpmnSemantics.SemanticProcessJson.isSafeWireNat value
 
 def CompensationParentContextRetention.parent :
     CompensationParentContextRetention → RuntimeScopeOccurrence
@@ -76,7 +77,7 @@ def canonicalVariableBindingUtf8Bytes (binding : VariableBinding) : Nat :=
     ",\"value\":".utf8ByteSize + canonicalVariableValueUtf8Bytes binding.value +
     "}".utf8ByteSize
 
-private def canonicalArrayUtf8Bytes (measure : α → Nat) : List α → Nat
+def canonicalArrayUtf8Bytes (measure : α → Nat) : List α → Nat
   | [] => 2
   | first :: rest =>
       rest.foldl (fun total value => total + measure value + 1) (measure first) + 2
@@ -128,27 +129,27 @@ def compensationParentContextRetentionBefore
   else
     scopeOwnerBefore left.parent.id right.parent.id
 
-private def strictlyOrdered : List CompensationParentContextRetention → Bool
+def strictlyOrdered : List CompensationParentContextRetention → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       compensationParentContextRetentionBefore left right &&
         strictlyOrdered (right :: rest)
 
-private def retentionKeyMatches
+def retentionKeyMatches
     (left right : CompensationParentContextRetention) : Bool :=
   left.parent.id == right.parent.id &&
     left.handlerScopeId == right.handlerScopeId
 
-private def retentionKeyUnique
+def retentionKeyUnique
     (retentions : List CompensationParentContextRetention)
     (retention : CompensationParentContextRetention) : Bool :=
   (retentions.filter (retentionKeyMatches retention)).length = 1
 
-private def scopeOccurrenceIdValid (id : ScopeOccurrenceId) : Bool :=
+def scopeOccurrenceIdValid (id : ScopeOccurrenceId) : Bool :=
   !id.processInstanceId.value.isEmpty &&
     !id.definitionScopeId.value.isEmpty && id.activation > 0 && safeNat id.activation
 
-private def runtimeScopeOccurrenceValid (occurrence : RuntimeScopeOccurrence) : Bool :=
+def runtimeScopeOccurrenceValid (occurrence : RuntimeScopeOccurrence) : Bool :=
   scopeOccurrenceIdValid occurrence.id &&
     match occurrence.parent with
     | none => true
@@ -167,13 +168,13 @@ def targetForParent? (program : Program) (parentScopeId : DefinitionScopeId) :
   | some declaration =>
       declaration.targets.find? fun target => target.parentScopeId == parentScopeId
 
-private def retentionTargetValid (program : Program)
+def retentionTargetValid (program : Program)
     (retention : CompensationParentContextRetention) : Bool :=
   match targetForParent? program retention.parent.id.definitionScopeId with
   | none => false
   | some target => target.handlerScopeId == retention.handlerScopeId
 
-private def retentionParentMatchesProgram (program : Program)
+def retentionParentMatchesProgram (program : Program)
     (retention : CompensationParentContextRetention) : Bool :=
   match programEntryRootScopeId? program with
   | none => false
@@ -188,11 +189,11 @@ private def retentionParentMatchesProgram (program : Program)
               parent.processInstanceId == retention.parent.id.processInstanceId &&
               parent.activation == 1
 
-private def frameValid (frame : CompensationParentContextFrame) : Bool :=
+def frameValid (frame : CompensationParentContextFrame) : Bool :=
   scopeOccurrenceIdValid frame.owner &&
     compensationParentContextBindingsValid frame.bindings
 
-private def snapshotFramesValid (parent : RuntimeScopeOccurrence)
+def snapshotFramesValid (parent : RuntimeScopeOccurrence)
     (snapshot : CompensationParentContextSnapshot) (root : ScopeOccurrenceId) : Bool :=
   match parent.parent, snapshot.frames with
   | none, [frame] =>
@@ -203,20 +204,20 @@ private def snapshotFramesValid (parent : RuntimeScopeOccurrence)
         parentFrame.bindings.isEmpty
   | _, _ => false
 
-private def exactRuntimeOccurrenceLive (state : RuntimeState)
+def exactRuntimeOccurrenceLive (state : RuntimeState)
     (target : RuntimeScopeOccurrence) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => occurrence == target).length = 1
 
-private def exactOccurrenceIdAbsent (state : RuntimeState)
+def exactOccurrenceIdAbsent (state : RuntimeState)
     (target : ScopeOccurrenceId) : Bool :=
   !(state.scopeOccurrences.any fun occurrence => occurrence.id == target)
 
-private def selectedLiveParents (program : Program) (state : RuntimeState) :
+def selectedLiveParents (program : Program) (state : RuntimeState) :
     List RuntimeScopeOccurrence :=
   state.scopeOccurrences.filter fun occurrence =>
     (targetForParent? program occurrence.id.definitionScopeId).isSome
 
-private def selectedLiveParentReserved
+def selectedLiveParentReserved
     (retentions : List CompensationParentContextRetention)
     (occurrence : RuntimeScopeOccurrence) : Bool :=
   (retentions.filter fun retention =>
@@ -224,7 +225,7 @@ private def selectedLiveParentReserved
     | .provisional parent _ => parent == occurrence
     | .promoted .. => false).length = 1
 
-private def runningRetentionValid (state : RuntimeState) (root : ScopeOccurrenceId) :
+def runningRetentionValid (state : RuntimeState) (root : ScopeOccurrenceId) :
     CompensationParentContextRetention → Bool
   | .provisional parent _ => exactRuntimeOccurrenceLive state parent
   | .promoted parent _ snapshot =>
@@ -234,7 +235,7 @@ private def runningRetentionValid (state : RuntimeState) (root : ScopeOccurrence
           exactOccurrenceIdAbsent state parent.id && parentRoot == root &&
             snapshotFramesValid parent snapshot root
 
-private def runningLifecycleValid (program : Program) (instanceId : SemanticId)
+def runningLifecycleValid (program : Program) (instanceId : SemanticId)
     (state : RuntimeState)
     (retentions : List CompensationParentContextRetention) : Bool :=
   match programEntryRootScopeId? program with
@@ -250,7 +251,7 @@ private def runningLifecycleValid (program : Program) (instanceId : SemanticId)
             retentions.all (runningRetentionValid state root.id)
       | _ => false
 
-private def completedRootRetentions (rootScopeId : DefinitionScopeId)
+def completedRootRetentions (rootScopeId : DefinitionScopeId)
     (instanceId : SemanticId)
     (retentions : List CompensationParentContextRetention) :
     List CompensationParentContextRetention :=
@@ -259,7 +260,7 @@ private def completedRootRetentions (rootScopeId : DefinitionScopeId)
       retention.parent.id.definitionScopeId == rootScopeId &&
       retention.parent.id.processInstanceId == instanceId
 
-private def completedRetentionValid
+def completedRetentionValid
     (roots : List CompensationParentContextRetention) :
     CompensationParentContextRetention → Bool
   | .provisional .. => false
@@ -274,7 +275,7 @@ private def completedRetentionValid
           | [root] => snapshotFramesValid parent snapshot root.parent.id
           | _ => false
 
-private def completedLifecycleValid (program : Program) (instanceId : SemanticId)
+def completedLifecycleValid (program : Program) (instanceId : SemanticId)
     (retentions : List CompensationParentContextRetention) : Bool :=
   match programEntryRootScopeId? program with
   | none => false
@@ -364,7 +365,7 @@ inductive CompensationParentContextRootDisposition where
   | retainPromoted
   deriving Repr, DecidableEq
 
-private def prospectiveParentValid (program : Program) (state : RuntimeState)
+def prospectiveParentValid (program : Program) (state : RuntimeState)
     (parent : RuntimeScopeOccurrence) : Bool :=
   runtimeScopeOccurrenceValid parent &&
     match programEntryRootScopeId? program with
@@ -508,7 +509,7 @@ def constructCompensationParentContextSnapshot? (program : Program)
       else none
   | none, _ => none
 
-private def captureCompensationParentContextWhileNotFailed? (program : Program)
+def captureCompensationParentContextWhileNotFailed? (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence) :
     Option CompensationParentContextSnapshot :=
   if !exactRuntimeOccurrenceLive state parent then none
@@ -566,7 +567,7 @@ def promoteMatchingRetention (parent : RuntimeScopeOccurrence)
       else current
   | current@(.promoted ..) => current
 
-private def promoteSelectedCompensationParentContext
+def promoteSelectedCompensationParentContext
     (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
     (declaration : CompensationEventSubProcessSnapshotDeclaration)
     (target : CompensationEventSubProcessSnapshotTarget)

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.LoweringIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! Lower the declaration-owned handler without an ordinary flow entry. The checked source keeps
 Sequence Flow identity; the IL keeps its resolved control place and a token-free completion strategy. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

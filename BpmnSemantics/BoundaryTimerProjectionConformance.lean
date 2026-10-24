@@ -1,18 +1,22 @@
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.NonInterruptingBoundaryTimerConformance
-import BpmnSemantics.ActivityBodyTurnoverConformance
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
+public import BpmnSemantics.ActivityBodyTurnoverConformance
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! BTP-LEGACY-HOST-01 affects both Task arms as well as bounded scopes. These constructed
 states distinguish AOO-JOIN-03's exact attachment from the retired ordinal coincidence;
 they establish no additional profile reachability. -/
 
+@[expose] public section
+
 namespace BpmnSemantics.BoundaryTimerProjectionConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def ownershipRefusal (program : Program) (expected : SemanticId) (state : RuntimeState) : Prop :=
+def ownershipRefusal (program : Program) (expected : SemanticId) (state : RuntimeState) : Prop :=
   let missingRecord := { state with activityOccurrences := [] }
   let missingAttachment := { state with activityOccurrences := state.activityOccurrences.map fun record =>
     { record with attachedHandlers := [] } }
@@ -21,7 +25,7 @@ private def ownershipRefusal (program : Program) (expected : SemanticId) (state 
     projectOpenFlowNodeOccurrences? program missingRecord = none ∧
     projectOpenFlowNodeOccurrences? program missingAttachment = none
 
-private def divergentTimerState (state : RuntimeState) : RuntimeState :=
+def divergentTimerState (state : RuntimeState) : RuntimeState :=
   { state with
     timerWaits := state.timerWaits.map fun wait => { wait with activation := 2 }
     timerActivations := state.timerActivations.map fun counter => { counter with count := 2 }
@@ -31,7 +35,7 @@ private def divergentTimerState (state : RuntimeState) : RuntimeState :=
           | .timer occurrence => .timer { occurrence with activation := 2 }
           | .message occurrence => .message occurrence } }
 
-private def divergentProjection (program : Program) (expected : SemanticId) (state : RuntimeState) : Prop :=
+def divergentProjection (program : Program) (expected : SemanticId) (state : RuntimeState) : Prop :=
   let after := divergentTimerState state
   state.waits.map (·.activation) = [1] ∧ after.timerWaits.map (·.activation) = [2] ∧
     runtimeStateWellFormed program expected after = true ∧
@@ -62,7 +66,7 @@ theorem monitored_task_divergent_deadline_projected : divergentProjection
   unfold divergentProjection
   decide +kernel
 
-private def attachedTaskPublication (before : RuntimeState) (taskActivation timerActivation : Nat) : Bool :=
+def attachedTaskPublication (before : RuntimeState) (taskActivation timerActivation : Nat) : Bool :=
   let program := ActivityBoundaryTimerConformance.program
   let timer := { ActivityBoundaryTimerConformance.deadlineId with activation := timerActivation }
   let task := { ActivityBoundaryTimerConformance.taskId with activation := taskActivation }

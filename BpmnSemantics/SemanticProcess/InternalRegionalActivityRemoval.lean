@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Activity and handler removal agreement
 
@@ -7,6 +9,8 @@ The Internal Commutation account prepares regions before execution. AOO-CANCEL-0
 withdraws handlers through their Activity records, including records whose owner survives while
 their child body is cancelled. Predecessor validity connects those records to the prepared region.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

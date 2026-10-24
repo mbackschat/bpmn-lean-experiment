@@ -1,17 +1,21 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairMixedFields
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairMixedFields
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 
 /-! Complete regional pairs compose the existing preparation, execution, validity, and publication laws. Canonical token order and additive end counts are proved separately from retained-field removal before reconstructing literal RuntimeState equality. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private structure RegionalPairExecutionSquare (program : Program)
+structure RegionalPairExecutionSquare (program : Program)
     (before afterLeft afterRight finalLR finalRL : RuntimeState) (hosting : SemanticId)
     (leftOperation rightOperation : SemanticOperation) (left right : PreparedInternalRegional) : Prop where
   leftApplied : applyPreparedInternalRegional? program before left = some afterLeft

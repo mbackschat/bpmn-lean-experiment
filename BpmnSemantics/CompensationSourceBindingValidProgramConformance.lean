@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source valid near-miss conformance
 
 These Programs remain structurally valid, so their later rejection isolates checked-to-Program
 definition binding rather than generic Program admission.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

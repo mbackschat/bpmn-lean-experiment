@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.TokenStorage
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 
 /-! # External completion and internal body-operation locality
 
 PMIS-DATA-01 replaces one exact live wait with a continuation token owned by the same body. These laws establish sibling quiescence preservation through external completion and the PMIS-SELECT-01 singleton body dispatcher. Reserved-batch prefixes can make a blocked owner quiescent only through a token patch at that owner; arming retains a wait blocker. Committed-state reachability and bounded closure progress are separate obligations in the capsule's reachable-retirement account.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -251,13 +255,6 @@ private theorem occurrenceApplicationRunning (program : Program) (before after :
   cases control : before.control with
   | running instanceId => exact ⟨instanceId, rfl⟩
   | _ => simp [applyInternalOperationOccurrence?, control] at applied
-
-private def singletonArmingPatch (program : Program) (before : RuntimeState)
-    (operation : SemanticOperation) (owner : ScopeOccurrenceId) (input : ControlPlaceId)
-    (write : InternalArmingWrite) : InternalArmingPatch :=
-  { operation, definition := program.identity, processId := program.processId,
-    origin := operation.origin, runtimeInstanceId := owner.processInstanceId,
-    logicalTimeMs := before.logicalTimeMs, input, inputOrigin := { elementId := ⟨input.value⟩ }, owner, write }
 
 private theorem activateUserTask_quiescence_frame (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (owner sibling : ScopeOccurrenceId) (input output : ControlPlaceId)

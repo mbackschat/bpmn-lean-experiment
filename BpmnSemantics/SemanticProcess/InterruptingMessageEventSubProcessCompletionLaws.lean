@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+module
+
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
 
 /-! IMES-CLOSE-01 and IMES-EXPIRE-01 relations, soundness and lifetime laws. These distinguish handler
 disposal from ordinary-child continuation and passive listening from work that prevents completion. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

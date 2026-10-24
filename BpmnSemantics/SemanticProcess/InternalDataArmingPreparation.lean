@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Prepared Activity-data arming
 
 One predecessor selects any copied input and both occurrence identities. Applying that patch must
 realize the existing activation before any commutation or publication claim can use it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

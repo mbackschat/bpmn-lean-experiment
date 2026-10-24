@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcessJson
-import BpmnSemantics.SemanticProcessJson.Publication
-import BpmnSemantics.SemanticProcessJson.Observation
-import Lean.Data.Json
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcessJson
+public import BpmnSemantics.SemanticProcessJson.Publication
+public import BpmnSemantics.SemanticProcessJson.Observation
+public import Lean.Data.Json
 
 /-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
 
 It strictly decodes the same answer-free scenario documents supplied to the other targets, then exposes results derived by the executable Lean interpreter so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJsonMain
 
@@ -18,7 +22,7 @@ open Lean
 export BpmnSemantics.SemanticProcessJson.Observation
   (commandOutcomeJson correlatedMessageAddressJson effectIncidentIdJson enabledInteractionJson encodeOpenUserTask jsonArray messageChannelJson occurrenceIdJson openEffectIncidentJson openEffectJson programIdentityJson sourceOverlayIdentityJson stateObservationJson variableBindingJson)
 
-private def effectExecutionResultJson : EffectExecutionResult → Json
+def effectExecutionResultJson : EffectExecutionResult → Json
   | .success localPatch =>
       Json.mkObj
         [ ("kind", toJson "success")
@@ -30,7 +34,7 @@ private def effectExecutionResultJson : EffectExecutionResult → Json
         , ("message", toJson message)
         , ("localPatch", jsonArray (localPatch.map variableBindingJson)) ]
 
-private def canonicalObservationJson : CanonicalObservation → Json
+def canonicalObservationJson : CanonicalObservation → Json
   | .deployment outcome =>
       Json.mkObj
         [ ("kind", toJson "deployment")
@@ -43,7 +47,7 @@ private def canonicalObservationJson : CanonicalObservation → Json
   | .state state =>
       stateObservationJson state
 
-private def scenarioOutcomeJson : ScenarioOutcome → Json
+def scenarioOutcomeJson : ScenarioOutcome → Json
   | .semantic outcome =>
       Json.mkObj
         [ ("kind", toJson "semantic")
@@ -53,12 +57,12 @@ private def scenarioOutcomeJson : ScenarioOutcome → Json
   | .infrastructureFailure =>
       Json.mkObj [("kind", toJson "infrastructureFailure")]
 
-private def scenarioResultJson (result : ScenarioResult) : Json :=
+def scenarioResultJson (result : ScenarioResult) : Json :=
   Json.mkObj
     [ ("outcome", scenarioOutcomeJson result.outcome)
     , ("trace", jsonArray (result.trace.map canonicalObservationJson)) ]
 
-private def scenarioKindJson : ScenarioKind → Json
+def scenarioKindJson : ScenarioKind → Json
   | .scenario => toJson "scenario"
 
 def stimulusJson : Stimulus → Json
@@ -148,7 +152,7 @@ def stimulusJson : Stimulus → Json
         , ("processInstanceId", toJson processInstanceId.value)
         , ("incidentId", effectIncidentIdJson incidentId) ]
 
-private def observationKindJson : ObservationKind → Json
+def observationKindJson : ObservationKind → Json
   | .deployment => toJson "deployment"
   | .commandResults => toJson "commandResults"
   | .processStatus => toJson "processStatus"
@@ -161,7 +165,7 @@ private def observationKindJson : ObservationKind → Json
   | .enabledInteractions => toJson "enabledInteractions"
   | .logicalTime => toJson "logicalTime"
 
-private def resourceIdentityJson (resource : ResourceIdentity) : Json :=
+def resourceIdentityJson (resource : ResourceIdentity) : Json :=
   Json.mkObj
     [ ("id", toJson resource.id.value)
     , ("relativePath", toJson resource.relativePath)
@@ -169,7 +173,7 @@ private def resourceIdentityJson (resource : ResourceIdentity) : Json :=
     , ("sourceOverlay",
         sourceOverlayIdentityJson resource.sourceOverlay) ]
 
-private def scenarioProvenanceJson (provenance : ScenarioProvenance) : Json :=
+def scenarioProvenanceJson (provenance : ScenarioProvenance) : Json :=
   Json.mkObj
     [ ("normativeRefs", toJson provenance.normativeRefs)
     , ("cibRevision", toJson provenance.cibRevision)
@@ -283,7 +287,7 @@ theorem open_incident_json_retains_equal_nested_effect_identity
 /-- Echo of the exact scenario content this interpreter executed.
 
 The differential harness compares this against the admitted scenario document. Scenario identity alone cannot establish that the compiled-in Lean scenario still matches the admitted bytes, because a canonical command observation records only the command identity and outcome rather than the submitted payload. -/
-private def scenarioJson (scenario : Scenario) : Json :=
+def scenarioJson (scenario : Scenario) : Json :=
   Json.mkObj
     [ ("kind", scenarioKindJson scenario.kind)
     , ("id", toJson scenario.id.value)
@@ -294,7 +298,7 @@ private def scenarioJson (scenario : Scenario) : Json :=
         jsonArray (scenario.observations.map observationKindJson))
     , ("provenance", scenarioProvenanceJson scenario.provenance) ]
 
-private def definitionBindingJson (input : DefinitionInput) : Json :=
+def definitionBindingJson (input : DefinitionInput) : Json :=
   Json.mkObj
     [ ("kind", toJson "leanDefinitionBinding")
     , ("sourceSha256",
@@ -303,7 +307,7 @@ private def definitionBindingJson (input : DefinitionInput) : Json :=
         toJson input.checkedProcess.identity.semanticProfile.value)
     , ("programMatchesLeanLowering", toJson true) ]
 
-private def commandPublicationsJson (program : SemanticProcess.Program)
+def commandPublicationsJson (program : SemanticProcess.Program)
     (instanceId : SemanticId) : SemanticProcess.RuntimeState → List Stimulus → List Json
   | _, [] => []
   | initial, stimulus :: rest =>
@@ -335,7 +339,7 @@ private def commandPublicationsJson (program : SemanticProcess.Program)
         | .rolledBack | .semanticFailure | .unsupported => []
       record :: tail
 
-private def scenarioPublicationsJson (scenario : Scenario) (input : DefinitionInput) : Json :=
+def scenarioPublicationsJson (scenario : Scenario) (input : DefinitionInput) : Json :=
   let instanceId := match scenario.stimuli.head? with
     | some (.startProcess _ _ instanceId _) | some (.triggerMessageStart _ _ instanceId _ _)
     | some (.triggerTimerStart _ _ instanceId _) => instanceId
@@ -344,7 +348,7 @@ private def scenarioPublicationsJson (scenario : Scenario) (input : DefinitionIn
     commandPublicationsJson input.semanticProcess instanceId SemanticProcess.initialState scenario.stimuli
   else []
 
-private def resultRecordJson (scenario : Scenario)
+def resultRecordJson (scenario : Scenario)
     (input : DefinitionInput) (includePublications : Bool) : Json :=
   Json.mkObj <|
     [ ("scenarioId", toJson scenario.id.value)
@@ -355,7 +359,7 @@ private def resultRecordJson (scenario : Scenario)
           input.semanticProcess scenario)) ] ++
     if includePublications then [("commandPublications", scenarioPublicationsJson scenario input)] else []
 
-private def readDefinitionInputs (path : System.FilePath) :
+def readDefinitionInputs (path : System.FilePath) :
     IO (List DefinitionInput) := do
   let contents ← IO.FS.readFile path
   let lines := (contents.splitOn "\n").filter fun line => !line.isEmpty
@@ -364,14 +368,14 @@ private def readDefinitionInputs (path : System.FilePath) :
     | .ok input => pure input
     | .error message => throw (IO.userError message)
 
-private def readScenario (path : System.FilePath) : IO Scenario := do
+def readScenario (path : System.FilePath) : IO Scenario := do
   let contents ← IO.FS.readFile path
   match decodeScenarioDocument contents with
   | .ok scenario => pure scenario
   | .error message =>
       throw (IO.userError s!"invalid scenario {path}: {message}")
 
-private def definitionForScenario (inputs : List DefinitionInput)
+def definitionForScenario (inputs : List DefinitionInput)
     (scenario : Scenario) : IO DefinitionInput := do
   let matchingInputs := inputs.filter fun input =>
     decide (input.scenarioId = scenario.id)

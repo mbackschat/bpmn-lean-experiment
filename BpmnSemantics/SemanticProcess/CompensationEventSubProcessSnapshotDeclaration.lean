@@ -1,19 +1,23 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
 
 /-! # Compensation Event Sub-Process snapshot declaration
 
 Program-only validation for the optional hidden snapshot declaration and its narrow dormant-handler scope lifecycle. Runtime snapshots remain outside this module so graph admission depends only on immutable Program data.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def safeNat (value : Nat) : Bool :=
+def safeNat (value : Nat) : Bool :=
   BpmnSemantics.SemanticProcessJson.isSafeWireNat value
 
-private def operationScope? (program : Program) (operationId : OperationId) :
+def operationScope? (program : Program) (operationId : OperationId) :
     Option DefinitionScopeId :=
   (program.operationScopes.find? fun ownership =>
     decide (ownership.operationId = operationId)).map (·.scopeId)
@@ -45,11 +49,11 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .throwError .. | .reachNoneEnd .. | .terminateScope ..
   | .completeScope .. | .completeEventSubProcess .. | .triggerCompensation .. | .cancelTransaction .. => none
 
-private def completesScope (scopeId : DefinitionScopeId) : SemanticOperation → Bool
+def completesScope (scopeId : DefinitionScopeId) : SemanticOperation → Bool
   | .completeScope _ _ completedScopeId _ => completedScopeId == scopeId
   | _ => false
 
-private def scopeHasOneEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
+def scopeHasOneEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
   (program.operations.filter fun operation =>
     enteredChildScopeId? operation = some scopeId).length = 1
 
@@ -82,13 +86,13 @@ def sequentialScopeOperationsPaired (program : Program) : Bool :=
           | _ => false).length == 1
     | _ => false
 
-private def hasRepeatedScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
+def hasRepeatedScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
   program.operations.any fun
     | .enterSequentialMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _
     | .enterParallelMultiInstanceScope _ _ _ _ childScopeId _ _ _ _ _ => childScopeId == scopeId
     | _ => false
 
-private def ordinaryScopeLifecycleValid (program : Program)
+def ordinaryScopeLifecycleValid (program : Program)
     (entryRootId : DefinitionScopeId) (scope : DefinitionScope) : Bool :=
   (if scope.parentScopeId.isSome && hasRepeatedScopeEntry program scope.id then
       (program.operations.filter (completesScope scope.id)).isEmpty &&
@@ -137,13 +141,13 @@ def programEntryRootScopeId? (program : Program) : Option DefinitionScopeId :=
   | [scope] => some scope.id
   | _ => none
 
-private def entryRootIsOnlyParentlessScope (program : Program)
+def entryRootIsOnlyParentlessScope (program : Program)
     (entryRootId : DefinitionScopeId) : Bool :=
   match program.definitionScopes.filter fun scope => scope.parentScopeId.isNone with
   | [scope] => scope.id == entryRootId
   | _ => false
 
-private def uniqueScope? (program : Program) (scopeId : DefinitionScopeId) :
+def uniqueScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => scope.id == scopeId with
   | [scope] => some scope
@@ -155,32 +159,32 @@ def compensationEventSubProcessSnapshotTargetBefore
     decide (left.handlerScopeId.value < right.handlerScopeId.value)
   else decide (left.parentScopeId.value < right.parentScopeId.value)
 
-private def targetsStrictlyOrdered :
+def targetsStrictlyOrdered :
     List CompensationEventSubProcessSnapshotTarget → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       compensationEventSubProcessSnapshotTargetBefore left right &&
         targetsStrictlyOrdered (right :: rest)
 
-private def targetIdentityValid
+def targetIdentityValid
     (target : CompensationEventSubProcessSnapshotTarget) : Bool :=
   !target.parentScopeId.value.isEmpty &&
     !target.handlerScopeId.value.isEmpty &&
     target.parentScopeId != target.handlerScopeId
 
-private def targetParentUnique
+def targetParentUnique
     (targets : List CompensationEventSubProcessSnapshotTarget)
     (target : CompensationEventSubProcessSnapshotTarget) : Bool :=
   (targets.filter fun candidate =>
     candidate.parentScopeId == target.parentScopeId).length = 1
 
-private def targetHandlerUnique
+def targetHandlerUnique
     (targets : List CompensationEventSubProcessSnapshotTarget)
     (target : CompensationEventSubProcessSnapshotTarget) : Bool :=
   (targets.filter fun candidate =>
     candidate.handlerScopeId == target.handlerScopeId).length = 1
 
-private def targetScopesValid (program : Program) (entryRootId : DefinitionScopeId)
+def targetScopesValid (program : Program) (entryRootId : DefinitionScopeId)
     (target : CompensationEventSubProcessSnapshotTarget) : Bool :=
   match uniqueScope? program target.parentScopeId,
       uniqueScope? program target.handlerScopeId with
@@ -217,12 +221,12 @@ def compensationEventSubProcessSnapshotDeclarationValid (program : Program) : Bo
             safeNat declaration.maxCanonicalBytes &&
             declaration.targets.all (targetScopesValid program entryRootId)
 
-private def declaredHandlerScopeIds (program : Program) : List DefinitionScopeId :=
+def declaredHandlerScopeIds (program : Program) : List DefinitionScopeId :=
   match program.compensationEventSubProcessSnapshots with
   | none => []
   | some declaration => declaration.targets.map (fun target => target.handlerScopeId)
 
-private def declaredScopeLifecycleValid (program : Program)
+def declaredScopeLifecycleValid (program : Program)
     (entryRootId : DefinitionScopeId) (handlerScopeIds : List DefinitionScopeId)
     (scope : DefinitionScope) : Bool :=
   let messageHandler := program.interruptingMessageEventSubProcesses.any (fun declaration =>

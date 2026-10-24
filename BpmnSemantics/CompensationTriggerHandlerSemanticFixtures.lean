@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Shared compensation trigger and handler semantic fixtures -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 

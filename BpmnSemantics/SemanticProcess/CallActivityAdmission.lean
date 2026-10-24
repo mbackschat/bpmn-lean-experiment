@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Call Activity program admission
 
 This module owns standalone well-formedness for the paired cross-root operations and the virtual called-End-to-return graph edge. Source binding and runtime transitions remain separate owners.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private structure InvokeBinding where
+structure InvokeBinding where
   id : OperationId
   origin : BpmnElementOrigin
   input : ControlPlaceId
@@ -17,7 +21,7 @@ private structure InvokeBinding where
   returnOperationId : OperationId
   data : CallDataInterface
 
-private structure ReturnBinding where
+structure ReturnBinding where
   id : OperationId
   origin : BpmnElementOrigin
   calledProcessId : ProcessId
@@ -25,12 +29,12 @@ private structure ReturnBinding where
   callerOutput : ControlPlaceId
   data : CallDataInterface
 
-private def operationScope? (program : Program) (operationId : OperationId) :
+def operationScopeOf? (program : Program) (operationId : OperationId) :
     Option DefinitionScopeId :=
   (program.operationScopes.find? fun owner =>
     decide (owner.operationId = operationId)).map (·.scopeId)
 
-private def placeScope? (program : Program) (placeId : ControlPlaceId) :
+def placeScope? (program : Program) (placeId : ControlPlaceId) :
     Option DefinitionScopeId :=
   (program.controlPlaceScopes.find? fun owner =>
     decide (owner.controlPlaceId = placeId)).map (·.scopeId)
@@ -105,17 +109,17 @@ def callOperationsPaired (program : Program) : Bool :=
                 | [calledRoot] =>
                     calledRoot.id = invoke.calledRoot &&
                       calledRoot.id ≠ entryRoot.id &&
-                      (match operationScope? program invoke.id with
+                      (match operationScopeOf? program invoke.id with
                         | some callerScope =>
                             match processRootWithin program.definitionScopes
                                 program.definitionScopes.length callerScope with
                             | some callerRoot => callerRoot ≠ calledRoot.id
                             | none => false
                         | none => false) &&
-                      operationScope? program returned.id = some calledRoot.id &&
-                      placeScope? program invoke.input = operationScope? program invoke.id &&
+                      operationScopeOf? program returned.id = some calledRoot.id &&
+                      placeScope? program invoke.input = operationScopeOf? program invoke.id &&
                       placeScope? program invoke.calledEntry = some calledRoot.id &&
-                      placeScope? program returned.callerOutput = operationScope? program invoke.id &&
+                      placeScope? program returned.callerOutput = operationScopeOf? program invoke.id &&
                       returned.origin = invoke.origin &&
                       returned.calledProcessId = invoke.calledProcessId &&
                       returned.calledRoot = invoke.calledRoot && returned.data = invoke.data
@@ -164,7 +168,9 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
       · rename_i returned returns
         have selectedMember := (List.mem_filter (p := fun value : ReturnBinding => decide (value.id = returnedId))).mpr
           ⟨actualMember, by simp [actual]⟩
-        rw [returns] at selectedMember
+        -- `erw`: `returns` carries the definition's matcher and `selectedMember` this proof's private one
+        -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+        erw [returns] at selectedMember
         have same := List.mem_singleton.mp selectedMember
         rw [← same] at selected
         dsimp only [actual] at selected
@@ -220,14 +226,14 @@ def callCompletionPairs (program : Program) : List (OperationId × OperationId) 
         match program.operations.filter fun operation =>
             match operation with
             | .reachNoneEnd endId _ _ =>
-                operationScope? program endId = some calledRoot
+                operationScopeOf? program endId = some calledRoot
             | _ => false with
         | [.reachNoneEnd endId _ _] => some (endId, returnId)
         | _ => none
     | _ => none
 
 
-private theorem invoke_return_count (operations : List SemanticOperation) (returned : OperationId) :
+theorem invoke_return_count (operations : List SemanticOperation) (returned : OperationId) :
     (operations.filter fun
       | .invokeProcess _ _ _ _ _ _ candidate _ => decide (candidate = returned)
       | _ => false).length =
@@ -263,20 +269,19 @@ theorem callOperationsPaired_invokes_by_return_le_one (program : Program) (retur
     simp
   · split at paired
     · simp only [Bool.and_eq_true, List.all_eq_true] at paired
-      cases filtered : (program.operations.filterMap fun
-          | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
-              some (show InvokeBinding from
-                { id, origin, input, calledProcessId, calledRoot, calledEntry
-                  returnOperationId := returned, data })
-          | _ => none).filter (fun invoke => decide (invoke.returnOperationId = returned)) with
+      -- Restated once so `cases` abstracts it: a module gives this proof's `match` its own private matcher
+      -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+      let invokes := program.operations.filterMap fun
+        | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
+            some (show InvokeBinding from
+              { id, origin, input, calledProcessId, calledRoot, calledEntry
+                returnOperationId := returned, data })
+        | _ => none
+      show (invokes.filter fun invoke => decide (invoke.returnOperationId = returned)).length ≤ 1
+      cases filtered : invokes.filter (fun invoke => decide (invoke.returnOperationId = returned)) with
       | nil => simp
       | cons first rest =>
-          have firstIn : first ∈ (program.operations.filterMap fun
-              | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
-                  some (show InvokeBinding from
-                    { id, origin, input, calledProcessId, calledRoot, calledEntry
-                      returnOperationId := returned, data })
-              | _ => none).filter (fun invoke => decide (invoke.returnOperationId = returned)) := by
+          have firstIn : first ∈ invokes.filter (fun invoke => decide (invoke.returnOperationId = returned)) := by
             rw [filtered]; exact List.mem_cons_self
           obtain ⟨firstMember, firstReturned⟩ := List.mem_filter.mp firstIn
           have firstReturnedEq := of_decide_eq_true firstReturned

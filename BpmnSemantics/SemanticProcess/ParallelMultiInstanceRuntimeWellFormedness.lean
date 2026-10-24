@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
 
 /-! # Parallel Multi-Instance shared runtime well-formedness
 
@@ -13,6 +15,8 @@ Scope boundary: shared `RuntimeState` binding validity and its proofs. The famil
 executable invariant are imported from `ParallelMultiInstanceRuntimeInvariant`; this module defines
 no transition, public observation, shared runtime-state field, or host state.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -26,7 +30,7 @@ def parallelRecordForController? (state : RuntimeState)
   | [record] => some record
   | _ => none
 
-private def parallelWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
+def parallelWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
@@ -76,7 +80,7 @@ def parallelControllerProgramBindingValid (program : Program) (state : RuntimeSt
                 | _ => false
       | _ => false
 
-private def sameParallelControllerIdentity (left right : ParallelMultiInstanceController) : Bool :=
+def sameParallelControllerIdentity (left right : ParallelMultiInstanceController) : Bool :=
   left.id == right.id
 
 def parallelMultiInstanceProgramBindingsValid (program : Program) (state : RuntimeState) : Bool :=

@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 
 /-! # Hosting-root termination position
 
@@ -7,6 +9,8 @@ The admitted Terminate selector binds its owner to the hosting Process. Cancelli
 reaches every live child and called instance, retains the hosting root, and leaves ordinary
 completion responsible for the terminal control change.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

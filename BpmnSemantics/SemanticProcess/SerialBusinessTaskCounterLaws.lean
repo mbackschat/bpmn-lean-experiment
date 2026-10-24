@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
 
 /-! Serial task issuance retains canonical counter storage and high-water marks. These laws are
 shared by the serial chain and mixed-task graph reachability frames. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 

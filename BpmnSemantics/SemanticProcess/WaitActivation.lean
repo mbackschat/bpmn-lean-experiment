@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Wait activation
 
@@ -17,6 +19,8 @@ occurrence from `activityActivations`, and writes the ownership record that pair
 ordinals agree under every registered profile and the record is what stops that agreement from being
 load-bearing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

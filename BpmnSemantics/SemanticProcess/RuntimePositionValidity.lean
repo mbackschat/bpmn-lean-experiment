@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Runtime position validity
 
@@ -7,6 +9,8 @@ This lower-level owner validates lifecycle state, the runtime scope forest, call
 associations, and token bindings against one immutable Semantic Process program. Public control
 projection and committed transition traces consume this predicate but do not define it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -49,7 +53,7 @@ def programProjectionBindingsValid (program : Program) : Bool :=
 def exactLiveOccurrence (state : RuntimeState) (id : ScopeOccurrenceId) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id)).length = 1
 
-private def hostingRoot (program : Program) (instanceId : SemanticId)
+def hostingRoot (program : Program) (instanceId : SemanticId)
     (scope : DefinitionScope) (occurrence : RuntimeScopeOccurrence) : Bool :=
   occurrence.parent.isNone &&
     occurrence.id.processInstanceId = instanceId &&

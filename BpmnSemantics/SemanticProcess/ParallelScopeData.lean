@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
-import BpmnSemantics.SemanticProcess.EffectCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
+public import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

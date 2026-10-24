@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
 
 /-! Child completion preserves the complete candidate census for surviving Timers.
 Exact Activity body and tagged-handler selection keep a surviving Timer from naming
 the removed child, independently of activation-counter coincidences. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

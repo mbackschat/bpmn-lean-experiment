@@ -141,7 +141,7 @@ theorem a_collection_over_the_canonical_byte_bound_is_refused_at_entry :
   decide +kernel
 
 /-- Sixteen accepted results of exactly `maximumItemUtf8Bytes` bytes each. -/
-private def maximalOutputCollection (result : String) : List String :=
+def maximalOutputCollection (result : String) : List String :=
   [result, result, result, result, result, result, result, result,
     result, result, result, result, result, result, result, result]
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 
 /-! The selected subscription account publishes one atomic Task/Message delta.
 Acceptance checks the actual candidate, independent open projection, transition record, and token position. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

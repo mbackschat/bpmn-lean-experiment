@@ -1,51 +1,55 @@
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.ValueDomain
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Exact Compensation source-checkpoint admission -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
-private def compensationDescriptorValid (descriptor : EffectDescriptor) : Bool :=
+def compensationDescriptorValid (descriptor : EffectDescriptor) : Bool :=
   descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&
     descriptor.operation =
       "urn:bpmn-lean:effect-operation:compensation-single-effect-v1"
 
-private def checkedScope? (source : CheckedProcess) (id : DefinitionScopeId) :
+def checkedScope? (source : CheckedProcess) (id : DefinitionScopeId) :
     Option DefinitionScope :=
   match source.definitionScopes.filter fun scope => scope.id == id with
   | [scope] => some scope
   | _ => none
 
-private def checkedNodeScope? (source : CheckedProcess) (id : NodeId) :
+def checkedNodeScope? (source : CheckedProcess) (id : NodeId) :
     Option DefinitionScopeId :=
   match source.nodeScopes.filter fun ownership => ownership.nodeId == id with
   | [ownership] => some ownership.scopeId
   | _ => none
 
-private def checkedSubjectElementId : CheckedCompensationSubject → NodeId
+def checkedSubjectElementId : CheckedCompensationSubject → NodeId
   | .boundaryActivity subject _ _ => subject
   | .eventSubProcess parent _ _ _ => parent
 
-private def checkedSubjectBefore
+def checkedSubjectBefore
     (left right : CheckedCompensationSubject) : Bool :=
   decide ((checkedSubjectElementId left).value <
     (checkedSubjectElementId right).value)
 
-private def checkedSubjectsStrictlyOrdered :
+def checkedSubjectsStrictlyOrdered :
     List CheckedCompensationSubject → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       checkedSubjectBefore left right &&
         checkedSubjectsStrictlyOrdered (right :: rest)
 
-private def checkedBoundarySubjects
+def checkedBoundarySubjects
     (subjects : List CheckedCompensationSubject) :
     List (NodeId × NodeId × CheckedCompensationBody) :=
   subjects.filterMap fun
     | .boundaryActivity subject boundary body => some (subject, boundary, body)
     | _ => none
 
-private def checkedEventSubjects
+def checkedEventSubjects
     (subjects : List CheckedCompensationSubject) :
     List (NodeId × DefinitionScopeId × DefinitionScopeId ×
       CheckedCompensationBody) :=
@@ -54,10 +58,10 @@ private def checkedEventSubjects
         some (parent, parentScope, handlerScope, body)
     | _ => none
 
-private def bodyIdentityValues (body : CheckedCompensationBody) : List String :=
+def bodyIdentityValues (body : CheckedCompensationBody) : List String :=
   [body.handlerElementId.value, body.effectElementId.value].eraseDups
 
-private def subjectRetainedIdentityValues :
+def subjectRetainedIdentityValues :
     CheckedCompensationSubject → List String
   | .boundaryActivity subject boundary body =>
       [subject.value, boundary.value] ++ bodyIdentityValues body
@@ -69,12 +73,12 @@ private def subjectRetainedIdentityValues :
         | .directRestoredProcessBinding sourceProperty targetInput =>
             [sourceProperty, targetInput]
 
-private def bodyUnavailableToOrdinaryNodes
+def bodyUnavailableToOrdinaryNodes
     (source : CheckedProcess) (body : CheckedCompensationBody) : Bool :=
   !source.nodes.any fun node =>
     node.id == body.handlerElementId || node.id == body.effectElementId
 
-private def boundarySubjectValid (source : CheckedProcess)
+def boundarySubjectValid (source : CheckedProcess)
     (rootScopeId : DefinitionScopeId)
     (subject boundary : NodeId) (body : CheckedCompensationBody) : Bool :=
   (source.nodes.filter fun
@@ -86,7 +90,7 @@ private def boundarySubjectValid (source : CheckedProcess)
     bodyUnavailableToOrdinaryNodes source body &&
     !source.nodes.any fun node => node.id == boundary
 
-private def eventSubjectValid (source : CheckedProcess)
+def eventSubjectValid (source : CheckedProcess)
     (rootScopeId : DefinitionScopeId) (parent : NodeId)
     (parentScopeId handlerScopeId : DefinitionScopeId)
     (body : CheckedCompensationBody) : Bool :=
@@ -111,7 +115,7 @@ private def eventSubjectValid (source : CheckedProcess)
         nonempty sourceProperty && nonempty targetInput &&
           sourceProperty ≠ targetInput
 
-private def directDependencyValid (source : CheckedProcess)
+def directDependencyValid (source : CheckedProcess)
     (boundaries : List (NodeId × NodeId × CheckedCompensationBody))
     (eventParent : NodeId) (dependency : CheckedCompensationDependency) : Bool :=
   dependency.reason = .sequenceFlow &&
@@ -122,7 +126,7 @@ private def directDependencyValid (source : CheckedProcess)
         flow.targetId = dependency.successorElementId &&
         flow.condition.isNone).length = 1
 
-private def rootScopeId? (source : CheckedProcess) : Option DefinitionScopeId :=
+def rootScopeId? (source : CheckedProcess) : Option DefinitionScopeId :=
   match source.definitionScopes.filter fun scope =>
       scope.parentScopeId.isNone &&
         scope.originElementId.value = source.processId.value with
@@ -155,7 +159,7 @@ def checkedProcessWithoutCompensationDormantScope
   { source with definitionScopes := source.definitionScopes.filter fun scope =>
       !compensationDormantDefinitionScopeValid source scope }
 
-private def selectedCheckedCompensationValid
+def selectedCheckedCompensationValid
     (source : CheckedProcess) (declaration : CheckedCompensation) : Bool :=
   match rootScopeId? source,
       checkedBoundarySubjects declaration.subjects,
@@ -195,17 +199,17 @@ def compensationSourceCheckedProfileValid (source : CheckedProcess) : Bool :=
     | none => false
   else source.compensation.isNone
 
-private def programBoundarySubjectCount : List CompensationSubjectDefinition → Nat
+def programBoundarySubjectCount : List CompensationSubjectDefinition → Nat
   | [] => 0
   | .boundaryActivity .. :: rest => programBoundarySubjectCount rest + 1
   | _ :: rest => programBoundarySubjectCount rest
 
-private def programEventSubjectCount : List CompensationSubjectDefinition → Nat
+def programEventSubjectCount : List CompensationSubjectDefinition → Nat
   | [] => 0
   | .eventSubProcess .. :: rest => programEventSubjectCount rest + 1
   | _ :: rest => programEventSubjectCount rest
 
-private def selectedProgramCompensationValid (program : Program) : Bool :=
+def selectedProgramCompensationValid (program : Program) : Bool :=
   match program.compensationActivityRetention,
       program.compensationEventSubProcessSnapshots,
       program.compensationExecution with

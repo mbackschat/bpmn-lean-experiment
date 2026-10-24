@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCompletion
 
 /-! Regional retirement and joined Timer-task insertion commute from predecessor preparations.
 The proof binds actual Return, completion, Error, and Terminate execution, including continuations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

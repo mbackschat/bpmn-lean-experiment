@@ -16,7 +16,7 @@ theorem active_frontier_requires_exact_dependencies_context_and_disjoint_effect_
       compensationExecutionStateValid program secondActiveTriggerState = false := by
   decide +kernel
 
-private def incidentState (elementId : String) : RuntimeState :=
+def incidentState (elementId : String) : RuntimeState :=
   { activeState with
     effectWaits := []
     effectIncidents :=
@@ -44,7 +44,7 @@ theorem unrelated_incident_does_not_collide_with_either_handler :
     compensationExecutionStateValid program (incidentState "Unrelated") = true := by
   decide +kernel
 
-private def programWithCanonicalByteLimit (limit : Nat) : Program :=
+def programWithCanonicalByteLimit (limit : Nat) : Program :=
   { program with
     compensationExecution := some
       { executionDeclaration with

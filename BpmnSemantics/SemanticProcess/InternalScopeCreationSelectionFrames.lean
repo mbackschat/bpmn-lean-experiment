@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.TokenPatchLaws
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-import BpmnSemantics.SemanticProcess.TokenPatch
-import BpmnSemantics.SemanticProcess.CallActivityIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+public import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.CallActivityIdentity
 
 /-! Population frames for scope creation preserve the complete definition and instance exclusions
 of the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

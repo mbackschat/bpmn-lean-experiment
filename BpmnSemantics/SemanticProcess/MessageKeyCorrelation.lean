@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.EventBasedGateway
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
 
 /-! # Context-backed Message key correlation
 
 This module owns the pure finite-population matcher, candidate projection from committed Process
 state, and exact target delivery for the bounded single-property correlation profile.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -29,10 +33,10 @@ inductive CorrelatedMessageMatch where
   | ambiguous
   deriving Repr, DecidableEq
 
-private def lowerHexDigit (character : Char) : Bool :=
+def lowerHexDigit (character : Char) : Bool :=
   character.isDigit || ('a' ≤ character && character ≤ 'f')
 
-private def sha256Valid (value : String) : Bool :=
+def sha256Valid (value : String) : Bool :=
   value.length = 64 && value.toList.all lowerHexDigit
 
 def correlatedMessageAddressValid (address : CorrelatedMessageAddress) : Bool :=
@@ -72,7 +76,7 @@ theorem matchingCorrelatedMessageCandidates_perm
       (matchingCorrelatedMessageCandidates address payload right) := by
   exact permutation.filter (correlatedMessageCandidateMatches address payload)
 
-private def classifyCorrelatedMessageCandidates :
+def classifyCorrelatedMessageCandidates :
     List CorrelatedMessageCandidate → CorrelatedMessageMatch
   | [] => .noMatch
   | [candidate] => .unique candidate
@@ -271,7 +275,7 @@ theorem matchCorrelatedMessageCandidates_source_sha_isolation
   intro sameAddress
   exact differentSource (congrArg (fun current => current.definition.sourceSha256) sameAddress)
 
-private def correlatedOperationSelectedForWait (program : Program)
+def correlatedOperationSelectedForWait (program : Program)
     (operation : SemanticOperation) (wait : MessageWait) : Bool :=
   messageWaitDeclarers program wait.elementId == [operation] &&
     (program.operations.filter fun candidate => decide (candidate = operation)).length = 1 &&

@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! # Compensation Activity retention producers
 
@@ -9,6 +11,8 @@ classifier and the existing Activity completion transitions. It stages retention
 rewrite and delegates every absent-declaration or non-target case to the legacy transition unchanged.
 It defines no handler execution, source admission, public observation, or hosting behavior.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

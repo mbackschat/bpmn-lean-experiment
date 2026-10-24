@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.EventBasedGateway
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.ScopeCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Single-operation state evaluators
 
 Each evaluator rewrites a state for one operation shape from its unique input owner; the step relation
 and dispatcher in `Transition` select among them and bridge them to `OperationStep`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

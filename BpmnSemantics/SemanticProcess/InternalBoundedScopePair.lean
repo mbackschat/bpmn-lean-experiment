@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeCreationPair
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeCreationPair
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 
 /-! Independent bounded entries retain distinct child, Timer, and Activity issuers and complete
 association reads under the [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

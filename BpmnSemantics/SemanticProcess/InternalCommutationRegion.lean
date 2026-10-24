@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Internal commutation occurrence regions
 
@@ -6,6 +8,8 @@ This module derives the exact pre-state occurrence ownership closure used by des
 transition footprints. Scope-parent edges and caller-to-called-root edges are directional. The
 classification applies no transition and proves no commutation theorem by itself.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -18,7 +22,7 @@ structure InternalOccurrenceRegion where
   members : List ScopeOccurrenceId
   deriving Repr, DecidableEq
 
-private def exactScopeOccurrenceCount (state : RuntimeState)
+def exactScopeOccurrenceCount (state : RuntimeState)
     (id : ScopeOccurrenceId) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = id)).length == 1
 

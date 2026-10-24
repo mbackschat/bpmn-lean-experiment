@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 
 /-! REG-OWN-CLOSE-01 preserves live references by retaining their complete predecessor census.
 Actual operation masks supply field agreement; successor validity is derived rather than assumed. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

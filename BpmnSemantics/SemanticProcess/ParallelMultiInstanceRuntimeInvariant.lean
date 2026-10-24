@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 
 /-! # Parallel Multi-Instance family runtime invariant
 
@@ -11,6 +13,8 @@ from Timer closure without retaining a second copy of controller progress.
 Scope boundary: the family-local state relation and its executable predicate. It does not define a
 transition, public observation, shared runtime-state field, or host state.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

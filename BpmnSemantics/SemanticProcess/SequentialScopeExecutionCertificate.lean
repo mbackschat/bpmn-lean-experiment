@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
-import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
-import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
 
 /-! SMIS-ADMIT-01 defines the joint phase, body-credit, data and population certificate, derives parent-credit consequences, and seeds it from actual committed Start. Transition preservation and actual-history transport remain above this owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

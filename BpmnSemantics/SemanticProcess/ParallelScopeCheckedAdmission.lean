@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! PMIS-ADMIT-01 checks the source graph independently of lowering; it grants no execution capability. -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.ParallelScopeChecked
 
-private def nodeAllowed : CheckedNode → Bool
+def nodeAllowed : CheckedNode → Bool
   | .noneStartEvent .. | .noneEndEvent .. | .parallelGateway .. | .parallelMultiInstanceSubProcess .. => true
   | .userTask _ _ none | .serviceTask _ _ _ _ none => true
   | _ => false

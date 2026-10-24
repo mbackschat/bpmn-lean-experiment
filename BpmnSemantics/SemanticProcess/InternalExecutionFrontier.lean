@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
 
 /-! Discovery retains every exact Merge offer before classification under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 Families outside the prepared account retain their existing singleton evaluator path.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -160,7 +164,8 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
   · cases state.control <;> simp_all
   · cases state.control <;> simp_all
   · dsimp only
-    rw [folded]
+    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    erw [folded]
     rfl
 
 private theorem sortBy_empty_reflects (before : α → α → Bool) (values : List α)

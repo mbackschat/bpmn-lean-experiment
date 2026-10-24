@@ -97,11 +97,36 @@ These come from small scratch projects, not the library, and are not retained in
 
 Hub functions are explicitly unfolded in few files: `programWellFormed` in 18 of the 235 that mention it, and `applyStimulus` in 7 of 84. A broader scan found 80 modules unfolding a hub function through some route, so bridge work is larger than those direct counts suggest.
 
+## Module matcher defect
+
+Inside a `module`, a `match` lambda restated in a proof elaborates to a new private matcher instead of reusing the identical public matcher of a definition or statement, so `rw` and `cases` no longer find a syntactically restated term. The same file compiles without `module`. Lean v4.34.1's `mkMatcherAuxDefinition` (`src/lean/Lean/Meta/Match/Match.lean`, line 1099) states that "private contexts may reuse public matchers", but its cache is registered with `asyncMode := .local`. That probably explains the miss, but the cause is not yet demonstrated, and no upstream report was found on 2026-10-24. Reproducer, which fails at the `rw` only with the first three lines:
+
+```lean
+module
+
+@[expose] public section
+
+inductive Op where
+  | a (key : Nat)
+  | b
+
+theorem sole (ops : List Op) (k : Nat) (h : (ops.filter fun | .a key => decide (key = k) | _ => false) = [.a k]) :
+    (ops.filter fun | .a key => decide (key = k) | _ => false) = [.a k] := h
+
+theorem use (ops : List Op) (k : Nat) (h : (ops.filter fun | .a key => decide (key = k) | _ => false) = [.a k])
+    (m : Op.a k ∈ ops) : True := by
+  have mem : Op.a k ∈ ops.filter (fun | .a key => decide (key = k) | _ => false) := List.mem_filter.mpr ⟨m, by simp⟩
+  rw [sole ops k h] at mem
+  trivial
+```
+
+The owner approved a proof-level workaround on 2026-10-24. Each affected proof either restates its goal once through a binding with `show` before `cases`, or rewrites with `erw`, which compares up to unfolding. Every such site carries a comment linking here. Theorem statements, claims and gates are unchanged. Remove the workaround when the pinned Lean reuses the public matcher in this reproducer.
+
 ## Migration order
 
 1. Guard migration.
 2. Module conversion of the kernel types, a one-time complete rebuild.
-3. Module conversion of every remaining library module with exposed bodies, a one-time complete rebuild.
+3. Module conversion of every remaining library module with exposed bodies, a one-time complete rebuild. An exposed body cannot name a private constant, so the conversion makes private helper definitions public. A newly public name can then win name resolution over an opened namespace's declaration and silently change what a statement means; the build does not catch this. So every newly public name that a file could resolve unqualified, alongside another declaration of the same short name, gets a distinct name. Fixtures that evaluate through a core definition whose body a module importer cannot see, or `#eval` library code whose compiled form a module does not import, stay plain files, with every file importing them, because a module cannot import a plain file: a probe on 2026-10-24 found about 50 such data definitions, among them `String.toUTF8`, `Lean.Json.compress` and the JSON parser, `List.mergeSort`, `Nat.repr` and `String.splitOn`, and with the `#eval` fixtures 97 fixture, check and umbrella files stay plain. `import all` of the owning core module restored `String.toUTF8` but not `Lean.Json.compress`. A plain file rebuilds on every edit to what it imports, so the step 3 and hidden-body rows below overstate the payoff for those files until re-measured.
 4. Hidden hub bodies, one hub at a time in the order of the measurement below: an importer that unfolds or kernel-reduces the hub imports it with `import all` until a bridge lemma replaces that use.
 5. The next coverage family, built in the family shape: its declarations live in family-owned modules, never appended to a hub.
 

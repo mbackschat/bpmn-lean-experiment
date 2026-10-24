@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
 
 /-! Normal root completion retains successful Compensation history. Quiescence rules out
 active triggers at the sole live root, while predecessor validity rules out failed triggers
 in a running state. These facts justify terminal validity without erasing that history. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

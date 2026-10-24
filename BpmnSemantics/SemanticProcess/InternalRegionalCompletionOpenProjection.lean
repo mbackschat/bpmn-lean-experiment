@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalQuiescence
-import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalQuiescence
+public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
 
 /-! Root completion's terminal projection follows from predecessor quiescence, live ownership,
 and the selected local-data closure. Historical and issuance fields need not be empty. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 
 /-! Child completion preserves the exact ordered wait projection. Its withdrawn Timer
 was already private, and every retained wait keeps its complete owner/Process lookup. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

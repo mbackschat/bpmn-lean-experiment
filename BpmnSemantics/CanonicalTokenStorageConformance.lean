@@ -1,32 +1,36 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Canonical token storage conformance
 
 These witnesses compare exact stored token units under the Internal Commutation canonical-storage account, including existing parallel execution prefixes. They introduce no source-admission or operation-family claim.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.CanonicalTokenStorageConformance
 
 open BpmnSemantics.SemanticProcess
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance:A"⟩
     definitionScopeId := ⟨"scope:A"⟩
     activation := 2 }
 
-private def placeA : ControlPlaceId := ⟨"place:A"⟩
-private def placeB : ControlPlaceId := ⟨"place:B"⟩
-private def tokenA : ControlToken := { placeId := placeA, owner }
-private def tokenB : ControlToken := { placeId := placeB, owner }
+def placeA : ControlPlaceId := ⟨"place:A"⟩
+def placeB : ControlPlaceId := ⟨"place:B"⟩
+def tokenA : ControlToken := { placeId := placeA, owner }
+def tokenB : ControlToken := { placeId := placeB, owner }
 
 theorem distinct_places_have_one_exact_storage_order :
     addToken (addToken [] placeA owner) placeB owner = [tokenA, tokenB] ∧
       addToken (addToken [] placeB owner) placeA owner = [tokenA, tokenB] := by
   decide +kernel
 
-private def laterOwner : ScopeOccurrenceId := { owner with activation := 10 }
-private def laterToken : ControlToken := { placeId := placeA, owner := laterOwner }
+def laterOwner : ScopeOccurrenceId := { owner with activation := 10 }
+def laterToken : ControlToken := { placeId := placeA, owner := laterOwner }
 
 theorem same_place_uses_complete_numeric_owner_order :
     addToken (addToken [] placeA owner) placeA laterOwner = [tokenA, laterToken] ∧
@@ -50,7 +54,7 @@ theorem aggregate_order_distinguishes_reversed_places_and_owners :
       canonicalCollectionOrder { initialState with tokens := [laterToken, tokenA] } = false := by
   decide +kernel
 
-private def rawOrderedPairs : List (ControlToken × ControlToken) :=
+def rawOrderedPairs : List (ControlToken × ControlToken) :=
   [ ( { tokenA with owner := { owner with processInstanceId := ⟨"Z"⟩ } }
     , { tokenB with owner := { owner with processInstanceId := ⟨"A"⟩ } } )
   , ( { tokenA with owner := { owner with processInstanceId := ⟨"A"⟩, definitionScopeId := ⟨"Z"⟩ } }
@@ -74,15 +78,15 @@ theorem complete_key_coordinates_have_exact_scalar_order :
       decide (removeToken [first, second] second.placeId second.owner = [first])) = true := by
   decide +kernel
 
-private def placeC : ControlPlaceId := ⟨"place:C"⟩
-private def tokenC : ControlToken := { placeId := placeC, owner }
+def placeC : ControlPlaceId := ⟨"place:C"⟩
+def tokenC : ControlToken := { placeId := placeC, owner }
 
 theorem unordered_predecessor_separates_mixed_update_orders :
     removeToken (addToken [tokenC, tokenA] placeB owner) placeC owner = [tokenB, tokenA] ∧
       addToken (removeToken [tokenC, tokenA] placeC owner) placeB owner = [tokenA, tokenB] := by
   decide +kernel
 
-private def positionOperations : List SemanticOperation :=
+def positionOperations : List SemanticOperation :=
   [ .reachNoneEnd ⟨"operation:End"⟩ { elementId := ⟨"End"⟩ } placeB
   , .initiate ⟨"operation:Start"⟩ { elementId := ⟨"Start"⟩ } placeA
   , .awaitUserTask ⟨"operation:Task"⟩ { elementId := ⟨"Task"⟩ } placeA placeB
@@ -90,7 +94,7 @@ private def positionOperations : List SemanticOperation :=
   , .completeScope ⟨"operation:complete"⟩ { elementId := ⟨"Process_TokenStorage"⟩ }
       owner.definitionScopeId none ]
 
-private def positionProgram : Program :=
+def positionProgram : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"cibseven-2.2.0-embedded-subprocess-completion-draft"⟩
@@ -111,7 +115,7 @@ private def positionProgram : Program :=
        { id := placeB, origin := ⟨⟨"Flow_B"⟩⟩ }]
     operations := positionOperations }
 
-private def positionState : RuntimeState :=
+def positionState : RuntimeState :=
   { initialState with
     control := .running owner.processInstanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -125,11 +129,11 @@ theorem position_valid_reversed_places_fail_aggregate_order :
         { positionState with tokens := [tokenB, tokenA] } = false := by
   decide +kernel
 
-private def childOwner : ScopeOccurrenceId := { owner with definitionScopeId := ⟨"scope:Child"⟩ }
-private def childLater : ScopeOccurrenceId := { childOwner with activation := 10 }
-private def childToken : ControlToken := { placeId := placeC, owner := childOwner }
-private def childLaterToken : ControlToken := { placeId := placeC, owner := childLater }
-private def childOperations : List (SemanticOperation × DefinitionScopeId) :=
+def childOwner : ScopeOccurrenceId := { owner with definitionScopeId := ⟨"scope:Child"⟩ }
+def childLater : ScopeOccurrenceId := { childOwner with activation := 10 }
+def childToken : ControlToken := { placeId := placeC, owner := childOwner }
+def childLaterToken : ControlToken := { placeId := placeC, owner := childLater }
+def childOperations : List (SemanticOperation × DefinitionScopeId) :=
   [ (.reachNoneEnd ⟨"operation:EndChild"⟩ { elementId := ⟨"EndChild"⟩ } placeC,
       childOwner.definitionScopeId)
   , (.reachNoneEnd ⟨"operation:EndRoot"⟩ { elementId := ⟨"EndRoot"⟩ } placeB,
@@ -142,7 +146,7 @@ private def childOperations : List (SemanticOperation × DefinitionScopeId) :=
       owner.definitionScopeId none, owner.definitionScopeId)
   , (.completeScope ⟨"operation:completeChild"⟩ { elementId := ⟨"Child"⟩ }
       childOwner.definitionScopeId (some placeB), childOwner.definitionScopeId) ]
-private def childProgram : Program :=
+def childProgram : Program :=
   { positionProgram with
     definitionScopes := positionProgram.definitionScopes ++
       [{ id := childOwner.definitionScopeId, parentScopeId := some owner.definitionScopeId
@@ -153,7 +157,7 @@ private def childProgram : Program :=
     controlPlaces := positionProgram.controlPlaces ++ [{ id := placeC, origin := ⟨⟨"Flow_C"⟩⟩ }]
     controlPlaceScopes := positionProgram.controlPlaceScopes ++
       [{ controlPlaceId := placeC, scopeId := childOwner.definitionScopeId }] }
-private def childState : RuntimeState :=
+def childState : RuntimeState :=
   { positionState with
     scopeOccurrences := positionState.scopeOccurrences ++
       [{ id := childOwner, parent := some owner }, { id := childLater, parent := some owner }]
@@ -167,10 +171,10 @@ theorem position_valid_reversed_owners_fail_aggregate_order :
         { childState with tokens := [childLaterToken, childToken] } = false := by
   decide +kernel
 
-private def executionToken (place : String) : ControlToken :=
+def executionToken (place : String) : ControlToken :=
   rootToken parallelInstanceId parallelProgram.processId ⟨place⟩
 
-private def executedJoin : RuntimeState :=
+def executedJoin : RuntimeState :=
   (step parallelProgram parallelAfterAThenB parallelJoinOperation).getD initialState
 
 theorem actual_parallel_prefixes_preserve_exact_canonical_tokens :

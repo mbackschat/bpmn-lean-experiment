@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.SequentialMultiInstance
-import BpmnSemantics.SemanticProcess.WaitActivation
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+public import BpmnSemantics.SemanticProcess.WaitActivation
 
 /-! # Sequential Multi-Instance definition facts and state rewrites
 
@@ -33,6 +35,8 @@ Scope boundary: definition facts, admitted submitted values, and five state rewr
 relation, no evaluator, no admission of a source or program, no public observation, and no occurrence
 projection.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

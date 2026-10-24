@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 
 /-! # Called-tree position preservation
 
@@ -6,6 +8,8 @@ Call cleanup removes a forward-closed set of Process instances. Retained endpoin
 Call censuses, and reachability in the smaller graph must be derived from predecessor validity;
 keeping the old traversal fuel or assuming successor association validity would miss that boundary.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

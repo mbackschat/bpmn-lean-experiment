@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcessJson.Elements
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Strict checked Transaction declaration decoding -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 open BpmnSemantics.SemanticProcess

@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
 
 /-! Complete preparation compares the entire derived footprint, including parent-owned bounded-completion withdrawals. Retained Activity populations therefore need exact equality after an independent removal. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

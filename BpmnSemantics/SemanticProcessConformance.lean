@@ -44,7 +44,7 @@ theorem timer_user_task_composition_completes :
       .completed ⟨"CompositionInstance_1"⟩ := by
   decide +kernel
 
-private def timerUserTaskCompositionStrandedState : RuntimeState :=
+def timerUserTaskCompositionStrandedState : RuntimeState :=
   { timerUserTaskCompositionTaskWait.state with
     tokens := [rootToken ⟨"CompositionInstance_1"⟩
       timerUserTaskCompositionProgram.processId ⟨"place:stranded"⟩]

@@ -29,7 +29,7 @@ theorem old_profile_does_not_gain_repeated_message_admission :
       identity := ActivityBoundaryMessageConformance.checkedProcess.identity } = false := by
   decide +kernel
 
-private def burstProcess (width : Nat) : CheckedProcess :=
+def burstProcess (width : Nat) : CheckedProcess :=
   let process : ProcessId := ⟨"Burst"⟩
   let ids := List.range width
   let nodes : List CheckedNode :=

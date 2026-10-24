@@ -1,22 +1,26 @@
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcessJson.ParallelScopeProgramInput
-import BpmnSemantics.SemanticProcessJson.Scenario
-import BpmnSemantics.SemanticProcessJson.Publication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcessJson.ParallelScopeProgramInput
+public import BpmnSemantics.SemanticProcessJson.Scenario
+public import BpmnSemantics.SemanticProcessJson.Publication
 
 /-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes, exact body retirements, and real command traces.
 The command witness uses the existing evaluator and publication serializer without registering a public profile. -/
 
+@[expose] public section
+
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics.SemanticProcessJson Lean
 
-private def ownerJson (owner : ScopeOccurrenceId) : Json :=
+def ownerJson (owner : ScopeOccurrenceId) : Json :=
   toJson [toJson owner.processInstanceId.value, toJson owner.definitionScopeId.value, toJson owner.activation]
 
-private def bindingsJson (bindings : List VariableBinding) : Json :=
+def bindingsJson (bindings : List VariableBinding) : Json :=
   toJson (bindings.map fun binding => Json.mkObj [("name", toJson binding.name), ("value", encodeVariableValue binding.value)])
 
 /-- Compare projected wait fields and multiplicity by public identity; RuntimeState uses owner-first private storage. -/
-private def prefixJson (before state : RuntimeState) : Json :=
+def prefixJson (before state : RuntimeState) : Json :=
   let waits := InternalCommutation.sortBy (fun left right : UserTaskWait =>
     if left.task.id.value != right.task.id.value then left.task.id.value < right.task.id.value
     else left.activation < right.activation) state.waits
@@ -45,7 +49,7 @@ private def prefixJson (before state : RuntimeState) : Json :=
       effectActivations := before.effectActivations
       variables := { state.variables with activities := before.variables.activities } } = before))) ]
 
-private def publicationRecordsJson? (program : Program) (before : RuntimeState)
+def publicationRecordsJson? (program : Program) (before : RuntimeState)
     (successors : List RuntimeState) (records : List InternalTransitionRecord)
     (lifecycles : List UnnumberedFlowNodeOccurrenceDelta) : Option Json := do
   if records.length != successors.length || lifecycles.length != successors.length then none else pure ()
@@ -68,11 +72,11 @@ private def publicationRecordsJson? (program : Program) (before : RuntimeState)
   pure (Json.mkObj [("records", toJson encoded),
     ("lifecycles", toJson (lifecycles.map Publication.occurrenceDeltaJson))])
 
-private def publicationJson? (program : Program) (before : RuntimeState)
+def publicationJson? (program : Program) (before : RuntimeState)
     (successors : List RuntimeState) (closed : ScheduledClosureResult) : Option Json := do
   publicationRecordsJson? program before successors (← closed.records) (← closed.lifecycles)
 
-private def enteredReservationState? (program : Program) (stimulus : Stimulus) : Option RuntimeState := do
+def enteredReservationState? (program : Program) (stimulus : Stimulus) : Option RuntimeState := do
   let .startProcess _ _ instanceId bindings := stimulus | none
   let state ← runningProgramStartState? program instanceId bindings
   let [root] := state.scopeOccurrences | none
@@ -81,14 +85,14 @@ private def enteredReservationState? (program : Program) (stimulus : Stimulus) :
   let [entry] := program.operations.filter (fun operation => match operation with | .enterParallelMultiInstanceScope .. => true | _ => false) | none
   applyInternalOperationOccurrence? program state ⟨entry.id, root.id⟩
 
-private def refusalJson (program : Program) (stimulus : Stimulus) : Option Json := do
+def refusalJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let entered ← enteredReservationState? program stimulus
   let frontier := deriveInternalExecutionFrontier program entered
   let closed := closeScheduledTraced 16 program ⟨"batch"⟩ 0 0 [] entered
   pure (Json.mkObj [("preparationFailed", toJson frontier.preparationFailed),
     ("failed", toJson closed.failed), ("unchanged", toJson (decide (closed.state = entered)))])
 
-private def integrityJson (program : Program) (stimulus : Stimulus) : Option Json := do
+def integrityJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let entered ← enteredReservationState? program stimulus
   let [operation] := program.operations.filter (fun operation => match operation with
     | .awaitUserTask .. | .awaitEffect .. => true | _ => false) | none
@@ -130,7 +134,7 @@ private def integrityJson (program : Program) (stimulus : Stimulus) : Option Jso
       ("activations", toJson activations),
       ("counters", toJson finalCounters) ]))
 
-private def reservationJson (program : Program) (stimulus : Stimulus) : Option Json := do
+def reservationJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let entered ← enteredReservationState? program stimulus
   let batch ← (deriveInternalExecutionFrontier program entered).occurrenceBatch
   let successors ← applyInternalOccurrenceBatch? program entered batch
@@ -145,7 +149,7 @@ private def reservationJson (program : Program) (stimulus : Stimulus) : Option J
     ("publications", (publicationJson? program entered successors closed).getD Json.null),
     ("prefixes", toJson (successors.map (prefixJson entered))) ])
 
-private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : Nat)
+def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : Nat)
     (afterEntry : Bool) : Option Json := do
   let .startProcess commandId _ instanceId bindings := stimulus | none
   let admitted ← if afterEntry then enteredReservationState? program stimulus
@@ -174,24 +178,24 @@ private def startFrontierJson (program : Program) (stimulus : Stimulus) (fuel : 
     ("scopes", toJson (state.scopeOccurrences.map fun scope => toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])),
     ("publications", publications.getD Json.null) ])
 
-private def applyElementOccurrence? (program : Program) (state : RuntimeState)
+def applyElementOccurrence? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (kind : SemanticOperationKind) (elementId : String) : Option RuntimeState := do
   let [operation] := program.operations.filter (fun operation =>
     operation.kind == kind && operation.origin.elementId.value == elementId) | none
   applyInternalOperationOccurrence? program state ⟨operation.id, owner⟩
 
-private def completeBodyTask? (program : Program) (state : RuntimeState)
+def completeBodyTask? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (elementId : String) (values : List VariableBinding := []) : Option RuntimeState := do
   let [wait] := state.waits.filter (fun wait => wait.owner == owner && wait.task.id.value == elementId) | none
   completeParallelScopeUserTask? program state ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩ values
 
-private def completeBodyEffect? (program : Program) (state : RuntimeState)
+def completeBodyEffect? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option RuntimeState := do
   let [wait] := state.effectWaits.filter (fun wait => wait.owner == owner && wait.elementId.value == "Validate") | none
   completeParallelScopeEffect? program state ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩
     (.success [⟨"result", .string "ok"⟩])
 
-private def retireBodyJson? (program : Program) (entryId : OperationId) (commandId : SemanticId)
+def retireBodyJson? (program : Program) (entryId : OperationId) (commandId : SemanticId)
     (index : Nat) (before : RuntimeState) (owner : ScopeOccurrenceId) : Option (RuntimeState × Json) := do
   let [operation] := program.operations.filter (fun operation => match operation with
     | .completeParallelMultiInstanceScope _ _ paired => paired == entryId
@@ -209,7 +213,7 @@ private def retireBodyJson? (program : Program) (entryId : OperationId) (command
     ("publications", publications) ])
 
 /-- The finite invoice witness drives real waits and exact operations; each retirement alone crosses the replay/lifecycle/position boundary. -/
-private def retirementFrontierJson (program : Program) (stimulus : Stimulus) : Option Json := do
+def retirementFrontierJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let .startProcess commandId _ _ _ := stimulus | none
   let entered ← enteredReservationState? program stimulus
   let [entry] := program.operations.filterMap parallelScopeEntry? | none
@@ -253,33 +257,33 @@ private def retirementFrontierJson (program : Program) (stimulus : Stimulus) : O
     state := after
   pure (toJson outputs)
 
-private def commandOutcomeName : CommandOutcome → String
+def commandOutcomeName : CommandOutcome → String
   | .committed => "committed"
   | .rolledBack => "rolledBack"
   | .rejected => "rejected"
   | .semanticFailure => "semanticFailure"
   | .unsupported => "unsupported"
 
-private def controlStatusName : ProcessControl → String
+def controlStatusName : ProcessControl → String
   | .notStarted => "notStarted"
   | .running _ => "running"
   | .completed _ => "completed"
   | .cancelled _ => "cancelled"
   | .failed .. => "failed"
 
-private def stateScopeIdJson (id : ScopeOccurrenceId) : Json :=
+def stateScopeIdJson (id : ScopeOccurrenceId) : Json :=
   Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
     ("definitionScopeId", toJson id.definitionScopeId.value), ("activation", toJson id.activation)]
 
-private def stateOccurrenceIdJson (id : OccurrenceId) : Json :=
+def stateOccurrenceIdJson (id : OccurrenceId) : Json :=
   Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
     ("elementId", toJson id.elementId.value), ("activation", toJson id.activation)]
 
-private def stateActivityIdJson (id : ActivityOccurrenceId) : Json :=
+def stateActivityIdJson (id : ActivityOccurrenceId) : Json :=
   Json.mkObj [("processInstanceId", toJson id.processInstanceId.value),
     ("activityElementId", toJson id.activityElementId.value), ("activation", toJson id.activation)]
 
-private def stateMappingJson (mapping : VariableMapping) : Json :=
+def stateMappingJson (mapping : VariableMapping) : Json :=
   let expression := match mapping.expression with
     | .stringLiteral value => Json.mkObj [("kind", toJson "stringLiteral"), ("value", toJson value)]
     | .localVariable name => Json.mkObj [("kind", toJson "localVariable"), ("name", toJson name)]
@@ -287,7 +291,7 @@ private def stateMappingJson (mapping : VariableMapping) : Json :=
   Json.mkObj [("target", toJson mapping.target), ("expression", expression)]
 
 /-- ActivityOccurrence deliberately omits operation identity in Lean; resolve its unique PMIS declarer. -/
-private def stateActivityJson? (program : Program) (activity : ActivityOccurrence) : Option Json := do
+def stateActivityJson? (program : Program) (activity : ActivityOccurrence) : Option Json := do
   let .parallelChildScopes first rest := activity.body | none
   if !activity.attachedHandlers.isEmpty then none else pure ()
   let [operation] := program.operations.filter (fun operation => match operation with
@@ -301,7 +305,7 @@ private def stateActivityJson? (program : Program) (activity : ActivityOccurrenc
 
 /-- This private observer refuses excluded families rather than erasing their contents from agreement.
 As in `prefixJson`, owner-first Lean wait storage maps to the core's public-occurrence order without removing duplicates. -/
-private def completePrivateStateJson? (program : Program) (state : RuntimeState) : Option Json := do
+def completePrivateStateJson? (program : Program) (state : RuntimeState) : Option Json := do
   if !([state.messageWaits.isEmpty, state.eventSubProcessMessageSubscriptions.isEmpty, state.timerWaits.isEmpty,
       state.effectIncidents.isEmpty, state.selectedBranchSets.isEmpty, state.eventRaces.isEmpty,
       state.calledProcessOccurrences.isEmpty, state.sequentialScopeControllers.isEmpty,
@@ -365,7 +369,7 @@ private def completePrivateStateJson? (program : Program) (state : RuntimeState)
     ("compensationTriggers", empty), ("compensationHandlerEffectWaits", empty),
     ("endOccurrences", toJson state.endOccurrences), ("logicalTimeMs", toJson state.logicalTimeMs)])
 
-private def commandStateJson (before state : RuntimeState) (fullState : Json) : Json :=
+def commandStateJson (before state : RuntimeState) (fullState : Json) : Json :=
   Json.mkObj [
     ("fullState", fullState),
     ("status", toJson (controlStatusName state.control)),
@@ -376,7 +380,7 @@ private def commandStateJson (before state : RuntimeState) (fullState : Json) : 
     ("scopes", toJson (state.scopeOccurrences.map fun scope =>
       toJson [ownerJson scope.id, toJson (scope.parent.map ownerJson)])) ]
 
-private def commandsJson (program : Program) (inputs : List (Stimulus × Json)) : Except String Json := do
+def commandsJson (program : Program) (inputs : List (Stimulus × Json)) : Except String Json := do
   let some (.startProcess _ _ instanceId _, _) := inputs.head? |
     throw "command witness requires an initial manual Start"
   let mut state := initialState
@@ -406,7 +410,7 @@ private def commandsJson (program : Program) (inputs : List (Stimulus × Json)) 
     ("finalState", commandStateJson initialState state fullState),
     ("publicShapeAdmitted", toJson (programProfileCapabilitiesValid program)) ])
 
-private def printCommands (programPath stimuliPath : String) : IO Unit := do
+def printCommands (programPath stimuliPath : String) : IO Unit := do
   let programText ← IO.FS.readFile programPath
   let stimuliText ← IO.FS.readFile stimuliPath
   let result := do
@@ -421,20 +425,20 @@ private def printCommands (programPath stimuliPath : String) : IO Unit := do
   | .error error => throw (IO.userError error)
   | .ok value => IO.println value.compress
 
-private def runCommands : List String → IO UInt32
+def runCommands : List String → IO UInt32
   | [] => pure 0
   | programPath :: stimuliPath :: rest => do
       printCommands programPath stimuliPath
       runCommands rest
   | _ => throw (IO.userError "expected Program/Stimuli path pairs")
 
-private def programCapacityJson (program : Program) (stimulus : Stimulus) : Option Json := do
+def programCapacityJson (program : Program) (stimulus : Stimulus) : Option Json := do
   let .startProcess _ _ _ bindings := stimulus | none
   let capacity ← ParallelScopeStart.programStartCapacity program bindings
   pure (Json.mkObj [("closureBound", toJson capacity.closureBound),
     ("waits", toJson capacity.waits), ("effects", toJson capacity.effects)])
 
-private inductive DiagnosticMode where
+inductive DiagnosticMode where
   | reservation
   | refusal
   | integrity
@@ -443,7 +447,7 @@ private inductive DiagnosticMode where
   | retirementFrontier
   | programCapacity
 
-private def printInput (mode : DiagnosticMode) (programPath startPath : String) (fuel : Nat) : IO Unit := do
+def printInput (mode : DiagnosticMode) (programPath startPath : String) (fuel : Nat) : IO Unit := do
   let programText ← IO.FS.readFile programPath
   let startText ← IO.FS.readFile startPath
   let result := do
@@ -465,7 +469,7 @@ private def printInput (mode : DiagnosticMode) (programPath startPath : String) 
     | _ => throw (IO.userError error)
   | .ok value => IO.println value.compress
 
-private def runInputs (mode : DiagnosticMode) : List String → IO UInt32
+def runInputs (mode : DiagnosticMode) : List String → IO UInt32
   | [] => pure 0
   | programPath :: startPath :: rest => match mode with
       | .startFrontier | .enteredFrontier => match rest with

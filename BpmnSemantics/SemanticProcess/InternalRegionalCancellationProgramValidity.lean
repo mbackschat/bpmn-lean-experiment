@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 
 /-! Cancellation preserves immutable Program correspondence by retaining each surviving
 owner census. The selected child may itself survive; singleton preservation handles that
 case without requiring it to lie outside its own cancellation region. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

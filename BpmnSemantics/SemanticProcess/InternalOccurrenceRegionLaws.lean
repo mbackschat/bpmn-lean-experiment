@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 
 /-! # Directed occurrence-region closure laws
 
 The existing occurrence-count evaluator computes the least parent/forward-Call closure. These
 laws concern predecessor graph membership, not agreement with a transition's removal algorithm.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

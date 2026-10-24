@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Configured Task conformance
 
@@ -8,6 +10,8 @@ This module owns the checked checkpoint for one configured Task lowered to the e
 It preserves a distinct checked-source constructor while keeping the runtime operation, stimulus,
 state, and observation contracts unchanged.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ConfiguredTaskConformance
 

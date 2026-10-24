@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 
 /-! Predecessor-selected completion preserves runtime position under the checked admission contract. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

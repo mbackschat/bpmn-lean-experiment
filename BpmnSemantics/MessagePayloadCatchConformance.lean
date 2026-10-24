@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.InternalCommutationCensus
-import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.InternalCommutationCensus
+public import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Message payload Catch Event conformance
 
@@ -11,6 +13,8 @@ keeps the Catch Event, Message, source `DataOutput`, association target `Propert
 payload identities pairwise distinct so an implementation that merges any of them cannot satisfy
 the routed-write evidence by coincidence.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MessagePayloadCatchConformance
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 
 /-! # Wait declarations across parallel-scope command completion
 
@@ -6,6 +8,8 @@ PMIS-DATA-01 completion erases a selected wait and changes data and tokens.
 RSI-BIND-04 therefore follows from the predecessor declaration census without
 assuming successful scheduling or a well-formed successor.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 

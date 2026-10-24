@@ -14,7 +14,7 @@ namespace BpmnSemantics.PortableHandoffConformance
 
 open SemanticProcess
 
-private def dataTask (id input output reads writes : String) : SemanticOperation :=
+def dataTask (id input output reads writes : String) : SemanticOperation :=
   .awaitDataInputOutputUserTask ⟨"operation:" ++ id⟩ { elementId := ⟨id⟩ }
     ⟨"place:" ++ input⟩ ⟨"place:" ++ output⟩ ⟨id⟩ none
     { associationId := id ++ "InputAssociation", source := .property reads
@@ -22,9 +22,9 @@ private def dataTask (id input output reads writes : String) : SemanticOperation
     { associationId := id ++ "OutputAssociation", sourceDataOutputId := id ++ "Output"
       target := .property writes, sourceDataOutputName := none }
 
-private def scopeId : DefinitionScopeId := ⟨"scope:OrderProcess"⟩
+def scopeId : DefinitionScopeId := ⟨"scope:OrderProcess"⟩
 
-private def program (profile : ProfileId) (operations : List SemanticOperation) : Program :=
+def program (profile : ProfileId) (operations : List SemanticOperation) : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess, semanticProfile := profile
         sourceId := ⟨"portable-handoff-fixture"⟩
@@ -38,54 +38,54 @@ private def program (profile : ProfileId) (operations : List SemanticOperation) 
     controlPlaces := ["a", "b", "c"].map fun id => { id := ⟨"place:" ++ id⟩, origin := { elementId := ⟨id⟩ } }
     operations }
 
-private def boundary : List SemanticOperation :=
+def boundary : List SemanticOperation :=
   [ .initiate ⟨"operation:Start"⟩ { elementId := ⟨"Start"⟩ } ⟨"place:a"⟩
   , .reachNoneEnd ⟨"operation:End"⟩ { elementId := ⟨"End"⟩ } ⟨"place:c"⟩
   , .completeScope ⟨"operation:complete-scope:scope:OrderProcess"⟩ { elementId := ⟨"OrderProcess"⟩ }
       scopeId none ]
 
-private def handoff : Program :=
+def handoff : Program :=
   program portableHandoffProfileId
     (dataTask "Review" "a" "b" "OrderDraft" "ReviewedOrder" ::
       dataTask "Archive" "b" "c" "ReviewedOrder" "ArchivedOrder" :: boundary)
 
 /-- Renamed tasks and Properties, declared in the opposite order. -/
-private def renamed : Program :=
+def renamed : Program :=
   program portableHandoffProfileId
     (boundary.reverse ++ [dataTask "Store" "b" "c" "Checked" "Stored", dataTask "Check" "a" "b" "Draft" "Checked"])
 
-private def orderItem (sku : String) : BusinessValue := .map [("quantity", .integer 1), ("sku", .string sku)]
+def orderItem (sku : String) : BusinessValue := .map [("quantity", .integer 1), ("sku", .string sku)]
 
 /-- The capsule's 12-node order: present-null `line2`, two equal items and an exact signed total. -/
-private def order : VariableValue :=
+def order : VariableValue :=
   .map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
         ("items", .list [orderItem "A", orderItem "A"]),
         ("total", .decimal 12345 2)]
 
 /-- Ordered unequal items and a negative total defeat deduplication, sorting and unsigned readers. -/
-private def revision : VariableValue :=
+def revision : VariableValue :=
   .map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
         ("items", .list [orderItem "B", orderItem "A"]),
         ("total", .decimal (-125) 2)]
 
-private def start (target : Program) (bindings : List VariableBinding) : StimulusResult :=
+def start (target : Program) (bindings : List VariableBinding) : StimulusResult :=
   applyStimulus scenarioClosureLimit target initialState (.startProcess ⟨"start"⟩ ⟨"OrderProcess"⟩ ⟨"order-1"⟩ bindings)
 
-private def task (id : String) : UserTaskInstanceId :=
+def task (id : String) : UserTaskInstanceId :=
   { processInstanceId := ⟨"order-1"⟩, elementId := ⟨id⟩, activation := 1 }
 
-private def complete (state : RuntimeState) (id : String) (bindings : List VariableBinding) :
+def complete (state : RuntimeState) (id : String) (bindings : List VariableBinding) :
     StimulusResult :=
   applyStimulus scenarioClosureLimit handoff state (.completeUserTaskInstance ⟨"complete-" ++ id⟩ (task id) bindings)
 
-private def value? (bindings : List VariableBinding) (name : String) : Option VariableValue :=
+def value? (bindings : List VariableBinding) (name : String) : Option VariableValue :=
   (bindings.find? (·.name == name)).map (·.value)
 
-private def locals (state : RuntimeState) : List (List VariableBinding) :=
+def locals (state : RuntimeState) : List (List VariableBinding) :=
   state.variables.activities.map (·.bindings)
 
-private def atReview : RuntimeState := (start handoff [{ name := "OrderDraft", value := order }]).state
-private def atArchive : RuntimeState :=
+def atReview : RuntimeState := (start handoff [{ name := "OrderDraft", value := order }]).state
+def atArchive : RuntimeState :=
   (complete atReview "Review" [{ name := "ReviewOutput", value := revision }]).state
 
 theorem handoff_shapes_admitted_independent_of_names_and_order :
@@ -122,7 +122,7 @@ theorem start_admits_only_one_singleton_item_for_the_start_property :
         .rejected := by
   decide +kernel
 
-private def structuredHandoff : Program :=
+def structuredHandoff : Program :=
   { handoff with identity := { handoff.identity with
       semanticProfile := structuredCompositionCheckpointProfileId } }
 

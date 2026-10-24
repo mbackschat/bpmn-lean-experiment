@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! Actual PMIS singleton and Start evidence is shared by position and publication
 preservation, as required by AA-01. The classification retains the resolved
 declaration and canonical replay; each consumer still owns its field invariants.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

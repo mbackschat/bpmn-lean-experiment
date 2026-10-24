@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Internal commutation Activity ownership preservation -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

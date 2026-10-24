@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionValidity
 
 /-! Quiescent Return preserves all open child scopes and removes exactly its selected
 Call anchor. The Call identity injection and parent-instance binding connect actual
 Process-tree cleanup to those independently projected occurrence populations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

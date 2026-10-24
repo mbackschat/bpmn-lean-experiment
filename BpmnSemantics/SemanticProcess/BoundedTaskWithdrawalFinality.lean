@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.BoundedTask
-import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+module
+
+public import BpmnSemantics.SemanticProcess.BoundedTask
+public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 
 /-! # Boundary-Timer withdrawal finality
 
@@ -21,6 +23,8 @@ It is a separate module because the generic withdrawal lemmas belong with the in
 consequence belongs with the boundary-Timer family, and because `BoundedTask` cannot import the
 invariant without a cycle through the lifecycle owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

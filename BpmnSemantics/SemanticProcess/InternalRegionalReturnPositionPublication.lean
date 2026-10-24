@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 
 /-! Return publication binds the selected Call cleanup to the prepared occurrence region.
 Quiescence protects the caller; continuation insertion preserves existing output multiplicity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -11,10 +11,10 @@ namespace BpmnSemantics.InternalScopeCreationSelectionConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def root : ScopeOccurrenceId :=
+def root : ScopeOccurrenceId :=
   { processInstanceId := ⟨"instance"⟩, definitionScopeId := ⟨"process"⟩, activation := 1 }
 
-private def before : RuntimeState :=
+def before : RuntimeState :=
   { initialState with
     control := .running root.processInstanceId
     scopeOccurrences := [{ id := root, parent := none }]
@@ -28,17 +28,17 @@ private def before : RuntimeState :=
     logicalTimeMs := 42
     endOccurrences := 3 }
 
-private def childOperation : SemanticOperation :=
+def childOperation : SemanticOperation :=
   .enterScope ⟨"enter"⟩ ⟨⟨"subprocess"⟩⟩ ⟨"input"⟩ ⟨"child-entry"⟩ ⟨"child"⟩
 
-private def callOperation : SemanticOperation :=
+def callOperation : SemanticOperation :=
   .invokeProcess ⟨"invoke"⟩ ⟨⟨"call"⟩⟩ ⟨"input"⟩ ⟨"callee"⟩
     ⟨"called-root"⟩ ⟨"called-entry"⟩ ⟨"return"⟩
 
-private def selectedChild := selectInternalScopeCreation? before childOperation
-private def selectedCall := selectInternalScopeCreation? before callOperation
+def selectedChild := selectInternalScopeCreation? before childOperation
+def selectedCall := selectInternalScopeCreation? before callOperation
 
-private def applySelected (state : RuntimeState) (operation : SemanticOperation) :=
+def applySelected (state : RuntimeState) (operation : SemanticOperation) :=
   (selectInternalScopeCreation? state operation).map (fun selected => selected.apply state)
 
 theorem child_selection_retains_parent_and_next_high_water_identity :
@@ -58,11 +58,11 @@ theorem child_patch_matches_complete_raw_successor :
       (applySelected before childOperation).map (·.callActivations) = some before.callActivations := by
   decide +kernel
 
-private def calledRoot : ScopeOccurrenceId :=
+def calledRoot : ScopeOccurrenceId :=
   { processInstanceId := deriveCalledProcessInstanceId root.processInstanceId ⟨"call"⟩ 10,
     definitionScopeId := ⟨"called-root"⟩, activation := 1 }
 
-private def calledRecord : CalledProcessOccurrence :=
+def calledRecord : CalledProcessOccurrence :=
   { id := { processInstanceId := root.processInstanceId, elementId := ⟨"call"⟩, activation := 10 },
     caller := root, calledProcessId := ⟨"callee"⟩, calledRoot, returnOperationId := ⟨"return"⟩ }
 
@@ -83,7 +83,7 @@ theorem call_patch_matches_complete_raw_successor :
       (applySelected before callOperation).map (·.scopeActivations) = some before.scopeActivations := by
   decide +kernel
 
-private def repeatedInput : RuntimeState :=
+def repeatedInput : RuntimeState :=
   { before with tokens := { placeId := ⟨"input"⟩, owner := root } :: before.tokens }
 
 theorem call_refuses_repeated_input_even_with_one_unambiguous_owner :
@@ -99,13 +99,13 @@ theorem child_entry_consumes_one_unit_without_strengthening_the_raw_selector :
         some 1 := by
   decide +kernel
 
-private def foreignOwner : ScopeOccurrenceId :=
+def foreignOwner : ScopeOccurrenceId :=
   { root with processInstanceId := ⟨"foreign"⟩ }
 
-private def mixedOwners : RuntimeState :=
+def mixedOwners : RuntimeState :=
   { before with tokens := { placeId := ⟨"input"⟩, owner := foreignOwner } :: before.tokens }
 
-private def foreignInput : RuntimeState :=
+def foreignInput : RuntimeState :=
   { before with tokens := [{ placeId := ⟨"input"⟩, owner := foreignOwner }] }
 
 /-- "Nonhosting" names an owner in an instance that is neither the hosting instance nor a live called one: no call

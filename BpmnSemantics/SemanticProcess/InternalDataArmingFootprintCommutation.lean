@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
-import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
+public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 
 /-! # Composed data-pair laws from footprint independence
 
 Both key inequalities follow from complete predecessor preparation and footprint separation. Raw
 counter storage uses the same canonical-order invariant as the evaluator's other affected fields.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

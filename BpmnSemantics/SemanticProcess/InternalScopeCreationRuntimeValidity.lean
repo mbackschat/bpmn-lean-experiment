@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
-import BpmnSemantics.SemanticProcess.CallStorageOrder
-import BpmnSemantics.SemanticProcess.ScopeCreationCompensationValidity
-import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+public import BpmnSemantics.SemanticProcess.CallStorageOrder
+public import BpmnSemantics.SemanticProcess.ScopeCreationCompensationValidity
+public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! Aggregate validity of actual scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

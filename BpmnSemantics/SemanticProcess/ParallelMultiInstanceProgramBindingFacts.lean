@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Parallel Multi-Instance Program-binding facts
 
@@ -10,6 +12,8 @@ downstream preservation proofs do not unfold its private implementation.
 Scope boundary: proof facts for one controller. This module defines no validator, transition,
 evaluator, runtime representation, admission rule, public observation, or Program-wide census.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

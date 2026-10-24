@@ -1,8 +1,10 @@
-import BpmnSemantics.ActivityBoundaryTimerFixtures
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # BpmnSemantics.ActivityBoundaryTimerConformance — interrupting boundary Timer locks
 
@@ -10,6 +12,8 @@ These checks own the direct Lean account for the admitted interrupting Activity 
 
 The armed observation is where the recorded interpretation is visible. BPMN 2.0.2 Clause 13.5.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never reached, so publishing an open deadline at logical time zero is a project choice rather than a clause consequence.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ActivityBoundaryTimerConformance
 
@@ -33,7 +37,7 @@ theorem exactly_one_activity_owns_a_boundary_deadline :
     (boundedTaskOperations program).length = 1 := by decide +kernel
 
 /-- Redirects only the deadline's attachment, keeping every other byte of the admitted source. -/
-private def misattachedDeadline : CheckedProcess :=
+def misattachedDeadline : CheckedProcess :=
   { checkedProcess with
     nodes := checkedProcess.nodes.map fun
       | .timerBoundaryEvent id _ interruption durationLiteral outputFlowId =>
@@ -54,7 +58,7 @@ theorem activity_and_deadline_arm_atomically :
         [("Deadline", 1, 1000)] ∧
       armedState.tokens = [] := by decide +kernel
 
-private def observations : List ObservationKind :=
+def observations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus
@@ -99,7 +103,7 @@ def deadlineWinsScenario : Scenario :=
           instanceId []
       , .fireTimer ⟨"fire-deadline"⟩ deadlineId 1000 ] }
 
-private def openTask (elementId name : String) : OpenUserTask :=
+def openTask (elementId name : String) : OpenUserTask :=
   { id :=
       { processInstanceId := instanceId
         elementId := ⟨elementId⟩
@@ -107,7 +111,7 @@ private def openTask (elementId name : String) : OpenUserTask :=
     name := some name
     state := .active }
 
-private def waitingOn (elementId name : String) (logicalTimeMs : Nat) :
+def waitingOn (elementId name : String) (logicalTimeMs : Nat) :
     StateObservation :=
   { instanceId
     status := .running
@@ -193,7 +197,7 @@ theorem victories_retire_the_activity_and_preserve_runtime_validity :
   decide +kernel
 
 /-- Constructed record-frame control, outside profile reachability: another activation of the same Task must survive either victory. -/
-private def unrelatedActivitySurvives : Bool :=
+def unrelatedActivitySurvives : Bool :=
   match armedState.activityOccurrences.head? with
   | none => false
   | some record =>

@@ -18,11 +18,11 @@ namespace BpmnSemantics.NestedScopeControlConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def scope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
+def scope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
 
-private def task (id name : String) : String × CheckedNode := (id, .userTask ⟨id⟩ (some name))
+def task (id name : String) : String × CheckedNode := (id, .userTask ⟨id⟩ (some name))
 
-private def sub (id : String) : String × CheckedNode := (id, .embeddedSubProcess ⟨id⟩ (scope id))
+def sub (id : String) : String × CheckedNode := (id, .embeddedSubProcess ⟨id⟩ (scope id))
 
 /-- A checked process rooted at `P`; `scopes` pairs each scope with its parent and `members` pairs each
 owning scope with its node, in node-id order. Flow `s>t` belongs to the scope owning `s`. -/
@@ -42,11 +42,11 @@ def build (scopes : List (String × Option String)) (members : List (String × S
     nodes := members.map (·.2.2)
     sequenceFlows := edges.map fun edge => { id := ⟨flowId edge⟩, sourceId := ⟨edge.1⟩, targetId := ⟨edge.2⟩ } }
 
-private def start (owner id : String) : String × String × CheckedNode := (owner, id, .noneStartEvent ⟨id⟩)
-private def finish (owner id : String) : String × String × CheckedNode := (owner, id, .noneEndEvent ⟨id⟩)
-private def fork (owner id : String) : String × String × CheckedNode := (owner, id, .parallelGateway ⟨id⟩ .diverging)
-private def join (owner id : String) : String × String × CheckedNode := (owner, id, .parallelGateway ⟨id⟩ .converging)
-private def inScope (owner : String) (node : String × CheckedNode) : String × String × CheckedNode := (owner, node)
+def start (owner id : String) : String × String × CheckedNode := (owner, id, .noneStartEvent ⟨id⟩)
+def finish (owner id : String) : String × String × CheckedNode := (owner, id, .noneEndEvent ⟨id⟩)
+def fork (owner id : String) : String × String × CheckedNode := (owner, id, .parallelGateway ⟨id⟩ .diverging)
+def join (owner id : String) : String × String × CheckedNode := (owner, id, .parallelGateway ⟨id⟩ .converging)
+def inScope (owner : String) (node : String × CheckedNode) : String × String × CheckedNode := (owner, node)
 
 /-- Employee onboarding: the root forks equipment against start-date confirmation followed by workplace
 setup `W`; setup forks desk assignment against accounts `X`, which forks mailbox against VPN. -/
@@ -121,15 +121,15 @@ def rootTerminalFork : CheckedProcess :=
     , inScope "Q" (task "QU" "Work"), finish "Q" "QZ" ]
     [ ("PA", "PF"), ("PF", "PY"), ("PF", "Q"), ("Q", "PZ"), ("QA", "QU"), ("QU", "QZ") ]
 
-private def admitted (source : CheckedProcess) : Bool :=
+def admitted (source : CheckedProcess) : Bool :=
   let program := lowerCheckedProcess source
   checkedWellFormed source && programWellFormed program && programProfileCapabilitiesValid program &&
     definitionBindingValid source program
 
-private def analyses (source : CheckedProcess) : Option Nat × Option Nat :=
+def analyses (source : CheckedProcess) : Option Nat × Option Nat :=
   (NestedScopeControl.checkedAnalysis source, NestedScopeControl.programAnalysis (lowerCheckedProcess source))
 
-private def taskId (element : String) : UserTaskInstanceId :=
+def taskId (element : String) : UserTaskInstanceId :=
   { processInstanceId := ⟨"I"⟩, elementId := ⟨element⟩, activation := 1 }
 
 /-- The committed result after starting `source` and completing `tasks` in order; a rejected step stops. -/
@@ -150,7 +150,7 @@ def openTasks (source : CheckedProcess) (tasks : List String) : Option (List Str
       (·.openUserTasks.map (·.id.elementId.value))
   else none
 
-private def completed (source : CheckedProcess) (tasks : List String) : Bool :=
+def completed (source : CheckedProcess) (tasks : List String) : Bool :=
   let result := journey source tasks
   result.outcome == .committed && result.state.control == .completed ⟨"I"⟩
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! Transaction arming preserves active Compensation ownership from the selected input token.
 The two-Task composition carries the same child-retention state through both actual arming steps. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

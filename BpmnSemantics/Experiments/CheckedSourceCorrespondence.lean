@@ -1,11 +1,15 @@
-import BpmnSemantics.Experiments.CheckedSourceTransition
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.Fixtures
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceTransition
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.Fixtures
 
 /-! # Stage 1 checked-source correspondence
 
 This provisional module establishes the ordering substrate and a two-segment enabled-transition correspondence before any graph-admission proof is attempted. It compares the direct checked-source selector with the production operation evaluator; it does not claim closure or run preservation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceCorrespondence
 
@@ -30,13 +34,13 @@ theorem operationPrefixPreservesLt (left right : String) :
   exact lex_same_prefix (fun _ => Std.lt_irrefl)
     "operation:".toList left.toList right.toList
 
-private def lowerControl :
+def lowerControl :
     CheckedSourceSemantics.SourceControl → ProcessControl
   | .notStarted => .notStarted
   | .running instanceId => .running instanceId
   | .completed instanceId => .completed instanceId
 
-private def lowerWait
+def lowerWait
     (source : CheckedProcess)
     (wait : CheckedSourceSemantics.SourceUserTaskWait) : UserTaskWait :=
   { processInstanceId := wait.processInstanceId
@@ -45,13 +49,13 @@ private def lowerWait
     activation := wait.activation
     output := flowControlPlaceId wait.output }
 
-private def lowerActivation
+def lowerActivation
     (activation : CheckedSourceSemantics.SourceTaskActivation) :
     TaskActivation :=
   { taskId := ⟨activation.taskNodeId.value⟩
     count := activation.count }
 
-private def insertActivation (activation : TaskActivation) :
+def insertActivation (activation : TaskActivation) :
     List TaskActivation → List TaskActivation
   | [] => [activation]
   | current :: rest =>
@@ -59,12 +63,12 @@ private def insertActivation (activation : TaskActivation) :
         activation :: current :: rest
       else current :: insertActivation activation rest
 
-private def sortActivations : List TaskActivation → List TaskActivation
+def sortActivations : List TaskActivation → List TaskActivation
   | [] => []
   | activation :: rest =>
       insertActivation activation (sortActivations rest)
 
-private def lowerState
+def lowerState
     (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : RuntimeState :=
   let instanceId? := match state.control with
@@ -97,14 +101,14 @@ private def lowerState
     endOccurrences := state.endOccurrences
     logicalTimeMs := state.logicalTimeMs }
 
-private def sourceEnabledTransitions (source : CheckedProcess)
+def sourceEnabledTransitions (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) :
     List (OperationId × RuntimeState) :=
   (CheckedSourceSemantics.enabledTransitions source state).map
     fun (node, successor) =>
       (nodeOperationId node.id, lowerState source successor)
 
-private def closeRootIfEnabled (program : Program) (state : RuntimeState) :
+def closeRootIfEnabled (program : Program) (state : RuntimeState) :
     RuntimeState :=
   match program.operations.find? fun
       | .completeScope _ _ _ none => true
@@ -113,7 +117,7 @@ private def closeRootIfEnabled (program : Program) (state : RuntimeState) :
   | some completion => (fire? program completion state).getD state
 
 /-- Frozen operation surface for this pre-Terminate experiment. The new family is explicit and fail-closed. -/
-private def correspondenceOperationSupported : SemanticOperation → Bool
+def correspondenceOperationSupported : SemanticOperation → Bool
   | .initiate .. | .awaitUserTask .. | .duplicate .. | .synchronize ..
   | .reachNoneEnd .. | .completeScope .. => true
   | .initiateMessage .. | .initiateTimer .. | .enterScope ..
@@ -136,7 +140,7 @@ private def correspondenceOperationSupported : SemanticOperation → Bool
   | .synchronizeSelected .. | .throwError .. | .triggerCompensation .. | .cancelTransaction ..
   | .terminateScope .. | .completeEventSubProcess .. => false
 
-private def programEnabledTransitions (program : Program)
+def programEnabledTransitions (program : Program)
     (state : RuntimeState) : List (OperationId × RuntimeState) :=
   program.operations.filterMap fun operation =>
     if correspondenceOperationSupported operation then
@@ -144,14 +148,14 @@ private def programEnabledTransitions (program : Program)
         (operation.id, closeRootIfEnabled program successor)
     else none
 
-private def enabledTransitionsCorrespondAt (source : CheckedProcess)
+def enabledTransitionsCorrespondAt (source : CheckedProcess)
     (state : CheckedSourceSemantics.SourceRuntimeState) : Bool :=
   decide (
     sourceEnabledTransitions source state =
       programEnabledTransitions (lowerCheckedProcess source)
         (lowerState source state))
 
-private def twoSegmentSource : CheckedProcess :=
+def correspondenceTwoSegmentSource : CheckedProcess :=
   { identity :=
       { semanticProfile := ⟨"checked-source-stage-1"⟩
         sourceId := ⟨"two-segment-chain"⟩
@@ -179,43 +183,43 @@ private def twoSegmentSource : CheckedProcess :=
           sourceId := ⟨"Start"⟩
           targetId := ⟨"Task_A"⟩ } ] }
 
-private def sourceFire (node : CheckedNode)
+def sourceFire (node : CheckedNode)
     (state : CheckedSourceSemantics.SourceRuntimeState) :
     CheckedSourceSemantics.SourceRuntimeState :=
-  (CheckedSourceSemantics.fireNode? twoSegmentSource node state).getD state
+  (CheckedSourceSemantics.fireNode? correspondenceTwoSegmentSource node state).getD state
 
-private def sourceComplete (nodeId : NodeId)
+def sourceComplete (nodeId : NodeId)
     (state : CheckedSourceSemantics.SourceRuntimeState) :
     CheckedSourceSemantics.SourceRuntimeState :=
   (CheckedSourceSemantics.completeUserTask state ⟨"Instance_1"⟩ nodeId 1)
     |>.getD state
 
-private def beforeStart : CheckedSourceSemantics.SourceRuntimeState :=
+def beforeStart : CheckedSourceSemantics.SourceRuntimeState :=
   CheckedSourceSemantics.runningStartState ⟨"Instance_1"⟩
 
-private def beforeTaskA : CheckedSourceSemantics.SourceRuntimeState :=
+def beforeTaskA : CheckedSourceSemantics.SourceRuntimeState :=
   sourceFire (.noneStartEvent ⟨"Start"⟩) beforeStart
 
-private def beforeTaskB : CheckedSourceSemantics.SourceRuntimeState :=
+def beforeTaskB : CheckedSourceSemantics.SourceRuntimeState :=
   sourceComplete ⟨"Task_A"⟩
     (sourceFire (.userTask ⟨"Task_A"⟩ (some "A")) beforeTaskA)
 
-private def beforeEnd : CheckedSourceSemantics.SourceRuntimeState :=
+def beforeEnd : CheckedSourceSemantics.SourceRuntimeState :=
   sourceComplete ⟨"Task_B"⟩
     (sourceFire (.userTask ⟨"Task_B"⟩ (some "B")) beforeTaskB)
 
 /-- The direct and lowered selectors agree at every automatic boundary in a two-segment serial chain. -/
 theorem twoSegmentEnabledTransitionsCorrespondence :
-    enabledTransitionsCorrespondAt twoSegmentSource beforeStart = true ∧
-      enabledTransitionsCorrespondAt twoSegmentSource beforeTaskA = true ∧
-      enabledTransitionsCorrespondAt twoSegmentSource beforeTaskB = true ∧
-      enabledTransitionsCorrespondAt twoSegmentSource beforeEnd = true := by
+    enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeStart = true ∧
+      enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeTaskA = true ∧
+      enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeTaskB = true ∧
+      enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeEnd = true := by
   decide +kernel
 
 def twoSegmentEnabledTransitionsCorrespond : Bool :=
-  enabledTransitionsCorrespondAt twoSegmentSource beforeStart &&
-    enabledTransitionsCorrespondAt twoSegmentSource beforeTaskA &&
-    enabledTransitionsCorrespondAt twoSegmentSource beforeTaskB &&
-    enabledTransitionsCorrespondAt twoSegmentSource beforeEnd
+  enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeStart &&
+    enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeTaskA &&
+    enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeTaskB &&
+    enabledTransitionsCorrespondAt correspondenceTwoSegmentSource beforeEnd
 
 end BpmnSemantics.Experiments.CheckedSourceCorrespondence

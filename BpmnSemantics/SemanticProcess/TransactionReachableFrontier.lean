@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.TransactionProgramRoles
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
-import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
+public import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
 
 /-! # Transaction branch structure and operational reachability
 
 Branch facts are derived from the existing admission reader. Command boundaries and internal prefixes use the compensation-aware evaluators, so their definitions require neither successor validity nor a desired frontier classification. Chain soundness and rollback preservation do not establish phase preservation or classify reachable frontiers.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

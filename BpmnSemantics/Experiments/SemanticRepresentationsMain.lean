@@ -1,13 +1,17 @@
-import BpmnSemantics.Experiments.SemanticRepresentations
+module
+
+public import BpmnSemantics.Experiments.SemanticRepresentations
 
 /-! # BpmnSemantics.Experiments.SemanticRepresentationsMain — bounded representation spike gate
 
 This executable checks only the separating witnesses documented for the semantic-representation spike. It makes no BPMN conformance or CIB Seven compatibility claim.
 -/
 
+@[expose] public section
+
 open BpmnSemantics.Experiments.SemanticRepresentations
 
-private def requireTrue (condition : Bool) (message : String) : IO Unit :=
+def requireTrue (condition : Bool) (message : String) : IO Unit :=
   if condition then
     pure ()
   else

@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 
 /-! Bounded entry's child insertion uses the ordinary scope-position law. The joined Timer and
 Activity preserve that position while retaining their separate validity obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

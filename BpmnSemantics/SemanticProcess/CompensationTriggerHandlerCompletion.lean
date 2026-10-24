@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
-import BpmnSemantics.SemanticProcess.TransactionCancellation
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+public import BpmnSemantics.SemanticProcess.TransactionCancellation
 
 /-! # Compensation handler completion and fail-fast Process failure -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -30,11 +34,6 @@ structure SelectedCompensationHandler where
   wait : CompensationHandlerEffectWait
   trigger : CompensationTriggerExecution
   handler : CompensationHandlerExecution
-
-private def findUnique? (candidates : List α) : Option α :=
-  match candidates with
-  | [candidate] => some candidate
-  | _ => none
 
 /-- Selects the unique active compensation handler owning the submitted effect occurrence. -/
 def selectCompensationHandler? (state : RuntimeState)
@@ -151,7 +150,7 @@ def completeSuccess (program : Program)
               if compensationTriggerHandlerStateValid program successor then .applied successor
               else .refused .invalidState
 
-private def failOtherHandler (failed : CompensationHandlerExecution)
+def failOtherHandler (failed : CompensationHandlerExecution)
     (candidate : CompensationHandlerExecution) : CompensationHandlerExecution :=
   if candidate.identity.id == failed.identity.id then terminalHandler candidate .failed
   else match candidate.lifecycle with

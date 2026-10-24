@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
-import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 
 /-! # Actual parent execution and parallel-entry uniqueness
 
@@ -10,6 +12,8 @@ that every published command is a member of this pre-entry phase. Two-phase
 parent accounting exhausts the selected entry input after its first execution,
 independently of whether the collection is empty.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

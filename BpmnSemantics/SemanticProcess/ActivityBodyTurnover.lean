@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
-import BpmnSemantics.SemanticProcess.CollectionOrder
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+public import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Activity body turnover
 
@@ -22,6 +24,8 @@ canonical order key — Process instance, Activity element, activation — is un
 rather than restored by a re-sort, and `RSI-ORDER-01` follows from the frame rather than needing its
 own argument.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

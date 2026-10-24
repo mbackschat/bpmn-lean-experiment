@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
-import BpmnSemantics.SemanticProcess.Data
+module
+
+public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+public import BpmnSemantics.SemanticProcess.Data
 
 /-! # Policy-parameterized effect input mapping
 
@@ -8,6 +10,8 @@ definition is the policy-parameterized form of the scalar definition in `Data` a
 theorem pins the `scalar` arm to that definition, so the legacy names and statements stay the
 scalar specialization without rewriting the proofs that unfold them.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.GraphValidation
+module
+
+public import BpmnSemantics.SemanticProcess.GraphValidation
 
 /-! # Checked-source graph validation
 
 This module owns executable graph facts for the provisional structured-admission experiment. It does not participate in production source admission.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

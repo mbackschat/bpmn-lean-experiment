@@ -1,9 +1,11 @@
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
-import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.BoundedScopeArming
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.WaitActivation
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
+public import BpmnSemantics.SemanticProcess.ActivityDataOutput
+public import BpmnSemantics.SemanticProcess.BoundedScopeArming
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.WaitActivation
 
 /-! # Activity body-claim writer preservation
 
@@ -11,6 +13,8 @@ Shared preservation laws for production writers of `RuntimeState.activityOccurre
 membership remains executable in the guarded census; this owner states why each non-structural write
 shape preserves `AOO-CLAIM-01` without coupling the representation owner to its transition users.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

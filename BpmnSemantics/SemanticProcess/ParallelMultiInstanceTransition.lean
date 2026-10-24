@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+module
+
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Parallel Multi-Instance transitions
 
@@ -14,6 +16,8 @@ completion condition. Timer and early closure remove the complete live region an
 Scope boundary: bounded family transitions. Shared runtime dispatch, JSON, Temporal hosting, source
 admission, and public observation belong to their existing integration owners.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -228,7 +232,7 @@ def parallelControllerForTimer? (arm : ParallelMultiInstanceArm)
   | [controller] => some controller
   | _ => none
 
-private def parallelChildWait (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId)
+def parallelChildWait (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId)
     (taskId : UserTaskInstanceId) : UserTaskWait :=
   { processInstanceId := taskId.processInstanceId
     owner

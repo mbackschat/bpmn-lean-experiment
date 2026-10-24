@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalRetention
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRegionalRetention
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalOwnership
 
 /-! Bounded entry adds a child and its parent-owned Activity/Timer together. Regional reference
 closure retains that complete group; local-data ownership reuses the Timer-task insertion law.+-/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-import BpmnSemantics.WireNatural
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+public import BpmnSemantics.WireNatural
 
 /-! # Flow-node occurrence boundary starts
 
 This module constructs candidate long-lived lifecycle starts from one exact selected Program operation and the runtime record that operation created. It does not project an open runtime state or validate a lifecycle fold against an after-state oracle.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -57,7 +61,7 @@ structure FlowNodeIdentity where
   owner : ScopeOccurrenceId
   deriving Repr, DecidableEq
 
-private def exactOperationOwner? (program : Program) (operation : SemanticOperation) :
+def exactOperationOwner? (program : Program) (operation : SemanticOperation) :
     Option DefinitionScopeId := do
   let selected ← match program.operations.filter fun candidate =>
       decide (candidate.id = operation.id) with
@@ -124,17 +128,17 @@ theorem candidateOperationFlowNodeIdentity_of_exact_selection (program : Program
   simp [candidateOperationFlowNodeIdentity?, exactOperationOwner?, candidateFlowNodeIdentity?,
     operationSelection, scopeSelection, scopeMatches, processSelection]
 
-private def processIdForSelectedOperation? (program : Program)
+def processIdForSelectedOperation? (program : Program)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId) : Option ProcessId := do
   let staticOwner ← exactOperationOwner? program operation
   if staticOwner ≠ owner.definitionScopeId then none
   else candidateProcessIdForDefinitionScope? program staticOwner
 
-private def candidateOccurrenceId (processInstanceId : SemanticId) (elementId : NodeId)
+def candidateOccurrenceId (processInstanceId : SemanticId) (elementId : NodeId)
     (activation : Nat) : OccurrenceId :=
   { processInstanceId, elementId := ⟨elementId.value⟩, activation }
 
-private def candidateWaitStart? (program : Program) (operation : SemanticOperation)
+def candidateWaitStart? (program : Program) (operation : SemanticOperation)
     (owner : ScopeOccurrenceId) (processInstanceId : SemanticId) (elementId : NodeId)
     (activation : Nat) : Option UnnumberedFlowNodeOccurrenceStart := do
   let processId ← processIdForSelectedOperation? program operation owner

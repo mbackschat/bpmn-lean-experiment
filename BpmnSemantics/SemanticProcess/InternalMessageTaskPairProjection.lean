@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
 
 /-! Message-host publication requires exact Task/Message/Activity pairing in both states.
 ESL-OWN-01 preparation's fresh anchors and tagged associations keep the inserted triple separate. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

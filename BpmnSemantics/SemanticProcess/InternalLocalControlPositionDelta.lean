@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ControlPositionContract
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
-import BpmnSemantics.SemanticProcess.TokenPatch
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPositionContract
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! Local-control publication templates retain signed token units from the immutable Program and
 patch, as required by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.MessageMonitoredTask
+module
+
+public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 
 /-! Quantified ESL-MESSAGE/SPAWN/CLOSE laws. Exact singleton censuses, rather than an assumed
 successor invariant, establish withdrawal finality. Token production and prior handler multiplicity
 are independent of the number or order of existing handler occurrences. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+module
+
+public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 
 /-! # Owned Activity data endpoints
 
@@ -6,6 +8,8 @@ These pure selectors and writers implement CDATA-OWNER-01 and CDATA-OUTPUT-01. C
 are available only to the hosting instance; Process ports belong to the complete selected scope.
 No endpoint falls back to another store, and no write changes Activity-local bindings.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

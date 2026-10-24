@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierClassificationProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierClassificationProofs
 
 /-! # Reachable token-control readiness
 
@@ -9,6 +11,8 @@ constructing a patch. Actual native enabledness supplies unit input buckets;
 the admitted acyclic body's lifetime accounting supplies empty output buckets.
 Neither fact assumes successful batch preparation or publication.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

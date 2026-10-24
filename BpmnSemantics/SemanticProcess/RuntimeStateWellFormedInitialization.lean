@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.MessageStartAdmission
-import BpmnSemantics.SemanticProcess.TimerStartAdmission
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.MessageStartAdmission
+public import BpmnSemantics.SemanticProcess.TimerStartAdmission
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Runtime-state well-formedness at initialization
 
@@ -9,6 +11,8 @@ This module owns `RSI-OBL-01` and `RSI-OBL-02`: the complete invariant for the e
 
 These are initialization base cases. They neither establish position validity nor prove preservation through internal closure or subsequent transitions, and therefore do not justify installing a full-invariant admission gate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

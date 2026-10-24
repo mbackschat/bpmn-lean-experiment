@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.ScopeVariableData
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeVariableData
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! SMIS-DATA-01/PMIS-DATA-01: shared write policy after validating the exact repeated-body binding. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

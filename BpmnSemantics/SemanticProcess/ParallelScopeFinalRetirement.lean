@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeRetirementProgress
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeRetirementProgress
 
 /-! # Parent return after parallel subprocess completion
 
@@ -6,6 +8,8 @@ PMIS-END-01 and PMIS-CANCEL-01 discharge the captured population and transfer it
 pending outer continuation to the parent. Issuance history is retained; final
 return is not a fresh-entry state and cannot reuse its zero-counter premise.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -227,7 +231,7 @@ theorem completeParallelScope_survivor_or_final_return (entry : ParallelScopeEnt
 /-- This invariant follows the existing lifetime history only while an outer population
 remains. Final removal discharges it instead of forbidding later parent execution.
 -/
-private def pendingParentCredit (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId) (state : RuntimeState) : Prop :=
+def pendingParentCredit (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId) (state : RuntimeState) : Prop :=
   state.activityOccurrences = [] ∨
     (∀ place, parentContinuationMarking entry parent state place = ownedPortCount [entry.normalOutput] parent parent place) ∧
     ∀ place, continuationMarking state parent place = 0

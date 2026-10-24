@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 
 /-! Projected open occurrences carry live ownership. A scope anchor additionally carries its
 actual parent edge, which makes region membership agree with cancellation's anchor-based account.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

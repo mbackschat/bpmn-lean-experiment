@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingPublication
 
 /-! Ordinary snapshot-aware pair laws lift to finite prefixes with defined canonical accepted publication. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 
 /-! # Classified internal commutation
 
 Defines the public exact-two independence classifier and proves exact state and canonical-order commutation for every admitted classified pair.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -408,7 +412,7 @@ def internalOperationPairIndependent? (program : Program) (state : RuntimeState)
         | _, _ => false
   | _ => false
 
-private def internalOperationIndependentFrom? (program : Program)
+def internalOperationIndependentFrom? (program : Program)
     (state : RuntimeState) (left : SemanticOperation) :
     List SemanticOperation → Bool
   | [] => true
@@ -416,7 +420,7 @@ private def internalOperationIndependentFrom? (program : Program)
       internalOperationPairIndependent? program state [left, right] &&
         internalOperationIndependentFrom? program state left rest
 
-private def internalOperationPairsIndependent? (program : Program)
+def internalOperationPairsIndependent? (program : Program)
     (state : RuntimeState) : List SemanticOperation → Bool
   | [] => true
   | left :: rest =>

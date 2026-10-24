@@ -1,47 +1,51 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! A structurally admitted claim-routing frontier runs beside human review and input-bound
 coverage assessment. Admission here is Program/runtime admission, not registered XML or reachability.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FiniteInternalTransitionConformance
 
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def processId : ProcessId := ⟨"Process_ClaimAssessment"⟩
-private def instanceId : SemanticId := ⟨"claim-4711"⟩
-private def commandId : SemanticId := ⟨"claim-routing"⟩
-private def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
+def processId : ProcessId := ⟨"Process_ClaimAssessment"⟩
+def instanceId : SemanticId := ⟨"claim-4711"⟩
+def commandId : SemanticId := ⟨"claim-routing"⟩
+def owner : ScopeOccurrenceId := rootScopeOccurrenceId instanceId processId
 
-private def directInput : DirectActivityDataInput :=
+def directInput : DirectActivityDataInput :=
   { associationId := "InputAssociation_Coverage"
     source := .property "Property_ClaimSummary"
     targetDataInputId := "Input_Coverage"
     targetDataInputName := some "Claim summary" }
 
-private def directOutput : DirectActivityDataOutput :=
+def directOutput : DirectActivityDataOutput :=
   { associationId := "OutputAssociation_Coverage"
     sourceDataOutputId := "Output_Coverage"
     sourceDataOutputName := some "Decision"
     target := .property "Property_CoverageDecision" }
 
-private def data : SemanticOperation :=
+def data : SemanticOperation :=
   .awaitDataInputOutputUserTask ⟨"operation:UserTask_Coverage"⟩
     { elementId := ⟨"UserTask_Coverage"⟩ } ⟨"place:Flow_A_Input"⟩ ⟨"place:Flow_A_Output"⟩
     ⟨"UserTask_Coverage"⟩ (some "Coverage") directInput directOutput
 
-private def ordinary : SemanticOperation :=
+def ordinary : SemanticOperation :=
   .awaitUserTask ⟨"operation:UserTask_Review"⟩ { elementId := ⟨"UserTask_Review"⟩ }
     ⟨"place:Flow_B_Input"⟩ ⟨"place:Flow_B_Output"⟩
     { id := ⟨"UserTask_Review"⟩, name := some "Review" }
 
-private def routing : SemanticOperation :=
+def routing : SemanticOperation :=
   .duplicate ⟨"operation:Route_Claim"⟩ { elementId := ⟨"Route_Claim"⟩ }
     ⟨"place:Flow_C_Input"⟩ [⟨"place:Flow_C_Archive"⟩, ⟨"place:Flow_C_Notify"⟩]
 
-private def operations : List SemanticOperation :=
+def operations : List SemanticOperation :=
   [ .reachNoneEnd ⟨"operation:End_Claim"⟩ { elementId := ⟨"End_Claim"⟩ }
       ⟨"place:Flow_Join"⟩
   , .duplicate ⟨"operation:Fork_Claim"⟩ { elementId := ⟨"Fork_Claim"⟩ }
@@ -55,12 +59,12 @@ private def operations : List SemanticOperation :=
   , .completeScope ⟨"operation:complete-scope:scope:Process_ClaimAssessment"⟩
       { elementId := ⟨"Process_ClaimAssessment"⟩ } (rootDefinitionScopeId processId) none ]
 
-private def places : List ControlPlace :=
+def places : List ControlPlace :=
   ["Flow_A_Input", "Flow_A_Output", "Flow_B_Input", "Flow_B_Output", "Flow_C_Archive",
     "Flow_C_Input", "Flow_C_Notify", "Flow_Entry", "Flow_Join"].map fun name =>
       { id := ⟨"place:" ++ name⟩, origin := { elementId := ⟨name⟩ } }
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := activityDataInputOutputUserTaskProfileId
@@ -76,10 +80,10 @@ private def program : Program :=
     controlPlaces := places
     operations }
 
-private def summary : VariableBinding :=
+def summary : VariableBinding :=
   { name := "Property_ClaimSummary", value := .string "Claim summary" }
 
-private def ready : RuntimeState :=
+def ready : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := owner, parent := none }]
@@ -91,8 +95,8 @@ private def ready : RuntimeState :=
     logicalTimeMs := 321
     variables := { process := { bindings := [summary] }, activities := [], processInterfaces := [], scopes := [] } }
 
-private def frontier : List SemanticOperation := [data, ordinary, routing]
-private def prepared : List PreparedInternalTransition :=
+def frontier : List SemanticOperation := [data, ordinary, routing]
+def prepared : List PreparedInternalTransition :=
   (prepareInternalTransitionBatch? program ready frontier).getD []
 
 instance : InterruptionInvocationsRooted program :=
@@ -150,10 +154,10 @@ theorem every_permutation_has_one_defined_canonical_publication
       (fun member present => ordinary member (permutation.mem_iff.mpr present))] at result
   exact result
 
-private def templates : List InternalTransitionPublicationTemplate :=
+def templates : List InternalTransitionPublicationTemplate :=
   (prepared.mapM (preparedTransitionPublicationTemplate? program ready)).getD []
 
-private def publications : List InstantiatedInternalTransitionPublication :=
+def publications : List InstantiatedInternalTransitionPublication :=
   instantiateTransitionPublicationBatch commandId 37 templates
 
 theorem original_templates_are_defined :
@@ -193,7 +197,7 @@ theorem canonical_numbering_keeps_records_and_local_lifecycle_aligned :
           ended := [{ anchor := .transition commandId 37 0, terminal := .completed }] } := by
   decide +kernel
 
-private def alteredLocal : Option PreparedInternalTransition :=
+def alteredLocal : Option PreparedInternalTransition :=
   (prepareInternalTransition? program ready routing).map fun
     | .localControl selected => .localControl
         { selected with publicationTemplate :=
@@ -208,11 +212,11 @@ theorem same_operation_with_altered_publication_time_is_refused :
         (applyPreparedInternalTransition? program { ready with logicalTimeMs := 322 }) = none := by
   decide +kernel
 
-private def conflictingRouting : SemanticOperation :=
+def conflictingRouting : SemanticOperation :=
   .duplicate ⟨"operation:Route_Claim"⟩ { elementId := ⟨"Route_Claim"⟩ }
     ⟨"place:Flow_C_Input"⟩ [⟨"place:Flow_A_Input"⟩, ⟨"place:Flow_C_Notify"⟩]
 
-private def conflictingProgram : Program :=
+def conflictingProgram : Program :=
   { program with operations := operations.map fun operation =>
       if operation.id = routing.id then conflictingRouting else operation }
 
@@ -223,7 +227,7 @@ theorem individually_prepared_input_writer_and_reader_cannot_form_a_batch :
         [data, ordinary, conflictingRouting] = none := by
   decide +kernel
 
-private def numberedBeforeSorting (values : List InternalTransitionPublicationTemplate) :
+def numberedBeforeSorting (values : List InternalTransitionPublicationTemplate) :
     List InstantiatedInternalTransitionPublication :=
   canonicalInstantiatedTransitionPublications
     (numberTransitionPublicationTemplates commandId 37 values)
@@ -247,14 +251,14 @@ theorem canonical_numbering_ignores_reversed_execution_order :
   exact instantiateTransitionPublicationBatch_perm commandId 37 templates templates.reverse
     distinct (List.reverse_perm _).symm
 
-private def ending : SemanticOperation :=
+def ending : SemanticOperation :=
   .reachNoneEnd ⟨"operation:End_Claim"⟩ { elementId := ⟨"End_Claim"⟩ } ⟨"place:Flow_Join"⟩
 
-private def endReady : RuntimeState :=
+def endReady : RuntimeState :=
   { ready with tokens := addToken ready.tokens ⟨"place:Flow_Join"⟩ owner, endOccurrences := 7 }
 
-private def endFrontier : List SemanticOperation := frontier ++ [ending]
-private def endPrepared : List PreparedInternalTransition :=
+def endFrontier : List SemanticOperation := frontier ++ [ending]
+def endPrepared : List PreparedInternalTransition :=
   (prepareInternalTransitionBatch? program endReady endFrontier).getD []
 
 /-- The extra token is a constructed admitted state, not a claim of reachability in this model. -/

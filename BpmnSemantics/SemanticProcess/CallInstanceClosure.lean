@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Directed Called-Process instance closure
 
 Call association and regional cancellation share this bounded forward traversal. Duplicate-free
 seeds justify its equal-length stopping condition; the executable duplicate-seed behavior is retained.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -22,7 +26,7 @@ def processInstanceClosureWithin
       if expanded.length = seed.length then expanded
       else processInstanceClosureWithin records expanded fuel
 
-private abbrev expand (records : List CalledProcessOccurrence) (seed : List SemanticId) :=
+abbrev expand (records : List CalledProcessOccurrence) (seed : List SemanticId) :=
   (seed ++ records.filterMap fun record =>
     if seed.contains record.caller.processInstanceId then
       some record.calledRoot.processInstanceId

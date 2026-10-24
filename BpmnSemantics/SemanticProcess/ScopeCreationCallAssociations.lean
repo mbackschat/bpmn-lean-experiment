@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-import BpmnSemantics.SemanticProcess.CallReachability
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+public import BpmnSemantics.SemanticProcess.CallReachability
 
 /-! # Call associations under scope creation
 
@@ -7,11 +9,13 @@ The [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) requir
 parentless-root and Call-record bijection to survive the actual selected insertion.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private def RecordFacts (state : RuntimeState) (hosting : SemanticId)
+def RecordFacts (state : RuntimeState) (hosting : SemanticId)
     (record : CalledProcessOccurrence) : Prop :=
   (state.calledProcessOccurrences.filter fun candidate =>
     decide (candidate.id.elementId.value = record.id.elementId.value)).length = 1 ∧
@@ -29,7 +33,7 @@ private def RecordFacts (state : RuntimeState) (hosting : SemanticId)
   (state.scopeOccurrences.filter fun occurrence =>
     decide (occurrence.id = record.calledRoot ∧ occurrence.parent.isNone)).length = 1
 
-private def AssociationFacts (state : RuntimeState) (hosting : SemanticId) : Prop :=
+def AssociationFacts (state : RuntimeState) (hosting : SemanticId) : Prop :=
   (state.scopeOccurrences.filter fun occurrence =>
     decide (occurrence.parent.isNone ∧ occurrence.id.processInstanceId = hosting)).length = 1 ∧
   (∀ record ∈ state.calledProcessOccurrences, RecordFacts state hosting record) ∧

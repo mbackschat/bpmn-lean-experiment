@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeStructuralFrontierProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeStructuralFrontierProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
 
 /-! # Refusal-free multi-offer preparation during scoped resumption
 
@@ -9,6 +11,8 @@ retirement beside ordinary work contradicts quiescence. The resulting ordinary
 frontier installs its complete reserved batch. Initial-entry drain remains outside
 this scoped-resumption premise.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

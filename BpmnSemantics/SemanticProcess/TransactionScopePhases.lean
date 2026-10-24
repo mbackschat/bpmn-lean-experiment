@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
-import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
 
 /-! # Transaction leaf-scope frontier classification
 
@@ -10,6 +12,8 @@ Exact scope layouts and leaf-owned tokens are local induction predicates. They e
 beside a quiescent child without assuming disabled completion, runtime validity, or a frontier bound.
 The classifier does not establish that execution reaches only these layouts.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -32,7 +36,7 @@ def TransactionTokensAtLeaf (state : RuntimeState) (leaf : Option RuntimeScopeOc
 def TransactionWaitsAtLeaf (state : RuntimeState) (leaf : Option RuntimeScopeOccurrence) : Prop :=
   ∀ wait ∈ state.waits, some wait.owner = leaf.map (·.id)
 
-private def leafCompletion (leaf : Option RuntimeScopeOccurrence) (operation : SemanticOperation) : Bool :=
+def leafCompletion (leaf : Option RuntimeScopeOccurrence) (operation : SemanticOperation) : Bool :=
   match leaf, operation with
   | some occurrence, .completeScope _ _ scope _ => scope == occurrence.id.definitionScopeId
   | _, _ => false
@@ -585,7 +589,7 @@ theorem transaction_scope_normal_completion (p : Program) (roles : TransactionAd
                · intro wait present; simp [emptyWaits] at present)
   · contradiction
 
-private def transactionBranchScopeFamily : SemanticOperation → Prop
+def transactionBranchScopeFamily : SemanticOperation → Prop
   | .awaitUserTask .. | .reachNoneEnd .. | .cancelTransaction .. => True
   | _ => False
 

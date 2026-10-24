@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Boundary Compensation Activity retention declaration
 
@@ -7,6 +9,8 @@ Program-only validation for the optional hidden boundary Compensation retention 
 state and insertion stay in `CompensationActivityRetention` so aggregate Program admission can depend
 on this module without creating a Program-to-runtime import cycle.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -17,10 +21,7 @@ inductive CompensationActivityOperationFamily where
   | multiInstanceUserTask
   deriving Repr, DecidableEq
 
-private def safeNat (value : Nat) : Bool :=
-  BpmnSemantics.SemanticProcessJson.isSafeWireNat value
-
-private def nonemptyNodeId (id : NodeId) : Bool :=
+def nonemptyNodeId (id : NodeId) : Bool :=
   !id.value.isEmpty
 
 def boundaryCompensationTargetBefore (left right : BoundaryCompensationTarget) : Bool :=
@@ -31,13 +32,13 @@ def boundaryCompensationTargetBefore (left right : BoundaryCompensationTarget) :
     else decide (left.boundaryEventElementId.value < right.boundaryEventElementId.value)
   else decide (left.activityElementId.value < right.activityElementId.value)
 
-private def targetsStrictlyOrdered : List BoundaryCompensationTarget → Bool
+def boundaryTargetsStrictlyOrdered : List BoundaryCompensationTarget → Bool
   | [] | [_] => true
   | left :: right :: rest =>
       boundaryCompensationTargetBefore left right &&
-        targetsStrictlyOrdered (right :: rest)
+        boundaryTargetsStrictlyOrdered (right :: rest)
 
-private def targetIdentityValid (target : BoundaryCompensationTarget) : Bool :=
+def boundaryTargetIdentityValid (target : BoundaryCompensationTarget) : Bool :=
   nonemptyNodeId target.activityElementId &&
     nonemptyNodeId target.boundaryEventElementId &&
     nonemptyNodeId target.compensationActivityElementId &&
@@ -45,12 +46,12 @@ private def targetIdentityValid (target : BoundaryCompensationTarget) : Bool :=
     target.activityElementId != target.compensationActivityElementId &&
     target.boundaryEventElementId != target.compensationActivityElementId
 
-private def targetActivityUnique (targets : List BoundaryCompensationTarget)
+def targetActivityUnique (targets : List BoundaryCompensationTarget)
     (target : BoundaryCompensationTarget) : Bool :=
   (targets.filter fun candidate =>
     candidate.activityElementId == target.activityElementId).length = 1
 
-private def compensationActivityElementAndFamily? :
+def compensationActivityElementAndFamily? :
     SemanticOperation → Option (NodeId × CompensationActivityOperationFamily)
   | .awaitUserTask _ origin _ _ task =>
       if origin.elementId.value = task.id.value then
@@ -66,7 +67,7 @@ private def compensationActivityElementAndFamily? :
       else none
   | _ => none
 
-private def operationOwnedByScope (program : Program) (operation : SemanticOperation)
+def operationOwnedByScope (program : Program) (operation : SemanticOperation)
     (scopeId : DefinitionScopeId) : Bool :=
   match program.operationScopes.filter fun ownership =>
       ownership.operationId == operation.id with
@@ -85,7 +86,7 @@ def compensationActivityTargetFamily? (program : Program)
       else none
   | _ => none
 
-private def targetOperationValid (program : Program)
+def targetOperationValid (program : Program)
     (declaration : CompensationActivityRetentionDeclaration)
     (target : BoundaryCompensationTarget) : Bool :=
   (compensationActivityTargetFamily? program declaration target.activityElementId).isSome
@@ -141,7 +142,7 @@ def compensationTransactionRetentionShapeValid (program : Program)
         | _ => false)
   | _, _, _ => false
 
-private def declarationHasFlatRoot (program : Program)
+def declarationHasFlatRoot (program : Program)
     (declaration : CompensationActivityRetentionDeclaration) : Bool :=
   match program.definitionScopes.filter (·.parentScopeId.isNone) with
   | [scope] =>
@@ -150,7 +151,7 @@ private def declarationHasFlatRoot (program : Program)
         (program.compensationExecution.isSome || program.definitionScopes.length = 1)
   | _ => false
 
-private def forbiddenRetentionOperation : SemanticOperation → Bool
+def forbiddenRetentionOperation : SemanticOperation → Bool
   | .invokeProcess .. | .returnProcess .. | .terminateScope .. => true
   | _ => false
 
@@ -165,9 +166,9 @@ def compensationActivityRetentionDeclarationValid (program : Program) : Bool :=
         compensationTransactionRetentionShapeValid program declaration) &&
         program.identity.semanticProfile != serviceTaskIncidentCancellationCheckpointProfileId &&
         !declaration.targets.isEmpty &&
-        declaration.targets.all targetIdentityValid &&
+        declaration.targets.all boundaryTargetIdentityValid &&
         declaration.targets.all (targetActivityUnique declaration.targets) &&
-        targetsStrictlyOrdered declaration.targets &&
+        boundaryTargetsStrictlyOrdered declaration.targets &&
         declaration.maxRecords > 0 && safeNat declaration.maxRecords &&
         declaration.maxCanonicalBytes ≥ 2 &&
         declaration.maxCanonicalBytes ≤ 65536 &&

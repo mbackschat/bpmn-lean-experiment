@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+public import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 
 /-! Cancellation preserves Compensation validity through the exact retained-owner census.
 The selected operation must justify retention or removal; an empty result alone is not
 valid for a running Program that declares an Activity-retention register. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

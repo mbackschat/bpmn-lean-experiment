@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ScopeVariableData
-import BpmnSemantics.SemanticProcess.EffectDataMapping
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeVariableData
+public import BpmnSemantics.SemanticProcess.EffectDataMapping
 
 /-! # Nested embedded scope data
 
@@ -15,6 +17,8 @@ refuses instead of choosing by storage order, so a later repeated-activation acc
 this lookup rather than inherit an arbitrary choice. Every operation here depends only on the Program
 and `ScopedVariables`, never on scope-occurrence bookkeeping.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 
 /-! Regional cleanup must retain the complete newly inserted Activity group.
 Owner separation, fresh Timer identity, and the unchanged ownership graph determine the masks.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

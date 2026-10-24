@@ -1,5 +1,7 @@
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Runtime-state identity-bound negative fixtures
 
@@ -7,6 +9,8 @@ These three states isolate the consumer-required branches of `RSI-BOUND-01`. Eac
 counter entry that bounds one live occurrence from the reachable interrupting boundary-Timer state.
 The absent key reads as zero, so the corresponding live activation at one must be refused.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RuntimeStateIdentityBoundConformance
 

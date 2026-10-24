@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 
 /-! # Actual parallel body counter growth
 
@@ -7,6 +9,8 @@ Human and Service arms issue exactly the next native ordinal; token controls
 increase only the End count, by at most one. These laws charge one internal
 record without assuming reservation preparation or a predecessor counter bound.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

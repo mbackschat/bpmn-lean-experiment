@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcessJsonMain
-import Lean.Data.Json
+module
+
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcessJsonMain
+public import Lean.Data.Json
 
 /-! # Compensation trigger and handler runtime contract checkpoint -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerRuntimeContractConformance
 
@@ -11,15 +15,15 @@ open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcessJsonMain
 open Lean
 
-private def instanceId : SemanticId := ⟨"compensation-runtime-instance"⟩
+def instanceId : SemanticId := ⟨"compensation-runtime-instance"⟩
 
-private def occurrence (elementId : String) : OccurrenceId :=
+def occurrence (elementId : String) : OccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨elementId⟩, activation := 1 }
 
-private def occurrenceAt (elementId : String) (activation : Nat) : OccurrenceId :=
+def occurrenceAt (elementId : String) (activation : Nat) : OccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨elementId⟩, activation }
 
-private def failure : CompensationHandlerFailure :=
+def failure : CompensationHandlerFailure :=
   { kind := .compensationHandlerFailure
     triggerId := occurrence "trigger"
     handlerId := occurrence "handler"
@@ -27,43 +31,43 @@ private def failure : CompensationHandlerFailure :=
     code := "COMPENSATION_FAILED"
     message := some "handler failed" }
 
-private def owner : ScopeOccurrenceId :=
+def owner : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:process"⟩
     activation := 1 }
 
-private def subject : CompensationSubjectOccurrence :=
+def subject : CompensationSubjectOccurrence :=
   .boundaryActivity
     { processInstanceId := instanceId
       activityElementId := ⟨"activity"⟩
       activation := 1 }
 
-private def eventSubProcessParent : ScopeOccurrenceId :=
+def eventSubProcessParent : ScopeOccurrenceId :=
   { processInstanceId := instanceId
     definitionScopeId := ⟨"scope:parent"⟩
     activation := 1 }
 
-private def restoredContext : CompensationParentContextSnapshot :=
+def restoredContext : CompensationParentContextSnapshot :=
   { frames :=
       [ { owner
           bindings := [{ name := "completionContext", value := .string "frozen" }] }
       , { owner := eventSubProcessParent, bindings := [] } ] }
 
-private def pendingEventSubProcessHandler : CompensationHandlerExecution :=
+def pendingEventSubProcessHandler : CompensationHandlerExecution :=
   { identity :=
       { id := occurrence "event-handler"
         subject := .eventSubProcess eventSubProcessParent
         handlerElementId := ⟨"event-handler"⟩ }
     lifecycle := .pending (some restoredContext) }
 
-private def failedHandler : CompensationHandlerExecution :=
+def failedHandler : CompensationHandlerExecution :=
   { identity :=
       { id := occurrence "handler"
         subject
         handlerElementId := ⟨"handler"⟩ }
     lifecycle := .failed }
 
-private def failedTrigger : CompensationTriggerExecution :=
+def failedTrigger : CompensationTriggerExecution :=
   { id := occurrence "trigger"
     owner
     output := ⟨"place:output"⟩
@@ -71,7 +75,7 @@ private def failedTrigger : CompensationTriggerExecution :=
     handlers := [failedHandler]
     dependencies := [] }
 
-private def succeededTrigger : CompensationTriggerExecution :=
+def succeededTrigger : CompensationTriggerExecution :=
   { failedTrigger with
     id := occurrenceAt "trigger" 2
     lifecycle := .succeeded
@@ -79,13 +83,13 @@ private def succeededTrigger : CompensationTriggerExecution :=
       identity := { failedHandler.identity with id := occurrenceAt "handler" 2 }
       lifecycle := .compensated }] }
 
-private def secondFailedTrigger : CompensationTriggerExecution :=
+def secondFailedTrigger : CompensationTriggerExecution :=
   { succeededTrigger with
     lifecycle := .failed
     handlers := succeededTrigger.handlers.map fun handler =>
       { handler with lifecycle := .failed } }
 
-private def handlerBody : SingleEffectCompensationHandlerBody :=
+def handlerBody : SingleEffectCompensationHandlerBody :=
   { handlerElementId := ⟨"handler"⟩
     effectElementId := ⟨"handler"⟩
     descriptor :=
@@ -93,14 +97,14 @@ private def handlerBody : SingleEffectCompensationHandlerBody :=
         operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
     input := .empty }
 
-private def declaration : CompensationExecutionDeclaration :=
+def declaration : CompensationExecutionDeclaration :=
   { definitionScopeId := owner.definitionScopeId
     triggerOperationId := ⟨"trigger"⟩
     subjects := [.boundaryActivity ⟨"activity"⟩ handlerBody]
     dependencies := []
     limits := { maxTriggers := 2, maxHandlers := 1, maxCanonicalBytes := 4096 } }
 
-private def program : Program :=
+def program : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"compensation-runtime-contract"⟩
@@ -115,41 +119,41 @@ private def program : Program :=
     operations := []
     compensationExecution := some declaration }
 
-private def failedState : RuntimeState :=
+def failedState : RuntimeState :=
   { initialState with
     control := .failed instanceId failure
     compensationTriggers := [failedTrigger]
     effectActivations := [{ elementId := ⟨"handler"⟩, count := 1 }] }
 
-private def failedStateWithSucceededTombstone : RuntimeState :=
+def failedStateWithSucceededTombstone : RuntimeState :=
   { failedState with compensationTriggers := [failedTrigger, succeededTrigger] }
 
-private def failedStateWithSecondFailedTrigger : RuntimeState :=
+def failedStateWithSecondFailedTrigger : RuntimeState :=
   { failedState with compensationTriggers := [failedTrigger, secondFailedTrigger] }
 
-private def activeTrigger : CompensationTriggerExecution :=
+def activeTrigger : CompensationTriggerExecution :=
   { failedTrigger with
     lifecycle := .active
     handlers := [{ failedHandler with lifecycle := .pending none }] }
 
-private def secondActiveTrigger : CompensationTriggerExecution :=
+def secondActiveTrigger : CompensationTriggerExecution :=
   { activeTrigger with
     id := occurrenceAt "trigger" 2
     handlers := [{ failedHandler with
       identity := { failedHandler.identity with id := occurrenceAt "handler" 2 }
       lifecycle := .pending none }] }
 
-private def oneActiveTriggerState : RuntimeState :=
+def oneActiveTriggerState : RuntimeState :=
   { initialState with
     control := .running instanceId
     scopeOccurrences := [{ id := owner, parent := none }]
     compensationTriggers := [activeTrigger] }
 
-private def twoActiveTriggerState : RuntimeState :=
+def twoActiveTriggerState : RuntimeState :=
   { oneActiveTriggerState with
     compensationTriggers := [activeTrigger, secondActiveTrigger] }
 
-private def liveHandlerWait : CompensationHandlerEffectWait :=
+def liveHandlerWait : CompensationHandlerEffectWait :=
   { id := occurrence "handler"
     triggerId := occurrence "trigger"
     handlerId := occurrence "handler"
@@ -158,13 +162,13 @@ private def liveHandlerWait : CompensationHandlerEffectWait :=
         operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
     arguments := [] }
 
-private def failedStateWithLiveWait : RuntimeState :=
+def failedStateWithLiveWait : RuntimeState :=
   { failedState with compensationHandlerEffectWaits := [liveHandlerWait] }
 
-private def failedStateWithoutTombstone : RuntimeState :=
+def failedStateWithoutTombstone : RuntimeState :=
   { failedState with compensationTriggers := [] }
 
-private def expectedFailedObservation : StateObservation :=
+def expectedFailedObservation : StateObservation :=
   { instanceId
     status := .failed
     failure := some failure
@@ -178,16 +182,16 @@ private def expectedFailedObservation : StateObservation :=
     enabledInteractions := []
     logicalTimeMs := 0 }
 
-private def completedObservationWithMalformedFailure : StateObservation :=
+def completedObservationWithMalformedFailure : StateObservation :=
   { expectedFailedObservation with status := .completed }
 
-private def occurrenceJson (id : OccurrenceId) : Json :=
+def occurrenceJson (id : OccurrenceId) : Json :=
   Json.mkObj
     [ ("processInstanceId", toJson id.processInstanceId.value)
     , ("elementId", toJson id.elementId.value)
     , ("activation", toJson id.activation) ]
 
-private def expectedFailureJson : Json :=
+def expectedFailureJson : Json :=
   Json.mkObj
     [ ("kind", toJson "compensationHandlerFailure")
     , ("triggerId", occurrenceJson failure.triggerId)
@@ -196,7 +200,7 @@ private def expectedFailureJson : Json :=
     , ("code", toJson failure.code)
     , ("message", toJson failure.message) ]
 
-private def expectedFailedJson : Json :=
+def expectedFailedJson : Json :=
   Json.mkObj
     [ ("kind", toJson "state")
     , ("instanceId", toJson instanceId.value)
@@ -212,7 +216,7 @@ private def expectedFailedJson : Json :=
     , ("enabledInteractions", .arr #[])
     , ("logicalTimeMs", toJson 0) ]
 
-private def expectedCompletedJson : Json :=
+def expectedCompletedJson : Json :=
   Json.mkObj
     [ ("kind", toJson "state")
     , ("instanceId", toJson instanceId.value)
@@ -227,7 +231,7 @@ private def expectedCompletedJson : Json :=
     , ("enabledInteractions", .arr #[])
     , ("logicalTimeMs", toJson 0) ]
 
-private def failedStateWithLiveScope : RuntimeState :=
+def failedStateWithLiveScope : RuntimeState :=
   { failedState with scopeOccurrences := [{ id := owner, parent := none }] }
 
 theorem failed_control_requires_exactly_one_failed_trigger :

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 
 /-! # Scope-creation freshness
 
 The selector's definition-wide or instance-wide exclusion must imply complete-identity freshness
 before the scope-insertion ownership laws can apply.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ActivityDataInput
-import BpmnSemantics.SemanticProcess.ActivityDataOutput
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
+public import BpmnSemantics.SemanticProcess.ActivityDataOutput
+public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 
 /-! # Composed direct Activity data input and output
 
@@ -14,6 +16,8 @@ The `DataOutput` exists only in the accepted completion command; its direct asso
 value to Process scope in the same transition that removes the wait, Activity record, and that one
 input-bearing scope.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

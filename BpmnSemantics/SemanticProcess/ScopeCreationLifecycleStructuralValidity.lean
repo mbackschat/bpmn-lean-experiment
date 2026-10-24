@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-import BpmnSemantics.SemanticProcess.CallReachability
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+public import BpmnSemantics.SemanticProcess.CallReachability
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 
 /-! Structural lifecycle preservation for the predecessor-selected scope creation account in
 [Internal Commutation](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -189,7 +193,7 @@ private theorem invoke_return_census (program : Program)
       · contradiction
     · contradiction
 
-private def selectedOperationOwner? (program : Program) (operation : SemanticOperation) :
+def commutationOperationOwner? (program : Program) (operation : SemanticOperation) :
     Option DefinitionScopeId := do
   let selected ← match program.operations.filter fun candidate => decide (candidate.id = operation.id) with
     | [selected] => some selected
@@ -205,7 +209,7 @@ private theorem start_operation_owned (program : Program) (selected : InternalSc
     operationOwnedBy program selected.operation selected.owner = true := by
   have selectedProcess : ∃ process,
       (do
-        let scope ← selectedOperationOwner? program selected.operation
+        let scope ← commutationOperationOwner? program selected.operation
         if scope ≠ selected.owner.definitionScopeId then none
         else candidateProcessIdForDefinitionScope? program scope) = some process := by
     cases kind : selected.kind <;>
@@ -217,7 +221,7 @@ private theorem start_operation_owned (program : Program) (selected : InternalSc
   split at processFound
   · contradiction
   · next owned =>
-      unfold selectedOperationOwner? at scopeFound
+      unfold commutationOperationOwner? at scopeFound
       unfold operationOwnedBy
       split
       all_goals repeat first | contradiction | split at scopeFound

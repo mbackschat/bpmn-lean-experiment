@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
-import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+public import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
 
 /-! # Internal commutation runtime preservation
 
 Proves family-specific non-interference and preservation of admitted runtime state, open occurrence projection, and exact single-arm execution for prepared internal arms.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

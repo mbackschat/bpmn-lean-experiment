@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryPreservation
 
 /-! # Parallel Multi-Instance entry evaluator preservation
 
 This module owns the evaluator corollary of the nonempty and empty shared entry-step preservation
 proofs. The relation-level owner remains independently buildable and below its source bound.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

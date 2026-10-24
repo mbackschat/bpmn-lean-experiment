@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 
 /-! Regional retirement cannot issue a Message-task identity or create an association collision.
 The existing removal-only resource law therefore protects both wait anchors and the joined record.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

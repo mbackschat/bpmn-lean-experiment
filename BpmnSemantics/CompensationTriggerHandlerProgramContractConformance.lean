@@ -13,46 +13,46 @@ open BpmnSemantics.SemanticProcessJson
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics
 
-private def programAccepted (contents : String) : Bool :=
+def programAccepted (contents : String) : Bool :=
   match parseWireJson contents >>= decodeProgram with
   | .ok _ => true
   | .error _ => false
 
-private def emptyCompensationProgram : String :=
+def emptyCompensationProgram : String :=
   "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"kind\":\"triggerCompensation\",\"id\":\"trigger\",\"origin\":{\"kind\":\"bpmnElement\",\"elementId\":\"throw\"},\"definitionScopeId\":\"scope:p\",\"input\":\"in\",\"output\":\"out\"}],\"compensationExecution\":{\"definitionScopeId\":\"scope:p\",\"triggerOperationId\":\"trigger\",\"subjects\":[],\"dependencies\":[],\"limits\":{\"maxTriggers\":1,\"maxHandlers\":1,\"maxCanonicalBytes\":7}}}"
 
-private def compensationDescriptor : EffectDescriptor :=
+def compensationDescriptor : EffectDescriptor :=
   { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
     operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
 
-private def boundaryBody (handler : String) : SingleEffectCompensationHandlerBody :=
+def boundaryBody (handler : String) : SingleEffectCompensationHandlerBody :=
   { handlerElementId := ⟨handler⟩, effectElementId := ⟨handler⟩
     descriptor := compensationDescriptor, input := .empty }
 
-private def restoredBody : SingleEffectCompensationHandlerBody :=
+def restoredBody : SingleEffectCompensationHandlerBody :=
   { handlerElementId := ⟨"HB"⟩, effectElementId := ⟨"EB"⟩
     descriptor := compensationDescriptor
     input := .restoredProcessBinding "frozen" "argument" }
 
-private def subjectA : CompensationSubjectDefinition :=
+def subjectA : CompensationSubjectDefinition :=
   .boundaryActivity ⟨"A"⟩ (boundaryBody "HA")
 
-private def subjectB : CompensationSubjectDefinition :=
+def subjectB : CompensationSubjectDefinition :=
   .eventSubProcess ⟨"scope:B"⟩ ⟨"scope:HB"⟩ restoredBody
 
-private def subjectC : CompensationSubjectDefinition :=
+def subjectC : CompensationSubjectDefinition :=
   .boundaryActivity ⟨"C"⟩ (boundaryBody "HC")
 
-private def subjects : List CompensationSubjectDefinition := [subjectA, subjectB, subjectC]
+def subjects : List CompensationSubjectDefinition := [subjectA, subjectB, subjectC]
 
-private def declaration : CompensationExecutionDeclaration :=
+def declaration : CompensationExecutionDeclaration :=
   { definitionScopeId := ⟨"scope:p"⟩
     triggerOperationId := ⟨"trigger"⟩
     subjects
     dependencies := [{ predecessorElementId := ⟨"A"⟩, successorElementId := ⟨"B"⟩ }]
     limits := { maxTriggers := 1, maxHandlers := 3, maxCanonicalBytes := 4096 } }
 
-private def programWith (candidate : CompensationExecutionDeclaration) : Program :=
+def programWith (candidate : CompensationExecutionDeclaration) : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess, semanticProfile := ⟨"p"⟩
         sourceId := ⟨"s"⟩, sourceSha256 := "x" }
@@ -80,17 +80,17 @@ private def programWith (candidate : CompensationExecutionDeclaration) : Program
         maxRecords := 1, maxCanonicalBytes := 4096 }
     compensationExecution := some candidate }
 
-private def validProgram := programWith declaration
+def validProgram := programWith declaration
 
-private def reorderedProgram :=
+def reorderedProgram :=
   programWith { declaration with subjects := [subjectB, subjectA, subjectC] }
 
-private def cyclicProgram :=
+def cyclicProgram :=
   programWith { declaration with dependencies :=
     [{ predecessorElementId := ⟨"A"⟩, successorElementId := ⟨"B"⟩ },
      { predecessorElementId := ⟨"B"⟩, successorElementId := ⟨"A"⟩ }] }
 
-private def emptyRestorationProgram :=
+def emptyRestorationProgram :=
   programWith { declaration with subjects :=
     [subjectA,
      .eventSubProcess ⟨"scope:B"⟩ ⟨"scope:HB"⟩
@@ -105,13 +105,13 @@ theorem strict_program_decoder_and_declaration_admission_separate_identity_order
     compensationExecutionDeclarationValid emptyRestorationProgram = false := by
   native_decide
 
-private def emptyDeclaration (bytes : Nat) : CompensationExecutionDeclaration :=
+def emptyDeclaration (bytes : Nat) : CompensationExecutionDeclaration :=
   { declaration with
     subjects := []
     dependencies := []
     limits := { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := bytes } }
 
-private def emptyProgram (bytes : Nat) : Program :=
+def emptyProgram (bytes : Nat) : Program :=
   { programWith (emptyDeclaration bytes) with
     identity := { validProgram.identity with
       semanticProfile := compensationSourceCheckpointProfileId
@@ -132,14 +132,14 @@ private def emptyProgram (bytes : Nat) : Program :=
     compensationActivityRetention := none
     compensationEventSubProcessSnapshots := none }
 
-private def executionJson (bytes : Nat) : Lean.Json :=
+def executionJson (bytes : Nat) : Lean.Json :=
   Lean.Json.mkObj [("compensationExecution", Lean.Json.mkObj
     [("definitionScopeId", .str "scope:p"), ("triggerOperationId", .str "trigger"),
      ("subjects", .arr #[]), ("dependencies", .arr #[]),
      ("limits", Lean.Json.mkObj [("maxTriggers", Lean.toJson (1 : Nat)),
        ("maxHandlers", Lean.toJson (1 : Nat)), ("maxCanonicalBytes", Lean.toJson bytes)])])]
 
-private def executionJsonAccepted (bytes : Nat) : Bool :=
+def executionJsonAccepted (bytes : Nat) : Bool :=
   (decodeCompensationExecutionField (executionJson bytes)).isOk
 
 theorem execution_readers_reject_below_empty_pair_capacity :
@@ -173,7 +173,7 @@ theorem admitted_execution_declaration_can_represent_empty_collections (program 
     canonicalCompensationExecutionStateUtf8Bytes [] [] ≤ candidate.limits.maxCanonicalBytes := by
   exact compensationExecutionDeclarationValid_minimumBytes program candidate present valid
 
-private def retentionAtTwoBytes : Program :=
+def retentionAtTwoBytes : Program :=
   { emptyProgram 7 with
     compensationActivityRetention := some
       { definitionScopeId := ⟨"scope:p"⟩
@@ -185,7 +185,7 @@ private def retentionAtTwoBytes : Program :=
       [.awaitUserTask ⟨"A"⟩ ⟨⟨"A"⟩⟩ ⟨"in"⟩ ⟨"out"⟩ { id := ⟨"A"⟩, name := none }]
     operationScopes := [{ operationId := ⟨"A"⟩, scopeId := ⟨"scope:p"⟩ }] }
 
-private def snapshotAtTwoBytes : Program :=
+def snapshotAtTwoBytes : Program :=
   { emptyProgram 7 with
     definitionScopes :=
       [{ id := ⟨"scope:p"⟩, parentScopeId := none, originElementId := ⟨"p"⟩ },

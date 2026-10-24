@@ -1,79 +1,83 @@
-import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
+module
+
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 
 /-! # Parallel User Task metadata composition closure conformance
 
 Proved metadata-erased control equivalence, existing relation-family reuse, bounded closure, and the exact disjoint-versus-overlapping data-order boundary.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def eraseWaitMetadata (wait : UserTaskWait) : UserTaskWait :=
+def eraseWaitMetadata (wait : UserTaskWait) : UserTaskWait :=
   { wait with
     task := { wait.task with metadata := none }
     metadata := none }
 
-private def eraseRuntimeMetadata (state : RuntimeState) : RuntimeState :=
+def eraseRuntimeMetadata (state : RuntimeState) : RuntimeState :=
   { state with waits := state.waits.map eraseWaitMetadata }
 
-private def eraseResultMetadata (result : StimulusResult) : StimulusResult :=
+def eraseResultMetadata (result : StimulusResult) : StimulusResult :=
   { result with state := eraseRuntimeMetadata result.state }
 
-private def committedOperationKinds (result : TracedStimulusResult) :
+def committedOperationKinds (result : TracedStimulusResult) :
     List SemanticOperationKind :=
   result.committedTransitions.filterMap fun
     | .externalStimulus _ => none
     | .internalOperation record => some record.operationKind
 
-private def emptyContentFirst (program : Program) (started : StimulusResult) :
+def emptyContentFirst (program : Program) (started : StimulusResult) :
     StimulusResult :=
   applyStimulus scenarioClosureLimit program started.state
     (completionStimulus "complete-content-empty" contentTaskId [])
 
-private def emptyRiskFirst (program : Program) (started : StimulusResult) :
+def emptyRiskFirst (program : Program) (started : StimulusResult) :
     StimulusResult :=
   applyStimulus scenarioClosureLimit program started.state
     (completionStimulus "complete-risk-empty" riskTaskId [])
 
-private def emptyContentThenRisk (program : Program) (started : StimulusResult) :
+def emptyContentThenRisk (program : Program) (started : StimulusResult) :
     StimulusResult :=
   let afterContent := emptyContentFirst program started
   applyStimulus scenarioClosureLimit program afterContent.state
     (completionStimulus "complete-risk-empty" riskTaskId [])
 
-private def emptyRiskThenContent (program : Program) (started : StimulusResult) :
+def emptyRiskThenContent (program : Program) (started : StimulusResult) :
     StimulusResult :=
   let afterRisk := emptyRiskFirst program started
   applyStimulus scenarioClosureLimit program afterRisk.state
     (completionStimulus "complete-content-empty" contentTaskId [])
 
-private def submittedKeysDisjoint
+def submittedKeysDisjoint
     (left right : List VariableBinding) : Bool :=
   left.all fun leftBinding =>
     right.all fun rightBinding => decide (leftBinding.name ≠ rightBinding.name)
 
-private def overlappingContentPatch : List VariableBinding :=
+def overlappingContentPatch : List VariableBinding :=
   [{ name := "decision", value := .boolean true }]
 
-private def overlappingRiskPatch : List VariableBinding :=
+def overlappingRiskPatch : List VariableBinding :=
   [{ name := "decision", value := .boolean false }]
 
-private def overlappingContentFirst : StimulusResult :=
+def overlappingContentFirst : StimulusResult :=
   applyStimulus scenarioClosureLimit compositionProgram compositionStarted.state
     (completionStimulus "complete-content-overlap" contentTaskId
       overlappingContentPatch)
 
-private def overlappingRiskFirst : StimulusResult :=
+def overlappingRiskFirst : StimulusResult :=
   applyStimulus scenarioClosureLimit compositionProgram compositionStarted.state
     (completionStimulus "complete-risk-overlap" riskTaskId overlappingRiskPatch)
 
-private def overlappingContentThenRisk : StimulusResult :=
+def overlappingContentThenRisk : StimulusResult :=
   applyStimulus scenarioClosureLimit compositionProgram overlappingContentFirst.state
     (completionStimulus "complete-risk-overlap" riskTaskId overlappingRiskPatch)
 
-private def overlappingRiskThenContent : StimulusResult :=
+def overlappingRiskThenContent : StimulusResult :=
   applyStimulus scenarioClosureLimit compositionProgram overlappingRiskFirst.state
     (completionStimulus "complete-content-overlap" contentTaskId
       overlappingContentPatch)

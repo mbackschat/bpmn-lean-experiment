@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
-import BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
 
 /-! # Ownership closure for selected regional operations
 
 REG-OWN-CLOSE-01 derives reference masks from retained predecessor choices and compares them
 with actual evaluator fields before deriving Activity and event-race reference preservation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

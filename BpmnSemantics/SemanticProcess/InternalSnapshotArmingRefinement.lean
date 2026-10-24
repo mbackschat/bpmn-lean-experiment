@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 
 /-! Full running-state validity makes ordinary arming agree with the snapshot-aware attempt, including retention purge. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

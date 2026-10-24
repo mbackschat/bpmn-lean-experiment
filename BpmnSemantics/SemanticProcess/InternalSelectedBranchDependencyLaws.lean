@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
-import BpmnSemantics.SemanticProcess.TokenPatchLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+public import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Selected-join readiness is unchanged by token patches outside its recorded read dependency. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

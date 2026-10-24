@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeLocalControl
-import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeLocalControl
+public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+public import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
 
 /-! Merge and ordinary End reuse token-patch separation for bounded child entry under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 Neither changes the joined Activity or deadline, so those retained reads stay exact.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

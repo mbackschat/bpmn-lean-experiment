@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! # Transaction Start-to-publication witnesses
 
@@ -8,6 +10,8 @@ The manual Program follows the reservation-withdrawal roles in
 TXC-CANCEL-01, TXC-EMPTY-01, TXC-JOIN-01 and TXC-FAIL-01 before source/profile registration;
 they establish neither general conformance nor host refinement.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.TransactionCancellationPublicationConformance
 
@@ -27,7 +31,7 @@ def childOwner : ScopeOccurrenceId :=
 def occurrence (element : String) : OccurrenceId :=
   { processInstanceId := instanceId, elementId := ⟨element⟩, activation := 1 }
 
-private def task (element input output : String) : SemanticOperation :=
+def task (element input output : String) : SemanticOperation :=
   .awaitUserTask ⟨"operation:" ++ element⟩ ⟨⟨element⟩⟩ ⟨"place:" ++ input⟩
     ⟨"place:" ++ output⟩ { id := ⟨element⟩, name := none }
 
@@ -55,10 +59,10 @@ def childOperations : List SemanticOperation :=
       [⟨"place:Split_Reserve"⟩, ⟨"place:Split_Withdraw"⟩]
   , task "Withdraw" "Split_Withdraw" "Withdraw_Cancel" ]
 
-private def rootFlows : List String :=
+def rootFlows : List String :=
   ["Acknowledge_End", "Cancel_Acknowledge", "Start_Transaction", "Transaction_End_Normal"]
 
-private def childFlows : List String :=
+def childFlows : List String :=
   ["Child_Start_Split", "Prepare_End", "Reserve_Prepare", "Split_Reserve",
     "Split_Withdraw", "Withdraw_Cancel"]
 
@@ -126,7 +130,7 @@ def completed : TracedStimulusResult := run joined.result.state (completeTask "A
 def emptyCancelled : TracedStimulusResult := run started.result.state (completeTask "Withdraw")
 def failed : TracedStimulusResult := run cancelled.result.state failureStimulus
 
-private def openStart (anchor : SemanticFlowNodeOccurrenceAnchor) (element : String)
+def openStart (anchor : SemanticFlowNodeOccurrenceAnchor) (element : String)
     (owner : ScopeOccurrenceId) : OpenSemanticFlowNodeOccurrence :=
   { anchor, processId := program.processId, elementId := ⟨element⟩, owner }
 
@@ -139,7 +143,7 @@ def taskStart (element : String) (owner : ScopeOccurrenceId) : OpenSemanticFlowN
 def handlerStart : OpenSemanticFlowNodeOccurrence :=
   openStart (.compensationHandler (occurrence "Release_Reservation")) "Release_Reservation" childOwner
 
-private def instantaneous (command : String) (index localIndex : Nat) (element : String)
+def instantaneous (command : String) (index localIndex : Nat) (element : String)
     (owner : ScopeOccurrenceId) : UnnumberedFlowNodeOccurrenceStart :=
   openStart (.transition ⟨command⟩ index localIndex) element owner
 
@@ -162,7 +166,7 @@ def emptyDelta : UnnumberedFlowNodeOccurrenceDelta :=
       { anchor := .transition ⟨"publish-Withdraw"⟩ 1 0, terminal := .completed },
       { anchor := .transition ⟨"publish-Withdraw"⟩ 1 1, terminal := .completed }] }
 
-private def acceptedCompanions (commandId : SemanticId) :
+def acceptedCompanions (commandId : SemanticId) :
     Nat → RuntimeState → List CommittedTransition →
       List UnnumberedFlowNodeOccurrenceDelta → Option RuntimeState
   | _, before, [], [] => some before

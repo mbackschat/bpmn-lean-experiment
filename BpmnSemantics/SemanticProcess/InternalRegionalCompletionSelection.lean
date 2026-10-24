@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Bounded completion withdrawal selection
 
@@ -7,6 +9,8 @@ Regional preparation retains the exact predecessor Activity and Timer before ord
 removes their child. REG-OWN-CLOSE-01 adds no Activity-to-Program binding: the Lean runtime
 representation deliberately carries no TypeScript operation-id field.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

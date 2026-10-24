@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 
 /-! # Multi-Instance frames for unrelated Activity-data arming
 
 The admitted declarer census separates the new ordinary Activity from existing Multi-Instance
 controllers. Their record filters and independent high-water counters therefore remain exact.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

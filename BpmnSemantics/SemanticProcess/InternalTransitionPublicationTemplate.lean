@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalEndPublication
-import BpmnSemantics.SemanticProcess.InternalMergePublication
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPairPublication
-import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalEndPublication
+public import BpmnSemantics.SemanticProcess.InternalMergePublication
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPairPublication
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

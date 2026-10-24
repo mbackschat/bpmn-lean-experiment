@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
 
 /-! Regional selection preserves runtime position through the admitted completion and error transitions. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

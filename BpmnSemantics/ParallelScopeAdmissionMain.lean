@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
 
 /-! Diagnostic admission over the existing checked-process wire; inputs contain no expected results. -/
+
+@[expose] public section
 
 def main (paths : List String) : IO UInt32 := do
   for path in paths do

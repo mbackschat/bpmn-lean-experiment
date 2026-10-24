@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Semantic Process Message delivery
 
 This module owns direct Message-subscription correlation, committed delivery, its declarative external transition relation, and the executable soundness bridge. Message activation remains an internal Semantic Process operation owned by `Transition`; command closure and scenario projection remain separate.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

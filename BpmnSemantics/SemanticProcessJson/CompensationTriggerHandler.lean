@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcessJson.Elements
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Compensation trigger and single-effect handler Program decoding -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
@@ -9,7 +13,7 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeHandlerInput (json : Json) : Except String CompensationHandlerInput := do
+def decodeHandlerInput (json : Json) : Except String CompensationHandlerInput := do
   match ← stringField json "kind" with
   | "empty" =>
       requireObjectShape json ["kind"]
@@ -21,7 +25,7 @@ private def decodeHandlerInput (json : Json) : Except String CompensationHandler
         (← decodeNonemptyStringField json "argumentName"))
   | kind => throw s!"unsupported compensation handler input {kind}"
 
-private def decodeHandlerBody (json : Json) :
+def decodeHandlerBody (json : Json) :
     Except String SingleEffectCompensationHandlerBody := do
   requireObjectShape json
     ["descriptor", "effectElementId", "handlerElementId", "input", "kind"]
@@ -36,7 +40,7 @@ private def decodeHandlerBody (json : Json) :
       descriptor
       input := ← decodeHandlerInput (← field json "input") }
 
-private def decodeSubject (json : Json) : Except String CompensationSubjectDefinition := do
+def decodeSubjectDefinition (json : Json) : Except String CompensationSubjectDefinition := do
   match ← stringField json "kind" with
   | "boundaryActivity" =>
       requireObjectShape json ["body", "kind", "subjectElementId"]
@@ -51,14 +55,14 @@ private def decodeSubject (json : Json) : Except String CompensationSubjectDefin
         (← decodeHandlerBody (← field json "body")))
   | kind => throw s!"unsupported compensation subject {kind}"
 
-private def decodeDependency (json : Json) : Except String CompensationDependency := do
+def decodeCompensationDependency (json : Json) : Except String CompensationDependency := do
   requireObjectShape json ["predecessorElementId", "reason", "successorElementId"]
   expectStringField json "reason" "sequenceFlow"
   pure
     { predecessorElementId := ⟨← decodeNonemptyStringField json "predecessorElementId"⟩
       successorElementId := ⟨← decodeNonemptyStringField json "successorElementId"⟩ }
 
-private def decodeLimits (json : Json) : Except String CompensationTriggerLimits := do
+def decodeLimits (json : Json) : Except String CompensationTriggerLimits := do
   requireObjectShape json ["maxCanonicalBytes", "maxHandlers", "maxTriggers"]
   let limits : CompensationTriggerLimits :=
     { maxTriggers := ← decodeSafeNat (← field json "maxTriggers")
@@ -69,14 +73,14 @@ private def decodeLimits (json : Json) : Except String CompensationTriggerLimits
     throw "compensation limits are outside their admitted bounds"
   pure limits
 
-private def decodeDeclaration (json : Json) : Except String CompensationExecutionDeclaration := do
+def decodeDeclaration (json : Json) : Except String CompensationExecutionDeclaration := do
   requireObjectShape json
     ["definitionScopeId", "dependencies", "limits", "subjects", "triggerOperationId"]
   pure
     { definitionScopeId := ⟨← decodeNonemptyStringField json "definitionScopeId"⟩
       triggerOperationId := ⟨← decodeNonemptyStringField json "triggerOperationId"⟩
-      subjects := ← decodeArray decodeSubject (← field json "subjects")
-      dependencies := ← decodeArray decodeDependency (← field json "dependencies")
+      subjects := ← decodeArray decodeSubjectDefinition (← field json "subjects")
+      dependencies := ← decodeArray decodeCompensationDependency (← field json "dependencies")
       limits := ← decodeLimits (← field json "limits") }
 
 def decodeCompensationExecutionField (json : Json) :

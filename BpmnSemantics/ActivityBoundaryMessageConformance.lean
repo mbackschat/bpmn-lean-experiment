@@ -1,12 +1,14 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.CommandAdmission
-import BpmnSemantics.SemanticProcess.InternalCommutationCensus
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.InternalCommutationCensus
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Interrupting Activity boundary Message conformance
 
@@ -14,6 +16,8 @@ Kernel-decided witnesses bind the exact source identity to its distinct checked 
 exercise atomic same-owner arming, both exclusive victories, the refusal matrix, the tagged handler
 adversary, and exact Flow Node occurrence publication.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ActivityBoundaryMessageConformance
 
@@ -303,7 +307,7 @@ theorem wrong_handler_family_is_neither_well_formed_nor_deliverable :
 def wrongChannel : MessageChannel :=
   .operationMessage ⟨"Interface_Other"⟩ ⟨"Operation_Other"⟩ ⟨"Message_Other"⟩
 
-private def rejectedPreserving (admission : ExternalAdmission) (state : RuntimeState) : Bool :=
+def rejectedPreserving (admission : ExternalAdmission) (state : RuntimeState) : Bool :=
   decide (admission.outcome = .rejected) && decide (admission.state = state)
 
 theorem exact_refusal_matrix :

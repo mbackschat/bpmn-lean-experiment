@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Compensation Event Sub-Process snapshot declaration decoding
 
@@ -6,19 +8,21 @@ Strict decoding for the optional hidden Program declaration. Structural scope an
 validity remain semantic admission obligations over the complete Program.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeSnapshotTarget (json : Json) :
+def decodeSnapshotTarget (json : Json) :
     Except String CompensationEventSubProcessSnapshotTarget := do
   requireObjectShape json ["handlerScopeId", "parentScopeId"]
   pure
     { parentScopeId := ⟨← decodeNonemptyStringField json "parentScopeId"⟩
       handlerScopeId := ⟨← decodeNonemptyStringField json "handlerScopeId"⟩ }
 
-private def decodeSnapshotDeclaration (json : Json) :
+def decodeSnapshotDeclaration (json : Json) :
     Except String CompensationEventSubProcessSnapshotDeclaration := do
   requireObjectShape json ["limits", "targets"]
   let limits ← field json "limits"

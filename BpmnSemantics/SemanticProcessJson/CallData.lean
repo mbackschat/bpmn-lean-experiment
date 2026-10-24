@@ -1,36 +1,40 @@
-import BpmnSemantics.SemanticProcess.CallDataContract
-import BpmnSemantics.SemanticProcessJson.ActivityData
-import BpmnSemantics.SemanticProcessJson.Elements
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataContract
+public import BpmnSemantics.SemanticProcessJson.ActivityData
+public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! Closed Call data decoding preserves declarations; contextual admission owns correspondence. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 
 open BpmnSemantics.SemanticProcess
 open Lean
 
-private def decodeIdentity (json : Json) : Except String String := do
+def decodeIdentity (json : Json) : Except String String := do
   let value ← json.getStr?
   if nonempty value then pure value else throw "Call data identity must be non-empty"
 
-private def decodePort (json : Json) : Except String ScalarIoPort := do
+def decodePort (json : Json) : Except String ScalarIoPort := do
   requireObjectShape json ["id", "name"]
   pure { id := ← decodeNonemptyStringField json "id"
          name := ← decodeOptionalString (← field json "name") }
 
-private def decodeInputSet (json : Json) : Except String ScalarIoInputSet := do
+def decodeInputSet (json : Json) : Except String ScalarIoInputSet := do
   requireObjectShape json ["id", "name", "dataInputRefs"]
   pure { id := ← decodeNonemptyStringField json "id"
          name := ← decodeOptionalString (← field json "name")
          dataInputRefs := ← decodeArray decodeIdentity (← field json "dataInputRefs") }
 
-private def decodeOutputSet (json : Json) : Except String ScalarIoOutputSet := do
+def decodeOutputSet (json : Json) : Except String ScalarIoOutputSet := do
   requireObjectShape json ["id", "name", "dataOutputRefs"]
   pure { id := ← decodeNonemptyStringField json "id"
          name := ← decodeOptionalString (← field json "name")
          dataOutputRefs := ← decodeArray decodeIdentity (← field json "dataOutputRefs") }
 
-private def decodeIo (json : Json) : Except String ScalarIoSpecification := do
+def decodeIo (json : Json) : Except String ScalarIoSpecification := do
   requireObjectShape json ["ownerId", "id", "input", "output", "inputSet", "outputSet"]
   pure { ownerId := ← decodeNonemptyStringField json "ownerId"
          id := ← decodeNonemptyStringField json "id"

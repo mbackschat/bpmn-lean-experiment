@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 
 /-! Bounded Sub-Process preparation reuses child-entry selection and retains its parent-owned
 deadline and Activity as one patch for interrupting and ESL-OWN noninterrupting boundaries under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
-import BpmnSemantics.SemanticProcessJson.Program
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcessJson.Program
 
 /-! PMIS-ADMIT-01 preserves declaration presence at private ingress because the syntax-only Program decoder merges omission and empty List declarations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

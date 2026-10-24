@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.ActivityOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Activity boundary Message
 
@@ -9,11 +11,13 @@ same Activity occurrence; the handler tag is part of that resolution, so an iden
 Timer identity cannot stand in for the Message subscription.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def messageBoundedRunningInstance? (state : RuntimeState) : Option SemanticId :=
+def messageBoundedRunningInstance? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
@@ -314,7 +318,7 @@ private theorem messageBoundedPairForSubscription_pairing (program : Program)
                             channel] at found
               · simp [msgFound, opFound, recFound, sole] at found
 
-private def commitMessageBoundedVictory (state : RuntimeState)
+def commitMessageBoundedVictory (state : RuntimeState)
     (pair : MessageBoundedPair) (output : ControlPlaceId) : Option RuntimeState :=
   match state.control with
   | .running _ =>

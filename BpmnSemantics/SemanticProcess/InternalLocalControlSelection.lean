@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
-import BpmnSemantics.SemanticProcess.InternalLocalControlBranchSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+public import BpmnSemantics.SemanticProcess.InternalLocalControlBranchSelection
 
 /-! Predecessor selection for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

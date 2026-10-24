@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 
 /-! Runtime-position preservation for complete scope-creation preparations under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

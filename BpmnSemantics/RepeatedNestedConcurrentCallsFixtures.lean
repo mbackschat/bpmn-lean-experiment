@@ -20,25 +20,25 @@ def call (owner id callee : String) := node owner (.callActivity ⟨id⟩ ⟨cal
 /-- One Process body: its members and its flows. -/
 abbrev Body := List (String × String × CheckedNode) × List (String × String)
 
-private def chain (ids : List String) : List (String × String) := ids.zip ids.tail
+def chain (ids : List String) : List (String × String) := ids.zip ids.tail
 
-private def step (owner id value : String) : String × String × CheckedNode :=
+def callsStep (owner id value : String) : String × String × CheckedNode :=
   if value == "T" then task owner id else call owner id value
 
 /-- Explicit suffixes keep vertex ids free of `Nat.repr`, which the kernel would otherwise reduce. -/
-private def suffixes : List String := ["0", "1", "2", "3", "4"]
+def suffixes : List String := ["0", "1", "2", "3", "4"]
 
 /-- None Start, the steps in order, None End. -/
 def serial (owner : String) (steps : List String) : Body :=
   let ids := (suffixes.take steps.length).map (owner ++ "V" ++ ·)
-  (start owner (owner ++ "S") :: finish owner (owner ++ "E") :: (steps.zip ids).map (fun (value, id) => step owner id value),
+  (start owner (owner ++ "S") :: finish owner (owner ++ "E") :: (steps.zip ids).map (fun (value, id) => callsStep owner id value),
     chain ((owner ++ "S") :: ids ++ [owner ++ "E"]))
 
 /-- None Start, a Parallel fork into the serial branches, their join, None End. -/
 def forked (owner : String) (branches : List (List String)) : Body :=
   let branch := fun (label : String) (steps : List String) =>
     let ids := (suffixes.take steps.length).map (owner ++ "B" ++ label ++ "V" ++ ·)
-    ((steps.zip ids).map (fun (value, id) => step owner id value), chain ((owner ++ "F") :: ids ++ [owner ++ "J"]))
+    ((steps.zip ids).map (fun (value, id) => callsStep owner id value), chain ((owner ++ "F") :: ids ++ [owner ++ "J"]))
   let arms := (branches.zip (suffixes.take branches.length)).map fun (steps, label) => branch label steps
   ([start owner (owner ++ "S"), fork owner (owner ++ "F"), join owner (owner ++ "J"), finish owner (owner ++ "E")] ++
       arms.flatMap (·.1),

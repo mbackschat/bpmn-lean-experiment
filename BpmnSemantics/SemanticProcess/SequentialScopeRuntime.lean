@@ -1,17 +1,21 @@
-import BpmnSemantics.SemanticProcess.ScopeCompletion
-import BpmnSemantics.SemanticProcess.ScopeVariableData
-import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
-import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
-import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.EffectDataMapping
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.ScopeVariableData
+public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
+public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.EffectDataMapping
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Sequential repeated embedded scopes
 
 SMIS-ENTER-01 and SMIS-END-01 separate outer token consumption from fresh body issuance.
 Body-local initialization and disposal are atomic; the outer Activity retains the sole child reference.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 
 /-! # Completion continuation position
 
@@ -8,6 +10,8 @@ Scope quiescence protects the parents and token owners retained by normal comple
 continuation's declared static place binding is separate from the raw completion selector,
 which receives only a scope identifier and optional output identifier.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

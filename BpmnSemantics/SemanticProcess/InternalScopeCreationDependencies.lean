@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalCommutationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! Scope and Call dependencies retain their complete typed identities under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! Fresh scope insertion retains the complete public payload. The proof uses permutations and
 identity freshness, not comparator equality for potentially different same-id payloads, under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def scopePosition (program : Program) (occurrence : RuntimeScopeOccurrence) :
+def scopePosition (program : Program) (occurrence : RuntimeScopeOccurrence) :
     PublicScopePosition :=
   { id := occurrence.id, parent := occurrence.parent
     bpmnElementId := match uniqueDefinitionScope? program occurrence.id.definitionScopeId with

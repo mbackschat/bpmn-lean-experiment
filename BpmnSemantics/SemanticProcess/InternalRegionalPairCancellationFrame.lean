@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
 
 /-! Cancellation removes derived Activity, effect, and incident populations, so pair commutation needs their exact predecessor lists rather than only disjoint root IDs. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

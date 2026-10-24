@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
-import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 
 /-! # Activity body turnover preservation
 
@@ -7,6 +9,8 @@ Whole-state preservation laws for the Activity body turnover operation. The tran
 conjunct-specific laws remain in `ActivityBodyTurnover`; this owner composes them without forcing that
 mechanism owner past the reviewability ceiling.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.CommandAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! Admission inversion laws expose the committed-storage ingress guard without unfolding its dispatch. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

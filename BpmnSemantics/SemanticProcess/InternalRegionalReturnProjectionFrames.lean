@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 
 /-! Return preserves complete lookup results for owners outside its selected Call tree.
 Incoming Call records are retained by target Process, including all matching records;
 the association invariant excludes an equal selected identity with a different target. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

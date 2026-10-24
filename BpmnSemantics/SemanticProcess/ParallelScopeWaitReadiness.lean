@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
 
 /-! # Reachable wait reservation validity
 
@@ -8,6 +10,8 @@ PMIS-SELECT-01 requires fresh retained anchors as well as safe issuance counters
 Ordinary occurrence execution and reserved execution share these invariants;
 validity preservation is separate from successful preparation of the next wait.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

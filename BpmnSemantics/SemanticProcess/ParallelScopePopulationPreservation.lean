@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeData
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Parallel repeated-scope population preservation
 
 PMIS-END-01 and PMIS-CANCEL-01 share exact population censuses through retirement. These proofs stay downstream of data and occurrence execution so the structural frame can compose actual batch prefixes without introducing a runtime dependency cycle. They do not establish committed-state reachability or bounded progress.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

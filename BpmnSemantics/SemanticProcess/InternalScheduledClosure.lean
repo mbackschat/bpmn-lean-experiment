@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
-import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+public import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
 
 /-! Bounded closure consumes explicit choices only after universally independent normalization,
 under the [approved choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -203,7 +207,7 @@ def singletonOccurrencePublication? (program : Program) (commandId : SemanticId)
 /-- Result-only singletons must not acquire publication admission: the Configured Task
 pass-through mutation deliberately executes a wrong lowering without a publishable trace.
 -/
-private def singletonClosureStep (program : Program) (commandId : SemanticId)
+def singletonClosureStep (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (offer : InternalExecutionOffer) : InternalClosureStep :=
   let occurrence := match offer.alternative with
     | .operationOccurrence _ owner => singletonOccurrencePublication? program commandId first state offer owner
@@ -224,7 +228,7 @@ private def singletonClosureStep (program : Program) (commandId : SemanticId)
             offer.operation offer.alternative commandId first
           some [publication.lifecycle] }
 
-private def acceptOccurrencePublicationPrefixes? (program : Program) (state : RuntimeState) :
+def acceptOccurrencePublicationPrefixes? (program : Program) (state : RuntimeState) :
     List InstantiatedInternalTransitionPublication → List RuntimeState → Option Unit
   | [], [] => some ()
   | publication :: rest, next :: successors => do
@@ -237,7 +241,7 @@ private def acceptOccurrencePublicationPrefixes? (program : Program) (state : Ru
       else acceptOccurrencePublicationPrefixes? program next rest successors
   | _, _ => none
 
-private def occurrenceBatchPublications? (program : Program) (commandId : SemanticId)
+def occurrenceBatchPublications? (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (batch : InternalOccurrenceBatch)
     (successors : List RuntimeState) : Option (List InstantiatedInternalTransitionPublication) := do
   if !programWellFormed program then none else pure ()
@@ -321,7 +325,7 @@ structure ScheduledClosureResult where
 def ScheduledClosureResult.failed (result : ScheduledClosureResult) : Bool :=
   result.hitBound || result.ambiguousChoice || result.scheduleFailure.isSome
 
-private def prependClosureStep (step : InternalClosureStep) (closed : ScheduledClosureResult) :
+def prependClosureStep (step : InternalClosureStep) (closed : ScheduledClosureResult) :
     ScheduledClosureResult :=
   if closed.failed then closed
   else { closed with

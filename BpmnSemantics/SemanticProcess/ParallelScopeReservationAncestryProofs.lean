@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 
 /-! # Actual parallel reservation ancestry
 
@@ -7,6 +9,8 @@ PMIS-ENTER-01 issues direct children of the Start root. Actual lifetime history
 retains a sublist of that census and preserves the root, so resolution's exact
 live occurrence is enough to establish reservation's bounded ancestry check.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

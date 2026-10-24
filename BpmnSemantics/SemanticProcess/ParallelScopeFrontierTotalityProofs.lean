@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeResumptionFrontierProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeInitialEntryProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionFrontierProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeInitialEntryProofs
 
 /-! PMIS-SELECT-01 separates discovery failure from dependent multi-offer selection.
 Actual reachability rules out failed discovery and duplicate alternatives even at
 empty or singleton frontiers. Initial-entry blockers and scoped resumption supply
 complete batches, so selection consumes no private choice directive.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 
 /-! Cancellation compares public anchors only after private Timer classification.
 The predecessor projection supplies the cross-family identity census needed to preserve
 unrelated waits with the same raw identity as a private deadline (RHP-PRIVATE-01).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

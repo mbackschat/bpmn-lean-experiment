@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.TopologyFixtures
-import BpmnSemantics.CallActivityConformanceFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
+public import BpmnSemantics.CallActivityConformanceFixtures
 
 /-! Executable publication probes and conformance proofs share these exact states and expected traces. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CommittedExecutionPublicationConformance
 

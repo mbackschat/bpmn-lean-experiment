@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Withdrawal finality for wait identities
 
@@ -15,6 +17,8 @@ because one concrete state never holds the duplicate.
 The laws are stated over `List.erase` rather than over any one victory, so every arm that withdraws a
 wait by erasing it inherits them instead of restating the argument.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

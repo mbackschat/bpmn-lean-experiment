@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+module
+
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -833,7 +837,9 @@ theorem serial_patch_exists (handlers : List String) (outputs : List VariableMap
   change ∃ bindings, (outputs.mapM (fun m : VariableMapping => match m.expression with | .localVariable n => some n | _ => none)).bind (fun names =>
     if !(names.eraseDups.length == patch.length && names.all (fun name => patch.any (·.name == name))) then none
     else (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes))) = some bindings
-  rw [collected]
+  -- `erw`: `collected` carries the statement's matcher and the `change` above this proof's private one
+  -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  erw [collected]
   simp only [Option.bind_some, count, beq_self_eq_true, covered, Bool.and_self, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
   change ∃ bindings, (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes)) = some bindings
   rw [writesMapped]

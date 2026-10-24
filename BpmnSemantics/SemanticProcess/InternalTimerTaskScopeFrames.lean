@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
 
 /-! Scope creation frames use complete input-place censuses, including the newly produced token.
 An already-live Timer-task owner remains live after the fresh scope insertion.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

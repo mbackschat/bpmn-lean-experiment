@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
 
 /-! # Initial parallel entry blockers
 
@@ -7,6 +9,8 @@ PMIS-ENTER-01 issues one entry credit per live child. PMIS-ADMIT-01's
 strict predecessor order makes disappearance of every continuation imply a Task
 firing; without external ingress its issued wait still blocks retirement.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -191,11 +195,11 @@ private theorem exact_port_charges (program : Program) (analysis : ParallelScope
     | externalStimulus stimulus => simp [transitionPortCharge, declarationFiringCharge]
     | internalOperation record => first | exact (charges record present).1 | exact (charges record present).2
 
-private def taskWaitCount (state : RuntimeState) (owner : ScopeOccurrenceId) : Nat :=
+def taskWaitCount (state : RuntimeState) (owner : ScopeOccurrenceId) : Nat :=
   (state.waits.filter (fun wait => wait.owner == owner)).length +
     (state.effectWaits.filter (fun wait => wait.owner == owner)).length
 
-private def taskArmCharge (owner : ScopeOccurrenceId) : CommittedTransition → Nat
+def taskArmCharge (owner : ScopeOccurrenceId) : CommittedTransition → Nat
   | .externalStimulus _ => 0
   | .internalOperation record => if record.owner == owner &&
       (record.operationKind == .awaitUserTask || record.operationKind == .awaitEffect) then 1 else 0

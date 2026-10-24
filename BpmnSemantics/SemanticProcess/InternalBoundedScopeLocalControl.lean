@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
 
 /-! Bounded entry reuses child/local-control separation. Its joined deadline and Activity touch
 no additional local-control reads, including the nonchosen selected-join populations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

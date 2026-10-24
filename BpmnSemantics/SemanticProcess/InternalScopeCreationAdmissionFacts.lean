@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+public import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 
 /-! # Admission facts for scope creation
 
 The Call association invariant requires distinct caller and called definitions. The reviewed Call
 admission account supplies that fact; local preparation alone does not establish it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

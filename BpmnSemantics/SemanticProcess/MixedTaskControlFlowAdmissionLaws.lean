@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+module
+
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! MTCF-DATA-01 and MTCF-PROGRESS-01 connect the executable graph certificates to declarative paths and ranks so runtime proofs need not trust a finite search result without its saturation evidence. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

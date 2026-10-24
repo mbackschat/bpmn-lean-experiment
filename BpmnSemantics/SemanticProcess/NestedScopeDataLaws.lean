@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.NestedScopeData
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Nested scope-data frame laws
 
@@ -9,6 +11,8 @@ the nearest checked non-law, per the
 The laws hold for every Program, chain and frame population; they need no runtime well-formedness
 because a definition with more than one live frame makes resolution refuse rather than choose.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeData
 
@@ -307,9 +311,9 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
 Writing into the writer's innermost frame is not the nearest-owner write: credit review's frame exists
 but does not declare `status`, which order approval's frame declares. -/
 
-private def nonLawScope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
+def nonLawScope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
 
-private def nonLawProgram : Program :=
+def nonLawProgram : Program :=
   { identity := { compiler := .bpmnSourceSemanticProcess, semanticProfile := nestedScopeDataProfileId
                   sourceId := ⟨"non-law"⟩, sourceSha256 := "" }
     internalSchedulingMode := .rejectObservableChoice
@@ -320,10 +324,10 @@ private def nonLawProgram : Program :=
       , { id := nonLawScope "P", parentScopeId := none, originElementId := ⟨"P"⟩ } ]
     operationScopes := [], controlPlaceScopes := [], controlPlaces := [], operations := [] }
 
-private def nonLawOwner (name : String) : ScopeOccurrenceId :=
+def nonLawOwner (name : String) : ScopeOccurrenceId :=
   { processInstanceId := ⟨"I"⟩, definitionScopeId := nonLawScope name, activation := 1 }
 
-private def nonLawVariables : ScopedVariables :=
+def nonLawVariables : ScopedVariables :=
   { emptyScopedVariables with scopes :=
       [ { owner := nonLawOwner "C", bindings := [{ name := "limit", value := .string "0" }] }
       , { owner := nonLawOwner "O", bindings := [{ name := "status", value := .null }] } ] }

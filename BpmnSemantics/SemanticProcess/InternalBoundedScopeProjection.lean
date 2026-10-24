@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
-import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 
 /-! The bounded Sub-Process adds one public scope anchor. Its joined deadline remains private,
 while fresh child and Activity identities preserve every existing Timer classification.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

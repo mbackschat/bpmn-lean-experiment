@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
 
 /-! Selected-record algebra for the approved local-control preparation boundary in
 [the selected-join readiness amendment](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-readiness-dependency-amendment).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 
 /-! Mixed scope/arming frames retain the complete predecessor artifact required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Scope insertion
 preserves an already-live arming owner; arbitrary absent-owner queries need not be preserved.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

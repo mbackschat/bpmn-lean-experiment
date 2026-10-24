@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Composed Activity data-input/output conformance fixtures
 
 Shared exact-source and runtime fixtures for admission and lifetime witnesses. Literal fixtures are
 kernel-locked to their original constructions so consumers do not repeat the lifetime reductions.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -54,7 +58,7 @@ def claimCheckedProcess : CheckedProcess :=
           sourceId := ⟨"StartEvent_ClaimReceived"⟩
           targetId := ⟨"UserTask_AssessClaim"⟩ } ] }
 
-private def claimDefinitionScopeId : DefinitionScopeId := ⟨"scope:Process_ClaimAssessment"⟩
+def claimDefinitionScopeId : DefinitionScopeId := ⟨"scope:Process_ClaimAssessment"⟩
 
 def claimProgram : Program :=
   { identity :=
@@ -112,7 +116,7 @@ theorem claimProgram_capabilities : programProfileCapabilitiesValid claimProgram
 
 def claimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_1"⟩
 
-private def claimScopeOwner : ScopeOccurrenceId :=
+def claimScopeOwner : ScopeOccurrenceId :=
   { processInstanceId := claimInstanceId
     definitionScopeId := claimDefinitionScopeId
     activation := 1 }

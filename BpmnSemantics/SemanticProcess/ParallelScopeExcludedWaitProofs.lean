@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
 
 /-! # Excluded PMIS waits and incidents
 
@@ -8,6 +10,8 @@ committed ingress preserve empty Message/Timer wait and Effect incident collecti
 Predecessor absence is explicit; command reachability and publication compose these
 primitive laws downstream.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

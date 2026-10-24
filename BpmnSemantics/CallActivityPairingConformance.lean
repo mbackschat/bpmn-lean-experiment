@@ -1,8 +1,12 @@
-import BpmnSemantics.CallActivityConformance
+module
+
+public import BpmnSemantics.CallActivityConformance
 
 /-! Balanced invoke/return populations must still form a bijection, as required by
 the [Call Activity account](../docs/capsules/CALL-ACTIVITY-SPEC.md).
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -11,7 +15,7 @@ namespace BpmnSemantics.CallActivityPairingConformance
 open BpmnSemantics.SemanticProcess
 open CallActivityConformance
 
-private def extraOperations (distinctInvokeId : Bool) : List SemanticOperation :=
+def extraOperations (distinctInvokeId : Bool) : List SemanticOperation :=
   program.operations.filterMap fun
     | .invokeProcess id origin input process root entry returned _ =>
         some (.invokeProcess
@@ -21,7 +25,7 @@ private def extraOperations (distinctInvokeId : Bool) : List SemanticOperation :
         some (.returnProcess ⟨"operation:UnclaimedReturn"⟩ origin process root output)
     | _ => none
 
-private def balancedManyToOne (distinctInvokeId : Bool) : Program :=
+def balancedManyToOne (distinctInvokeId : Bool) : Program :=
   { program with
     operations := program.operations ++ extraOperations distinctInvokeId
     operationScopes := program.operationScopes ++

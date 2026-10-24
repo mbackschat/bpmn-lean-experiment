@@ -1,17 +1,21 @@
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-import BpmnSemantics.SemanticProcess.ParallelScopeRecordAccounting
-import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
-import BpmnSemantics.SemanticProcess.ParallelScopeWaitHistoryProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameHistoryProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeLogicalTimeProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationOwnerProofs
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+public import BpmnSemantics.SemanticProcess.ParallelScopeRecordAccounting
+public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+public import BpmnSemantics.SemanticProcess.ParallelScopeWaitHistoryProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameHistoryProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeLogicalTimeProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationOwnerProofs
 
 /-! # Parallel scope scheduler phase accounting
 
 PMIS-SELECT-01 accounts for actual selected execution before publication. This downstream owner composes phase-aware lifetime history with the runtime closure prefix law, including fuel exhaustion and terminal root completion.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

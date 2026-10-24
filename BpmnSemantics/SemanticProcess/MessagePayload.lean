@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Direct Message Catch Event payload mediation
 
@@ -7,6 +9,8 @@ The received payload, admitted by the selected profile's Message-payload domain,
 declared Catch Event `DataOutput`; its direct association then routes the value into the owning
 Process scope under the target `Property` identity. Neither pure intermediate binding is committed.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -40,44 +44,22 @@ theorem payloadMessageOperation?_facts (program : Program) (wait : MessageWait)
         message.channel = wait.channel ∧
         operationOwningScope? program operation.id = some wait.owner.definitionScopeId := by
   unfold payloadMessageOperation? at resolved
-  generalize entriesEq : program.operations.filterMap (fun candidate =>
-    match candidate with
-    | .awaitPayloadMessage _ _ _ output message candidateOutput =>
-        if message.elementId = wait.elementId && message.channel = wait.channel &&
-            output = wait.output &&
-            operationOwningScope? program candidate.id = some wait.owner.definitionScopeId then
-          some (candidate, candidateOutput)
-        else none
-    | _ => none) = entries at resolved
-  cases entries with
-  | nil => simp at resolved
-  | cons entry rest =>
-      cases rest with
-      | cons other tail => simp at resolved
-      | nil =>
-          have entryEq : entry = (operation, directOutput) := Option.some.inj resolved
-          have selected : (operation, directOutput) ∈
-              program.operations.filterMap (fun candidate =>
-                match candidate with
-                | .awaitPayloadMessage _ _ _ output message candidateOutput =>
-                    if message.elementId = wait.elementId &&
-                        message.channel = wait.channel && output = wait.output &&
-                        operationOwningScope? program candidate.id =
-                          some wait.owner.definitionScopeId then
-                      some (candidate, candidateOutput)
-                    else none
-                | _ => none) := by
-            rw [entriesEq, ← entryEq]
-            simp
-          obtain ⟨candidate, member, projected⟩ := List.mem_filterMap.mp selected
-          cases candidate <;> simp_all
-          rename_i id origin input output message candidateOutput
-          obtain ⟨⟨⟨⟨elementEq, channelEq⟩, waitOutputEq⟩, ownerEq⟩,
-            operationEq, outputEq⟩ := projected
-          subst operation
-          subst directOutput
-          subst output
-          exact ⟨member, id, origin, input, message, rfl, elementEq, channelEq, ownerEq⟩
+  -- Split the definition's own `match` rather than restating it: a module gives a restated `match` its own
+  -- private matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  split at resolved
+  · rename_i entry entries
+    obtain rfl := Option.some.inj resolved
+    have selected := entries ▸ List.mem_singleton_self (operation, directOutput)
+    obtain ⟨candidate, member, projected⟩ := List.mem_filterMap.mp selected
+    cases candidate <;> simp_all
+    rename_i id origin input output message candidateOutput
+    obtain ⟨⟨⟨⟨elementEq, channelEq⟩, waitOutputEq⟩, ownerEq⟩,
+      operationEq, outputEq⟩ := projected
+    subst operation
+    subst directOutput
+    subst output
+    exact ⟨member, id, origin, input, message, rfl, elementEq, channelEq, ownerEq⟩
+  · contradiction
 
 /-- The pure fill result before the direct association is applied. -/
 def fillCatchEventOutput (directOutput : DirectCatchEventPayloadOutput)

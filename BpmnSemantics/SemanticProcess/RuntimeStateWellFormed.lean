@@ -1,17 +1,19 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-import BpmnSemantics.SemanticProcess.EventBasedGateway
-import BpmnSemantics.SemanticProcess.Incident
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.RuntimePositionValidity
-import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
-import BpmnSemantics.SemanticProcess.SequentialMultiInstance
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
-import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.Incident
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 
 /-! # Runtime-state well-formedness
 
@@ -58,6 +60,8 @@ would make every not-started and terminal state ill-formed; inside the running c
 `runtimePositionValid` already decides it, and a second statement would be one conjunct pretending
 to be two.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -704,7 +708,7 @@ theorem runtimeStateWellFormed_associationValidities (program : Program)
 
 /-! ## Layer 3: monotonicity -/
 
-private def taskCountFor (activations : List TaskActivation) (taskId : TaskDefinitionId) : Nat :=
+def taskCountFor (activations : List TaskActivation) (taskId : TaskDefinitionId) : Nat :=
   (activations.find? fun activation => decide (activation.taskId = taskId)).map (·.count) |>.getD 0
 
 /-- The count an element-keyed activation family has reached, or zero when the key is absent.
@@ -715,7 +719,7 @@ def nodeCountFor {α : Type} (key : α → NodeId) (count : α → Nat) (values 
     (elementId : NodeId) : Nat :=
   (values.find? fun value => decide (key value = elementId)).map count |>.getD 0
 
-private def scopeCountFor (activations : List ScopeActivation) (scopeId : DefinitionScopeId) :
+def scopeCountFor (activations : List ScopeActivation) (scopeId : DefinitionScopeId) :
     Nat :=
   (activations.find? fun activation => decide (activation.scopeId = scopeId)).map (·.count)
     |>.getD 0

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Flow-node occurrence lifecycle ordering laws
 
 Proves the strict total-order laws behind canonical open-occurrence sorting and the resulting invariance under permutation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -71,7 +75,7 @@ private theorem scalarBefore_trans (left middle right : String) :
   simp only [scalarBefore, decide_eq_true_eq]
   exact String.lt_trans
 
-private def natBefore (left right : Nat) : Bool := left < right
+def natBefore (left right : Nat) : Bool := left < right
 
 private theorem natBefore_asymm (left right : Nat) :
     natBefore left right = true → natBefore right left = false := by
@@ -187,7 +191,7 @@ theorem scopeBefore_total (left right : ScopeOccurrenceId) (different : left ≠
     cases right
     simp_all)
 
-private def transitionBefore (leftCommand : SemanticId) (leftTransition leftLocal : Nat)
+def transitionBefore (leftCommand : SemanticId) (leftTransition leftLocal : Nat)
     (rightCommand : SemanticId) (rightTransition rightLocal : Nat) : Bool :=
   lifecycleLexStep (fun a b : SemanticId => scalarBefore a.value b.value)
     leftCommand rightCommand

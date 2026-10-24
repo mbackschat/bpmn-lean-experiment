@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 
 /-! # Flow-node occurrence projection shape proofs
 
 This module proves that the independent open-occurrence projector emits only wait, scope, and
 Call Activity anchors. Instantaneous transition anchors enter only through accepted deltas.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

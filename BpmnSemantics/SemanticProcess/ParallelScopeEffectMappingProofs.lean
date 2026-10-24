@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
-import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
+public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! # Stored Service mapping provenance
 
@@ -7,6 +9,8 @@ PMIS-DATA-01 stores the admitted output list when creating a Service wait.
 The target-uniqueness invariant follows actual issuance and removal through the
 existing histories; declaration-key validity alone does not establish it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

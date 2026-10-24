@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.CallActivity
+module
+
+public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! REG-OWN-CLOSE-01 separates predecessor liveness from survival under selected removal. The
 retention masks describe predecessor records only; no speculative successor supplies the condition.
 Exact raw-field agreement remains distinct from cross-target selection-domain agreement. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

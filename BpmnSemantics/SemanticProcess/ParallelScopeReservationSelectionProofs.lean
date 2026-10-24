@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 
 /-! # Declaration selection for parallel reservation
 
@@ -7,6 +9,8 @@ PMIS-SELECT-01 preparation rechecks operation and input-flow ownership. These
 checks follow exact occurrence resolution and the admitted Program graph,
 without assuming preparation succeeds or introducing another selection rule.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,17 +1,19 @@
-import BpmnSemantics.SemanticProcess.CallDataContract
-import BpmnSemantics.SemanticProcessJson.CallData
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.CallActivityAdmission
-import BpmnSemantics.SemanticProcess.CommandAdmission
-import BpmnSemantics.SemanticProcess.CallDataTransfer
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.CallDataStateValidation
+module
+
+public import BpmnSemantics.SemanticProcess.CallDataContract
+public import BpmnSemantics.SemanticProcessJson.CallData
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+public import BpmnSemantics.SemanticProcessJson.Program
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.CallDataTransfer
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.CallDataStateValidation
 
 /-! # Call data boundary discriminators
 
@@ -19,6 +21,8 @@ These finite declarations, transfers and scheduled supplier traces separate exac
 correspondence from label matching, cross-Process associations and control-only data loss.
 The selected scalar profile bounds these checks; they establish no general call equivalence.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CallActivityDataBoundariesConformance
 

@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 
 /-! # Scoped parallel subprocess resumption
 
@@ -8,6 +10,8 @@ foreign refusal; actual singleton and reserved-batch selections preserve it unti
 a structural phase transition. Entry-population drain, refusal-free reservation,
 complete command progress and publication acceptance remain separate obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 
 /-! Actual Terminate position publication follows from predecessor region selection and
 the existing evaluator's removal fields. Successor validity is derived from the selected step.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

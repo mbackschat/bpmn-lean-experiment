@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationOpenProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalHostingCancellationProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
-import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
-import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalHostingCancellationProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
+public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 
 /-! Cancellation acceptance connects the independently projected raw successor to the
 prepared lifecycle fold. Exact predecessor anchors identify each removed occurrence;
 instantaneous Error and Boundary events retain the existing candidate account. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

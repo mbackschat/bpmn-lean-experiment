@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! Finite independent SBT witnesses retain the invoice review, validation, classification and finalization journey. They do not discharge the quantified reachable-progress obligation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SerialBusinessTaskConformance
 open BpmnSemantics.SemanticProcess

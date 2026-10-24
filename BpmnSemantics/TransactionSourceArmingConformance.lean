@@ -17,40 +17,40 @@ open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics.TransactionSourceConformance
 
-private def program : Program := lowerCheckedProcess (transactionCheckedSource "" false)
-private def instanceId : SemanticId := ⟨"tx-arming"⟩
-private def commandId : SemanticId := ⟨"start-transaction-arming"⟩
-private def childOwner : ScopeOccurrenceId :=
+def program : Program := lowerCheckedProcess (transactionCheckedSource "" false)
+def instanceId : SemanticId := ⟨"tx-arming"⟩
+def commandId : SemanticId := ⟨"start-transaction-arming"⟩
+def childOwner : ScopeOccurrenceId :=
   { processInstanceId := instanceId, definitionScopeId := ⟨"scope:Transaction"⟩, activation := 1 }
 
-private def start : Stimulus :=
+def start : Stimulus :=
   .startProcess commandId ⟨program.processId.value⟩ instanceId []
 
-private def admitted : ExternalAdmission :=
+def admitted : ExternalAdmission :=
   admitStimulusWithCompensationSnapshots program initialState start
 
-private def selectedSuccessor? (before : RuntimeState) (element : String) : Option RuntimeState := do
+def selectedSuccessor? (before : RuntimeState) (element : String) : Option RuntimeState := do
   let operation ← program.operations.find? (fun operation => operation.id.value == "operation:" ++ element)
   match attemptInternalOperation program operation before with
   | .applied step => some step.successor
   | .disabled _ | .refused _ _ => none
 
-private def initiated : RuntimeState :=
+def initiated : RuntimeState :=
   (selectedSuccessor? admitted.state "RootStart").getD initialState
-private def entered : RuntimeState :=
+def entered : RuntimeState :=
   (selectedSuccessor? initiated "Transaction").getD initialState
-private def ready : RuntimeState :=
+def ready : RuntimeState :=
   (selectedSuccessor? entered "Split").getD initialState
 
-private def frontier : List SemanticOperation :=
+def frontier : List SemanticOperation :=
   (snapshotInternalTransitionFrontier program ready).transitions.map (·.1)
-private def prepared : List PreparedInternalArming :=
+def prepared : List PreparedInternalArming :=
   (prepareInternalArmingBatch? program ready frontier).getD []
 
-private def childRegister : List CompensationActivityRetention :=
+def childRegister : List CompensationActivityRetention :=
   [{ owner := childOwner, nextCompletionOrdinal := 1, records := [] }]
 
-private def erasedRegister : RuntimeState :=
+def erasedRegister : RuntimeState :=
   { ready with compensationActivityRetentions := [] }
 
 theorem selected_program_is_source_lowered_and_admitted :

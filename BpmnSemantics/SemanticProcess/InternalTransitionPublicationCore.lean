@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
-import BpmnSemantics.SemanticProcess.TransitionRecord
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import BpmnSemantics.SemanticProcess.InternalMergePreparation
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.TransitionRecord
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 
 /-! Family publication values stay below the unified prepared dispatcher, so its pair laws can reuse acceptance without an import cycle. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

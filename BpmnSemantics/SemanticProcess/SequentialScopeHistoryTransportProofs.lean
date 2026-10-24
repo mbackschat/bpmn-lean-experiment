@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeCertificatePreservationProofs
-import BpmnSemantics.SemanticProcess.Execution
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeCertificatePreservationProofs
+public import BpmnSemantics.SemanticProcess.Execution
 
 /-! SMIS-ADMIT-01 owns actual command and internal-prefix reachability with one invariant transport through the shared scheduler cursor induction. Individual certificate preservation remains below this owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

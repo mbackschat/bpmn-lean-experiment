@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 
 /-! # Compensation removal and prepared regions
 
@@ -6,6 +8,8 @@ Compensation history can outlive its original scope. The Internal Commutation ac
 the additional called-instance ownership test when it uses a region of currently live scopes.
 Parent-context retention also distinguishes retaining a selected root from removing it.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

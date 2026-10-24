@@ -1,9 +1,13 @@
-import BpmnSemantics.Experiments.CheckedSourceFrontier
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceFrontier
 
 /-! # Two-token checked-source frontiers
 
 This module owns order-independent facts about enabled checked-source transitions at two distinct Sequence Flow tokens aimed at two distinct checked nodes, plus the generic two-anchor `filterMap` isolation law used by that account. It adds no runtime state, observation, or selector.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceParallelFrontier
 

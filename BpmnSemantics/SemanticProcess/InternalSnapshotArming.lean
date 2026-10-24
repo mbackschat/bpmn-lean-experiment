@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
 
 /-! Retained ordinary preparations connect snapshot-aware attempts to the focused closure without widening the declaration-free evaluator. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -45,7 +49,7 @@ def snapshotArmingPublicationForFootprint? (program : Program) (before after : R
     commandId 0
   pure { footprint, record, lifecycle }
 
-private def internalOperationAttemptBefore
+def internalOperationAttemptBefore
     (left right : InternalOperationAttempt) : Bool :=
   left.operation.id.value < right.operation.id.value
 

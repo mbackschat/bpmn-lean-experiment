@@ -15,7 +15,7 @@ namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def chainEdges (ids : List String) : List (String × String) := ids.zip ids.tail
+def chainEdges (ids : List String) : List (String × String) := ids.zip ids.tail
 
 /-- Root `P` runs Work `W`, whose body is the region `fork → branches → merge → T → End`; `target` supplies
 `T`'s body nodes and edges, and the `extra` lists perturb the model. -/
@@ -36,7 +36,7 @@ def serialTarget (tasks : List String) : List (String × String × CheckedNode) 
 
 def region (branches : List String) : CheckedProcess := regionWith branches (serialTarget ["Fix"])
 
-private def padded (index : Nat) : String := "F" ++ (if index < 10 then "0" else "") ++ toString index
+def padded (index : Nat) : String := "F" ++ (if index < 10 then "0" else "") ++ toString index
 
 /-- The minimal region with `count` target tasks: its multiplicity-weighted count is `2 + 2 * count`. -/
 def weighted (count : Nat) : CheckedProcess :=

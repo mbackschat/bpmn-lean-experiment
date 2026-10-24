@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.WaitActivation
+module
+
+public import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.WaitActivation
 
 /-! # Internal arming collection order: canonical insertion and distinct-key replacement laws for bounded internal arming. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -331,7 +335,7 @@ theorem insertTaskActivation_eq_canonicalInsertBy (value : TaskActivation) (valu
 
 def stringKeyBefore (key : α → String) (left right : α) : Bool := decide (key left < key right)
 
-private def excludesStringKey (key : α → String) (removed : String) (value : α) : Bool := decide (key value ≠ removed)
+def excludesStringKey (key : α → String) (removed : String) (value : α) : Bool := decide (key value ≠ removed)
 
 theorem stringKeyBefore_asymm (key : α → String) (left right : α) : stringKeyBefore key left right = true → stringKeyBefore key right left = false := by
   simp only [stringKeyBefore, decide_eq_true_eq, decide_eq_false_iff_not]
@@ -415,7 +419,7 @@ private theorem filter_canonicalInsertBy_stringKey (key : α → String)
           simp [canonicalInsertBy, stringKeyBefore, excludesStringKey,
             insertedBefore, currentKept, ih tailOrdered]
 
-private def replaceByStringKey (key : α → String) (value : α) (values : List α) : List α :=
+def replaceByStringKey (key : α → String) (value : α) (values : List α) : List α :=
   canonicalInsertBy (stringKeyBefore key) value
     (values.filter (excludesStringKey key (key value)))
 
@@ -504,7 +508,7 @@ private theorem setEffectActivationCount_eq_replace (values : List EffectActivat
   rw [filterIdentifierNe_eq_filterValueNe (fun value : EffectActivation => value.elementId)
     NodeId.value nodeId_eq_of_value_eq elementId]
 
-private def mappedActivationCount (element : α → NodeId) (count : α → Nat) (values : List α) (query : NodeId) : Nat := ((values.find? fun value => decide (element value = query)).map count).getD 0
+def mappedActivationCount (element : α → NodeId) (count : α → Nat) (values : List α) (query : NodeId) : Nat := ((values.find? fun value => decide (element value = query)).map count).getD 0
 
 private theorem elementActivationCount_map_eq (element : α → NodeId) (count : α → Nat) (values : List α) (query : NodeId) : elementActivationCount (values.map fun value => (element value, count value)) query = mappedActivationCount element count values query := by
   induction values with

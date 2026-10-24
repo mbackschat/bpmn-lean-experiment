@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.TopologyFixtures
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Semantic Process retained topology fixtures
 
 This module owns the retained sequential and parallel checked graphs, independent expected programs, discriminating runtime states, and generic parallel laws used by the current conformance capsules. The expected programs are authored separately from lowering so the exact-lowering laws can detect a changed lowering result, as required by AA-25 in the assurance architecture repair proposal.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -61,7 +65,7 @@ theorem token_projection_ignores_storage_permutation :
   decide +kernel
 
 /-- This synthetic state is deliberately outside current admission: it locks the cross-language canonical order before mixed wait kinds become reachable. -/
-private def mixedWaitProjectionProgram : Program :=
+def mixedWaitProjectionProgram : Program :=
   { identity :=
       { compiler := .bpmnSourceSemanticProcess
         semanticProfile := ⟨"projection-order-test"⟩
@@ -114,7 +118,7 @@ private def mixedWaitProjectionProgram : Program :=
             outputMappings := [] }
           none ] }
 
-private def mixedWaitProjectionState : RuntimeState :=
+def mixedWaitProjectionState : RuntimeState :=
   let owner : ScopeOccurrenceId :=
     rootScopeOccurrenceId ⟨"Instance_ProjectionOrder"⟩
       ⟨"Process_ProjectionOrder"⟩

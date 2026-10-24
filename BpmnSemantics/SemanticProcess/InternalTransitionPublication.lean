@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+module
+
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 
 /-! Complete prepared templates and accepted batch execution follow the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

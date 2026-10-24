@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.EffectDataAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Nested scope-data profile admission
 
@@ -12,6 +14,8 @@ availability scan needs; the walk is analysis evidence, never serialized executa
 
 Mapping grammar, name policy and literal bounds are `SerialBusinessTask`'s and `EffectData`'s.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -241,18 +245,18 @@ def serviceValid (handlers : List String) (descriptor : EffectDescriptor)
 
 /-- `CheckedGraphValidation` owns the general lookup but sits above the profile catalog; this one also
 refuses a node with more than one owner. -/
-private def checkedNodeScope? (source : CheckedProcess) (nodeId : NodeId) : Option DefinitionScopeId := do
+def dataCheckedNodeScope? (source : CheckedProcess) (nodeId : NodeId) : Option DefinitionScopeId := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId
 
-private def checkedStart? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
+def checkedStart? (source : CheckedProcess) (scope : DefinitionScopeId) : Option NodeId :=
   StructuredComposition.unique? (source.nodes.filterMap fun node => match node with
-    | .noneStartEvent id => if checkedNodeScope? source id == some scope then some id else none
+    | .noneStartEvent id => if dataCheckedNodeScope? source id == some scope then some id else none
     | _ => none)
 
 def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Vertex := do
   let id := node.id.value
-  let scope ← checkedNodeScope? source node.id
+  let scope ← dataCheckedNodeScope? source node.id
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
   let handlers := SerialBusinessTask.checkedHandlers source
   match node with
@@ -290,12 +294,12 @@ def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
     analyze (← source.nodes.mapM (checkedVertex? source)) source.scopeLocalData source.definitionScopes
       root.id.value entry.value (SerialBusinessTask.checkedHandlers source)
 
-private def operationScope? (program : Program) (operation : SemanticOperation) : Option String := do
+def dataOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique?
     (program.operationScopes.filter (·.operationId == operation.id))
   return owner.scopeId.value
 
-private def childCompletion? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId :=
+def childCompletion? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId :=
   match program.operations.filter (fun op => match op with
       | .completeScope _ _ scopeId _ => scopeId == child
       | _ => false) with
@@ -314,7 +318,7 @@ def consumer? (program : Program) (place : ControlPlaceId) : Option String := do
 
 def operationVertex? (program : Program) (operation : SemanticOperation) : Option Vertex := do
   let id := operation.id.value
-  let scope ← operationScope? program operation
+  let scope ← dataOperationScope? program operation
   let consumer := consumer? program
   let handlers := SerialBusinessTask.programHandlers program
   match operation with

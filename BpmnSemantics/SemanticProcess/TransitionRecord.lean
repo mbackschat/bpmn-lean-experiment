@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! Exact operation metadata and strict replay remain independent of closure selection so
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) can validate
 prepared publications without importing the closure that consumes them. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -121,7 +125,7 @@ def selectedOperationOwner? (state : RuntimeState) :
     SemanticOperation → Option ScopeOccurrenceId :=
   flowNodeSelectedOperationOwner? state
 
-private def uniqueOperation? (program : Program) (id : OperationId) : Option SemanticOperation :=
+def uniqueOperation? (program : Program) (id : OperationId) : Option SemanticOperation :=
   match program.operations.filter fun operation => decide (operation.id = id) with
   | [operation] => some operation
   | _ => none
@@ -178,7 +182,7 @@ def selectedRecordedOperationOwner? (state : RuntimeState) (operation : Semantic
       if input ∈ inputs ∧ ⟨input, record.owner⟩ ∈ state.tokens then some record.owner else none
   | some _, _ => none
 
-private def fireRecordedOperation? (program : Program) (state : RuntimeState)
+def fireRecordedOperation? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (record : InternalTransitionRecord) : Option RuntimeState :=
   match record.mergeInput, operation with
   | none, _ => fire? program operation state
@@ -288,7 +292,7 @@ theorem replayInternalTransition_sound (program : Program) (before after : Runti
         · simp [kindMatches, originMatches] at replayed
       · simp [kindMatches] at replayed
 
-private def replayInternalTransitionsWithoutCompensationSnapshots (program : Program) :
+def replayInternalTransitionsWithoutCompensationSnapshots (program : Program) :
     RuntimeState → List CommittedTransition → Option RuntimeState
   | state, [] => some state
   | state, .internalOperation record :: rest => do
@@ -305,7 +309,7 @@ def replayInternalTransitions (program : Program) (state : RuntimeState)
   | some _ => none
 
 /-- Declaration-free strict replay requires one leading external stimulus and only internal records afterward. -/
-private def replayCommittedTransitionsWithoutCompensationSnapshots
+def replayCommittedTransitionsWithoutCompensationSnapshots
     (program : Program) (initial : RuntimeState) :
     List CommittedTransition → Option RuntimeState
   | .externalStimulus stimulus :: rest =>

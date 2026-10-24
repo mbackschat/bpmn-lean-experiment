@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
-import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
+public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 
 /-! Timer-task and ordinary arming share the existing wait, counter, and owner-census frame laws.
 Both public wait anchors are checked even though only the task receives a lifecycle publication.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

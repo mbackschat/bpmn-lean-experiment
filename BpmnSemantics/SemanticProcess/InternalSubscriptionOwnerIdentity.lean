@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+module
+
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 
 /-! The subscription proposal's depth-one forest and Call exclusion align live owners with
 the hosting Process through existing projection validity, without a reachability premise. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

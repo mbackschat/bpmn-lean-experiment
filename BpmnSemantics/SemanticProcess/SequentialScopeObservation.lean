@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import BpmnSemantics.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.Scenario
 
 /-! SMIS-PUBLISH-01 derives progress from the committed current-body binding. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

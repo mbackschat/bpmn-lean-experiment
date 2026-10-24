@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
-import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 
 /-! Bounded completion retention agrees with actual Activity and Timer withdrawal. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

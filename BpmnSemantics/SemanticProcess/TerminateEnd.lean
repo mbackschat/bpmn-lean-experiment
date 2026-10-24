@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Containing-scope termination
 
@@ -10,16 +12,18 @@ retaining the selected occurrence, and the existing scope-completion transition 
 producer of a parent continuation or root completion.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def operationOwnershipExact (program : Program) (id : OperationId)
+def operationOwnershipExact (program : Program) (id : OperationId)
     (scopeId : DefinitionScopeId) : Bool :=
   program.operationScopes.filter (fun ownership => ownership.operationId = id) =
     [{ operationId := id, scopeId }]
 
-private def terminateOperationPresent (program : Program) (id : OperationId)
+def terminateOperationPresent (program : Program) (id : OperationId)
     (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (scopeId : DefinitionScopeId) : Bool :=
   program.operations.contains (.terminateScope id origin input scopeId)
@@ -40,7 +44,7 @@ structure TerminateScopeEnabled (program : Program) (before : RuntimeState)
   liveOccurrence :
     (before.scopeOccurrences.filter fun occurrence => occurrence.id = owner).length = 1
 
-private def commitTermination (before : RuntimeState)
+def commitTermination (before : RuntimeState)
     (owner : ScopeOccurrenceId) : RuntimeState :=
   let cancelled := cancelScopeSubtree before owner .retain
   { cancelled with endOccurrences := before.endOccurrences + 1 }

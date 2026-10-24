@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
-import BpmnSemantics.SemanticProcess.ProcessInterfaceData
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+public import BpmnSemantics.SemanticProcess.ProcessInterfaceData
 
 /-! # Typed Activity data endpoint laws
 
@@ -7,6 +9,8 @@ The selected complete owner governs data access across the Call boundary (CDATA-
 Routing relates exact source and successor stores independently of the evaluator; admitted values,
 caller isolation, immutable inputs and sibling frames remain explicit obligations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

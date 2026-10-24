@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
-import BpmnSemantics.SemanticProcess.ParallelScopeCollectionProvenance
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+public import BpmnSemantics.SemanticProcess.ParallelScopeCollectionProvenance
 
 /-! # Actual lifetime record population
 
@@ -8,6 +10,8 @@ execution only restrict the scope census, so lifetime records remain covered by
 the initial owner population and original declarations, without uniqueness
 premises on either counting population.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

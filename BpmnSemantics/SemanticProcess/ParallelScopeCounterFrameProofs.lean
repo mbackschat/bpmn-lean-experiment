@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 
 /-! # Counter and hosting-control frames across actual parallel lifetime operations
 
@@ -7,6 +9,8 @@ checks End credit and hosting identity separately. Start initializes the native
 counters and fixes running control; entry, retirement and completion ingress
 retain that control and the counters while changing population or data.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalArmingBatch
-import BpmnSemantics.SemanticProcess.InternalDataArmingPairPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalArmingBatch
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPairPublication
 
 /-! Actual accepted bundles remain defined and canonical through every independent finite prefix. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

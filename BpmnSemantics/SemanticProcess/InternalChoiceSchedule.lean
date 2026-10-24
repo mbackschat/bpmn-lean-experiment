@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 
 /-! Exact directive consumption follows the fixed failure precedence in the
 [explicit-choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

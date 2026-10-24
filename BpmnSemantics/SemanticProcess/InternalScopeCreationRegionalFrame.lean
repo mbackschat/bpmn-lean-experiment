@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
 
 /-! Regional removal preserves complete independent scope-creation preparations. Protected
 owner and token reads retain exact populations, while definition and Call freshness survive
 the actual removal filters required by the Internal Commutation account. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

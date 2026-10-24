@@ -1,16 +1,20 @@
-import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
+module
+
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 
 /-! # Exact balanced parallel topology admission conformance
 
 This module distinguishes the admitted balanced two-branch Parallel Gateway chain from a same-cardinality acyclic graph that places one User Task before the split and routes the other branch directly to the join.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ParallelBalancedTopologyConformance
 
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 
-private def sequentialBeforeSplitFlows : List CheckedSequenceFlow :=
+def sequentialBeforeSplitFlows : List CheckedSequenceFlow :=
   [ { id := ⟨"Flow_StartToFork"⟩
       sourceId := ⟨"StartEvent_1"⟩
       targetId := ⟨"UserTask_ContentReview"⟩ }
@@ -30,10 +34,10 @@ private def sequentialBeforeSplitFlows : List CheckedSequenceFlow :=
       sourceId := ⟨"Gateway_Join"⟩
       targetId := ⟨"EndEvent_1"⟩ } ]
 
-private def checkpointSequentialBeforeSplit : CheckedProcess :=
+def checkpointSequentialBeforeSplit : CheckedProcess :=
   { compositionCheckedProcess with sequenceFlows := sequentialBeforeSplitFlows }
 
-private def predecessorSequentialBeforeSplit : CheckedProcess :=
+def predecessorSequentialBeforeSplit : CheckedProcess :=
   { erasedCheckedProcess with sequenceFlows := sequentialBeforeSplitFlows }
 
 /-- Balanced admission is retained for both profiles while the same-cardinality sequential-before-split topology is rejected at both representations. -/

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
 
 /-! Complete regional preparation binds the selected removal, exact predecessor region,
 dependency footprint, and publication before invoking the existing evaluator.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

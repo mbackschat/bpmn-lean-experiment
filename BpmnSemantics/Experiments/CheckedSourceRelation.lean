@@ -1,45 +1,49 @@
-import BpmnSemantics.Experiments.CheckedSourceSemantics
-import BpmnSemantics.ParallelForkJoinConformance
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.UserTaskInteractionConformance
+module
+
+public import BpmnSemantics.Experiments.CheckedSourceSemantics
+public import BpmnSemantics.ParallelForkJoinConformance
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.UserTaskInteractionConformance
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
 
 The deliberately wrong lowerer zips checked User Tasks with separately sorted input/output Sequence Flows. It also obtains task metadata through the wrongly paired input Flow target, which makes the positional error publicly observable under an admitted renaming while the retained fixtures happen to align.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.Experiments.CheckedSourceRelation
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def nodeIsUserTask (source : CheckedProcess) (nodeId : NodeId) :
+def nodeIsUserTask (source : CheckedProcess) (nodeId : NodeId) :
     Bool :=
   source.nodes.any fun
     | .userTask id _ => decide (id = nodeId)
     | _ => false
 
-private def taskNameAt (source : CheckedProcess) (nodeId : NodeId) :
+def taskNameAt (source : CheckedProcess) (nodeId : NodeId) :
     Option String :=
   match source.nodes.find? fun node => decide (node.id = nodeId) with
   | some (.userTask _ name) => name
   | some _
   | none => none
 
-private def taskInputFlows (source : CheckedProcess) :
+def taskInputFlows (source : CheckedProcess) :
     List CheckedSequenceFlow :=
   source.sequenceFlows.filter fun flow =>
     nodeIsUserTask source flow.targetId
 
-private def taskOutputFlows (source : CheckedProcess) :
+def taskOutputFlows (source : CheckedProcess) :
     List CheckedSequenceFlow :=
   source.sequenceFlows.filter fun flow =>
     nodeIsUserTask source flow.sourceId
 
-private def rewriteTaskOperations (source : CheckedProcess) :
+def rewriteTaskOperations (source : CheckedProcess) :
     List SemanticOperation → List CheckedSequenceFlow →
       List CheckedSequenceFlow → List SemanticOperation
   | [], _, _ => []
@@ -66,7 +70,7 @@ def positionalLowerCheckedProcess (source : CheckedProcess) : Program :=
       rewriteTaskOperations source program.operations
         (taskInputFlows source) (taskOutputFlows source) }
 
-private def retainedScenarios : List (CheckedProcess × Scenario) :=
+def retainedScenarios : List (CheckedProcess × Scenario) :=
   [ (sequentialCheckedProcess,
       UserTaskInteractionConformance.successfulScenario)
   , (sequentialCheckedProcess,

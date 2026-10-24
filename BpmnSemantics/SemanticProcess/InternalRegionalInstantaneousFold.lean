@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleFold
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleFold
 
 /-! Instantaneous entries sort after existing open occurrences and close in the same delta.
 Their transient anchors must neither remove nor collide with retained regional occurrences.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

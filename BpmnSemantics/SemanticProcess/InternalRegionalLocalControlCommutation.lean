@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPreparationFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPreparationFrame
 
 /-! Exact regional/local-control commutation is derived from predecessor preparation and
 footprint independence. The two evaluation orders share the complete prepared artifacts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

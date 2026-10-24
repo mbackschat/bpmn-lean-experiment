@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.ScopeCompletion
+module
+
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Interrupting Sub-Process boundary Timer: victory
 
@@ -11,6 +13,8 @@ The pair is recovered through the [Activity occurrence record](ActivityOccurrenc
 
 The retired form joined the two by requiring the child occurrence's activation to equal the deadline's under the parent as owner. That held only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and arming is atomic, which is a property of the admission rather than a fact the state carried.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

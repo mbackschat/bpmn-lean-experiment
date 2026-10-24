@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! # Regional position preservation
 
@@ -6,6 +8,8 @@ The selected child-scope domain preserves parentless Process roots and their Cal
 actual cancellation masks must retain each surviving parent and token owner before the position
 frame applies; arbitrary root deletion is not a position-preserving operation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

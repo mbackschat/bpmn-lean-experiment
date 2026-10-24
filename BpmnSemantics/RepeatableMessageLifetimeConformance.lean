@@ -10,12 +10,12 @@ open BpmnSemantics.SemanticProcess
 open RepeatableEventSubscriptionAdmissionConformance (program)
 open ActivityBoundaryMessageConformance (armedState instanceId taskId subscriptionId channel)
 
-private def deliver (command : String) (state : RuntimeState) : StimulusResult :=
+def deliver (command : String) (state : RuntimeState) : StimulusResult :=
   applyStimulus scenarioClosureLimit program state (.deliverMessage ⟨command⟩ subscriptionId channel)
 
-private def first := deliver "first" armedState
-private def second := deliver "second" first.state
-private def completed := applyStimulus scenarioClosureLimit program second.state
+def first := deliver "first" armedState
+def second := deliver "second" first.state
+def completed := applyStimulus scenarioClosureLimit program second.state
   (.completeUserTaskInstance ⟨"complete-host"⟩ taskId [])
 
 theorem distinct_deliveries_retain_subscription_and_create_distinct_handlers :

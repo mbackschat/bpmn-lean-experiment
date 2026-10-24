@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! IMES-OBSERVE-01 separates a dormant parent listener from an executing handler scope.
 The declaration-owned projection supplements the ordinary-entry projection without weakening its predicates. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -41,7 +45,7 @@ def messageHandlerDeliveryDelta? (program : Program) (before : RuntimeState)
       terminal := .cancelled : UnnumberedFlowNodeOccurrenceEnd }
   pure (canonicalFlowNodeOccurrenceDelta (scope :: instant.started) (cancelled ++ instant.ended))
 
-private def acceptMessageHandlerCandidate? (program : Program) (before after : RuntimeState)
+def acceptMessageHandlerCandidate? (program : Program) (before after : RuntimeState)
     (candidate : UnnumberedFlowNodeOccurrenceDelta) : Option UnnumberedFlowNodeOccurrenceDelta := do
   let openBefore ← projectOpenFlowNodeOccurrencesWithMessageHandler? program before
   let openAfter ← projectOpenFlowNodeOccurrencesWithMessageHandler? program after

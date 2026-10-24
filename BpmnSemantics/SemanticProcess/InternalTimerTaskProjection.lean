@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRuntimePreservation
-import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskRuntimePreservation
+public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 
 /-! Timer-task arming adds one public task anchor. Its new Timer is private through the exact
 Activity association, while every predecessor Timer retains its publication classification.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

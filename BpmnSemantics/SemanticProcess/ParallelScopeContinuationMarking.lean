@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.TokenStorage
-import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
-import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Actual body-operation continuation balance
 
@@ -10,6 +12,8 @@ PMIS-SELECT-01 transfers the continuation marking defined by PMIS-DATA-01 throug
 actual owned input/output ports. Wait issuance counts its blocked output once;
 these laws do not assert enabledness or execution at most once.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -495,7 +499,7 @@ theorem completeParallelScope_parent_continuation_marking (entry : ParallelScope
       unfold tokenCount ownedPortCount at added
       cases output : (entry.normalOutput == place) <;> simp [output, addTokens] at * <;> omega
 
-private def armingContinuationPorts : InternalArmingWrite → List ControlPlaceId
+def armingContinuationPorts : InternalArmingWrite → List ControlPlaceId
   | .userTask wait => [wait.output]
   | .effect wait _ => [wait.output]
   | .message _ | .timer _ => []

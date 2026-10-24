@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalEndRegionalPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+module
+
+public import BpmnSemantics.SemanticProcess.InternalEndRegionalPreparationFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
 
 /-! Actual End/regional executions commute by the existing fixed regional token action and
 relative End increment. Both complete preparations and successor facts come from predecessor
 validity and footprint independence, without an intermediate-invariant premise. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

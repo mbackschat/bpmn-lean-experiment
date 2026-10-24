@@ -1,9 +1,13 @@
-import BpmnSemantics.SequentialUserTask
+module
+
+public import BpmnSemantics.SequentialUserTask
 
 /-! # BpmnSemantics.ProcessStartDataConformance — initial Process-data locks
 
 This module owns the selected CIB Seven start-variable extension for the bounded sequential User Task profile. It separates the universal fresh-state data invariant from the exact positive and negative executable witnesses.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ProcessStartDataConformance
 

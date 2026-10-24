@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
 
 /-! PMI reverse binding requires a finite partition of pending children rather than equal raw
 population counts. These correspondence laws preserve multiplicity and assign completed slots
 zero weight, as required by the existing Program-binding validator. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

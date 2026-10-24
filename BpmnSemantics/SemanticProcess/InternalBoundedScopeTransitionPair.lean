@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalBoundedScopeTokenPairs
-import BpmnSemantics.SemanticProcess.InternalSubscriptionPairExclusions
-import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeTokenPairs
+public import BpmnSemantics.SemanticProcess.InternalSubscriptionPairExclusions
+public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnership
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
 
 /-! The selected subscription child-entry pairs reuse complete raw preparation laws.
 The immutable admission certificate excludes other composite and child declarations. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

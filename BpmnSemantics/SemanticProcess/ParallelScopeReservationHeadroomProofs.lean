@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 
 /-! # Reachable reservation ordinal headroom
 
@@ -9,6 +11,8 @@ Admitted Program size and the actual issued scope census bound that frontier;
 the cumulative Start counter bound then leaves safe wire headroom for every
 partial reservation accumulator. No successful batch preparation is assumed.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

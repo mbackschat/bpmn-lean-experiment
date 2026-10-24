@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.TimerStart
-import BpmnSemantics.SemanticProcess.MessageStartLaws
+module
+
+public import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.MessageStartLaws
 
 /-! Timer initiation shares Message Start’s root-token fan-out law; the dispatcher retains only its executable relation bridge. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

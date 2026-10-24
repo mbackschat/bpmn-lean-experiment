@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
 
 /-! # Compensation trigger construction -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -38,19 +42,19 @@ def triggerRetentionOwnedByRoot (retention : CompensationParentContextRetention)
     (owner : ScopeOccurrenceId) : Bool :=
   retention.parent.id == owner || retention.parent.parent == some owner
 
-private def findUnique? (candidates : List α) : Option α :=
+def findUnique? (candidates : List α) : Option α :=
   match candidates with
   | [candidate] => some candidate
   | _ => none
 
-private def boundaryDefinitionFor? (declaration : CompensationExecutionDeclaration)
+def boundaryDefinitionFor? (declaration : CompensationExecutionDeclaration)
     (activity : ActivityOccurrenceId) : Option CompensationSubjectDefinition :=
   findUnique? (declaration.subjects.filter fun definition =>
     match definition with
     | .boundaryActivity elementId _ => elementId.value == activity.activityElementId.value
     | _ => false)
 
-private def eventDefinitionFor? (declaration : CompensationExecutionDeclaration)
+def eventDefinitionFor? (declaration : CompensationExecutionDeclaration)
     (parent : ScopeOccurrenceId) (handlerScopeId : DefinitionScopeId) :
     Option CompensationSubjectDefinition :=
   findUnique? (declaration.subjects.filter fun definition =>
@@ -59,7 +63,7 @@ private def eventDefinitionFor? (declaration : CompensationExecutionDeclaration)
         parentScopeId == parent.definitionScopeId && candidateHandlerScopeId == handlerScopeId
     | _ => false)
 
-private def selectActivities (declaration : CompensationExecutionDeclaration) :
+def selectActivities (declaration : CompensationExecutionDeclaration) :
     List CompletedCompensableActivity → Option (List SelectedCompensationSubject)
   | [] => some []
   | record :: rest => do
@@ -70,7 +74,7 @@ private def selectActivities (declaration : CompensationExecutionDeclaration) :
            occurrence := .boundaryActivity record.id
            restoredContext := none } :: selected)
 
-private def selectContexts (declaration : CompensationExecutionDeclaration) :
+def selectContexts (declaration : CompensationExecutionDeclaration) :
     List CompensationParentContextRetention → Option (List SelectedCompensationSubject)
   | [] => some []
   | .provisional .. :: _ => none
@@ -99,7 +103,7 @@ def selectedCompensationSubjects? (program : Program)
       triggerRetentionOwnedByRoot retention owner)
   pure (activities ++ contexts)
 
-private def maximumOccurrenceActivation (elementId : String) : List OccurrenceId → Nat
+def maximumOccurrenceActivation (elementId : String) : List OccurrenceId → Nat
   | [] => 0
   | id :: rest =>
       max (if id.elementId.value = elementId then id.activation else 0)
@@ -112,15 +116,15 @@ def nextOccurrence (instanceId : SemanticId) (elementId : String)
     elementId := ⟨elementId⟩
     activation := maximumOccurrenceActivation elementId existing + 1 }
 
-private def handlerBefore
+def handlerBefore
     (left right : CompensationHandlerExecution) : Bool :=
   compensationOccurrenceBefore left.identity.id right.identity.id
 
-private def triggerBefore
+def triggerBefore
     (left right : CompensationTriggerExecution) : Bool :=
   compensationOccurrenceBefore left.id right.id
 
-private def insertHandler (handler : CompensationHandlerExecution)
+def insertHandler (handler : CompensationHandlerExecution)
     (handlers : List CompensationHandlerExecution) : List CompensationHandlerExecution :=
   canonicalInsertBy handlerBefore handler handlers
 

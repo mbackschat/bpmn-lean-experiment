@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
-import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 
 /-! A preparation frame must preserve the publication template as well as readiness. Canonical positions and lifecycle populations assemble the unchanged complete regional artifact from predecessor facts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcessContract
+module
+
+public import BpmnSemantics.SemanticProcessContract
 
 /-! Checked-node and operation counts remain separate from profile selection so new capabilities do not duplicate the exhaustive constructor classification. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

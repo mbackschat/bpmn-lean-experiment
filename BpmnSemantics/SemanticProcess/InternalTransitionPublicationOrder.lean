@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+public import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

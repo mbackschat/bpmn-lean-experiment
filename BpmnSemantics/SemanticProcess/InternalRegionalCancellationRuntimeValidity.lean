@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
-import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
+public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
 
 /-! Aggregate cancellation preservation composes the established collection proofs.
 Position and Compensation depend on whether the selected occurrence is a child or the
 hosting root; the public operation theorems discharge those cases from preparation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

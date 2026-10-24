@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeState
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Direct scope-owner filtering
 
@@ -7,6 +9,8 @@ keys. Attached handlers, controllers, parent contexts and Activity data need the
 rules. Event Sub-Process listeners deliberately remain outside this shared filter: cancellation
 and Call removal dispose them, while the existing Compensation failure account retains them.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

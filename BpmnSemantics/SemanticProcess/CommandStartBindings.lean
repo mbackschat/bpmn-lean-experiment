@@ -1,17 +1,21 @@
-import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
-import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
-import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
-import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
-import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 
 /-! Declaration-bound Start binding policy shared by raw command dispatch and private capacity admission. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.CommandStartBindings
 
@@ -23,7 +27,7 @@ def parallelMultiInstanceProgramAdmitted (program : Program) : Bool :=
   program.identity.semanticProfile = parallelMultiInstanceUserTaskProfileId &&
     programWellFormed program && programProfileCapabilitiesValid program
 
-private def parallelMultiInstanceStartBindingsAdmitted (program : Program)
+def parallelMultiInstanceStartBindingsAdmitted (program : Program)
     (bindings : List VariableBinding) : Bool :=
   match program.operations.filterMap ParallelMultiInstanceArm.ofOperation?, bindings with
   | [arm], [input, policy] =>
@@ -38,7 +42,7 @@ private def parallelMultiInstanceStartBindingsAdmitted (program : Program)
   | _, _ => false
 
 /-- The value-domain table cannot settle the sole arm's binding identity, cardinality and bounds. -/
-private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
+def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
     (bindings : List VariableBinding) : Bool :=
   match program.operations.filterMap SequentialMultiInstanceArm.ofOperation?, bindings with
   | [arm], [binding] =>
@@ -49,7 +53,7 @@ private def sequentialMultiInstanceStartBindingsAdmitted (program : Program)
   | _, _ => false
 
 /-- The shared value-domain table cannot settle the composed profile's declared input Property. -/
-private def dataInputOutputStartBindingsAdmitted (program : Program)
+def dataInputOutputStartBindingsAdmitted (program : Program)
     (bindings : List VariableBinding) : Bool :=
   match dataInputOutputTaskContracts program, bindings with
   | [_], [] => true

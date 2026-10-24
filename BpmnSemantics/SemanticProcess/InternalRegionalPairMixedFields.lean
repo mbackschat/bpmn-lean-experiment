@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
-import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
+public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 
 /-! Return and completion share removal fields with cancellation but keep different roots and continuations. These exact record-update laws isolate retained-field algebra from canonical token insertion and end counts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

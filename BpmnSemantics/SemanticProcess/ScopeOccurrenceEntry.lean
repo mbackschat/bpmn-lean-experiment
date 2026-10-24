@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 
 /-! # Concurrent scope-occurrence entry
 
@@ -6,6 +8,8 @@ CEA-OCCUR-01 for a merge target: entry issues a fresh occurrence of the child de
 arriving token's owner, even while other occurrences of that definition are live. `enterScopeState?` keeps
 refusing a second live occurrence for every other `enterScope`; the two agree whenever none is live.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

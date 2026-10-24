@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 
 /-! # Complete Activity-data arming footprints
 
 The prepared data arm owns its Activity record and Activity-local scope in addition to its User Task
 wait. Shared Process input reads remain independent under the Internal Commutation contract.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

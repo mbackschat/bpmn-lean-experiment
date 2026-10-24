@@ -1,8 +1,12 @@
-import BpmnSemantics.Scenario
-import BpmnSemantics.SemanticProcess.JsonSupport
+module
+
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! Canonical observation JSON shared by the Semantic Process and engine-population runners.
 Closed semantic variants are matched exhaustively so both evidence lanes observe the same contract. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJson.Observation
 
@@ -20,14 +24,14 @@ def commandOutcomeJson : CommandOutcome → Json
   | .semanticFailure => toJson "semanticFailure"
   | .unsupported => toJson "unsupported"
 
-private def processStatusJson : ProcessStatus → Json
+def processStatusJson : ProcessStatus → Json
   | .notStarted => toJson "notStarted"
   | .running => toJson "running"
   | .completed => toJson "completed"
   | .cancelled => toJson "cancelled"
   | .failed => toJson "failed"
 
-private def waitKindJson : WaitKind → Json
+def waitKindJson : WaitKind → Json
   | .userTask => toJson "userTask"
   | .message => toJson "message"
   | .timer => toJson "timer"
@@ -40,7 +44,7 @@ def occurrenceIdJson (occurrenceId : OccurrenceId) : Json :=
     , ("elementId", toJson occurrenceId.elementId.value)
     , ("activation", toJson occurrenceId.activation) ]
 
-private def compensationHandlerFailureJson
+def compensationHandlerFailureJson
     (failure : CompensationHandlerFailure) : Json :=
   Json.mkObj
     [ ("kind", toJson "compensationHandlerFailure")
@@ -50,7 +54,7 @@ private def compensationHandlerFailureJson
     , ("code", toJson failure.code)
     , ("message", toJson failure.message) ]
 
-private def activeWaitJson (wait : ActiveWait) : Json :=
+def activeWaitJson (wait : ActiveWait) : Json :=
   Json.mkObj
     [ ("elementId", toJson wait.elementId.value)
     , ("kind", waitKindJson wait.kind)
@@ -61,7 +65,7 @@ def variableBindingJson (binding : VariableBinding) : Json :=
     [ ("name", toJson binding.name)
     , ("value", encodeVariableValue binding.value) ]
 
-private def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
+def userTaskLifecycleStateJson : UserTaskLifecycleState → Json
   | .active => toJson "active"
 
 /-- Encode one public User Task and omit metadata and selected inputs physically when the contract
@@ -115,29 +119,29 @@ def correlatedMessageAddressJson
     , ("channel", messageChannelJson address.channel)
     , ("correlationKeyId", toJson address.correlationKeyId) ]
 
-private def openMessageSubscriptionJson
+def openMessageSubscriptionJson
     (subscription : OpenMessageSubscription) : Json :=
   Json.mkObj
     [ ("id", occurrenceIdJson subscription.id)
     , ("channel", messageChannelJson subscription.channel) ]
 
-private def openTimerJson (timer : OpenTimer) : Json :=
+def openTimerJson (timer : OpenTimer) : Json :=
   Json.mkObj
     [ ("id", occurrenceIdJson timer.id)
     , ("deadlineMs", toJson timer.deadlineMs) ]
 
-private def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
+def effectDescriptorJson (descriptor : EffectDescriptor) : Json :=
   Json.mkObj
     [ ("protocol", toJson descriptor.protocol)
     , ("operation", toJson descriptor.operation) ]
 
-private def activityOccurrenceIdJson (id : ActivityOccurrenceId) : Json :=
+def activityOccurrenceIdJson (id : ActivityOccurrenceId) : Json :=
   Json.mkObj
     [ ("processInstanceId", toJson id.processInstanceId.value)
     , ("activityElementId", toJson id.activityElementId.value)
     , ("activation", toJson id.activation) ]
 
-private def openSequentialMultiInstanceIterationJson
+def openSequentialMultiInstanceIterationJson
     (iteration : OpenSequentialMultiInstanceIteration) : Json :=
   Json.mkObj
     [ ("loopCounter", toJson iteration.loopCounter)
@@ -145,7 +149,7 @@ private def openSequentialMultiInstanceIterationJson
     , ("taskInput", variableBindingJson iteration.taskInput)
     , ("completionBindingName", toJson iteration.completionBindingName) ]
 
-private def openSequentialMultiInstanceJson
+def openSequentialMultiInstanceJson
     (multiInstance : OpenSequentialMultiInstance) : Json :=
   Json.mkObj
     [ ("id", activityOccurrenceIdJson multiInstance.id)
@@ -161,7 +165,7 @@ private def openSequentialMultiInstanceJson
         jsonArray
           (multiInstance.activeIterations.map openSequentialMultiInstanceIterationJson)) ]
 
-private def openParallelMultiInstanceIterationJson
+def openParallelMultiInstanceIterationJson
     (iteration : OpenParallelMultiInstanceIteration) : Json :=
   Json.mkObj
     [ ("loopCounter", toJson iteration.loopCounter)
@@ -169,7 +173,7 @@ private def openParallelMultiInstanceIterationJson
     , ("taskInput", variableBindingJson iteration.taskInput)
     , ("completionBindingName", toJson iteration.completionBindingName) ]
 
-private def openParallelMultiInstanceJson
+def openParallelMultiInstanceJson
     (multiInstance : OpenParallelMultiInstance) : Json :=
   Json.mkObj
     [ ("id", activityOccurrenceIdJson multiInstance.id)
@@ -185,7 +189,7 @@ private def openParallelMultiInstanceJson
         jsonArray
           (multiInstance.activeIterations.map openParallelMultiInstanceIterationJson)) ]
 
-private def subProcessIterationJson (iteration : OpenSubProcessIteration) : Json :=
+def subProcessIterationJson (iteration : OpenSubProcessIteration) : Json :=
   Json.mkObj
     [ ("loopCounter", toJson iteration.loopCounter)
     , ("body", Json.mkObj
@@ -197,7 +201,7 @@ private def subProcessIterationJson (iteration : OpenSubProcessIteration) : Json
     , ("userTaskIds", jsonArray (iteration.userTaskIds.map occurrenceIdJson))
     , ("effectIds", jsonArray (iteration.effectIds.map occurrenceIdJson)) ]
 
-private def sequentialSubProcessMultiInstanceJson
+def sequentialSubProcessMultiInstanceJson
     (value : OpenSequentialSubProcessMultiInstance) : Json :=
   Json.mkObj
     [ ("id", activityOccurrenceIdJson value.id)
@@ -211,7 +215,7 @@ private def sequentialSubProcessMultiInstanceJson
     , ("numberOfTerminatedInstances", toJson value.numberOfTerminatedInstances)
     , ("activeIterations", jsonArray (value.activeIterations.map subProcessIterationJson)) ]
 
-private def openMultiInstanceJson : OpenMultiInstance → Json
+def openMultiInstanceJson : OpenMultiInstance → Json
   | .sequentialSubProcess value => sequentialSubProcessMultiInstanceJson value
   | .sequential value => openSequentialMultiInstanceJson value
   | .parallel value => openParallelMultiInstanceJson value

@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.ValueDomain
-import BpmnSemantics.SemanticProcess.CallDataAdmission
-import BpmnSemantics.SemanticProcess.CallActivity
+module
+
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Declaration-bound scalar Call command admission
 
@@ -8,6 +10,8 @@ CDATA-INPUT-01 requires the mapped request and closes optional start bindings ov
 caller Property inventory. CDATA-OWNER-01 permits a called Task completion only through its live,
 exact Call/root association; hosting Workflow identity is not the called Task's semantic identity.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

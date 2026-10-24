@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
+module
+
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
 
 /-! MBERR-CATCH-01, MBERR-MAP-01 and MBERR-PROGRESS-01 derive attached Error completion and bounded resumption from an actual committed Start. Route selection belongs to the current wait; shared Error codes supply no authority to select another Service Task's continuation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

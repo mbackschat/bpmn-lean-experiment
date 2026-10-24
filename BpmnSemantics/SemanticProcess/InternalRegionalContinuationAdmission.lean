@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 
 /-! # Regional continuation admission
 
@@ -6,6 +8,8 @@ Program graph ownership and the open-occurrence Call census discharge the static
 bindings required by the raw Return preservation theorem. A selected runtime Call identity alone
 cannot justify the continuation's definition-scope owner.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

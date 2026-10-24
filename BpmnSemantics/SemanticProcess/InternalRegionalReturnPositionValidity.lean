@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 
 /-! # Return continuation position
 
@@ -10,6 +12,8 @@ validator, that excludes outgoing Calls from its entire Process instance and pro
 from cleanup. The continuation still needs its declared static place binding: the raw evaluator
 receives an output identifier rather than a Program.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

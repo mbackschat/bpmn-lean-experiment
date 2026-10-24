@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
-import BpmnSemantics.SemanticProcess.InternalDataArmingRegionalPatch
+module
+
+public import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
+public import BpmnSemantics.SemanticProcess.InternalDataArmingRegionalPatch
 
 /-! The regional/arming pair closes both evaluation orders from the original preparations.
 Regional removal commutes with retained wait, Activity, and local-data insertion; footprint
 separation also protects the consumed token from a regional continuation. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

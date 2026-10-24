@@ -1,14 +1,18 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 
 /-! PMIS-SELECT-01 reservation preserves the complete operation/owner sequence.
 These laws derive identity from the actual singleton preparation calls retained by
 the reservation trace, then connect accepted members to the current execution frontier.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
-private def memberCandidate (member : InternalOccurrencePatch) : InternalOperationOccurrence :=
+def memberCandidate (member : InternalOccurrencePatch) : InternalOperationOccurrence :=
   ⟨member.operation.id, member.owner⟩
 
 private theorem prepared_token_owner (program : Program) (state : RuntimeState)

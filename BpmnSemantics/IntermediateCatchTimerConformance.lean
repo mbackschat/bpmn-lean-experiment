@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # BpmnSemantics.IntermediateCatchTimerConformance — exact PT1S timer locks
 
 These checks own the direct Lean account for the admitted Intermediate Catch Timer capsule: independent literal normalization, exact-deadline firing, full occurrence/time refusal, and canonical observations.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.IntermediateCatchTimerConformance
 
@@ -60,7 +64,7 @@ def timerWait : TimerWait :=
 def fireCommandId : SemanticId :=
   ⟨"fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b"⟩
 
-private def observations : List ObservationKind :=
+def observations : List ObservationKind :=
   [ .deployment
   , .commandResults
   , .processStatus

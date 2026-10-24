@@ -1,15 +1,17 @@
-import BpmnSemantics.SemanticProcess.TransactionSourceLowering
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import BpmnSemantics.SemanticProcess.ErrorDefinition
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.LoweringIdentity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
-import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
-import BpmnSemantics.SemanticProcess.TimerStartLowering
-import BpmnSemantics.SemanticProcess.TerminateEndLowering
-import BpmnSemantics.SemanticProcess.CompensationSourceLowering
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionSourceLowering
+public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+public import BpmnSemantics.SemanticProcess.ErrorDefinition
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.LoweringIdentity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
+public import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
+public import BpmnSemantics.SemanticProcess.TimerStartLowering
+public import BpmnSemantics.SemanticProcess.TerminateEndLowering
+public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 
 /-! # Canonical checked-process lowering
 
@@ -17,6 +19,8 @@ This module owns the total project-authored lowering from a checked BPMN graph t
 
 `lowerCheckedProcess` is total as required by the reviewed preservation proposition, but only `checkedWellFormed` inputs are admitted. Its arbitrary result outside that domain is never a semantic outcome.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -27,7 +31,7 @@ def CheckedSequenceFlow.toControlPlace (flow : CheckedSequenceFlow) :
   { id := ⟨"place:" ++ flow.id.value⟩
     origin := { elementId := flow.id } }
 
-private def incomingPlaces (source : CheckedProcess) (nodeId : NodeId) :
+def incomingPlaces (source : CheckedProcess) (nodeId : NodeId) :
     List ControlPlaceId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.targetId = nodeId then
@@ -35,7 +39,7 @@ private def incomingPlaces (source : CheckedProcess) (nodeId : NodeId) :
     else
       none
 
-private def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
+def outgoingPlaces (source : CheckedProcess) (nodeId : NodeId) :
     List ControlPlaceId :=
   source.sequenceFlows.filterMap fun flow =>
     if flow.sourceId = nodeId then
@@ -60,7 +64,7 @@ def lowerMessageStartOperation (source : CheckedProcess) (id : NodeId)
     channel
     (lowerMessageStartOutputs source id)
 
-private def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
+def firstPlace (places : List ControlPlaceId) : ControlPlaceId :=
   places.head?.getD ⟨""⟩
 
 /-- Canonical merge inputs derived only from authoritative checked Sequence Flow endpoints. -/
@@ -79,12 +83,12 @@ def eventRaceConfigurationFlow (source : CheckedProcess)
     | .eventBasedGateway gatewayId => decide (flow.sourceId = gatewayId)
     | _ => false
 
-private def configuredByEventGateway (source : CheckedProcess)
+def configuredByEventGateway (source : CheckedProcess)
     (nodeId : NodeId) : Bool :=
   source.sequenceFlows.any fun flow =>
     decide (flow.targetId = nodeId) && eventRaceConfigurationFlow source flow
 
-private def eventRaceMessageArm (source : CheckedProcess)
+def eventRaceMessageArm (source : CheckedProcess)
     (gatewayId : NodeId) : EventRaceMessageArm :=
   match source.sequenceFlows.findSome? fun flow =>
       if flow.sourceId = gatewayId then
@@ -114,16 +118,16 @@ structural validation directly or, for the parallel Multi-Instance arm it delega
 executing an instant deadline. The table also cannot drift from the TypeScript one unnoticed,
 because definition admission requires `lowerCheckedProcess` to equal the submitted program exactly
 and TypeScript derives its admitted lexemes from its own table rather than restating them. -/
-private def normalizeTimerDuration (durationLiteral : String) : Nat :=
+def normalizeTimerDuration (durationLiteral : String) : Nat :=
   if durationLiteral = "PT1S" then 1000
   else if durationLiteral = "PT5S" then 5000
   else 0
 
-private def normalizeBoundaryTimerExpression : CheckedBoundaryTimerExpression → Nat
+def normalizeBoundaryTimerExpression : CheckedBoundaryTimerExpression → Nat
   | .duration literal => normalizeTimerDuration literal
   | .cycle literal => if literal = "R/PT1S" then 1000 else 0
 
-private def eventRaceTimerArm (source : CheckedProcess)
+def eventRaceTimerArm (source : CheckedProcess)
     (gatewayId : NodeId) : EventRaceTimerArm :=
   match source.sequenceFlows.findSome? fun flow =>
       if flow.sourceId = gatewayId then
@@ -143,7 +147,7 @@ private def eventRaceTimerArm (source : CheckedProcess)
         durationMs := 0
         output := ⟨""⟩ }
 
-private def isEntryRootScope (source : CheckedProcess)
+def isEntryRootScope (source : CheckedProcess)
     (scopeId : DefinitionScopeId) : Bool :=
   source.definitionScopes.any fun scope =>
     decide (scope.id = scopeId && scope.parentScopeId.isNone &&
@@ -152,7 +156,7 @@ private def isEntryRootScope (source : CheckedProcess)
 def returnProcessOperationId (id : NodeId) : OperationId :=
   ⟨"operation:return-process:" ++ id.value⟩
 
-private def childEntryPlace (source : CheckedProcess)
+def childEntryPlace (source : CheckedProcess)
     (childScopeId : DefinitionScopeId) : ControlPlaceId :=
   let startId := (source.nodes.findSome? fun node =>
     match node, checkedNodeScopeId? source node.id with
@@ -161,7 +165,7 @@ private def childEntryPlace (source : CheckedProcess)
     | _, _ => none).getD ⟨""⟩
   firstPlace (outgoingPlaces source startId)
 
-private def lowerBpmnErrorRoute
+def lowerBpmnErrorRoute
     (route : Option CheckedBpmnErrorRoute) : Option BpmnErrorRoute :=
   route.map fun route =>
     { code := route.code
@@ -172,7 +176,7 @@ private def lowerBpmnErrorRoute
           errorElementId := route.errorElementId
           sequenceFlowId := route.outputFlowId } }
 
-private def lowerConditionalCandidate (source : CheckedProcess)
+def lowerConditionalCandidate (source : CheckedProcess)
     (flowId : SequenceFlowId) : ConditionalCandidate :=
   match source.sequenceFlows.find? fun flow => decide (flow.id = flowId) with
   | some flow =>
@@ -186,14 +190,14 @@ private def lowerConditionalCandidate (source : CheckedProcess)
         output := flowControlPlaceId flowId
         origin := { elementId := flowId } }
 
-private def pairedInclusiveJoinId? (source : CheckedProcess)
+def pairedInclusiveJoinId? (source : CheckedProcess)
     (splitId : NodeId) : Option NodeId :=
   source.nodes.findSome? fun
     | .inclusiveGatewayConverging joinId pairedGatewayId =>
         if pairedGatewayId = splitId then some joinId else none
     | _ => none
 
-private def expectedJoinInput (source : CheckedProcess) (splitId : NodeId)
+def expectedJoinInput (source : CheckedProcess) (splitId : NodeId)
     (flowId : SequenceFlowId) : ControlPlaceId :=
   let branchTarget := (source.sequenceFlows.find? fun flow =>
     decide (flow.id = flowId && flow.sourceId = splitId)).map (·.targetId)
@@ -205,7 +209,7 @@ private def expectedJoinInput (source : CheckedProcess) (splitId : NodeId)
       flowControlPlaceId (inputs.head?.map (·.id) |>.getD ⟨""⟩)
   | _, _ => ⟨""⟩
 
-private def lowerInclusiveCandidate (source : CheckedProcess)
+def lowerInclusiveCandidate (source : CheckedProcess)
     (splitId : NodeId) (flowId : SequenceFlowId) : InclusiveCandidate :=
   let candidate := lowerConditionalCandidate source flowId
   { condition := candidate.condition
@@ -213,13 +217,13 @@ private def lowerInclusiveCandidate (source : CheckedProcess)
     expectedJoinInput := expectedJoinInput source splitId flowId
     origin := candidate.origin }
 
-private def lowerInclusiveDefaultBranch (source : CheckedProcess)
+def lowerInclusiveDefaultBranch (source : CheckedProcess)
     (splitId : NodeId) (flowId : SequenceFlowId) : InclusiveDefaultBranch :=
   { output := flowControlPlaceId flowId
     expectedJoinInput := expectedJoinInput source splitId flowId
     origin := { elementId := flowId } }
 
-private def insertInclusiveCandidate (candidate : InclusiveCandidate) :
+def insertInclusiveCandidate (candidate : InclusiveCandidate) :
     List InclusiveCandidate → List InclusiveCandidate
   | [] => [candidate]
   | current :: rest =>
@@ -227,14 +231,14 @@ private def insertInclusiveCandidate (candidate : InclusiveCandidate) :
         candidate :: current :: rest
       else current :: insertInclusiveCandidate candidate rest
 
-private def sortInclusiveCandidates :
+def sortInclusiveCandidates :
     List InclusiveCandidate → List InclusiveCandidate
   | [] => []
   | candidate :: rest =>
       insertInclusiveCandidate candidate (sortInclusiveCandidates rest)
 
 /-- The Timer Boundary Event attached to this Activity, when the profile admitted one, with the disposition that selects the host's operation kind. -/
-private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
+def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
     Option (NodeId × BoundaryInterruption × CheckedBoundaryTimerExpression × SequenceFlowId) :=
   source.nodes.findSome? fun
     | .timerBoundaryEvent id attachedToRef interruption durationLiteral
@@ -244,7 +248,7 @@ private def timerBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
         else none
     | _ => none
 
-private def messageBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
+def messageBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
     Option (NodeId × BoundaryInterruption × MessageChannel × SequenceFlowId) :=
   source.nodes.findSome? fun
     | .messageBoundaryEvent id attachedToRef interruption channel outputFlowId =>
@@ -252,7 +256,7 @@ private def messageBoundaryFor (source : CheckedProcess) (activityId : NodeId) :
         else none
     | _ => none
 
-private def lowerNode (source : CheckedProcess) :
+def lowerNode (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
   | .noneStartEvent id =>
       match checkedNodeScopeId? source id with
@@ -625,7 +629,7 @@ theorem lowering_preserves_user_task_resumption_cut
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
   simp [lowerNode, unbounded, noMessageBoundary, scope]
 
-private def lowerOrdinaryScopeCompletions (source : CheckedProcess)
+def lowerOrdinaryScopeCompletions (source : CheckedProcess)
     (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=
   if checkedScopeIsCompensationDormant source scope then []
   else if scope.parentScopeId.isNone &&
@@ -651,7 +655,7 @@ private def lowerOrdinaryScopeCompletions (source : CheckedProcess)
         scope.id
         parentOutput, scope.id)]
 
-private def lowerScopeCompletions (source : CheckedProcess)
+def lowerScopeCompletions (source : CheckedProcess)
     (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=
   match lowerMessageEventSubProcessCompletion? source scope with
   | some completion => [completion]
@@ -668,7 +672,7 @@ private def lowerScopeCompletions (source : CheckedProcess)
       | some completion => [(completion, scope.id)]
       | none => lowerOrdinaryScopeCompletions source scope
 
-private def insertScopedOperation
+def insertScopedOperation
     (operation : SemanticOperation × DefinitionScopeId) :
     List (SemanticOperation × DefinitionScopeId) →
       List (SemanticOperation × DefinitionScopeId)
@@ -678,14 +682,14 @@ private def insertScopedOperation
         operation :: candidate :: rest
       else candidate :: insertScopedOperation operation rest
 
-private def sortScopedOperations :
+def sortScopedOperations :
     List (SemanticOperation × DefinitionScopeId) →
       List (SemanticOperation × DefinitionScopeId)
   | [] => []
   | operation :: rest =>
       insertScopedOperation operation (sortScopedOperations rest)
 
-private def lowerParallelMultiInstanceCompletion? (source : CheckedProcess) :
+def lowerParallelMultiInstanceCompletion? (source : CheckedProcess) :
     CheckedNode → Option (SemanticOperation × DefinitionScopeId)
   | .parallelMultiInstanceUserTask id _ _ _ _ normalOutputFlowId _ => do
       let scopeId ← checkedNodeScopeId? source id

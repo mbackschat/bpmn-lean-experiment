@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
 
 /-! The actual Return successor preserves the complete optional wait projection.
 Owner survival follows from the actual cleanup filter, while private Timer visibility
 uses the independently proved host census frame. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

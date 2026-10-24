@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeLiveBindingProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeReservationHeadroomProofs
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeLiveBindingProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationHeadroomProofs
 
 /-! # Reachable wait reservation
 
@@ -9,6 +11,8 @@ PMIS-SELECT-01 rechecks identity, declaration provenance and fresh write ownersh
 in addition to native transition enabledness. Actual command-prefix certificates
 supply those checks before the scheduler constructs its reserved patch.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

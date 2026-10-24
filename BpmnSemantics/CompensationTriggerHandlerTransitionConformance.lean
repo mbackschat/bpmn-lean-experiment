@@ -55,7 +55,7 @@ theorem active_trigger_refusal_is_covered_by_the_declarative_relation :
   apply attemptCompensationTrigger_refusal_sound
   exact active_trigger_refusal_precedes_both_empty_and_eligible_source_selection.1
 
-private def programBelowFirstFrontierBytes : Program :=
+def programBelowFirstFrontierBytes : Program :=
   { program with
     compensationExecution := some
       { executionDeclaration with

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
-import BpmnSemantics.SemanticProcess.TransitionRecord
+module
+
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! Timer-task publication is checked through the evaluator's lifecycle acceptance boundary.
 The attached Timer remains private; the public delta starts only the prepared User Task.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

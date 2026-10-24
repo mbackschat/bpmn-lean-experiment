@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+module
+
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 
 /-! Prepared data arming refines Activity activation and preserves the checked binding contract. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

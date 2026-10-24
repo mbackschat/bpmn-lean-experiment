@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Activity data-input conformance
 
@@ -13,28 +15,30 @@ The owner-discriminator cases come first so an equal-coordinate effect occurrenc
 Activity-local owner by structural coincidence before the transition family is introduced.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.ActivityDataInputConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-private def processInstanceId : SemanticId := ⟨"Instance_1"⟩
+def processInstanceId : SemanticId := ⟨"Instance_1"⟩
 
-private def effectOccurrenceId : EffectOccurrenceId :=
+def inputEffectOccurrenceId : EffectOccurrenceId :=
   { processInstanceId
     elementId := ⟨"UserTask_Review"⟩
     activation := 1 }
 
-private def activityOccurrenceId : ActivityOccurrenceId :=
+def inputActivityOccurrenceId : ActivityOccurrenceId :=
   { processInstanceId
     activityElementId := ⟨"UserTask_Review"⟩
     activation := 1 }
 
-private def effectOwner : LocalDataOwner :=
-  .effectOccurrence effectOccurrenceId
+def effectOwner : LocalDataOwner :=
+  .effectOccurrence inputEffectOccurrenceId
 
-private def activityOwner : LocalDataOwner :=
-  .activityOccurrence activityOccurrenceId
+def activityOwner : LocalDataOwner :=
+  .activityOccurrence inputActivityOccurrenceId
 
 theorem equalCoordinateOwnersRemainDistinct : effectOwner ≠ activityOwner := by
   decide +kernel
@@ -43,19 +47,19 @@ theorem crossFamilyOwnersDoNotMatch :
     localDataOwnerMatches effectOwner activityOwner = false := by
   decide +kernel
 
-private def activityScope : ActivityVariableScope :=
+def activityScope : ActivityVariableScope :=
   { owner := activityOwner, bindings := [] }
 
-private def mixedVariables : ScopedVariables :=
+def mixedVariables : ScopedVariables :=
   addActivityVariableScope
     { process := { bindings := [] }
       activities := [activityScope]
       processInterfaces := [], scopes := [] }
-    effectOccurrenceId
+    inputEffectOccurrenceId
     []
 
 theorem effectCompletionPreservesEqualCoordinateActivityScope :
-    completeActivityVariableScope mixedVariables effectOccurrenceId [] (.success []) =
+    completeActivityVariableScope mixedVariables inputEffectOccurrenceId [] (.success []) =
       some
         { process := { bindings := [] }
           activities := [activityScope]
@@ -70,15 +74,15 @@ The same program and the same start command reach two different stable states de
 one carrying explicit null. The quantified laws for this family are stated at their owner,
 [ActivityDataInput](SemanticProcess/ActivityDataInput.lean). -/
 
-private def reviewDirectInput : DirectActivityDataInput :=
+def reviewDirectInput : DirectActivityDataInput :=
   { associationId := "DataInputAssociation_ReviewContext"
     source := .property "Property_ReviewContext"
     targetDataInputId := "DataInput_ReviewContext"
     targetDataInputName := some "Review context" }
 
-private def reviewProcessId : ProcessId := ⟨"Process_ActivityDataInputReview"⟩
+def reviewProcessId : ProcessId := ⟨"Process_ActivityDataInputReview"⟩
 
-private def reviewCheckedProcess : CheckedProcess :=
+def reviewCheckedProcess : CheckedProcess :=
   { identity :=
       { semanticProfile := activityDataInputUserTaskProfileId
         sourceId := ⟨"activity-data-input-user-task"⟩
@@ -102,41 +106,41 @@ private def reviewCheckedProcess : CheckedProcess :=
           sourceId := ⟨"StartEvent_Review"⟩
           targetId := ⟨"UserTask_Review"⟩ } ] }
 
-private def reviewProgram : Program := lowerCheckedProcess reviewCheckedProcess
+def reviewProgram : Program := lowerCheckedProcess reviewCheckedProcess
 
-private def reviewInstanceId : SemanticId := ⟨"ActivityDataInputInstance_1"⟩
+def reviewInstanceId : SemanticId := ⟨"ActivityDataInputInstance_1"⟩
 
-private def startReview (commandId : String)
+def startReview (commandId : String)
     (initialVariables : List VariableBinding) : Stimulus :=
   .startProcess ⟨commandId⟩ ⟨reviewProcessId.value⟩ reviewInstanceId initialVariables
 
-private def presentContext : VariableBinding :=
+def presentContext : VariableBinding :=
   { name := reviewDirectInput.source.id, value := .string "invoice-4711" }
 
-private def nullContext : VariableBinding :=
+def nullContext : VariableBinding :=
   { name := reviewDirectInput.source.id, value := .null }
 
-private def startWithContext : Stimulus :=
+def startWithContext : Stimulus :=
   startReview "start-with-review-context" [presentContext]
 
-private def startWithNullContext : Stimulus :=
+def startWithNullContext : Stimulus :=
   startReview "start-with-null-context" [nullContext]
 
-private def startWithoutContext : Stimulus :=
+def startWithoutContext : Stimulus :=
   startReview "start-without-context" []
 
-private def runStart (stimulus : Stimulus) : StimulusResult :=
+def runStart (stimulus : Stimulus) : StimulusResult :=
   applyStimulus scenarioClosureLimit reviewProgram initialState stimulus
 
-private def reviewTaskInstanceId : UserTaskInstanceId :=
+def reviewTaskInstanceId : UserTaskInstanceId :=
   { processInstanceId := reviewInstanceId
     elementId := ⟨"UserTask_Review"⟩
     activation := 1 }
 
-private def completeReview : Stimulus :=
+def completeReview : Stimulus :=
   .completeUserTaskInstance ⟨"complete-review"⟩ reviewTaskInstanceId []
 
-private def observed (result : StimulusResult) : Option StateObservation :=
+def observed (result : StimulusResult) : Option StateObservation :=
   observeStableState reviewProgram result.state
 
 theorem unavailableSourceStartCommits :
@@ -211,7 +215,7 @@ theorem activeTaskPublishesExactlyItsOneSelectedInput :
                   value := presentContext.value }] }] := by
   decide +kernel
 
-private def completedReview : StimulusResult :=
+def completedReview : StimulusResult :=
   applyStimulus scenarioClosureLimit reviewProgram
     (runStart startWithContext).state completeReview
 
@@ -258,20 +262,20 @@ duplicated local owner, an absent one, and a well-formed command naming an activ
 does not carry. Each perturbs the committed active state rather than a terminal one, so the refusal
 cannot be attributed to the task already being gone. -/
 
-private def activeState : RuntimeState := (runStart startWithContext).state
+def activeState : RuntimeState := (runStart startWithContext).state
 
-private def reviewLocalScope : ActivityVariableScope :=
+def reviewLocalScope : ActivityVariableScope :=
   { owner := .activityOccurrence
       { processInstanceId := reviewInstanceId
         activityElementId := ⟨"UserTask_Review"⟩
         activation := 1 }
     bindings := [{ name := reviewDirectInput.targetDataInputId, value := presentContext.value }] }
 
-private def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
+def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
   { activeState with
       variables := { activeState.variables with activities := scopes } }
 
-private def refused (state : RuntimeState) : StimulusResult :=
+def refused (state : RuntimeState) : StimulusResult :=
   { outcome := .rejected
     state := state
     internalStepBoundExceeded := false
@@ -305,7 +309,7 @@ theorem wrongActivationAgainstALiveWaitRefuses :
       refused activeState := by
   decide +kernel
 
-private def repeatedInputDeclarations (count : Nat) : Program :=
+def repeatedInputDeclarations (count : Nat) : Program :=
   { reviewProgram with
     operations := reviewProgram.operations.flatMap fun operation =>
       match operation with

@@ -1,8 +1,12 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 
 /-! Prepared regional transitions preserve position, references and the root-compensation refusal domain. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

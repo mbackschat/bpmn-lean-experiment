@@ -1,7 +1,9 @@
-import BpmnSemantics.SemanticProcess.BoundedScope
-import BpmnSemantics.SemanticProcess.MonitoredScope
-import BpmnSemantics.SemanticProcess.TransactionCancellation
-import BpmnSemantics.SemanticProcess.NestedScopeData
+module
+
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.MonitoredScope
+public import BpmnSemantics.SemanticProcess.TransactionCancellation
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Declared scope entry and completion
 
@@ -11,6 +13,8 @@ scope-data hooks that initialize a declaring scope's frame on entry and write it
 completion disposes it. A Program without a `scopeLocalData` record for the scope keeps exactly the
 undeclared entry and completion, which the `_undeclared` and `_other_profile` equations state.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

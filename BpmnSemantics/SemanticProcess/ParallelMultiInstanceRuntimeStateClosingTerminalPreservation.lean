@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingTerminal
-import BpmnSemantics.SemanticProcess.TokenOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingTerminal
+public import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Parallel Multi-Instance terminal runtime-state preservation
 
@@ -13,11 +15,13 @@ Scope boundary: terminal closure only. Progress, evaluator lifting, command trac
 and any change to the semantic account remain downstream.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-private def terminalTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
+def terminalTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
@@ -63,7 +67,7 @@ private theorem removeParallelChildWaits_lookup_of_not_mem (waits : List UserTas
   · simp only [Bool.not_eq_true] at names
     simp [names]
 
-private def terminalLexStep [DecidableEq α] (less : α → α → Bool)
+def terminalLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then less left right else rest
 
@@ -191,9 +195,9 @@ private theorem terminalLexStep_trans [DecidableEq α] (less : α → α → Boo
       · simp only [lrEq, ite_false]
         exact trans left middle right leftMiddle middleRight
 
-private def terminalStringBefore (left right : String) : Bool := decide (left < right)
+def terminalStringBefore (left right : String) : Bool := decide (left < right)
 
-private def terminalNatBefore (left right : Nat) : Bool := decide (left < right)
+def terminalNatBefore (left right : Nat) : Bool := decide (left < right)
 
 private theorem terminalString_asymm (left right : String) :
     terminalStringBefore left right = true → terminalStringBefore right left = false := by

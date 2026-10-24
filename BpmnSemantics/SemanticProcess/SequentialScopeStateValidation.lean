@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! SMIS-IDENTITY-01 binds controllers and generated bodies in both directions; SMIS-ENTER-01 fixes their collection index. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

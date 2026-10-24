@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Collection laws for transition-level preservation
 
@@ -24,6 +26,8 @@ in this repository before it was decided of a concrete state, because the initia
 collections and needed no order argument; the first transition-level preservation claim is what forces
 the theory.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -111,7 +115,7 @@ The step is stated over an arbitrary ordered key rather than over `String` and `
 that the chain can mix them, which every comparator here does.
 -/
 
-private def lexStep {α : Type} [DecidableEq α] [LT α] [DecidableLT α]
+def lexStep {α : Type} [DecidableEq α] [LT α] [DecidableLT α]
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then decide (left < right) else rest
 

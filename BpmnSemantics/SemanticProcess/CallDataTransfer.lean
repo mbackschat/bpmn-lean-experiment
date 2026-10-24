@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
-import BpmnSemantics.SemanticProcess.CallActivity
+module
+
+public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Atomic scalar Call transfers
 
 CDATA-INPUT-01 and CDATA-OUTPUT-01 compose explicit owned data movement with the existing
 Call control relations. Empty interfaces retain the original control domain.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

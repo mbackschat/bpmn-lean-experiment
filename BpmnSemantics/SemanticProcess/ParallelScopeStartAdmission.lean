@@ -1,6 +1,10 @@
-import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
 
 /-! PMIS-ADMIT-01 binds the proposed closure count to source ownership and validated Start data, without enabling execution. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 
@@ -31,7 +35,7 @@ theorem boundedClosureBound_within_ceiling (parent bodyWithRetirement count boun
     exact closureBound_within_ceiling _ _ _ limits.1 limits.2
   next => contradiction
 
-private def checkedSourceCounts (source : CheckedProcess) (bindings : List VariableBinding) : Option (Nat × Nat × Nat) := do
+def checkedSourceCounts (source : CheckedProcess) (bindings : List VariableBinding) : Option (Nat × Nat × Nat) := do
   if !ParallelScopeChecked.admitted source then none else do
     let [entry] := source.nodes.filter (fun node => match node with | .parallelMultiInstanceSubProcess .. => true | _ => false) | none
     let .parallelMultiInstanceSubProcess _ childScope collection item inputs condition := entry | none

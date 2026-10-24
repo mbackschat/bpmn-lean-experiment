@@ -1,13 +1,17 @@
-import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
-import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
-import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+module
+
+public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 
 /-! Timer-task arming preserves the three independent issuer bounds and the existing runtime
 collections. The joint wait/Activity obligations come from `InternalTimerTaskValidity`.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

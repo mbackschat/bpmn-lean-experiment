@@ -92,18 +92,18 @@ def startStimulus : Stimulus :=
 def booleanCompletion : Stimulus :=
   BooleanProcessDataConformance.completionStimulus (.boolean true)
 
-private def decodingRejected (result : Except String α) : Bool :=
+def decodingRejected (result : Except String α) : Bool :=
   match result with
   | .ok _ => false
   | .error _ => true
 
-private def decodingAccepted [DecidableEq α]
+def decodingAccepted [DecidableEq α]
     (result : Except String α) (expected : α) : Bool :=
   match result with
   | .ok actual => decide (actual = expected)
   | .error _ => false
 
-private def optionalFieldAbsent (json : Json) (key : String) : Bool :=
+def optionalFieldAbsent (json : Json) (key : String) : Bool :=
   match optionalField json key with
   | .ok none => true
   | .ok (some _)
@@ -316,24 +316,24 @@ theorem metadata_free_values_omit_the_property_physically :
           "metadata" = true := by
   decide +kernel
 
-private def completionReady (bindings : List VariableBinding) : RuntimeState :=
+def completionReady (bindings : List VariableBinding) : RuntimeState :=
   { BooleanProcessDataConformance.waitingState with
     waits := []
     tokens := addToken BooleanProcessDataConformance.waitingState.tokens
       SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner
     variables := { BooleanProcessDataConformance.waitingState.variables with process := { bindings } } }
 
-private def completionEndOperation : SemanticOperation :=
+def completionEndOperation : SemanticOperation :=
   .reachNoneEnd ⟨"operation:EndEvent_1"⟩ { elementId := ⟨"EndEvent_1"⟩ } ⟨"place:Flow_TaskToEnd"⟩
 
-private def completionRootOperation : SemanticOperation :=
+def completionRootOperation : SemanticOperation :=
   .completeScope ⟨"operation:complete-scope:scope:Process_SequentialUserTask"⟩
     { elementId := ⟨"Process_SequentialUserTask"⟩ } ⟨"scope:Process_SequentialUserTask"⟩ none
 
-private def completionAfterEnd (bindings : List VariableBinding) : RuntimeState :=
+def completionAfterEnd (bindings : List VariableBinding) : RuntimeState :=
   reachNoneEndToken (completionReady bindings) SequentialUserTask.rootOwner ⟨"place:Flow_TaskToEnd"⟩
 
-private def completionFinished (bindings : List VariableBinding) : RuntimeState :=
+def completionFinished (bindings : List VariableBinding) : RuntimeState :=
   { SequentialUserTask.completedState with
     variables := { SequentialUserTask.completedState.variables with process := { bindings } } }
 
@@ -343,7 +343,7 @@ private theorem completionOperations : (programFor exactMetadata).operations =
       operationFor exactMetadata, completionRootOperation] := by
   decide +kernel
 
-private def completionOffer (before after : RuntimeState) (operation : SemanticOperation) :
+def completionOffer (before after : RuntimeState) (operation : SemanticOperation) :
     InternalCommutation.InternalExecutionOffer :=
   { alternative := .operation operation.id, operation, successor := after,
     preparation := InternalCommutation.prepareInternalTransition? (programFor exactMetadata) before operation }

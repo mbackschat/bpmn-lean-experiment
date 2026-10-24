@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
-import BpmnSemantics.SemanticProcess.Incident
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
+public import BpmnSemantics.SemanticProcess.Incident
 
 /-! Effect-local data and its open or suspended wait must survive cancellation together.
 The projection's exact identity census excludes a cancelled alias from deleting a survivor's
 data; incident association supplies the identity used by the actual cleanup filter. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -1,22 +1,26 @@
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+module
+
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! # Flow-node occurrence wait Program validity
 
 This module validates the exact correspondence between immutable Program definitions and live wait occurrences before lifecycle projection. It owns operation-owned wait families, private Boundary Timer host pairing, and effect-local scope exactness. Structural scope and Call Activity correspondence remains in `FlowNodeOccurrenceProgramValidityCore`.
 -/
 
+@[expose] public section
+
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 open FlowNodeOccurrenceProgramValidity.Internal
 
-private def messageWaitId (wait : MessageWait) : OccurrenceId :=
+def messageWaitId (wait : MessageWait) : OccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
 
-private def messageOperationMatchesWait (program : Program) (eventRaces : List EventRace)
+def messageOperationMatchesWait (program : Program) (eventRaces : List EventRace)
     (wait : MessageWait) (operation : SemanticOperation) : Bool :=
   operationOwnedBy program operation wait.owner && match operation with
   | .awaitMessage _ _ _ output message
@@ -35,13 +39,13 @@ private def messageOperationMatchesWait (program : Program) (eventRaces : List E
             race.messageSubscriptionId = messageWaitId wait
   | _ => false
 
-private def messageWaitValid (program : Program) (state : RuntimeState)
+def messageWaitValid (program : Program) (state : RuntimeState)
     (wait : MessageWait) : Bool :=
   occurrenceOwnerValid state wait.processInstanceId wait.owner wait.elementId wait.activation &&
     (program.operations.filter
       (messageOperationMatchesWait program state.eventRaces wait)).length = 1
 
-private def timerWaitId (wait : TimerWait) : OccurrenceId :=
+def timerWaitId (wait : TimerWait) : OccurrenceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.elementId.value⟩
     activation := wait.activation }
@@ -201,7 +205,7 @@ theorem flowNodeOccurrenceBoundaryTimerBound_ordinaryTimer_false (program : Prog
   rw [empty]
   rfl
 
-private def timerWaitValid (program : Program) (state : RuntimeState)
+def timerWaitValid (program : Program) (state : RuntimeState)
     (wait : TimerWait) : Bool :=
   occurrenceOwnerValid state wait.processInstanceId wait.owner wait.elementId wait.activation &&
     (program.operations.filter fun operation =>
@@ -727,6 +731,9 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
       _ = 1 := by simpa [timerWaitDeclarers] using congrArg List.length declarers
   have newValidBefore : timerWaitValid program state wait = true := by
     simp_all [timerWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique]
+    -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
+    -- private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    exact operationCount
   have newValid : timerWaitValid program after wait = true := by
     have frame : timerWaitValid program after wait = timerWaitValid program state wait := by
       unfold timerWaitValid

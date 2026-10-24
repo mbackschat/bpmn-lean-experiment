@@ -1,19 +1,23 @@
-import BpmnSemantics.SemanticProcess.Data
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-import BpmnSemantics.SemanticProcess.ErrorDefinition
-import BpmnSemantics.SemanticProcess.GraphValidation
-import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
-import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-import BpmnSemantics.SemanticProcess.CallActivityAdmission
-import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+module
+
+public import BpmnSemantics.SemanticProcess.Data
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcess.ErrorDefinition
+public import BpmnSemantics.SemanticProcess.GraphValidation
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.MessageStart
+public import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! # Semantic Process program structural validation
 
 This module owns definition, place, operation, initiation, and operation-specific admission for the Semantic Process IL. `GraphValidation` remains the owner of topology, reachability, scope-tree, and producer/consumer checks.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -49,15 +53,15 @@ theorem strictlySortedStrings_nodup (values : List String)
               decide_eq_true_eq] at sorted
             exact ih sorted.2
 
-private def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
+def placeExists (places : List ControlPlace) (id : ControlPlaceId) : Bool :=
   places.any fun place => decide (place.id = id)
 
-private def placeHasOrigin (places : List ControlPlace)
+def placeHasOrigin (places : List ControlPlace)
     (id : ControlPlaceId) (origin : BpmnSequenceFlowOrigin) : Bool :=
   places.any fun place =>
     decide (place.id = id && place.origin = origin)
 
-private def sortedDistinctPlaceIds (ids : List ControlPlaceId) : Bool :=
+def sortedDistinctPlaceIds (ids : List ControlPlaceId) : Bool :=
   strictlySortedStrings (ids.map fun id => id.value)
 
 /-- Runtime wait families whose element identities must resolve to one declaring operation. -/
@@ -158,7 +162,7 @@ def programWaitDeclarersUnique (operations : List SemanticOperation) : Bool :=
     (operationWaitDeclarationKeys operation).all fun key =>
       decide ((operations.filter fun candidate => operationDeclaresWaitKey candidate key).length = 1)
 
-private def wellFormedBpmnErrorRoute (places : List ControlPlace)
+def wellFormedBpmnErrorRoute (places : List ControlPlace)
     (route : Option BpmnErrorRoute) : Bool :=
   match route with
   | none => true
@@ -548,13 +552,13 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty boundaryEventElementId.value && boundaryEventElementId != origin.elementId &&
         placeExists places input && placeExists places output
 
-private def isInitiate : SemanticOperation → Bool
+def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
   | .initiateMessage .. => true
   | .initiateTimer .. => true
   | _ => false
 
-private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bool :=
+def inclusiveOperationsPaired (operations : List SemanticOperation) : Bool :=
   let selections := operations.filterMap fun
     | .selectMany _ _ _ candidates defaultBranch selectionKey =>
         some (selectionKey,
@@ -575,7 +579,7 @@ private def inclusiveOperationsPaired (operations : List SemanticOperation) : Bo
       joins.all fun join =>
         (selections.filter fun selection => decide (selection.1 = join.1)).length = 1
 
-private def operationRecurrenceValid (profile : ProfileId) : SemanticOperation → Bool
+def operationRecurrenceValid (profile : ProfileId) : SemanticOperation → Bool
   | .awaitMonitoredUserTask _ _ _ _ arm | .enterMonitoredScope _ _ _ _ _ arm =>
       arm.recurrence.isNone || profile == repeatableSubscriptionCheckpointProfileId
   | .awaitBoundedUserTask _ _ _ _ arm | .enterBoundedScope _ _ _ _ _ arm => arm.recurrence.isNone
@@ -757,7 +761,8 @@ theorem programWellFormed_rejects_selectMany_declarer_collision (program : Progr
       rightDefault selectionKey ∈ program.operations.filter (fun
         | .selectMany _ _ _ _ _ key => decide (key = selectionKey)
         | _ => false) := List.mem_filter.mpr ⟨rightMember, by simp⟩
-  rw [singleton] at leftFiltered rightFiltered
+  -- `erw` bridges the statement's and this proof's matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  erw [singleton] at leftFiltered rightFiltered
   simp only [List.mem_singleton] at leftFiltered rightFiltered
   exact different (leftFiltered.trans rightFiltered.symm)
 

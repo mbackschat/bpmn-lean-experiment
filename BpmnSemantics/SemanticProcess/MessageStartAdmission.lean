@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.TimerStartAdmission
+module
+
+public import BpmnSemantics.SemanticProcess.MessageStart
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 
 /-! # Message Start Event external admission
 
 This module owns exact resolved-trigger admission against the Message Start profile and its single admitted IL start operation. It creates no subscription and performs no routing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

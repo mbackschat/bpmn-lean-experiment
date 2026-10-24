@@ -1,13 +1,17 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-import BpmnSemantics.EventBasedGatewayConformance
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.ReceiveTaskConformance
-import BpmnSemantics.ConfiguredTaskConformance
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+public import BpmnSemantics.EventBasedGatewayConformance
+public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.ReceiveTaskConformance
+public import BpmnSemantics.ConfiguredTaskConformance
 
 /-! # Flow-node occurrence lifecycle projection conformance
 
 This module owns independent open-set projection witnesses for boundary subscriptions, event races, and reused wait shapes.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

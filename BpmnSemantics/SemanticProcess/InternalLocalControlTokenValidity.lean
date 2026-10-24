@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.TokenPatch
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 
 /-! # Local-control token-patch validity
 
@@ -11,6 +13,8 @@ owned token removal to retain foreign-owner units at the same place. This owner 
 validity from the token patch and static output bindings, without selecting an operation or assuming
 its successor is valid.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

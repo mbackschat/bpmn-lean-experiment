@@ -1,12 +1,16 @@
-import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+module
+
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionMultiInstanceValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensationValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 
 /-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the
 retained Activity owners that quiescence alone does not constrain. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
