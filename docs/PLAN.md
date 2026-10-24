@@ -90,13 +90,13 @@ Current task: landing of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CAL
 
 Deliverable: `PC-SCOPE-05` and migration step 3 on `main`.
 
-Acceptance blockers: green hosted checks for step 3's branch; a green dependency-security check through the approved routine zod 4.4.3 → 4.6.6 upgrade, admissible after 2026-10-25 16:18 UTC. Routine fast-uri 3.1.9 (moderate advisories, below the gate) is admissible after 2026-11-02 23:05 UTC.
+Acceptance blockers: a green dependency-security check through the approved routine zod 4.4.3 → 4.6.6 upgrade, admissible after 2026-10-25 16:18 UTC. Routine fast-uri 3.1.9 (moderate advisories, below the gate) is admissible after 2026-11-02 23:05 UTC.
 
-Current result: `PC-SCOPE-05` is closure-approved and green on `3f457ad4`. Step 3 is committed: the library is modules, 97 evaluating fixture files stay plain; the complete container build and `BpmnConformance` are green and 131 cost rows re-measured. Two performance findings must close before the next coverage family adds pipeline cases: every Temporal run executes serially since `ec3ff2b3` (an absent effect schedule maps to `null`, but the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
+Current result: `PC-SCOPE-05` is closure-approved and green on `3f457ad4`. Step 3 is on PR #19: the library is modules, 100 evaluating fixture and driver files stay plain, 131 cost rows re-measured, and every hosted check but dependency-security is green on `d05ad9eb`. Two performance findings must close before the next coverage family adds pipeline cases: every Temporal run executes serially since `ec3ff2b3` (an absent effect schedule maps to `null`, but the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
 Effort budget: 2 hours for the upgrade and landing; step 3's renewed 4 hours from 12:05 UTC.
 
-Next action: push step 3's branch and read its hosted checks; after 2026-10-25 16:18 UTC upgrade zod, push the branch and land on green checks for the exact SHA.
+Next action: after 2026-10-25 16:18 UTC upgrade zod, push the branch and land on green checks for the exact SHA.
 
 Oracle: a landing commit whose hosted checks are not all green, or a zod version younger than 14 days.
 
