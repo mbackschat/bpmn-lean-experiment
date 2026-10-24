@@ -11,6 +11,8 @@ enableGlobalVirtualStore: false
 minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeExclude:
+  - zod@4.6.6
 trustLockfile: false
 allowBuilds:
   '@swc/core': false
