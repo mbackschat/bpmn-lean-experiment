@@ -87,16 +87,18 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: [migration step 4](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) (owner-directed 2026-10-24), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: the first hidden hubs (`ProgramStructuralValidation`, `CheckedGraphValidation`, `FlowNodeOccurrenceLifecycle`, `CallActivity`) and the name-shadowing guard on `main`.
+Deliverable: four hidden hubs and the name-shadowing guard on `main`.
 
-Acceptance blockers: a green complete library and `BpmnConformance` build, re-measured cost rows for every changed conformance module, and green hosted checks.
+Acceptance blockers: green hosted checks, including `verify-complete`; the local builds and cost rows are done.
 
-Current result: `PC-SCOPE-05`, step 3 and the zod 4.6.6 security upgrade are on `main` (`49f2f085`). Step 4 hides four hubs, saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
+Current result: step 3 and earlier work are on `main` (`49f2f085`). Step 4 hides four hubs, saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
 Effort budget: 3 hours from 17:47 UTC on 2026-10-24, renewed by the owner for 2 hours at 20:50 UTC.
 
-Next action: land step 4 on green checks for the exact SHA, then move standalone decided checks to executable guards (owner decision 2026-10-24, the proposal's optional item) in family-sized batches, then hide the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Boundary (22:50 UTC): PR #20 fails only Lean executable checks; four `Experiments/CheckedSource*` decide fixtures lack hub `import all`. Renewal pending.
+
+Next action: add those imports, build the executable-check targets, then land step 4 on green checks for the exact SHA, then move standalone decided checks to executable guards (owner decision 2026-10-24) in family batches, then the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a landing commit whose hosted checks are not all green, or an age exclusion beyond `zod@4.6.6`.
 
-Stop if a hub needs a consumer proof rewritten rather than an exposure or `import all`. Runtime/release holds remain open. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
+Stop if a hub needs a consumer proof rewritten rather than an exposure or `import all`. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
