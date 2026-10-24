@@ -1,5 +1,5 @@
 /**
- * Locks the registered guarantor loan schedules against Stage B of the repeated, nested and concurrent Calls proposal
+ * Locks the registered guarantor loan schedules against Stage B of the repeated, nested and concurrent Calls specification
  * without Lean or Temporal: the Call inside the Guarantor review returns its output into the review's declared frame
  * rather than the Process, which receives it only when the Sub-Process publishes it, and the root-path Call's output stays
  * as written (CALLN-FRAME-01); the repeated call's first task carries activation 2 under its own called identity

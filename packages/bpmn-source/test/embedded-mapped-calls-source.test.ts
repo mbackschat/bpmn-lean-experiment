@@ -1,7 +1,7 @@
 /**
  * CALLN-ADMIT-01 for Stage B through the exact-bytes source path: the guarantor loan model's two mapped Calls of one
  * definition under the nested scope-data profile, one on the root path and one inside the Guarantor review
- * Sub-Process. The oracle is the repeated, nested and concurrent Calls proposal's Stage B scope; every refusal differs
+ * Sub-Process. The oracle is the repeated, nested and concurrent Calls specification's Stage B scope; every refusal differs
  * from the admitted control in the one fact its label names.
  */
 import assert from "node:assert/strict";

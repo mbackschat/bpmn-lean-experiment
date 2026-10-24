@@ -1,20 +1,20 @@
-# Repeated, nested and concurrent Calls proposal
+# Repeated, nested and concurrent Calls specification
 
 ## Status
 
-Lifecycle: owner-approved
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
 Can one hosted process instance run several calls to the same reusable Process definition, serially, through a Call inside a called Process, and concurrently on distinct Parallel branches, so that every called instance returns exactly once, to exactly the caller occurrence and Call activation that created it, in any completion order? And can a mapped Call sit inside an embedded Sub-Process, receiving its inputs from and writing its outputs to that Sub-Process's frame?
 
-This proposal serves `PC-SCOPE-05` in the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and closes it only when both stages below close. No sibling row shares its mechanism, as [PLAN](../PLAN.md#exact-resume-point) records. The two stages share one mechanism, a call record whose caller is any admitted caller occurrence rather than the hosting Process root, and they differ in where that caller may sit:
+This specification closes `PC-SCOPE-05` in the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) through both stages below. No sibling row shares its mechanism, as [PLAN](../PLAN.md#exact-resume-point) records. The two stages share one mechanism, a call record whose caller is any admitted caller occurrence rather than the hosting Process root, and they differ in where that caller may sit:
 
 - **Stage A, Process-root callers.** Calls in the root body of the caller Process and in the root bodies of called Processes. Every caller occurrence is then a parentless Process root, either the hosting root or a called root. This covers serial repetition, nesting and concurrency. It grows the `SCOPE` family's cumulative profile, the only profile with Parallel branches and Calls in reach.
-- **Stage B, embedded callers.** One mapped Call on the serial path of an embedded Sub-Process body, beside a root-path mapped Call to the same definition. It grows the `DATA` family's cumulative profile, which owns the [Call variable mapping account](CALL-VARIABLE-MAPPING-SPEC.md). Stage B carries the Lean premise lift that removes the parentless-caller assumption from call-association validity and the position proofs, and confines it to an explicit Program premise of the interruption proofs, under its own effort bound.
+- **Stage B, embedded callers.** One mapped Call on the serial path of an embedded Sub-Process body, beside a root-path mapped Call to the same definition. It grows the `DATA` family's cumulative profile, which owns the [Call variable mapping account](CALL-VARIABLE-MAPPING-SPEC.md). Stage B carries the Lean premise lift that removes the parentless-caller assumption from call-association validity and the position proofs, and confines it to an explicit Program premise of the interruption proofs.
 
-Stage A comes first because it keeps the parentless-caller premise: a called root is parentless, as the hosting root is. It still lifts every guard that assumes a caller in the hosting instance, listed under [Representation and runtime ownership](#representation-and-runtime-ownership), under its own effort bound. Stage B starts only after Stage A is accepted.
+Stage A keeps the parentless-caller premise, since a called root is parentless as the hosting root is, but lifts every guard that assumes a caller in the hosting instance, listed under [Representation and runtime ownership](#representation-and-runtime-ownership).
 
 The following stay later increments, and every restriction below bounds admission only:
 
@@ -22,7 +22,7 @@ The following stay later increments, and every restriction below bounds admissio
 - Multi-Instance Call bodies, with `PC-MI-03`, which this change amends to also own invoking several instances of one definition in one closure, including the plain fork into two Calls of one definition (see [Admission](#admission));
 - exceptional return and propagated cancellation, with `PC-SCOPE-06` and `PC-SCOPE-07`;
 - version and selector policy beyond in-document key equality, with `PC-SCOPE-03`;
-- mapped Calls on concurrent branches, where scope data meets concurrency, with the concurrent owners of `PC-DATA-04`. That row also takes the output half of `PC-SCOPE-05`'s reverse-order clause: this proposal shows return ownership under reverse completion and output ownership under serial repetition only. Both checklist rows are amended in this change.
+- mapped Calls on concurrent branches, where scope data meets concurrency, with the concurrent owners of `PC-DATA-04`. That row also takes the output half of `PC-SCOPE-05`'s reverse-order clause: this specification shows return ownership under reverse completion and output ownership under serial repetition only.
 
 ## Normative basis and CIB classification
 
@@ -199,7 +199,7 @@ Lanes: B profile admission, L Lean law, decided fixture or executable check, T T
 
 Lane shape: proved
 
-Evidence: the guard lifts and the return association are proved from the starting owners [`CallActivity`](../../BpmnSemantics/SemanticProcess/CallActivity.lean), [`CallActivityAdmission`](../../BpmnSemantics/SemanticProcess/CallActivityAdmission.lean) and [`ScopeCompletion`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean); admission is checked.
+Evidence: the guard lifts and the return association are proved from the starting owners [`CallActivity`](../../BpmnSemantics/SemanticProcess/CallActivity.lean), [`CallActivityAdmission`](../../BpmnSemantics/SemanticProcess/CallActivityAdmission.lean) and [`ScopeCompletion`](../../BpmnSemantics/SemanticProcess/ScopeCompletion.lean); admission is checked. Guaranteeing declarations: [`invokeProcessState_sound`](../../BpmnSemantics/SemanticProcess/CallActivity.lean#invokeProcessState_sound), [`returnProcessState_sound`](../../BpmnSemantics/SemanticProcess/CallActivity.lean#returnProcessState_sound), [`return_step_removes_exact_association_and_emits_one_continuation`](../../BpmnSemantics/SemanticProcess/CallActivity.lean#return_step_removes_exact_association_and_emits_one_continuation), [`scopeQuiescent_refuses_live_called_record`](../../BpmnSemantics/SemanticProcess/InternalRegionalReturnQuiescence.lean#scopeQuiescent_refuses_live_called_record), [`invokeState?_reads_caller_frames`](../../BpmnSemantics/SemanticProcess/CallVariableMappingLaws.lean#invokeState?_reads_caller_frames) and [`returnState?_outputs_land_in_caller_frames`](../../BpmnSemantics/SemanticProcess/CallVariableMappingLaws.lean#returnState?_outputs_land_in_caller_frames).
 
 **Stage A.** The proved obligations are what no finite journey covers:
 
@@ -208,8 +208,6 @@ Evidence: the guard lifts and the return association are proved from the startin
 - a called root with a live nested record is not quiescent (`CALLN-NEST-01`);
 - removing a returned called tree keeps every record, occurrence and reachable instance outside it, through the unchanged removal frame (`removeCalledProcessTree_keeps_outside_target`, `removeCalledProcessTree_preserves_outside_reachability` in [`InternalRegionalCallPositionValidity`](../../BpmnSemantics/SemanticProcess/InternalRegionalCallPositionValidity.lean)) and `return_step_removes_exact_association_and_emits_one_continuation` in [`CallActivity`](../../BpmnSemantics/SemanticProcess/CallActivity.lean);
 - the lifted `callOperationsPaired` keeps three facts its consumers use: the called root differs from the entry root, the return lies in the called root, and the caller output lies in the invocation's scope. It drops the fourth, that the invocation lies in the entry root, from which `paired_invocation_host` derives a caller in the hosting instance. That consumer and the 14 modules consuming `scopeCreation_selection_call_facts` are re-proved on the weaker fact that the caller is a parentless root of a reachable instance. On 2026-10-23, `callOperationsPaired` appeared in ten modules, and the selection facts, `paired_invocation_host` and `selectInternalScopeCreation?` together in 41.
-
-Stage A effort bound: 10 hours of root Lean time from Stage A start, measured at the stage's commits, covering the invocation, batch-selection, pairing and graph-rule lifts. At the limit, Stage A records its exact unresolved boundary and stays open.
 
 Admission and the concurrency rules are fixed per retained model and refusal as executable checks that [`CallFamilyChecksMain`](../../BpmnSemantics/CallFamilyChecksMain.lean) runs, extending `NestedScopeControlAdmission`. The structural certificate stays quantified over rules 1–3 only. The nearest checked non-law is an executable check in which selecting the return by called definition, on two live instances, continues the wrong caller.
 
@@ -237,7 +235,7 @@ Signature strategy: the state-only predicate keeps its signature, because it app
 
 After Stage B, call-association validity, invocation, return and the position proofs no longer assume Process-root callers, and only the interruption proofs carry that explicit premise. `PC-SCOPE-07` lifts it when it admits interruption around a Sub-Process-placed Call. The amended `PC-SCOPE-05` row records this.
 
-Effort bound: 14 hours of root Lean time from Stage B start, measured at the stage's commits. With 21 consuming modules, exhausting the bound is a realistic outcome. Stage B then records its exact unresolved boundary and stays open, `PC-SCOPE-05` stays open with Stage A delivered, and no weaker claim replaces it. Stage B also:
+Stage B also:
 
 - proves `CALLN-FRAME-01`'s input-read and output-write laws by extending the `CallVariableMappingLaws` evaluators to an embedded caller chain;
 - moves `calledRootMappings?` to selection through the live record, with its frame-validity and resolution consumers.
@@ -290,7 +288,7 @@ Each model gets scenarios, pipeline cases, seeded mutations, a model-corpus row 
 Acceptance:
 
 - Lean, the core and the pipeline agree on every scenario's `StateObservation`;
-- the Lean laws hold within each stage's lane, Stage B within its effort bound;
+- the Lean laws hold within each stage's lane;
 - the hosted refinement witnesses pass;
 - the Stage B probe agrees with its expected caller observations;
 - the hosted pipeline passes once at family acceptance.
@@ -328,9 +326,9 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy).
 - Hosting: the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts) for Stage B. Start admitted no identity bound under the `SCOPE` profile, so Stage A added one in the same owner: a hosting identity above 256 UTF-8 bytes is refused before Workflow creation, and the hosted recovery witness starts at exactly that size.
 - Evidence: scenarios, pipeline cases, model corpus, both profile READMEs and the `CIB-EXT-0021` profile coverage. The `SCOPE` profile artifact cannot name `CIB-EXT-0021`, because the immutable cyclic preservation baseline pins its digest, as it already froze the artifact's `features`; the profile README and the Call scenarios' provenance name it instead. The owner accepted this substitution on 2026-10-23 at the Stage A checkpoint over replacing the baseline and its CIB evidence. The [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) bind it: a scenario may cite a relationship its profile artifact omits only through a recorded substitution whose register Boundary and profile README name it, and the entry retires once the artifact names the relationship.
 
-## Implementation corrections
+## Implemented refinements
 
-Stage B's implementation changed the approved account in these places; the closure review judges each one.
+The implementation refines the approved lift in these places, each approved at closure.
 
 - **Association validity** (lift item 1). The parentless clause is dropped rather than weakened to reachability, because no consumer needs the caller's reachability once the derived identity separates instances. The state-only predicate instead requires one live record per Call element, which invocation freshness keeps and the parentless caller used to imply through the per-caller anchor, and a caller naming exactly one live occurrence. The TypeScript core gained the same element-uniqueness conjunct. The Program-linked `callRecordDeclared` clause of `runtimePositionValid` (item 2) binds the caller's definition scope to its invocation.
 - **Interruption premise** (item 4). The Program premise is `InterruptionInvocationsRooted`, which asks for Process-root invocations only of a Program holding a `throwError` or `terminateScope` operation. A Program without interruption satisfies it outright, so the normal-path journeys stay premise-free even through the generic pair, batch and publication layers that dispatch over every operation kind. The cancellation lemmas take the state-indexed `CallersParentless`, derived from that premise and position validity, or from a state without calls. The regional dispatchers take the premise per interrupting operation.
@@ -344,8 +342,10 @@ Stage B's implementation changed the approved account in these places; the closu
 |---|---|---|---|---|
 | Proposal | `d51d42c4` | `fork-turns-none` | `approve-with-required-edits` | `647ab54c, df3fc157` |
 | Semantic checkpoint | `0db7e397` | `fork-turns-none` | `approve-with-required-edits` | `f6933b64` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `f191a389` | `fork-turns-none` | `approve-with-required-edits` | `3f457ad4` |
 
 The cold proposal review of `d51d42c4` (baseline `2edc6da0`, packet `cffe38786b9e22d808936314177eb310438ac8b05c8425d4a7e8eb0f86c07e86`) required seven bounded edits. It found further hosting-root guards in Lean batch selection and both graph validators, a called-root mapping lookup keyed by definition, a larger Stage B Lean census, an unamended `CIB-EXT-0021` boundary, unrouted deferred shapes, a misapplied capacity envelope and two contradictions. It judged the two-stage split sound and the `testTwoSubProcesses` refusal honest and forward-compatible. The same reviewer's first audit of `647ab54c` resolved six edits and required one more census row. Its second audit approved `df3fc157` on 2026-10-23 and found no correction material enough to need a fresh cold review.
 
 The cold Stage A checkpoint review of `0db7e397` (baseline `efe439ef`, packet `d05469146956d89991e886e578fbfd32e7ea99050078741b2c7a04351379e030`) required four bounded edits and recommended two. It found the CIB-EXT-0021 artifact substitution unrecorded and unguarded, a reverse schedule whose cross-addressed refusals did not separate an instance-blind selector, an absent nested-record validity guard, witness and contract drift, a call cycle refused only by unstated profile analysis, and unnamed removal-frame lemmas. The same reviewer's audit approved `f6933b64` on 2026-10-23 with one prose note, applied. Stage B opens no checkpoint review; the family closure review covers both stages.
+
+The cold closure review of `f191a389` (baseline `f6933b64`, packet `067a0c3520b0dc92fa5aea5e31a77408172bc7bad2791bbd6326d16e454041f3`) covered both stages and required four bounded edits: Lean negative witnesses for Stage B's admission bounds, a Lean- and pipeline-reaching separation of wrong algorithm 5 with an accurately named mutation, stale owner passages, and an executable basis for the interruption premise. The same reviewer's audit approved `3f457ad4` on 2026-10-24 with no new finding.

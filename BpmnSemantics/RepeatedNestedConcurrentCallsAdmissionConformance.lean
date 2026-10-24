@@ -6,7 +6,7 @@ Finite checked admission witnesses of Process-root Call forests under the cumula
 profile (CALLN-ADMIT-01): the retained supplier onboarding forest is admitted with agreeing checked and
 Program closure bounds, and each refused forest is refused before start while its control, which differs in
 the one fact the refusal names, is admitted. Each refusal is its own check. The forest scan has no quantified certificate; see the
-[repeated, nested and concurrent Calls proposal](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md#separating-witnesses).
+[repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance

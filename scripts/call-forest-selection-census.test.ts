@@ -1,5 +1,5 @@
 /**
- * The repeated, nested and concurrent Calls census (docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md,
+ * The repeated, nested and concurrent Calls census (docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md,
  * "Representation and runtime ownership"): every executable TypeScript function and Lean definition that selects a
  * runtime occurrence by place, by definition scope alone, or by called definition, with the reason it stays sound once
  * a Program carries a Call forest. The site set is closed, so a new selector site fails here until it is classified.

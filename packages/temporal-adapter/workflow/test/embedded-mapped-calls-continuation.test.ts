@@ -1,5 +1,5 @@
 /**
- * Continue-As-New carries Stage B's embedded-caller record (the repeated, nested and concurrent Calls proposal's
+ * Continue-As-New carries Stage B's embedded-caller record (the repeated, nested and concurrent Calls specification's
  * Temporal preflight): every running checkpoint of the guarantor loan decodes to itself, and the continuation decoder,
  * validating through the lifted association validity, refuses a record whose caller is absent or not the occurrence
  * holding its invocation.

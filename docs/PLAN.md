@@ -76,18 +76,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: closure of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-PROPOSAL.md), batch 2 of the [batch order](#scheduled-delivery-batches). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: landing of [`PC-SCOPE-05`](capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md), closure-approved on 2026-10-24, batch 2 of the [batch order](#scheduled-delivery-batches); then [migration step 3](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: the family closure of both stages, landed on `main`; then [migration step 3](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order).
+Deliverable: `PC-SCOPE-05` on `main`, then migration step 3 rescoped and started.
 
-Acceptance blockers: green closure lanes (Stage B Temporal witness, CIB oracle with the embedded mapped Calls probe, integration pipeline, hosted complete rebuild) and an approved cold closure review.
+Acceptance blockers: a green dependency-security check on the landing commit, through the approved routine zod 4.4.3 → 4.6.6 upgrade, admissible after 2026-10-25 16:18 UTC.
 
-Current result: Stage B's Lean lift is committed (`b96f0139`): Call association, invocation, return and position proofs admit Sub-Process callers, interruption proofs carry the explicit `InterruptionInvocationsRooted` premise, and `CALLN-FRAME-01`'s laws are proved.
+Current result: the closure review approved both stages after one correction audit (`f191a389` → `3f457ad4`); hosted `verify-complete` is green on `3f457ad4`. The hosted warm pipeline took 238.8 s for 133 cases (start load 0.28) against 162.8 s for 131 cases at `e768ee78`. Two performance findings must close before the next coverage family adds pipeline cases: every Temporal run executes serially since `ec3ff2b3` (an absent effect schedule maps to `null`, but the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
-Effort budget: 4 hours for the closure lanes, review corrections and landing. The Lean lift used 4 h 25 min of Stage B's 14-hour bound.
+Effort budget: 2 hours for the upgrade and landing; step 3 gets its own budget at rescoping.
 
-Next action: run the closure lanes one at a time, commit registration and evidence, push a branch, then request the cold closure review.
+Next action: rescope step 3 read-only; after 2026-10-25 16:18 UTC upgrade zod, push the branch and land on green checks for the exact SHA.
 
-Oracle: a return or called completion delivered to the wrong caller occurrence or call activation, or a proof that still assumes a Process-root caller for an admitted nested Call.
+Oracle: a landing commit whose hosted checks are not all green, or a zod version younger than 14 days.
 
-Stop if the path requires SDK work, deferred MI guarantees or unbounded inherited-proof expansion. Existing runtime/release holds remain open.
+Stop if the upgrade needs a security exception, another dependency change, or a gate change. Existing runtime/release holds remain open.
