@@ -23,6 +23,7 @@ import {
   runScenario,
   type Scenario,
 } from "@bpmn-lean/semantic-core";
+import { prepareNativeLeanDriver } from "../../../scripts/lean-native-driver.ts";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -104,9 +105,11 @@ function readFixtureScenarioBytes(bytes: Uint8Array): ScenarioDocument {
   return { contents, scenario: parseWireJson<Scenario>(contents, "fixture scenario") };
 }
 
+const fixtureBindingMain = "BpmnSemantics/FixtureBindingJsonMain.lean";
+
 async function runBindings(
   inputs: Inputs,
-  main = "BpmnSemantics/FixtureBindingJsonMain.lean",
+  main = fixtureBindingMain,
 ): Promise<string> {
   const temporaryDirectory = await mkdtemp(join(tmpdir(), "lean-fixture-bindings-"));
   try {
@@ -117,9 +120,14 @@ async function runBindings(
       await writeFile(path, document.contents);
       return path;
     }));
-    const result = await execFileAsync("./scripts/lake.sh", [
-      "run", main, definitionPath, ...paths,
-    ], { cwd: projectRoot, timeout: 60_000, encoding: "buffer", maxBuffer: 1024 * 1024 });
+    // The fixture-binding driver binds proof-bearing fixtures, so it stays an interpreted plain file
+    // (scripts/lean-native-driver.ts). Any other driver is a Lean module, whose imported library code the
+    // interpreter cannot load, so it runs as its declared executable.
+    const [file, args] = main === fixtureBindingMain
+      ? ["./scripts/lake.sh", ["run", main, definitionPath, ...paths]] as const
+      : [await prepareNativeLeanDriver(main), [definitionPath, ...paths]] as const;
+    const result = await execFileAsync(file, args,
+      { cwd: projectRoot, timeout: 60_000, encoding: "buffer", maxBuffer: 1024 * 1024 });
     return decodeFixtureUtf8(result.stdout);
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });

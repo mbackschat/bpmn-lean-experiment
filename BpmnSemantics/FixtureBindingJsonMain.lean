@@ -1,17 +1,13 @@
-module
-
-public import BpmnSemantics.SemanticProcessJson.DefinitionInput
-public import BpmnSemantics.SemanticProcessJson.Scenario
-public import BpmnSemantics.SemanticProcess.Fixtures
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
-public import BpmnSemantics.UserTaskInteractionConformance
-public import BpmnSemantics.ParallelForkJoinConformance
+import BpmnSemantics.SemanticProcessJson.DefinitionInput
+import BpmnSemantics.SemanticProcessJson.Scenario
+import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+import BpmnSemantics.UserTaskInteractionConformance
+import BpmnSemantics.ParallelForkJoinConformance
 
 /-! Exact external-input binding for concrete conformance fixtures. Synthetic countermodels,
 generic laws, and arbitrary-schedule theorems have no corresponding Scenario input here.
 -/
-
-@[expose] public section
 
 namespace BpmnSemantics.FixtureBindingJsonMain
 

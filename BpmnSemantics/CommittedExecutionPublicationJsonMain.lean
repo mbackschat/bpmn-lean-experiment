@@ -1,14 +1,10 @@
-module
-
-public import BpmnSemantics.SemanticProcess.TopologyFixtures
-public import BpmnSemantics.SemanticProcessJson.Publication
-public import BpmnSemantics.CommittedExecutionPublicationFixtures
-public import BpmnSemantics.RuntimeStateWellFormedFixtures
-public import BpmnSemantics.RuntimeStateWellFormedEventRaceFixtures
+import BpmnSemantics.SemanticProcess.TopologyFixtures
+import BpmnSemantics.SemanticProcessJson.Publication
+import BpmnSemantics.CommittedExecutionPublicationFixtures
+import BpmnSemantics.RuntimeStateWellFormedFixtures
+import BpmnSemantics.RuntimeStateWellFormedEventRaceFixtures
 
 /-! One-way JSON emitter for the exact parallel committed-execution publication parity witness. -/
-
-@[expose] public section
 
 namespace BpmnSemantics.CommittedExecutionPublicationJsonMain
 

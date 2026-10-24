@@ -1,18 +1,14 @@
-module
-
-public import BpmnSemantics.Experiments.CheckedSourceRelation
-public import BpmnSemantics.Experiments.CheckedSourceCorrespondence
-public import BpmnSemantics.Experiments.CheckedSourceAdmission
-public import BpmnSemantics.Experiments.CheckedSourceFrontier
-public import BpmnSemantics.Experiments.CheckedSourceFrontierConformance
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.Experiments.CheckedSourceRelation
+import BpmnSemantics.Experiments.CheckedSourceCorrespondence
+import BpmnSemantics.Experiments.CheckedSourceAdmission
+import BpmnSemantics.Experiments.CheckedSourceFrontier
+import BpmnSemantics.Experiments.CheckedSourceFrontierConformance
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelationMain — checked-source relation experiment gate
 
 This executable retains the fixture-coincidental positional-lowering countermodel and its green controls. It does not make the direct checked-source relation an independent BPMN authority.
 -/
-
-@[expose] public section
 
 open BpmnSemantics.Experiments.CheckedSourceRelation
 open BpmnSemantics.Experiments.CheckedSourceCorrespondence
