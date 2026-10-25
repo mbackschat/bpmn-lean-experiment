@@ -1,5 +1,4 @@
 import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotLifecycleLaws
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 
@@ -32,13 +31,12 @@ def childCompletionResult : StimulusResult :=
     (.completeUserTaskInstance ⟨"complete-snapshot-child"⟩ childTaskId [])
 
 /-- Child entry and its provisional context record are one public-evaluator commit. -/
-theorem child_entry_reserves_before_exposing_child_work :
+def child_entry_reserves_before_exposing_child_work : Bool := decide <|
     startResult.outcome = .committed ∧
-      startResult.state.compensationParentContextRetentions.length = 1 := by
-  decide +kernel
+      startResult.state.compensationParentContextRetentions.length = 1
 
 /-- Ordinary child completion promotes the exact provisional record before removing the occurrence. -/
-theorem child_completion_promotes_the_deciding_prestate :
+def child_completion_promotes_the_deciding_prestate : Bool := decide <|
     childCompletionResult.outcome = .committed ∧
       childCompletionResult.state.compensationParentContextRetentions =
         [.promoted CompensationEventSubProcessSnapshotConformance.childOccurrence
@@ -50,8 +48,7 @@ theorem child_completion_promotes_the_deciding_prestate :
                   bindings := [] } ] }] ∧
       (childCompletionResult.state.scopeOccurrences.map fun occurrence =>
         occurrence.id.definitionScopeId) =
-          [SubProcessBoundaryTimerConformance.rootScopeId] := by
-  decide +kernel
+          [SubProcessBoundaryTimerConformance.rootScopeId]
 
 def timerInterruptionResult : StimulusResult :=
   applyStimulusWithCompensationSnapshots scenarioClosureLimit
@@ -72,21 +69,19 @@ def timerInterruptionAdmission : ExternalAdmission :=
       1000)
 
 /-- The external Timer transition itself purges the unsuccessful parent; closure cannot repair admission. -/
-theorem timer_admission_purges_before_closure :
+def timer_admission_purges_before_closure : Bool := decide <|
     timerInterruptionAdmission.outcome = .committed ∧
       timerInterruptionAdmission.state.compensationParentContextRetentions = [] ∧
       compensationEventSubProcessSnapshotStateValid
           CompensationEventSubProcessSnapshotAdmissionConformance.program
-          timerInterruptionAdmission.state = true := by
-  decide +kernel
+          timerInterruptionAdmission.state = true
 
 /-- Timer interruption removes the failed child's reservation in the same regional transition. -/
-theorem timer_interruption_purges_without_promotion :
+def timer_interruption_purges_without_promotion : Bool := decide <|
     timerInterruptionResult.outcome = .committed ∧
       timerInterruptionResult.state.compensationParentContextRetentions = [] ∧
       (timerInterruptionResult.state.waits.map fun wait => wait.task.id.value) =
-        ["EscalationTask"] := by
-  decide +kernel
+        ["EscalationTask"]
 
 def oneOfTwoSameDefinitionPurged : RuntimeState :=
   purgeCompensationParentContextsAfterUnsuccessfulScopeRemoval <|
@@ -95,26 +90,24 @@ def oneOfTwoSameDefinitionPurged : RuntimeState :=
       CompensationEventSubProcessSnapshotConformance.childOccurrence.id .remove
 
 /-- Regional purge keys by complete occurrence identity, not the shared definition scope. -/
-theorem same_definition_occurrences_do_not_alias_during_purge :
+def same_definition_occurrences_do_not_alias_during_purge : Bool := decide <|
     oneOfTwoSameDefinitionPurged.compensationParentContextRetentions =
       [.provisional CompensationEventSubProcessSnapshotConformance.secondChildOccurrence
         CompensationEventSubProcessSnapshotAdmissionConformance.handlerScopeId] ∧
       oneOfTwoSameDefinitionPurged.scopeOccurrences.any (fun occurrence =>
         occurrence.id ==
-          CompensationEventSubProcessSnapshotConformance.secondChildOccurrence.id) = true := by
-  decide +kernel
+          CompensationEventSubProcessSnapshotConformance.secondChildOccurrence.id) = true
 
 def removedRootWithPromotedChild : RuntimeState :=
   cancelScopeSubtree CompensationEventSubProcessSnapshotConformance.settledChildState
     CompensationEventSubProcessSnapshotConformance.rootOccurrence.id .remove
 
 /-- Removing the owning root purges promoted children even though their completed occurrences are already absent. -/
-theorem root_removal_purges_promoted_child_snapshots :
-    removedRootWithPromotedChild.compensationParentContextRetentions = [] := by
-  decide +kernel
+def root_removal_purges_promoted_child_snapshots : Bool := decide <|
+    removedRootWithPromotedChild.compensationParentContextRetentions = []
 
 /-- The footprint vocabulary names capacity, exact retention identity, captured Process data, and purge ownership. -/
-theorem snapshot_footprints_are_exact_and_region_owned :
+def snapshot_footprints_are_exact_and_region_owned : Bool := decide <|
     compensationSnapshotReservationAtoms
         CompensationEventSubProcessSnapshotAdmissionConformance.program
         CompensationEventSubProcessSnapshotConformance.childOccurrence =
@@ -138,7 +131,17 @@ theorem snapshot_footprints_are_exact_and_region_owned :
           CompensationEventSubProcessSnapshotConformance.childOccurrence.id) =
       [ .compensationParentContextCapacity
       , .compensationParentContextRetention
-          CompensationEventSubProcessSnapshotConformance.childOccurrence ] := by
-  decide +kernel
+          CompensationEventSubProcessSnapshotConformance.childOccurrence ]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationEventSubProcessSnapshotLifecycleIntegrationConformanceChecks : List (String × Bool) := [
+  ("child_entry_reserves_before_exposing_child_work", child_entry_reserves_before_exposing_child_work),
+  ("child_completion_promotes_the_deciding_prestate", child_completion_promotes_the_deciding_prestate),
+  ("timer_admission_purges_before_closure", timer_admission_purges_before_closure),
+  ("timer_interruption_purges_without_promotion", timer_interruption_purges_without_promotion),
+  ("same_definition_occurrences_do_not_alias_during_purge", same_definition_occurrences_do_not_alias_during_purge),
+  ("root_removal_purges_promoted_child_snapshots", root_removal_purges_promoted_child_snapshots),
+  ("snapshot_footprints_are_exact_and_region_owned", snapshot_footprints_are_exact_and_region_owned)
+]
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance

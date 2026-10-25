@@ -86,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [executable guards](LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) for standalone decided checks (owner decision 2026-10-24), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: no Lean module above 2 GiB peak, locked by Lean's own `-M2048` limit (owner decision 2026-10-25), then two local Lean threads under a 5 GB total (owner direction 2026-10-25), then the 104 plain files to modules, then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: 333 standalone checks of 49 conformance modules run natively by `ConformanceChecksMain`, on `main`.
+Deliverable: a cold hosted build under `-M2048` with no failing module and a cost guard that rejects any recorded row above the limit, on `main`.
 
-Acceptance blockers: green library, `BpmnConformance` and executable-check builds; re-measured cost rows; documentation claims matching the evidence form; green hosted checks.
+Acceptance blockers: green local library, `BpmnConformance` and executable-check builds; re-measured cost rows; documentation claims matching the evidence form; green hosted checks on the cold build.
 
-Current result: step 4 is on `main` (`51646364`), saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
+Current result: `a25f3c51` landed 333 executable checks. A single kernel decision replaying a medium whole model peaks near 2 GiB, so the remaining large modules move their finite witnesses to executable checks or split consumed facts into kernel-decided parts.
 
-Effort budget: 4 hours from 00:06 UTC on 2026-10-25.
+Effort budget: 4 hours from 02:57 UTC on 2026-10-25.
 
-Next action: land the executable guards on green checks for the exact SHA, then the next deliverable (owner decision 2026-10-25): no Lean module above 2 GiB peak, locked by a cost-guard ceiling; then the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: re-measure the changed rows, push the branch for the cold hosted build, land on green checks for the exact SHA, then the thread change. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
-Oracle: a converted check that no driver runs, or a proved lane citing an executable check.
+Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 
 Stop if a check cannot convert without changing its statement. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

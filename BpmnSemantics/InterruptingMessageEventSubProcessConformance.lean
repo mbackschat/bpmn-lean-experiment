@@ -712,15 +712,30 @@ def completeSchedules : List (List (Stimulus × Nat)) :=
    [(completeTask "CheckA", 1), (withdrawApplication, 1), (completeTask "Handler", 3)],
    [(completeTask "CheckB", 1), (withdrawApplication, 1), (completeTask "Handler", 3)]]
 
-theorem both_modes_execute_normal_and_interrupted_schedules_with_valid_prefixes :
-    ([InternalSchedulingMode.rejectObservableChoice, .requireChoiceSchedule].all fun mode =>
-      completeSchedules.all fun commands =>
-        match checkedCommandSequence { applicationProgram with internalSchedulingMode := mode }
-            initialState ((startApplication, 4) :: commands) with
-        | none => false
-        | some final => final.control == .completed ⟨"application"⟩ &&
-            final.scopeOccurrences.isEmpty && final.eventSubProcessMessageSubscriptions.isEmpty) = true := by
+/-- Every complete schedule under `mode` runs to completion with valid prefixes and no residue. -/
+def completeSchedulesFinish (mode : InternalSchedulingMode) : Bool :=
+  completeSchedules.all fun commands =>
+    match checkedCommandSequence { applicationProgram with internalSchedulingMode := mode }
+        initialState ((startApplication, 4) :: commands) with
+    | none => false
+    | some final => final.control == .completed ⟨"application"⟩ &&
+        final.scopeOccurrences.isEmpty && final.eventSubProcessMessageSubscriptions.isEmpty
+
+theorem observable_choice_rejection_finishes_every_complete_schedule :
+    completeSchedulesFinish .rejectObservableChoice = true := by
   decide +kernel
+
+theorem required_choice_schedule_finishes_every_complete_schedule :
+    completeSchedulesFinish .requireChoiceSchedule = true := by
+  decide +kernel
+
+-- Composed from one kernel decision per mode: deciding both modes at once peaked at 2.02 GiB resident on
+-- 2026-10-25, above the 2 GiB per-module ceiling in `lakefile.toml`.
+theorem both_modes_execute_normal_and_interrupted_schedules_with_valid_prefixes :
+    ([InternalSchedulingMode.rejectObservableChoice, .requireChoiceSchedule].all
+      completeSchedulesFinish) = true := by
+  simp only [List.all_cons, List.all_nil, observable_choice_rejection_finishes_every_complete_schedule,
+    required_choice_schedule_finishes_every_complete_schedule, Bool.and_self]
 
 theorem last_task_and_message_races_follow_input_order_and_keep_completed_history :
     (["CheckA", "CheckB"].all fun first =>

@@ -9,12 +9,15 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem acknowledgement_completes_the_process_and_closes_publication :
+def acknowledgement_completes_the_process_and_closes_publication : Bool := decide <|
     publicationAccepted joined.result.state (completeTask "Acknowledge") completed = true ∧
       completed.result.state.control = .completed instanceId ∧
       completed.result.state.scopeOccurrences = [] ∧
-      projectOpenFlowNodeOccurrencesWithCompensation? program completed.result.state = some [] := by
-  simp only [completed, joined_state_checkpoint]
-  decide +kernel
+      projectOpenFlowNodeOccurrencesWithCompensation? program completed.result.state = some []
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationTerminalPublicationConformanceChecks : List (String × Bool) := [
+  ("acknowledgement_completes_the_process_and_closes_publication", acknowledgement_completes_the_process_and_closes_publication)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

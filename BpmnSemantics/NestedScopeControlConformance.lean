@@ -161,102 +161,83 @@ def refused (source : CheckedProcess) (tasks : List String) (element : String) :
     (.completeUserTaskInstance ⟨"again"⟩ (taskId element) [])
   before.outcome == .committed && after.outcome == .rejected && after.state == before.state
 
-theorem onboarding_is_admitted_with_agreeing_bursts :
-    admitted onboarding = true ∧ analyses onboarding = (some 7, some 7) := by
-  decide +kernel
+def onboarding_is_admitted_with_agreeing_bursts : Bool := decide <|
+    admitted onboarding = true ∧ analyses onboarding = (some 7, some 7)
 
-theorem audit_is_admitted_with_agreeing_bursts :
-    admitted audit = true ∧ analyses audit = (some 5, some 5) := by
-  decide +kernel
+def audit_is_admitted_with_agreeing_bursts : Bool := decide <|
+    admitted audit = true ∧ analyses audit = (some 5, some 5)
 
-theorem onboarding_start_arms_start_date_and_equipment :
-    openTasks onboarding [] = some ["D", "E"] := by
-  decide +kernel
+def onboarding_start_arms_start_date_and_equipment : Bool := decide <|
+    openTasks onboarding [] = some ["D", "E"]
 
 /-- NSC-ENTER-01: confirming the start date enters setup and accounts in one closure, arming three tasks
 three scopes deep beside the root's pending equipment order. -/
-theorem onboarding_start_date_enters_two_scopes_in_one_closure :
-    openTasks onboarding ["D"] = some ["E", "WD", "XM", "XV"] := by
-  decide +kernel
+def onboarding_start_date_enters_two_scopes_in_one_closure : Bool := decide <|
+    openTasks onboarding ["D"] = some ["E", "WD", "XM", "XV"]
 
 /-- NSC-END-01 and NSC-OUTSIDE-01: the mailbox End at depth two leaves its sibling VPN, the desk and the
 root join waiting. -/
-theorem onboarding_mailbox_end_completes_nothing :
-    openTasks onboarding ["D", "XM"] = some ["E", "WD", "XV"] := by
-  decide +kernel
+def onboarding_mailbox_end_completes_nothing : Bool := decide <|
+    openTasks onboarding ["D", "XM"] = some ["E", "WD", "XV"]
 
 /-- NSC-END-01 and NSC-OUTSIDE-01: the desk End at depth one leaves the accounts scope and the root join
 waiting. -/
-theorem onboarding_desk_end_completes_nothing :
-    openTasks onboarding ["D", "WD"] = some ["E", "XM", "XV"] := by
-  decide +kernel
+def onboarding_desk_end_completes_nothing : Bool := decide <|
+    openTasks onboarding ["D", "WD"] = some ["E", "XM", "XV"]
 
 /-- NSC-JOIN-01: the root join waits for the setup scope, which waits for the accounts scope. -/
-theorem onboarding_root_join_waits_for_the_last_nested_task :
-    openTasks onboarding ["D", "XM", "WD", "E"] = some ["XV"] := by
-  decide +kernel
+def onboarding_root_join_waits_for_the_last_nested_task : Bool := decide <|
+    openTasks onboarding ["D", "XM", "WD", "E"] = some ["XV"]
 
-theorem onboarding_last_nested_task_releases_the_welcome_meeting :
-    openTasks onboarding ["D", "XM", "WD", "E", "XV"] = some ["M"] := by
-  decide +kernel
+def onboarding_last_nested_task_releases_the_welcome_meeting : Bool := decide <|
+    openTasks onboarding ["D", "XM", "WD", "E", "XV"] = some ["M"]
 
 /-- NSC-JOIN-01: the reverse completion order reaches the same join. -/
-theorem onboarding_reverse_order_releases_the_welcome_meeting :
-    openTasks onboarding ["E", "D", "XV", "XM", "WD"] = some ["M"] := by
-  decide +kernel
+def onboarding_reverse_order_releases_the_welcome_meeting : Bool := decide <|
+    openTasks onboarding ["E", "D", "XV", "XM", "WD"] = some ["M"]
 
-theorem onboarding_completes_after_the_welcome_meeting :
-    completed onboarding ["D", "XM", "WD", "E", "XV", "M"] = true := by
-  decide +kernel
+def onboarding_completes_after_the_welcome_meeting : Bool := decide <|
+    completed onboarding ["D", "XM", "WD", "E", "XV", "M"] = true
 
 /-- NSC-ENTER-01: planning enters both third-level scopes. -/
-theorem audit_planning_enters_both_third_level_scopes :
-    openTasks audit ["TP"] = some ["UD", "VI"] := by
-  decide +kernel
+def audit_planning_enters_both_third_level_scopes : Bool := decide <|
+    openTasks audit ["TP"] = some ["UD", "VI"]
 
 /-- NSC-QUIESCE-01 and NSC-JOIN-01: one completed scope leaves fieldwork's join waiting. -/
-theorem audit_one_completed_scope_leaves_fieldwork_waiting :
-    openTasks audit ["TP", "UD"] = some ["VI"] := by
-  decide +kernel
+def audit_one_completed_scope_leaves_fieldwork_waiting : Bool := decide <|
+    openTasks audit ["TP", "UD"] = some ["VI"]
 
-theorem audit_both_completed_scopes_release_review :
-    openTasks audit ["TP", "VI", "UD"] = some ["TR"] := by
-  decide +kernel
+def audit_both_completed_scopes_release_review : Bool := decide <|
+    openTasks audit ["TP", "VI", "UD"] = some ["TR"]
 
 /-- NSC-QUIESCE-01: completed fieldwork resumes the audit with sign-off. -/
-theorem audit_review_resumes_sign_off :
-    openTasks audit ["TP", "UD", "VI", "TR"] = some ["SS"] := by
-  decide +kernel
+def audit_review_resumes_sign_off : Bool := decide <|
+    openTasks audit ["TP", "UD", "VI", "TR"] = some ["SS"]
 
-theorem audit_completes_after_closing :
-    completed audit ["TP", "UD", "VI", "TR", "SS", "C"] = true := by
-  decide +kernel
+def audit_completes_after_closing : Bool := decide <|
+    completed audit ["TP", "UD", "VI", "TR", "SS", "C"] = true
 
 /-- NSC-REFUSE-01: an early review is a rejection that leaves the state unchanged. -/
-theorem early_review_leaves_state_unchanged :
-    refused audit ["TP", "UD"] "TR" = true := by
-  decide +kernel
+def early_review_leaves_state_unchanged : Bool := decide <|
+    refused audit ["TP", "UD"] "TR" = true
 
 /-- NSC-REFUSE-01: a repeated sample is a rejection that leaves the state unchanged. -/
-theorem repeated_sample_leaves_state_unchanged :
-    refused audit ["TP", "UD"] "UD" = true := by
-  decide +kernel
+def repeated_sample_leaves_state_unchanged : Bool := decide <|
+    refused audit ["TP", "UD"] "UD" = true
 
 /-- NSC-ADMIT-01: the audit at depth three is admitted, and a fourth level under sampling is refused. -/
-theorem fourth_nesting_level_is_refused :
-    analyses (auditWith true) = (none, none) := by
-  decide +kernel
+def fourth_nesting_level_is_refused : Bool := decide <|
+    analyses (auditWith true) = (none, none)
 
 /-- NSC-ADMIT-01: five parallel child tasks need eight closure steps and are admitted; six would need nine.
 The kernel does not reduce the five-task Start journey, so its commit is witnessed by the source admission test. -/
-theorem closure_limit_bounds_the_fanout :
+def closure_limit_bounds_the_fanout : Bool := decide <|
     analyses (fanout 5 []) = (some 8, some 8) ∧
-      (NestedScopeControl.checkedAnalysis (fanout 6 [])).isNone = true := by
-  decide +kernel
+      (NestedScopeControl.checkedAnalysis (fanout 6 [])).isNone = true
 
 /-- NSC-ADMIT-01: a task-free branch, crossing Parallel blocks, a join fed from two scopes, a root terminal
 fork, an Exclusive Gateway and a Service Task are refused. -/
-theorem unstructured_bodies_are_refused :
+def unstructured_bodies_are_refused : Bool := decide <|
     (NestedScopeControl.checkedAnalysis (fanout 2 [("QF", "QJ")])).isNone = true ∧
       (NestedScopeControl.checkedAnalysis crossing).isNone = true ∧
       (NestedScopeControl.checkedAnalysis joinFedFromTwoScopes).isNone = true ∧
@@ -264,7 +245,30 @@ theorem unstructured_bodies_are_refused :
       (NestedScopeControl.checkedAnalysis (detour (.exclusiveGateway ⟨"QN"⟩ [] ⟨"QN>QU"⟩))).isNone = true ∧
       (NestedScopeControl.checkedAnalysis (detour (.serviceTask ⟨"QN"⟩
         { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
-          operation := "urn:bpmn-lean:effect-operation:probe-v1" } [] [] none))).isNone = true := by
-  decide +kernel
+          operation := "urn:bpmn-lean:effect-operation:probe-v1" } [] [] none))).isNone = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("onboarding_is_admitted_with_agreeing_bursts", onboarding_is_admitted_with_agreeing_bursts),
+  ("audit_is_admitted_with_agreeing_bursts", audit_is_admitted_with_agreeing_bursts),
+  ("onboarding_start_arms_start_date_and_equipment", onboarding_start_arms_start_date_and_equipment),
+  ("onboarding_start_date_enters_two_scopes_in_one_closure", onboarding_start_date_enters_two_scopes_in_one_closure),
+  ("onboarding_mailbox_end_completes_nothing", onboarding_mailbox_end_completes_nothing),
+  ("onboarding_desk_end_completes_nothing", onboarding_desk_end_completes_nothing),
+  ("onboarding_root_join_waits_for_the_last_nested_task", onboarding_root_join_waits_for_the_last_nested_task),
+  ("onboarding_last_nested_task_releases_the_welcome_meeting", onboarding_last_nested_task_releases_the_welcome_meeting),
+  ("onboarding_reverse_order_releases_the_welcome_meeting", onboarding_reverse_order_releases_the_welcome_meeting),
+  ("onboarding_completes_after_the_welcome_meeting", onboarding_completes_after_the_welcome_meeting),
+  ("audit_planning_enters_both_third_level_scopes", audit_planning_enters_both_third_level_scopes),
+  ("audit_one_completed_scope_leaves_fieldwork_waiting", audit_one_completed_scope_leaves_fieldwork_waiting),
+  ("audit_both_completed_scopes_release_review", audit_both_completed_scopes_release_review),
+  ("audit_review_resumes_sign_off", audit_review_resumes_sign_off),
+  ("audit_completes_after_closing", audit_completes_after_closing),
+  ("early_review_leaves_state_unchanged", early_review_leaves_state_unchanged),
+  ("repeated_sample_leaves_state_unchanged", repeated_sample_leaves_state_unchanged),
+  ("fourth_nesting_level_is_refused", fourth_nesting_level_is_refused),
+  ("closure_limit_bounds_the_fanout", closure_limit_bounds_the_fanout),
+  ("unstructured_bodies_are_refused", unstructured_bodies_are_refused)
+]
 
 end BpmnSemantics.NestedScopeControlConformance

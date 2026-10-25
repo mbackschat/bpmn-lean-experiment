@@ -36,33 +36,6 @@ theorem matching_effect_error_cancels_service_and_completes_boundary :
           | _ => false)).length ≥ 1 := by
   decide +kernel
 
-def propagatedErrorTrace : TracedStimulusResult :=
-  applyStimulusTraced scenarioClosureLimit SubProcessErrorPropagationConformance.program
-    SubProcessErrorPropagationConformance.childWaiting.state
-    (SubProcessErrorPropagationConformance.completeTask
-      "complete-trigger-error" "UserTask_TriggerError")
-
-def propagatedScopeAnchor : SemanticFlowNodeOccurrenceAnchor :=
-  .scope
-    { processInstanceId := SubProcessErrorPropagationConformance.instanceId
-      definitionScopeId := SubProcessErrorPropagationConformance.childScopeId
-      activation := 1 }
-
-def propagatedSiblingAnchor : SemanticFlowNodeOccurrenceAnchor :=
-  .wait (SubProcessErrorPropagationConformance.taskId "UserTask_SiblingWork")
-
-/-- Propagation emits Error End and Boundary Error together while cancelling the scope and its sibling work. -/
-theorem propagated_error_publishes_both_events_and_cancels_subtree :
-    ((lifecycleStarts propagatedErrorTrace).filter
-        (fun start => start.elementId.value = "EndEvent_ScopedFailure")).length = 1 ∧
-      ((lifecycleStarts propagatedErrorTrace).filter
-        (fun start => start.elementId.value = "BoundaryEvent_ScopedFailure")).length = 1 ∧
-      (lifecycleEnds propagatedErrorTrace).count
-        { anchor := propagatedScopeAnchor, terminal := .cancelled } = 1 ∧
-      (lifecycleEnds propagatedErrorTrace).count
-        { anchor := propagatedSiblingAnchor, terminal := .cancelled } = 1 := by
-  decide +kernel
-
 def boundedScopeDeadlineTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit SubProcessBoundaryTimerConformance.program
     SubProcessBoundaryTimerConformance.armedState

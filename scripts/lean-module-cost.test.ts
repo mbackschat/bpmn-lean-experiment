@@ -312,6 +312,18 @@ test("the declared near-cap disclosure equals the set derived from the recorded 
   );
 });
 
+// The lakefile's `-M` limit fails any build above it, so a row above it records a module that no longer
+// builds; reading the limit from the lakefile keeps it the single owner of the figure.
+test("no recorded module exceeds the per-process Lean memory limit the lakefile passes", () => {
+  const lakefile = readFileSync(new URL("../lakefile.toml", import.meta.url), "utf8");
+  const limitMib = Number(/^moreLeanArgs = \["-M(\d+)"\]$/mu.exec(lakefile)?.[1]);
+  assert.ok(limitMib > 0, "the lakefile passes no -M limit");
+  assert.deepEqual(
+    leanModuleCostRecord.rows.filter((row) => row.peakResidentKib > limitMib * 1024).map((row) => row.module),
+    [],
+  );
+});
+
 test("new module measurements bind to archived code before the introducing commit exists", () => {
   const source = Buffer.from("theorem measured : True := True.intro\n");
   const digest = leanCodeSha256(source);

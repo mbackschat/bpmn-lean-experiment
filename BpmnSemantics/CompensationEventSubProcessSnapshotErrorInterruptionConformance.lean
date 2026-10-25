@@ -1,14 +1,10 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorProgramConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorReadyStateConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorOutcomeConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorPurgeConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorRecoveryConformance
+import BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionFixture
 
 /-! # Compensation Event Sub-Process snapshot Error interruption
 
-Aggregate evidence that direct Error propagation purges the failed occurrence's provisional
-snapshot without disturbing recovery work. Each kernel-decided observation is compiled in its own
-process so the enforced resource boundary applies to one claim at a time.
+Evidence that direct Error propagation purges the failed occurrence's provisional snapshot without
+disturbing recovery work, as an executable check that
+[`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively.
 -/
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
@@ -16,7 +12,7 @@ namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformanc
 open BpmnSemantics.SemanticProcess
 
 /-- Direct Error propagation purges the failed occurrence and never promotes it. -/
-theorem error_interruption_purges_only_the_failed_parent :
+def error_interruption_purges_only_the_failed_parent : Bool := decide <|
     programWellFormed errorProgram = true ∧
       compensationEventSubProcessSnapshotStateValid errorProgram errorReadyState = true ∧
       errorReadyState.compensationParentContextRetentions =
@@ -24,12 +20,11 @@ theorem error_interruption_purges_only_the_failed_parent :
       errorInterrupted.outcome = .committed ∧
       errorInterrupted.state.compensationParentContextRetentions = [] ∧
       (errorInterrupted.state.waits.map fun wait => wait.task.id.value) =
-        ["UserTask_Recover"] := by
-  exact ⟨error_program_is_well_formed,
-    error_ready_state_is_valid_and_reserved.1,
-    error_ready_state_is_valid_and_reserved.2,
-    error_interruption_commits,
-    error_interruption_purges_the_provisional_context,
-    error_interruption_exposes_recovery⟩
+        ["UserTask_Recover"]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationEventSubProcessSnapshotErrorInterruptionConformanceChecks : List (String × Bool) := [
+  ("error_interruption_purges_only_the_failed_parent", error_interruption_purges_only_the_failed_parent)
+]
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance

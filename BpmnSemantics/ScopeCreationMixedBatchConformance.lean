@@ -3,7 +3,7 @@ import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.ControlPosition
 
-/-! A document review witnesses production closure across ordinary scope creation, a local fork, and a deadline under the [mixed batch account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite). Both constructed Programs use the Call profile's structural graph policy but deliberately fail its capability admission. These kernel-decided facts cover actual Start admission and closure for those Programs; they establish neither checked XML admission, a generalized closure-fuel theorem, nor Temporal refinement. -/
+/-! A document review witnesses production closure across ordinary scope creation, a local fork, and a deadline under the [mixed batch account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite). Both constructed Programs use the Call profile's structural graph policy but deliberately fail its capability admission. These executable checks, which [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively for both creators, cover actual Start admission and closure for those Programs; they establish neither checked XML admission, a generalized closure-fuel theorem, nor Temporal refinement. -/
 
 namespace BpmnSemantics.ScopeCreationMixedBatchConformance
 
@@ -14,6 +14,8 @@ inductive Creator where
   | child
   | called
   deriving DecidableEq
+
+def creators : List Creator := [.child, .called]
 
 def processId : ProcessId := ⟨"Root"⟩
 def instanceId : SemanticId := ⟨"mixed-review-4711"⟩
@@ -116,29 +118,26 @@ def mixedOperations (kind : Creator) : List SemanticOperation :=
   (program kind).operations.filter fun op =>
     [⟨"operation:C_Checks"⟩, ⟨"operation:D_LegalScope"⟩, ⟨"operation:G_Deadline"⟩].contains op.id
 
-theorem fixtures_are_structurally_admitted_but_outside_profile_capabilities (kind : Creator) :
+def fixtures_are_structurally_admitted_but_outside_profile_capabilities : Bool := creators.all fun kind => decide <|
     programWellFormed (program kind) = true ∧
       programProfileCapabilitiesValid (program kind) = false ∧
-      (admitStimulus (program kind) initialState start).outcome = .committed := by
-  cases kind <;> decide +kernel
+      (admitStimulus (program kind) initialState start).outcome = .committed
 
-theorem reached_frontier_contains_three_independent_preparations (kind : Creator) :
+def reached_frontier_contains_three_independent_preparations : Bool := creators.all fun kind => decide <|
     runtimeStateWellFormed (program kind) instanceId (beforeMixed kind) = true ∧
       (projectOpenFlowNodeOccurrences? (program kind) (beforeMixed kind)).isSome = true ∧
       (projectControlPosition? (program kind) instanceId (beforeMixed kind)).isSome = true ∧
       enabledInternalOperationCount (program kind) (beforeMixed kind) = 3 ∧
       (prepareInternalTransitionBatch? (program kind) (beforeMixed kind)
-        (mixedOperations kind)).map List.length = some 3 := by
-  cases kind <;> decide +kernel
+        (mixedOperations kind)).map List.length = some 3
 
 def trace (kind : Creator) : TracedStimulusResult :=
   applyStimulusTraced 8 (program kind) initialState start
 
-theorem committed_start_closes_the_mixed_scope_frontier (kind : Creator) :
+def committed_start_closes_the_mixed_scope_frontier : Bool := creators.all fun kind => decide <|
     (trace kind).result.outcome = .committed ∧
       (trace kind).result.internalStepBoundExceeded = false ∧
-      (trace kind).result.ambiguousInternalChoice = false := by
-  cases kind <;> decide +kernel
+      (trace kind).result.ambiguousInternalChoice = false
 
 def legalOwner : Creator → ScopeOccurrenceId
   | .child =>
@@ -147,7 +146,7 @@ def legalOwner : Creator → ScopeOccurrenceId
       { processInstanceId := deriveCalledProcessInstanceId instanceId ⟨"D_LegalScope"⟩ 1,
         definitionScopeId := legalScope, activation := 1 }
 
-theorem committed_state_retains_three_user_waits_and_one_deadline (kind : Creator) :
+def committed_state_retains_three_user_waits_and_one_deadline : Bool := creators.all fun kind => decide <|
     (trace kind).result.state.control = .running instanceId ∧
       (trace kind).result.state.waits.length = 3 ∧
       ((trace kind).result.state.waits.find? fun wait => wait.task.id == ⟨"E_Content"⟩).map
@@ -157,16 +156,14 @@ theorem committed_state_retains_three_user_waits_and_one_deadline (kind : Creato
       ((trace kind).result.state.waits.find? fun wait => wait.task.id == ⟨"K_LegalReview"⟩).map
         (·.owner) = some (legalOwner kind) ∧
       (trace kind).result.state.timerWaits.length = 1 ∧
-      (trace kind).result.state.tokens = [] := by
-  cases kind <;> decide +kernel
+      (trace kind).result.state.tokens = []
 
-theorem committed_runtime_and_public_projections_are_accepted (kind : Creator) :
+def committed_runtime_and_public_projections_are_accepted : Bool := creators.all fun kind => decide <|
     runtimeStateWellFormed (program kind) instanceId (trace kind).result.state = true ∧
       (projectOpenFlowNodeOccurrences? (program kind) (trace kind).result.state).map List.length = some 5 ∧
-      (projectControlPosition? (program kind) instanceId (trace kind).result.state).isSome = true := by
-  cases kind <;> decide +kernel
+      (projectControlPosition? (program kind) instanceId (trace kind).result.state).isSome = true
 
-theorem committed_publication_has_one_external_and_eight_internal_rows (kind : Creator) :
+def committed_publication_has_one_external_and_eight_internal_rows : Bool := creators.all fun kind => decide <|
     (trace kind).committedTransitions.length = 9 ∧
       (trace kind).flowNodeOccurrenceLifecycles.length = 9 ∧
       (trace kind).committedTransitions.head? = some (.externalStimulus start) ∧
@@ -175,16 +172,14 @@ theorem committed_publication_has_one_external_and_eight_internal_rows (kind : C
         | .externalStimulus _ => none) =
         [⟨"operation:A_Start"⟩, ⟨"operation:B_Fork"⟩, ⟨"operation:C_Checks"⟩,
          ⟨"operation:D_LegalScope"⟩, ⟨"operation:G_Deadline"⟩,
-         ⟨"operation:E_Content"⟩, ⟨"operation:F_Risk"⟩, ⟨"operation:K_LegalReview"⟩] := by
-  cases kind <;> decide +kernel
+         ⟨"operation:E_Content"⟩, ⟨"operation:F_Risk"⟩, ⟨"operation:K_LegalReview"⟩]
 
-theorem local_fork_uses_its_canonical_transition_index (kind : Creator) :
+def local_fork_uses_its_canonical_transition_index : Bool := creators.all fun kind => decide <|
     (trace kind).flowNodeOccurrenceLifecycles[3]? = some
       { started :=
           [{ anchor := .transition commandId 3 0, processId,
              elementId := ⟨"C_Checks"⟩, owner }]
-        ended := [{ anchor := .transition commandId 3 0, terminal := .completed }] } := by
-  cases kind <;> decide +kernel
+        ended := [{ anchor := .transition commandId 3 0, terminal := .completed }] }
 
 def child_scope_publication_retains_its_created_scope_identity : Bool := decide <|
     (trace .child).flowNodeOccurrenceLifecycles[4]? = some
@@ -205,17 +200,24 @@ def call_publication_retains_its_invocation_identity : Bool := decide <|
       (trace .called).result.state.calledProcessOccurrences.map (·.calledRoot) =
         [legalOwner .called]
 
-theorem insufficient_final_batch_fuel_restores_the_whole_command (kind : Creator) :
+def insufficient_final_batch_fuel_restores_the_whole_command : Bool := creators.all fun kind => decide <|
     let refused := applyStimulusTraced 7 (program kind) initialState start
     refused.result =
         { outcome := .rolledBack, state := initialState,
           internalStepBoundExceeded := true, ambiguousInternalChoice := false } ∧
       refused.committedTransitions = [] ∧
-      refused.flowNodeOccurrenceLifecycles = [] := by
-  cases kind <;> decide +kernel
+      refused.flowNodeOccurrenceLifecycles = []
 
 /-- Every executable check of this module, named for the driver's failure report. -/
 def checks : List (String × Bool) := [
+  ("fixtures_are_structurally_admitted_but_outside_profile_capabilities", fixtures_are_structurally_admitted_but_outside_profile_capabilities),
+  ("reached_frontier_contains_three_independent_preparations", reached_frontier_contains_three_independent_preparations),
+  ("committed_start_closes_the_mixed_scope_frontier", committed_start_closes_the_mixed_scope_frontier),
+  ("committed_state_retains_three_user_waits_and_one_deadline", committed_state_retains_three_user_waits_and_one_deadline),
+  ("committed_runtime_and_public_projections_are_accepted", committed_runtime_and_public_projections_are_accepted),
+  ("committed_publication_has_one_external_and_eight_internal_rows", committed_publication_has_one_external_and_eight_internal_rows),
+  ("local_fork_uses_its_canonical_transition_index", local_fork_uses_its_canonical_transition_index),
+  ("insufficient_final_batch_fuel_restores_the_whole_command", insufficient_final_batch_fuel_restores_the_whole_command),
   ("child_scope_publication_retains_its_created_scope_identity", child_scope_publication_retains_its_created_scope_identity),
   ("call_publication_retains_its_invocation_identity", call_publication_retains_its_invocation_identity)
 ]

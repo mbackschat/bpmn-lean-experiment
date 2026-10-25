@@ -1,6 +1,6 @@
 import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 import BpmnSemantics.SubProcessBoundaryTimerConformance
-import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
+import BpmnSemantics.SequentialMultiInstanceDataFixtures
 
 /-! Bounded Sub-Process Activity identity regressions from the 2026-09-22 reassessment.
 The two definition-scope IDs deliberately collide with a Multi-Instance task element, inside
@@ -73,13 +73,11 @@ def validBoundedEntry (taskName : String) : Bool := Id.run do
     decide (after.scopeOccurrences.any (fun occurrence =>
       occurrence.id.definitionScopeId.value == taskName && occurrence.id.activation == 1))
 
-theorem bounded_entry_preserves_validity_with_child_task_scope_id :
-    validBoundedEntry "ChildTask" = true := by
-  decide +kernel
+def bounded_entry_preserves_validity_with_child_task_scope_id : Bool :=
+    validBoundedEntry "ChildTask"
 
-theorem bounded_entry_preserves_validity_with_following_task_scope_id :
-    validBoundedEntry "AfterScope" = true := by
-  decide +kernel
+def bounded_entry_preserves_validity_with_following_task_scope_id : Bool :=
+    validBoundedEntry "AfterScope"
 
 def ambiguousProgram (sequential : Bool) : Program :=
   let base := if sequential then programFor "ChildTask" else SubProcessBoundaryTimerConformance.program
@@ -101,8 +99,14 @@ def ambiguityRefused (sequential : Bool) : Bool := Id.run do
     (fire? program contract.operation before).isSome &&
     (prepareInternalBoundedScope? program before contract).isNone
 
-theorem bounded_batch_refuses_ambiguous_user_task_declarations (sequential : Bool) :
-    ambiguityRefused sequential = true := by
-  cases sequential <;> decide +kernel
+def bounded_batch_refuses_ambiguous_user_task_declarations : Bool :=
+  [false, true].all ambiguityRefused
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("bounded_entry_preserves_validity_with_child_task_scope_id", bounded_entry_preserves_validity_with_child_task_scope_id),
+  ("bounded_entry_preserves_validity_with_following_task_scope_id", bounded_entry_preserves_validity_with_following_task_scope_id),
+  ("bounded_batch_refuses_ambiguous_user_task_declarations", bounded_batch_refuses_ambiguous_user_task_declarations)
+]
 
 end BpmnSemantics.BoundedScopeActivityIdentityConformance

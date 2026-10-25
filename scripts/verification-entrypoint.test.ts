@@ -275,6 +275,17 @@ test("the Lake package defaults every module target to synchronous theorem elabo
     "set synchronous elaboration at package scope so all libraries and executables inherit it");
 });
 
+test("the Lake package bounds every Lean process at 2 GiB on Lean's command line", async () => {
+  const lakefile = await readFile(
+    fileURLToPath(new URL("../lakefile.toml", import.meta.url)), "utf8",
+  );
+  const packageFields = lakefile.split(/^\s*\[/mu, 1)[0] ?? "";
+  // `leanOptions = { max_memory = ... }` would compile and silently not apply: Lake passes it through
+  // `--setup`, and the Lean shell reads `max_memory` only from its own arguments (census, 2026-10-25).
+  assert.match(packageFields, /^moreLeanArgs = \["-M2048"\]$/mu);
+  assert.doesNotMatch(lakefile.replace(/^#.*$/gmu, ""), /max_memory/u);
+});
+
 test("the elaboration guard rejects an absent, enabled, or library-only setting", () => {
   const option = "leanOptions = { Elab.async = false }";
   assert.equal(synchronousPackageElaboration(`${option}\n[[lean_lib]]\nname = \"Example\"`), true);

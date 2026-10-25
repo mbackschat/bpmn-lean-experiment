@@ -92,52 +92,72 @@ def depthThreeRegion : CheckedProcess :=
     [ ("PA", "L"), ("L", "Z"), ("LA", "M"), ("M", "LZ"), ("MA", "N"), ("N", "MZ"), ("NA", "WF"), ("WF", "A")
     , ("WF", "B"), ("A", "WM"), ("B", "WM"), ("WM", "T"), ("T", "NZ"), ("TA", "Fix"), ("Fix", "TZ") ]
 
-theorem audit_is_admitted : admitted audit = true := by decide +kernel
+def audit_is_admitted : Bool := decide <| admitted audit = true
 
-theorem audit_analyses_agree_on_its_burst : analyses audit = (some 5, some 5) := by decide +kernel
+def audit_analyses_agree_on_its_burst : Bool := decide <| analyses audit = (some 5, some 5)
 
-theorem intake_is_admitted : admitted intake = true := by decide +kernel
+def intake_is_admitted : Bool := decide <| admitted intake = true
 
-theorem intake_analyses_agree_on_its_burst : analyses intake = (some 5, some 5) := by decide +kernel
+def intake_analyses_agree_on_its_burst : Bool := decide <| analyses intake = (some 5, some 5)
 
 /-- CEA-ADMIT-01: a region in a depth-two body, whose target lies at depth three, is admitted. -/
-theorem depth_two_region_is_admitted : admitted claim = true := by decide +kernel
+def depth_two_region_is_admitted : Bool := decide <| admitted claim = true
 
-theorem depth_two_region_analyses_agree : analyses claim = (some 6, some 6) := by decide +kernel
+def depth_two_region_analyses_agree : Bool := decide <| analyses claim = (some 6, some 6)
 
 /-- CEA-ADMIT-01: the minimal region is the admitted control for every refusal below. -/
-theorem minimal_region_is_admitted : analyses (region ["A", "B"]) = (some 6, some 6) := by decide +kernel
+def minimal_region_is_admitted : Bool := decide <| analyses (region ["A", "B"]) = (some 6, some 6)
 
-theorem parallel_gateway_in_target_is_refused :
-    NestedScopeControl.checkedAnalysis parallelInTarget = none := by decide +kernel
+def parallel_gateway_in_target_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis parallelInTarget = none
 
-theorem sub_process_in_target_is_refused :
-    NestedScopeControl.checkedAnalysis subProcessInTarget = none := by decide +kernel
+def sub_process_in_target_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis subProcessInTarget = none
 
-theorem service_task_branch_is_refused :
-    NestedScopeControl.checkedAnalysis serviceTaskBranch = none := by decide +kernel
+def service_task_branch_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis serviceTaskBranch = none
 
-theorem fork_output_into_merge_is_refused :
-    NestedScopeControl.checkedAnalysis forkIntoMerge = none := by decide +kernel
+def fork_output_into_merge_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis forkIntoMerge = none
 
-theorem partial_merge_is_refused : NestedScopeControl.checkedAnalysis partialMerge = none := by decide +kernel
+def partial_merge_is_refused : Bool := decide <| NestedScopeControl.checkedAnalysis partialMerge = none
 
-theorem merge_fed_by_two_forks_is_refused : NestedScopeControl.checkedAnalysis twoForks = none := by decide +kernel
+def merge_fed_by_two_forks_is_refused : Bool := decide <| NestedScopeControl.checkedAnalysis twoForks = none
 
-theorem conditional_merge_flow_is_refused :
-    NestedScopeControl.checkedAnalysis conditionalMerge = none := by decide +kernel
+def conditional_merge_flow_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis conditionalMerge = none
 
-theorem root_body_region_is_refused : NestedScopeControl.checkedAnalysis rootRegion = none := by decide +kernel
+def root_body_region_is_refused : Bool := decide <| NestedScopeControl.checkedAnalysis rootRegion = none
 
-theorem depth_three_body_region_is_refused :
-    NestedScopeControl.checkedAnalysis depthThreeRegion = none := by decide +kernel
+def depth_three_body_region_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis depthThreeRegion = none
 
 /-- CEA-ADMIT-01: 63 target tasks weigh 128 and are admitted. -/
-theorem weighted_bound_admits_128_tasks : NestedScopeControl.checkedAnalysis (weighted 63) = some 6 := by
-  decide +kernel
+def weighted_bound_admits_128_tasks : Bool := decide <| NestedScopeControl.checkedAnalysis (weighted 63) = some 6
 
 /-- CEA-ADMIT-01: 64 target tasks weigh 130 and are refused. -/
-theorem weighted_bound_refuses_130_tasks : NestedScopeControl.checkedAnalysis (weighted 64) = none := by
-  decide +kernel
+def weighted_bound_refuses_130_tasks : Bool := decide <| NestedScopeControl.checkedAnalysis (weighted 64) = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def concurrentEmbeddedActivationsAdmissionConformanceChecks : List (String × Bool) := [
+  ("audit_is_admitted", audit_is_admitted),
+  ("audit_analyses_agree_on_its_burst", audit_analyses_agree_on_its_burst),
+  ("intake_is_admitted", intake_is_admitted),
+  ("intake_analyses_agree_on_its_burst", intake_analyses_agree_on_its_burst),
+  ("depth_two_region_is_admitted", depth_two_region_is_admitted),
+  ("depth_two_region_analyses_agree", depth_two_region_analyses_agree),
+  ("minimal_region_is_admitted", minimal_region_is_admitted),
+  ("parallel_gateway_in_target_is_refused", parallel_gateway_in_target_is_refused),
+  ("sub_process_in_target_is_refused", sub_process_in_target_is_refused),
+  ("service_task_branch_is_refused", service_task_branch_is_refused),
+  ("fork_output_into_merge_is_refused", fork_output_into_merge_is_refused),
+  ("partial_merge_is_refused", partial_merge_is_refused),
+  ("merge_fed_by_two_forks_is_refused", merge_fed_by_two_forks_is_refused),
+  ("conditional_merge_flow_is_refused", conditional_merge_flow_is_refused),
+  ("root_body_region_is_refused", root_body_region_is_refused),
+  ("depth_three_body_region_is_refused", depth_three_body_region_is_refused),
+  ("weighted_bound_admits_128_tasks", weighted_bound_admits_128_tasks),
+  ("weighted_bound_refuses_130_tasks", weighted_bound_refuses_130_tasks)
+]
 
 end BpmnSemantics.ConcurrentEmbeddedActivationsConformance

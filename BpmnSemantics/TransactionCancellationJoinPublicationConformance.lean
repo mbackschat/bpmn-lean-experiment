@@ -33,7 +33,7 @@ def joinedCheckpoint : RuntimeState :=
     scopeActivations := [{ scopeId := rootScope, count := 1 }, { scopeId := childScope, count := 1 }]
     activityActivations := [{ taskId := ⟨"Reserve"⟩, count := 1 }] }
 
-theorem handler_success_publishes_parent_boundary_and_acknowledgement :
+def handler_success_publishes_parent_boundary_and_acknowledgement : Bool := decide <|
     publicationAccepted cancelled.result.state successStimulus joined = true ∧
       joined.flowNodeOccurrenceLifecycles.head? = some joinDelta ∧
       projectOpenFlowNodeOccurrencesWithCompensation? program joined.result.state =
@@ -41,10 +41,11 @@ theorem handler_success_publishes_parent_boundary_and_acknowledgement :
       joined.result.state.scopeOccurrences = [{ id := rootOwner, parent := none }] ∧
       joined.result.state.compensationActivityRetentions = [] ∧
       joined.result.state.compensationHandlerEffectWaits = [] ∧
-      joined.result.state = joinedCheckpoint := by
-  decide +kernel
+      joined.result.state = joinedCheckpoint
 
-theorem joined_state_checkpoint : joined.result.state = joinedCheckpoint :=
-  handler_success_publishes_parent_boundary_and_acknowledgement.2.2.2.2.2.2
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationJoinPublicationConformanceChecks : List (String × Bool) := [
+  ("handler_success_publishes_parent_boundary_and_acknowledgement", handler_success_publishes_parent_boundary_and_acknowledgement)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

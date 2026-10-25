@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.Scenario
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Embedded Sub-Process Error propagation conformance
 
@@ -196,65 +192,69 @@ def wrongHandlerOutputProgram : Program :=
       | other => other }
 
 /-- The exact checked Error graph is admitted and independently lowers to its program. -/
-theorem exact_error_definition_is_admitted :
-    definitionBindingValid checkedProcess program = true := by
-  decide +kernel
+def exact_error_definition_is_admitted : Bool := decide <|
+    definitionBindingValid checkedProcess program = true
 
 /-- Typed nested-handler mutations remain representable but cannot pass exact checked-source lowering equality. -/
-theorem handler_mutations_fail_exact_lowering :
+def handler_mutations_fail_exact_lowering : Bool := decide <|
     wrongAttachedScopeProgram ≠ lowerCheckedProcess checkedProcess ∧
       wrongHandlerOutputProgram ≠ lowerCheckedProcess checkedProcess ∧
       definitionBindingValid checkedProcess wrongAttachedScopeProgram = false ∧
-      definitionBindingValid checkedProcess wrongHandlerOutputProgram = false := by
-  decide +kernel
+      definitionBindingValid checkedProcess wrongHandlerOutputProgram = false
 
 /-- Before automatic closure, the Error throw is uniquely enabled and child normal completion cannot compete. -/
-theorem throw_precedes_unreachable_normal_completion :
+def throw_precedes_unreachable_normal_completion : Bool := decide <|
     enabledInternalOperationCount program triggerCommittedBeforeClosure = 1 ∧
       step program triggerCommittedBeforeClosure
           ⟨"operation:EndEvent_ScopedFailure"⟩ ≠ none ∧
       step program triggerCommittedBeforeClosure
-          ⟨"operation:complete-scope:scope:SubProcess_Work"⟩ = none := by
-  decide +kernel
+          ⟨"operation:complete-scope:scope:SubProcess_Work"⟩ = none
 
 /-- Trigger-first cancellation removes the child occurrence and preserves its zero-End history. -/
-theorem trigger_first_reaches_exact_recovery_state :
+def trigger_first_reaches_exact_recovery_state : Bool := decide <|
     triggerFirst.outcome = .committed ∧
       observeStableState program triggerFirst.state = some recoveryObservation ∧
       triggerFirst.state.scopeOccurrences.length = 1 ∧
       triggerFirst.state.endOccurrences = 0 ∧
       tokenMultiplicity triggerFirst.state ⟨"place:Flow_ScopeToNormalEnd"⟩ = 0 ∧
       enabledInternalOperationCount program triggerFirst.state = 0 ∧
-      stableStateResumable triggerFirst.state = true := by
-  decide +kernel
+      stableStateResumable triggerFirst.state = true
 
 /-- Sibling-first retains its historical End count while exposing the same public recovery result. -/
-theorem sibling_first_has_same_public_recovery_not_same_history :
+def sibling_first_has_same_public_recovery_not_same_history : Bool := decide <|
     siblingFirst.state.endOccurrences = 1 ∧
       siblingThenTrigger.state.endOccurrences = 1 ∧
       observeStableState program siblingThenTrigger.state = some recoveryObservation ∧
       observeStableState program siblingThenTrigger.state =
         observeStableState program triggerFirst.state ∧
-      siblingThenTrigger.state ≠ triggerFirst.state := by
-  decide +kernel
+      siblingThenTrigger.state ≠ triggerFirst.state
 
 /-- A command against the interrupted sibling is rejected with exact state preservation. -/
-theorem stale_sibling_completion_preserves_recovery :
+def stale_sibling_completion_preserves_recovery : Bool := decide <|
     applyStimulus scenarioClosureLimit program triggerFirst.state
         (completeTask "refuse-stale-sibling-after-error" "UserTask_SiblingWork") =
       { outcome := .rejected
         state := triggerFirst.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- Completing Recover reaches only the recovered root completion. -/
-theorem recover_completes_process_without_normal_route :
+def recover_completes_process_without_normal_route : Bool := decide <|
     completed.outcome = .committed ∧
       completed.state.control = .completed instanceId ∧
       completed.state.scopeOccurrences = [] ∧
       completed.state.endOccurrences = 1 ∧
-      tokenMultiplicity completed.state ⟨"place:Flow_ScopeToNormalEnd"⟩ = 0 := by
-  decide +kernel
+      tokenMultiplicity completed.state ⟨"place:Flow_ScopeToNormalEnd"⟩ = 0
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("exact_error_definition_is_admitted", exact_error_definition_is_admitted),
+  ("handler_mutations_fail_exact_lowering", handler_mutations_fail_exact_lowering),
+  ("throw_precedes_unreachable_normal_completion", throw_precedes_unreachable_normal_completion),
+  ("trigger_first_reaches_exact_recovery_state", trigger_first_reaches_exact_recovery_state),
+  ("sibling_first_has_same_public_recovery_not_same_history", sibling_first_has_same_public_recovery_not_same_history),
+  ("stale_sibling_completion_preserves_recovery", stale_sibling_completion_preserves_recovery),
+  ("recover_completes_process_without_normal_route", recover_completes_process_without_normal_route)
+]
 
 end BpmnSemantics.SubProcessErrorPropagationConformance

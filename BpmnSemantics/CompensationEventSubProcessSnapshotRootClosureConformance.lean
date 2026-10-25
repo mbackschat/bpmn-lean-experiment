@@ -2,12 +2,8 @@ import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConf
 
 /-! # Compensation Event Sub-Process snapshot root closure
 
-Kernel-decided witnesses for selected and unselected root closure. The fixture declares its
-definition scopes in canonical order directly so kernel reduction does not repeatedly sort
-immutable Program data while evaluating each witness.
-Complete-result equality proofs prevent each projected fact from replaying its predecessor
-commands; see the [measured correction](../docs/CAPSULE-COST-LEDGER.md#package-wide-theorem-elaboration-memory-correction).
--/
+Selected and unselected root closure, as executable checks that
+[`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. -/
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 
@@ -61,105 +57,8 @@ def rootAndChildCompleted : StimulusResult :=
 
 open _root_.BpmnSemantics.CompensationEventSubProcessSnapshotConformance
 
-def rootAndChildStartedValue : StimulusResult :=
-  { outcome := .committed
-    state :=
-      { initialState with
-        control := .running instanceId
-        scopeOccurrences := [rootOccurrence, childOccurrence]
-        waits :=
-          [{ processInstanceId := instanceId
-             owner := childOccurrence.id
-             task := { id := ⟨"ChildTask"⟩, name := some "Work inside the scope", metadata := none }
-             activation := 1
-             output := ⟨"place:Flow_Child_End"⟩
-             metadata := none }]
-        timerWaits :=
-          [{ processInstanceId := instanceId
-             owner := rootOccurrence.id
-             elementId := ⟨"Deadline"⟩
-             activation := 1
-             deadlineMs := 1000
-             output := ⟨"place:Flow_Boundary"⟩ }]
-        activityOccurrences :=
-          [{ processInstanceId := instanceId
-             activityElementId := ⟨"Scope"⟩
-             activation := 1
-             owner := rootOccurrence.id
-             body := .childScope childOccurrence.id
-             attachedHandlers :=
-               [.timer
-                 { processInstanceId := instanceId
-                   elementId := ⟨"Deadline"⟩
-                   activation := 1 }] }]
-        compensationParentContextRetentions :=
-          [.provisional rootOccurrence rootHandlerScopeId,
-           .provisional childOccurrence
-             CompensationEventSubProcessSnapshotAdmissionConformance.handlerScopeId]
-        activations := [{ taskId := ⟨"ChildTask"⟩, count := 1 }]
-        timerActivations := [{ elementId := ⟨"Deadline"⟩, count := 1 }]
-        scopeActivations :=
-          [{ scopeId := rootOccurrence.id.definitionScopeId, count := 1 },
-           { scopeId := childOccurrence.id.definitionScopeId, count := 1 }]
-        activityActivations := [{ taskId := ⟨"Scope"⟩, count := 1 }] }
-    internalStepBoundExceeded := false
-    ambiguousInternalChoice := false }
-
-private theorem rootAndChildStarted_eq : rootAndChildStarted = rootAndChildStartedValue := by
-  decide +kernel
-
-def promotedChild : CompensationParentContextRetention :=
-  .promoted childOccurrence
-    CompensationEventSubProcessSnapshotAdmissionConformance.handlerScopeId
-    { frames := [{ owner := rootOccurrence.id, bindings := [] },
-                 { owner := childOccurrence.id, bindings := [] }] }
-
-def rootAndChildChildCompletedValue : StimulusResult :=
-  { rootAndChildStartedValue with
-    state :=
-      { rootAndChildStartedValue.state with
-        scopeOccurrences := [rootOccurrence]
-        waits :=
-          [{ processInstanceId := instanceId
-             owner := rootOccurrence.id
-             task := { id := ⟨"AfterScope"⟩, name := some "Scope completed in time", metadata := none }
-             activation := 1
-             output := ⟨"place:Flow_Normal_End"⟩
-             metadata := none }]
-        timerWaits := []
-        activityOccurrences := []
-        compensationParentContextRetentions :=
-          [.provisional rootOccurrence rootHandlerScopeId, promotedChild]
-        activations := [{ taskId := ⟨"AfterScope"⟩, count := 1 },
-                        { taskId := ⟨"ChildTask"⟩, count := 1 }]
-        endOccurrences := 1 } }
-
-private theorem rootAndChildChildCompleted_eq :
-    rootAndChildChildCompleted = rootAndChildChildCompletedValue := by
-  unfold rootAndChildChildCompleted
-  rw [rootAndChildStarted_eq]
-  decide +kernel
-
-def rootAndChildCompletedValue : StimulusResult :=
-  { rootAndChildChildCompletedValue with
-    state :=
-      { rootAndChildChildCompletedValue.state with
-        control := .completed instanceId
-        scopeOccurrences := []
-        waits := []
-        compensationParentContextRetentions :=
-          [.promoted rootOccurrence rootHandlerScopeId
-             { frames := [{ owner := rootOccurrence.id, bindings := [] }] },
-           promotedChild]
-        endOccurrences := 2 } }
-
-private theorem rootAndChildCompleted_eq : rootAndChildCompleted = rootAndChildCompletedValue := by
-  unfold rootAndChildCompleted
-  rw [rootAndChildChildCompleted_eq]
-  decide +kernel
-
 /-- Selected root closure retains its promoted root and direct-child snapshots together. -/
-theorem selected_root_terminal_state_owns_every_retained_child :
+def selected_root_terminal_state_owns_every_retained_child : Bool := decide <|
     programWellFormed rootAndChildProgram = true ∧
       rootAndChildStarted.outcome = .committed ∧
       rootAndChildStarted.state.compensationParentContextRetentions.length = 2 ∧
@@ -171,54 +70,24 @@ theorem selected_root_terminal_state_owns_every_retained_child :
       rootAndChildCompleted.state.compensationParentContextRetentions.all
         CompensationParentContextRetention.isPromoted = true ∧
       compensationEventSubProcessSnapshotStateValid rootAndChildProgram
-        rootAndChildCompleted.state = true := by
-  rw [rootAndChildStarted_eq, rootAndChildChildCompleted_eq, rootAndChildCompleted_eq]
-  decide +kernel
+        rootAndChildCompleted.state = true
 
 def unselectedRootCompleted : StimulusResult :=
   applyStimulusWithCompensationSnapshots scenarioClosureLimit
     CompensationEventSubProcessSnapshotAdmissionConformance.program childCompletionResult.state
     (.completeUserTaskInstance ⟨"complete-unselected-root"⟩ afterScopeTaskId [])
 
-def unselectedStartedValue : StimulusResult :=
-  { rootAndChildStartedValue with
-    state := { rootAndChildStartedValue.state with
-      compensationParentContextRetentions :=
-        [.provisional childOccurrence
-          CompensationEventSubProcessSnapshotAdmissionConformance.handlerScopeId] } }
-
-private theorem unselectedStarted_eq : startResult = unselectedStartedValue := by
-  decide +kernel
-
-def unselectedChildCompletedValue : StimulusResult :=
-  { rootAndChildChildCompletedValue with
-    state := { rootAndChildChildCompletedValue.state with
-      compensationParentContextRetentions := [promotedChild] } }
-
-private theorem unselectedChildCompleted_eq :
-    childCompletionResult = unselectedChildCompletedValue := by
-  unfold childCompletionResult
-  rw [unselectedStarted_eq]
-  decide +kernel
-
-def unselectedRootCompletedValue : StimulusResult :=
-  { rootAndChildCompletedValue with
-    state := { rootAndChildCompletedValue.state with
-      compensationParentContextRetentions := [] } }
-
-private theorem unselectedRootCompleted_eq :
-    unselectedRootCompleted = unselectedRootCompletedValue := by
-  unfold unselectedRootCompleted
-  rw [unselectedChildCompleted_eq]
-  decide +kernel
-
 /-- An unselected root discards its promoted child when the containing occurrence closes. -/
-theorem unselected_root_completion_discards_child_snapshot :
+def unselected_root_completion_discards_child_snapshot : Bool := decide <|
     unselectedRootCompleted.outcome = .committed ∧
       unselectedRootCompleted.state.control =
         .completed CompensationEventSubProcessSnapshotConformance.instanceId ∧
-      unselectedRootCompleted.state.compensationParentContextRetentions = [] := by
-  rw [unselectedRootCompleted_eq]
-  decide +kernel
+      unselectedRootCompleted.state.compensationParentContextRetentions = []
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationEventSubProcessSnapshotRootClosureConformanceChecks : List (String × Bool) := [
+  ("selected_root_terminal_state_owns_every_retained_child", selected_root_terminal_state_owns_every_retained_child),
+  ("unselected_root_completion_discards_child_snapshot", unselected_root_completion_discards_child_snapshot)
+]
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance

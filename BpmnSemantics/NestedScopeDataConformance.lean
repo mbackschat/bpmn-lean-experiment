@@ -170,41 +170,37 @@ def frameNames (state : RuntimeState) : List String :=
 def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
   result.outcome == .rejected && result.state == before
 
-theorem purchase_order_definition_is_admitted :
+def purchase_order_definition_is_admitted : Bool := decide <|
     checkedWellFormed checked = true ∧ programWellFormed program = true ∧
       programProfileCapabilitiesValid program = true ∧
-      definitionBindingValid checked program = true := by
-  decide +kernel
+      definitionBindingValid checked program = true
 
 /-- NSD-AVAILABLE-01: compliance's `riskClass` is read but never declared or produced, and the root
 reads `note` after order approval, whose frame alone received the inner write, has retired. The Process
 `limit` and the four order outputs are definite Process writes and are not required. -/
-theorem required_start_names_follow_the_scope_chain :
+def required_start_names_follow_the_scope_chain : Bool := decide <|
     (NestedScopeData.programAnalysis program).map (·.required) =
-      some ["order", "initialStatus", "requestedLimit", "riskClass", "note", "status"] := by
-  decide +kernel
+      some ["order", "initialStatus", "requestedLimit", "riskClass", "note", "status"]
 
 /-- NSD-AVAILABLE-01 at Start: a missing required name is a rejection, a present null is present. -/
-theorem start_requires_risk_class_and_accepts_present_null :
+def start_requires_risk_class_and_accepts_present_null : Bool := decide <|
     refusedUnchanged (start ((startBindings .null).filter (·.name != "riskClass"))) initialState = true ∧
-      (start (startBindings .null)).outcome = .committed := by
-  decide +kernel
+      (start (startBindings .null)).outcome = .committed
 
 /-- NSD-INIT-01 and NSD-READ-01 at the compliance effect: `limit` is the Process `requestedLimit`, not
 credit review's sibling literal; `reviewer` and `status` are order approval's null over the Process
 `"open"`. Three frames are live, one per scope. -/
-theorem compliance_effect_reads_through_three_frames :
+def compliance_effect_reads_through_three_frames : Bool := decide <|
     (started.outcome == .committed &&
       frameNames started.state == ["scope:C", "scope:K", "scope:O"] &&
       started.state.effectWaits.map (·.arguments) ==
         [[{ name := "limit", value := .string "5000" }, { name := "reviewer", value := .null },
-          { name := "risk", value := .string "low" }, { name := "status", value := .null }]]) = true := by
-  decide +kernel
+          { name := "risk", value := .string "low" }, { name := "status", value := .null }]]) = true
 
 /-- NSD-WRITE-01, NSD-OUTPUT-01 and NSD-RETIRE-01 to the credit review: the compliance result lands in
 its own frame and in order approval's `note`, compliance retires and publishes `checkResult` into order
 approval's `status`, and the Process keeps `"open"`. -/
-theorem compliance_outputs_land_in_the_order_frame :
+def compliance_outputs_land_in_the_order_frame : Bool := decide <|
     (checkedCompliance.outcome == .committed &&
       frameNames checkedCompliance.state == ["scope:C", "scope:O"] &&
       (checkedCompliance.state.variables.scopes.filter (·.owner.definitionScopeId == ⟨"scope:O"⟩)).map
@@ -212,24 +208,22 @@ theorem compliance_outputs_land_in_the_order_frame :
         [[{ name := "decision", value := .string "pending" }, { name := "note", value := .string "checked" },
           { name := "order", value := order }, { name := "status", value := .string "compliant" }]] &&
       checkedCompliance.state.variables.process.bindings == startBindings (.string "low") &&
-      checkedCompliance.state.waits.length == 1) = true := by
-  decide +kernel
+      checkedCompliance.state.waits.length == 1) = true
 
 /-- NSD-TASK-01: a name outside every frame on the task's chain, a repeated name and a root List are
 rejections that leave the committed state unchanged. -/
-theorem review_patch_refusals_leave_state_unchanged :
+def review_patch_refusals_leave_state_unchanged : Bool := decide <|
     refusedUnchanged (review [{ name := "unknown", value := .string "x" }]) checkedCompliance.state = true ∧
       refusedUnchanged (review [{ name := "status", value := .string "a" }, { name := "status", value := .string "b" }])
         checkedCompliance.state = true ∧
       refusedUnchanged (review [{ name := "status", value := .list [.string "a"] }])
-        checkedCompliance.state = true := by
-  decide +kernel
+        checkedCompliance.state = true
 
 /-- NSD-WRITE-01 and NSD-OUTPUT-01 through the end: the review writes `decision` to credit review and
 `status` to order approval; credit review publishes its `limit` to the Process and retires, so the
 approval effect reads the Process value; order approval then publishes `"approved"` twice and its own
 untouched `decision`, and the order Map arrives unchanged. -/
-theorem order_outputs_publish_the_nearest_owner_writes :
+def order_outputs_publish_the_nearest_owner_writes : Bool := decide <|
     (reviewed.outcome == .committed && frameNames reviewed.state == ["scope:O"] &&
       reviewed.state.effectWaits.map (·.arguments) ==
         [[{ name := "limit", value := .string "7500" }, { name := "order", value := order }]] &&
@@ -240,18 +234,28 @@ theorem order_outputs_publish_the_nearest_owner_writes :
           { name := "finalStatus", value := .string "approved" },
           { name := "limit", value := .string "7500" }, { name := "note", value := .string "n0" },
           { name := "status", value := .string "open" }]] &&
-      published.outcome == .committed && published.state.control == .completed ⟨"I"⟩) = true := by
-  decide +kernel
+      published.outcome == .committed && published.state.control == .completed ⟨"I"⟩) = true
 
 /-- NSD-ADMIT-01: an output sourced from a name its own Sub-Process does not declare, a record for the
 root scope and a scope-local table under another profile are refused. -/
-theorem undeclared_output_source_and_foreign_tables_are_refused :
+def undeclared_output_source_and_foreign_tables_are_refused : Bool := decide <|
     (NestedScopeData.checkedAnalysis (checkedWith [creditRecord, complianceRecord,
         { orderRecord with localOutputs := [fromLocal "approvedOrder" "initialStatus"] }])).isNone = true ∧
       (NestedScopeData.checkedAnalysis (checkedWith [creditRecord, complianceRecord, orderRecord,
         { orderRecord with scopeId := scope "P" }])).isNone = true ∧
       checkedProfileCapabilitiesValid { checked with
-        identity := { checked.identity with semanticProfile := portableEffectDataProfileId } } = false := by
-  decide +kernel
+        identity := { checked.identity with semanticProfile := portableEffectDataProfileId } } = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("purchase_order_definition_is_admitted", purchase_order_definition_is_admitted),
+  ("required_start_names_follow_the_scope_chain", required_start_names_follow_the_scope_chain),
+  ("start_requires_risk_class_and_accepts_present_null", start_requires_risk_class_and_accepts_present_null),
+  ("compliance_effect_reads_through_three_frames", compliance_effect_reads_through_three_frames),
+  ("compliance_outputs_land_in_the_order_frame", compliance_outputs_land_in_the_order_frame),
+  ("review_patch_refusals_leave_state_unchanged", review_patch_refusals_leave_state_unchanged),
+  ("order_outputs_publish_the_nearest_owner_writes", order_outputs_publish_the_nearest_owner_writes),
+  ("undeclared_output_source_and_foreign_tables_are_refused", undeclared_output_source_and_foreign_tables_are_refused)
+]
 
 end BpmnSemantics.NestedScopeDataConformance

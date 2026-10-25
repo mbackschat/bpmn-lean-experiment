@@ -83,6 +83,28 @@ def configuredUnownedActivityLocal : RuntimeState :=
              bindings := [] }] } }
 
 /-- Open projection rejects malformed scope trees, residual terminal locals, and every non-exact effect-local association. -/
+theorem independent_open_projection_rejects_self_parented_embedded :
+    projectOpenFlowNodeOccurrences? EmbeddedSubProcessCompletionConformance.program selfParentedEmbeddedState = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_terminal_activity_local :
+    projectOpenFlowNodeOccurrences? SequentialUserTask.program terminalStateWithActivityLocal = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_configured_missing_activity_local :
+    projectOpenFlowNodeOccurrences? ConfiguredTaskConformance.program configuredMissingActivityLocal = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_configured_duplicate_activity_local :
+    projectOpenFlowNodeOccurrences? ConfiguredTaskConformance.program configuredDuplicateActivityLocal = none := by
+  decide +kernel
+
+theorem independent_open_projection_rejects_configured_unowned_activity_local :
+    projectOpenFlowNodeOccurrences? ConfiguredTaskConformance.program configuredUnownedActivityLocal = none := by
+  decide +kernel
+
+-- Composed from one kernel decision per counterexample: deciding the conjunction at once peaked at
+-- 2.21 GiB resident on 2026-10-25, above the 2 GiB per-module ceiling in `lakefile.toml`.
 theorem independent_open_projection_rejects_every_runtime_validity_counterexample :
     projectOpenFlowNodeOccurrences? EmbeddedSubProcessCompletionConformance.program
         selfParentedEmbeddedState = none ∧
@@ -93,8 +115,12 @@ theorem independent_open_projection_rejects_every_runtime_validity_counterexampl
       projectOpenFlowNodeOccurrences? ConfiguredTaskConformance.program
         configuredDuplicateActivityLocal = none ∧
       projectOpenFlowNodeOccurrences? ConfiguredTaskConformance.program
-        configuredUnownedActivityLocal = none := by
-  decide +kernel
+        configuredUnownedActivityLocal = none :=
+  ⟨independent_open_projection_rejects_self_parented_embedded,
+    independent_open_projection_rejects_terminal_activity_local,
+    independent_open_projection_rejects_configured_missing_activity_local,
+    independent_open_projection_rejects_configured_duplicate_activity_local,
+    independent_open_projection_rejects_configured_unowned_activity_local⟩
 
 def foreignUserTaskState : RuntimeState :=
   { SequentialUserTask.afterStartState with

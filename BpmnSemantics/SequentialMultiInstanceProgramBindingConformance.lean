@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SequentialMultiInstanceDataFixtures
 
 /-! # Sequential Multi-Instance program binding conformance
 
@@ -20,26 +21,6 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
 set_option synthInstance.maxSize 2000
-
-def dataDefinition : SequentialMultiInstanceDataDefinition :=
-  { input :=
-      { collectionItemDefinitionId := "ItemDefinition_StringList"
-        scalarItemDefinitionId := "ItemDefinition_String"
-        dataObjectId := "DataObject_InputItems"
-        dataObjectReferenceId := "DataObjectReference_InputItems"
-        loopDataInputId := "DataInput_Items"
-        inputDataItemId := "InputDataItem_CurrentItem"
-        taskDataInputId := "DataInput_CurrentItem"
-        collectionAssociationId := "DataInputAssociation_Items"
-        itemAssociationId := "DataInputAssociation_CurrentItem" }
-    output :=
-      { dataObjectId := "DataObject_OutputResults"
-        dataObjectReferenceId := "DataObjectReference_OutputResults"
-        taskDataOutputId := "DataOutput_CurrentResult"
-        outputDataItemId := "OutputDataItem_CurrentResult"
-        loopDataOutputId := "DataOutput_Results"
-        itemAssociationId := "DataOutputAssociation_CurrentResult"
-        collectionAssociationId := "DataOutputAssociation_Results" } }
 
 def checkedProcess : CheckedProcess :=
   { identity :=

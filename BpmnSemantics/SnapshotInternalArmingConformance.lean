@@ -116,28 +116,4 @@ theorem duplicate_operation_refuses_batching :
     (prepareSnapshotArmingBatch? program ready (ordinary ++ ordinary)).isNone = true := by
   decide +kernel
 
-def sourceStart : Stimulus :=
-  .startProcess ⟨"s"⟩ ⟨CompensationSourceLoweringConformance.expectedProgram.processId.value⟩ ⟨"i"⟩
-    [{ name := "Property_TravelDetails", value := .string "trip" }]
-
-def sourceTrace : TracedStimulusResult :=
-  applyStimulusTracedWithCompensationSnapshots 4 CompensationSourceLoweringConformance.expectedProgram
-    initialState sourceStart
-
-theorem reviewed_source_start_commits_both_tasks_and_complete_publication :
-    sourceTrace.result.outcome = .committed ∧
-      sourceTrace.result.state.waits.length = 2 ∧
-      sourceTrace.committedTransitions.length = 5 ∧
-      sourceTrace.flowNodeOccurrenceLifecycles.length = 5 := by
-  decide +kernel
-
-theorem reviewed_source_insufficient_fuel_rolls_back_without_publication :
-    let traced := applyStimulusTracedWithCompensationSnapshots 3
-      CompensationSourceLoweringConformance.expectedProgram initialState sourceStart
-    traced.result =
-      { outcome := .rolledBack, state := initialState,
-        internalStepBoundExceeded := true, ambiguousInternalChoice := false } ∧
-      traced.committedTransitions = [] ∧ traced.flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
-
 end BpmnSemantics.SnapshotInternalArmingConformance

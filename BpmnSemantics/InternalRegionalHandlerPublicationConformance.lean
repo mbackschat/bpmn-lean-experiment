@@ -1,13 +1,9 @@
 module
 
 public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
 
-/-! RHP-HANDLER-01 keeps the handler-publication reductions in a separate kernel process
-from the cancellation projection witnesses to respect the fixed 3 GiB validation bound. -/
+/-! RHP-HANDLER-01's handler-publication witnesses are executable checks that
+[`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively, apart from the cancellation projection witnesses. -/
 
 @[expose] public section
 
@@ -103,18 +99,23 @@ def exactHandlerPublication (timer terminate : Bool) : Bool :=
       decide (flowNodeOccurrenceDeltaForOperation? program before after (selected timer terminate)
         ⟨"cancel-body"⟩ 0 = some (prepared.publicationTemplate.lifecycle ⟨"cancel-body"⟩ 0))
 
-theorem error_message_handler_publication_exact : exactHandlerPublication false false = true := by
-  decide +kernel
+def error_message_handler_publication_exact : Bool := exactHandlerPublication false false
 
-theorem error_timer_handler_publication_exact : exactHandlerPublication true false = true := by
-  decide +kernel
+def error_timer_handler_publication_exact : Bool := exactHandlerPublication true false
 
-theorem terminate_message_handler_publication_exact : exactHandlerPublication false true = true := by
-  decide +kernel
+def terminate_message_handler_publication_exact : Bool := exactHandlerPublication false true
 
-theorem terminate_timer_handler_publication_exact : exactHandlerPublication true true = true := by
-  decide +kernel
+def terminate_timer_handler_publication_exact : Bool := exactHandlerPublication true true
 
 end HandlerPublicationWitness
+
+open HandlerPublicationWitness in
+/-- Every executable check of this module, named for the driver's failure report. -/
+def internalRegionalHandlerPublicationConformanceChecks : List (String × Bool) := [
+  ("error_message_handler_publication_exact", error_message_handler_publication_exact),
+  ("error_timer_handler_publication_exact", error_timer_handler_publication_exact),
+  ("terminate_message_handler_publication_exact", terminate_message_handler_publication_exact),
+  ("terminate_timer_handler_publication_exact", terminate_timer_handler_publication_exact)
+]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness
