@@ -1,7 +1,11 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 
 /-! # Compensation trigger and handler runtime invariant conformance -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.ControlPosition
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! A document review witnesses production closure across ordinary scope creation, a local fork, and a deadline under the [mixed batch account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite). Both constructed Programs use the Call profile's structural graph policy but deliberately fail its capability admission. These executable checks, which [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively for both creators, cover actual Start admission and closure for those Programs; they establish neither checked XML admission, a generalized closure-fuel theorem, nor Temporal refinement. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ScopeCreationMixedBatchConformance
 

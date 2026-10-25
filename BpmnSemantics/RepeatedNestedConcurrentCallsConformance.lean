@@ -1,4 +1,6 @@
-import BpmnSemantics.RepeatedNestedConcurrentCallsFixtures
+module
+
+public import BpmnSemantics.RepeatedNestedConcurrentCallsFixtures
 
 /-! # Repeated, nested and concurrent Calls conformance
 
@@ -10,6 +12,8 @@ decides one observation. They do not discharge a quantified law; the invocation,
 `ScopeCreationCallAssociations` and `ScopeCompletion`. See the
 [repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

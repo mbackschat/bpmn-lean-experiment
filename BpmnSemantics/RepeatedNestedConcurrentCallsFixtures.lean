@@ -1,4 +1,6 @@
-import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
+module
+
+public import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
 
 /-! # Repeated, nested and concurrent Calls fixtures
 
@@ -8,6 +10,8 @@ fact its name states. Processes are named by one letter and the entry Process is
 User Task and any other step names the Process a Call invokes. The journey helpers address tasks by element
 and activation across called instances. This module states no theorem, so each conformance module decides
 only its own facts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

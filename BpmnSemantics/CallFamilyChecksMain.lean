@@ -1,9 +1,11 @@
-import BpmnSemantics.CallActivityConformance
-import BpmnSemantics.CallActivityDataBoundariesConformance
-import BpmnSemantics.CallActivityPairingConformance
-import BpmnSemantics.CallVariableMappingConformance
-import BpmnSemantics.RepeatedNestedConcurrentCallsAdmissionConformance
-import BpmnSemantics.RepeatedNestedConcurrentCallsConformance
+module
+
+public import BpmnSemantics.CallActivityConformance
+public import BpmnSemantics.CallActivityDataBoundariesConformance
+public import BpmnSemantics.CallActivityPairingConformance
+public import BpmnSemantics.CallVariableMappingConformance
+public import BpmnSemantics.RepeatedNestedConcurrentCallsAdmissionConformance
+public import BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 
 /-! # Call family executable checks
 
@@ -14,6 +16,8 @@ single-core elaboration ([cost ledger](../scripts/lean-module-cost.ts) as of 202
 checked lane shape admits an executable guard (owner pilot decision 2026-10-23,
 [executable guards](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)). A fact a proof consumes
 stays a kernel-decided theorem. -/
+
+@[expose] public section
 
 open BpmnSemantics in
 def callFamilyChecks : List (String × List (String × Bool)) := [

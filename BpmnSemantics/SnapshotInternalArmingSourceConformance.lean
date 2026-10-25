@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! The reviewed Compensation source model's Start across the dormant snapshot declaration, as executable
 checks that [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. They are apart from the
 six-family arming witnesses because those import proof owners an executable root may not reach. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SnapshotInternalArmingSourceConformance
 

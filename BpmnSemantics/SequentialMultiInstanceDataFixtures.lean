@@ -1,7 +1,11 @@
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! The reviewed Sequential Multi-Instance data-role identities, apart from the program-binding proofs so
 an executable check can use them without importing a proof owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 

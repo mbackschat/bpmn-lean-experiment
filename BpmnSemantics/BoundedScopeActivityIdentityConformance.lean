@@ -1,11 +1,15 @@
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
-import BpmnSemantics.SubProcessBoundaryTimerConformance
-import BpmnSemantics.SequentialMultiInstanceDataFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SubProcessBoundaryTimerConformance
+public import BpmnSemantics.SequentialMultiInstanceDataFixtures
 
 /-! Bounded Sub-Process Activity identity regressions from the 2026-09-22 reassessment.
 The two definition-scope IDs deliberately collide with a Multi-Instance task element, inside
 and after the child respectively. These are constructed Programs, not public admission witnesses.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.BoundedScopeActivityIdentityConformance
 

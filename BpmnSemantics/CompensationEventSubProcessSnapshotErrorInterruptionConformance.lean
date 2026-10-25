@@ -1,4 +1,6 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionFixture
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionFixture
 
 /-! # Compensation Event Sub-Process snapshot Error interruption
 
@@ -6,6 +8,8 @@ Evidence that direct Error propagation purges the failed occurrence's provisiona
 disturbing recovery work, as an executable check that
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

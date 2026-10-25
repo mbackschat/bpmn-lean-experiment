@@ -1,4 +1,6 @@
-import BpmnSemantics.RepeatedNestedConcurrentCallsFixtures
+module
+
+public import BpmnSemantics.RepeatedNestedConcurrentCallsFixtures
 
 /-! # Repeated, nested and concurrent Calls admission conformance
 
@@ -8,6 +10,8 @@ Program closure bounds, and each refused forest is refused before start while it
 the one fact the refusal names, is admitted. Each refusal is its own check. The forest scan has no quantified certificate; see the
 [repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

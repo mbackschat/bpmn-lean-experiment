@@ -1,12 +1,16 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 
 /-! # Compensation Event Sub-Process snapshot lifecycle integration
 
 Kernel-decided witnesses for root start, child entry and completion, Timer interruption,
 occurrence isolation, and exact commutation atoms.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

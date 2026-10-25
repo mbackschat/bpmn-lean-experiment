@@ -1,9 +1,13 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SubProcessErrorPropagationConformance
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotInternalCommutation
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SubProcessErrorPropagationConformance
 
 /-! # Compensation Event Sub-Process snapshot Error interruption fixture -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

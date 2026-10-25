@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! # Transaction child retention witnesses
 
@@ -7,6 +9,8 @@ TXC-RETAIN-01 distinguishes a child's lifetime and pre-removal wait ownership fr
 root completion-fact contract. These fixtures check those boundaries without claiming graph admission
 or a complete cancellation run.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.TransactionRetentionConformance
 

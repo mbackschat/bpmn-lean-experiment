@@ -1,4 +1,6 @@
-import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
+module
+
+public import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
 
 /-! # Concurrent embedded activations conformance
 
@@ -11,6 +13,8 @@ quantified law; the quantified laws live in `ScopeOccurrenceEntry`, `ScopeComple
 `MergeTargetOccurrenceLaws`. See the
 [concurrent embedded activations specification](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#separating-witnesses).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 

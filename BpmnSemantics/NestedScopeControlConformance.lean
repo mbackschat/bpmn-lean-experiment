@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Nested scope-control conformance
 
@@ -12,6 +14,8 @@ and Program analyses; the structural and over-limit refusals use the checked ana
 discharge a quantified law; see the
 [nested scope-control specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#separating-witnesses).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.NestedScopeControlConformance
 

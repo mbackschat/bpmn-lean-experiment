@@ -1,4 +1,6 @@
-import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
+module
+
+public import BpmnSemantics.ConcurrentEmbeddedActivationsFixtures
 
 /-! # Concurrent embedded activations admission conformance
 
@@ -9,6 +11,8 @@ refused before start. Each refusal is its own theorem, so no kernel decision kee
 reduction resident. The region scan has no quantified certificate; see the
 [concurrent embedded activations specification](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#separating-witnesses).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 

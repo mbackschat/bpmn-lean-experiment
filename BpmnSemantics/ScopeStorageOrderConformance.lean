@@ -1,4 +1,6 @@
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Scope and remaining counter storage witnesses
 
@@ -6,6 +8,8 @@ Actual scope entry, Call invocation, and Event race arming retain independent in
 through their raw collections. These witnesses distinguish canonical storage from sorted observation;
 they do not establish new Program or source admission.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ScopeStorageOrderConformance
 

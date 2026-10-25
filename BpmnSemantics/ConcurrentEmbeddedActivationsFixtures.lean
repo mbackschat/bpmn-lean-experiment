@@ -1,4 +1,6 @@
-import BpmnSemantics.NestedScopeControlConformance
+module
+
+public import BpmnSemantics.NestedScopeControlConformance
 
 /-! # Concurrent embedded activations fixtures
 
@@ -7,6 +9,8 @@ their conformance modules decide: the audit, whose two parallel reviews merge in
 Sub-Process, the intake, whose three checks merge into one Assess Sub-Process, and the depth-two claim. Tasks
 are named by element and activation. This module states no theorem, so each conformance module decides only
 its own facts. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 

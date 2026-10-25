@@ -1,9 +1,13 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-import BpmnSemantics.SubProcessErrorPropagationConformance
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+public import BpmnSemantics.SubProcessErrorPropagationConformance
 
 /-! Lifecycle publication of direct-parent Error propagation, as an executable check that
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. It is apart from the other cancellation
 witnesses because those import proof owners an executable root may not reach. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

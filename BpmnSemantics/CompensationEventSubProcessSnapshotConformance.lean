@@ -1,11 +1,15 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
-import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Compensation Event Sub-Process snapshot runtime checkpoint
 
 Kernel-decided fixtures for the approved hidden parent-context snapshot lifecycle. Transition integration, source admission, handler execution, Temporal hosting, and public projection remain outside this pure runtime checkpoint.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotConformance
 

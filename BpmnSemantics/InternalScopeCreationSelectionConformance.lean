@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 
 /-! # Scope-creation selection witnesses
 
 These constructed predecessor states distinguish retained issuance and exact evaluator refinement.
 They establish neither source admission nor aggregate validity, preparation frames, or commutation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalScopeCreationSelectionConformance
 

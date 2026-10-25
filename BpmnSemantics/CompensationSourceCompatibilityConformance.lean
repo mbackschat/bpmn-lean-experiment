@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
-import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
+public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 
 /-! # Compensation source compatibility conformance
 
 The checkpoint-only profile's String value-kind cell, exact Program-derived start binding, prospective downstream capacities, and every physically absent legacy declaration are decided independently of the larger admission fixtures.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

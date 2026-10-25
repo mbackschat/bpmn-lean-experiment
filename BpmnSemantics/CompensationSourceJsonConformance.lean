@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.CompensationSourceLoweringFixtures
 
 /-! # Compensation source JSON conformance
 
 Each accepted or refused wire shape is an independent kernel decision. This preserves every strict
 decoder obligation while preventing one conjunction from retaining all decoded fixture terms.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

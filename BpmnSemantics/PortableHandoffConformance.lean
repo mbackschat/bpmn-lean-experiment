@@ -1,5 +1,7 @@
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Portable handoff witnesses run the actual external dispatcher and its internal closure on the
 capsule's typed order, so neither a widened value domain nor a widened Property path alone can
@@ -7,6 +9,8 @@ satisfy them. They are finite checks of the selected profile, not universal code
 theorems; see the
 [serial-handoff amendment](../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses-and-checkpoint).
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 

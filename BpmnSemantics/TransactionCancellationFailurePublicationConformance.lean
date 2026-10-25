@@ -1,8 +1,12 @@
-import BpmnSemantics.TransactionCancellationPublicationFixtures
+module
+
+public import BpmnSemantics.TransactionCancellationPublicationFixtures
 
 /-! Transaction journey checks are separated at command boundaries because the combined
 kernel reduction reached the 3 GiB ceiling on 2026-09-26. Each module retains the complete
 preceding command chain and its exact publication oracle. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.TransactionCancellationPublicationConformance
 

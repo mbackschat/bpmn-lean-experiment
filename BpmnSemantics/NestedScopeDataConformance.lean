@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! # Nested scope-data conformance
 
@@ -14,6 +16,8 @@ frame laws, and the 16,384-byte patch bound is stated beside its predicate inste
 boundary-sized patch; see the
 [nested scope data specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#separating-witnesses-and-rule-to-evidence-matrix).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.NestedScopeDataConformance
 

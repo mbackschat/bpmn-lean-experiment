@@ -1,6 +1,8 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! Finite checked witnesses of the structured effect-data profile run the credit-decision chain through the
 actual external dispatcher and its internal closure, so neither a widened result domain alone nor a widened
@@ -11,6 +13,8 @@ instead of kernel-reducing boundary-sized values; restoration and the aliasing o
 TypeScript-only claims; see the
 [structured effect-data amendment](../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#source-profile-and-port-contract).
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.EffectDataConformance
 

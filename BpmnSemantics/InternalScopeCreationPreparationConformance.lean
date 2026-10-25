@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+module
+
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 
 /-! # Complete scope-creation preparation witnesses
 
 Constructed Programs and predecessor states distinguish local preparation and retained publication.
 They establish no source admission, aggregate preservation, or regional batch execution.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalScopeCreationPreparationConformance
 
