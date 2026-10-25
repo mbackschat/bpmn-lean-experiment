@@ -102,6 +102,18 @@ test("keeps every machine-readable pin copy on the owner's versions", async () =
   }
 });
 
+// Locks the owner's development-host bound (2026-10-25, docs/VERIFICATION-INFRASTRUCTURE-POLICY.md): local Lean
+// work stays within 5 GB, and the threads that Lake runs concurrently, each capped by the lakefile's `-M`, must
+// fit below the brake with room left for Lake itself, so a full build stops at Lean's limit before the brake.
+test("keeps concurrent local Lean processes below the brake and the brake within 5 GB", async () => {
+  const pins = await ownerPins();
+  const perProcessMib = Number(/^moreLeanArgs = \["-M(\d+)"\]$/mu.exec(await readProjectFile("lakefile.toml"))?.[1]);
+  assert.ok(perProcessMib > 0, "the lakefile must cap every Lean process with -M");
+  const brakeMib = Number(pins.leanMemoryBrakeMib);
+  assert.ok(Number(pins.leanThreads) * perProcessMib < brakeMib);
+  assert.ok(brakeMib <= Math.floor(5e9 / 2 ** 20));
+});
+
 test("derives the pins in every wrapper, doctor, and CI consumer", async () => {
   const pins = await ownerPins();
   const workflows: string[] = [];

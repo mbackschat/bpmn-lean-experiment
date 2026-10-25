@@ -6,8 +6,8 @@
   "license": "MIT",
   "packageManager": "pnpm@11.20.0",
   "config": {
-    "leanBuildThreads": "1",
-    "leanMemoryBrakeMiB": "4096",
+    "leanBuildThreads": "2",
+    "leanMemoryBrakeMiB": "4768",
     "leanCiBuildThreads": "3",
     "leanCiMemoryBrakeMiB": "12288"
   },

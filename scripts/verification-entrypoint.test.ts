@@ -700,13 +700,16 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
     PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
   };
 
+  const pinnedThreads = (JSON.parse(await readFile(rootPackageManifestPath, "utf8")) as
+    { config: Record<string, string> }).config.leanBuildThreads;
+
   try {
     const ordinary = spawnSync(lakeWrapperPath, ["--version"], {
       encoding: "utf8",
       env: environment,
     });
     assert.equal(ordinary.status, 0, ordinary.stderr);
-    assert.equal(ordinary.stdout.trim(), "1\n--version");
+    assert.equal(ordinary.stdout.trim(), `${pinnedThreads}\n--version`);
 
     const interpreted = spawnSync(
       lakeWrapperPath,
@@ -716,7 +719,7 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
     assert.equal(interpreted.status, 0, interpreted.stderr);
     assert.equal(
       interpreted.stdout.trim(),
-      "1\nenv lean --run BpmnSemantics/SemanticProcessJsonMain.lean input.jsonl",
+      `${pinnedThreads}\nenv lean --run BpmnSemantics/SemanticProcessJsonMain.lean input.jsonl`,
     );
 
     const broadFocused = spawnSync(
