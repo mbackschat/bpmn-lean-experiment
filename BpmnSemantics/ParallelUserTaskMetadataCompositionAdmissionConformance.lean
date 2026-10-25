@@ -62,28 +62,26 @@ def oldProfileComposition : CheckedProcess :=
         semanticProfile := userTaskAssignmentFormMetadataProfileId } }
 
 /-- The checkpoint profile identity is exact and does not widen either predecessor profile. -/
-theorem checkpoint_profile_identity_is_exact :
+def checkpoint_profile_identity_is_exact : Bool := decide <|
     parallelUserTaskMetadataCheckpointProfileId.value =
       "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft" ∧
       parallelUserTaskMetadataCheckpointProfileId ≠
         userTaskAssignmentFormMetadataProfileId ∧
       parallelUserTaskMetadataCheckpointProfileId.value ≠
-        "parallel-fork-join-draft" := by
-  decide +kernel
+        "parallel-fork-join-draft"
 
 /-- The exact six-node graph and its lowered program satisfy both structural and profile admission. -/
-theorem exact_two_task_metadata_composition_is_admitted :
+def exact_two_task_metadata_composition_is_admitted : Bool := decide <|
     checkedWellFormed compositionCheckedProcess = true ∧
       programWellFormed compositionProgram = true ∧
       checkedProfileCapabilitiesValid compositionCheckedProcess = true ∧
       programProfileCapabilitiesValid compositionProgram = true ∧
       definitionBindingValid compositionCheckedProcess compositionProgram = true ∧
       profileGraphPolicy? parallelUserTaskMetadataCheckpointProfileId.value =
-        some .acyclic := by
-  decide +kernel
+        some .acyclic
 
 /-- Lowering keeps each complete metadata block attached to its source element identity. -/
-theorem lowering_preserves_both_exact_task_metadata_bindings :
+def lowering_preserves_both_exact_task_metadata_bindings : Bool := decide <|
     compositionProgram.operations.contains
         (.awaitUserTask ⟨"operation:UserTask_ContentReview"⟩
           { elementId := ⟨"UserTask_ContentReview"⟩ }
@@ -93,28 +91,25 @@ theorem lowering_preserves_both_exact_task_metadata_bindings :
         (.awaitUserTask ⟨"operation:UserTask_RiskReview"⟩
           { elementId := ⟨"UserTask_RiskReview"⟩ }
           ⟨"place:Flow_ForkToRisk"⟩ ⟨"place:Flow_RiskToJoin"⟩
-          riskTask) = true := by
-  decide +kernel
+          riskTask) = true
 
 /-- Metadata erasure produces the existing metadata-free profile without changing the lowered control program. -/
-theorem program_metadata_erasure_is_exact :
+def program_metadata_erasure_is_exact : Bool := decide <|
     checkedWellFormed erasedCheckedProcess = true ∧
       programWellFormed erasedProgram = true ∧
-      eraseProgramMetadata compositionProgram = erasedProgram := by
-  decide +kernel
+      eraseProgramMetadata compositionProgram = erasedProgram
 
 /-- Missing one metadata block rejects the profile while a complete pairing mutation cannot masquerade as the exact checkpoint fixture. -/
-theorem missing_or_mispaired_metadata_refuses_exact_checkpoint_evidence :
+def missing_or_mispaired_metadata_refuses_exact_checkpoint_evidence : Bool := decide <|
     checkedProfileCapabilitiesValid missingRiskMetadataProcess = false ∧
       programProfileCapabilitiesValid
         (lowerCheckedProcess missingRiskMetadataProcess) = false ∧
       exactTaskMetadataPairing compositionCheckedProcess = true ∧
       exactTaskMetadataPairing swappedMetadataProcess = false ∧
-      swappedMetadataProcess ≠ compositionCheckedProcess := by
-  decide +kernel
+      swappedMetadataProcess ≠ compositionCheckedProcess
 
 /-- Neither predecessor profile admits the composed metadata-bearing parallel shape. -/
-theorem predecessor_profiles_remain_narrow :
+def predecessor_profiles_remain_narrow : Bool := decide <|
     checkedProfileCapabilitiesValid oldProfileComposition = false ∧
       programProfileCapabilitiesValid
         (lowerCheckedProcess oldProfileComposition) = false ∧
@@ -122,8 +117,7 @@ theorem predecessor_profiles_remain_narrow :
         { erasedCheckedProcess with
           identity :=
             { erasedCheckedProcess.identity with
-              semanticProfile := userTaskAssignmentFormMetadataProfileId } } = false := by
-  decide +kernel
+              semanticProfile := userTaskAssignmentFormMetadataProfileId } } = false
 
 /-- List-level Process Start admission for the checkpoint succeeds exactly for an empty binding map. -/
 theorem process_start_admits_exactly_the_empty_binding_map
@@ -140,7 +134,7 @@ theorem process_start_admits_exactly_the_empty_binding_map
       simp [processDataBindingsAdmitted, firstRejected]
 
 /-- Process Start admits only the empty binding map while completion admits string, null, and Boolean values for this exact profile. -/
-theorem value_domain_extension_is_completion_only :
+def value_domain_extension_is_completion_only : Bool := decide <|
     variableValueAdmitted parallelUserTaskMetadataCheckpointProfileId
         .processStart (.string "pending") = false ∧
       variableValueAdmitted parallelUserTaskMetadataCheckpointProfileId
@@ -161,7 +155,17 @@ theorem value_domain_extension_is_completion_only :
         { outcome := .rejected
           state := initialState
           internalStepBoundExceeded := false
-          ambiguousInternalChoice := false } := by
-  decide +kernel
+          ambiguousInternalChoice := false }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def parallelUserTaskMetadataCompositionAdmissionConformanceChecks : List (String × Bool) := [
+  ("checkpoint_profile_identity_is_exact", checkpoint_profile_identity_is_exact),
+  ("exact_two_task_metadata_composition_is_admitted", exact_two_task_metadata_composition_is_admitted),
+  ("lowering_preserves_both_exact_task_metadata_bindings", lowering_preserves_both_exact_task_metadata_bindings),
+  ("program_metadata_erasure_is_exact", program_metadata_erasure_is_exact),
+  ("missing_or_mispaired_metadata_refuses_exact_checkpoint_evidence", missing_or_mispaired_metadata_refuses_exact_checkpoint_evidence),
+  ("predecessor_profiles_remain_narrow", predecessor_profiles_remain_narrow),
+  ("value_domain_extension_is_completion_only", value_domain_extension_is_completion_only)
+]
 
 end BpmnSemantics.ParallelUserTaskMetadataCompositionConformance

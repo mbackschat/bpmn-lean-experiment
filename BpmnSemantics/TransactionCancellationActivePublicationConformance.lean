@@ -9,7 +9,7 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem cancellation_pins_child_without_early_boundary_or_synthetic_trigger :
+def cancellation_pins_child_without_early_boundary_or_synthetic_trigger : Bool := decide <|
     publicationAccepted reserved.result.state (completeTask "Withdraw") cancelled = true ∧
       cancelled.flowNodeOccurrenceLifecycles[1]? = some cancelDelta ∧
       projectOpenFlowNodeOccurrencesWithCompensation? program cancelled.result.state =
@@ -17,7 +17,11 @@ theorem cancellation_pins_child_without_early_boundary_or_synthetic_trigger :
       cancelled.result.state.tokens = [] ∧
       cancelled.result.state.waits = [] ∧
       cancelled.result.state.compensationActivityRetentions =
-        [{ owner := childOwner, nextCompletionOrdinal := 2, records := [] }] := by
-  decide +kernel
+        [{ owner := childOwner, nextCompletionOrdinal := 2, records := [] }]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationActivePublicationConformanceChecks : List (String × Bool) := [
+  ("cancellation_pins_child_without_early_boundary_or_synthetic_trigger", cancellation_pins_child_without_early_boundary_or_synthetic_trigger)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

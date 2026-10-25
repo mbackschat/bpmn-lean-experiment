@@ -97,17 +97,16 @@ def completed : StimulusResult :=
 def refusedUnchanged (result : StimulusResult) (before : RuntimeState) : Bool :=
   result.outcome == .rejected && result.state == before
 
-theorem credit_chain_admitted_with_one_required_start_property :
+def credit_chain_admitted_with_one_required_start_property : Bool := decide <|
     checkedWellFormed checked = true ∧ programWellFormed program = true ∧
       programProfileCapabilitiesValid program = true ∧
-      (EffectData.programAnalysis program).map (·.required) = some ["applicantRef"] := by
-  decide +kernel
+      (EffectData.programAnalysis program).map (·.required) = some ["applicantRef"]
 
 /-- PBV-EFF-01 through PBV-EFF-04 along the whole chain: Start copies the Property into the first snapshot,
 the structured result is written exactly and copied by value into the next task's snapshot while the retired
 Activity-local scope is gone, and the chain completes with a structured receipt. Each step is one dispatcher
 evaluation; the conjuncts only read its result. -/
-theorem structured_assessment_flows_through_the_credit_chain_exactly :
+def structured_assessment_flows_through_the_credit_chain_exactly : Bool := decide <|
     (started.outcome == .committed &&
       started.state.effectWaits.map (·.arguments) == [[{ name := "applicant", value := .string "ap-1" }]] &&
       assessed.outcome == .committed &&
@@ -119,22 +118,20 @@ theorem structured_assessment_flows_through_the_credit_chain_exactly :
       completed.state.effectWaits.isEmpty && completed.state.variables.activities.isEmpty &&
       completed.state.variables.process.bindings ==
         [{ name := "applicantRef", value := .string "ap-1" }, { name := "assessment", value := assessment },
-         { name := "receipt", value := .map [("ok", .boolean true)] }]) = true := by
-  decide +kernel
+         { name := "receipt", value := .map [("ok", .boolean true)] }]) = true
 
 /-- Null and an empty Map are present values: each is written and snapshotted, never treated as absent. -/
-theorem null_and_empty_map_are_present_results :
+def null_and_empty_map_are_present_results : Bool := decide <|
     (completeAssess (assessmentPatch .null)).outcome = .committed ∧
       (completeAssess (assessmentPatch .null)).state.effectWaits.map (·.arguments) =
         [[{ name := "assessment", value := .null }]] ∧
       (completeAssess (assessmentPatch (.map []))).outcome = .committed ∧
       (completeAssess (assessmentPatch (.map []))).state.effectWaits.map (·.arguments) =
-        [[{ name := "assessment", value := .map [] }]] := by
-  decide +kernel
+        [[{ name := "assessment", value := .map [] }]]
 
 /-- PBV-EFF-02: a root List or StringList result, a missing or extra local, and a patch for another
 occurrence are semantic rejections that leave the committed state byte for byte unchanged. -/
-theorem invalid_results_refuse_without_partial_writes :
+def invalid_results_refuse_without_partial_writes : Bool := decide <|
     refusedUnchanged (completeAssess (assessmentPatch (.list [.string "a"]))) started.state = true ∧
       refusedUnchanged (completeAssess (assessmentPatch (.stringList ["a"]))) started.state = true ∧
       refusedUnchanged (completeAssess []) started.state = true ∧
@@ -143,20 +140,18 @@ theorem invalid_results_refuse_without_partial_writes :
       refusedUnchanged (completeAssess [{ name := "other", value := assessment }]) started.state = true ∧
       refusedUnchanged
         (applyStimulus 8 program started.state (.completeEffect ⟨"wrong"⟩ notifyId
-          (.success [{ name := "receipt", value := .null }]))) started.state = true := by
-  decide +kernel
+          (.success [{ name := "receipt", value := .null }]))) started.state = true
 
 /-- PBV-EFF-01: Process Start stays String or Null and must bind every required input. -/
-theorem start_keeps_string_or_null :
+def start_keeps_string_or_null : Bool := decide <|
     (start [{ name := "applicantRef", value := .null }]).outcome = .committed ∧
       (start [{ name := "applicantRef", value := assessment }]).outcome = .rejected ∧
       (start [{ name := "applicantRef", value := .list [] }]).outcome = .rejected ∧
-      (start []).outcome = .rejected := by
-  decide +kernel
+      (start []).outcome = .rejected
 
 /-- The scalar contract is the discriminator: the same patch is refused by the earlier profiles' definition
 and accepted only by the item arm, and every other profile selects the scalar arm. -/
-theorem result_domain_is_selected_by_the_exact_profile :
+def result_domain_is_selected_by_the_exact_profile : Bool := decide <|
     serialEffectPatch? ["assessCredit", "notifyApplicant"] [{ target := "assessment", expression := .localVariable "assessment" }]
         [] (assessmentPatch assessment) = none ∧
       (serialEffectPatchUnder? .singletonBusinessItem ["assessCredit", "notifyApplicant"]
@@ -164,15 +159,24 @@ theorem result_domain_is_selected_by_the_exact_profile :
         (assessmentPatch assessment)).isSome = true ∧
       programEffectMappingValuePolicy program = .singletonBusinessItem ∧
       programEffectMappingValuePolicy { program with identity := { program.identity with
-        semanticProfile := serialBusinessTaskProfileId } } = .scalar := by
-  decide +kernel
+        semanticProfile := serialBusinessTaskProfileId } } = .scalar
 
 /-- SBT-CHAIN-01 without Human vertices: the amendment makes a User Task unsupported rather than
 passive, and the earlier serial profile still admits the same graph. -/
-theorem user_task_is_unsupported_at_capability_admission :
+def user_task_is_unsupported_at_capability_admission : Bool := decide <|
     (EffectData.checkedAnalysis (withHumanTask portableEffectDataProfileId)).isNone = true ∧
       programProfileCapabilitiesValid (lowerCheckedProcess (withHumanTask portableEffectDataProfileId)) = false ∧
-      (SerialBusinessTask.checkedAnalysis (withHumanTask serialBusinessTaskProfileId)).isSome = true := by
-  decide +kernel
+      (SerialBusinessTask.checkedAnalysis (withHumanTask serialBusinessTaskProfileId)).isSome = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("credit_chain_admitted_with_one_required_start_property", credit_chain_admitted_with_one_required_start_property),
+  ("structured_assessment_flows_through_the_credit_chain_exactly", structured_assessment_flows_through_the_credit_chain_exactly),
+  ("null_and_empty_map_are_present_results", null_and_empty_map_are_present_results),
+  ("invalid_results_refuse_without_partial_writes", invalid_results_refuse_without_partial_writes),
+  ("start_keeps_string_or_null", start_keeps_string_or_null),
+  ("result_domain_is_selected_by_the_exact_profile", result_domain_is_selected_by_the_exact_profile),
+  ("user_task_is_unsupported_at_capability_admission", user_task_is_unsupported_at_capability_admission)
+]
 
 end BpmnSemantics.EffectDataConformance

@@ -29,14 +29,14 @@ theorem armed_state_is_well_formed :
 def strandedActivityBodyState : RuntimeState :=
   { armedState with waits := [] }
 
-theorem stranded_activity_body_is_refused :
-    runtimeStateWellFormed program instanceId strandedActivityBodyState = false := by decide +kernel
+def stranded_activity_body_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId strandedActivityBodyState = false
 
-theorem stranded_activity_body_fails_ownership_with_siblings_intact :
+def stranded_activity_body_fails_ownership_with_siblings_intact : Bool := decide <|
     activityRecordsOwnLiveWork strandedActivityBodyState = false ∧
       attachedTimersUnambiguous strandedActivityBodyState = true ∧
       activityIdentitiesUnique strandedActivityBodyState = true ∧
-      waitOwnersLive strandedActivityBodyState = true := by decide +kernel
+      waitOwnersLive strandedActivityBodyState = true
 
 /-- `A2`, violating `AOO-ATTACH-01`: two records claiming one live deadline. -/
 def ambiguousAttachedTimerState : RuntimeState :=
@@ -49,12 +49,12 @@ def ambiguousAttachedTimerState : RuntimeState :=
         { taskId := { value := record.activityElementId.value ++ "_Other" }
           count := record.activation } }
 
-theorem ambiguous_attached_timer_is_refused :
-    runtimeStateWellFormed program instanceId ambiguousAttachedTimerState = false := by decide +kernel
+def ambiguous_attached_timer_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId ambiguousAttachedTimerState = false
 
-theorem ambiguous_attached_timer_fails_attachment_with_identity_intact :
+def ambiguous_attached_timer_fails_attachment_with_identity_intact : Bool := decide <|
     attachedTimersUnambiguous ambiguousAttachedTimerState = false ∧
-      activityIdentitiesUnique ambiguousAttachedTimerState = true := by decide +kernel
+      activityIdentitiesUnique ambiguousAttachedTimerState = true
 
 /-- A Message handler with the same occurrence coordinates as a live Timer cannot satisfy Timer ownership. -/
 def sameShapedMessageHandlerState : RuntimeState :=
@@ -65,21 +65,19 @@ def sameShapedMessageHandlerState : RuntimeState :=
           | .timer occurrence => .message occurrence
           | handler => handler } }
 
-theorem same_shaped_message_handler_is_not_a_timer_owner :
-    runtimeStateWellFormed program instanceId sameShapedMessageHandlerState = false := by
-  decide +kernel
+def same_shaped_message_handler_is_not_a_timer_owner : Bool := decide <|
+    runtimeStateWellFormed program instanceId sameShapedMessageHandlerState = false
 
 /-- `A3`, violating `AOO-ID-01`: one Activity occurrence identity carried twice. -/
 def duplicateActivityIdentityState : RuntimeState :=
   { armedState with
     activityOccurrences := armedState.activityOccurrences ++ armedState.activityOccurrences }
 
-theorem duplicate_activity_identity_is_refused :
-    runtimeStateWellFormed program instanceId duplicateActivityIdentityState = false := by
-  decide +kernel
+def duplicate_activity_identity_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId duplicateActivityIdentityState = false
 
-theorem duplicate_activity_identity_fails_uniqueness :
-    activityIdentitiesUnique duplicateActivityIdentityState = false := by decide +kernel
+def duplicate_activity_identity_fails_uniqueness : Bool := decide <|
+    activityIdentitiesUnique duplicateActivityIdentityState = false
 
 /-- The incidental Activity/task counter agreement is asserted nowhere, so disagreement stays admitted. -/
 def disagreeingActivityCounterState : RuntimeState :=
@@ -87,9 +85,8 @@ def disagreeingActivityCounterState : RuntimeState :=
     activityActivations := armedState.activityActivations.map fun activation =>
       { activation with count := activation.count + 4 } }
 
-theorem disagreeing_activity_counter_is_admitted :
-    runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true := by
-  decide +kernel
+def disagreeing_activity_counter_is_admitted : Bool := decide <|
+    runtimeStateWellFormed program instanceId disagreeingActivityCounterState = true
 
 def ownerA : ScopeOccurrenceId :=
   { processInstanceId := instanceId, definitionScopeId := ⟨"scope:A"⟩, activation := 1 }
@@ -113,7 +110,7 @@ def ownershipState (body : ActivityBody) (waits : List UserTaskWait) : RuntimeSt
       [{ processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1
          owner := ownerA, body, attachedHandlers := [] }] }
 
-theorem task_body_owner_must_agree_for_singular_and_parallel_bodies :
+def task_body_owner_must_agree_for_singular_and_parallel_bodies : Bool := decide <|
     activityRecordsOwnLiveWork
       (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = false ∧
       activityRecordsOwnLiveWork
@@ -122,24 +119,21 @@ theorem task_body_owner_must_agree_for_singular_and_parallel_bodies :
         (ownershipState (.parallelUserTasks ownedTaskId [{ ownedTaskId with activation := 2 }])
           [ownedTaskWait ownerA, { ownedTaskWait ownerB with activation := 2 }]) = false ∧
       waitOwnersLive (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = true ∧
-      waitIdentitiesUnique (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = true := by
-  decide +kernel
+      waitIdentitiesUnique (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerB]) = true
 
-theorem owner_filter_cannot_hide_a_duplicate_task_identity :
+def owner_filter_cannot_hide_a_duplicate_task_identity : Bool := decide <|
     activityRecordsOwnLiveWork (ownershipState (.userTask ownedTaskId)
       [ownedTaskWait ownerA, ownedTaskWait ownerB]) = false ∧
       activityRecordsOwnLiveWork (ownershipState (.parallelUserTasks ownedTaskId [])
-        [ownedTaskWait ownerA, ownedTaskWait ownerB]) = false := by
-  decide +kernel
+        [ownedTaskWait ownerA, ownedTaskWait ownerB]) = false
 
-theorem task_owner_agreement_preserves_child_scope_identity :
+def task_owner_agreement_preserves_child_scope_identity : Bool := decide <|
     activityRecordsOwnLiveWork
       (ownershipState (.userTask ownedTaskId) [ownedTaskWait ownerA]) = true ∧
       activityRecordsOwnLiveWork
         (ownershipState (.parallelUserTasks ownedTaskId []) [ownedTaskWait ownerA]) = true ∧
       activityRecordsOwnLiveWork (ownershipState (.childScope ownerB) []) = true ∧
-      decide (ownerA = ownerB) = false := by
-  decide +kernel
+      decide (ownerA = ownerB) = false
 
 def scopeIteration (activation index : Nat) : ParallelScopeIteration :=
   { scope := { ownerB with activation }, loopCounter := index, item := "applicant" }
@@ -150,34 +144,31 @@ def parallelScopeState : RuntimeState :=
       { id := ownerB, parent := some ownerA },
       { id := { ownerB with activation := 2 }, parent := some ownerA }] }
 
-theorem parallel_scope_membership_preserves_gaps_and_equal_items :
+def parallel_scope_membership_preserves_gaps_and_equal_items : Bool := decide <|
     activityRecordsOwnLiveWork parallelScopeState = true ∧
       activityBodyScopeClaims (.parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 2]) =
-        [ownerB, { ownerB with activation := 2 }] := by
-  decide +kernel
+        [ownerB, { ownerB with activation := 2 }]
 
-theorem every_parallel_scope_member_requires_exact_live_parentage :
+def every_parallel_scope_member_requires_exact_live_parentage : Bool := decide <|
     activityRecordsOwnLiveWork
       { parallelScopeState with scopeOccurrences := parallelScopeState.scopeOccurrences.take 2 } = false ∧
     activityRecordsOwnLiveWork
       { parallelScopeState with scopeOccurrences := parallelScopeState.scopeOccurrences.map fun scope =>
-          if scope.id.activation = 2 then { scope with parent := none } else scope } = false := by
-  decide +kernel
+          if scope.id.activation = 2 then { scope with parent := none } else scope } = false
 
-theorem parallel_scope_membership_refuses_duplicate_identity_and_index :
+def parallel_scope_membership_refuses_duplicate_identity_and_index : Bool := decide <|
     activityRecordsOwnLiveWork
       { parallelScopeState with activityOccurrences := parallelScopeState.activityOccurrences.map fun record =>
           { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 1 2] } } = false ∧
     activityRecordsOwnLiveWork
       { parallelScopeState with activityOccurrences := parallelScopeState.activityOccurrences.map fun record =>
-          { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 0] } } = false := by
-  decide +kernel
+          { record with body := .parallelChildScopes (scopeIteration 1 0) [scopeIteration 2 0] } } = false
 
 def parallelController : ParallelScopeController :=
   { id := { processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1 }
     total := 3, completed := 1 }
 
-theorem parallel_controller_counts_bind_both_ways_to_activity_membership :
+def parallel_controller_counts_bind_both_ways_to_activity_membership : Bool := decide <|
     parallelScopeControllersConsistent
       { parallelScopeState with parallelScopeControllers := [parallelController] } = true ∧
     parallelScopeControllersConsistent parallelScopeState = false ∧
@@ -186,7 +177,25 @@ theorem parallel_controller_counts_bind_both_ways_to_activity_membership :
     parallelScopeControllersConsistent
       { parallelScopeState with parallelScopeControllers := [{ parallelController with total := 4 }] } = false ∧
     parallelScopeControllersConsistent
-      { parallelScopeState with parallelScopeControllers := [parallelController], activityOccurrences := [] } = false := by
-  decide +kernel
+      { parallelScopeState with parallelScopeControllers := [parallelController], activityOccurrences := [] } = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def runtimeStateActivityOccurrenceConformanceChecks : List (String × Bool) := [
+  ("stranded_activity_body_is_refused", stranded_activity_body_is_refused),
+  ("stranded_activity_body_fails_ownership_with_siblings_intact", stranded_activity_body_fails_ownership_with_siblings_intact),
+  ("ambiguous_attached_timer_is_refused", ambiguous_attached_timer_is_refused),
+  ("ambiguous_attached_timer_fails_attachment_with_identity_intact", ambiguous_attached_timer_fails_attachment_with_identity_intact),
+  ("same_shaped_message_handler_is_not_a_timer_owner", same_shaped_message_handler_is_not_a_timer_owner),
+  ("duplicate_activity_identity_is_refused", duplicate_activity_identity_is_refused),
+  ("duplicate_activity_identity_fails_uniqueness", duplicate_activity_identity_fails_uniqueness),
+  ("disagreeing_activity_counter_is_admitted", disagreeing_activity_counter_is_admitted),
+  ("task_body_owner_must_agree_for_singular_and_parallel_bodies", task_body_owner_must_agree_for_singular_and_parallel_bodies),
+  ("owner_filter_cannot_hide_a_duplicate_task_identity", owner_filter_cannot_hide_a_duplicate_task_identity),
+  ("task_owner_agreement_preserves_child_scope_identity", task_owner_agreement_preserves_child_scope_identity),
+  ("parallel_scope_membership_preserves_gaps_and_equal_items", parallel_scope_membership_preserves_gaps_and_equal_items),
+  ("every_parallel_scope_member_requires_exact_live_parentage", every_parallel_scope_member_requires_exact_live_parentage),
+  ("parallel_scope_membership_refuses_duplicate_identity_and_index", parallel_scope_membership_refuses_duplicate_identity_and_index),
+  ("parallel_controller_counts_bind_both_ways_to_activity_membership", parallel_controller_counts_bind_both_ways_to_activity_membership)
+]
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

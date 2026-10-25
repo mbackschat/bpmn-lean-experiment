@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.TransactionCancellationPublicationFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Transaction journey checks are separated at command boundaries because the combined
 kernel reduction reached the 3 GiB ceiling on 2026-09-26. Each module retains the complete
@@ -17,20 +13,24 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem manual_program_is_structurally_well_formed : programWellFormed program = true := by
-  decide +kernel
+def manual_program_is_structurally_well_formed : Bool := decide <| programWellFormed program = true
 
-theorem start_admission_uses_the_manual_program :
+def start_admission_uses_the_manual_program : Bool := decide <|
     (admitStimulusWithCompensationSnapshots program initialState startStimulus).outcome =
-      .committed := by
-  decide +kernel
+      .committed
 
-theorem start_enters_child_and_arms_both_tasks_with_accepted_publication :
+def start_enters_child_and_arms_both_tasks_with_accepted_publication : Bool := decide <|
     publicationAccepted initialState startStimulus started = true ∧
       projectOpenFlowNodeOccurrencesWithCompensation? program started.result.state =
         some [taskStart "Reserve" childOwner, taskStart "Withdraw" childOwner, transactionStart] ∧
       started.result.state.compensationActivityRetentions =
-        [{ owner := childOwner, nextCompletionOrdinal := 1, records := [] }] := by
-  decide +kernel
+        [{ owner := childOwner, nextCompletionOrdinal := 1, records := [] }]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationStartConformanceChecks : List (String × Bool) := [
+  ("manual_program_is_structurally_well_formed", manual_program_is_structurally_well_formed),
+  ("start_admission_uses_the_manual_program", start_admission_uses_the_manual_program),
+  ("start_enters_child_and_arms_both_tasks_with_accepted_publication", start_enters_child_and_arms_both_tasks_with_accepted_publication)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

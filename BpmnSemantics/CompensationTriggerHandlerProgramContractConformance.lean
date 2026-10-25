@@ -142,25 +142,22 @@ def executionJson (bytes : Nat) : Lean.Json :=
 def executionJsonAccepted (bytes : Nat) : Bool :=
   (decodeCompensationExecutionField (executionJson bytes)).isOk
 
-theorem execution_readers_reject_below_empty_pair_capacity :
+def execution_readers_reject_below_empty_pair_capacity : Bool := decide <|
     compensationExecutionDeclarationValid (emptyProgram 2) = false ∧
     compensationExecutionDeclarationValid (emptyProgram 6) = false ∧
-    executionJsonAccepted 2 = false ∧ executionJsonAccepted 6 = false := by
-  decide +kernel
+    executionJsonAccepted 2 = false ∧ executionJsonAccepted 6 = false
 
-theorem minimum_execution_capacity_admits_a_structurally_valid_empty_state :
+def minimum_execution_capacity_admits_a_structurally_valid_empty_state : Bool := decide <|
     programWellFormed (emptyProgram 7) = true ∧
     compensationExecutionStateValid (emptyProgram 7) initialState = true ∧
     executionJsonAccepted 7 = true ∧
     compensationExecutionDeclarationValid (emptyProgram 65536) = true ∧
-    executionJsonAccepted 65536 = true := by
-  decide +kernel
+    executionJsonAccepted 65536 = true
 
-theorem execution_readers_keep_integer_and_upper_bounds :
+def execution_readers_keep_integer_and_upper_bounds : Bool := decide <|
     ([0, 65537, 9007199254740992].all fun bytes =>
       !compensationExecutionDeclarationValid (emptyProgram bytes) &&
-        !executionJsonAccepted bytes) = true := by
-  decide +kernel
+        !executionJsonAccepted bytes) = true
 
 theorem canonical_empty_execution_pair_has_seven_bytes :
     canonicalCompensationExecutionStateUtf8Bytes [] [] = 7 := by
@@ -194,11 +191,18 @@ def snapshotAtTwoBytes : Program :=
       { targets := [{ parentScopeId := ⟨"scope:p"⟩, handlerScopeId := ⟨"scope:H"⟩ }]
         maxRecords := 1, maxCanonicalBytes := 2 } }
 
-theorem separate_retention_and_snapshot_declarations_keep_two_byte_minima :
+def separate_retention_and_snapshot_declarations_keep_two_byte_minima : Bool := decide <|
     compensationActivityRetentionDeclarationValid retentionAtTwoBytes = true ∧
     compensationEventSubProcessSnapshotDeclarationValid snapshotAtTwoBytes = true ∧
     canonicalCompensationRecordsUtf8Bytes [] = 2 ∧
-    canonicalCompensationParentContextRetentionsUtf8Bytes [] = 2 := by
-  decide +kernel
+    canonicalCompensationParentContextRetentionsUtf8Bytes [] = 2
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("execution_readers_reject_below_empty_pair_capacity", execution_readers_reject_below_empty_pair_capacity),
+  ("minimum_execution_capacity_admits_a_structurally_valid_empty_state", minimum_execution_capacity_admits_a_structurally_valid_empty_state),
+  ("execution_readers_keep_integer_and_upper_bounds", execution_readers_keep_integer_and_upper_bounds),
+  ("separate_retention_and_snapshot_declarations_keep_two_byte_minima", separate_retention_and_snapshot_declarations_keep_two_byte_minima)
+]
 
 end BpmnSemantics.CompensationTriggerHandlerProgramContractConformance

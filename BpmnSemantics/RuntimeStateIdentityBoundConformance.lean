@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Runtime-state identity-bound negative fixtures
 
@@ -27,37 +23,45 @@ def instanceId : SemanticId := ActivityBoundaryTimerConformance.instanceId
 
 def armedState : RuntimeState := ActivityBoundaryTimerConformance.armedState
 
-theorem armed_state_satisfies_identity_bound :
-    runtimeStateIdentityBound armedState = true := by decide +kernel
+def armed_state_satisfies_identity_bound : Bool := decide <|
+    runtimeStateIdentityBound armedState = true
 
 def userTaskCounterAbsentState : RuntimeState :=
   { armedState with activations := [] }
 
-theorem user_task_counter_absence_fails_identity_bound :
-    runtimeStateIdentityBound userTaskCounterAbsentState = false := by decide +kernel
+def user_task_counter_absence_fails_identity_bound : Bool := decide <|
+    runtimeStateIdentityBound userTaskCounterAbsentState = false
 
-theorem user_task_identity_above_absent_counter_is_refused :
-    runtimeStateWellFormed program instanceId userTaskCounterAbsentState = false := by
-  decide +kernel
+def user_task_identity_above_absent_counter_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId userTaskCounterAbsentState = false
 
 def timerCounterAbsentState : RuntimeState :=
   { armedState with timerActivations := [] }
 
-theorem timer_counter_absence_fails_identity_bound :
-    runtimeStateIdentityBound timerCounterAbsentState = false := by decide +kernel
+def timer_counter_absence_fails_identity_bound : Bool := decide <|
+    runtimeStateIdentityBound timerCounterAbsentState = false
 
-theorem timer_identity_above_absent_counter_is_refused :
-    runtimeStateWellFormed program instanceId timerCounterAbsentState = false := by
-  decide +kernel
+def timer_identity_above_absent_counter_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId timerCounterAbsentState = false
 
 def activityCounterAbsentState : RuntimeState :=
   { armedState with activityActivations := [] }
 
-theorem activity_counter_absence_fails_identity_bound :
-    runtimeStateIdentityBound activityCounterAbsentState = false := by decide +kernel
+def activity_counter_absence_fails_identity_bound : Bool := decide <|
+    runtimeStateIdentityBound activityCounterAbsentState = false
 
-theorem activity_identity_above_absent_counter_is_refused :
-    runtimeStateWellFormed program instanceId activityCounterAbsentState = false := by
-  decide +kernel
+def activity_identity_above_absent_counter_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId activityCounterAbsentState = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("armed_state_satisfies_identity_bound", armed_state_satisfies_identity_bound),
+  ("user_task_counter_absence_fails_identity_bound", user_task_counter_absence_fails_identity_bound),
+  ("user_task_identity_above_absent_counter_is_refused", user_task_identity_above_absent_counter_is_refused),
+  ("timer_counter_absence_fails_identity_bound", timer_counter_absence_fails_identity_bound),
+  ("timer_identity_above_absent_counter_is_refused", timer_identity_above_absent_counter_is_refused),
+  ("activity_counter_absence_fails_identity_bound", activity_counter_absence_fails_identity_bound),
+  ("activity_identity_above_absent_counter_is_refused", activity_identity_above_absent_counter_is_refused)
+]
 
 end BpmnSemantics.RuntimeStateIdentityBoundConformance

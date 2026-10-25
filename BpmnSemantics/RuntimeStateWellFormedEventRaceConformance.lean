@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.RuntimeStateWellFormedEventRaceFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Runtime-state well-formedness event-race negatives
 
@@ -21,22 +17,29 @@ namespace BpmnSemantics.RuntimeStateWellFormedConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem undeclared_event_race_is_refused :
+def undeclared_event_race_is_refused : Bool := decide <|
     runtimeStateWellFormed EventBasedGatewayConformance.program
-      EventBasedGatewayConformance.instanceId undeclaredEventRaceState = false := by decide +kernel
+      EventBasedGatewayConformance.instanceId undeclaredEventRaceState = false
 
-theorem undeclared_event_race_fails_declaration_with_association_intact :
+def undeclared_event_race_fails_declaration_with_association_intact : Bool := decide <|
     hiddenRecordDeclarationsValid EventBasedGatewayConformance.program
         undeclaredEventRaceState = false ∧
       eventRaceAssociationsValid undeclaredEventRaceState = true ∧
       waitOwnersLive undeclaredEventRaceState = true ∧
       waitIdentitiesUnique undeclaredEventRaceState = true ∧
       waitDeclarationsValid EventBasedGatewayConformance.program
-        EventBasedGatewayConformance.instanceId undeclaredEventRaceState = true := by decide +kernel
+        EventBasedGatewayConformance.instanceId undeclaredEventRaceState = true
 
-theorem armed_event_race_state_is_well_formed :
+def armed_event_race_state_is_well_formed : Bool := decide <|
     runtimeStateWellFormed EventBasedGatewayConformance.program
       EventBasedGatewayConformance.instanceId
-      EventBasedGatewayConformance.armed.state = true := by decide +kernel
+      EventBasedGatewayConformance.armed.state = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def runtimeStateWellFormedEventRaceConformanceChecks : List (String × Bool) := [
+  ("undeclared_event_race_is_refused", undeclared_event_race_is_refused),
+  ("undeclared_event_race_fails_declaration_with_association_intact", undeclared_event_race_fails_declaration_with_association_intact),
+  ("armed_event_race_state_is_well_formed", armed_event_race_state_is_well_formed)
+]
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

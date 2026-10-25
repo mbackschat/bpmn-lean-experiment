@@ -186,16 +186,15 @@ theorem local_fork_uses_its_canonical_transition_index (kind : Creator) :
         ended := [{ anchor := .transition commandId 3 0, terminal := .completed }] } := by
   cases kind <;> decide +kernel
 
-theorem child_scope_publication_retains_its_created_scope_identity :
+def child_scope_publication_retains_its_created_scope_identity : Bool := decide <|
     (trace .child).flowNodeOccurrenceLifecycles[4]? = some
       { started :=
           [{ anchor := .scope (legalOwner .child), processId,
              elementId := ⟨"D_LegalScope"⟩, owner }]
         ended := [] } ∧
-      scopeActivationCount (trace .child).result.state legalScope = 1 := by
-  decide +kernel
+      scopeActivationCount (trace .child).result.state legalScope = 1
 
-theorem call_publication_retains_its_invocation_identity :
+def call_publication_retains_its_invocation_identity : Bool := decide <|
     (trace .called).flowNodeOccurrenceLifecycles[4]? = some
       { started :=
           [{ anchor := .callActivity
@@ -204,8 +203,7 @@ theorem call_publication_retains_its_invocation_identity :
         ended := [] } ∧
       callActivationCount (trace .called).result.state ⟨"D_LegalScope"⟩ = 1 ∧
       (trace .called).result.state.calledProcessOccurrences.map (·.calledRoot) =
-        [legalOwner .called] := by
-  decide +kernel
+        [legalOwner .called]
 
 theorem insufficient_final_batch_fuel_restores_the_whole_command (kind : Creator) :
     let refused := applyStimulusTraced 7 (program kind) initialState start
@@ -215,5 +213,11 @@ theorem insufficient_final_batch_fuel_restores_the_whole_command (kind : Creator
       refused.committedTransitions = [] ∧
       refused.flowNodeOccurrenceLifecycles = [] := by
   cases kind <;> decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("child_scope_publication_retains_its_created_scope_identity", child_scope_publication_retains_its_created_scope_identity),
+  ("call_publication_retains_its_invocation_identity", call_publication_retains_its_invocation_identity)
+]
 
 end BpmnSemantics.ScopeCreationMixedBatchConformance

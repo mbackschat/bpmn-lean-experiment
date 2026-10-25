@@ -35,8 +35,8 @@ def rewoundCounterSuccessor : RuntimeState :=
     timerActivations := armedState.timerActivations.map fun activation =>
       { activation with count := activation.count - 1 } }
 
-theorem rewound_counter_successor_is_still_well_formed :
-    runtimeStateWellFormed program instanceId rewoundCounterSuccessor = true := by decide +kernel
+def rewound_counter_successor_is_still_well_formed : Bool := decide <|
+    runtimeStateWellFormed program instanceId rewoundCounterSuccessor = true
 
 theorem rewound_counter_successor_breaks_monotonicity :
     ¬ RuntimeStateMonotone armedState rewoundCounterSuccessor := by
@@ -57,7 +57,7 @@ def withdrawnActivityIdentityState : RuntimeState :=
 def reissuedActivityIdentityState : RuntimeState :=
   armedState
 
-theorem reissued_activity_identity_siblings_remain_intact :
+def reissued_activity_identity_siblings_remain_intact : Bool := decide <|
     runtimeStateWellFormed program instanceId withdrawnActivityIdentityState = true ∧
       runtimeStateWellFormed program instanceId reissuedActivityIdentityState = true ∧
       withdrawnActivityIdentityState.activations = reissuedActivityIdentityState.activations ∧
@@ -76,13 +76,11 @@ theorem reissued_activity_identity_siblings_remain_intact :
       withdrawnActivityIdentityState.activityActivations =
         reissuedActivityIdentityState.activityActivations ∧
       withdrawnActivityIdentityState.endOccurrences =
-        reissuedActivityIdentityState.endOccurrences := by
-  decide +kernel
+        reissuedActivityIdentityState.endOccurrences
 
-theorem exact_activity_identity_reissue_breaks_issuing_discipline :
+def exact_activity_identity_reissue_breaks_issuing_discipline : Bool := decide <|
     activityIdentityIssuingDiscipline withdrawnActivityIdentityState
-        reissuedActivityIdentityState = false := by
-  decide +kernel
+        reissuedActivityIdentityState = false
 
 /-- Violating `RSI-MONO-03`: a successor whose clock moves backwards while the firing hypothesis
 holds.
@@ -98,11 +96,11 @@ def advancedClockState : RuntimeState :=
 def rewoundClockSuccessor : RuntimeState :=
   { armedState with logicalTimeMs := 4999 }
 
-theorem advanced_clock_state_is_well_formed :
-    runtimeStateWellFormed program instanceId advancedClockState = true := by decide +kernel
+def advanced_clock_state_is_well_formed : Bool := decide <|
+    runtimeStateWellFormed program instanceId advancedClockState = true
 
-theorem rewound_clock_successor_is_still_well_formed :
-    runtimeStateWellFormed program instanceId rewoundClockSuccessor = true := by decide +kernel
+def rewound_clock_successor_is_still_well_formed : Bool := decide <|
+    runtimeStateWellFormed program instanceId rewoundClockSuccessor = true
 
 theorem rewound_clock_successor_breaks_time_monotonicity :
     ¬ RuntimeStateTimeMonotone 5000 advancedClockState rewoundClockSuccessor := by
@@ -126,5 +124,14 @@ theorem rewound_clock_successor_keeps_counters_monotone :
   ⟨fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
     fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, fun _ => Nat.le_refl _,
     fun _ => Nat.le_refl _, fun _ => Nat.le_refl _, Nat.le_refl _, by decide +kernel⟩
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def runtimeStateWellFormedSuccessorConformanceChecks : List (String × Bool) := [
+  ("rewound_counter_successor_is_still_well_formed", rewound_counter_successor_is_still_well_formed),
+  ("reissued_activity_identity_siblings_remain_intact", reissued_activity_identity_siblings_remain_intact),
+  ("exact_activity_identity_reissue_breaks_issuing_discipline", exact_activity_identity_reissue_breaks_issuing_discipline),
+  ("advanced_clock_state_is_well_formed", advanced_clock_state_is_well_formed),
+  ("rewound_clock_successor_is_still_well_formed", rewound_clock_successor_is_still_well_formed)
+]
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

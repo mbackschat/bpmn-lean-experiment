@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source reference-binding conformance
 
@@ -17,16 +13,20 @@ namespace BpmnSemantics.CompensationSourceLoweringConformance
 
 open BpmnSemantics.SemanticProcess
 
-theorem binding_rejects_a_swapped_restored_endpoint :
-    definitionBindingValid checkedProcess swappedRestoredBindingProgram = false := by
-  decide +kernel
+def binding_rejects_a_swapped_restored_endpoint : Bool := decide <|
+    definitionBindingValid checkedProcess swappedRestoredBindingProgram = false
 
-theorem binding_rejects_a_reversed_dependency :
-    definitionBindingValid checkedProcess reversedDependencyProgram = false := by
-  decide +kernel
+def binding_rejects_a_reversed_dependency : Bool := decide <|
+    definitionBindingValid checkedProcess reversedDependencyProgram = false
 
-theorem binding_rejects_a_substituted_effect :
-    definitionBindingValid checkedProcess substitutedEffectProgram = false := by
-  decide +kernel
+def binding_rejects_a_substituted_effect : Bool := decide <|
+    definitionBindingValid checkedProcess substitutedEffectProgram = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceBindingReferenceConformanceChecks : List (String × Bool) := [
+  ("binding_rejects_a_swapped_restored_endpoint", binding_rejects_a_swapped_restored_endpoint),
+  ("binding_rejects_a_reversed_dependency", binding_rejects_a_reversed_dependency),
+  ("binding_rejects_a_substituted_effect", binding_rejects_a_substituted_effect)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

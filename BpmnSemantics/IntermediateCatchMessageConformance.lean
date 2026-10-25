@@ -198,13 +198,12 @@ theorem exact_definition_is_admitted :
   decide +kernel
 
 /-- A checked Intermediate Catch Message Event requires its complete Operation address. -/
-theorem catch_event_rejects_direct_message_channel :
+def catch_event_rejects_direct_message_channel : Bool := decide <|
     definitionBindingValid directChannelCheckedProcess
-      (lowerCheckedProcess directChannelCheckedProcess) = false := by
-  decide +kernel
+      (lowerCheckedProcess directChannelCheckedProcess) = false
 
 /-- Canonical lowering retains the complete reference-resolved channel and Catch Event identity. -/
-theorem lowering_preserves_message_channel :
+def lowering_preserves_message_channel : Bool := decide <|
     program.operations.find? (fun operation =>
         decide (operation.id.value =
           "operation:MessageCatch_ApprovalRequest")) =
@@ -214,8 +213,7 @@ theorem lowering_preserves_message_channel :
           { elementId := ⟨"MessageCatch_ApprovalRequest"⟩ }
           ⟨"place:Flow_StartToMessage"⟩
           ⟨"place:Flow_MessageToTask"⟩
-          { elementId := ⟨"MessageCatch_ApprovalRequest"⟩, channel }) := by
-  decide +kernel
+          { elementId := ⟨"MessageCatch_ApprovalRequest"⟩, channel })
 
 /-- Start requires exactly the initiate and Message-activation internal steps. -/
 theorem start_closure_uses_two_internal_steps :
@@ -228,7 +226,7 @@ theorem start_closure_uses_two_internal_steps :
   decide +kernel
 
 /-- `awaitMessage` creates one Process-owned occurrence with the definition channel and stops closure. -/
-theorem message_activation_preserves_complete_subscription :
+def message_activation_preserves_complete_subscription : Bool := decide <|
     messageWaitingResult.outcome = .committed ∧
       messageWaitingResult.state.messageWaits =
         [{ processInstanceId := subscriptionId.processInstanceId
@@ -238,18 +236,16 @@ theorem message_activation_preserves_complete_subscription :
            channel
            output := ⟨"place:Flow_MessageToTask"⟩ }] ∧
       observeStableState program messageWaitingResult.state =
-        some messageWaitingObservation := by
-  decide +kernel
+        some messageWaitingObservation
 
 /-- Exact delivery consumes the subscription and needs one automatic User Task activation step. -/
-theorem exact_delivery_opens_only_the_trailing_task :
+def exact_delivery_opens_only_the_trailing_task : Bool := decide <|
     (applyStimulus 0 program messageWaitingResult.state
         exactDelivery).internalStepBoundExceeded = true ∧
       taskWaitingResult.outcome = .committed ∧
       taskWaitingResult.state.messageWaits = [] ∧
       observeStableState program taskWaitingResult.state =
-        some taskWaitingObservation := by
-  decide +kernel
+        some taskWaitingObservation
 
 def mismatchedDeliveries : List Stimulus :=
   [ .deliverMessage ⟨"wrong-instance"⟩
@@ -269,30 +265,27 @@ def mismatchedDeliveries : List Stimulus :=
         ⟨"Operation_ReceiveApprovalRequest"⟩ ⟨"OtherMessage"⟩) ]
 
 /-- Every direct address or definition-consistency mismatch rejects with exact state preservation. -/
-theorem every_message_mismatch_preserves_state :
+def every_message_mismatch_preserves_state : Bool := decide <|
     mismatchedDeliveries.map (fun stimulus =>
         let result :=
           applyStimulus scenarioClosureLimit program
             messageWaitingResult.state stimulus
         (result.outcome, result.state)) =
-      List.replicate 6 (.rejected, messageWaitingResult.state) := by
-  decide +kernel
+      List.replicate 6 (.rejected, messageWaitingResult.state)
 
 /-- A fresh command targeting the consumed occurrence is stale and cannot consume it twice. -/
-theorem consumed_subscription_cannot_be_delivered_again :
+def consumed_subscription_cannot_be_delivered_again : Bool := decide <|
     applyStimulus scenarioClosureLimit program taskWaitingResult.state
         (.deliverMessage ⟨"deliver-message-stale"⟩ subscriptionId channel) =
       { outcome := .rejected
         state := taskWaitingResult.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- The answer-free scenario closes through the exact canonical public observations. -/
-theorem scenario_matches_expected_trace :
+def scenario_matches_expected_trace : Bool := decide <|
     runScenario program scenario =
-      { outcome := .semantic .committed, trace := expectedTrace } := by
-  decide +kernel
+      { outcome := .semantic .committed, trace := expectedTrace }
 
 def reverseCheckedProcess : CheckedProcess :=
   { checkedProcess with
@@ -330,7 +323,7 @@ def reverseCompleted : StimulusResult :=
     exactDelivery
 
 /-- Generic graph facts admit the reverse mechanism order under the same operation multiset and preserve one resumption surface at each stable state. -/
-theorem reverse_order_is_admitted_and_preserves_progress :
+def reverse_order_is_admitted_and_preserves_progress : Bool := decide <|
     definitionBindingValid reverseCheckedProcess reverseProgram = true ∧
       reverseTaskWaiting.outcome = .committed ∧
       reverseTaskWaiting.state.waits.length = 1 ∧
@@ -342,17 +335,28 @@ theorem reverse_order_is_admitted_and_preserves_progress :
       stableStateResumable reverseMessageWaiting.state = true ∧
       reverseCompleted.outcome = .committed ∧
       reverseCompleted.state.control =
-        .completed subscriptionId.processInstanceId := by
-  decide +kernel
+        .completed subscriptionId.processInstanceId
 
 /-- Before reverse-order Message activation, even an otherwise exact delivery rejects without changing the User Task wait. -/
-theorem reverse_order_pre_activation_delivery_is_rejected :
+def reverse_order_pre_activation_delivery_is_rejected : Bool := decide <|
     applyStimulus scenarioClosureLimit reverseProgram
         reverseTaskWaiting.state exactDelivery =
       { outcome := .rejected
         state := reverseTaskWaiting.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("catch_event_rejects_direct_message_channel", catch_event_rejects_direct_message_channel),
+  ("lowering_preserves_message_channel", lowering_preserves_message_channel),
+  ("message_activation_preserves_complete_subscription", message_activation_preserves_complete_subscription),
+  ("exact_delivery_opens_only_the_trailing_task", exact_delivery_opens_only_the_trailing_task),
+  ("every_message_mismatch_preserves_state", every_message_mismatch_preserves_state),
+  ("consumed_subscription_cannot_be_delivered_again", consumed_subscription_cannot_be_delivered_again),
+  ("scenario_matches_expected_trace", scenario_matches_expected_trace),
+  ("reverse_order_is_admitted_and_preserves_progress", reverse_order_is_admitted_and_preserves_progress),
+  ("reverse_order_pre_activation_delivery_is_rejected", reverse_order_pre_activation_delivery_is_rejected)
+]
 
 end BpmnSemantics.IntermediateCatchMessageConformance

@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Exact balanced parallel topology admission conformance
 
@@ -45,7 +41,7 @@ def predecessorSequentialBeforeSplit : CheckedProcess :=
   { erasedCheckedProcess with sequenceFlows := sequentialBeforeSplitFlows }
 
 /-- Balanced admission is retained for both profiles while the same-cardinality sequential-before-split topology is rejected at both representations. -/
-theorem exact_balanced_topology_is_required_for_both_profiles :
+def exact_balanced_topology_is_required_for_both_profiles : Bool := decide <|
     checkedProfileCapabilitiesValid compositionCheckedProcess = true ∧
       programProfileCapabilitiesValid compositionProgram = true ∧
       checkedProfileCapabilitiesValid erasedCheckedProcess = true ∧
@@ -55,7 +51,11 @@ theorem exact_balanced_topology_is_required_for_both_profiles :
           (lowerCheckedProcess checkpointSequentialBeforeSplit) = false ∧
       checkedProfileCapabilitiesValid predecessorSequentialBeforeSplit = false ∧
       programProfileCapabilitiesValid
-          (lowerCheckedProcess predecessorSequentialBeforeSplit) = false := by
-  decide +kernel
+          (lowerCheckedProcess predecessorSequentialBeforeSplit) = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("exact_balanced_topology_is_required_for_both_profiles", exact_balanced_topology_is_required_for_both_profiles)
+]
 
 end BpmnSemantics.ParallelBalancedTopologyConformance

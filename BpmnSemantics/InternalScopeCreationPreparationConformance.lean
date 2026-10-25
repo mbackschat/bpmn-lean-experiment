@@ -73,14 +73,13 @@ def applyPrepared (program : Program) (state : RuntimeState)
   let prepared ← prepareInternalScopeCreation? program state operation
   applyPreparedInternalScopeCreation? program state prepared
 
-theorem both_creation_preparations_are_nonvacuous_and_refine_the_raw_evaluator :
+def both_creation_preparations_are_nonvacuous_and_refine_the_raw_evaluator : Bool := decide <|
     (prepareInternalScopeCreation? childProgram before childOperation).isSome = true ∧
       (prepareInternalScopeCreation? callProgram before callOperation).isSome = true ∧
       applyPrepared childProgram before childOperation = fire? childProgram childOperation before ∧
-      applyPrepared callProgram before callOperation = fire? callProgram callOperation before := by
-  decide +kernel
+      applyPrepared callProgram before callOperation = fire? callProgram callOperation before
 
-theorem publication_retains_both_owners_and_the_created_definition_origin :
+def publication_retains_both_owners_and_the_created_definition_origin : Bool := decide <|
     (prepareInternalScopeCreation? childProgram before childOperation).map
         (·.publicationTemplate.positionDelta) = some
       { consumedTokens := [{ sequenceFlowId := ⟨"input-flow"⟩, owner := root, multiplicity := 1 }]
@@ -92,10 +91,9 @@ theorem publication_retains_both_owners_and_the_created_definition_origin :
         { consumedTokens := [{ sequenceFlowId := ⟨"input-flow"⟩, owner := root, multiplicity := 1 }]
           producedTokens := [{ sequenceFlowId := ⟨"entry-flow"⟩, owner := calledId, multiplicity := 1 }]
           enteredScopes := [{ id := calledId, parent := none, bpmnElementId := ⟨"callee"⟩ }]
-          exitedScopes := [] } := by
-  decide +kernel
+          exitedScopes := [] }
 
-theorem lifecycle_templates_retain_distinct_scope_and_call_anchors_without_numbering :
+def lifecycle_templates_retain_distinct_scope_and_call_anchors_without_numbering : Bool := decide <|
     (prepareInternalScopeCreation? childProgram before childOperation).map
         (·.publicationTemplate.lifecycle) = some
       { started :=
@@ -108,10 +106,9 @@ theorem lifecycle_templates_retain_distinct_scope_and_call_anchors_without_numbe
             [{ anchor := .callActivity
                 { processInstanceId := root.processInstanceId, elementId := ⟨"call"⟩, activation := 10 }
                processId := ⟨"process"⟩, elementId := ⟨"call"⟩, owner := root }]
-          ended := [] } := by
-  decide +kernel
+          ended := [] }
 
-theorem footprints_protect_censuses_parentage_and_the_exact_issuance_domain :
+def footprints_protect_censuses_parentage_and_the_exact_issuance_domain : Bool := decide <|
     (prepareInternalScopeCreation? childProgram before childOperation).map (fun prepared =>
       prepared.footprint.reads.contains (.tokenOwners ⟨"input"⟩) &&
       prepared.footprint.reads.contains (.scopeParent root none) &&
@@ -124,8 +121,7 @@ theorem footprints_protect_censuses_parentage_and_the_exact_issuance_domain :
         prepared.footprint.writes.contains (.callAssociation
           { id := { processInstanceId := root.processInstanceId, elementId := ⟨"call"⟩,
                     activation := 10 }, caller := root, calledProcessId := ⟨"callee"⟩,
-            calledRoot := calledId, returnOperationId := ⟨"return"⟩ })) = some true := by
-  decide +kernel
+            calledRoot := calledId, returnOperationId := ⟨"return"⟩ })) = some true
 
 def alteredPreparations (prepared : PreparedInternalScopeCreation) :=
   [ { prepared with runtimeInstanceId := ⟨"other"⟩ }
@@ -141,21 +137,19 @@ def alteredPreparations (prepared : PreparedInternalScopeCreation) :=
         { prepared.selection with created :=
             { prepared.selection.created with id := { childId with activation := 11 } } } } ]
 
-theorem checked_application_refuses_every_altered_preparation_component :
+def checked_application_refuses_every_altered_preparation_component : Bool := decide <|
     (prepareInternalScopeCreation? childProgram before childOperation).map (fun prepared =>
       (alteredPreparations prepared).all fun altered =>
-        (applyPreparedInternalScopeCreation? childProgram before altered).isNone) = some true := by
-  decide +kernel
+        (applyPreparedInternalScopeCreation? childProgram before altered).isNone) = some true
 
-theorem child_entry_preserves_excess_units_while_call_refuses_repeated_input :
+def child_entry_preserves_excess_units_while_call_refuses_repeated_input : Bool := decide <|
     let repeated := { before with tokens := before.tokens ++ before.tokens }
     (prepareInternalScopeCreation? childProgram repeated childOperation).isSome = true ∧
       (applyPrepared childProgram repeated childOperation).map
         (fun state => tokenMultiplicity state ⟨"input"⟩) = some 1 ∧
-      prepareInternalScopeCreation? callProgram repeated callOperation = none := by
-  decide +kernel
+      prepareInternalScopeCreation? callProgram repeated callOperation = none
 
-theorem duplicate_definition_identity_is_refused_before_matching_parent_metadata :
+def duplicate_definition_identity_is_refused_before_matching_parent_metadata : Bool := decide <|
     prepareInternalScopeCreation?
       { childProgram with definitionScopes :=
           { childDefinition with parentScopeId := none } :: childProgram.definitionScopes }
@@ -164,25 +158,22 @@ theorem duplicate_definition_identity_is_refused_before_matching_parent_metadata
         { callProgram with definitionScopes :=
             { calledDefinition with parentScopeId := some root.definitionScopeId } ::
               callProgram.definitionScopes }
-        before callOperation = none := by
-  decide +kernel
+        before callOperation = none
 
-theorem duplicate_operation_identity_is_refused_before_matching_its_payload :
+def duplicate_operation_identity_is_refused_before_matching_its_payload : Bool := decide <|
     prepareInternalScopeCreation?
       { childProgram with
         operations := .enterScope ⟨"enter"⟩ ⟨⟨"other"⟩⟩ ⟨"input"⟩ ⟨"entry"⟩ ⟨"child"⟩ ::
           childProgram.operations }
-      before childOperation = none := by
-  decide +kernel
+      before childOperation = none
 
-theorem duplicate_owner_identity_is_refused_before_matching_parent_metadata :
+def duplicate_owner_identity_is_refused_before_matching_parent_metadata : Bool := decide <|
     prepareInternalScopeCreation? childProgram
       { before with scopeOccurrences :=
           { id := root, parent := some { root with activation := 2 } } :: before.scopeOccurrences }
-      childOperation = none := by
-  decide +kernel
+      childOperation = none
 
-theorem unsafe_time_and_counter_issuance_are_refused :
+def unsafe_time_and_counter_issuance_are_refused : Bool := decide <|
     prepareInternalScopeCreation? childProgram
       { before with logicalTimeMs := 9007199254740992 } childOperation = none ∧
       prepareInternalScopeCreation? childProgram
@@ -190,10 +181,9 @@ theorem unsafe_time_and_counter_issuance_are_refused :
         childOperation = none ∧
       prepareInternalScopeCreation? callProgram
         { before with callActivations := [{ elementId := ⟨"call"⟩, count := 9007199254740991 }] }
-        callOperation = none := by
-  decide +kernel
+        callOperation = none
 
-theorem duplicate_issuance_counters_are_refused_before_selecting_a_value :
+def duplicate_issuance_counters_are_refused_before_selecting_a_value : Bool := decide <|
     prepareInternalScopeCreation? childProgram
       { before with scopeActivations :=
           { scopeId := ⟨"child"⟩, count := 3 } :: before.scopeActivations }
@@ -201,10 +191,9 @@ theorem duplicate_issuance_counters_are_refused_before_selecting_a_value :
       prepareInternalScopeCreation? callProgram
         { before with callActivations :=
             { elementId := ⟨"call"⟩, count := 3 } :: before.callActivations }
-        callOperation = none := by
-  decide +kernel
+        callOperation = none
 
-theorem position_origins_and_ownership_are_checked_before_publication :
+def position_origins_and_ownership_are_checked_before_publication : Bool := decide <|
     prepareInternalScopeCreation?
       { childProgram with controlPlaces :=
           [{ id := ⟨"input"⟩, origin := ⟨⟨"same-flow"⟩⟩ },
@@ -214,10 +203,9 @@ theorem position_origins_and_ownership_are_checked_before_publication :
         { callProgram with controlPlaceScopes :=
             [{ controlPlaceId := ⟨"input"⟩, scopeId := root.definitionScopeId },
               { controlPlaceId := ⟨"entry"⟩, scopeId := root.definitionScopeId }] }
-        before callOperation = none := by
-  decide +kernel
+        before callOperation = none
 
-theorem snapshot_declarations_are_refused_for_both_creation_families :
+def snapshot_declarations_are_refused_for_both_creation_families : Bool := decide <|
     prepareInternalScopeCreation?
       { childProgram with
         compensationEventSubProcessSnapshots :=
@@ -227,7 +215,23 @@ theorem snapshot_declarations_are_refused_for_both_creation_families :
         { callProgram with
           compensationEventSubProcessSnapshots :=
             some { targets := [], maxRecords := 4, maxCanonicalBytes := 1000 } }
-        before callOperation = none := by
-  decide +kernel
+        before callOperation = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("both_creation_preparations_are_nonvacuous_and_refine_the_raw_evaluator", both_creation_preparations_are_nonvacuous_and_refine_the_raw_evaluator),
+  ("publication_retains_both_owners_and_the_created_definition_origin", publication_retains_both_owners_and_the_created_definition_origin),
+  ("lifecycle_templates_retain_distinct_scope_and_call_anchors_without_numbering", lifecycle_templates_retain_distinct_scope_and_call_anchors_without_numbering),
+  ("footprints_protect_censuses_parentage_and_the_exact_issuance_domain", footprints_protect_censuses_parentage_and_the_exact_issuance_domain),
+  ("checked_application_refuses_every_altered_preparation_component", checked_application_refuses_every_altered_preparation_component),
+  ("child_entry_preserves_excess_units_while_call_refuses_repeated_input", child_entry_preserves_excess_units_while_call_refuses_repeated_input),
+  ("duplicate_definition_identity_is_refused_before_matching_parent_metadata", duplicate_definition_identity_is_refused_before_matching_parent_metadata),
+  ("duplicate_operation_identity_is_refused_before_matching_its_payload", duplicate_operation_identity_is_refused_before_matching_its_payload),
+  ("duplicate_owner_identity_is_refused_before_matching_parent_metadata", duplicate_owner_identity_is_refused_before_matching_parent_metadata),
+  ("unsafe_time_and_counter_issuance_are_refused", unsafe_time_and_counter_issuance_are_refused),
+  ("duplicate_issuance_counters_are_refused_before_selecting_a_value", duplicate_issuance_counters_are_refused_before_selecting_a_value),
+  ("position_origins_and_ownership_are_checked_before_publication", position_origins_and_ownership_are_checked_before_publication),
+  ("snapshot_declarations_are_refused_for_both_creation_families", snapshot_declarations_are_refused_for_both_creation_families)
+]
 
 end BpmnSemantics.InternalScopeCreationPreparationConformance

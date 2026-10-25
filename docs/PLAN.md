@@ -54,6 +54,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 - Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each.
+- Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
 ### Scheduled delivery batches
@@ -85,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [migration step 4](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) (owner-directed 2026-10-24), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: [executable guards](LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) for standalone decided checks (owner decision 2026-10-24), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: four hidden hubs and the name-shadowing guard on `main`.
+Deliverable: 333 standalone checks of 49 conformance modules run natively by `ConformanceChecksMain`, on `main`.
 
-Acceptance blockers: green hosted checks, including `verify-complete`; the local builds and cost rows are done.
+Acceptance blockers: green library, `BpmnConformance` and executable-check builds; re-measured cost rows; documentation claims matching the evidence form; green hosted checks.
 
-Current result: step 3 and earlier work are on `main` (`49f2f085`). Step 4 hides four hubs, saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
+Current result: step 4 is on `main` (`51646364`), saving about 120 module rebuilds per replayed commit. Before the next family adds pipeline cases: Temporal runs execute serially since `ec3ff2b3` (an absent effect schedule maps to `null`; the partition tests `undefined`), and the Start capacity envelope runs one journey per reserved-patch combination (17.8 s per guarantor Start).
 
-Effort budget: 3 hours from 23:38 UTC on 2026-10-24 to land step 4; the owner directed running it to the end (2026-10-25).
+Effort budget: 4 hours from 00:06 UTC on 2026-10-25.
 
-Next action: land step 4 on green checks for the exact SHA, then move standalone decided checks to executable guards (owner decision 2026-10-24) in family batches, then the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land the executable guards on green checks for the exact SHA, then the next deliverable (owner decision 2026-10-25): no Lean module above 2 GiB peak, locked by a cost-guard ceiling; then the next ranked hubs. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
-Oracle: a landing commit whose hosted checks are not all green, or an age exclusion beyond `zod@4.6.6`.
+Oracle: a converted check that no driver runs, or a proved lane citing an executable check.
 
-Stop if a hub needs a consumer proof rewritten rather than an exposure or `import all`. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
+Stop if a check cannot convert without changing its statement. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

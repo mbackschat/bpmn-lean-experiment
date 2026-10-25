@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.TransactionCancellationPublicationFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Transaction journey checks are separated at command boundaries because the combined
 kernel reduction reached the 3 GiB ceiling on 2026-09-26. Each module retains the complete
@@ -17,7 +13,7 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem withdrawal_first_cancels_unfinished_reservation_without_a_handler :
+def withdrawal_first_cancels_unfinished_reservation_without_a_handler : Bool := decide <|
     publicationAccepted started.result.state (completeTask "Withdraw") emptyCancelled = true ∧
       emptyCancelled.flowNodeOccurrenceLifecycles[1]? = some emptyDelta ∧
       projectOpenFlowNodeOccurrencesWithCompensation? program emptyCancelled.result.state =
@@ -25,7 +21,11 @@ theorem withdrawal_first_cancels_unfinished_reservation_without_a_handler :
       emptyCancelled.result.state.scopeOccurrences = [{ id := rootOwner, parent := none }] ∧
       emptyCancelled.result.state.compensationActivityRetentions = [] ∧
       emptyCancelled.result.state.compensationTriggers = [] ∧
-      emptyCancelled.result.state.compensationHandlerEffectWaits = [] := by
-  decide +kernel
+      emptyCancelled.result.state.compensationHandlerEffectWaits = []
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationEmptyPublicationConformanceChecks : List (String × Bool) := [
+  ("withdrawal_first_cancels_unfinished_reservation_without_a_handler", withdrawal_first_cancels_unfinished_reservation_without_a_handler)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

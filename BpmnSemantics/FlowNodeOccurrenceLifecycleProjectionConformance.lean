@@ -5,10 +5,6 @@ public import BpmnSemantics.EventBasedGatewayConformance
 public import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.ReceiveTaskConformance
 public import BpmnSemantics.ConfiguredTaskConformance
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle projection conformance
 
@@ -31,12 +27,11 @@ def armedEventRaceOpen : Option (List OpenSemanticFlowNodeOccurrence) :=
     EventBasedGatewayConformance.armed.state
 
 /-- An armed Boundary Timer is not a flow-node occurrence, while both armed Event-Based candidates are. -/
-theorem boundary_subscription_and_event_race_candidates_are_distinct :
+def boundary_subscription_and_event_race_candidates_are_distinct : Bool := decide <|
     armedBoundaryOpen.map (fun current => current.map fun occurrence => occurrence.elementId.value) =
         some ["BoundedTask"] ∧
       armedEventRaceOpen.map (fun current => current.map fun occurrence => occurrence.elementId.value) =
-        some ["MessageCatch", "TimerCatch"] := by
-  decide +kernel
+        some ["MessageCatch", "TimerCatch"]
 
 def receiveStartTrace : TracedStimulusResult :=
   applyStimulusTraced scenarioClosureLimit ReceiveTaskConformance.program initialState
@@ -47,13 +42,18 @@ def configuredStartTrace : TracedStimulusResult :=
     ConfiguredTaskConformance.startStimulus
 
 /-- Reused Message and effect operations retain the admitted Receive Task and Configured Task element identities. -/
-theorem reused_wait_shapes_publish_receive_and_configured_tasks :
+def reused_wait_shapes_publish_receive_and_configured_tasks : Bool := decide <|
     ((lifecycleStarts receiveStartTrace).filter
         (fun start => start.anchor = .wait ReceiveTaskConformance.subscriptionId)).map
           (fun start => start.elementId.value) = ["ReceiveTask_WaitForInvoice"] ∧
       ((lifecycleStarts configuredStartTrace).filter
         (fun start => start.anchor = .wait ConfiguredTaskConformance.effectId)).map
-          (fun start => start.elementId.value) = ["ConfiguredTask_Probe"] := by
-  decide +kernel
+          (fun start => start.elementId.value) = ["ConfiguredTask_Probe"]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def flowNodeOccurrenceLifecycleProjectionConformanceChecks : List (String × Bool) := [
+  ("boundary_subscription_and_event_race_candidates_are_distinct", boundary_subscription_and_event_race_candidates_are_distinct),
+  ("reused_wait_shapes_publish_receive_and_configured_tasks", reused_wait_shapes_publish_receive_and_configured_tasks)
+]
 
 end BpmnSemantics.FlowNodeOccurrenceLifecycleConformance

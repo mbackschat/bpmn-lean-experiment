@@ -31,35 +31,27 @@ def missingAttachments : RuntimeState :=
   { armedState with activityOccurrences := armedState.activityOccurrences.map fun record =>
       { record with attachedHandlers := [] } }
 
-theorem missing_activity_predecessor_valid : runtimeStateWellFormed program instanceId missingActivities = true := by
-  decide +kernel
+def missing_activity_predecessor_valid : Bool := decide <| runtimeStateWellFormed program instanceId missingActivities = true
 
-theorem missing_activity_predecessor_projection_refused : projectOpenFlowNodeOccurrences? program missingActivities = none := by
-  decide +kernel
+def missing_activity_predecessor_projection_refused : Bool := decide <| projectOpenFlowNodeOccurrences? program missingActivities = none
 
-theorem missing_attachment_predecessor_valid : runtimeStateWellFormed program instanceId missingAttachments = true := by
-  decide +kernel
+def missing_attachment_predecessor_valid : Bool := decide <| runtimeStateWellFormed program instanceId missingAttachments = true
 
-theorem missing_attachment_predecessor_projection_refused : projectOpenFlowNodeOccurrences? program missingAttachments = none := by
-  decide +kernel
+def missing_attachment_predecessor_projection_refused : Bool := decide <| projectOpenFlowNodeOccurrences? program missingAttachments = none
 
-theorem missing_activity_cancellation_leaves_deadline :
+def missing_activity_cancellation_leaves_deadline : Bool := decide <|
     (cancelScopeSubtree missingActivities child .remove).timerWaits = missingActivities.timerWaits ∧
-      missingActivities.timerWaits.length = 1 := by
-  decide +kernel
+      missingActivities.timerWaits.length = 1
 
-theorem missing_attachment_cancellation_leaves_deadline :
+def missing_attachment_cancellation_leaves_deadline : Bool := decide <|
     (cancelScopeSubtree missingAttachments child .remove).timerWaits = missingAttachments.timerWaits ∧
-      missingAttachments.timerWaits.length = 1 := by
-  decide +kernel
+      missingAttachments.timerWaits.length = 1
 
-theorem missing_activity_cancellation_projection_refused :
-    projectOpenFlowNodeOccurrences? program (cancelScopeSubtree missingActivities child .remove) = none := by
-  decide +kernel
+def missing_activity_cancellation_projection_refused : Bool := decide <|
+    projectOpenFlowNodeOccurrences? program (cancelScopeSubtree missingActivities child .remove) = none
 
-theorem missing_attachment_cancellation_projection_refused :
-    projectOpenFlowNodeOccurrences? program (cancelScopeSubtree missingAttachments child .remove) = none := by
-  decide +kernel
+def missing_attachment_cancellation_projection_refused : Bool := decide <|
+    projectOpenFlowNodeOccurrences? program (cancelScopeSubtree missingAttachments child .remove) = none
 
 def errorProgram : Program :=
   let source := SubProcessErrorPropagationConformance.checkedProcess
@@ -102,34 +94,26 @@ def preparedErrorSuccessor (state : RuntimeState) : Option RuntimeState := do
 theorem error_program_is_well_formed : programWellFormed errorProgram = true := by
   decide +kernel
 
-theorem error_missing_activity_predecessor_valid : runtimeStateWellFormed errorProgram instanceId errorMissingActivities = true := by
-  decide +kernel
+def error_missing_activity_predecessor_valid : Bool := decide <| runtimeStateWellFormed errorProgram instanceId errorMissingActivities = true
 
-theorem error_missing_attachment_predecessor_valid : runtimeStateWellFormed errorProgram instanceId errorMissingAttachments = true := by
-  decide +kernel
+def error_missing_attachment_predecessor_valid : Bool := decide <| runtimeStateWellFormed errorProgram instanceId errorMissingAttachments = true
 
-theorem error_missing_activity_preparation_refused :
-    prepareInternalRegional? errorProgram errorMissingActivities errorOperation = none := by
-  decide +kernel
+def error_missing_activity_preparation_refused : Bool := decide <|
+    prepareInternalRegional? errorProgram errorMissingActivities errorOperation = none
 
-theorem error_missing_attachment_preparation_refused :
-    prepareInternalRegional? errorProgram errorMissingAttachments errorOperation = none := by
-  decide +kernel
+def error_missing_attachment_preparation_refused : Bool := decide <|
+    prepareInternalRegional? errorProgram errorMissingAttachments errorOperation = none
 
-theorem prepared_error_missing_activity_execution_refused :
-    preparedErrorSuccessor errorMissingActivities = none := by
-  decide +kernel
+def prepared_error_missing_activity_execution_refused : Bool := decide <|
+    preparedErrorSuccessor errorMissingActivities = none
 
-theorem prepared_error_missing_attachment_execution_refused :
-    preparedErrorSuccessor errorMissingAttachments = none := by
-  decide +kernel
+def prepared_error_missing_attachment_execution_refused : Bool := decide <|
+    preparedErrorSuccessor errorMissingAttachments = none
 
-theorem intact_error_predecessor_valid : runtimeStateWellFormed errorProgram instanceId errorReady = true := by
-  decide +kernel
+def intact_error_predecessor_valid : Bool := decide <| runtimeStateWellFormed errorProgram instanceId errorReady = true
 
-theorem intact_prepared_error_successor_projectable :
-    (preparedErrorSuccessor errorReady).map (fun after => (projectOpenFlowNodeOccurrences? errorProgram after).isSome) = some true := by
-  decide +kernel
+def intact_prepared_error_successor_projectable : Bool := decide <|
+    (preparedErrorSuccessor errorReady).map (fun after => (projectOpenFlowNodeOccurrences? errorProgram after).isSome) = some true
 
 def divergentDeadline : RuntimeState :=
   { armedState with
@@ -141,13 +125,11 @@ def divergentDeadline : RuntimeState :=
           | .timer occurrence => .timer { occurrence with activation := 2 }
           | .message occurrence => .message occurrence } }
 
-theorem divergent_deadline_predecessor_valid : runtimeStateWellFormed program instanceId divergentDeadline = true := by
-  decide +kernel
+def divergent_deadline_predecessor_valid : Bool := decide <| runtimeStateWellFormed program instanceId divergentDeadline = true
 
-theorem divergent_deadline_projection_unchanged :
+def divergent_deadline_projection_unchanged : Bool := decide <|
     projectOpenFlowNodeOccurrences? program divergentDeadline = projectOpenFlowNodeOccurrences? program armedState ∧
-      (projectOpenFlowNodeOccurrences? program armedState).isSome = true := by
-  decide +kernel
+      (projectOpenFlowNodeOccurrences? program armedState).isSome = true
 
 def privateErrorTimerPublication : Option (Nat × Nat × Bool) := do
   let prepared ← prepareInternalRegional? errorProgram errorReady errorOperation
@@ -158,8 +140,30 @@ def privateErrorTimerPublication : Option (Nat × Nat × Bool) := do
       | .wait id => errorReady.timerWaits.any (timerIdNamesWait id)
       | _ => false)
 
-theorem private_error_timer_is_withdrawn_without_a_public_ending :
-    privateErrorTimerPublication = some (1, 0, false) := by
-  decide +kernel
+def private_error_timer_is_withdrawn_without_a_public_ending : Bool := decide <|
+    privateErrorTimerPublication = some (1, 0, false)
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def internalRegionalCancellationProjectionConformanceChecks : List (String × Bool) := [
+  ("missing_activity_predecessor_valid", missing_activity_predecessor_valid),
+  ("missing_activity_predecessor_projection_refused", missing_activity_predecessor_projection_refused),
+  ("missing_attachment_predecessor_valid", missing_attachment_predecessor_valid),
+  ("missing_attachment_predecessor_projection_refused", missing_attachment_predecessor_projection_refused),
+  ("missing_activity_cancellation_leaves_deadline", missing_activity_cancellation_leaves_deadline),
+  ("missing_attachment_cancellation_leaves_deadline", missing_attachment_cancellation_leaves_deadline),
+  ("missing_activity_cancellation_projection_refused", missing_activity_cancellation_projection_refused),
+  ("missing_attachment_cancellation_projection_refused", missing_attachment_cancellation_projection_refused),
+  ("error_missing_activity_predecessor_valid", error_missing_activity_predecessor_valid),
+  ("error_missing_attachment_predecessor_valid", error_missing_attachment_predecessor_valid),
+  ("error_missing_activity_preparation_refused", error_missing_activity_preparation_refused),
+  ("error_missing_attachment_preparation_refused", error_missing_attachment_preparation_refused),
+  ("prepared_error_missing_activity_execution_refused", prepared_error_missing_activity_execution_refused),
+  ("prepared_error_missing_attachment_execution_refused", prepared_error_missing_attachment_execution_refused),
+  ("intact_error_predecessor_valid", intact_error_predecessor_valid),
+  ("intact_prepared_error_successor_projectable", intact_prepared_error_successor_projectable),
+  ("divergent_deadline_predecessor_valid", divergent_deadline_predecessor_valid),
+  ("divergent_deadline_projection_unchanged", divergent_deadline_projection_unchanged),
+  ("private_error_timer_is_withdrawn_without_a_public_ending", private_error_timer_is_withdrawn_without_a_public_ending)
+]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness

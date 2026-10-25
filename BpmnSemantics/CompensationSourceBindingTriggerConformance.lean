@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source trigger-binding conformance
 
@@ -18,16 +14,20 @@ namespace BpmnSemantics.CompensationSourceLoweringConformance
 
 open BpmnSemantics.SemanticProcess
 
-theorem binding_rejects_trigger_flow_drift :
-    definitionBindingValid checkedProcess triggerFlowProgram = false := by
-  decide +kernel
+def binding_rejects_trigger_flow_drift : Bool := decide <|
+    definitionBindingValid checkedProcess triggerFlowProgram = false
 
-theorem binding_rejects_trigger_scope_drift :
-    definitionBindingValid checkedProcess triggerScopeProgram = false := by
-  decide +kernel
+def binding_rejects_trigger_scope_drift : Bool := decide <|
+    definitionBindingValid checkedProcess triggerScopeProgram = false
 
-theorem binding_rejects_an_executable_dormant_scope :
-    definitionBindingValid checkedProcess executableDormantScopeProgram = false := by
-  decide +kernel
+def binding_rejects_an_executable_dormant_scope : Bool := decide <|
+    definitionBindingValid checkedProcess executableDormantScopeProgram = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceBindingTriggerConformanceChecks : List (String × Bool) := [
+  ("binding_rejects_trigger_flow_drift", binding_rejects_trigger_flow_drift),
+  ("binding_rejects_trigger_scope_drift", binding_rejects_trigger_scope_drift),
+  ("binding_rejects_an_executable_dormant_scope", binding_rejects_an_executable_dormant_scope)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

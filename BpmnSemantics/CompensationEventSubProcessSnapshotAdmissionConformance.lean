@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.SubProcessBoundaryTimerConformance
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation Event Sub-Process snapshot structural admission
 
@@ -41,19 +37,16 @@ def program : Program :=
     compensationEventSubProcessSnapshots := some declaration }
 
 /-- The declaration is the sole authority for treating the nested empty scope as dormant. -/
-theorem declaration_is_valid :
-    compensationEventSubProcessSnapshotDeclarationValid program = true := by
-  decide +kernel
+def declaration_is_valid : Bool := decide <|
+    compensationEventSubProcessSnapshotDeclarationValid program = true
 
 /-- Raw graph admission keeps its ordinary meaning and rejects the dormant nested scope. -/
-theorem raw_graph_admission_stays_strict :
-    programGraphWellFormed program = false := by
-  decide +kernel
+def raw_graph_admission_stays_strict : Bool := decide <|
+    programGraphWellFormed program = false
 
 /-- Complete Program admission applies the validated declaration-derived lifecycle exception. -/
-theorem strict_program_admission_accepts_the_declared_handler :
-    programWellFormed program = true := by
-  decide +kernel
+def strict_program_admission_accepts_the_declared_handler : Bool := decide <|
+    programWellFormed program = true
 
 def extraDormantScopeId : DefinitionScopeId :=
   ⟨"scope:ZZExtraDormant"⟩
@@ -65,9 +58,8 @@ def extraDormantProgram : Program :=
           parentScopeId := some SubProcessBoundaryTimerConformance.childScopeId
           originElementId := ⟨"ZZExtraDormant"⟩ } ] }
 
-theorem an_undeclared_dormant_scope_is_rejected :
-    programGraphWellFormedForProgram extraDormantProgram = false := by
-  decide +kernel
+def an_undeclared_dormant_scope_is_rejected : Bool := decide <|
+    programGraphWellFormedForProgram extraDormantProgram = false
 
 def additionalParentlessRootProgram : Program :=
   { program with
@@ -77,10 +69,9 @@ def additionalParentlessRootProgram : Program :=
           originElementId := ⟨"CalledProcess"⟩ } ] }
 
 /-- The snapshot checkpoint excludes called Processes even though ordinary graph admission supports them. -/
-theorem an_additional_parentless_root_is_rejected :
+def an_additional_parentless_root_is_rejected : Bool := decide <|
     compensationEventSubProcessSnapshotDeclarationValid additionalParentlessRootProgram =
-      false := by
-  decide +kernel
+      false
 
 def parentMismatchProgram : Program :=
   { program with
@@ -90,9 +81,8 @@ def parentMismatchProgram : Program :=
           [ { parentScopeId := SubProcessBoundaryTimerConformance.rootScopeId
               handlerScopeId } ] } }
 
-theorem a_handler_outside_its_declared_parent_is_rejected :
-    compensationEventSubProcessSnapshotDeclarationValid parentMismatchProgram = false := by
-  decide +kernel
+def a_handler_outside_its_declared_parent_is_rejected : Bool := decide <|
+    compensationEventSubProcessSnapshotDeclarationValid parentMismatchProgram = false
 
 def nonemptyHandlerProgram : Program :=
   { program with
@@ -101,9 +91,8 @@ def nonemptyHandlerProgram : Program :=
       | [] => []
       | ownership :: rest => { ownership with scopeId := handlerScopeId } :: rest }
 
-theorem a_handler_with_an_owned_operation_is_rejected :
-    compensationEventSubProcessSnapshotDeclarationValid nonemptyHandlerProgram = false := by
-  decide +kernel
+def a_handler_with_an_owned_operation_is_rejected : Bool := decide <|
+    compensationEventSubProcessSnapshotDeclarationValid nonemptyHandlerProgram = false
 
 def handlerEntryProgram : Program :=
   { program with
@@ -113,9 +102,8 @@ def handlerEntryProgram : Program :=
           .enterBoundedScope id origin input childEntry handlerScopeId boundaryTimer
       | other => other }
 
-theorem a_handler_with_an_entry_operation_is_rejected :
-    compensationEventSubProcessSnapshotDeclarationValid handlerEntryProgram = false := by
-  decide +kernel
+def a_handler_with_an_entry_operation_is_rejected : Bool := decide <|
+    compensationEventSubProcessSnapshotDeclarationValid handlerEntryProgram = false
 
 def handlerCompletionProgram : Program :=
   { program with
@@ -127,8 +115,20 @@ def handlerCompletionProgram : Program :=
           else operation
       | other => other }
 
-theorem a_handler_with_a_completion_operation_is_rejected :
-    compensationEventSubProcessSnapshotDeclarationValid handlerCompletionProgram = false := by
-  decide +kernel
+def a_handler_with_a_completion_operation_is_rejected : Bool := decide <|
+    compensationEventSubProcessSnapshotDeclarationValid handlerCompletionProgram = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("declaration_is_valid", declaration_is_valid),
+  ("raw_graph_admission_stays_strict", raw_graph_admission_stays_strict),
+  ("strict_program_admission_accepts_the_declared_handler", strict_program_admission_accepts_the_declared_handler),
+  ("an_undeclared_dormant_scope_is_rejected", an_undeclared_dormant_scope_is_rejected),
+  ("an_additional_parentless_root_is_rejected", an_additional_parentless_root_is_rejected),
+  ("a_handler_outside_its_declared_parent_is_rejected", a_handler_outside_its_declared_parent_is_rejected),
+  ("a_handler_with_an_owned_operation_is_rejected", a_handler_with_an_owned_operation_is_rejected),
+  ("a_handler_with_an_entry_operation_is_rejected", a_handler_with_an_entry_operation_is_rejected),
+  ("a_handler_with_a_completion_operation_is_rejected", a_handler_with_a_completion_operation_is_rejected)
+]
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance

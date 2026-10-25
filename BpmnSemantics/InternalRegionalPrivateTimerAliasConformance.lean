@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Private Timer identities are family-tagged internally but public wait anchors are not.
 These constructed Program/state witnesses check cancellation without claiming profile reachability.
@@ -74,10 +70,14 @@ def exactPublication (message : Bool) : Bool :=
       decide (flowNodeOccurrenceDeltaForOperation? selectedProgram predecessor after errorOperation
         ⟨"private-alias"⟩ 0 = some (prepared.publicationTemplate.lifecycle ⟨"private-alias"⟩ 0))
 
-theorem private_timer_cancellation_preserves_aliased_public_task : exactPublication false = true := by
-  decide +kernel
+def private_timer_cancellation_preserves_aliased_public_task : Bool := decide <| exactPublication false = true
 
-theorem private_timer_cancellation_preserves_aliased_public_message : exactPublication true = true := by
-  decide +kernel
+def private_timer_cancellation_preserves_aliased_public_message : Bool := decide <| exactPublication true = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def internalRegionalPrivateTimerAliasConformanceChecks : List (String × Bool) := [
+  ("private_timer_cancellation_preserves_aliased_public_task", private_timer_cancellation_preserves_aliased_public_task),
+  ("private_timer_cancellation_preserves_aliased_public_message", private_timer_cancellation_preserves_aliased_public_message)
+]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation.PrivateTimerAliasWitness

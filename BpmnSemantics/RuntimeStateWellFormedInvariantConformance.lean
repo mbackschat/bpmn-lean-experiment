@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.RuntimeStateWellFormedFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Runtime-state well-formedness invariant negatives
 
@@ -21,54 +17,52 @@ namespace BpmnSemantics.RuntimeStateWellFormedConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem stranded_timer_owner_is_refused :
-    runtimeStateWellFormed program instanceId strandedTimerOwnerState = false := by decide +kernel
+def stranded_timer_owner_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId strandedTimerOwnerState = false
 
-theorem stranded_timer_owner_fails_ownership_with_siblings_intact :
+def stranded_timer_owner_fails_ownership_with_siblings_intact : Bool := decide <|
     waitOwnersLive strandedTimerOwnerState = false ∧
       waitIdentitiesUnique strandedTimerOwnerState = true ∧
-      canonicalCollectionOrder strandedTimerOwnerState = true := by decide +kernel
+      canonicalCollectionOrder strandedTimerOwnerState = true
 
-theorem duplicate_timer_key_is_refused :
-    runtimeStateWellFormed program instanceId duplicateTimerKeyState = false := by decide +kernel
+def duplicate_timer_key_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId duplicateTimerKeyState = false
 
-theorem duplicate_timer_key_fails_uniqueness_with_ownership_intact :
+def duplicate_timer_key_fails_uniqueness_with_ownership_intact : Bool := decide <|
     waitIdentitiesUnique duplicateTimerKeyState = false ∧
-      waitOwnersLive duplicateTimerKeyState = true := by decide +kernel
+      waitOwnersLive duplicateTimerKeyState = true
 
-theorem undeclared_timer_element_is_refused :
-    runtimeStateWellFormed program instanceId undeclaredTimerElementState = false := by
-  decide +kernel
+def undeclared_timer_element_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId undeclaredTimerElementState = false
 
-theorem undeclared_timer_element_fails_declaration_with_siblings_intact :
+def undeclared_timer_element_fails_declaration_with_siblings_intact : Bool := decide <|
     waitDeclarationsValid program instanceId undeclaredTimerElementState = false ∧
       waitOwnersLive undeclaredTimerElementState = true ∧
-      waitIdentitiesUnique undeclaredTimerElementState = true := by decide +kernel
+      waitIdentitiesUnique undeclaredTimerElementState = true
 
-theorem unordered_activations_are_refused :
-    runtimeStateWellFormed program instanceId unorderedActivationsState = false := by decide +kernel
+def unordered_activations_are_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId unorderedActivationsState = false
 
-theorem unordered_activations_fail_order_with_ownership_intact :
+def unordered_activations_fail_order_with_ownership_intact : Bool := decide <|
     canonicalCollectionOrder unorderedActivationsState = false ∧
-      waitOwnersLive unorderedActivationsState = true := by decide +kernel
+      waitOwnersLive unorderedActivationsState = true
 
 def unorderedActivityCounters : RuntimeState :=
   { armedState with activityActivations :=
       [{ taskId := ⟨"z-counter"⟩, count := 1 }, { taskId := ⟨"a-counter"⟩, count := 1 }] }
 
-theorem unordered_activity_counters_fail_order_with_ownership_intact :
+def unordered_activity_counters_fail_order_with_ownership_intact : Bool := decide <|
     canonicalCollectionOrder unorderedActivityCounters = false ∧
-      waitOwnersLive unorderedActivityCounters = true := by decide +kernel
+      waitOwnersLive unorderedActivityCounters = true
 
-theorem not_started_with_pending_initiation_is_refused :
-    runtimeStateWellFormed program instanceId notStartedWithPendingInitiationState = false := by
-  decide +kernel
+def not_started_with_pending_initiation_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId notStartedWithPendingInitiationState = false
 
-theorem not_started_with_pending_initiation_fails_lifecycle :
+def not_started_with_pending_initiation_fails_lifecycle : Bool := decide <|
     notStartedStateEmpty notStartedWithPendingInitiationState = false ∧
       waitOwnersLive notStartedWithPendingInitiationState = true ∧
       waitIdentitiesUnique notStartedWithPendingInitiationState = true ∧
-      canonicalCollectionOrder notStartedWithPendingInitiationState = true := by decide +kernel
+      canonicalCollectionOrder notStartedWithPendingInitiationState = true
 
 def notStartedWithActivityData : RuntimeState :=
   { initialState with variables :=
@@ -77,12 +71,11 @@ def notStartedWithActivityData : RuntimeState :=
             { processInstanceId := instanceId, activityElementId := ⟨"Activity"⟩, activation := 1 }
            bindings := [] }] } }
 
-theorem not_started_with_activity_data_fails_only_lifecycle :
+def not_started_with_activity_data_fails_only_lifecycle : Bool := decide <|
     notStartedStateEmpty notStartedWithActivityData = false ∧
       runtimeStateWellFormed program instanceId notStartedWithActivityData = false ∧
       canonicalCollectionOrder notStartedWithActivityData = true ∧
-      waitOwnersLive notStartedWithActivityData = true := by
-  decide +kernel
+      waitOwnersLive notStartedWithActivityData = true
 
 def orphanCompensationTrigger : CompensationTriggerExecution :=
   { id := { processInstanceId := instanceId, elementId := ⟨"throw"⟩, activation := 1 }
@@ -97,7 +90,7 @@ def orphanCompensationWait : CompensationHandlerEffectWait :=
                     operation := "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" }
     arguments := [] }
 
-theorem not_started_compensation_collections_fail_lifecycle_and_aggregate :
+def not_started_compensation_collections_fail_lifecycle_and_aggregate : Bool := decide <|
     notStartedStateEmpty { initialState with compensationTriggers := [orphanCompensationTrigger] }
         = false ∧
       notStartedStateEmpty
@@ -105,19 +98,35 @@ theorem not_started_compensation_collections_fail_lifecycle_and_aggregate :
       runtimeStateWellFormed program instanceId
         { initialState with compensationTriggers := [orphanCompensationTrigger] } = false ∧
       runtimeStateWellFormed program instanceId
-        { initialState with compensationHandlerEffectWaits := [orphanCompensationWait] } = false := by
-  decide +kernel
+        { initialState with compensationHandlerEffectWaits := [orphanCompensationWait] } = false
 
-theorem aggregate_rejects_orphan_compensation_work_in_running_state :
+def aggregate_rejects_orphan_compensation_work_in_running_state : Bool := decide <|
     runtimeStateWellFormed program instanceId
       { armedState with compensationTriggers := [orphanCompensationTrigger] } = false ∧
       runtimeStateWellFormed program instanceId
-        { armedState with compensationHandlerEffectWaits := [orphanCompensationWait] } = false := by
-  decide +kernel
+        { armedState with compensationHandlerEffectWaits := [orphanCompensationWait] } = false
 
-theorem empty_state_remains_well_formed :
+def empty_state_remains_well_formed : Bool := decide <|
     notStartedStateEmpty initialState = true ∧
-      runtimeStateWellFormed program instanceId initialState = true := by
-  decide +kernel
+      runtimeStateWellFormed program instanceId initialState = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def runtimeStateWellFormedInvariantConformanceChecks : List (String × Bool) := [
+  ("stranded_timer_owner_is_refused", stranded_timer_owner_is_refused),
+  ("stranded_timer_owner_fails_ownership_with_siblings_intact", stranded_timer_owner_fails_ownership_with_siblings_intact),
+  ("duplicate_timer_key_is_refused", duplicate_timer_key_is_refused),
+  ("duplicate_timer_key_fails_uniqueness_with_ownership_intact", duplicate_timer_key_fails_uniqueness_with_ownership_intact),
+  ("undeclared_timer_element_is_refused", undeclared_timer_element_is_refused),
+  ("undeclared_timer_element_fails_declaration_with_siblings_intact", undeclared_timer_element_fails_declaration_with_siblings_intact),
+  ("unordered_activations_are_refused", unordered_activations_are_refused),
+  ("unordered_activations_fail_order_with_ownership_intact", unordered_activations_fail_order_with_ownership_intact),
+  ("unordered_activity_counters_fail_order_with_ownership_intact", unordered_activity_counters_fail_order_with_ownership_intact),
+  ("not_started_with_pending_initiation_is_refused", not_started_with_pending_initiation_is_refused),
+  ("not_started_with_pending_initiation_fails_lifecycle", not_started_with_pending_initiation_fails_lifecycle),
+  ("not_started_with_activity_data_fails_only_lifecycle", not_started_with_activity_data_fails_only_lifecycle),
+  ("not_started_compensation_collections_fail_lifecycle_and_aggregate", not_started_compensation_collections_fail_lifecycle_and_aggregate),
+  ("aggregate_rejects_orphan_compensation_work_in_running_state", aggregate_rejects_orphan_compensation_work_in_running_state),
+  ("empty_state_remains_well_formed", empty_state_remains_well_formed)
+]
 
 end BpmnSemantics.RuntimeStateWellFormedConformance

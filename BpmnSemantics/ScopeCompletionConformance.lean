@@ -24,25 +24,22 @@ def pendingOnlyState : RuntimeState :=
       [{ activeTrigger with handlers := [pendingHandlerA], dependencies := [] }]
     compensationHandlerEffectWaits := [] }
 
-theorem pending_trigger_is_not_quiescent_without_ordinary_work :
-    scopeQuiescent pendingOnlyState rootOwner = false := by decide +kernel
+def pending_trigger_is_not_quiescent_without_ordinary_work : Bool := decide <|
+    scopeQuiescent pendingOnlyState rootOwner = false
 
-theorem in_flight_trigger_is_not_quiescent_without_ordinary_work :
-    scopeQuiescent activeState rootOwner = false := by decide +kernel
+def in_flight_trigger_is_not_quiescent_without_ordinary_work : Bool := decide <|
+    scopeQuiescent activeState rootOwner = false
 
-theorem pending_trigger_prevents_normal_root_completion :
-    completeScopeState? pendingOnlyState rootOwner.definitionScopeId none = none := by
-  decide +kernel
+def pending_trigger_prevents_normal_root_completion : Bool := decide <|
+    completeScopeState? pendingOnlyState rootOwner.definitionScopeId none = none
 
-theorem in_flight_trigger_prevents_normal_root_completion :
-    completeScopeState? activeState rootOwner.definitionScopeId none = none := by
-  decide +kernel
+def in_flight_trigger_prevents_normal_root_completion : Bool := decide <|
+    completeScopeState? activeState rootOwner.definitionScopeId none = none
 
-theorem another_owner_activation_is_not_blocked_by_this_trigger :
-    scopeQuiescent pendingOnlyState { rootOwner with activation := 2 } = true := by
-  decide +kernel
+def another_owner_activation_is_not_blocked_by_this_trigger : Bool := decide <|
+    scopeQuiescent pendingOnlyState { rootOwner with activation := 2 } = true
 
-theorem terminal_trigger_tombstones_do_not_block_quiescence :
+def terminal_trigger_tombstones_do_not_block_quiescence : Bool := decide <|
     scopeQuiescent
         { pendingOnlyState with
           compensationTriggers := [{ activeTrigger with lifecycle := .succeeded }] }
@@ -50,6 +47,16 @@ theorem terminal_trigger_tombstones_do_not_block_quiescence :
       scopeQuiescent
         { pendingOnlyState with
           compensationTriggers := [{ activeTrigger with lifecycle := .failed }] }
-        rootOwner = true := by decide +kernel
+        rootOwner = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("pending_trigger_is_not_quiescent_without_ordinary_work", pending_trigger_is_not_quiescent_without_ordinary_work),
+  ("in_flight_trigger_is_not_quiescent_without_ordinary_work", in_flight_trigger_is_not_quiescent_without_ordinary_work),
+  ("pending_trigger_prevents_normal_root_completion", pending_trigger_prevents_normal_root_completion),
+  ("in_flight_trigger_prevents_normal_root_completion", in_flight_trigger_prevents_normal_root_completion),
+  ("another_owner_activation_is_not_blocked_by_this_trigger", another_owner_activation_is_not_blocked_by_this_trigger),
+  ("terminal_trigger_tombstones_do_not_block_quiescence", terminal_trigger_tombstones_do_not_block_quiescence)
+]
 
 end BpmnSemantics.ScopeCompletionConformance

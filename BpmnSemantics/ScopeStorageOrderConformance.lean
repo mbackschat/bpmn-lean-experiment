@@ -38,7 +38,7 @@ def child (key : String) (activation : Nat) : RuntimeScopeOccurrence :=
   { id := { root with definitionScopeId := ⟨key ++ "-child"⟩, activation },
     parent := some root }
 
-theorem scope_entry_stores_equal_raw_state_in_both_orders :
+def scope_entry_stores_equal_raw_state_in_both_orders : Bool := decide <|
     canonicalCollectionOrder before = true ∧
       (enterPair "a" "z").isSome = true ∧
       enterPair "a" "z" = enterPair "z" "a" ∧
@@ -47,8 +47,7 @@ theorem scope_entry_stores_equal_raw_state_in_both_orders :
         some [child "a" 3, { id := root, parent := none }, child "z" 10] ∧
       (enterPair "a" "z").map (·.scopeActivations) =
         some [{ scopeId := ⟨"a-child"⟩, count := 3 },
-          { scopeId := ⟨"process"⟩, count := 1 }, { scopeId := ⟨"z-child"⟩, count := 10 }] := by
-  decide +kernel
+          { scopeId := ⟨"process"⟩, count := 1 }, { scopeId := ⟨"z-child"⟩, count := 10 }]
 
 def invoke (state : RuntimeState) (key : String) : Option RuntimeState :=
   invokeProcessState? state ⟨⟨key ++ "-call"⟩⟩ ⟨key ++ "-input"⟩
@@ -58,15 +57,14 @@ def invokePair (first second : String) : Option RuntimeState := do
   let middle ← invoke before first
   invoke middle second
 
-theorem call_invocation_stores_equal_raw_state_and_preserves_other_marks :
+def call_invocation_stores_equal_raw_state_and_preserves_other_marks : Bool := decide <|
     (invokePair "a" "z").isSome = true ∧
       invokePair "a" "z" = invokePair "z" "a" ∧
       (invokePair "a" "z").map canonicalCollectionOrder = some true ∧
       (invokePair "a" "z").map (·.callActivations) =
         some [{ elementId := ⟨"a-call"⟩, count := 3 },
           { elementId := ⟨"z-call"⟩, count := 10 }] ∧
-      (invokePair "a" "z").map (·.scopeActivations) = some before.scopeActivations := by
-  decide +kernel
+      (invokePair "a" "z").map (·.scopeActivations) = some before.scopeActivations
 
 def armRace (state : RuntimeState) (key : String) : Option RuntimeState :=
   armEventRaceState? state ⟨⟨key ++ "-race"⟩⟩ ⟨key ++ "-input"⟩
@@ -79,17 +77,16 @@ def armRacePair (first second : String) : Option RuntimeState := do
   let middle ← armRace before first
   armRace middle second
 
-theorem race_arming_stores_equal_raw_state_and_preserves_other_marks :
+def race_arming_stores_equal_raw_state_and_preserves_other_marks : Bool := decide <|
     (armRacePair "a" "z").isSome = true ∧
       armRacePair "a" "z" = armRacePair "z" "a" ∧
       (armRacePair "a" "z").map canonicalCollectionOrder = some true ∧
       (armRacePair "a" "z").map (·.eventRaceActivations) =
         some [{ elementId := ⟨"a-race"⟩, count := 3 },
           { elementId := ⟨"z-race"⟩, count := 10 }] ∧
-      (armRacePair "a" "z").map (·.callActivations) = some before.callActivations := by
-  decide +kernel
+      (armRacePair "a" "z").map (·.callActivations) = some before.callActivations
 
-theorem every_new_storage_collection_refuses_its_own_inversion :
+def every_new_storage_collection_refuses_its_own_inversion : Bool := decide <|
     canonicalCollectionOrder before = true ∧
       canonicalCollectionOrder
         { before with scopeOccurrences := [{ id := root, parent := none }, child "z" 10] } = true ∧
@@ -100,10 +97,9 @@ theorem every_new_storage_collection_refuses_its_own_inversion :
       canonicalCollectionOrder
         { before with callActivations := before.callActivations.reverse } = false ∧
       canonicalCollectionOrder
-        { before with eventRaceActivations := before.eventRaceActivations.reverse } = false := by
-  decide +kernel
+        { before with eventRaceActivations := before.eventRaceActivations.reverse } = false
 
-theorem scope_storage_compares_complete_scalar_and_numeric_keys :
+def scope_storage_compares_complete_scalar_and_numeric_keys : Bool := decide <|
     scopeOwnerBefore { root with processInstanceId := ⟨"a"⟩, definitionScopeId := ⟨"z"⟩ }
       { root with processInstanceId := ⟨"z"⟩, definitionScopeId := ⟨"a"⟩ } = true ∧
       scopeOwnerBefore { root with definitionScopeId := ⟨"a"⟩, activation := 10 }
@@ -112,7 +108,15 @@ theorem scope_storage_compares_complete_scalar_and_numeric_keys :
       scopeOwnerBefore { root with processInstanceId := ⟨"\uE000"⟩ }
         { root with processInstanceId := ⟨"𐀀"⟩ } = true ∧
       scopeOwnerBefore { root with definitionScopeId := ⟨"\uE000"⟩ }
-        { root with definitionScopeId := ⟨"𐀀"⟩ } = true := by
-  decide +kernel
+        { root with definitionScopeId := ⟨"𐀀"⟩ } = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("scope_entry_stores_equal_raw_state_in_both_orders", scope_entry_stores_equal_raw_state_in_both_orders),
+  ("call_invocation_stores_equal_raw_state_and_preserves_other_marks", call_invocation_stores_equal_raw_state_and_preserves_other_marks),
+  ("race_arming_stores_equal_raw_state_and_preserves_other_marks", race_arming_stores_equal_raw_state_and_preserves_other_marks),
+  ("every_new_storage_collection_refuses_its_own_inversion", every_new_storage_collection_refuses_its_own_inversion),
+  ("scope_storage_compares_complete_scalar_and_numeric_keys", scope_storage_compares_complete_scalar_and_numeric_keys)
+]
 
 end BpmnSemantics.ScopeStorageOrderConformance

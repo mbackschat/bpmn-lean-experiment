@@ -8,13 +8,12 @@ namespace BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 open BpmnSemantics.SemanticProcess
 
-theorem active_frontier_requires_exact_dependencies_context_and_disjoint_effect_identity :
+def active_frontier_requires_exact_dependencies_context_and_disjoint_effect_identity : Bool := decide <|
     compensationExecutionStateValid program activeState = true ∧
       compensationExecutionStateValid program dependencyDriftState = false ∧
       compensationExecutionStateValid program contextDriftState = false ∧
       compensationExecutionStateValid program effectCollisionState = false ∧
-      compensationExecutionStateValid program secondActiveTriggerState = false := by
-  decide +kernel
+      compensationExecutionStateValid program secondActiveTriggerState = false
 
 def incidentState (elementId : String) : RuntimeState :=
   { activeState with
@@ -32,17 +31,14 @@ def incidentState (elementId : String) : RuntimeState :=
              output := ⟨"place:done"⟩
              bpmnErrorRoute := none } }] }
 
-theorem event_subprocess_handler_rejects_incident_collision_without_ordinary_waits :
-    compensationExecutionStateValid program (incidentState "EB") = false := by
-  decide +kernel
+def event_subprocess_handler_rejects_incident_collision_without_ordinary_waits : Bool := decide <|
+    compensationExecutionStateValid program (incidentState "EB") = false
 
-theorem boundary_handler_rejects_incident_collision_without_ordinary_waits :
-    compensationExecutionStateValid program (incidentState "HC") = false := by
-  decide +kernel
+def boundary_handler_rejects_incident_collision_without_ordinary_waits : Bool := decide <|
+    compensationExecutionStateValid program (incidentState "HC") = false
 
-theorem unrelated_incident_does_not_collide_with_either_handler :
-    compensationExecutionStateValid program (incidentState "Unrelated") = true := by
-  decide +kernel
+def unrelated_incident_does_not_collide_with_either_handler : Bool := decide <|
+    compensationExecutionStateValid program (incidentState "Unrelated") = true
 
 def programWithCanonicalByteLimit (limit : Nat) : Program :=
   { program with
@@ -50,11 +46,19 @@ def programWithCanonicalByteLimit (limit : Nat) : Program :=
       { executionDeclaration with
         limits := { executionDeclaration.limits with maxCanonicalBytes := limit } } }
 
-theorem exact_cross_language_bytes_drive_the_capacity_boundary :
+def exact_cross_language_bytes_drive_the_capacity_boundary : Bool := decide <|
     canonicalCompensationExecutionStateUtf8Bytes activeState.compensationTriggers
         activeState.compensationHandlerEffectWaits = 3031 ∧
       compensationExecutionStateValid (programWithCanonicalByteLimit 3031) activeState = true ∧
-      compensationExecutionStateValid (programWithCanonicalByteLimit 3030) activeState = false := by
-  decide +kernel
+      compensationExecutionStateValid (programWithCanonicalByteLimit 3030) activeState = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("active_frontier_requires_exact_dependencies_context_and_disjoint_effect_identity", active_frontier_requires_exact_dependencies_context_and_disjoint_effect_identity),
+  ("event_subprocess_handler_rejects_incident_collision_without_ordinary_waits", event_subprocess_handler_rejects_incident_collision_without_ordinary_waits),
+  ("boundary_handler_rejects_incident_collision_without_ordinary_waits", boundary_handler_rejects_incident_collision_without_ordinary_waits),
+  ("unrelated_incident_does_not_collide_with_either_handler", unrelated_incident_does_not_collide_with_either_handler),
+  ("exact_cross_language_bytes_drive_the_capacity_boundary", exact_cross_language_bytes_drive_the_capacity_boundary)
+]
 
 end BpmnSemantics.CompensationTriggerHandlerRuntimeConformance

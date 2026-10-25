@@ -28,12 +28,13 @@ verify_lean_library() {
 
 verify_lean_checks() {
   ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain
-  ./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures
+  ./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures checkConformanceFixtures
   ./scripts/lake.sh run BpmnSemantics/Experiments/CheckedSourceRelationMain.lean
   ./scripts/lake.sh run BpmnSemantics/CommittedExecutionPublicationJsonMain.lean
   # The executable checks run as the binary built above, because the wrapper's forbidden exe subcommand
   # re-checks the closure on every call (scripts/lean-native-driver.ts).
   .lake/build/bin/checkCallFamilyFixtures
+  .lake/build/bin/checkConformanceFixtures
 }
 
 verify_runtime() {

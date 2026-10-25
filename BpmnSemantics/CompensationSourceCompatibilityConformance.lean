@@ -10,41 +10,36 @@ namespace BpmnSemantics.CompensationSourceLoweringConformance
 
 open BpmnSemantics.SemanticProcess
 
-theorem checkpoint_process_value_domain_leaves_empty_patch_to_program_admission :
-    processDataBindingsAdmitted compensationSourceCheckpointProfileId .processStart [] = true := by
-  decide +kernel
+def checkpoint_process_value_domain_leaves_empty_patch_to_program_admission : Bool := decide <|
+    processDataBindingsAdmitted compensationSourceCheckpointProfileId .processStart [] = true
 
-theorem checkpoint_process_start_accepts_the_selected_string_kind :
+def checkpoint_process_start_accepts_the_selected_string_kind : Bool := decide <|
     processDataBindingsAdmitted compensationSourceCheckpointProfileId .processStart
-      [{ name := "Property_TravelDetails", value := .string "value" }] = true := by
-  decide +kernel
+      [{ name := "Property_TravelDetails", value := .string "value" }] = true
 
-theorem checkpoint_process_start_rejects_an_unselected_kind :
+def checkpoint_process_start_rejects_an_unselected_kind : Bool := decide <|
     processDataBindingsAdmitted compensationSourceCheckpointProfileId .processStart
-      [{ name := "Property_TravelDetails", value := .boolean true }] = false := by
-  decide +kernel
+      [{ name := "Property_TravelDetails", value := .boolean true }] = false
 
 def admittedStartBindings : List VariableBinding :=
   [{ name := "Property_TravelDetails", value := .string "frozen itinerary" }]
 
-theorem checkpoint_start_admission_is_program_derived_and_exact :
+def checkpoint_start_admission_is_program_derived_and_exact : Bool := decide <|
     compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩
         admittedStartBindings = true ∧
       compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩ [] = false ∧
       compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩
         [{ name := "DataInput_TravelDetails", value := .string "frozen itinerary" }] = false ∧
       compensationStartDataAdmitted swappedRestoredBindingProgram ⟨"CompensationStart_1"⟩
-        [{ name := "DataInput_TravelDetails", value := .string "frozen itinerary" }] = true := by
-  decide +kernel
+        [{ name := "DataInput_TravelDetails", value := .string "frozen itinerary" }] = true
 
-theorem checkpoint_start_admission_rejects_extra_duplicate_and_wrong_kind :
+def checkpoint_start_admission_rejects_extra_duplicate_and_wrong_kind : Bool := decide <|
     compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩
         (admittedStartBindings ++ [{ name := "Unrelated", value := .string "extra" }]) = false ∧
       compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩
         (admittedStartBindings ++ admittedStartBindings) = false ∧
       compensationStartDataAdmitted expectedProgram ⟨"CompensationStart_1"⟩
-        [{ name := "Property_TravelDetails", value := .null }] = false := by
-  decide +kernel
+        [{ name := "Property_TravelDetails", value := .null }] = false
 
 def repeatAscii (count : Nat) : String := String.ofList (List.replicate count 'a')
 
@@ -68,7 +63,7 @@ def withStartCapacityLimits (snapshotBytes executionBytes : Nat) : Program :=
 def checkpointStart (instanceId : SemanticId) (bindings : List VariableBinding) : Stimulus :=
   .startProcess ⟨"start-command"⟩ ⟨processId.value⟩ instanceId bindings
 
-theorem checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_under :
+def checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_under : Bool := decide <|
     let bytes := startCapacityBytes ⟨"ShortCapacity_1"⟩ "short value"
     let bindings :=
       [{ name := "Property_TravelDetails", value := .string "short value" }]
@@ -84,15 +79,13 @@ theorem checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_u
       snapshotOneUnder.outcome = .rejected ∧
       snapshotOneUnder.state = initialState ∧
       executionOneUnder.outcome = .rejected ∧
-      executionOneUnder.state = initialState := by
-  decide +kernel
+      executionOneUnder.state = initialState
 
-theorem checkpoint_start_capacity_uses_escaped_and_multibyte_canonical_json_bytes :
+def checkpoint_start_capacity_uses_escaped_and_multibyte_canonical_json_bytes : Bool := decide <|
     startCapacityBytes ⟨"Escaped_\"\\_1"⟩ "quote=\" slash=\\ newline=\n" = (706, 3273) ∧
-      startCapacityBytes ⟨"Multibyte_雪_1"⟩ "旅程-雪-🚆" = (697, 3267) := by
-  decide +kernel
+      startCapacityBytes ⟨"Multibyte_雪_1"⟩ "旅程-雪-🚆" = (697, 3267)
 
-theorem direct_command_admission_installs_the_exact_patch_and_preserves_empty_refusal :
+def direct_command_admission_installs_the_exact_patch_and_preserves_empty_refusal : Bool := decide <|
     (admitStimulusWithCompensationSnapshots expectedProgram initialState
         (checkpointStart ⟨"CompensationStart_1"⟩ admittedStartBindings)).outcome = .committed ∧
       (admitStimulusWithCompensationSnapshots expectedProgram initialState
@@ -101,23 +94,34 @@ theorem direct_command_admission_installs_the_exact_patch_and_preserves_empty_re
       (admitStimulusWithCompensationSnapshots expectedProgram initialState
         (checkpointStart ⟨"CompensationStart_1"⟩ [])).outcome = .rejected ∧
       (admitStimulusWithCompensationSnapshots expectedProgram initialState
-        (checkpointStart ⟨"CompensationStart_1"⟩ [])).state = initialState := by
-  decide +kernel
+        (checkpointStart ⟨"CompensationStart_1"⟩ [])).state = initialState
 
-theorem old_checked_process_omits_compensation :
-    oldCheckedProcess.compensation = none := by
-  decide +kernel
+def old_checked_process_omits_compensation : Bool := decide <|
+    oldCheckedProcess.compensation = none
 
-theorem old_lowering_omits_compensation_retention :
-    (lowerCheckedProcess oldCheckedProcess).compensationActivityRetention = none := by
-  decide +kernel
+def old_lowering_omits_compensation_retention : Bool := decide <|
+    (lowerCheckedProcess oldCheckedProcess).compensationActivityRetention = none
 
-theorem old_lowering_omits_compensation_snapshots :
-    (lowerCheckedProcess oldCheckedProcess).compensationEventSubProcessSnapshots = none := by
-  decide +kernel
+def old_lowering_omits_compensation_snapshots : Bool := decide <|
+    (lowerCheckedProcess oldCheckedProcess).compensationEventSubProcessSnapshots = none
 
-theorem old_lowering_omits_compensation_execution :
-    (lowerCheckedProcess oldCheckedProcess).compensationExecution = none := by
-  decide +kernel
+def old_lowering_omits_compensation_execution : Bool := decide <|
+    (lowerCheckedProcess oldCheckedProcess).compensationExecution = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceCompatibilityConformanceChecks : List (String × Bool) := [
+  ("checkpoint_process_value_domain_leaves_empty_patch_to_program_admission", checkpoint_process_value_domain_leaves_empty_patch_to_program_admission),
+  ("checkpoint_process_start_accepts_the_selected_string_kind", checkpoint_process_start_accepts_the_selected_string_kind),
+  ("checkpoint_process_start_rejects_an_unselected_kind", checkpoint_process_start_rejects_an_unselected_kind),
+  ("checkpoint_start_admission_is_program_derived_and_exact", checkpoint_start_admission_is_program_derived_and_exact),
+  ("checkpoint_start_admission_rejects_extra_duplicate_and_wrong_kind", checkpoint_start_admission_rejects_extra_duplicate_and_wrong_kind),
+  ("checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_under", checkpoint_start_capacity_accepts_exact_encoder_counts_and_rejects_one_under),
+  ("checkpoint_start_capacity_uses_escaped_and_multibyte_canonical_json_bytes", checkpoint_start_capacity_uses_escaped_and_multibyte_canonical_json_bytes),
+  ("direct_command_admission_installs_the_exact_patch_and_preserves_empty_refusal", direct_command_admission_installs_the_exact_patch_and_preserves_empty_refusal),
+  ("old_checked_process_omits_compensation", old_checked_process_omits_compensation),
+  ("old_lowering_omits_compensation_retention", old_lowering_omits_compensation_retention),
+  ("old_lowering_omits_compensation_snapshots", old_lowering_omits_compensation_snapshots),
+  ("old_lowering_omits_compensation_execution", old_lowering_omits_compensation_execution)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

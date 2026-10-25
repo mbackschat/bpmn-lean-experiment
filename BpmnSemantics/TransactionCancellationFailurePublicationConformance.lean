@@ -9,7 +9,7 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem typed_failure_closes_all_opens_without_boundary_or_continuation :
+def typed_failure_closes_all_opens_without_boundary_or_continuation : Bool := decide <|
     publicationAccepted cancelled.result.state failureStimulus failed = true ∧
       failed.result.state.control = .failed instanceId
         { kind := .compensationHandlerFailure, triggerId := occurrence "operation:Cancel",
@@ -22,7 +22,11 @@ theorem typed_failure_closes_all_opens_without_boundary_or_continuation :
       failed.result.state.tokens = [] ∧
       failed.result.state.waits = [] ∧
       failed.result.state.compensationHandlerEffectWaits = [] ∧
-      projectOpenFlowNodeOccurrencesWithCompensation? program failed.result.state = some [] := by
-  decide +kernel
+      projectOpenFlowNodeOccurrencesWithCompensation? program failed.result.state = some []
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationFailurePublicationConformanceChecks : List (String × Bool) := [
+  ("typed_failure_closes_all_opens_without_boundary_or_continuation", typed_failure_closes_all_opens_without_boundary_or_continuation)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

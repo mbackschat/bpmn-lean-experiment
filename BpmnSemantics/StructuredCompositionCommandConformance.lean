@@ -21,25 +21,21 @@ def start (bindings : List VariableBinding) : Stimulus :=
 
 def invoice : VariableBinding := { name := "Invoice", value := .string "invoice-4711" }
 
-theorem required_input_start_commits :
-    (admitStimulus serialProgram initialState (start [invoice])).outcome = .committed := by
-  decide +kernel
+def required_input_start_commits : Bool := decide <|
+    (admitStimulus serialProgram initialState (start [invoice])).outcome = .committed
 
-theorem missing_required_input_start_rejects :
+def missing_required_input_start_rejects : Bool := decide <|
     (admitStimulus serialProgram initialState (start [])).outcome = .rejected ∧
-    (admitStimulus serialProgram initialState (start [])).state = initialState := by
-  decide +kernel
+    (admitStimulus serialProgram initialState (start [])).state = initialState
 
-theorem null_required_input_counts_as_present :
+def null_required_input_counts_as_present : Bool := decide <|
     (admitStimulus serialProgram initialState
-      (start [{ name := "Invoice", value := .null }])).outcome = .committed := by
-  decide +kernel
+      (start [{ name := "Invoice", value := .null }])).outcome = .committed
 
-theorem unrelated_start_binding_is_retained :
+def unrelated_start_binding_is_retained : Bool := decide <|
     (admitStimulus serialProgram initialState
       (start [invoice, { name := "Unrelated", value := .string "keep" }])).state.variables.process.bindings =
-        [invoice, { name := "Unrelated", value := .string "keep" }] := by
-  decide +kernel
+        [invoice, { name := "Unrelated", value := .string "keep" }]
 
 def notifyId : UserTaskInstanceId :=
   { processInstanceId := ⟨"invoice-1"⟩, elementId := ⟨"Notify"⟩, activation := 1 }
@@ -53,17 +49,15 @@ def notifyWait : RuntimeState :=
                 task := { id := ⟨"Notify"⟩, name := none }, activation := 1
                 output := ⟨"place:d"⟩, metadata := none }] }
 
-theorem ordinary_completion_accepts_empty_patch :
+def ordinary_completion_accepts_empty_patch : Bool := decide <|
     (admitStimulus serialProgram notifyWait
-      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [])).outcome = .committed := by
-  decide +kernel
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [])).outcome = .committed
 
-theorem ordinary_completion_refuses_process_write :
+def ordinary_completion_refuses_process_write : Bool := decide <|
     (admitStimulus serialProgram notifyWait
       (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).outcome = .rejected ∧
     (admitStimulus serialProgram notifyWait
-      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).state = notifyWait := by
-  decide +kernel
+      (.completeUserTaskInstance ⟨"notify"⟩ notifyId [invoice])).state = notifyWait
 
 def parallelProfileProgram : Program :=
   { serialProgram with identity := { serialProgram.identity with
@@ -115,5 +109,15 @@ theorem reprofiled_data_completion_separates_raw_dispatch_from_admission :
       (.completeUserTaskInstance ⟨"assess"⟩ assessId [propertyNamedOutput])).state = assessWait := by
   refine ⟨rfl, ?_⟩
   decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("required_input_start_commits", required_input_start_commits),
+  ("missing_required_input_start_rejects", missing_required_input_start_rejects),
+  ("null_required_input_counts_as_present", null_required_input_counts_as_present),
+  ("unrelated_start_binding_is_retained", unrelated_start_binding_is_retained),
+  ("ordinary_completion_accepts_empty_patch", ordinary_completion_accepts_empty_patch),
+  ("ordinary_completion_refuses_process_write", ordinary_completion_refuses_process_write)
+]
 
 end BpmnSemantics.StructuredCompositionCommandConformance

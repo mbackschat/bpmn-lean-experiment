@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source execution-limit binding conformance
 
@@ -18,16 +14,20 @@ namespace BpmnSemantics.CompensationSourceLoweringConformance
 
 open BpmnSemantics.SemanticProcess
 
-theorem binding_rejects_execution_trigger_limit_drift :
-    definitionBindingValid checkedProcess (mutateExecutionLimits 2 3 20480) = false := by
-  decide +kernel
+def binding_rejects_execution_trigger_limit_drift : Bool := decide <|
+    definitionBindingValid checkedProcess (mutateExecutionLimits 2 3 20480) = false
 
-theorem binding_rejects_execution_handler_limit_drift :
-    definitionBindingValid checkedProcess (mutateExecutionLimits 1 4 20480) = false := by
-  decide +kernel
+def binding_rejects_execution_handler_limit_drift : Bool := decide <|
+    definitionBindingValid checkedProcess (mutateExecutionLimits 1 4 20480) = false
 
-theorem binding_rejects_execution_byte_limit_drift :
-    definitionBindingValid checkedProcess (mutateExecutionLimits 1 3 20481) = false := by
-  decide +kernel
+def binding_rejects_execution_byte_limit_drift : Bool := decide <|
+    definitionBindingValid checkedProcess (mutateExecutionLimits 1 3 20481) = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceBindingExecutionLimitConformanceChecks : List (String × Bool) := [
+  ("binding_rejects_execution_trigger_limit_drift", binding_rejects_execution_trigger_limit_drift),
+  ("binding_rejects_execution_handler_limit_drift", binding_rejects_execution_handler_limit_drift),
+  ("binding_rejects_execution_byte_limit_drift", binding_rejects_execution_byte_limit_drift)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

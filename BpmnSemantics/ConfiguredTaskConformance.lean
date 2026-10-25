@@ -3,10 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Configured Task conformance
 
@@ -151,13 +147,12 @@ def serviceComparisonCheckedProcess : CheckedProcess :=
           .serviceTask id effectDescriptor [] [] none
       | other => other }
 
-theorem configured_and_service_tasks_are_distinct :
+def configured_and_service_tasks_are_distinct : Bool := decide <|
     CheckedNode.configuredTask configuredTaskId descriptor ≠
-      CheckedNode.serviceTask configuredTaskId descriptor [] [] none := by
-  decide +kernel
+      CheckedNode.serviceTask configuredTaskId descriptor [] [] none
 
 /-- Exact checked topology, descriptor, local arity, and checkpoint capability admit together. -/
-theorem checked_binding_topology_and_arity_are_exact :
+def checked_binding_topology_and_arity_are_exact : Bool := decide <|
     checkedWellFormed checkedProcess = true ∧
       checkedProfileCapabilitiesValid checkedProcess = true ∧
       (checkedProcess.sequenceFlows.filter fun flow =>
@@ -168,11 +163,10 @@ theorem checked_binding_topology_and_arity_are_exact :
         (flow.sourceId, flow.targetId)) =
         [ (configuredTaskId, userTaskId)
         , (startId, configuredTaskId)
-        , (userTaskId, endId) ] := by
-  decide +kernel
+        , (userTaskId, endId) ]
 
 /-- Lowering emits the existing effect operation with exact origin, endpoints, empty maps, and no Error route. -/
-theorem configured_task_lowering_is_endpoint_only :
+def configured_task_lowering_is_endpoint_only : Bool := decide <|
     (program.operations.filter fun operation =>
       operation.id = nodeOperationId configuredTaskId) =
       [ .awaitEffect
@@ -186,26 +180,23 @@ theorem configured_task_lowering_is_endpoint_only :
             outputMappings := [] }
           none ] ∧
       programWellFormed program = true ∧
-      programProfileCapabilitiesValid program = true := by
-  decide +kernel
+      programProfileCapabilitiesValid program = true
 
 /-- A checked Service Task stays a different constructor even though normalized lowering agrees exactly. -/
-theorem normalized_service_task_lowering_preserves_checked_distinction :
+def normalized_service_task_lowering_preserves_checked_distinction : Bool := decide <|
     serviceComparisonCheckedProcess.nodes ≠ checkedProcess.nodes ∧
-      lowerCheckedProcess serviceComparisonCheckedProcess = program := by
-  decide +kernel
+      lowerCheckedProcess serviceComparisonCheckedProcess = program
 
 /-- Descriptor and topology drift refuse at profile admission, before any runtime state exists. -/
-theorem descriptor_and_order_drift_refuse_before_runtime :
+def descriptor_and_order_drift_refuse_before_runtime : Bool := decide <|
     checkedProfileCapabilitiesValid descriptorDriftCheckedProcess = false ∧
       checkedWellFormed descriptorDriftCheckedProcess = false ∧
       programProfileCapabilitiesValid descriptorDriftProgram = false ∧
       checkedProfileCapabilitiesValid reversedTaskOrder = false ∧
-      checkedWellFormed reversedTaskOrder = false := by
-  decide +kernel
+      checkedWellFormed reversedTaskOrder = false
 
 /-- Start closes in two uniquely enabled steps to the sole stable configured effect wait. -/
-theorem start_closure_is_exact_and_stable :
+def start_closure_is_exact_and_stable : Bool := decide <|
     let admitted :=
       (runningProgramStartState? program instanceId []).getD initialState
     let initiated :=
@@ -220,11 +211,10 @@ theorem start_closure_is_exact_and_stable :
       enabledInternalOperationCount program startedResult.state = 0 ∧
       stableStateResumable startedResult.state = true ∧
       (applyStimulus 1 program initialState startStimulus).internalStepBoundExceeded =
-        true := by
-  decide +kernel
+        true
 
 /-- Exact effect completion closes in one uniquely enabled step to the sole stable User Task wait. -/
-theorem effect_completion_closure_is_exact_and_stable :
+def effect_completion_closure_is_exact_and_stable : Bool := decide <|
     let offered :=
       (completeEffect startedResult.state effectId (.success [])).getD initialState
     enabledInternalOperationCount program offered = 1 ∧
@@ -236,11 +226,10 @@ theorem effect_completion_closure_is_exact_and_stable :
       enabledInternalOperationCount program effectCompletedResult.state = 0 ∧
       stableStateResumable effectCompletedResult.state = true ∧
       (applyStimulus 0 program startedResult.state
-        completeEffectStimulus).internalStepBoundExceeded = true := by
-  decide +kernel
+        completeEffectStimulus).internalStepBoundExceeded = true
 
 /-- User Task completion closes through None End and existing root scope completion in exactly two steps. -/
-theorem user_task_completion_closure_is_exact :
+def user_task_completion_closure_is_exact : Bool := decide <|
     let offered :=
       (completeUserTask effectCompletedResult.state instanceId
         ⟨userTaskId.value⟩ 1).getD
@@ -255,11 +244,10 @@ theorem user_task_completion_closure_is_exact :
       completedResult.ambiguousInternalChoice = false ∧
       stableStateResumable completedResult.state = true ∧
       (applyStimulus 1 program effectCompletedResult.state
-        completeUserTaskStimulus).internalStepBoundExceeded = true := by
-  decide +kernel
+        completeUserTaskStimulus).internalStepBoundExceeded = true
 
 /-- Effect completion admits only the exact occurrence identity and preserves the stable state byte-for-byte otherwise. -/
-theorem effect_occurrence_identity_mismatch_rejects_exactly :
+def effect_occurrence_identity_mismatch_rejects_exactly : Bool := decide <|
     let wrongActivation := { effectId with activation := 2 }
     let wrongElement := { effectId with elementId := ⟨"OtherTask"⟩ }
     let wrongInstance :=
@@ -293,11 +281,10 @@ theorem effect_occurrence_identity_mismatch_rejects_exactly :
         { outcome := .rejected
           state := initialState
           internalStepBoundExceeded := false
-          ambiguousInternalChoice := false } := by
-  decide +kernel
+          ambiguousInternalChoice := false }
 
 /-- The realistic pass-through mutation exposes the trailing User Task at start and erases the effect wait. -/
-theorem pass_through_mutation_reaches_public_discriminator :
+def pass_through_mutation_reaches_public_discriminator : Bool := decide <|
     let wrong := applyStimulus 3 passThroughProgram initialState startStimulus
     effectWaitMultiplicity wrong.state configuredTaskId = 0 ∧
       waitMultiplicity wrong.state ⟨userTaskId.value⟩ = 1 ∧
@@ -308,7 +295,20 @@ theorem pass_through_mutation_reaches_public_discriminator :
           some (0, 1) ∧
       (observeStableState program startedResult.state).map (fun snapshot =>
         (snapshot.openEffects.length, snapshot.openUserTasks.length)) =
-          some (1, 0) := by
-  decide +kernel
+          some (1, 0)
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("configured_and_service_tasks_are_distinct", configured_and_service_tasks_are_distinct),
+  ("checked_binding_topology_and_arity_are_exact", checked_binding_topology_and_arity_are_exact),
+  ("configured_task_lowering_is_endpoint_only", configured_task_lowering_is_endpoint_only),
+  ("normalized_service_task_lowering_preserves_checked_distinction", normalized_service_task_lowering_preserves_checked_distinction),
+  ("descriptor_and_order_drift_refuse_before_runtime", descriptor_and_order_drift_refuse_before_runtime),
+  ("start_closure_is_exact_and_stable", start_closure_is_exact_and_stable),
+  ("effect_completion_closure_is_exact_and_stable", effect_completion_closure_is_exact_and_stable),
+  ("user_task_completion_closure_is_exact", user_task_completion_closure_is_exact),
+  ("effect_occurrence_identity_mismatch_rejects_exactly", effect_occurrence_identity_mismatch_rejects_exactly),
+  ("pass_through_mutation_reaches_public_discriminator", pass_through_mutation_reaches_public_discriminator)
+]
 
 end BpmnSemantics.ConfiguredTaskConformance

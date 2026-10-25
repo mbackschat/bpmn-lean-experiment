@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation source valid near-miss conformance
 
@@ -18,12 +14,16 @@ namespace BpmnSemantics.CompensationSourceLoweringConformance
 
 open BpmnSemantics.SemanticProcess
 
-theorem swapped_restored_binding_remains_a_valid_program :
-    programWellFormed swappedRestoredBindingProgram = true := by
-  decide +kernel
+def swapped_restored_binding_remains_a_valid_program : Bool := decide <|
+    programWellFormed swappedRestoredBindingProgram = true
 
-theorem reversed_dependency_remains_a_valid_program :
-    programWellFormed reversedDependencyProgram = true := by
-  decide +kernel
+def reversed_dependency_remains_a_valid_program : Bool := decide <|
+    programWellFormed reversedDependencyProgram = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceBindingValidProgramConformanceChecks : List (String × Bool) := [
+  ("swapped_restored_binding_remains_a_valid_program", swapped_restored_binding_remains_a_valid_program),
+  ("reversed_dependency_remains_a_valid_program", reversed_dependency_remains_a_valid_program)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

@@ -4,9 +4,6 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInput
 public import BpmnSemantics.SemanticProcess.ActivityDataOutput
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity-counter canonical insertion witnesses
 
@@ -57,7 +54,7 @@ def inputAfter : Option RuntimeState :=
 def outputAfter : Option RuntimeState :=
   activateDataOutputUserTask? state ⟨"input"⟩ ⟨"output"⟩ ⟨"z"⟩ none
 
-theorem activity_counter_insertion_preserves_marks_and_separate_issuers :
+def activity_counter_insertion_preserves_marks_and_separate_issuers : Bool := decide <|
     canonicalCollectionOrder state = true ∧
       boundedAfter.activityActivations = expected ∧
       activationCount boundedAfter ⟨"z"⟩ = 11 ∧
@@ -66,7 +63,11 @@ theorem activity_counter_insertion_preserves_marks_and_separate_issuers :
       inputAfter.map (·.activityActivations) = some expected ∧
       inputAfter.map (fun after => activationCount after ⟨"z"⟩) = some 11 ∧
       outputAfter.map (·.activityActivations) = some expected ∧
-      outputAfter.map (fun after => activationCount after ⟨"z"⟩) = some 11 := by
-  decide +kernel
+      outputAfter.map (fun after => activationCount after ⟨"z"⟩) = some 11
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("activity_counter_insertion_preserves_marks_and_separate_issuers", activity_counter_insertion_preserves_marks_and_separate_issuers)
+]
 
 end BpmnSemantics.ActivityActivationOrderConformance

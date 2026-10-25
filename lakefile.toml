@@ -58,3 +58,7 @@ root = "BpmnSemantics.ScenarioSupportJsonMain"
 [[lean_exe]]
 name = "checkCallFamilyFixtures"
 root = "BpmnSemantics.CallFamilyChecksMain"
+
+[[lean_exe]]
+name = "checkConformanceFixtures"
+root = "BpmnSemantics.ConformanceChecksMain"

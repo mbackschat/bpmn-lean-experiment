@@ -87,7 +87,7 @@ def overlappingRiskThenContent : StimulusResult :=
       overlappingContentPatch)
 
 /-- Erasing metadata commutes with start, either first completion, and both synchronization-to-closure orders. -/
-theorem metadata_erasure_preserves_parallel_control_through_closure :
+def metadata_erasure_preserves_parallel_control_through_closure : Bool := decide <|
     eraseResultMetadata compositionStarted = erasedStarted ∧
       eraseResultMetadata
           (emptyContentFirst compositionProgram compositionStarted) =
@@ -100,11 +100,10 @@ theorem metadata_erasure_preserves_parallel_control_through_closure :
         emptyContentThenRisk erasedProgram erasedStarted ∧
       eraseResultMetadata
           (emptyRiskThenContent compositionProgram compositionStarted) =
-        emptyRiskThenContent erasedProgram erasedStarted := by
-  decide +kernel
+        emptyRiskThenContent erasedProgram erasedStarted
 
 /-- The composed start and terminal closure use only the existing initiate, duplicate, await, synchronize, None End, and complete-scope relations. -/
-theorem committed_relation_families_are_the_existing_parallel_account :
+def committed_relation_families_are_the_existing_parallel_account : Bool := decide <|
     committedOperationKinds
         (applyStimulusTraced scenarioClosureLimit compositionProgram
           initialState startStimulus) =
@@ -113,17 +112,15 @@ theorem committed_relation_families_are_the_existing_parallel_account :
         (applyStimulusTraced scenarioClosureLimit compositionProgram
           contentFirst.state
           (completionStimulus "complete-risk-traced" riskTaskId riskPatch)) =
-      [ .synchronize, .reachNoneEnd, .completeScope ] := by
-  decide +kernel
+      [ .synchronize, .reachNoneEnd, .completeScope ]
 
 /-- Both completion orders reach the same terminal control state independently of their disjoint data proof. -/
-theorem both_completion_orders_reach_same_terminal_control :
+def both_completion_orders_reach_same_terminal_control : Bool := decide <|
     contentThenRisk.state.control = .completed instanceId ∧
       riskThenContent.state.control = .completed instanceId ∧
       contentThenRisk.state.control = riskThenContent.state.control ∧
       contentThenRisk.internalStepBoundExceeded = false ∧
-      riskThenContent.internalStepBoundExceeded = false := by
-  decide +kernel
+      riskThenContent.internalStepBoundExceeded = false
 
 /-- Final Process data agrees for the exact catalog patches only under their explicit disjoint-key premise. -/
 theorem disjoint_catalog_patches_reach_equal_final_process_data
@@ -133,14 +130,13 @@ theorem disjoint_catalog_patches_reach_equal_final_process_data
   decide +kernel
 
 /-- Overlapping submitted keys retain accepted command order, so no arbitrary commutativity claim is available. -/
-theorem overlapping_patches_have_ordered_unequal_final_data :
+def overlapping_patches_have_ordered_unequal_final_data : Bool := decide <|
     submittedKeysDisjoint overlappingContentPatch overlappingRiskPatch = false ∧
       overlappingContentThenRisk.state.variables.process ≠
-        overlappingRiskThenContent.state.variables.process := by
-  decide +kernel
+        overlappingRiskThenContent.state.variables.process
 
 /-- The start and post-completion closure thresholds are exactly those of the erased parallel account. -/
-theorem closure_bounds_are_unchanged_by_metadata :
+def closure_bounds_are_unchanged_by_metadata : Bool := decide <|
     (applyStimulus 3 compositionProgram initialState startStimulus).internalStepBoundExceeded =
         (applyStimulus 3 erasedProgram initialState startStimulus).internalStepBoundExceeded ∧
       (applyStimulus 4 compositionProgram initialState startStimulus).internalStepBoundExceeded =
@@ -150,7 +146,15 @@ theorem closure_bounds_are_unchanged_by_metadata :
       (applyStimulus 2 compositionProgram contentFirst.state
         (completionStimulus "complete-risk-bound" riskTaskId riskPatch)).internalStepBoundExceeded = true ∧
       (applyStimulus 3 compositionProgram contentFirst.state
-        (completionStimulus "complete-risk-bound" riskTaskId riskPatch)).internalStepBoundExceeded = false := by
-  decide +kernel
+        (completionStimulus "complete-risk-bound" riskTaskId riskPatch)).internalStepBoundExceeded = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def parallelUserTaskMetadataCompositionClosureConformanceChecks : List (String × Bool) := [
+  ("metadata_erasure_preserves_parallel_control_through_closure", metadata_erasure_preserves_parallel_control_through_closure),
+  ("committed_relation_families_are_the_existing_parallel_account", committed_relation_families_are_the_existing_parallel_account),
+  ("both_completion_orders_reach_same_terminal_control", both_completion_orders_reach_same_terminal_control),
+  ("overlapping_patches_have_ordered_unequal_final_data", overlapping_patches_have_ordered_unequal_final_data),
+  ("closure_bounds_are_unchanged_by_metadata", closure_bounds_are_unchanged_by_metadata)
+]
 
 end BpmnSemantics.ParallelUserTaskMetadataCompositionConformance

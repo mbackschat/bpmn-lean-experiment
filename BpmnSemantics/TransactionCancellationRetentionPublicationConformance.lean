@@ -9,7 +9,7 @@ namespace BpmnSemantics.TransactionCancellationPublicationConformance
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 
-theorem reserve_completion_retains_exact_owner_and_opens_prepare :
+def reserve_completion_retains_exact_owner_and_opens_prepare : Bool := decide <|
     publicationAccepted started.result.state (completeTask "Reserve") reserved = true ∧
       projectOpenFlowNodeOccurrencesWithCompensation? program reserved.result.state =
         some [taskStart "Prepare" childOwner, taskStart "Withdraw" childOwner, transactionStart] ∧
@@ -20,7 +20,11 @@ theorem reserve_completion_retains_exact_owner_and_opens_prepare :
              { id := { processInstanceId := instanceId
                        activityElementId := ⟨"Reserve"⟩
                        activation := 1 }
-               completionOrdinal := 1 }] }] := by
-  decide +kernel
+               completionOrdinal := 1 }] }]
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def transactionCancellationRetentionPublicationConformanceChecks : List (String × Bool) := [
+  ("reserve_completion_retains_exact_owner_and_opens_prepare", reserve_completion_retains_exact_owner_and_opens_prepare)
+]
 
 end BpmnSemantics.TransactionCancellationPublicationConformance

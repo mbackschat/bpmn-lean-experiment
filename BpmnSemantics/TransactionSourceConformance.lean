@@ -115,35 +115,39 @@ def nodeWireAccepted (node : String) : Bool :=
   unless (nodeWireAccepted "{\"kind\":\"cancelBoundaryEvent\",\"id\":\"boundary\",\"attachedToRef\":\"tx\",\"outputFlowId\":\"flow\",\"cancelActivity\":false}") == false do
     throw (IO.userError "Transaction strict decoder: reject extra Cancel Boundary field")
 
-theorem short_checked_source_is_admitted : checkedWellFormed (transactionCheckedSource "" false) = true := by
-  decide +kernel
-theorem renamed_long_checked_source_is_admitted : checkedWellFormed (transactionCheckedSource "Renamed_" true) = true := by
-  decide +kernel
-theorem short_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
-  decide +kernel
-theorem renamed_long_lowered_program_matches_complete_grammar : transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true := by
-  decide +kernel
-theorem eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (transactionCheckedSource "" false) "Withdraw") = false := by
-  decide +kernel
-theorem renamed_eligible_subject_on_cancel_branch_is_rejected : checkedWellFormed (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw") = false := by
-  decide +kernel
-theorem lowered_misplaced_subject_is_rejected : transactionCancellationProgramGraph
-    (lowerCheckedProcess (misplaced (transactionCheckedSource "" false) "Withdraw")) = false := by
-  decide +kernel
-theorem renamed_lowered_misplaced_subject_is_rejected : transactionCancellationProgramGraph
-    (lowerCheckedProcess (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw")) = false := by
-  decide +kernel
+def short_checked_source_is_admitted : Bool := decide <| checkedWellFormed (transactionCheckedSource "" false) = true
+def renamed_long_checked_source_is_admitted : Bool := decide <| checkedWellFormed (transactionCheckedSource "Renamed_" true) = true
+def short_lowered_program_matches_complete_grammar : Bool := decide <| transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "" false)) = true
+def renamed_long_lowered_program_matches_complete_grammar : Bool := decide <| transactionCancellationProgramGraph (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true
+def eligible_subject_on_cancel_branch_is_rejected : Bool := decide <| checkedWellFormed (misplaced (transactionCheckedSource "" false) "Withdraw") = false
+def renamed_eligible_subject_on_cancel_branch_is_rejected : Bool := decide <| checkedWellFormed (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw") = false
+def lowered_misplaced_subject_is_rejected : Bool := decide <| transactionCancellationProgramGraph
+    (lowerCheckedProcess (misplaced (transactionCheckedSource "" false) "Withdraw")) = false
+def renamed_lowered_misplaced_subject_is_rejected : Bool := decide <| transactionCancellationProgramGraph
+    (lowerCheckedProcess (misplaced (transactionCheckedSource "Renamed_" true) "Renamed_Withdraw")) = false
 theorem short_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
   decide +kernel
-theorem renamed_long_lowered_program_is_well_formed : programWellFormed (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true := by
-  decide +kernel
+def renamed_long_lowered_program_is_well_formed : Bool := decide <| programWellFormed (lowerCheckedProcess (transactionCheckedSource "Renamed_" true)) = true
 theorem short_lowered_program_is_profile_admitted : programProfileCapabilitiesValid (lowerCheckedProcess (transactionCheckedSource "" false)) = true := by
   decide +kernel
-theorem transaction_lowering_omits_snapshots : (lowerCheckedProcess (transactionCheckedSource "" false)).compensationEventSubProcessSnapshots = none := by
-  decide +kernel
-theorem transaction_start_rejects_process_data : variableValueAdmitted transactionCancellationCheckpointProfileId .processStart (.string "data") = false := by
-  decide +kernel
-theorem transaction_task_completion_rejects_process_data : variableValueAdmitted transactionCancellationCheckpointProfileId .userTaskCompletion (.string "data") = false := by
-  decide +kernel
+def transaction_lowering_omits_snapshots : Bool := decide <| (lowerCheckedProcess (transactionCheckedSource "" false)).compensationEventSubProcessSnapshots = none
+def transaction_start_rejects_process_data : Bool := decide <| variableValueAdmitted transactionCancellationCheckpointProfileId .processStart (.string "data") = false
+def transaction_task_completion_rejects_process_data : Bool := decide <| variableValueAdmitted transactionCancellationCheckpointProfileId .userTaskCompletion (.string "data") = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("short_checked_source_is_admitted", short_checked_source_is_admitted),
+  ("renamed_long_checked_source_is_admitted", renamed_long_checked_source_is_admitted),
+  ("short_lowered_program_matches_complete_grammar", short_lowered_program_matches_complete_grammar),
+  ("renamed_long_lowered_program_matches_complete_grammar", renamed_long_lowered_program_matches_complete_grammar),
+  ("eligible_subject_on_cancel_branch_is_rejected", eligible_subject_on_cancel_branch_is_rejected),
+  ("renamed_eligible_subject_on_cancel_branch_is_rejected", renamed_eligible_subject_on_cancel_branch_is_rejected),
+  ("lowered_misplaced_subject_is_rejected", lowered_misplaced_subject_is_rejected),
+  ("renamed_lowered_misplaced_subject_is_rejected", renamed_lowered_misplaced_subject_is_rejected),
+  ("renamed_long_lowered_program_is_well_formed", renamed_long_lowered_program_is_well_formed),
+  ("transaction_lowering_omits_snapshots", transaction_lowering_omits_snapshots),
+  ("transaction_start_rejects_process_data", transaction_start_rejects_process_data),
+  ("transaction_task_completion_rejects_process_data", transaction_task_completion_rejects_process_data)
+]
 
 end BpmnSemantics.TransactionSourceConformance

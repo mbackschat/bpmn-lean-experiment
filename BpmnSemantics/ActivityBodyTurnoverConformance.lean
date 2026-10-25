@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.ActivityBoundaryTimerConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity body turnover fixtures
 
@@ -47,13 +43,12 @@ def turnedOver? : Option RuntimeState :=
   | some record => replaceActivityBodyTask armedState record
   | none => none
 
-theorem armed_state_carries_the_ordinal_coincidence :
+def armed_state_carries_the_ordinal_coincidence : Bool := decide <|
     (armedState.waits.map (·.activation), armedState.timerWaits.map (·.activation),
-      armedState.activityOccurrences.map (·.activation)) = ([1], [1], [1]) := by
-  decide +kernel
+      armedState.activityOccurrences.map (·.activation)) = ([1], [1], [1])
 
 /-- Replacement is defined on the armed state, so every fact below is about a real result. -/
-theorem turnover_is_defined : turnedOver?.isSome = true := by decide +kernel
+def turnover_is_defined : Bool := decide <| turnedOver?.isSome = true
 
 /-- `AOO-TURNOVER-02` and `AOO-TURNOVER-04` as content rather than as definition.
 
@@ -61,15 +56,21 @@ The body advances and the handler does not. An operation that returned its argum
 answer `([1], [1], [1])` here, so this is the fact both quantified laws cannot supply. Each
 singleton also pins its family's cardinality, because `List.map` preserves length: exactly one body
 wait stays live, the outgoing one having been withdrawn in the same step. -/
-theorem turnover_diverges_the_body_from_its_handler :
+def turnover_diverges_the_body_from_its_handler : Bool := decide <|
     turnedOver?.map (fun state =>
       (state.waits.map (·.activation), state.timerWaits.map (·.activation),
-        state.activityOccurrences.map (·.activation))) = some ([2], [1], [1]) := by
-  decide +kernel
+        state.activityOccurrences.map (·.activation))) = some ([2], [1], [1])
 
 /-- The post-state is admitted, which the quantified law asserts only under hypotheses. -/
-theorem turnover_reaches_a_well_formed_state :
-    turnedOver?.map (runtimeStateWellFormed program instanceId) = some true := by
-  decide +kernel
+def turnover_reaches_a_well_formed_state : Bool := decide <|
+    turnedOver?.map (runtimeStateWellFormed program instanceId) = some true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("armed_state_carries_the_ordinal_coincidence", armed_state_carries_the_ordinal_coincidence),
+  ("turnover_is_defined", turnover_is_defined),
+  ("turnover_diverges_the_body_from_its_handler", turnover_diverges_the_body_from_its_handler),
+  ("turnover_reaches_a_well_formed_state", turnover_reaches_a_well_formed_state)
+]
 
 end BpmnSemantics.ActivityBodyTurnoverConformance

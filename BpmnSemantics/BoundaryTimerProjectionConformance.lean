@@ -91,12 +91,16 @@ def attachedTaskPublication (before : RuntimeState) (taskActivation timerActivat
       admission.state.timerWaits.isEmpty &&
       decide (flowNodeOccurrenceDeltaForStimulus? program before admission.state stimulus 0 = some expected)
 
-theorem replaced_task_deadline_publication_exact :
-    ActivityBodyTurnoverConformance.turnedOver?.map (attachedTaskPublication · 2 1) = some true := by
-  decide +kernel
+def replaced_task_deadline_publication_exact : Bool := decide <|
+    ActivityBodyTurnoverConformance.turnedOver?.map (attachedTaskPublication · 2 1) = some true
 
-theorem advanced_deadline_task_publication_exact : attachedTaskPublication
-    (divergentTimerState ActivityBoundaryTimerConformance.armedState) 1 2 = true := by
-  decide +kernel
+def advanced_deadline_task_publication_exact : Bool := decide <| attachedTaskPublication
+    (divergentTimerState ActivityBoundaryTimerConformance.armedState) 1 2 = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("replaced_task_deadline_publication_exact", replaced_task_deadline_publication_exact),
+  ("advanced_deadline_task_publication_exact", advanced_deadline_task_publication_exact)
+]
 
 end BpmnSemantics.BoundaryTimerProjectionConformance

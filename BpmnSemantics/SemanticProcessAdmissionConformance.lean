@@ -33,37 +33,35 @@ def danglingCheckedGraph : CheckedProcess :=
          sourceId := ⟨"Missing_Source"⟩
          targetId := ⟨"Missing_Target"⟩ }] }
 
-theorem sequential_checked_process_is_well_formed :
-    checkedWellFormed sequentialCheckedProcess = true := by decide +kernel
+def sequential_checked_process_is_well_formed : Bool := decide <|
+    checkedWellFormed sequentialCheckedProcess = true
 
-theorem parallel_checked_process_is_well_formed :
-    checkedWellFormed parallelCheckedProcess = true := by decide +kernel
+def parallel_checked_process_is_well_formed : Bool := decide <|
+    checkedWellFormed parallelCheckedProcess = true
 
-theorem timer_user_task_checked_process_is_well_formed :
-    checkedWellFormed timerUserTaskCompositionCheckedProcess = true := by
-  decide +kernel
+def timer_user_task_checked_process_is_well_formed : Bool := decide <|
+    checkedWellFormed timerUserTaskCompositionCheckedProcess = true
 
-theorem reverse_timer_user_task_checked_process_is_well_formed :
-    checkedWellFormed reverseTimerUserTaskCompositionCheckedProcess = true := by
-  decide +kernel
+def reverse_timer_user_task_checked_process_is_well_formed : Bool := decide <|
+    checkedWellFormed reverseTimerUserTaskCompositionCheckedProcess = true
 
-theorem empty_checked_graph_is_rejected :
-    checkedWellFormed emptyCheckedGraph = false := by decide +kernel
+def empty_checked_graph_is_rejected : Bool := decide <|
+    checkedWellFormed emptyCheckedGraph = false
 
-theorem flowless_checked_graph_is_rejected :
-    checkedWellFormed flowlessCheckedGraph = false := by decide +kernel
+def flowless_checked_graph_is_rejected : Bool := decide <|
+    checkedWellFormed flowlessCheckedGraph = false
 
-theorem dangling_checked_graph_is_rejected :
-    checkedWellFormed danglingCheckedGraph = false := by decide +kernel
+def dangling_checked_graph_is_rejected : Bool := decide <|
+    checkedWellFormed danglingCheckedGraph = false
 
-theorem sequential_program_is_well_formed :
-    programWellFormed sequentialProgram = true := by decide +kernel
+def sequential_program_is_well_formed : Bool := decide <|
+    programWellFormed sequentialProgram = true
 
-theorem parallel_program_is_well_formed :
-    programWellFormed parallelProgram = true := by decide +kernel
+def parallel_program_is_well_formed : Bool := decide <|
+    programWellFormed parallelProgram = true
 
-theorem timer_user_task_program_is_well_formed :
-    programWellFormed timerUserTaskCompositionProgram = true := by decide +kernel
+def timer_user_task_program_is_well_formed : Bool := decide <|
+    programWellFormed timerUserTaskCompositionProgram = true
 
 def sharedIdentityUserTask : SemanticOperation :=
   .awaitUserTask ⟨"operation:Shared_User"⟩ { elementId := ⟨"Shared_Wait"⟩ }
@@ -76,31 +74,26 @@ def sharedIdentityTimer : SemanticOperation :=
     { elementId := ⟨"Shared_Wait"⟩, durationMs := 1000 }
 
 /-- Family tagging admits the same element text across distinct runtime wait families. -/
-theorem cross_family_wait_identifier_reuse_is_admitted :
-    programWaitDeclarersUnique [sharedIdentityUserTask, sharedIdentityTimer] = true := by
-  decide +kernel
+def cross_family_wait_identifier_reuse_is_admitted : Bool := decide <|
+    programWaitDeclarersUnique [sharedIdentityUserTask, sharedIdentityTimer] = true
 
-theorem timer_user_task_profile_capabilities_are_valid :
-    programProfileCapabilitiesValid timerUserTaskCompositionProgram = true := by
-  decide +kernel
+def timer_user_task_profile_capabilities_are_valid : Bool := decide <|
+    programProfileCapabilitiesValid timerUserTaskCompositionProgram = true
 
-theorem timer_user_task_profile_mismatch_is_rejected :
+def timer_user_task_profile_mismatch_is_rejected : Bool := decide <|
     programProfileCapabilitiesValid
       { timerUserTaskCompositionProgram with
         identity :=
           { timerUserTaskCompositionProgram.identity with
             semanticProfile :=
               ⟨"cibseven-2.2.0-intermediate-catch-timer-draft"⟩ } } =
-      false := by
-  decide +kernel
+      false
 
-theorem sequential_definition_binding_is_valid :
-    definitionBindingValid sequentialCheckedProcess sequentialProgram = true := by
-  decide +kernel
+def sequential_definition_binding_is_valid : Bool := decide <|
+    definitionBindingValid sequentialCheckedProcess sequentialProgram = true
 
-theorem parallel_definition_binding_is_valid :
-    definitionBindingValid parallelCheckedProcess parallelProgram = true := by
-  decide +kernel
+def parallel_definition_binding_is_valid : Bool := decide <|
+    definitionBindingValid parallelCheckedProcess parallelProgram = true
 
 theorem sequential_lowering_is_exact :
     lowerCheckedProcess sequentialCheckedProcess = sequentialProgram := by
@@ -114,5 +107,24 @@ theorem timer_user_task_lowering_is_exact :
     lowerCheckedProcess timerUserTaskCompositionCheckedProcess =
       timerUserTaskCompositionProgram := by
   decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def semanticProcessAdmissionConformanceChecks : List (String × Bool) := [
+  ("sequential_checked_process_is_well_formed", sequential_checked_process_is_well_formed),
+  ("parallel_checked_process_is_well_formed", parallel_checked_process_is_well_formed),
+  ("timer_user_task_checked_process_is_well_formed", timer_user_task_checked_process_is_well_formed),
+  ("reverse_timer_user_task_checked_process_is_well_formed", reverse_timer_user_task_checked_process_is_well_formed),
+  ("empty_checked_graph_is_rejected", empty_checked_graph_is_rejected),
+  ("flowless_checked_graph_is_rejected", flowless_checked_graph_is_rejected),
+  ("dangling_checked_graph_is_rejected", dangling_checked_graph_is_rejected),
+  ("sequential_program_is_well_formed", sequential_program_is_well_formed),
+  ("parallel_program_is_well_formed", parallel_program_is_well_formed),
+  ("timer_user_task_program_is_well_formed", timer_user_task_program_is_well_formed),
+  ("cross_family_wait_identifier_reuse_is_admitted", cross_family_wait_identifier_reuse_is_admitted),
+  ("timer_user_task_profile_capabilities_are_valid", timer_user_task_profile_capabilities_are_valid),
+  ("timer_user_task_profile_mismatch_is_rejected", timer_user_task_profile_mismatch_is_rejected),
+  ("sequential_definition_binding_is_valid", sequential_definition_binding_is_valid),
+  ("parallel_definition_binding_is_valid", parallel_definition_binding_is_valid)
+]
 
 end BpmnSemantics.SemanticProcessConformance

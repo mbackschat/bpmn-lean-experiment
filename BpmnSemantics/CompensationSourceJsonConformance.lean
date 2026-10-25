@@ -8,64 +8,68 @@ decoder obligation while preventing one conjunction from retaining all decoded f
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 
-theorem strict_decoder_accepts_the_exact_declaration :
-    compensationAcceptedAs compensationJson checkedCompensation = true := by
-  decide +kernel
+def strict_decoder_accepts_the_exact_declaration : Bool := decide <|
+    compensationAcceptedAs compensationJson checkedCompensation = true
 
-theorem strict_checked_decoder_accepts_the_exact_artifact :
-    checkedAccepted checkedJsonWithCompensation = true := by
-  decide +kernel
+def strict_checked_decoder_accepts_the_exact_artifact : Bool := decide <|
+    checkedAccepted checkedJsonWithCompensation = true
 
-theorem strict_checked_decoder_preserves_old_omission :
-    checkedAccepted oldCheckedJson = true := by
-  decide +kernel
+def strict_checked_decoder_preserves_old_omission : Bool := decide <|
+    checkedAccepted oldCheckedJson = true
 
-theorem strict_decoder_rejects_null_declaration :
-    compensationRejected .null = true := by
-  decide +kernel
+def strict_decoder_rejects_null_declaration : Bool := decide <|
+    compensationRejected .null = true
 
-theorem strict_checked_decoder_rejects_present_null :
-    checkedAccepted (checkedJsonWithCompensation .null) = false := by
-  decide +kernel
+def strict_checked_decoder_rejects_present_null : Bool := decide <|
+    checkedAccepted (checkedJsonWithCompensation .null) = false
 
-theorem strict_decoder_rejects_an_extra_key :
-    compensationRejected (compensationJson (includeExtra := true)) = true := by
-  decide +kernel
+def strict_decoder_rejects_an_extra_key : Bool := decide <|
+    compensationRejected (compensationJson (includeExtra := true)) = true
 
-theorem strict_decoder_rejects_handler_body_discriminator_drift :
-    compensationRejected (compensationJson (bodyKind := "otherEffect")) = true := by
-  decide +kernel
+def strict_decoder_rejects_handler_body_discriminator_drift : Bool := decide <|
+    compensationRejected (compensationJson (bodyKind := "otherEffect")) = true
 
-theorem strict_decoder_rejects_dependency_discriminator_drift :
-    compensationRejected (compensationJson (dependencyReason := "association")) = true := by
-  decide +kernel
+def strict_decoder_rejects_dependency_discriminator_drift : Bool := decide <|
+    compensationRejected (compensationJson (dependencyReason := "association")) = true
 
-theorem strict_decoder_rejects_retention_record_limit_drift :
-    compensationRejected (compensationJson (retentionRecords := 3)) = true := by
-  decide +kernel
+def strict_decoder_rejects_retention_record_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (retentionRecords := 3)) = true
 
-theorem strict_decoder_rejects_retention_byte_limit_drift :
-    compensationRejected (compensationJson (retentionBytes := 4097)) = true := by
-  decide +kernel
+def strict_decoder_rejects_retention_byte_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (retentionBytes := 4097)) = true
 
-theorem strict_decoder_rejects_snapshot_record_limit_drift :
-    compensationRejected (compensationJson (snapshotRecords := 2)) = true := by
-  decide +kernel
+def strict_decoder_rejects_snapshot_record_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (snapshotRecords := 2)) = true
 
-theorem strict_decoder_rejects_snapshot_byte_limit_drift :
-    compensationRejected (compensationJson (snapshotBytes := 8193)) = true := by
-  decide +kernel
+def strict_decoder_rejects_snapshot_byte_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (snapshotBytes := 8193)) = true
 
-theorem strict_decoder_rejects_execution_trigger_limit_drift :
-    compensationRejected (compensationJson (executionTriggers := 2)) = true := by
-  decide +kernel
+def strict_decoder_rejects_execution_trigger_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (executionTriggers := 2)) = true
 
-theorem strict_decoder_rejects_execution_handler_limit_drift :
-    compensationRejected (compensationJson (executionHandlers := 4)) = true := by
-  decide +kernel
+def strict_decoder_rejects_execution_handler_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (executionHandlers := 4)) = true
 
-theorem strict_decoder_rejects_execution_byte_limit_drift :
-    compensationRejected (compensationJson (executionBytes := 20481)) = true := by
-  decide +kernel
+def strict_decoder_rejects_execution_byte_limit_drift : Bool := decide <|
+    compensationRejected (compensationJson (executionBytes := 20481)) = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationSourceJsonConformanceChecks : List (String × Bool) := [
+  ("strict_decoder_accepts_the_exact_declaration", strict_decoder_accepts_the_exact_declaration),
+  ("strict_checked_decoder_accepts_the_exact_artifact", strict_checked_decoder_accepts_the_exact_artifact),
+  ("strict_checked_decoder_preserves_old_omission", strict_checked_decoder_preserves_old_omission),
+  ("strict_decoder_rejects_null_declaration", strict_decoder_rejects_null_declaration),
+  ("strict_checked_decoder_rejects_present_null", strict_checked_decoder_rejects_present_null),
+  ("strict_decoder_rejects_an_extra_key", strict_decoder_rejects_an_extra_key),
+  ("strict_decoder_rejects_handler_body_discriminator_drift", strict_decoder_rejects_handler_body_discriminator_drift),
+  ("strict_decoder_rejects_dependency_discriminator_drift", strict_decoder_rejects_dependency_discriminator_drift),
+  ("strict_decoder_rejects_retention_record_limit_drift", strict_decoder_rejects_retention_record_limit_drift),
+  ("strict_decoder_rejects_retention_byte_limit_drift", strict_decoder_rejects_retention_byte_limit_drift),
+  ("strict_decoder_rejects_snapshot_record_limit_drift", strict_decoder_rejects_snapshot_record_limit_drift),
+  ("strict_decoder_rejects_snapshot_byte_limit_drift", strict_decoder_rejects_snapshot_byte_limit_drift),
+  ("strict_decoder_rejects_execution_trigger_limit_drift", strict_decoder_rejects_execution_trigger_limit_drift),
+  ("strict_decoder_rejects_execution_handler_limit_drift", strict_decoder_rejects_execution_handler_limit_drift),
+  ("strict_decoder_rejects_execution_byte_limit_drift", strict_decoder_rejects_execution_byte_limit_drift)
+]
 
 end BpmnSemantics.CompensationSourceLoweringConformance

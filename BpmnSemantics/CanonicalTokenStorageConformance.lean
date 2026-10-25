@@ -2,10 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.Fixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Canonical token storage conformance
 
@@ -28,35 +24,30 @@ def placeB : ControlPlaceId := ⟨"place:B"⟩
 def tokenA : ControlToken := { placeId := placeA, owner }
 def tokenB : ControlToken := { placeId := placeB, owner }
 
-theorem distinct_places_have_one_exact_storage_order :
+def distinct_places_have_one_exact_storage_order : Bool := decide <|
     addToken (addToken [] placeA owner) placeB owner = [tokenA, tokenB] ∧
-      addToken (addToken [] placeB owner) placeA owner = [tokenA, tokenB] := by
-  decide +kernel
+      addToken (addToken [] placeB owner) placeA owner = [tokenA, tokenB]
 
 def laterOwner : ScopeOccurrenceId := { owner with activation := 10 }
 def laterToken : ControlToken := { placeId := placeA, owner := laterOwner }
 
-theorem same_place_uses_complete_numeric_owner_order :
+def same_place_uses_complete_numeric_owner_order : Bool := decide <|
     addToken (addToken [] placeA owner) placeA laterOwner = [tokenA, laterToken] ∧
-      addToken (addToken [] placeA laterOwner) placeA owner = [tokenA, laterToken] := by
-  decide +kernel
+      addToken (addToken [] placeA laterOwner) placeA owner = [tokenA, laterToken]
 
-theorem equal_token_units_retain_multiplicity :
+def equal_token_units_retain_multiplicity : Bool := decide <|
     addToken (addToken [] placeA owner) placeA owner = [tokenA, tokenA] ∧
-      removeToken [tokenA, tokenA] placeA owner = [tokenA] := by
-  decide +kernel
+      removeToken [tokenA, tokenA] placeA owner = [tokenA]
 
-theorem foreign_owner_selection_remains_place_wide :
+def foreign_owner_selection_remains_place_wide : Bool := decide <|
     onlyTokenOwner? { initialState with tokens := [tokenA, laterToken] } placeA = none ∧
-      onlyTokenOwner? { initialState with tokens := [tokenA, tokenB] } placeA = some owner := by
-  decide +kernel
+      onlyTokenOwner? { initialState with tokens := [tokenA, tokenB] } placeA = some owner
 
-theorem aggregate_order_distinguishes_reversed_places_and_owners :
+def aggregate_order_distinguishes_reversed_places_and_owners : Bool := decide <|
     canonicalCollectionOrder { initialState with tokens := [tokenA, tokenB] } = true ∧
       canonicalCollectionOrder { initialState with tokens := [tokenB, tokenA] } = false ∧
       canonicalCollectionOrder { initialState with tokens := [tokenA, laterToken] } = true ∧
-      canonicalCollectionOrder { initialState with tokens := [laterToken, tokenA] } = false := by
-  decide +kernel
+      canonicalCollectionOrder { initialState with tokens := [laterToken, tokenA] } = false
 
 def rawOrderedPairs : List (ControlToken × ControlToken) :=
   [ ( { tokenA with owner := { owner with processInstanceId := ⟨"Z"⟩ } }
@@ -72,23 +63,21 @@ def rawOrderedPairs : List (ControlToken × ControlToken) :=
   , ( { tokenA with owner := { owner with definitionScopeId := ⟨"\uE000"⟩ } }
     , { tokenA with owner := { owner with definitionScopeId := ⟨"𐀀"⟩ } } ) ]
 
-theorem complete_key_coordinates_have_exact_scalar_order :
+def complete_key_coordinates_have_exact_scalar_order : Bool := decide <|
     rawOrderedPairs.all (fun (first, second) =>
       decide (addToken (addToken [] first.placeId first.owner) second.placeId second.owner =
         [first, second]) &&
       decide (addToken (addToken [] second.placeId second.owner) first.placeId first.owner =
         [first, second]) &&
       decide (removeToken [first, second] first.placeId first.owner = [second]) &&
-      decide (removeToken [first, second] second.placeId second.owner = [first])) = true := by
-  decide +kernel
+      decide (removeToken [first, second] second.placeId second.owner = [first])) = true
 
 def placeC : ControlPlaceId := ⟨"place:C"⟩
 def tokenC : ControlToken := { placeId := placeC, owner }
 
-theorem unordered_predecessor_separates_mixed_update_orders :
+def unordered_predecessor_separates_mixed_update_orders : Bool := decide <|
     removeToken (addToken [tokenC, tokenA] placeB owner) placeC owner = [tokenB, tokenA] ∧
-      addToken (removeToken [tokenC, tokenA] placeC owner) placeB owner = [tokenA, tokenB] := by
-  decide +kernel
+      addToken (removeToken [tokenC, tokenA] placeC owner) placeB owner = [tokenA, tokenB]
 
 def positionOperations : List SemanticOperation :=
   [ .reachNoneEnd ⟨"operation:End"⟩ { elementId := ⟨"End"⟩ } placeB
@@ -125,13 +114,12 @@ def positionState : RuntimeState :=
     scopeOccurrences := [{ id := owner, parent := none }]
     tokens := [tokenA, tokenB] }
 
-theorem position_valid_reversed_places_fail_aggregate_order :
+def position_valid_reversed_places_fail_aggregate_order : Bool := decide <|
     runtimeStateWellFormed positionProgram owner.processInstanceId positionState = true ∧
       runtimePositionValid positionProgram owner.processInstanceId
         { positionState with tokens := [tokenB, tokenA] } = true ∧
       runtimeStateWellFormed positionProgram owner.processInstanceId
-        { positionState with tokens := [tokenB, tokenA] } = false := by
-  decide +kernel
+        { positionState with tokens := [tokenB, tokenA] } = false
 
 def childOwner : ScopeOccurrenceId := { owner with definitionScopeId := ⟨"scope:Child"⟩ }
 def childLater : ScopeOccurrenceId := { childOwner with activation := 10 }
@@ -167,13 +155,12 @@ def childState : RuntimeState :=
       [{ id := childOwner, parent := some owner }, { id := childLater, parent := some owner }]
     tokens := [childToken, childLaterToken] }
 
-theorem position_valid_reversed_owners_fail_aggregate_order :
+def position_valid_reversed_owners_fail_aggregate_order : Bool := decide <|
     runtimeStateWellFormed childProgram owner.processInstanceId childState = true ∧
       runtimePositionValid childProgram owner.processInstanceId
         { childState with tokens := [childLaterToken, childToken] } = true ∧
       runtimeStateWellFormed childProgram owner.processInstanceId
-        { childState with tokens := [childLaterToken, childToken] } = false := by
-  decide +kernel
+        { childState with tokens := [childLaterToken, childToken] } = false
 
 def executionToken (place : String) : ControlToken :=
   rootToken parallelInstanceId parallelProgram.processId ⟨place⟩
@@ -181,7 +168,7 @@ def executionToken (place : String) : ControlToken :=
 def executedJoin : RuntimeState :=
   (step parallelProgram parallelAfterAThenB parallelJoinOperation).getD initialState
 
-theorem actual_parallel_prefixes_preserve_exact_canonical_tokens :
+def actual_parallel_prefixes_preserve_exact_canonical_tokens : Bool := decide <|
     step parallelProgram parallelStartState parallelStartOperation = some parallelAfterStart ∧
       step parallelProgram parallelAfterStart parallelForkOperation = some parallelAfterFork ∧
       parallelAfterFork.tokens =
@@ -195,7 +182,20 @@ theorem actual_parallel_prefixes_preserve_exact_canonical_tokens :
       [parallelStartState, parallelAfterStart, parallelAfterFork, parallelWaitingState,
         parallelAfterCompletingA, parallelAfterCompletingB, parallelAfterAThenB,
         parallelAfterBThenA, executedJoin].all
-          (runtimeStateWellFormed parallelProgram parallelInstanceId) = true := by
-  decide +kernel
+          (runtimeStateWellFormed parallelProgram parallelInstanceId) = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("distinct_places_have_one_exact_storage_order", distinct_places_have_one_exact_storage_order),
+  ("same_place_uses_complete_numeric_owner_order", same_place_uses_complete_numeric_owner_order),
+  ("equal_token_units_retain_multiplicity", equal_token_units_retain_multiplicity),
+  ("foreign_owner_selection_remains_place_wide", foreign_owner_selection_remains_place_wide),
+  ("aggregate_order_distinguishes_reversed_places_and_owners", aggregate_order_distinguishes_reversed_places_and_owners),
+  ("complete_key_coordinates_have_exact_scalar_order", complete_key_coordinates_have_exact_scalar_order),
+  ("unordered_predecessor_separates_mixed_update_orders", unordered_predecessor_separates_mixed_update_orders),
+  ("position_valid_reversed_places_fail_aggregate_order", position_valid_reversed_places_fail_aggregate_order),
+  ("position_valid_reversed_owners_fail_aggregate_order", position_valid_reversed_owners_fail_aggregate_order),
+  ("actual_parallel_prefixes_preserve_exact_canonical_tokens", actual_parallel_prefixes_preserve_exact_canonical_tokens)
+]
 
 end BpmnSemantics.CanonicalTokenStorageConformance

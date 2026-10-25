@@ -88,27 +88,25 @@ def atReview : RuntimeState := (start handoff [{ name := "OrderDraft", value := 
 def atArchive : RuntimeState :=
   (complete atReview "Review" [{ name := "ReviewOutput", value := revision }]).state
 
-theorem handoff_shapes_admitted_independent_of_names_and_order :
+def handoff_shapes_admitted_independent_of_names_and_order : Bool := decide <|
     programProfileCapabilitiesValid handoff = true ∧
       programProfileCapabilitiesValid renamed = true ∧
       portableHandoffProgramInput? handoff = some "OrderDraft" ∧
       portableHandoffProgramInput? renamed = some "Draft" ∧
       locals (start renamed [{ name := "Draft", value := order }]).state =
-        [[{ name := "CheckInput", value := order }]] := by
-  decide +kernel
+        [[{ name := "CheckInput", value := order }]]
 
 /-- A second task that rereads the Start Property instead of the first task's output, or a shared
 input and output Property, is not a handoff. -/
-theorem broken_property_chains_refused :
+def broken_property_chains_refused : Bool := decide <|
     programProfileCapabilitiesValid (program portableHandoffProfileId
       (dataTask "Review" "a" "b" "OrderDraft" "ReviewedOrder" ::
         dataTask "Archive" "b" "c" "OrderDraft" "ArchivedOrder" :: boundary)) = false ∧
     programProfileCapabilitiesValid (program portableHandoffProfileId
       (dataTask "Review" "a" "b" "OrderDraft" "ReviewedOrder" ::
-        dataTask "Archive" "b" "c" "ReviewedOrder" "OrderDraft" :: boundary)) = false := by
-  decide +kernel
+        dataTask "Archive" "b" "c" "ReviewedOrder" "OrderDraft" :: boundary)) = false
 
-theorem start_admits_only_one_singleton_item_for_the_start_property :
+def start_admits_only_one_singleton_item_for_the_start_property : Bool := decide <|
     (start handoff [{ name := "OrderDraft", value := order }]).outcome = .committed ∧
       (start handoff [{ name := "OrderDraft", value := .null }]).outcome = .committed ∧
       (start handoff [{ name := "OrderDraft", value := .list [orderItem "A"] }]).outcome = .rejected ∧
@@ -119,8 +117,7 @@ theorem start_admits_only_one_singleton_item_for_the_start_property :
       (start handoff []).outcome = .rejected ∧
       (start handoff [{ name := "Other", value := order }]).outcome = .rejected ∧
       (start handoff [{ name := "Extra", value := .null }, { name := "OrderDraft", value := order }]).outcome =
-        .rejected := by
-  decide +kernel
+        .rejected
 
 def structuredHandoff : Program :=
   { handoff with identity := { handoff.identity with
@@ -128,15 +125,14 @@ def structuredHandoff : Program :=
 
 /-- PBV-INGRESS-01: the same Program under the structured-composition profile still starts with a
 String but refuses the order. -/
-theorem old_profile_refuses_the_order :
+def old_profile_refuses_the_order : Bool := decide <|
     (start structuredHandoff [{ name := "OrderDraft", value := .string "order-1" }]).outcome =
         .committed ∧
-      (start structuredHandoff [{ name := "OrderDraft", value := order }]).outcome = .rejected := by
-  decide +kernel
+      (start structuredHandoff [{ name := "OrderDraft", value := order }]).outcome = .rejected
 
 /-- PBV-TREE-01 and PBV-AMOUNT-01 through both tasks: each task receives the exact value the
 previous step committed, and the Start Property keeps the original order. -/
-theorem order_and_revision_flow_through_both_tasks :
+def order_and_revision_flow_through_both_tasks : Bool := decide <|
     locals atReview = [[{ name := "ReviewInput", value := order }]] ∧
       locals atArchive = [[{ name := "ArchiveInput", value := revision }]] ∧
       value? atArchive.variables.process.bindings "ReviewedOrder" = some revision ∧
@@ -144,16 +140,24 @@ theorem order_and_revision_flow_through_both_tasks :
       (complete atArchive "Archive" [{ name := "ArchiveOutput", value := .null }]).outcome = .committed ∧
       value? (complete atArchive "Archive" [{ name := "ArchiveOutput", value := .null }]).state.variables.process.bindings
         "ArchivedOrder" = some .null ∧
-      locals (complete atArchive "Archive" [{ name := "ArchiveOutput", value := .null }]).state = [] := by
-  decide +kernel
+      locals (complete atArchive "Archive" [{ name := "ArchiveOutput", value := .null }]).state = []
 
-theorem invalid_completions_preserve_the_review_state :
+def invalid_completions_preserve_the_review_state : Bool := decide <|
     [ [{ name := "ReviewOutput", value := .list [orderItem "A"] }]
     , [{ name := "ReviewOutput", value := revision }, { name := "Zextra", value := .null }]
     , [{ name := "ReviewedOrder", value := revision }]
     , [] ].all (fun bindings =>
       (complete atReview "Review" bindings).outcome == .rejected &&
-        (complete atReview "Review" bindings).state == atReview) = true := by
-  decide +kernel
+        (complete atReview "Review" bindings).state == atReview) = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("handoff_shapes_admitted_independent_of_names_and_order", handoff_shapes_admitted_independent_of_names_and_order),
+  ("broken_property_chains_refused", broken_property_chains_refused),
+  ("start_admits_only_one_singleton_item_for_the_start_property", start_admits_only_one_singleton_item_for_the_start_property),
+  ("old_profile_refuses_the_order", old_profile_refuses_the_order),
+  ("order_and_revision_flow_through_both_tasks", order_and_revision_flow_through_both_tasks),
+  ("invalid_completions_preserve_the_review_state", invalid_completions_preserve_the_review_state)
+]
 
 end BpmnSemantics.PortableHandoffConformance

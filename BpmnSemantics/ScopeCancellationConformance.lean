@@ -65,36 +65,36 @@ def state : RuntimeState :=
            { owner := .effectOccurrence ⟨⟨"Instance"⟩, ⟨"Child"⟩, 1⟩, bindings := [] }]
         processInterfaces := [], scopes := [] } }
 
-theorem removal_withdraws_exact_activity_local_data :
+def removal_withdraws_exact_activity_local_data : Bool := decide <|
     (cancelScopeSubtree state child .remove).variables.activities =
-      state.variables.activities.tail := by decide +kernel
+      state.variables.activities.tail
 
-theorem retained_child_preserves_parent_activity_local_data :
+def retained_child_preserves_parent_activity_local_data : Bool := decide <|
     (cancelScopeSubtree state child .retain).variables.activities =
-      state.variables.activities := by decide +kernel
+      state.variables.activities
 
-theorem removal_withdraws_exact_parent_owned_message :
+def removal_withdraws_exact_parent_owned_message : Bool := decide <|
     (cancelScopeSubtree state child .remove).messageWaits =
-      [otherActivationMessage] := by decide +kernel
+      [otherActivationMessage]
 
-theorem retained_child_preserves_parent_owned_message :
+def retained_child_preserves_parent_owned_message : Bool := decide <|
     (cancelScopeSubtree state child .retain).messageWaits =
-      state.messageWaits := by decide +kernel
+      state.messageWaits
 
-theorem message_attachment_does_not_withdraw_same_coordinates_timer :
+def message_attachment_does_not_withdraw_same_coordinates_timer : Bool := decide <|
     (cancelScopeSubtree state child .remove).timerWaits =
-      [sameCoordinatesTimer] := by decide +kernel
+      [sameCoordinatesTimer]
 
-theorem activity_record_lifetime_follows_child_body_disposition :
+def activity_record_lifetime_follows_child_body_disposition : Bool := decide <|
     (cancelScopeSubtree state child .remove).activityOccurrences = [] ∧
       (cancelScopeSubtree state child .retain).activityOccurrences =
-        state.activityOccurrences := by decide +kernel
+        state.activityOccurrences
 
-theorem disposition_selects_the_region_occurrence_lifetime :
+def disposition_selects_the_region_occurrence_lifetime : Bool := decide <|
     (cancelScopeSubtree state child .remove).scopeOccurrences =
         [{ id := root, parent := none }] ∧
       (cancelScopeSubtree state child .retain).scopeOccurrences =
-        state.scopeOccurrences := by decide +kernel
+        state.scopeOccurrences
 
 def grandchild : ScopeOccurrenceId := ⟨⟨"Instance"⟩, ⟨"scope:grandchild"⟩, 1⟩
 
@@ -104,7 +104,7 @@ def descendantBodyState : RuntimeState :=
     activityOccurrences := state.activityOccurrences.map fun occurrence =>
       { occurrence with body := .childScope grandchild } }
 
-theorem retained_region_withdraws_removed_descendant_body_and_exact_attachments :
+def retained_region_withdraws_removed_descendant_body_and_exact_attachments : Bool := decide <|
     (cancelScopeSubtree descendantBodyState child .retain).scopeOccurrences =
         state.scopeOccurrences ∧
       (cancelScopeSubtree descendantBodyState child .retain).activityOccurrences = [] ∧
@@ -113,7 +113,7 @@ theorem retained_region_withdraws_removed_descendant_body_and_exact_attachments 
       (cancelScopeSubtree descendantBodyState child .retain).timerWaits =
         [sameCoordinatesTimer] ∧
       (cancelScopeSubtree descendantBodyState child .retain).variables.activities =
-        state.variables.activities.tail := by decide +kernel
+        state.variables.activities.tail
 
 def otherRoot : ScopeOccurrenceId := ⟨⟨"OtherInstance"⟩, ⟨"scope:root"⟩, 1⟩
 
@@ -148,13 +148,13 @@ def compensationState : RuntimeState :=
     compensationTriggers := [triggerFor root, triggerFor otherRoot]
     compensationHandlerEffectWaits := [handlerWaitFor root, handlerWaitFor otherRoot] }
 
-theorem root_disposal_removes_only_owned_compensation_state :
+def root_disposal_removes_only_owned_compensation_state : Bool := decide <|
     (cancelScopeSubtree compensationState root .remove).compensationActivityRetentions =
         [{ owner := otherRoot, nextCompletionOrdinal := 1, records := [] }] ∧
       (cancelScopeSubtree compensationState root .remove).compensationTriggers =
         [triggerFor otherRoot] ∧
       (cancelScopeSubtree compensationState root .remove).compensationHandlerEffectWaits =
-        [handlerWaitFor otherRoot] := by decide +kernel
+        [handlerWaitFor otherRoot]
 
 theorem returnProcessStep_activity_identity_discipline
     (before after : RuntimeState) (id origin calledProcessId calledRootScopeId callerOutput)
@@ -172,5 +172,18 @@ theorem returnProcessState_activity_identity_discipline
     activityIdentityIssuingDiscipline before after = true := by
   exact returnProcessStep_activity_identity_discipline before after id origin calledProcessId
     calledRootScopeId callerOutput (returnProcessState_sound before after _ _ _ _ _ returned)
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("removal_withdraws_exact_activity_local_data", removal_withdraws_exact_activity_local_data),
+  ("retained_child_preserves_parent_activity_local_data", retained_child_preserves_parent_activity_local_data),
+  ("removal_withdraws_exact_parent_owned_message", removal_withdraws_exact_parent_owned_message),
+  ("retained_child_preserves_parent_owned_message", retained_child_preserves_parent_owned_message),
+  ("message_attachment_does_not_withdraw_same_coordinates_timer", message_attachment_does_not_withdraw_same_coordinates_timer),
+  ("activity_record_lifetime_follows_child_body_disposition", activity_record_lifetime_follows_child_body_disposition),
+  ("disposition_selects_the_region_occurrence_lifetime", disposition_selects_the_region_occurrence_lifetime),
+  ("retained_region_withdraws_removed_descendant_body_and_exact_attachments", retained_region_withdraws_removed_descendant_body_and_exact_attachments),
+  ("root_disposal_removes_only_owned_compensation_state", root_disposal_removes_only_owned_compensation_state)
+]
 
 end BpmnSemantics.ScopeCancellationConformance

@@ -227,23 +227,20 @@ def portableBusinessValueWireWitness : IO Unit := do
 
 #eval portableBusinessValueWireWitness
 
-theorem business_order_has_twelve_nodes_and_container_depth_three :
-    businessOrder.nodeCount = 12 ∧ businessOrder.containerDepth = 3 := by
-  decide +kernel
+def business_order_has_twelve_nodes_and_container_depth_three : Bool := decide <|
+    businessOrder.nodeCount = 12 ∧ businessOrder.containerDepth = 3
 
-theorem business_value_types_remain_pairwise_distinct :
+def business_value_types_remain_pairwise_distinct : Bool := decide <|
     VariableValue.integer 1 ≠ .decimal 1 0 ∧
       VariableValue.boolean true ≠ .string "true" ∧
       VariableValue.null ≠ .map [] ∧
       VariableValue.list [.string "a"] ≠ .stringList ["a"] ∧
-      BusinessValue.integer 1 ≠ .decimal 1 0 := by
-  decide +kernel
+      BusinessValue.integer 1 ≠ .decimal 1 0
 
-theorem business_trees_keep_multiplicity_order_and_present_null :
+def business_trees_keep_multiplicity_order_and_present_null : Bool := decide <|
     VariableValue.list [orderItem, orderItem] ≠ .list [orderItem] ∧
       VariableValue.list [.integer 1, .integer 2] ≠ .list [.integer 2, .integer 1] ∧
-      VariableValue.map [("line2", .null)] ≠ .map [] := by
-  decide +kernel
+      VariableValue.map [("line2", .null)] ≠ .map []
 
 theorem new_variable_value_arms_round_trip_without_normalization :
     variableValueDecodedAs (.integer 4250)
@@ -257,17 +254,17 @@ theorem unpaired_surrogate_is_rejected :
     parseRejected "{\"id\":\"\\ud800\"}" = true := by
   native_decide
 
-theorem maximum_safe_wire_nat_is_accepted :
-    isSafeWireNat 9007199254740991 = true := by decide +kernel
+def maximum_safe_wire_nat_is_accepted : Bool := decide <|
+    isSafeWireNat 9007199254740991 = true
 
-theorem first_unsafe_wire_nat_is_rejected :
-    isSafeWireNat 9007199254740992 = false := by decide +kernel
+def first_unsafe_wire_nat_is_rejected : Bool := decide <|
+    isSafeWireNat 9007199254740992 = false
 
-theorem bmp_scalar_precedes_supplementary_scalar :
-    compare "\uE000" "𐀀" = .lt := by decide +kernel
+def bmp_scalar_precedes_supplementary_scalar : Bool := decide <|
+    compare "\uE000" "𐀀" = .lt
 
-theorem canonically_equivalent_strings_remain_distinct :
-    ("e\u0301" : String) ≠ "\u00E9" := by decide +kernel
+def canonically_equivalent_strings_remain_distinct : Bool := decide <|
+    ("e\u0301" : String) ≠ "\u00E9"
 
 theorem scenario_unknown_field_is_rejected :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]},\"unexpected\":true}" = true := by
@@ -495,29 +492,23 @@ def effectResultAccepted (businessError : Bool) (names : List String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
-theorem effect_success_duplicate_patch_wire_admission :
-    effectResultAccepted false ["a", "a"] = false := by
-  decide +kernel
+def effect_success_duplicate_patch_wire_admission : Bool := decide <|
+    effectResultAccepted false ["a", "a"] = false
 
-theorem effect_success_reversed_patch_wire_admission :
-    effectResultAccepted false ["b", "a"] = false := by
-  decide +kernel
+def effect_success_reversed_patch_wire_admission : Bool := decide <|
+    effectResultAccepted false ["b", "a"] = false
 
-theorem effect_success_canonical_patch_wire_admission :
-    effectResultAccepted false ["a", "b"] = true := by
-  decide +kernel
+def effect_success_canonical_patch_wire_admission : Bool := decide <|
+    effectResultAccepted false ["a", "b"] = true
 
-theorem effect_bpmnError_duplicate_patch_wire_admission :
-    effectResultAccepted true ["a", "a"] = false := by
-  decide +kernel
+def effect_bpmnError_duplicate_patch_wire_admission : Bool := decide <|
+    effectResultAccepted true ["a", "a"] = false
 
-theorem effect_bpmnError_reversed_patch_wire_admission :
-    effectResultAccepted true ["b", "a"] = false := by
-  decide +kernel
+def effect_bpmnError_reversed_patch_wire_admission : Bool := decide <|
+    effectResultAccepted true ["b", "a"] = false
 
-theorem effect_bpmnError_canonical_patch_wire_admission :
-    effectResultAccepted true ["a", "b"] = true := by
-  decide +kernel
+def effect_bpmnError_canonical_patch_wire_admission : Bool := decide <|
+    effectResultAccepted true ["a", "b"] = true
 
 def sequentialScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "sequentialMultiInstanceSubProcess"), ("id", .str "mi"),
@@ -556,28 +547,45 @@ def sequentialScopeDecodedOperations (fields : List (String × Lean.Json)) :
     ("controlPlaceScopes", .arr #[]), ("controlPlaces", .arr #[]),
     ("operations", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.operations)
 
-theorem sequential_scope_wire_preserves_entry_policy_and_completion_binding :
+def sequential_scope_wire_preserves_entry_policy_and_completion_binding : Bool := decide <|
     sequentialScopeDecodedNodes sequentialScopeNodeFields =
       some [.sequentialMultiInstanceSubProcess ⟨"mi"⟩ ⟨"body"⟩ "items" "item" [] none] ∧
     sequentialScopeDecodedOperations sequentialScopeEntryFields =
       some [.enterSequentialMultiInstanceScope ⟨"enter"⟩ { elementId := ⟨"mi"⟩ }
         ⟨"before"⟩ ⟨"first"⟩ ⟨"body"⟩ ⟨"after"⟩ "items" "item" [] (some "done")] ∧
     sequentialScopeDecodedOperations sequentialScopeCompletionFields =
-      some [.completeSequentialMultiInstanceScope ⟨"complete"⟩ { elementId := ⟨"mi"⟩ } ⟨"enter"⟩] := by
-  decide +kernel
+      some [.completeSequentialMultiInstanceScope ⟨"complete"⟩ { elementId := ⟨"mi"⟩ } ⟨"enter"⟩]
 
-theorem sequential_scope_wire_rejects_missing_policy_and_empty_binding :
+def sequential_scope_wire_rejects_missing_policy_and_empty_binding : Bool := decide <|
     sequentialScopeDecodedNodes (sequentialScopeNodeFields.map fun (key, value) =>
       (key, if key == "completionBooleanName" then .str "" else value)) = none ∧
     sequentialScopeDecodedOperations
       (sequentialScopeEntryFields.filter fun field => field.1 != "bodyInputs") = none ∧
     sequentialScopeDecodedOperations (sequentialScopeCompletionFields.map fun (key, value) =>
-      (key, if key == "entryOperationId" then .str "" else value)) = none := by
-  decide +kernel
+      (key, if key == "entryOperationId" then .str "" else value)) = none
 
-theorem sequential_scope_completion_wire_rejects_a_second_continuation_owner :
+def sequential_scope_completion_wire_rejects_a_second_continuation_owner : Bool := decide <|
     sequentialScopeDecodedOperations
-      (sequentialScopeCompletionFields ++ [("normalOutput", .str "elsewhere")]) = none := by
-  decide +kernel
+      (sequentialScopeCompletionFields ++ [("normalOutput", .str "elsewhere")]) = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("business_order_has_twelve_nodes_and_container_depth_three", business_order_has_twelve_nodes_and_container_depth_three),
+  ("business_value_types_remain_pairwise_distinct", business_value_types_remain_pairwise_distinct),
+  ("business_trees_keep_multiplicity_order_and_present_null", business_trees_keep_multiplicity_order_and_present_null),
+  ("maximum_safe_wire_nat_is_accepted", maximum_safe_wire_nat_is_accepted),
+  ("first_unsafe_wire_nat_is_rejected", first_unsafe_wire_nat_is_rejected),
+  ("bmp_scalar_precedes_supplementary_scalar", bmp_scalar_precedes_supplementary_scalar),
+  ("canonically_equivalent_strings_remain_distinct", canonically_equivalent_strings_remain_distinct),
+  ("effect_success_duplicate_patch_wire_admission", effect_success_duplicate_patch_wire_admission),
+  ("effect_success_reversed_patch_wire_admission", effect_success_reversed_patch_wire_admission),
+  ("effect_success_canonical_patch_wire_admission", effect_success_canonical_patch_wire_admission),
+  ("effect_bpmnError_duplicate_patch_wire_admission", effect_bpmnError_duplicate_patch_wire_admission),
+  ("effect_bpmnError_reversed_patch_wire_admission", effect_bpmnError_reversed_patch_wire_admission),
+  ("effect_bpmnError_canonical_patch_wire_admission", effect_bpmnError_canonical_patch_wire_admission),
+  ("sequential_scope_wire_preserves_entry_policy_and_completion_binding", sequential_scope_wire_preserves_entry_policy_and_completion_binding),
+  ("sequential_scope_wire_rejects_missing_policy_and_empty_binding", sequential_scope_wire_rejects_missing_policy_and_empty_binding),
+  ("sequential_scope_completion_wire_rejects_a_second_continuation_owner", sequential_scope_completion_wire_rejects_a_second_continuation_owner)
+]
 
 end BpmnSemantics.SemanticProcessJsonConformance
