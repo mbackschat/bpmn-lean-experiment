@@ -215,11 +215,10 @@ def nestedCounterexampleState : RuntimeState :=
     logicalTimeMs := 27 }
 
 /-- Consuming only the triggering token leaves this sibling live, so token removal is not termination. -/
-theorem incomplete_regional_cancellation_leaves_sibling_live :
+def incomplete_regional_cancellation_leaves_sibling_live : Bool := decide <|
     siblingWait ∈
       (reachNoneEndToken nestedCounterexampleState childOwner
-        ⟨"place:Flow_TriggerTerminate"⟩).waits := by
-  decide +kernel
+        ⟨"place:Flow_TriggerTerminate"⟩).waits
 
 def controllerCancellationState : RuntimeState :=
   { nestedCounterexampleState with
@@ -233,7 +232,7 @@ def controllerCancellationState : RuntimeState :=
 /-- Regional cancellation withdraws each controller bound to the withdrawn Activity identity and each
 called-instance controller even though it has no Activity record, retains the unrelated controllers,
 and frames every monotonic counter, Process data, and logical time. -/
-theorem regional_cancellation_withdraws_exact_controller :
+def regional_cancellation_withdraws_exact_controller : Bool := decide <|
     let cancelled := cancelScopeSubtree controllerCancellationState childOwner .retain
     cancelled.activityOccurrences = [unrelatedActivity] ∧
       cancelled.sequentialMultiInstanceControllers = [unrelatedController] ∧
@@ -248,8 +247,7 @@ theorem regional_cancellation_withdraws_exact_controller :
       cancelled.callActivations = controllerCancellationState.callActivations ∧
       cancelled.activityActivations = controllerCancellationState.activityActivations ∧
       cancelled.variables.process = controllerCancellationState.variables.process ∧
-      cancelled.logicalTimeMs = controllerCancellationState.logicalTimeMs := by
-  decide +kernel
+      cancelled.logicalTimeMs = controllerCancellationState.logicalTimeMs
 
 /-- The selected no-output operation must target the exact child scope occurrence. -/
 def nestedTerminateOperation : SemanticOperation :=
@@ -268,9 +266,8 @@ def rootTerminateOperation : SemanticOperation :=
     rootOwner.definitionScopeId
 
 /-- The exact representative checked graph passes structural and checkpoint-profile admission. -/
-theorem checked_process_is_admitted :
-    checkedWellFormed checkedProcess = true := by
-  decide +kernel
+def checked_process_is_admitted : Bool := decide <|
+    checkedWellFormed checkedProcess = true
 
 /-- Canonical lowering is definitionally the checkpoint program. -/
 theorem lowering_is_exact :
@@ -278,23 +275,21 @@ theorem lowering_is_exact :
   rfl
 
 /-- The lowered program has the exact no-output termination shape and passes structural admission. -/
-theorem program_is_admitted :
+def program_is_admitted : Bool := decide <|
     programWellFormed program = true ∧
       programProfileCapabilitiesValid program = true ∧
       program.operations.any (fun operation =>
         operation =
           .terminateScope ⟨"operation:I_Terminate"⟩
             { elementId := ⟨"I_Terminate"⟩ }
-            ⟨"place:Flow_TriggerTerminate"⟩ childScopeId) = true := by
-  decide +kernel
+            ⟨"place:Flow_TriggerTerminate"⟩ childScopeId) = true
 
 /-- The representative End has exactly one incoming Sequence Flow and no outgoing Sequence Flow. -/
-theorem checked_terminate_end_exact_arity :
+def checked_terminate_end_exact_arity : Bool := decide <|
     (checkedProcess.sequenceFlows.filter fun flow =>
       flow.targetId = ⟨"I_Terminate"⟩).length = 1 ∧
     (checkedProcess.sequenceFlows.filter fun flow =>
-      flow.sourceId = ⟨"I_Terminate"⟩).length = 0 := by
-  decide +kernel
+      flow.sourceId = ⟨"I_Terminate"⟩).length = 0
 
 /-- Lowering retains one operation with the exact End identity, origin, input, and containing scope. -/
 theorem lowered_terminate_operation_is_exact :
@@ -318,15 +313,13 @@ def crossScopeTerminateProgram : Program :=
       else operation }
 
 /-- A Terminate operation cannot reinterpret its input and operation ownership as a different scope. -/
-theorem cross_scope_terminate_is_structurally_rejected :
-    programWellFormed crossScopeTerminateProgram = false := by
-  decide +kernel
+def cross_scope_terminate_is_structurally_rejected : Bool := decide <|
+    programWellFormed crossScopeTerminateProgram = false
 
 /-- The generic root program is structurally valid while remaining outside exact nested profile capability. -/
-theorem root_program_is_generic_not_profile_registered :
+def root_program_is_generic_not_profile_registered : Bool := decide <|
     programWellFormed rootSyntheticProgram = true ∧
-      programProfileCapabilitiesValid rootSyntheticProgram = false := by
-  decide +kernel
+      programProfileCapabilitiesValid rootSyntheticProgram = false
 
 def exactTerminateId : OperationId := ⟨"operation:I_Terminate"⟩
 def exactTerminateOrigin : BpmnElementOrigin :=
@@ -411,11 +404,10 @@ theorem nested_termination_preserves_unrelated_state :
   decide +kernel
 
 /-- A global-cancellation mutation removes the higher-level Outer owner that correct child termination preserves. -/
-theorem global_cancellation_is_wrong_for_nested_terminate :
+def global_cancellation_is_wrong_for_nested_terminate : Bool := decide <|
     let globallyCancelled :=
       cancelScopeSubtree nestedCounterexampleState rootOwner .retain
-    nestedTerminatedState.waits.length = 1 ∧ globallyCancelled.waits = [] := by
-  decide +kernel
+    nestedTerminatedState.waits.length = 1 ∧ globallyCancelled.waits = []
 
 def zeroTokenState : RuntimeState :=
   { nestedCounterexampleState with
@@ -466,7 +458,7 @@ def siblingThenTriggerState : RuntimeState :=
   (applyStimulus 3 program siblingFirstState completeTrigger).state
 
 /-- Start closure takes five steps, exposes exactly Trigger and Sibling, and one-smaller fuel reports exhaustion. -/
-theorem start_closure_bounds_and_order_invariance :
+def start_closure_bounds_and_order_invariance : Bool := decide <|
     let exact := applyStimulus 5 program initialState startStimulus
     let short := applyStimulus 4 program initialState startStimulus
     exact.outcome = .committed ∧
@@ -490,11 +482,10 @@ theorem start_closure_bounds_and_order_invariance :
           , ⟨"operation:H_SubProcess"⟩
           , ⟨"operation:B_ChildFork"⟩
           , ⟨"operation:J_Trigger"⟩
-          , ⟨"operation:G_Sibling"⟩ ]) = some exact.state := by
-  decide +kernel
+          , ⟨"operation:G_Sibling"⟩ ]) = some exact.state
 
 /-- Trigger-first closure is uniquely `terminateScope`, child `completeScope`, then Outer activation; one-smaller fuel fails. -/
-theorem trigger_closure_bounds_and_unique_enabledness :
+def trigger_closure_bounds_and_unique_enabledness : Bool := decide <|
     let transient :=
       (completeUserTask startedState semanticInstanceId ⟨"J_Trigger"⟩ 1).getD initialState
     let terminated :=
@@ -525,11 +516,10 @@ theorem trigger_closure_bounds_and_unique_enabledness :
       waitMultiplicity exact.state ⟨"J_Trigger"⟩ = 0 ∧
       enabledInternalOperationCount program exact.state = 0 ∧
       stableStateResumable exact.state = true ∧
-      short.internalStepBoundExceeded = true := by
-  decide +kernel
+      short.internalStepBoundExceeded = true
 
 /-- Sibling-first reaches a stable Trigger wait, and later termination still reaches the Outer-only state. -/
-theorem sibling_first_is_stable_then_terminates :
+def sibling_first_is_stable_then_terminates : Bool := decide <|
     waitMultiplicity siblingFirstState ⟨"G_Sibling"⟩ = 0 ∧
     waitMultiplicity siblingFirstState ⟨"J_Trigger"⟩ = 1 ∧
     enabledInternalOperationCount program siblingFirstState = 0 ∧
@@ -537,42 +527,38 @@ theorem sibling_first_is_stable_then_terminates :
     waitMultiplicity siblingThenTriggerState ⟨"E_OuterTask"⟩ = 1 ∧
     waitMultiplicity siblingThenTriggerState ⟨"J_Trigger"⟩ = 0 ∧
     enabledInternalOperationCount program siblingThenTriggerState = 0 ∧
-    stableStateResumable siblingThenTriggerState = true := by
-  decide +kernel
+    stableStateResumable siblingThenTriggerState = true
 
 /-- The stable public projection contains only the Outer User Task and no termination-specific wait. -/
-theorem termination_has_no_public_wait_classification :
+def termination_has_no_public_wait_classification : Bool := decide <|
     (observeStableState program triggerFirstState).map (fun snapshot =>
       (snapshot.status, snapshot.activeWaits,
         snapshot.openUserTasks.map fun task => task.id)) =
       some
         ( .running
         , [{ elementId := ⟨"E_OuterTask"⟩, kind := .userTask, multiplicity := 1 }]
-        , [outerOccurrence] ) := by
-  decide +kernel
+        , [outerOccurrence] )
 
 /-- A cancelled Sibling occurrence rejects with exact state identity. -/
-theorem stale_sibling_rejects_with_exact_state :
+def stale_sibling_rejects_with_exact_state : Bool := decide <|
     applyStimulus 3 program triggerFirstState completeSibling =
       { outcome := .rejected
         state := triggerFirstState
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- Outer completion takes exactly two internal steps, and one-smaller fuel reports exhaustion. -/
-theorem outer_completion_bounds :
+def outer_completion_bounds : Bool := decide <|
     let exact := applyStimulus 2 program triggerFirstState completeOuter
     let short := applyStimulus 1 program triggerFirstState completeOuter
     exact.outcome = .committed ∧
       exact.state.control = .completed semanticInstanceId ∧
       exact.internalStepBoundExceeded = false ∧
       stableStateResumable exact.state = true ∧
-      short.internalStepBoundExceeded = true := by
-  decide +kernel
+      short.internalStepBoundExceeded = true
 
 /-- The generic root operation records one End occurrence, emits no token, and only existing root completion ends the Process. -/
-theorem root_termination_reuses_scope_completion :
+def root_termination_reuses_scope_completion : Bool := decide <|
     let terminated :=
       (step rootSyntheticProgram rootSyntheticOfferedState
         ⟨"operation:RootTerminate"⟩).getD initialState
@@ -587,18 +573,36 @@ theorem root_termination_reuses_scope_completion :
       completed = some
         { terminated with
           control := .completed semanticInstanceId
-          scopeOccurrences := [] } := by
-  decide +kernel
+          scopeOccurrences := [] }
 
 /-- Old product profiles do not enable the checkpoint-only operation family. -/
-theorem old_profile_fails_closed :
+def old_profile_fails_closed : Bool := decide <|
     terminateScopeState?
       { program with
         identity :=
           { program.identity with
             semanticProfile := ⟨"parallel-fork-join-draft"⟩ } }
       nestedCounterexampleState exactTerminateId exactTerminateOrigin
-      exactTerminateInput childScopeId = none := by
-  decide +kernel
+      exactTerminateInput childScopeId = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("incomplete_regional_cancellation_leaves_sibling_live", incomplete_regional_cancellation_leaves_sibling_live),
+  ("regional_cancellation_withdraws_exact_controller", regional_cancellation_withdraws_exact_controller),
+  ("checked_process_is_admitted", checked_process_is_admitted),
+  ("program_is_admitted", program_is_admitted),
+  ("checked_terminate_end_exact_arity", checked_terminate_end_exact_arity),
+  ("cross_scope_terminate_is_structurally_rejected", cross_scope_terminate_is_structurally_rejected),
+  ("root_program_is_generic_not_profile_registered", root_program_is_generic_not_profile_registered),
+  ("global_cancellation_is_wrong_for_nested_terminate", global_cancellation_is_wrong_for_nested_terminate),
+  ("start_closure_bounds_and_order_invariance", start_closure_bounds_and_order_invariance),
+  ("trigger_closure_bounds_and_unique_enabledness", trigger_closure_bounds_and_unique_enabledness),
+  ("sibling_first_is_stable_then_terminates", sibling_first_is_stable_then_terminates),
+  ("termination_has_no_public_wait_classification", termination_has_no_public_wait_classification),
+  ("stale_sibling_rejects_with_exact_state", stale_sibling_rejects_with_exact_state),
+  ("outer_completion_bounds", outer_completion_bounds),
+  ("root_termination_reuses_scope_completion", root_termination_reuses_scope_completion),
+  ("old_profile_fails_closed", old_profile_fails_closed)
+]
 
 end BpmnSemantics.TerminateEndEventConformance

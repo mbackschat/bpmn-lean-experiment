@@ -18,13 +18,13 @@ def exceptionalBypass : List Vertex :=
    { id := "reader", kind := .service, outputs := ["end"], reads := ["value"] },
    { id := "end", kind := .finish, outputs := [] }]
 
-theorem error_bypass_requires_initial_value :
-    (analyze exceptionalBypass).map (·.required) = some ["value"] := by decide +kernel
+def error_bypass_requires_initial_value : Bool := decide <|
+    (analyze exceptionalBypass).map (·.required) = some ["value"]
 
-theorem writer_before_both_exits_supplies_value :
+def writer_before_both_exits_supplies_value : Bool := decide <|
     (analyze (exceptionalBypass.map fun vertex =>
       if vertex.id == "check" then { vertex with writes := ["value"] } else vertex)).map
-        (·.required) = some [] := by decide +kernel
+        (·.required) = some []
 
 def recoveryLoop : List Vertex :=
   [{ id := "start", kind := .start, outputs := ["retry"] },
@@ -33,9 +33,9 @@ def recoveryLoop : List Vertex :=
    { id := "correct", kind := .service, outputs := ["retry"], writes := ["value"] },
    { id := "end", kind := .finish, outputs := [] }]
 
-theorem recovery_write_cannot_initialize_first_entry :
+def recovery_write_cannot_initialize_first_entry : Bool := decide <|
     (analyze recoveryLoop).map (fun result => (result.required, result.maximumBurst)) =
-      some (["value"], 3) := by decide +kernel
+      some (["value"], 3)
 
 def exceptionalBurst (choices : Nat) : List Vertex :=
   [{ id := "start", kind := .start, outputs := ["check"] },
@@ -49,18 +49,18 @@ def exceptionalBurst (choices : Nat) : List Vertex :=
    { id := "merge", kind := .merge, outputs := ["end"] },
    { id := "end", kind := .finish, outputs := [] }]
 
-theorem error_continuation_exactly_eight_is_admitted :
-    (analyze (exceptionalBurst 5)).map (·.maximumBurst) = some 8 := by decide +kernel
+def error_continuation_exactly_eight_is_admitted : Bool := decide <|
+    (analyze (exceptionalBurst 5)).map (·.maximumBurst) = some 8
 
-theorem error_continuation_nine_is_refused :
-    analyze (exceptionalBurst 6) = none := by decide +kernel
+def error_continuation_nine_is_refused : Bool := decide <|
+    analyze (exceptionalBurst 6) = none
 
-theorem wait_exit_order_does_not_hide_overlong_error_burst :
+def wait_exit_order_does_not_hide_overlong_error_burst : Bool := decide <|
     analyze ((exceptionalBurst 6).map fun vertex =>
       if vertex.id == "check" then { vertex with outputs := vertex.outputs.reverse } else vertex) =
-      none := by decide +kernel
+      none
 
-theorem internal_cycle_on_error_route_is_refused :
+def internal_cycle_on_error_route_is_refused : Bool := decide <|
     analyze
       [{ id := "start", kind := .start, outputs := ["check"] },
        { id := "check", kind := .service, outputs := ["normal", "cycle"] },
@@ -68,20 +68,18 @@ theorem internal_cycle_on_error_route_is_refused :
        { id := "cycle", kind := .merge, outputs := ["choice"] },
        { id := "choice", kind := .choice, outputs := ["cycle", "exit"] },
        { id := "exit", kind := .merge, outputs := ["end"] },
-       { id := "end", kind := .finish, outputs := [] }] = none := by decide +kernel
+       { id := "end", kind := .finish, outputs := [] }] = none
 
-theorem shared_merge_retains_alternative_edge_multiplicity :
+def shared_merge_retains_alternative_edge_multiplicity : Bool := decide <|
     (analyze
       [{ id := "start", kind := .start, outputs := ["check"] },
        { id := "check", kind := .service, outputs := ["merge", "merge"] },
        { id := "merge", kind := .merge, outputs := ["end"] },
-       { id := "end", kind := .finish, outputs := [] }]).map (·.maximumBurst) = some 3 := by
-  decide +kernel
+       { id := "end", kind := .finish, outputs := [] }]).map (·.maximumBurst) = some 3
 
-theorem human_wait_does_not_gain_alternative_exits :
+def human_wait_does_not_gain_alternative_exits : Bool := decide <|
     analyze (exceptionalBypass.map fun vertex =>
-      if vertex.id == "check" then { vertex with kind := .human } else vertex) = none := by
-  decide +kernel
+      if vertex.id == "check" then { vertex with kind := .human } else vertex) = none
 
 def effectId (name : String) : EffectOccurrenceId := ⟨⟨"I"⟩, ⟨name⟩, 1⟩
 
@@ -127,30 +125,28 @@ def completedAt (name continuation : String) : RuntimeState :=
         processInterfaces := [], scopes := []
         activities := [] } }
 
-theorem primitive_success_maps_null_and_preserves_parent :
+def primitive_success_maps_null_and_preserves_parent : Bool := decide <|
     completeBusinessEffect? [] (waiting "A") (effectId "A") (.success nullPatch) =
-      some (completedAt "A" "normal") := by decide +kernel
+      some (completedAt "A" "normal")
 
-theorem primitive_error_uses_each_active_attached_route :
+def primitive_error_uses_each_active_attached_route : Bool := decide <|
     ["A", "B"].all (fun name =>
       completeBusinessEffect? [] (waiting name) (effectId name) (.bpmnError "REVIEW" none nullPatch) ==
-        some (completedAt name "error")) = true := by decide +kernel
+        some (completedAt name "error")) = true
 
-theorem primitive_error_rejects_extra_local_results :
+def primitive_error_rejects_extra_local_results : Bool := decide <|
     completeBusinessEffect? [] (waiting "A") (effectId "A")
-      (.bpmnError "REVIEW" none ({ name := "extra", value := .null } :: nullPatch)) = none := by
-  decide +kernel
+      (.bpmnError "REVIEW" none ({ name := "extra", value := .null } :: nullPatch)) = none
 
-theorem primitive_error_rejects_duplicate_waits :
+def primitive_error_rejects_duplicate_waits : Bool := decide <|
     completeBusinessEffect? [] { waiting "A" with effectWaits := [effectWait "A", effectWait "A"] }
-      (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none := by decide +kernel
+      (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none
 
-theorem primitive_error_refuses_wrong_code_and_stale_identity :
+def primitive_error_refuses_wrong_code_and_stale_identity : Bool := decide <|
     completeBusinessEffect? [] (waiting "A") (effectId "A") (.bpmnError "OTHER" none nullPatch) = none ∧
-    completeBusinessEffect? [] (waiting "B") (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none := by
-  decide +kernel
+    completeBusinessEffect? [] (waiting "B") (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none
 
-theorem primitive_error_maps_one_local_to_two_targets :
+def primitive_error_maps_one_local_to_two_targets : Bool := decide <|
     completeBusinessEffect? [] { waiting "A" with effectWaits := [{ effectWait "A" with
       outputMappings := [{ target := "decision", expression := .localVariable "result" },
         { target := "status", expression := .localVariable "result" }] }] }
@@ -158,26 +154,23 @@ theorem primitive_error_maps_one_local_to_two_targets :
       some { completedAt "A" "error" with variables :=
         { (completedAt "A" "error").variables with process :=
           { bindings := [{ name := "decision", value := .null },
-            { name := "result", value := .string "parent" }, { name := "status", value := .null }] } } } := by
-  decide +kernel
+            { name := "result", value := .string "parent" }, { name := "status", value := .null }] } } }
 
-theorem primitive_error_without_outputs_accepts_exact_empty_patch :
+def primitive_error_without_outputs_accepts_exact_empty_patch : Bool := decide <|
     let state := { waiting "A" with effectWaits := [{ effectWait "A" with outputMappings := [] }] }
     completeBusinessEffect? [] state (effectId "A") (.bpmnError "REVIEW" none []) =
       some { completedAt "A" "error" with variables :=
         { (completedAt "A" "error").variables with process := (waiting "A").variables.process } } ∧
-    completeBusinessEffect? [] state (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none := by
-  decide +kernel
+    completeBusinessEffect? [] state (effectId "A") (.bpmnError "REVIEW" none nullPatch) = none
 
-theorem primitive_error_requires_one_exact_local_owner :
+def primitive_error_requires_one_exact_local_owner : Bool := decide <|
     [[], (waiting "A").variables.activities ++ (waiting "A").variables.activities,
       [{ owner := .effectOccurrence (effectId "B"), bindings := [] }]].all (fun activities =>
         completeBusinessEffect? [] { waiting "A" with variables := { (waiting "A").variables with activities } }
-          (effectId "A") (.bpmnError "REVIEW" none nullPatch) == none) = true := by decide +kernel
+          (effectId "A") (.bpmnError "REVIEW" none nullPatch) == none) = true
 
-theorem primitive_error_cannot_read_missing_result_from_parent :
-    completeBusinessEffect? [] (waiting "A") (effectId "A") (.bpmnError "REVIEW" none []) = none := by
-  decide +kernel
+def primitive_error_cannot_read_missing_result_from_parent : Bool := decide <|
+    completeBusinessEffect? [] (waiting "A") (effectId "A") (.bpmnError "REVIEW" none []) = none
 
 def invoiceService (id : String) : CheckedNode :=
   .serviceTask ⟨id⟩
@@ -245,25 +238,24 @@ def invoiceAuthorization : StimulusResult := applyStimulus 8 invoiceProgram repe
 def invoicePolicyReview : StimulusResult := applyStimulus 8 invoiceProgram invoiceAuthorization.state
   (.completeEffect ⟨"reject-authorization"⟩ (effectId "Authorize") (.bpmnError "REVIEW" none nullPatch))
 
-theorem independent_invoice_admission :
+def independent_invoice_admission : Bool := decide <|
     checkedWellFormed invoice = true ∧ programWellFormed invoiceProgram = true ∧
-    programProfileCapabilitiesValid invoiceProgram = true := by decide +kernel
+    programProfileCapabilitiesValid invoiceProgram = true
 
-theorem actual_invoice_error_reaches_human_correction :
+def actual_invoice_error_reaches_human_correction : Bool := decide <|
     invoiceReview.outcome = .committed ∧ invoiceValidation.outcome = .committed ∧
     invoiceCorrection.outcome = .committed ∧
     invoiceCorrection.state.waits.map (·.task.id.value) = ["CorrectData"] ∧
-    invoiceCorrection.state.effectWaits = [] ∧ invoiceCorrection.state.variables.activities = [] := by
-  decide +kernel
+    invoiceCorrection.state.effectWaits = [] ∧ invoiceCorrection.state.variables.activities = []
 
-theorem actual_rework_uses_fresh_identity_and_corrected_input :
+def actual_rework_uses_fresh_identity_and_corrected_input : Bool := decide <|
     correctedReview.outcome = .committed ∧ repeatedValidation.outcome = .committed ∧
     repeatedValidation.state.effectWaits.map (fun wait => (wait.elementId.value, wait.activation, wait.arguments)) =
-      [("Validate", 2, [{ name := "payload", value := .string "corrected" }])] := by decide +kernel
+      [("Validate", 2, [{ name := "payload", value := .string "corrected" }])]
 
-theorem second_service_catches_shared_code_at_its_own_boundary :
+def second_service_catches_shared_code_at_its_own_boundary : Bool := decide <|
     invoiceAuthorization.outcome = .committed ∧ invoicePolicyReview.outcome = .committed ∧
-    invoicePolicyReview.state.waits.map (·.task.id.value) = ["ReviewPolicy"] := by decide +kernel
+    invoicePolicyReview.state.waits.map (·.task.id.value) = ["ReviewPolicy"]
 
 def policyCorrectedReview : StimulusResult := applyStimulus 8 invoiceProgram invoicePolicyReview.state
   (.completeUserTaskInstance ⟨"policy-corrected"⟩ ⟨⟨"I"⟩, ⟨"ReviewPolicy"⟩, 1⟩ [])
@@ -280,14 +272,14 @@ def invoiceFinalization : StimulusResult := applyStimulus 8 invoiceProgram final
 def invoiceCompleted : StimulusResult := applyStimulus 8 invoiceProgram invoiceFinalization.state
   (.completeUserTaskInstance ⟨"finalize"⟩ ⟨⟨"I"⟩, ⟨"Finalize"⟩, 1⟩ [])
 
-theorem actual_invoice_completes_after_both_recovery_paths :
+def actual_invoice_completes_after_both_recovery_paths : Bool := decide <|
     [policyCorrectedReview, finalValidation, finalAuthorization, invoiceFinalization, invoiceCompleted].all
       (·.outcome == .committed) = true ∧
     invoiceCompleted.state.control = .completed ⟨"I"⟩ ∧
     invoiceCompleted.state.waits = [] ∧ invoiceCompleted.state.effectWaits = [] ∧
-    invoiceCompleted.state.variables.activities = [] := by decide +kernel
+    invoiceCompleted.state.variables.activities = []
 
-theorem actual_repeated_wait_rejects_stale_code_and_incomplete_results :
+def actual_repeated_wait_rejects_stale_code_and_incomplete_results : Bool := decide <|
     [(.completeEffect ⟨"stale"⟩ (effectId "Validate") (.bpmnError "REVIEW" none nullPatch)),
      (.completeEffect ⟨"wrong-code"⟩ { effectId "Validate" with activation := 2 }
        (.bpmnError "OTHER" none nullPatch)),
@@ -295,13 +287,41 @@ theorem actual_repeated_wait_rejects_stale_code_and_incomplete_results :
        (.bpmnError "REVIEW" none []))].all (fun command =>
       applyStimulus 8 invoiceProgram repeatedValidation.state command ==
         { outcome := .rejected, state := repeatedValidation.state,
-          internalStepBoundExceeded := false, ambiguousInternalChoice := false }) = true := by decide +kernel
+          internalStepBoundExceeded := false, ambiguousInternalChoice := false }) = true
 
-theorem previous_mixed_profile_keeps_error_routes_outside_its_scope :
+def previous_mixed_profile_keeps_error_routes_outside_its_scope : Bool := decide <|
     checkedWellFormed { invoice with identity :=
       { invoice.identity with semanticProfile := mixedTaskControlFlowProfileId } } = false ∧
     programProfileCapabilitiesValid { invoiceProgram with identity :=
-      { invoiceProgram.identity with semanticProfile := mixedTaskControlFlowProfileId } } = false := by
-  decide +kernel
+      { invoiceProgram.identity with semanticProfile := mixedTaskControlFlowProfileId } } = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("error_bypass_requires_initial_value", error_bypass_requires_initial_value),
+  ("writer_before_both_exits_supplies_value", writer_before_both_exits_supplies_value),
+  ("recovery_write_cannot_initialize_first_entry", recovery_write_cannot_initialize_first_entry),
+  ("error_continuation_exactly_eight_is_admitted", error_continuation_exactly_eight_is_admitted),
+  ("error_continuation_nine_is_refused", error_continuation_nine_is_refused),
+  ("wait_exit_order_does_not_hide_overlong_error_burst", wait_exit_order_does_not_hide_overlong_error_burst),
+  ("internal_cycle_on_error_route_is_refused", internal_cycle_on_error_route_is_refused),
+  ("shared_merge_retains_alternative_edge_multiplicity", shared_merge_retains_alternative_edge_multiplicity),
+  ("human_wait_does_not_gain_alternative_exits", human_wait_does_not_gain_alternative_exits),
+  ("primitive_success_maps_null_and_preserves_parent", primitive_success_maps_null_and_preserves_parent),
+  ("primitive_error_uses_each_active_attached_route", primitive_error_uses_each_active_attached_route),
+  ("primitive_error_rejects_extra_local_results", primitive_error_rejects_extra_local_results),
+  ("primitive_error_rejects_duplicate_waits", primitive_error_rejects_duplicate_waits),
+  ("primitive_error_refuses_wrong_code_and_stale_identity", primitive_error_refuses_wrong_code_and_stale_identity),
+  ("primitive_error_maps_one_local_to_two_targets", primitive_error_maps_one_local_to_two_targets),
+  ("primitive_error_without_outputs_accepts_exact_empty_patch", primitive_error_without_outputs_accepts_exact_empty_patch),
+  ("primitive_error_requires_one_exact_local_owner", primitive_error_requires_one_exact_local_owner),
+  ("primitive_error_cannot_read_missing_result_from_parent", primitive_error_cannot_read_missing_result_from_parent),
+  ("independent_invoice_admission", independent_invoice_admission),
+  ("actual_invoice_error_reaches_human_correction", actual_invoice_error_reaches_human_correction),
+  ("actual_rework_uses_fresh_identity_and_corrected_input", actual_rework_uses_fresh_identity_and_corrected_input),
+  ("second_service_catches_shared_code_at_its_own_boundary", second_service_catches_shared_code_at_its_own_boundary),
+  ("actual_invoice_completes_after_both_recovery_paths", actual_invoice_completes_after_both_recovery_paths),
+  ("actual_repeated_wait_rejects_stale_code_and_incomplete_results", actual_repeated_wait_rejects_stale_code_and_incomplete_results),
+  ("previous_mixed_profile_keeps_error_routes_outside_its_scope", previous_mixed_profile_keeps_error_routes_outside_its_scope)
+]
 
 end BpmnSemantics.MixedTaskBusinessErrorConformance

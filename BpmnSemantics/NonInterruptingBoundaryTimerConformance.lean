@@ -85,12 +85,12 @@ theorem boundary_timer_is_not_lowered_as_a_standalone_timer :
       | .awaitTimer .. => true
       | _ => false) = [] := by decide +kernel
 
-theorem exactly_one_activity_owns_a_monitored_deadline :
-    (monitoredTaskOperations program).length = 1 := by decide +kernel
+def exactly_one_activity_owns_a_monitored_deadline : Bool := decide <|
+    (monitoredTaskOperations program).length = 1
 
 /-- The disposition, not the node kind, is what selects the family: this source lowers to no interrupting operation at all. -/
-theorem no_interrupting_operation_is_lowered :
-    (boundedTaskOperations program).length = 0 := by decide +kernel
+def no_interrupting_operation_is_lowered : Bool := decide <|
+    (boundedTaskOperations program).length = 0
 
 /-- The same graph with the disposition flipped, keeping every other byte of the admitted source. -/
 def interruptingDisposition : CheckedProcess :=
@@ -102,8 +102,8 @@ def interruptingDisposition : CheckedProcess :=
       | node => node }
 
 /-- **The admission inversion.** The interrupting disposition is refused under this profile, so a source cannot acquire the wrong interruption semantics by matching a shape the two profiles share. Both profiles pin the same node kinds, so this is the only place the separation can be observed in checked source. -/
-theorem interrupting_disposition_is_refused_under_this_profile :
-    checkedWellFormed interruptingDisposition = false := by decide +kernel
+def interrupting_disposition_is_refused_under_this_profile : Bool := decide <|
+    checkedWellFormed interruptingDisposition = false
 
 /-- Redirects only the deadline's attachment, keeping every other byte of the admitted source. -/
 def misattachedDeadline : CheckedProcess :=
@@ -154,7 +154,7 @@ def afterEarlyCompletion : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
     (.completeUserTaskInstance ⟨"complete-monitored-task"⟩ taskId [])).state
 
-theorem monitored_commands_preserve_exact_activity_lifetime :
+def monitored_commands_preserve_exact_activity_lifetime : Bool := decide <|
     runtimeStateWellFormed program instanceId armedState = true ∧
       afterSpawn.activityOccurrences = (armedState.activityOccurrences.map fun record =>
         { record with attachedHandlers := [] }) ∧
@@ -164,11 +164,10 @@ theorem monitored_commands_preserve_exact_activity_lifetime :
       (let completed := applyStimulus scenarioClosureLimit program afterSpawn
           (.completeUserTaskInstance ⟨"complete-after-spawn"⟩ taskId [])
        completed.outcome = .committed ∧ completed.state.activityOccurrences = [] ∧
-         runtimeStateWellFormed program instanceId completed.state = true) := by
-  decide +kernel
+         runtimeStateWellFormed program instanceId completed.state = true)
 
 /-- Constructed frame control, outside profile reachability: other Task/Timer activations and a same-coordinate Message attachment remain distinct. -/
-def unrelatedActivitySurvives : Bool :=
+def monitored_commands_preserve_unrelated_records_and_attachments : Bool :=
   match armedState.activityOccurrences.head? with
   | none => false
   | some record =>
@@ -183,9 +182,6 @@ def unrelatedActivitySurvives : Bool :=
       decide ((spawnFromMonitoredUserTask? program before reminderId 1000).map
         (·.activityOccurrences) = some [{ record with attachedHandlers := [] }, unrelated])
 
-theorem monitored_commands_preserve_unrelated_records_and_attachments :
-    unrelatedActivitySurvives = true := by decide +kernel
-
 /-- **The proposition this capsule exists for.** Firing leaves the monitored occurrence exactly as it was — same element, same activation ordinal — and adds the handler occurrence beside it. The interrupting sibling's corresponding transition removes the host instead, so this state is unreachable there. -/
 theorem firing_spawns_the_handler_and_preserves_its_host :
     (afterSpawn.waits.map fun wait => (wait.task.id.value, wait.activation)) =
@@ -194,21 +190,21 @@ theorem firing_spawns_the_handler_and_preserves_its_host :
       afterSpawn.logicalTimeMs = 1000 := by decide +kernel
 
 /-- Completing before the deadline withdraws it, so only the normal branch is live and logical time never advances. -/
-theorem completion_before_the_deadline_withdraws_it :
+def completion_before_the_deadline_withdraws_it : Bool := decide <|
     (afterEarlyCompletion.waits.map fun wait =>
         (wait.task.id.value, wait.activation)) = [("NormalTask", 1)] ∧
       afterEarlyCompletion.timerWaits = [] ∧
-      afterEarlyCompletion.logicalTimeMs = 0 := by decide +kernel
+      afterEarlyCompletion.logicalTimeMs = 0
 
 /-- **The one-sided join.** After the deadline has fired, the host is still completable: the completion commits and opens the normal branch beside the live handler. A family requiring both waits would refuse here and strand the Activity. -/
-theorem the_host_stays_completable_after_its_deadline_fired :
+def the_host_stays_completable_after_its_deadline_fired : Bool := decide <|
     (applyStimulus scenarioClosureLimit program afterSpawn
         (.completeUserTaskInstance ⟨"complete-monitored-task"⟩ taskId [])).outcome =
       .committed ∧
       ((applyStimulus scenarioClosureLimit program afterSpawn
         (.completeUserTaskInstance ⟨"complete-monitored-task"⟩ taskId
           [])).state.waits.map fun wait => wait.task.id.value) =
-        ["HandlerTask", "NormalTask"] := by decide +kernel
+        ["HandlerTask", "NormalTask"]
 
 /-- The consumed deadline cannot fire again, with the spawned state preserved exactly. -/
 theorem the_consumed_deadline_cannot_fire_twice :
@@ -220,25 +216,25 @@ theorem the_consumed_deadline_cannot_fire_twice :
         ambiguousInternalChoice := false } := by decide +kernel
 
 /-- A withdrawn deadline can never fire, with the completed state preserved exactly. -/
-theorem a_withdrawn_deadline_cannot_fire :
+def a_withdrawn_deadline_cannot_fire : Bool := decide <|
     applyStimulus scenarioClosureLimit program afterEarlyCompletion
         (.fireTimer ⟨"fire-reminder-late"⟩ reminderId 1000) =
       { outcome := .rejected
         state := afterEarlyCompletion
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- Firing before the deadline is refused with exact state preservation, so exact deadline equality is semantically material rather than a host-scheduler convenience. -/
-theorem pre_due_firing_is_rejected :
+def pre_due_firing_is_rejected : Bool := decide <|
     applyStimulus scenarioClosureLimit program armedState
         (.fireTimer ⟨"fire-reminder-early"⟩ reminderId 999) =
       { outcome := .rejected
         state := armedState
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- A refused pre-due firing leaves the deadline armed rather than consuming it, so the exact firing at `1000` still spawns afterwards and reaches the same state. Stating this as equality between the two firings would prove nothing: it would hold under a mutation that made both reject, so the committed outcome and the exact resulting state are pinned here instead. -/
-theorem exact_firing_still_spawns_after_a_refused_pre_due_firing :
+def exact_firing_still_spawns_after_a_refused_pre_due_firing : Bool := decide <|
     applyStimulus scenarioClosureLimit program
         (applyStimulus scenarioClosureLimit program armedState
           (.fireTimer ⟨"fire-reminder-early"⟩ reminderId 999)).state
@@ -246,7 +242,7 @@ theorem exact_firing_still_spawns_after_a_refused_pre_due_firing :
       { outcome := .committed
         state := afterSpawn
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- The timing profile admits no completion patch, so a submitted variable is refused rather than ignored: silently dropping it would add a data claim to a timing capsule. -/
 theorem submitted_values_are_rejected_rather_than_ignored :
@@ -268,7 +264,7 @@ def completionOf (elementId : String) (commandId : String) :
       activation := 1 } []
 
 /-- **`NBTIMER-QUIESCE-01`'s checked non-law.** Neither branch reaching its own None End Event completes the Process while the other is live: the run stays `running` with exactly the sibling task open. Checked in both orders, because an implementation completing at the first End Event is publicly wrong in whichever order it meets first. -/
-theorem the_first_end_event_does_not_complete_the_process :
+def the_first_end_event_does_not_complete_the_process : Bool := decide <|
     ((applyStimulus scenarioClosureLimit program bothBranchesLive
         (completionOf "HandlerTask" "complete-handler")).state.waits.map fun wait =>
         wait.task.id.value) = ["NormalTask"] ∧
@@ -280,7 +276,7 @@ theorem the_first_end_event_does_not_complete_the_process :
         wait.task.id.value) = ["HandlerTask"] ∧
       (applyStimulus scenarioClosureLimit program bothBranchesLive
         (completionOf "NormalTask" "complete-normal")).state.control =
-        .running instanceId := by decide +kernel
+        .running instanceId
 
 /-- The Process completes only after both branches, in either order. -/
 theorem the_process_completes_after_both_branches :
@@ -294,5 +290,20 @@ theorem the_process_completes_after_both_branches :
           (completionOf "NormalTask" "complete-normal")).state
         (completionOf "HandlerTask" "complete-handler")).state.control =
         .completed instanceId := by decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("exactly_one_activity_owns_a_monitored_deadline", exactly_one_activity_owns_a_monitored_deadline),
+  ("no_interrupting_operation_is_lowered", no_interrupting_operation_is_lowered),
+  ("interrupting_disposition_is_refused_under_this_profile", interrupting_disposition_is_refused_under_this_profile),
+  ("monitored_commands_preserve_exact_activity_lifetime", monitored_commands_preserve_exact_activity_lifetime),
+  ("monitored_commands_preserve_unrelated_records_and_attachments", monitored_commands_preserve_unrelated_records_and_attachments),
+  ("completion_before_the_deadline_withdraws_it", completion_before_the_deadline_withdraws_it),
+  ("the_host_stays_completable_after_its_deadline_fired", the_host_stays_completable_after_its_deadline_fired),
+  ("a_withdrawn_deadline_cannot_fire", a_withdrawn_deadline_cannot_fire),
+  ("pre_due_firing_is_rejected", pre_due_firing_is_rejected),
+  ("exact_firing_still_spawns_after_a_refused_pre_due_firing", exact_firing_still_spawns_after_a_refused_pre_due_firing),
+  ("the_first_end_event_does_not_complete_the_process", the_first_end_event_does_not_complete_the_process)
+]
 
 end BpmnSemantics.NonInterruptingBoundaryTimerConformance

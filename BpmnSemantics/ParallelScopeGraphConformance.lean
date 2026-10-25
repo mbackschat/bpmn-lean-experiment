@@ -48,8 +48,8 @@ def program : Program :=
 def replacing (id : String) (replacement : SemanticOperation) : Program :=
   { program with operations := operations.map fun operation => if operation.id.value == id then replacement else operation }
 
-theorem parallel_source_graph_policy_does_not_admit_execution :
-    programProfileCapabilitiesValid program = false := by decide +kernel
+def parallel_source_graph_policy_does_not_admit_execution : Bool := decide <|
+    programProfileCapabilitiesValid program = false
 
 theorem paired_repeated_scope_graph_is_admitted : programGraphWellFormed program = true := by decide +kernel
 
@@ -82,9 +82,9 @@ theorem repeated_scope_requires_unique_completion : programGraphWellFormed { pro
     operations := operations ++ [.completeParallelMultiInstanceScope ⟨"duplicate"⟩ (origin "Batch") ⟨"enter"⟩],
     operationScopes := program.operationScopes ++ [{ operationId := ⟨"duplicate"⟩, scopeId := ⟨"body"⟩ }] } = false := by decide +kernel
 
-theorem parallel_completion_cannot_bind_sequential_entry : programGraphWellFormed
+def parallel_completion_cannot_bind_sequential_entry : Bool := decide <| programGraphWellFormed
     (replacing "enter" (.enterSequentialMultiInstanceScope ⟨"enter"⟩ (origin "Batch")
-      ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none)) = false := by decide +kernel
+      ⟨"incoming"⟩ ⟨"body-in"⟩ ⟨"body"⟩ ⟨"outgoing"⟩ "items" "item" [] none)) = false
 
 def checkedParallel : CheckedProcess :=
   { identity :=
@@ -135,20 +135,20 @@ def checkedMixed : CheckedProcess :=
       [⟨⟨"validated"⟩, ⟨"Validate"⟩, ⟨"ChildEnd"⟩, none⟩]
     sequenceFlowScopes := checkedParallel.sequenceFlowScopes ++ [⟨⟨"validated"⟩, ⟨"body"⟩⟩] }
 
-theorem private_checked_admission_retains_both_task_kinds_and_execution_refusal :
+def private_checked_admission_retains_both_task_kinds_and_execution_refusal : Bool := decide <|
     ParallelScopeChecked.admitted checkedMixed = true ∧
     ParallelScopeChecked.admitted { checkedMixed with nodes := checkedMixed.nodes.reverse } = true ∧
     ParallelScopeChecked.admitted checkedParallel = false ∧
-    programProfileCapabilitiesValid (lowerCheckedProcess checkedMixed) = false := by decide +kernel
+    programProfileCapabilitiesValid (lowerCheckedProcess checkedMixed) = false
 
 def startBindings (count : Nat) : List VariableBinding :=
   [⟨"done", .boolean false⟩, ⟨"items", .stringList (List.replicate count "same")⟩, ⟨"seed", .null⟩]
 
-theorem private_start_bound_counts_population_and_requires_pre_entry_inputs :
+def private_start_bound_counts_population_and_requires_pre_entry_inputs : Bool := decide <|
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 0) = some 4 ∧
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 16) = some 68 ∧
     ParallelScopeStart.checkedSourceBound checkedMixed (startBindings 17) = none ∧
-    ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none := by decide +kernel
+    ParallelScopeStart.checkedSourceBound checkedMixed ((startBindings 0).filter (·.name != "seed")) = none
 
 def rawCapacityProgram : Program :=
   lowerCheckedProcess { checkedMixed with
@@ -159,29 +159,28 @@ def rawCapacityProgram : Program :=
         id := ⟨"handlers"⟩
         sha256 := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } } }
 
-theorem private_raw_parallel_capacity_retains_population_and_required_empty_inputs :
+def private_raw_parallel_capacity_retains_population_and_required_empty_inputs : Bool := decide <|
     (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 0)).map (·.closureBound) = some 4 ∧
     (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 1)).map (·.closureBound) = some 8 ∧
     (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 2)).map (·.closureBound) = some 12 ∧
     (ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 16)).map (·.closureBound) = some 68 ∧
     ParallelScopeStart.programStartCapacity rawCapacityProgram (startBindings 17) = none ∧
-    ParallelScopeStart.programStartCapacity rawCapacityProgram ((startBindings 0).filter (·.name != "seed")) = none := by
-  decide +kernel
+    ParallelScopeStart.programStartCapacity rawCapacityProgram ((startBindings 0).filter (·.name != "seed")) = none
 
-theorem private_raw_parallel_start_ingress_preserves_public_shape_refusal :
+def private_raw_parallel_start_ingress_preserves_public_shape_refusal : Bool := decide <|
     (admitStimulus rawCapacityProgram initialState
       (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 0))).outcome = .committed ∧
     (admitStimulus rawCapacityProgram initialState
       (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 16))).outcome = .committed ∧
-    programProfileCapabilitiesValid rawCapacityProgram = false := by decide +kernel
+    programProfileCapabilitiesValid rawCapacityProgram = false
 
-theorem private_raw_parallel_capacity_checks_the_original_decoded_program :
+def private_raw_parallel_capacity_checks_the_original_decoded_program : Bool := decide <|
     ParallelScopeStart.programStartCapacity { rawCapacityProgram with operations := rawCapacityProgram.operations.reverse }
       (startBindings 2) = none ∧
     ParallelScopeStart.programStartCapacity { rawCapacityProgram with interruptingMessageEventSubProcesses := [{
       parentScopeId := ⟨"root"⟩, handlerScopeId := ⟨"body"⟩, elementId := ⟨"Batch"⟩,
       startEventId := ⟨"ChildStart"⟩, channel := .operationMessage ⟨"I"⟩ ⟨"O"⟩ ⟨"M"⟩,
-      childEntry := ⟨"body-in"⟩ }] } (startBindings 2) = none := by decide +kernel
+      childEntry := ⟨"body-in"⟩ }] } (startBindings 2) = none
 
 def commandWaitingState? : Option RuntimeState := do
   let started := admitStimulus rawCapacityProgram initialState
@@ -222,8 +221,8 @@ def cyclicParent (state : RuntimeState) : RuntimeState :=
   { state with scopeOccurrences := state.scopeOccurrences.map fun scope =>
     if scope.parent.isNone then { scope with parent := some scope.id } else scope }
 
-theorem private_parallel_resumption_uses_real_scoped_waits :
-    commandResume? id = some (.committed, some 12) := by decide +kernel
+def private_parallel_resumption_uses_real_scoped_waits : Bool := decide <|
+    commandResume? id = some (.committed, some 12)
 
 def duplicateStorageCounters : List (RuntimeState → RuntimeState) :=
   [ fun state => { state with activations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
@@ -235,20 +234,18 @@ def duplicateStorageCounters : List (RuntimeState → RuntimeState) :=
   , fun state => { state with callActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] }
   , fun state => { state with eventRaceActivations := [⟨⟨"Probe"⟩, 5⟩, ⟨⟨"Probe"⟩, 9⟩] } ]
 
-theorem private_parallel_resumption_refuses_all_duplicate_storage_counter_keys :
+def private_parallel_resumption_refuses_all_duplicate_storage_counter_keys : Bool := decide <|
     commandResume? id = some (.committed, some 12) ∧
-      duplicateStorageCounters.all (fun change => commandResume? change == some (.rejected, none)) = true := by
-  decide +kernel
+      duplicateStorageCounters.all (fun change => commandResume? change == some (.rejected, none)) = true
 
-theorem private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys :
+def private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys : Bool := decide <|
     let start := Stimulus.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"invoices"⟩ (startBindings 2)
     ParallelScopeStart.commandClosureLimit? rawCapacityProgram initialState start = some 12 ∧
       duplicateStorageCounters.all (fun change =>
         let state := change initialState
         ParallelScopeStart.commandClosureLimit? rawCapacityProgram state start == none &&
           (admitStimulus rawCapacityProgram state start).outcome == .rejected &&
-          (admitStimulus rawCapacityProgram state start).state == state) = true := by
-  decide +kernel
+          (admitStimulus rawCapacityProgram state start).state == state) = true
 
 def assertRejectedResumption (name : String)
     (variants : List (String × (RuntimeState → RuntimeState))) : IO Unit := do
@@ -268,10 +265,10 @@ def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : IO
 #eval private_parallel_resumption_refuses_unrelated_population_rows
 #eval private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents
 
-theorem private_frontier_population_retains_serial_task_capacity :
+def private_frontier_population_retains_serial_task_capacity : Bool := decide <|
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 0) = some ⟨0, 0⟩ ∧
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 16) = some ⟨16, 16⟩ ∧
-    ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 17) = none := by decide +kernel
+    ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 17) = none
 
 def nestedFrontier : List StructuredParallelBody.Vertex :=
   [⟨"start", .start, ["outer"]⟩, ⟨"outer", .fork, ["inner", "c"]⟩,
@@ -279,12 +276,12 @@ def nestedFrontier : List StructuredParallelBody.Vertex :=
    ⟨"innerJoin", .join, ["join"]⟩, ⟨"c", .task, ["join"]⟩, ⟨"join", .join, ["d"]⟩,
    ⟨"d", .task, ["end"]⟩, ⟨"end", .finish, []⟩]
 
-theorem weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima :
+def weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima : Bool := decide <|
     StructuredParallelBody.frontierCapacity nestedFrontier ["a", "b", "c", "d"] = some ⟨3, 3⟩ ∧
     StructuredParallelBody.frontierCapacity nestedFrontier.reverse ["d"] = some ⟨3, 1⟩ ∧
     ParallelScopeStart.boundedFrontier 128 64 = some ⟨128, 64⟩ ∧
     ParallelScopeStart.boundedFrontier 129 64 = none ∧
-    ParallelScopeStart.boundedFrontier 128 65 = none := by decide +kernel
+    ParallelScopeStart.boundedFrontier 128 65 = none
 
 def parallelScopeNodeFields : List (String × Lean.Json) :=
   [("kind", .str "parallelMultiInstanceSubProcess"), ("id", .str "mi"),
@@ -300,11 +297,27 @@ def decodedNodes (fields : List (String × Lean.Json)) : Option (List CheckedNod
     ("sequenceFlowScopes", .arr #[]), ("sequenceFlows", .arr #[]),
     ("nodes", .arr #[Lean.Json.mkObj fields])])).toOption.map (·.nodes)
 
-theorem parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields :
+def parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields : Bool := decide <|
     decodedNodes parallelScopeNodeFields =
       some [.parallelMultiInstanceSubProcess ⟨"mi"⟩ ⟨"body"⟩ "items" "item" [] none] ∧
     decodedNodes (parallelScopeNodeFields.filter (·.1 != "collectionName")) = none ∧
-    decodedNodes (parallelScopeNodeFields ++ [("isSequential", .bool false)]) = none := by
-  decide +kernel
+    decodedNodes (parallelScopeNodeFields ++ [("isSequential", .bool false)]) = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("parallel_source_graph_policy_does_not_admit_execution", parallel_source_graph_policy_does_not_admit_execution),
+  ("parallel_completion_cannot_bind_sequential_entry", parallel_completion_cannot_bind_sequential_entry),
+  ("private_checked_admission_retains_both_task_kinds_and_execution_refusal", private_checked_admission_retains_both_task_kinds_and_execution_refusal),
+  ("private_start_bound_counts_population_and_requires_pre_entry_inputs", private_start_bound_counts_population_and_requires_pre_entry_inputs),
+  ("private_raw_parallel_capacity_retains_population_and_required_empty_inputs", private_raw_parallel_capacity_retains_population_and_required_empty_inputs),
+  ("private_raw_parallel_start_ingress_preserves_public_shape_refusal", private_raw_parallel_start_ingress_preserves_public_shape_refusal),
+  ("private_raw_parallel_capacity_checks_the_original_decoded_program", private_raw_parallel_capacity_checks_the_original_decoded_program),
+  ("private_parallel_resumption_uses_real_scoped_waits", private_parallel_resumption_uses_real_scoped_waits),
+  ("private_parallel_resumption_refuses_all_duplicate_storage_counter_keys", private_parallel_resumption_refuses_all_duplicate_storage_counter_keys),
+  ("private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys", private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys),
+  ("private_frontier_population_retains_serial_task_capacity", private_frontier_population_retains_serial_task_capacity),
+  ("weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima", weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima),
+  ("parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields", parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields)
+]
 
 end BpmnSemantics.ParallelScopeGraphConformance

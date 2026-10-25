@@ -19,12 +19,12 @@ def descriptor (name : String) : EffectDescriptor :=
   { protocol := "urn:bpmn-lean:effect-protocol:activity-v1", operation := name }
 
 /-- SBT-RESULT-01 opts the private profile into null results; legacy mappings retain their refusal. -/
-theorem legacy_result_contract_refuses_null_fanout :
+def legacy_result_contract_refuses_null_fanout : Bool := decide <|
     applyEffectResult []
       [{ target := "decision", expression := .localVariable "result" },
        { target := "status", expression := .localVariable "result" }]
       [{ name := "result", value := .string "parent" }]
-      (.success [{ name := "result", value := .null }]) = none := by decide +kernel
+      (.success [{ name := "result", value := .null }]) = none
 
 def checked : CheckedProcess :=
   { identity :=
@@ -81,22 +81,20 @@ def finalization : StimulusResult := applyStimulus 8 program classification.stat
 def completed : StimulusResult := applyStimulus 8 program finalization.state
   (.completeUserTaskInstance ⟨"finalize"⟩ ⟨⟨"I"⟩, ⟨"E"⟩, 1⟩ [])
 
-theorem independent_chain_admission :
+def independent_chain_admission : Bool := decide <|
     checkedWellFormed checked = true ∧ programWellFormed program = true ∧
-    programProfileCapabilitiesValid program = true := by decide +kernel
+    programProfileCapabilitiesValid program = true
 
-theorem required_input_analysis :
-    (SerialBusinessTask.programAnalysis program).map (·.required) = some ["payload", "request"] := by
-  decide +kernel
+def required_input_analysis : Bool := decide <|
+    (SerialBusinessTask.programAnalysis program).map (·.required) = some ["payload", "request"]
 
-theorem explicit_null_start_reaches_review :
-    review.outcome = .committed ∧ review.state.waits.map (·.task.id.value) = ["B"] := by
-  decide +kernel
+def explicit_null_start_reaches_review : Bool := decide <|
+    review.outcome = .committed ∧ review.state.waits.map (·.task.id.value) = ["B"]
 
-theorem review_arms_immutable_enclosing_arguments :
+def review_arms_immutable_enclosing_arguments : Bool := decide <|
     validation.outcome = .committed ∧ validation.state.effectWaits.map (·.arguments) =
       [[{ name := "echo", value := .string "parent" },
-        { name := "payload", value := .string "reviewed" }]] := by decide +kernel
+        { name := "payload", value := .string "reviewed" }]]
 
 theorem local_result_fanout_and_parent_frame :
     classification.outcome = .committed ∧
@@ -118,16 +116,16 @@ theorem complete_actual_serial_journey :
        { name := "request", value := .string "reviewed" }, { name := "result", value := .string "old" },
        { name := "status", value := .null }] := by cbv
 
-theorem missing_start_refuses :
+def missing_start_refuses : Bool := decide <|
     applyStimulus 8 program initialState (.startProcess ⟨"bad"⟩ ⟨"P"⟩ ⟨"I"⟩ []) =
       { outcome := .rejected, state := initialState,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by decide +kernel
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false }
 
-theorem empty_instance_start_refuses :
+def empty_instance_start_refuses : Bool := decide <|
     (admitStimulus program initialState
       (.startProcess ⟨"empty-instance"⟩ ⟨"P"⟩ ⟨""⟩ initialBindings)).outcome = .rejected ∧
     (admitStimulus program initialState
-      (.startProcess ⟨"empty-instance"⟩ ⟨"P"⟩ ⟨""⟩ initialBindings)).state = initialState := by decide +kernel
+      (.startProcess ⟨"empty-instance"⟩ ⟨"P"⟩ ⟨""⟩ initialBindings)).state = initialState
 
 theorem replayed_effect_refuses_unchanged :
     applyStimulus 8 program classification.state
@@ -140,10 +138,10 @@ theorem incomplete_patch_refuses_unchanged :
       { outcome := .rejected, state := validation.state,
         internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by cbv
 
-theorem engine_context_and_keyword_handlers_refuse :
+def engine_context_and_keyword_handlers_refuse : Bool := decide <|
     SerialBusinessTask.descriptorValid (descriptor "execution") = false ∧
     SerialBusinessTask.descriptorValid (descriptor "authenticatedUserId") = false ∧
-    SerialBusinessTask.descriptorValid (descriptor "empty") = false := by decide +kernel
+    SerialBusinessTask.descriptorValid (descriptor "empty") = false
 
 theorem snapshot_survives_parent_change :
     serialRuntimeAssociationsValid program
@@ -159,10 +157,9 @@ theorem chained_input_nonlaw :
       some [{ name := "echo", value := .string "parent" }, { name := "payload", value := .string "reviewed" }] := by
   cbv
 
-theorem old_profile_does_not_admit_business_handlers :
+def old_profile_does_not_admit_business_handlers : Bool := decide <|
     programProfileCapabilitiesValid { program with identity := { program.identity with
-      semanticProfile := ⟨"cibseven-2.0.0-mapped-success-service-task-draft"⟩ } } = false := by
-  decide +kernel
+      semanticProfile := ⟨"cibseven-2.0.0-mapped-success-service-task-draft"⟩ } } = false
 
 theorem malformed_result_classes_refuse :
     [ [{ name := "result", value := .boolean true }],
@@ -173,34 +170,47 @@ theorem malformed_result_classes_refuse :
           (.completeEffect ⟨"bad"⟩ validationId (.success patch))
         result.outcome == .rejected && result.state == validation.state) = true := by cbv
 
-theorem second_distinct_source_cannot_partially_write :
+def second_distinct_source_cannot_partially_write : Bool := decide <|
     serialEffectPatch? []
       [{ target := "a", expression := .localVariable "x" },
        { target := "b", expression := .localVariable "y" }]
-      [{ name := "a", value := .string "old" }] [{ name := "x", value := .string "new" }] = none := by
-  decide +kernel
+      [{ name := "a", value := .string "old" }] [{ name := "x", value := .string "new" }] = none
 
-theorem empty_mapping_accepts_exact_empty_patch :
+def empty_mapping_accepts_exact_empty_patch : Bool := decide <|
     serialEffectPatch? [] [] initialBindings [] = some initialBindings ∧
-    serialEffectPatch? [] [] initialBindings [{ name := "extra", value := .null }] = none := by
-  decide +kernel
+    serialEffectPatch? [] [] initialBindings [{ name := "extra", value := .null }] = none
 
-theorem handler_shadowing_refuses_bindings_and_mapping :
+def handler_shadowing_refuses_bindings_and_mapping : Bool := decide <|
     SerialBusinessTask.bindingsValid ["validateInvoice"]
       [{ name := "validateInvoice", value := .null }] = false ∧
     SerialBusinessTask.mappingsValid ["validateInvoice"]
-      [{ target := "request", expression := .enclosingVariable "validateInvoice" }] [] = false := by
-  decide +kernel
+      [{ target := "request", expression := .enclosingVariable "validateInvoice" }] [] = false
 
-theorem duplicate_identity_and_disconnected_chain_refuse :
+def duplicate_identity_and_disconnected_chain_refuse : Bool := decide <|
     (SerialBusinessTask.analyze
       [{ id := "start", kind := .start, outputs := ["human"] },
        { id := "human", kind := .human, outputs := ["service"] },
        { id := "service", kind := .service, outputs := ["end"] },
        { id := "end", kind := .finish, outputs := [] },
        { id := "extra", kind := .human, outputs := ["extra"] }]).isNone = true ∧
-    checkedWellFormed { checked with nodes := checked.nodes ++ [.userTask ⟨"B"⟩ none none] } = false := by
-  decide +kernel
+    checkedWellFormed { checked with nodes := checked.nodes ++ [.userTask ⟨"B"⟩ none none] } = false
 
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("legacy_result_contract_refuses_null_fanout", legacy_result_contract_refuses_null_fanout),
+  ("independent_chain_admission", independent_chain_admission),
+  ("required_input_analysis", required_input_analysis),
+  ("explicit_null_start_reaches_review", explicit_null_start_reaches_review),
+  ("review_arms_immutable_enclosing_arguments", review_arms_immutable_enclosing_arguments),
+  ("missing_start_refuses", missing_start_refuses),
+  ("empty_instance_start_refuses", empty_instance_start_refuses),
+  ("engine_context_and_keyword_handlers_refuse", engine_context_and_keyword_handlers_refuse),
+  ("old_profile_does_not_admit_business_handlers", old_profile_does_not_admit_business_handlers),
+  ("second_distinct_source_cannot_partially_write", second_distinct_source_cannot_partially_write),
+  ("empty_mapping_accepts_exact_empty_patch", empty_mapping_accepts_exact_empty_patch),
+  ("handler_shadowing_refuses_bindings_and_mapping", handler_shadowing_refuses_bindings_and_mapping),
+  ("duplicate_identity_and_disconnected_chain_refuse", duplicate_identity_and_disconnected_chain_refuse)
+]
 
 end BpmnSemantics.SerialBusinessTaskConformance

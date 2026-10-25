@@ -67,13 +67,12 @@ theorem writes_choose_existing_body_and_otherwise_process :
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
     sortByTarget, insertByTarget] <;> decide +kernel
 
-theorem duplicate_complete_owner_refuses_before_binding_availability :
+def duplicate_complete_owner_refuses_before_binding_availability : Bool := decide <|
     let variables := { before with scopes := [{ owner, bindings := [] },
       { owner, bindings := [{ name := "status", value := .null }] }] }
     readScopeVariable? variables owner "status" = none ∧
     writeScopeVariables? variables owner [{ name := "status", value := .string "changed" }] = none ∧
-    removeScopeVariables? variables owner = none := by
-  decide +kernel
+    removeScopeVariables? variables owner = none
 
 theorem disposal_preserves_other_owners_and_reentry_initializes_fresh_data :
     (initialized.bind fun variables => removeScopeVariables? variables owner) = some before ∧
@@ -83,5 +82,10 @@ theorem disposal_preserves_other_owners_and_reentry_initializes_fresh_data :
   simp [initialized, before, owner, foreign, input, literal, initializeScopeVariables?,
     evaluateEnclosingInputMappings, evaluateInputMappings?, canonicalInputMappings?,
     sortByTarget, insertByTarget] <;> decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("duplicate_complete_owner_refuses_before_binding_availability", duplicate_complete_owner_refuses_before_binding_availability)
+]
 
 end BpmnSemantics.ScopeVariableDataConformance

@@ -37,7 +37,7 @@ theorem scenario_start_sequence_is_first_only :
   decide +kernel
 
 /-- Scenario admission pairs the first start kind with the program before executing any stimulus. -/
-theorem scenario_start_is_paired_with_program :
+def scenario_start_is_paired_with_program : Bool := decide <|
     supportsScenario program (scenarioForProgram program [trigger]) = true ∧
       supportsScenario sequentialProgram
         (scenarioForProgram sequentialProgram
@@ -53,8 +53,7 @@ theorem scenario_start_is_paired_with_program :
             ⟨sequentialProgram.processId.value⟩
             instanceId
             ⟨"StartEvent_1"⟩
-            channel]) = false := by
-  decide +kernel
+            channel]) = false
 
 /-- Cross-kind starts fail deployment admission and therefore execute no stimulus. -/
 theorem cross_kind_scenarios_execute_no_stimulus :
@@ -76,7 +75,7 @@ theorem cross_kind_scenarios_execute_no_stimulus :
   decide +kernel
 
 /-- Exact full-channel target pairing participates in scenario support admission. -/
-theorem wrong_interface_operation_is_unsupported_before_execution :
+def wrong_interface_operation_is_unsupported_before_execution : Bool := decide <|
     supportsScenario program
       (scenarioForProgram program
         [.triggerMessageStart
@@ -84,7 +83,12 @@ theorem wrong_interface_operation_is_unsupported_before_execution :
           ⟨processId.value⟩
           instanceId
           ⟨startEventId.value⟩
-          wrongInterfaceOperationChannel]) = false := by
-  decide +kernel
+          wrongInterfaceOperationChannel]) = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def messageStartScenarioConformanceChecks : List (String × Bool) := [
+  ("scenario_start_is_paired_with_program", scenario_start_is_paired_with_program),
+  ("wrong_interface_operation_is_unsupported_before_execution", wrong_interface_operation_is_unsupported_before_execution)
+]
 
 end BpmnSemantics.MessageStartConformance

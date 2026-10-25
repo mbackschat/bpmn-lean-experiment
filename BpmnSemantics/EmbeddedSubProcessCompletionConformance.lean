@@ -194,9 +194,8 @@ def completedObservation : StateObservation :=
     openUserTasks := []
     enabledInteractions := [] }
 
-theorem exact_scoped_definition_is_admitted :
-    definitionBindingValid checkedProcess program = true := by
-  decide +kernel
+def exact_scoped_definition_is_admitted : Bool := decide <|
+    definitionBindingValid checkedProcess program = true
 
 theorem start_enters_one_child_scope_and_opens_both_tasks :
     childWaiting.outcome = .committed ∧
@@ -226,11 +225,16 @@ theorem child_completion_order_has_same_parent_observation :
       observeStableState program afterBThenA.state = some afterScopeObservation := by
   decide +kernel
 
-theorem outer_task_completes_root_scope :
+def outer_task_completes_root_scope : Bool := decide <|
     completed.outcome = .committed ∧
       observeStableState program completed.state = some completedObservation ∧
       completed.state.scopeOccurrences = [] ∧
-      completed.state.endOccurrences = 3 := by
-  decide +kernel
+      completed.state.endOccurrences = 3
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("exact_scoped_definition_is_admitted", exact_scoped_definition_is_admitted),
+  ("outer_task_completes_root_scope", outer_task_completes_root_scope)
+]
 
 end BpmnSemantics.EmbeddedSubProcessCompletionConformance

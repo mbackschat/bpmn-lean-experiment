@@ -299,18 +299,17 @@ theorem exact_lowering_preserves_timer_start :
   decide +kernel
 
 /-- Generic IL validation admits canonical nonempty Timer-initiation fan-out. -/
-theorem generic_timer_initiation_accepts_multiple_distinct_outputs :
+def generic_timer_initiation_accepts_multiple_distinct_outputs : Bool := decide <|
     timerInitiationOperationWellFormed
       [ { id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }
       , { id := ⟨"place:B"⟩, origin := { elementId := ⟨"Flow_B"⟩ } } ]
       ⟨"operation:timer-start"⟩
       { elementId := startEventId }
       1000
-      [⟨"place:A"⟩, ⟨"place:B"⟩] = true := by
-  decide +kernel
+      [⟨"place:A"⟩, ⟨"place:B"⟩] = true
 
 /-- Generic IL validation rejects empty, repeated, noncanonical, and wrong-duration Timer initiations. -/
-theorem generic_timer_initiation_rejects_malformed_outputs_or_duration :
+def generic_timer_initiation_rejects_malformed_outputs_or_duration : Bool := decide <|
     let places :=
       [ { id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }
       , { id := ⟨"place:B"⟩, origin := { elementId := ⟨"Flow_B"⟩ } } ]
@@ -324,8 +323,7 @@ theorem generic_timer_initiation_rejects_malformed_outputs_or_duration :
         [⟨"place:B"⟩, ⟨"place:A"⟩] = false ∧
       timerInitiationOperationWellFormed places ⟨"operation:timer-start"⟩
         { elementId := startEventId } 999
-        [⟨"place:A"⟩, ⟨"place:B"⟩] = false := by
-  decide +kernel
+        [⟨"place:A"⟩, ⟨"place:B"⟩] = false
 
 /-- The selected profile narrows the reusable fan-out to exactly one output. -/
 theorem selected_profile_requires_exactly_one_output :
@@ -349,12 +347,11 @@ theorem exact_trigger_admission_state :
   decide +kernel
 
 /-- Internal Timer initiation creates the sole root-owned output token without opening a runtime Timer. -/
-theorem exact_timer_initiation_state :
+def exact_timer_initiation_state : Bool := decide <|
     initiatedState =
       { admittedState with
         initiationPending := false
-        tokens := [rootToken instanceId processId startOutput] } := by
-  decide +kernel
+        tokens := [rootToken instanceId processId startOutput] }
 
 /-- The executable Timer initiation evaluator is sound for its declarative relation. -/
 theorem timer_initiation_evaluator_is_sound
@@ -364,10 +361,9 @@ theorem timer_initiation_evaluator_is_sound
   initiateTimerState_sound before after outputs result
 
 /-- The two unstable prefixes each enable exactly one internal operation. -/
-theorem closure_prefixes_have_unique_enabledness :
+def closure_prefixes_have_unique_enabledness : Bool := decide <|
     enabledInternalOperationCount program admittedState = 1 ∧
-      enabledInternalOperationCount program initiatedState = 1 := by
-  decide +kernel
+      enabledInternalOperationCount program initiatedState = 1
 
 /-- The exact internal trace is Timer initiation followed by User Task activation. -/
 theorem exact_two_step_internal_trace :
@@ -392,9 +388,8 @@ theorem exact_closure_and_overflow_boundary :
   decide +kernel
 
 /-- The production closure limit is exactly eight and exceeds the representative two-step closure. -/
-theorem production_closure_limit_is_exact_and_sufficient :
-    scenarioClosureLimit = 8 ∧ 2 ≤ scenarioClosureLimit := by
-  decide +kernel
+def production_closure_limit_is_exact_and_sufficient : Bool := decide <|
+    scenarioClosureLimit = 8 ∧ 2 ≤ scenarioClosureLimit
 
 def rejectedExactly (candidateProgram : Program)
     (state : RuntimeState) (stimulus : Stimulus) : Bool :=
@@ -405,15 +400,14 @@ def rejectedExactly (candidateProgram : Program)
       ambiguousInternalChoice := false })
 
 /-- None, Message, and Timer start families reject every cross-kind start with exact state preservation. -/
-theorem start_families_are_pairwise_closed :
+def start_families_are_pairwise_closed : Bool := decide <|
     rejectedExactly program initialState noneTrigger = true ∧
       rejectedExactly program initialState messageTrigger = true ∧
       rejectedExactly noneComparisonProgram initialState trigger = true ∧
-      rejectedExactly messageComparisonProgram initialState trigger = true := by
-  decide +kernel
+      rejectedExactly messageComparisonProgram initialState trigger = true
 
 /-- Process, Start Event, profile, duration, root, and runtime-state mismatches reject exactly. -/
-theorem every_timer_start_binding_mismatch_is_rejected_exactly :
+def every_timer_start_binding_mismatch_is_rejected_exactly : Bool := decide <|
     let wrongProfileProgram :=
       { program with identity :=
           { program.identity with
@@ -435,8 +429,7 @@ theorem every_timer_start_binding_mismatch_is_rejected_exactly :
       rejectedExactly wrongProfileProgram initialState trigger = true ∧
       rejectedExactly wrongDurationProgram initialState trigger = true ∧
       rejectedExactly brokenRootProgram initialState trigger = true ∧
-      rejectedExactly program waitingState trigger = true := by
-  decide +kernel
+      rejectedExactly program waitingState trigger = true
 
 /-- Distinct semantic instance identities create distinct root occurrences and controls. -/
 theorem distinct_fresh_instances_do_not_alias :
@@ -461,7 +454,7 @@ theorem normalized_downstream_observations_agree :
   decide +kernel
 
 /-- Timer Start is first-only and scenario support pairs the first stimulus with the exact program family. -/
-theorem scenario_start_is_first_only_and_program_paired :
+def scenario_start_is_first_only_and_program_paired : Bool := decide <|
     stimulusSequenceSupported [trigger] = true ∧
       stimulusSequenceSupported [trigger, trigger] = false ∧
       supportsScenario program (scenarioForProgram program [trigger]) = true ∧
@@ -469,8 +462,7 @@ theorem scenario_start_is_first_only_and_program_paired :
       supportsScenario noneComparisonProgram
         (scenarioForProgram noneComparisonProgram [trigger]) = false ∧
       supportsScenario messageComparisonProgram
-        (scenarioForProgram messageComparisonProgram [trigger]) = false := by
-  decide +kernel
+        (scenarioForProgram messageComparisonProgram [trigger]) = false
 
 /-- Cross-kind scenarios fail deployment admission and execute no stimulus. -/
 theorem cross_kind_scenarios_execute_no_stimulus :
@@ -482,5 +474,17 @@ theorem cross_kind_scenarios_execute_no_stimulus :
         { outcome := .semantic .unsupported
           trace := [.deployment .unsupported] } := by
   decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("generic_timer_initiation_accepts_multiple_distinct_outputs", generic_timer_initiation_accepts_multiple_distinct_outputs),
+  ("generic_timer_initiation_rejects_malformed_outputs_or_duration", generic_timer_initiation_rejects_malformed_outputs_or_duration),
+  ("exact_timer_initiation_state", exact_timer_initiation_state),
+  ("closure_prefixes_have_unique_enabledness", closure_prefixes_have_unique_enabledness),
+  ("production_closure_limit_is_exact_and_sufficient", production_closure_limit_is_exact_and_sufficient),
+  ("start_families_are_pairwise_closed", start_families_are_pairwise_closed),
+  ("every_timer_start_binding_mismatch_is_rejected_exactly", every_timer_start_binding_mismatch_is_rejected_exactly),
+  ("scenario_start_is_first_only_and_program_paired", scenario_start_is_first_only_and_program_paired)
+]
 
 end BpmnSemantics.TimerStartConformance

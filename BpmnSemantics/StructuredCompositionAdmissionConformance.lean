@@ -11,21 +11,21 @@ namespace BpmnSemantics.StructuredCompositionAdmissionConformance
 
 open SemanticProcess StructuredCompositionFixtures
 
-theorem serial_program_capability_admitted : programProfileCapabilitiesValid serialProgram = true := by decide +kernel
+def serial_program_capability_admitted : Bool := decide <| programProfileCapabilitiesValid serialProgram = true
 
-theorem serial_checked_capability_admitted : checkedProfileCapabilitiesValid serialChecked = true := by decide +kernel
+def serial_checked_capability_admitted : Bool := decide <| checkedProfileCapabilitiesValid serialChecked = true
 
-theorem serial_checked_well_formed : checkedWellFormed serialChecked = true := by decide +kernel
+def serial_checked_well_formed : Bool := decide <| checkedWellFormed serialChecked = true
 
-theorem serial_program_well_formed : programWellFormed serialProgram = true := by decide +kernel
+def serial_program_well_formed : Bool := decide <| programWellFormed serialProgram = true
 
-theorem serial_lowering_exact : lowerCheckedProcess serialChecked = serialProgram := by decide +kernel
+def serial_lowering_exact : Bool := decide <| lowerCheckedProcess serialChecked = serialProgram
 
-theorem serial_start_requires_only_invoice : (StructuredComposition.programAnalysis serialProgram).map (·.required) =
-    some ["Invoice"] := by decide +kernel
+def serial_start_requires_only_invoice : Bool := decide <| (StructuredComposition.programAnalysis serialProgram).map (·.required) =
+    some ["Invoice"]
 
-theorem serial_automatic_burst_is_two : (StructuredComposition.programAnalysis serialProgram).map (·.maximumBurst) =
-    some 2 := by decide +kernel
+def serial_automatic_burst_is_two : Bool := decide <| (StructuredComposition.programAnalysis serialProgram).map (·.maximumBurst) =
+    some 2
 
 def aliasInput (input : DirectActivityDataInput) (variant : Nat) : DirectActivityDataInput :=
   match variant with
@@ -58,17 +58,17 @@ def aliasedProgram (variant : Nat) : Program :=
           else operation
       | _ => operation }
 
-theorem cross_task_aliases_retain_exact_lowering :
+def cross_task_aliases_retain_exact_lowering : Bool := decide <|
     ([0, 1, 2, 3, 4, 5].all fun variant =>
-      lowerCheckedProcess (aliasedChecked variant) == aliasedProgram variant) = true := by decide +kernel
+      lowerCheckedProcess (aliasedChecked variant) == aliasedProgram variant) = true
 
-theorem checked_cross_task_and_cross_role_aliases_rejected :
+def checked_cross_task_and_cross_role_aliases_rejected : Bool := decide <|
     ([0, 1, 2, 3, 4, 5].map fun variant => checkedWellFormed (aliasedChecked variant)) =
-      [false, false, false, false, false, false] := by decide +kernel
+      [false, false, false, false, false, false]
 
-theorem program_cross_task_and_cross_role_aliases_rejected :
+def program_cross_task_and_cross_role_aliases_rejected : Bool := decide <|
     ([0, 1, 2, 3, 4, 5].map fun variant => programProfileCapabilitiesValid (aliasedProgram variant)) =
-      [false, false, false, false, false, false] := by decide +kernel
+      [false, false, false, false, false, false]
 
 def branched (allWrite : Bool) : List StructuredComposition.Vertex :=
   [ { id := "start", kind := .start, outputs := ["choice"] }
@@ -86,14 +86,14 @@ def branched (allWrite : Bool) : List StructuredComposition.Vertex :=
       reads := some "Decision", writes := some "Receipt" }
   , { id := "end", kind := .finish, outputs := [] } ]
 
-theorem one_branch_write_does_not_establish_availability : (StructuredComposition.analyze (branched false)).map (·.required) =
-    some ["Decision", "Invoice"] := by decide +kernel
+def one_branch_write_does_not_establish_availability : Bool := decide <| (StructuredComposition.analyze (branched false)).map (·.required) =
+    some ["Decision", "Invoice"]
 
-theorem every_branch_write_establishes_availability : (StructuredComposition.analyze (branched true)).map (·.required) =
-    some ["Invoice"] := by decide +kernel
+def every_branch_write_establishes_availability : Bool := decide <| (StructuredComposition.analyze (branched true)).map (·.required) =
+    some ["Invoice"]
 
-theorem declaration_reversal_preserves_requirements : (StructuredComposition.analyze (branched false).reverse).map (·.required) =
-    some ["Decision", "Invoice"] := by decide +kernel
+def declaration_reversal_preserves_requirements : Bool := decide <| (StructuredComposition.analyze (branched false).reverse).map (·.required) =
+    some ["Decision", "Invoice"]
 
 def nestedRegion : Nat → String → List StructuredComposition.Vertex
   | 0, _ => []
@@ -110,11 +110,11 @@ def nested (depth : Nat) : List StructuredComposition.Vertex :=
     [{ id := "task", kind := .task, outputs := ["end"] },
      { id := "end", kind := .finish, outputs := [] }]
 
-theorem nested_empty_regions_reach_exact_bound : (StructuredComposition.analyze (nested 3)).map (·.maximumBurst) =
-    some scenarioClosureLimit := by decide +kernel
+def nested_empty_regions_reach_exact_bound : Bool := decide <| (StructuredComposition.analyze (nested 3)).map (·.maximumBurst) =
+    some scenarioClosureLimit
 
-theorem one_deeper_region_exceeds_bound : (StructuredComposition.analyze (nested 4)).map (·.maximumBurst) =
-    some (scenarioClosureLimit + 2) := by decide +kernel
+def one_deeper_region_exceeds_bound : Bool := decide <| (StructuredComposition.analyze (nested 4)).map (·.maximumBurst) =
+    some (scenarioClosureLimit + 2)
 
 def nineStep : List StructuredComposition.Vertex := (nested 3).map fun vertex =>
   if vertex.id == "split3" then { vertex with outputs := ["task", "merge3", "split2"] }
@@ -122,15 +122,15 @@ def nineStep : List StructuredComposition.Vertex := (nested 3).map fun vertex =>
   else if vertex.id == "task" then { vertex with outputs := ["merge3"] }
   else vertex
 
-theorem empty_route_reaches_exactly_nine_steps :
-    (StructuredComposition.analyze nineStep).map (·.maximumBurst) = some 9 := by decide +kernel
+def empty_route_reaches_exactly_nine_steps : Bool := decide <|
+    (StructuredComposition.analyze nineStep).map (·.maximumBurst) = some 9
 
-theorem exact_nine_step_route_exceeds_admission_limit :
+def exact_nine_step_route_exceeds_admission_limit : Bool := decide <|
     ((StructuredComposition.analyze nineStep).map fun analysis =>
-      decide (analysis.maximumBurst ≤ scenarioClosureLimit)) = some false := by decide +kernel
+      decide (analysis.maximumBurst ≤ scenarioClosureLimit)) = some false
 
-theorem private_profile_refuses_explicit_scheduling : programProfileCapabilitiesValid
-    { serialProgram with internalSchedulingMode := .requireChoiceSchedule } = false := by decide +kernel
+def private_profile_refuses_explicit_scheduling : Bool := decide <| programProfileCapabilitiesValid
+    { serialProgram with internalSchedulingMode := .requireChoiceSchedule } = false
 
 def crossing : List StructuredComposition.Vertex :=
   [ { id := "start", kind := .start, outputs := ["outer"] }
@@ -145,23 +145,48 @@ def crossing : List StructuredComposition.Vertex :=
   , { id := "second", kind := .merge, outputs := ["end"] }
   , { id := "end", kind := .finish, outputs := [] } ]
 
-theorem crossed_regions_have_valid_local_arities :
-    StructuredComposition.aritiesValid crossing = true := by decide +kernel
+def crossed_regions_have_valid_local_arities : Bool := decide <|
+    StructuredComposition.aritiesValid crossing = true
 
-theorem crossed_regions_are_not_structured :
-    StructuredComposition.analyze crossing = none := by decide +kernel
+def crossed_regions_are_not_structured : Bool := decide <|
+    StructuredComposition.analyze crossing = none
 
-theorem composed_predecessor_profile_stays_single_task :
+def composed_predecessor_profile_stays_single_task : Bool := decide <|
     programProfileCapabilitiesValid
       { serialProgram with identity :=
           { serialProgram.identity with semanticProfile := activityDataInputOutputUserTaskProfileId } } =
-      false := by decide +kernel
+      false
 
-theorem completion_identity_cannot_hide_excluded_operation :
+def completion_identity_cannot_hide_excluded_operation : Bool := decide <|
     structuredCompositionProgramGraph
       { serialProgram with operations := serialProgram.operations ++
           [.duplicate ⟨"operation:complete-scope:scope:InvoiceProcess"⟩
-            { elementId := ⟨"Unexpected"⟩ } ⟨"place:d"⟩ [⟨"place:a"⟩, ⟨"place:b"⟩]] } = false := by
-  decide +kernel
+            { elementId := ⟨"Unexpected"⟩ } ⟨"place:d"⟩ [⟨"place:a"⟩, ⟨"place:b"⟩]] } = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("serial_program_capability_admitted", serial_program_capability_admitted),
+  ("serial_checked_capability_admitted", serial_checked_capability_admitted),
+  ("serial_checked_well_formed", serial_checked_well_formed),
+  ("serial_program_well_formed", serial_program_well_formed),
+  ("serial_lowering_exact", serial_lowering_exact),
+  ("serial_start_requires_only_invoice", serial_start_requires_only_invoice),
+  ("serial_automatic_burst_is_two", serial_automatic_burst_is_two),
+  ("cross_task_aliases_retain_exact_lowering", cross_task_aliases_retain_exact_lowering),
+  ("checked_cross_task_and_cross_role_aliases_rejected", checked_cross_task_and_cross_role_aliases_rejected),
+  ("program_cross_task_and_cross_role_aliases_rejected", program_cross_task_and_cross_role_aliases_rejected),
+  ("one_branch_write_does_not_establish_availability", one_branch_write_does_not_establish_availability),
+  ("every_branch_write_establishes_availability", every_branch_write_establishes_availability),
+  ("declaration_reversal_preserves_requirements", declaration_reversal_preserves_requirements),
+  ("nested_empty_regions_reach_exact_bound", nested_empty_regions_reach_exact_bound),
+  ("one_deeper_region_exceeds_bound", one_deeper_region_exceeds_bound),
+  ("empty_route_reaches_exactly_nine_steps", empty_route_reaches_exactly_nine_steps),
+  ("exact_nine_step_route_exceeds_admission_limit", exact_nine_step_route_exceeds_admission_limit),
+  ("private_profile_refuses_explicit_scheduling", private_profile_refuses_explicit_scheduling),
+  ("crossed_regions_have_valid_local_arities", crossed_regions_have_valid_local_arities),
+  ("crossed_regions_are_not_structured", crossed_regions_are_not_structured),
+  ("composed_predecessor_profile_stays_single_task", composed_predecessor_profile_stays_single_task),
+  ("completion_identity_cannot_hide_excluded_operation", completion_identity_cannot_hide_excluded_operation)
+]
 
 end BpmnSemantics.StructuredCompositionAdmissionConformance

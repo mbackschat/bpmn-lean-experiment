@@ -44,30 +44,27 @@ theorem exact_lowering_preserves_message_start :
   rfl
 
 /-- Message Start output lowering is a canonical projection of checked Sequence Flow endpoints. -/
-theorem exact_lowering_uses_only_checked_flow_endpoints :
-    lowerMessageStartOutputs checkedProcess startEventId = [startOutput] := by
-  decide +kernel
+def exact_lowering_uses_only_checked_flow_endpoints : Bool := decide <|
+    lowerMessageStartOutputs checkedProcess startEventId = [startOutput]
 
 /-- A same-Message, same-Interface source mutation with a different Interface Operation changes the lowered operation. -/
-theorem interface_operation_is_a_lowering_discriminator :
+def interface_operation_is_a_lowering_discriminator : Bool := decide <|
     lowerMessageStartOperation checkedProcess startEventId
         wrongInterfaceOperationChannel ≠
-      lowerMessageStartOperation checkedProcess startEventId channel := by
-  decide +kernel
+      lowerMessageStartOperation checkedProcess startEventId channel
 
 /-- Generic IL validation admits canonical nonempty distinct Message initiation outputs. -/
-theorem generic_message_initiation_accepts_multiple_distinct_outputs :
+def generic_message_initiation_accepts_multiple_distinct_outputs : Bool := decide <|
     messageInitiationOperationWellFormed
       [ { id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }
       , { id := ⟨"place:B"⟩, origin := { elementId := ⟨"Flow_B"⟩ } } ]
       ⟨"operation:message-start"⟩
       { elementId := startEventId }
       channel
-      [⟨"place:A"⟩, ⟨"place:B"⟩] = true := by
-  decide +kernel
+      [⟨"place:A"⟩, ⟨"place:B"⟩] = true
 
 /-- Generic IL validation rejects empty and repeated output lists. -/
-theorem generic_message_initiation_rejects_empty_or_repeated_outputs :
+def generic_message_initiation_rejects_empty_or_repeated_outputs : Bool := decide <|
     messageInitiationOperationWellFormed
         [{ id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }]
         ⟨"operation:message-start"⟩
@@ -77,8 +74,7 @@ theorem generic_message_initiation_rejects_empty_or_repeated_outputs :
         [{ id := ⟨"place:A"⟩, origin := { elementId := ⟨"Flow_A"⟩ } }]
         ⟨"operation:message-start"⟩
         { elementId := startEventId }
-        channel [⟨"place:A"⟩, ⟨"place:A"⟩] = false := by
-  decide +kernel
+        channel [⟨"place:A"⟩, ⟨"place:A"⟩] = false
 
 /-- The selected profile refuses the generic multi-output representation. -/
 theorem selected_profile_requires_exactly_one_output :
@@ -102,11 +98,19 @@ theorem exact_trigger_admission_state :
   decide +kernel
 
 /-- Internal Message initiation creates the sole root-owned output token and no subscription. -/
-theorem exact_message_initiation_state :
+def exact_message_initiation_state : Bool := decide <|
     initiatedState =
       { admittedState with
         initiationPending := false
-        tokens := [rootToken instanceId processId startOutput] } := by
-  decide +kernel
+        tokens := [rootToken instanceId processId startOutput] }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def messageStartAdmissionConformanceChecks : List (String × Bool) := [
+  ("exact_lowering_uses_only_checked_flow_endpoints", exact_lowering_uses_only_checked_flow_endpoints),
+  ("interface_operation_is_a_lowering_discriminator", interface_operation_is_a_lowering_discriminator),
+  ("generic_message_initiation_accepts_multiple_distinct_outputs", generic_message_initiation_accepts_multiple_distinct_outputs),
+  ("generic_message_initiation_rejects_empty_or_repeated_outputs", generic_message_initiation_rejects_empty_or_repeated_outputs),
+  ("exact_message_initiation_state", exact_message_initiation_state)
+]
 
 end BpmnSemantics.MessageStartConformance

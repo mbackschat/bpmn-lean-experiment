@@ -44,14 +44,14 @@ def probePairedProgram : Program :=
       ⟨"body"⟩ ⟨"out"⟩ "applicants" "applicant" [] (some "approved"),
       .completeParallelMultiInstanceScope ⟨"complete"⟩ ⟨⟨"Checks"⟩⟩ ⟨"enter"⟩] }
 
-theorem parallel_il_binding_preserves_selected_occurrence_fixture :
+def parallel_il_binding_preserves_selected_occurrence_fixture : Bool := decide <|
     applyParallelScopeOperation? probePairedProgram ⟨"enter"⟩ probeReady probeParent = some probeActive ∧
     applyParallelScopeOperation? probePairedProgram ⟨"complete"⟩ probeSettled (probeBody 5) = some probeRetired ∧
     applyParallelScopeOperation? probePairedProgram ⟨"complete"⟩ probeSettled (probeBody 6) = none ∧
     applyParallelScopeOperation? { probePairedProgram with operations := probePairedProgram.operations.reverse }
       ⟨"complete"⟩ probeSettled (probeBody 5) = some probeRetired ∧
     applyParallelScopeOperation? { probePairedProgram with operationScopes := [] }
-      ⟨"complete"⟩ probeSettled (probeBody 5) = none := by decide +kernel
+      ⟨"complete"⟩ probeSettled (probeBody 5) = none
 
 theorem parallel_entry_disjoint_ownership_fixture :
     (enterParallelScope? probeEntry probeReady probeParent).isSome = true ∧
@@ -79,13 +79,13 @@ theorem parallel_terminal_cleanup_fixture :
     final.variables.scopes = [] ∧ final.variables.process = probeEarly.variables.process ∧
     final.tokens = [⟨⟨"out"⟩, probeParent⟩] ∧ final.scopeActivations = probeEarly.scopeActivations := by decide +kernel
 
-theorem parallel_natural_completion_fixture :
+def parallel_natural_completion_fixture : Bool := decide <|
     let settled := { probeRetired with tokens := [] }
     let final := (completeParallelScope? probeEntry settled (probeBody 6)).getD initialState
     (completeParallelScope? probeEntry settled (probeBody 6)).isSome = true ∧
     final.activityOccurrences = [probeOther] ∧ final.parallelScopeControllers = [] ∧
     final.variables.scopes = [] ∧ final.tokens = [⟨⟨"out"⟩, probeParent⟩] ∧
-    final.variables.process = probeReady.variables.process := by decide +kernel
+    final.variables.process = probeReady.variables.process
 
 open InternalCommutation
 
@@ -102,7 +102,7 @@ def occurrenceCandidate (n : Nat) : InternalOperationOccurrence := ⟨⟨"end"�
 def occurrenceEnded : RuntimeState :=
   { occurrenceState with tokens := [⟨⟨"in"⟩, probeBody 2⟩], endOccurrences := 1 }
 
-theorem exact_operation_occurrence_discovery_fixture :
+def exact_operation_occurrence_discovery_fixture : Bool := decide <|
     internalOperationOccurrences? occurrenceProgram occurrenceState ⟨"end"⟩ =
       some [occurrenceCandidate 1, occurrenceCandidate 2] ∧
     internalOperationOccurrences? occurrenceProgram
@@ -110,19 +110,19 @@ theorem exact_operation_occurrence_discovery_fixture :
       some [occurrenceCandidate 1, occurrenceCandidate 2] ∧
     resolveInternalOperationOccurrence? occurrenceProgram
       { occurrenceState with scopeOccurrences := [⟨probeBody 2, some probeParent⟩] }
-      (occurrenceCandidate 1) = none := by decide +kernel
+      (occurrenceCandidate 1) = none
 
-theorem exact_operation_occurrence_end_fixture :
+def exact_operation_occurrence_end_fixture : Bool := decide <|
     applyInternalOperationOccurrence? occurrenceProgram occurrenceState (occurrenceCandidate 1) = some occurrenceEnded ∧
     applyInternalOperationOccurrence? occurrenceProgram occurrenceEnded (occurrenceCandidate 1) = none ∧
     applyInternalOperationOccurrence? occurrenceProgram occurrenceEnded (occurrenceCandidate 2) =
-      some { occurrenceEnded with tokens := [], endOccurrences := 2 } := by decide +kernel
+      some { occurrenceEnded with tokens := [], endOccurrences := 2 }
 
-theorem exact_operation_occurrence_frontier_fixture :
+def exact_operation_occurrence_frontier_fixture : Bool := decide <|
     (deriveInternalOccurrenceFrontier? occurrenceProgram occurrenceState).map (List.map Prod.fst) =
       some [occurrenceCandidate 1, occurrenceCandidate 2] ∧
     (deriveInternalOccurrenceFrontier? occurrenceProgram occurrenceEnded).map (List.map Prod.fst) =
-      some [occurrenceCandidate 2] := by decide +kernel
+      some [occurrenceCandidate 2]
 
 def occurrenceFork : Program :=
   { occurrenceProgram with operations := [.duplicate ⟨"end"⟩ ⟨⟨"Fork"⟩⟩ ⟨"in"⟩ [⟨"left"⟩, ⟨"right"⟩]] }
@@ -131,13 +131,13 @@ def occurrenceForked : RuntimeState :=
 def occurrenceJoin : Program :=
   { occurrenceProgram with operations := [.synchronize ⟨"end"⟩ ⟨⟨"Join"⟩⟩ [⟨"left"⟩, ⟨"right"⟩] ⟨"out"⟩] }
 
-theorem exact_operation_occurrence_fork_join_fixture :
+def exact_operation_occurrence_fork_join_fixture : Bool := decide <|
     (applyInternalOperationOccurrence? occurrenceFork occurrenceState (occurrenceCandidate 2)).isSome = true ∧
     (applyInternalOperationOccurrence? occurrenceJoin occurrenceForked (occurrenceCandidate 2)).isSome = true ∧
     applyInternalOperationOccurrence? occurrenceJoin occurrenceForked (occurrenceCandidate 1) = none ∧
     applyInternalOperationOccurrence? occurrenceFork
       { occurrenceState with tokens := ⟨⟨"in"⟩, probeBody 1⟩ :: occurrenceState.tokens }
-      (occurrenceCandidate 1) = none := by decide +kernel
+      (occurrenceCandidate 1) = none
 
 def occurrenceTask : Program :=
   { occurrenceProgram with operations := [.awaitUserTask ⟨"end"⟩ ⟨⟨"End"⟩⟩ ⟨"in"⟩ ⟨"out"⟩
@@ -149,34 +149,34 @@ def occurrenceTaskOne : RuntimeState :=
 def occurrenceTaskBoth : RuntimeState :=
   (applyInternalOperationOccurrence? occurrenceTask occurrenceTaskOne (occurrenceCandidate 1)).getD initialState
 
-theorem exact_operation_occurrence_task_arming_fixture :
+def exact_operation_occurrence_task_arming_fixture : Bool := decide <|
     (deriveInternalOccurrenceFrontier? occurrenceTask occurrenceTaskBefore).map (List.map Prod.fst) =
       some [occurrenceCandidate 1, occurrenceCandidate 2] ∧
     occurrenceTaskOne.waits.map (fun wait => (wait.owner, wait.activation)) = [(probeBody 2, 8)] ∧
     applyInternalOperationOccurrence? occurrenceTask occurrenceTaskOne (occurrenceCandidate 2) = none ∧
     occurrenceTaskBoth.waits.map (fun wait => (wait.owner, wait.activation)) = [(probeBody 1, 9), (probeBody 2, 8)] ∧
     occurrenceTaskBoth.activations = [⟨⟨"Review"⟩, 9⟩] ∧ occurrenceTaskBoth.tokens = [] ∧
-    occurrenceTaskBoth.variables = occurrenceTaskBefore.variables := by decide +kernel
+    occurrenceTaskBoth.variables = occurrenceTaskBefore.variables
 
 def occurrenceTimerDefinition : TimerDefinition := ⟨⟨"Reminder"⟩, 1000⟩
 def occurrenceTimers : RuntimeState :=
   let first := activateTimer occurrenceState ⟨"applicants"⟩ (probeBody 2) ⟨"in"⟩ ⟨"out"⟩ occurrenceTimerDefinition
   activateTimer first ⟨"applicants"⟩ (probeBody 1) ⟨"in"⟩ ⟨"out"⟩ occurrenceTimerDefinition
 
-theorem exact_occurrence_task_projection_order_fixture :
+def exact_occurrence_task_projection_order_fixture : Bool := decide <|
     (projectOpenUserTasks [{ id := ⟨"Review"⟩, name := some "Review application" }] occurrenceTaskBoth).map
-      (·.id.activation) = [8, 9] := by decide +kernel
+      (·.id.activation) = [8, 9]
 
-theorem exact_occurrence_timer_projection_order_fixture :
-    (projectOpenTimers [occurrenceTimerDefinition] occurrenceTimers).map (·.id.activation) = [1, 2] := by decide +kernel
+def exact_occurrence_timer_projection_order_fixture : Bool := decide <|
+    (projectOpenTimers [occurrenceTimerDefinition] occurrenceTimers).map (·.id.activation) = [1, 2]
 
-theorem exact_occurrence_frontier_refuses_unhandled_operations :
+def exact_occurrence_frontier_refuses_unhandled_operations : Bool := decide <|
     deriveInternalOccurrenceFrontier?
       { occurrenceProgram with operations := [.mergeExclusive ⟨"merge"⟩ ⟨⟨"Merge"⟩⟩ [⟨"in"⟩] ⟨"out"⟩] }
       occurrenceState = none ∧
     deriveInternalOccurrenceFrontier?
       { occurrenceProgram with operations := occurrenceProgram.operations ++ [.mergeExclusive ⟨"merge"⟩ ⟨⟨"Merge"⟩⟩ [⟨"in"⟩] ⟨"out"⟩] }
-      occurrenceState = none := by decide +kernel
+      occurrenceState = none
 
 def effectInput (name : String) : VariableMapping := ⟨name, .enclosingVariable name⟩
 def scopedEffect : EffectDefinition :=
@@ -215,11 +215,11 @@ def armEffect (state : RuntimeState) (activation : Nat) : Option RuntimeState :=
   unless (armEffect both 5).isNone do
     throw (IO.userError "parallel effect: consumed candidate armed twice")
 
-theorem parallel_effect_missing_population_refuses_fixture :
+def parallel_effect_missing_population_refuses_fixture : Bool := decide <|
     armEffect { effectActive with parallelScopeControllers := [] } 5 = none ∧
     armEffect { effectActive with variables := { effectActive.variables with
       scopes := effectActive.variables.scopes.filter (·.owner != probeBody 6) } } 5 = none ∧
-    armEffect effectActive 7 = none := by decide +kernel
+    armEffect effectActive 7 = none
 
 def resultProgram : Program :=
   { effectProgram with operations := probePairedProgram.operations ++ [
@@ -326,8 +326,8 @@ def entryPublicationFixtureValid (count : Nat) : Bool := Id.run do
     let polluted := { after with scopeOccurrences := ⟨probeBody 5, some probeParent⟩ :: after.scopeOccurrences }
     return (candidateParallelScopeStarts? cohortProgram operation probeParent before polluted).isNone
 
-theorem parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures :
-    [0, 1, 2, 16].all entryPublicationFixtureValid = true := by decide +kernel
+def parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures : Bool := decide <|
+    [0, 1, 2, 16].all entryPublicationFixtureValid = true
 
 def completionPublicationOperation : SemanticOperation :=
   .completeParallelMultiInstanceScope ⟨"complete"⟩ ⟨⟨"Checks"⟩⟩ ⟨"enter"⟩
@@ -340,18 +340,18 @@ def completionPublicationEntryOperation : SemanticOperation :=
 def completionPublicationDelta (activation : Nat) : UnnumberedFlowNodeOccurrenceDelta :=
   { started := [], ended := [{ anchor := .scope (probeBody activation), terminal := .completed }] }
 
-theorem parallel_partial_retirement_publishes_only_exact_completed_body :
+def parallel_partial_retirement_publishes_only_exact_completed_body : Bool := decide <|
     candidateFlowNodeOccurrenceDeltaForOwnedOperation? cohortProgram probeSettled probeRetired
       completionPublicationOperation (probeBody 5) ⟨"retire"⟩ 0 =
-      some (completionPublicationDelta 5) := by decide +kernel
+      some (completionPublicationDelta 5)
 
-theorem parallel_natural_exhaustion_publishes_completed_body_even_with_true_condition :
+def parallel_natural_exhaustion_publishes_completed_body_even_with_true_condition : Bool := decide <|
     let before := { probeRetired with tokens := [], variables :=
       { probeRetired.variables with process := probeEarly.variables.process } }
     let after := (completeParallelScope? probeEntry before (probeBody 6)).getD initialState
     candidateFlowNodeOccurrenceDeltaForOwnedOperation? cohortProgram before after
       completionPublicationOperation (probeBody 6) ⟨"retire"⟩ 1 =
-      some (completionPublicationDelta 6) := by decide +kernel
+      some (completionPublicationDelta 6)
 
 def retirementPublicationOperations : List SemanticOperation :=
   [ completionPublicationOperation,
@@ -406,29 +406,27 @@ def retirementCandidate (program : Program) (before after : RuntimeState)
   candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after
     completionPublicationOperation owner ⟨"retire"⟩ 0
 
-theorem parallel_retirement_publication_fixture_has_independent_open_projection :
+def parallel_retirement_publication_fixture_has_independent_open_projection : Bool := decide <|
     programWellFormed retirementPublicationProgram = true ∧
     (projectOpenFlowNodeOccurrences? retirementPublicationProgram retirementPublicationBefore).isSome = true ∧
-    (projectOpenFlowNodeOccurrences? retirementPublicationProgram retirementPublicationAfter).isSome = true := by
-  decide +kernel
+    (projectOpenFlowNodeOccurrences? retirementPublicationProgram retirementPublicationAfter).isSome = true
 
-theorem parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work :
+def parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work : Bool := decide <|
     retirementCandidate retirementPublicationProgram retirementPublicationBefore retirementPublicationAfter =
       some retirementPublicationDelta ∧
     retirementPublicationAfter.waits = retirementPublicationBefore.waits.filter (·.owner == probeParent) ∧
     retirementPublicationAfter.effectWaits = [] ∧ retirementPublicationAfter.variables.activities = [] ∧
-    retirementPublicationAfter.variables.process = retirementPublicationBefore.variables.process := by
-  decide +kernel
+    retirementPublicationAfter.variables.process = retirementPublicationBefore.variables.process
 
-theorem parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent :
+def parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent : Bool := decide <|
     retirementCandidate retirementPublicationProgram retirementPublicationBefore initialState =
       some retirementPublicationDelta ∧
     acceptFlowNodeOccurrenceCandidate? retirementPublicationProgram retirementPublicationBefore
       retirementPublicationAfter retirementPublicationDelta = some retirementPublicationDelta ∧
     acceptFlowNodeOccurrenceCandidate? retirementPublicationProgram retirementPublicationBefore
-      retirementPublicationBefore retirementPublicationDelta = none := by decide +kernel
+      retirementPublicationBefore retirementPublicationDelta = none
 
-theorem parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings :
+def parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings : Bool := decide <|
     let candidate := fun program before => retirementCandidate program before probeRetired
     retirementCandidate cohortProgram probeSettled probeRetired (probeBody 6) = none ∧
     retirementCandidate cohortProgram probeRetired probeRetired (probeBody 5) = none ∧
@@ -450,7 +448,7 @@ theorem parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bi
       probeSettled = none ∧
     candidate { cohortProgram with definitionScopes := cohortProgram.definitionScopes.map fun definition =>
       if definition.id == ⟨"body"⟩ then { definition with originElementId := ⟨"Other"⟩ } else definition }
-      probeSettled = none := by decide +kernel
+      probeSettled = none
 
 #eval show IO Unit from do
   for count in [2, 16] do
@@ -553,5 +551,27 @@ def decodeChoiceWire (text : String) :=
   | .ok (.mergeInput ⟨"check"⟩ owner ⟨"in"⟩) =>
       unless owner == probeBody 2 do throw (IO.userError "Merge choice owner changed")
   | _ => throw (IO.userError "Merge choice decoding changed")
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("parallel_il_binding_preserves_selected_occurrence_fixture", parallel_il_binding_preserves_selected_occurrence_fixture),
+  ("parallel_natural_completion_fixture", parallel_natural_completion_fixture),
+  ("exact_operation_occurrence_discovery_fixture", exact_operation_occurrence_discovery_fixture),
+  ("exact_operation_occurrence_end_fixture", exact_operation_occurrence_end_fixture),
+  ("exact_operation_occurrence_frontier_fixture", exact_operation_occurrence_frontier_fixture),
+  ("exact_operation_occurrence_fork_join_fixture", exact_operation_occurrence_fork_join_fixture),
+  ("exact_operation_occurrence_task_arming_fixture", exact_operation_occurrence_task_arming_fixture),
+  ("exact_occurrence_task_projection_order_fixture", exact_occurrence_task_projection_order_fixture),
+  ("exact_occurrence_timer_projection_order_fixture", exact_occurrence_timer_projection_order_fixture),
+  ("exact_occurrence_frontier_refuses_unhandled_operations", exact_occurrence_frontier_refuses_unhandled_operations),
+  ("parallel_effect_missing_population_refuses_fixture", parallel_effect_missing_population_refuses_fixture),
+  ("parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures", parallel_entry_publication_preserves_population_and_rejects_corrupt_fixtures),
+  ("parallel_partial_retirement_publishes_only_exact_completed_body", parallel_partial_retirement_publishes_only_exact_completed_body),
+  ("parallel_natural_exhaustion_publishes_completed_body_even_with_true_condition", parallel_natural_exhaustion_publishes_completed_body_even_with_true_condition),
+  ("parallel_retirement_publication_fixture_has_independent_open_projection", parallel_retirement_publication_fixture_has_independent_open_projection),
+  ("parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work", parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work),
+  ("parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent", parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent),
+  ("parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings", parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings)
+]
 
 end BpmnSemantics.ParallelScopeRuntimeConformance

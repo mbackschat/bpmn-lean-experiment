@@ -130,20 +130,18 @@ theorem exact_definition_is_admitted :
   decide +kernel
 
 /-- The Receive Task profile rejects a Catch Event even when lowering would erase the locus. -/
-theorem catch_event_locus_is_not_receive_task_source :
+def catch_event_locus_is_not_receive_task_source : Bool := decide <|
     checkedProfileCapabilitiesValid locusSwappedCheckedProcess = false ∧
       definitionBindingValid locusSwappedCheckedProcess
-        (lowerCheckedProcess locusSwappedCheckedProcess) = false := by
-  decide +kernel
+        (lowerCheckedProcess locusSwappedCheckedProcess) = false
 
 /-- A checked Receive Task cannot carry the operation-addressed Event channel arm. -/
-theorem receive_task_rejects_operation_message_channel :
+def receive_task_rejects_operation_message_channel : Bool := decide <|
     definitionBindingValid crossArmCheckedProcess
-      (lowerCheckedProcess crossArmCheckedProcess) = false := by
-  decide +kernel
+      (lowerCheckedProcess crossArmCheckedProcess) = false
 
 /-- Lowering preserves the Receive Task element and direct Message arm without an invented Interface or Operation. -/
-theorem lowering_preserves_direct_message_address :
+def lowering_preserves_direct_message_address : Bool := decide <|
     program.operations.find? (fun operation =>
         decide (operation.id.value =
           "operation:ReceiveTask_WaitForInvoice")) =
@@ -153,8 +151,7 @@ theorem lowering_preserves_direct_message_address :
           { elementId := ⟨"ReceiveTask_WaitForInvoice"⟩ }
           ⟨"place:SequenceFlow_StartToReceive"⟩
           ⟨"place:SequenceFlow_ReceiveToEnd"⟩
-          { elementId := ⟨"ReceiveTask_WaitForInvoice"⟩, channel }) := by
-  decide +kernel
+          { elementId := ⟨"ReceiveTask_WaitForInvoice"⟩, channel })
 
 /-- Start requires exactly initiation followed by activation of the passive Message wait. -/
 theorem start_closure_uses_two_internal_steps :
@@ -180,14 +177,13 @@ theorem activation_creates_exact_direct_subscription :
   decide +kernel
 
 /-- Canonical observation exposes the complete direct subscription and its sole interaction. -/
-theorem canonical_observation_preserves_direct_subscription :
+def canonical_observation_preserves_direct_subscription : Bool := decide <|
     observeStableState program waitingResult.state = some waitingObservation ∧
       observeStableState program completedResult.state =
-        some completedObservation := by
-  decide +kernel
+        some completedObservation
 
 /-- Exact delivery needs the End and root-completion steps, then terminates with no subscription. -/
-theorem exact_delivery_completes_after_two_internal_steps :
+def exact_delivery_completes_after_two_internal_steps : Bool := decide <|
     (applyStimulus 1 program waitingResult.state
         exactDelivery).internalStepBoundExceeded = true ∧
       (applyStimulus 2 program waitingResult.state
@@ -196,8 +192,7 @@ theorem exact_delivery_completes_after_two_internal_steps :
       completedResult.internalStepBoundExceeded = false ∧
       completedResult.state.messageWaits = [] ∧
       completedResult.state.control =
-        .completed subscriptionId.processInstanceId := by
-  decide +kernel
+        .completed subscriptionId.processInstanceId
 
 /-- The executable direct delivery remains covered by the generic declarative Message relation. -/
 theorem exact_direct_delivery_is_permitted
@@ -229,22 +224,31 @@ theorem every_direct_address_mismatch_preserves_state :
   decide +kernel
 
 /-- A well-formed delivery before activation cannot create a subscription or progress control. -/
-theorem pre_activation_delivery_is_rejected :
+def pre_activation_delivery_is_rejected : Bool := decide <|
     applyStimulus scenarioClosureLimit program initialState exactDelivery =
       { outcome := .rejected
         state := initialState
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
 /-- A fresh semantic command cannot consume the completed Receive Task twice. -/
-theorem consumed_subscription_is_stale :
+def consumed_subscription_is_stale : Bool := decide <|
     applyStimulus scenarioClosureLimit program completedResult.state
         (.deliverMessage ⟨"stale-receive-task-message"⟩ subscriptionId channel) =
       { outcome := .rejected
         state := completedResult.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("catch_event_locus_is_not_receive_task_source", catch_event_locus_is_not_receive_task_source),
+  ("receive_task_rejects_operation_message_channel", receive_task_rejects_operation_message_channel),
+  ("lowering_preserves_direct_message_address", lowering_preserves_direct_message_address),
+  ("canonical_observation_preserves_direct_subscription", canonical_observation_preserves_direct_subscription),
+  ("exact_delivery_completes_after_two_internal_steps", exact_delivery_completes_after_two_internal_steps),
+  ("pre_activation_delivery_is_rejected", pre_activation_delivery_is_rejected),
+  ("consumed_subscription_is_stale", consumed_subscription_is_stale)
+]
 
 end BpmnSemantics.ReceiveTaskConformance

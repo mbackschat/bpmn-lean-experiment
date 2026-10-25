@@ -51,7 +51,7 @@ def missingOwnerState : RuntimeState :=
            [{ owner := missingOwner, bindings := [{ name := "frozen", value := .string "old" }] },
             { owner := parentB, bindings := [] }] }) }] }] }
 
-theorem exact_live_root_owner_is_required :
+def exact_live_root_owner_is_required : Bool := decide <|
     compensationExecutionStateValid program pendingState = true ∧
       compensationExecutionStateValid program missingOwnerState = false ∧
       compensationExecutionStateValid program
@@ -59,31 +59,26 @@ theorem exact_live_root_owner_is_required :
       compensationExecutionStateValid program { pendingState with scopeOccurrences :=
         [{ id := rootOwner, parent := none }, { id := rootOwner, parent := none }] } = false ∧
       compensationExecutionStateValid program { pendingState with scopeOccurrences :=
-        [{ id := rootOwner, parent := some parentB }] } = false := by
-  decide +kernel
+        [{ id := rootOwner, parent := some parentB }] } = false
 
-theorem repeated_predecessor_is_not_resolved_to_the_first_occurrence :
+def repeated_predecessor_is_not_resolved_to_the_first_occurrence : Bool := decide <|
     compensationExecutionStateValid program
-      (withHandlers [pendingHandlerA, secondA, pendingB]) = false := by
-  decide +kernel
+      (withHandlers [pendingHandlerA, secondA, pendingB]) = false
 
-theorem repeated_successor_is_not_resolved_to_the_first_occurrence :
+def repeated_successor_is_not_resolved_to_the_first_occurrence : Bool := decide <|
     compensationExecutionStateValid program
-      (withHandlers [pendingHandlerA, pendingB, secondB]) = false := by
-  decide +kernel
+      (withHandlers [pendingHandlerA, pendingB, secondB]) = false
 
-theorem missing_opposite_endpoint_does_not_hide_ambiguity :
+def missing_opposite_endpoint_does_not_hide_ambiguity : Bool := decide <|
     compensationExecutionStateValid program (withHandlers [pendingHandlerA, secondA] []) = false ∧
-      compensationExecutionStateValid program (withHandlers [pendingB, secondB] []) = false := by
-  decide +kernel
+      compensationExecutionStateValid program (withHandlers [pendingB, secondB] []) = false
 
-theorem unique_partial_selection_omits_only_the_missing_edge :
+def unique_partial_selection_omits_only_the_missing_edge : Bool := decide <|
     compensationExecutionStateValid program (withHandlers [pendingHandlerA] []) = true ∧
       compensationExecutionStateValid program (withHandlers [pendingB] []) = true ∧
       occurrenceDependencies program executionDeclaration [pendingHandlerA, pendingB] =
         activeTrigger.dependencies ∧
-      occurrenceDependencies program executionDeclaration [] = [] := by
-  decide +kernel
+      occurrenceDependencies program executionDeclaration [] = []
 
 def selectedA : SelectedCompensationSubject :=
   { definition := .boundaryActivity ⟨"A"⟩ (boundaryBody "HA")
@@ -98,26 +93,35 @@ def selectedB : SelectedCompensationSubject :=
     occurrence := subjectB
     restoredContext := some restoredContext }
 
-theorem constructor_refuses_ambiguous_lifting_before_frontier_activation :
+def constructor_refuses_ambiguous_lifting_before_frontier_activation : Bool := decide <|
     constructCompensationTriggerFrontier program preTriggerState triggerOperation rootOwner
       [selectedA, selectedA2, selectedB] = none ∧
       constructCompensationTriggerFrontier program preTriggerState triggerOperation rootOwner
-        [selectedA, selectedA2] = none := by
-  decide +kernel
+        [selectedA, selectedA2] = none
 
-theorem constructor_keeps_empty_and_partial_selection :
+def constructor_keeps_empty_and_partial_selection : Bool := decide <|
     (constructCompensationTriggerFrontier program preTriggerState triggerOperation rootOwner
       []).isSome = true ∧
       (constructCompensationTriggerFrontier program preTriggerState triggerOperation rootOwner
         [selectedA]).map (·.trigger.dependencies) = some [] ∧
       (constructCompensationTriggerFrontier program preTriggerState triggerOperation rootOwner
-        [selectedB]).map (·.trigger.dependencies) = some [] := by
-  decide +kernel
+        [selectedB]).map (·.trigger.dependencies) = some []
 
-theorem terminal_tombstones_outlive_their_live_owner :
+def terminal_tombstones_outlive_their_live_owner : Bool := decide <|
     compensationExecutionStateValid program
       { allSucceededState with control := .completed instanceId, scopeOccurrences := [], tokens := [] } = true ∧
-      compensationExecutionStateValid program failedState = true := by
-  decide +kernel
+      compensationExecutionStateValid program failedState = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("exact_live_root_owner_is_required", exact_live_root_owner_is_required),
+  ("repeated_predecessor_is_not_resolved_to_the_first_occurrence", repeated_predecessor_is_not_resolved_to_the_first_occurrence),
+  ("repeated_successor_is_not_resolved_to_the_first_occurrence", repeated_successor_is_not_resolved_to_the_first_occurrence),
+  ("missing_opposite_endpoint_does_not_hide_ambiguity", missing_opposite_endpoint_does_not_hide_ambiguity),
+  ("unique_partial_selection_omits_only_the_missing_edge", unique_partial_selection_omits_only_the_missing_edge),
+  ("constructor_refuses_ambiguous_lifting_before_frontier_activation", constructor_refuses_ambiguous_lifting_before_frontier_activation),
+  ("constructor_keeps_empty_and_partial_selection", constructor_keeps_empty_and_partial_selection),
+  ("terminal_tombstones_outlive_their_live_owner", terminal_tombstones_outlive_their_live_owner)
+]
 
 end BpmnSemantics.CompensationTriggerHandlerAmbiguityConformance

@@ -115,7 +115,7 @@ theorem exact_definition_is_admitted :
     definitionBindingValid checkedProcess program = true := by
   decide +kernel
 
-theorem lowering_arms_one_named_message_timer_race :
+def lowering_arms_one_named_message_timer_race : Bool := decide <|
     program.operations.find? (fun operation =>
         decide (operation.id.value = "operation:EventGateway")) =
       some
@@ -129,10 +129,9 @@ theorem lowering_arms_one_named_message_timer_race :
           { configurationOrigin := { elementId := ⟨"Flow_Gateway_Timer"⟩ }
             elementId := ⟨"TimerCatch"⟩
             durationMs := 1000
-            output := ⟨"place:Flow_Timer_Task"⟩ }) := by
-  decide +kernel
+            output := ⟨"place:Flow_Timer_Task"⟩ })
 
-theorem every_source_flow_is_classified_exactly_once :
+def every_source_flow_is_classified_exactly_once : Bool := decide <|
     checkedProcess.sequenceFlows.all fun flow =>
       let controlCount :=
         (program.controlPlaces.map (·.origin.elementId) |>.filter fun id =>
@@ -140,8 +139,7 @@ theorem every_source_flow_is_classified_exactly_once :
       let configurationCount :=
         (programConfigurationOrigins program |>.filter fun id =>
           decide (id = flow.id)).length
-      controlCount + configurationCount = 1 := by
-  decide +kernel
+      controlCount + configurationCount = 1
 
 def swapConfigurationOrigins : SemanticOperation → SemanticOperation
   | .awaitEventRace id origin input message timer =>
@@ -192,55 +190,48 @@ def mixedDuplicateOriginProgram : Program :=
             program.operations }
   | _ => program
 
-theorem swapped_configuration_origins_fail_checked_binding :
+def swapped_configuration_origins_fail_checked_binding : Bool := decide <|
     programWellFormed swappedConfigurationProgram = true ∧
-      definitionBindingValid checkedProcess swappedConfigurationProgram = false := by
-  decide +kernel
+      definitionBindingValid checkedProcess swappedConfigurationProgram = false
 
-theorem both_winner_directions_reject_swapped_outputs :
+def both_winner_directions_reject_swapped_outputs : Bool := decide <|
     (applyStimulus scenarioClosureLimit swappedOutputProgram armed.state
         messageStimulus).outcome = .rejected ∧
       (applyStimulus scenarioClosureLimit swappedOutputProgram armed.state
-        timerStimulus).outcome = .rejected := by
-  decide +kernel
+        timerStimulus).outcome = .rejected
 
-theorem both_winner_directions_reject_the_wrong_race_definition :
+def both_winner_directions_reject_the_wrong_race_definition : Bool := decide <|
     (applyStimulus scenarioClosureLimit wrongRaceDefinitionProgram armed.state
         messageStimulus).outcome = .rejected ∧
       (applyStimulus scenarioClosureLimit wrongRaceDefinitionProgram armed.state
-        timerStimulus).outcome = .rejected := by
-  decide +kernel
+        timerStimulus).outcome = .rejected
 
-theorem both_winner_directions_require_one_unique_race_definition :
+def both_winner_directions_require_one_unique_race_definition : Bool := decide <|
     (applyStimulus scenarioClosureLimit duplicateRaceDefinitionProgram
         armed.state messageStimulus).outcome = .rejected ∧
       (applyStimulus scenarioClosureLimit duplicateRaceDefinitionProgram
-        armed.state timerStimulus).outcome = .rejected := by
-  decide +kernel
+        armed.state timerStimulus).outcome = .rejected
 
-theorem both_winner_directions_reject_a_malformed_same_origin_definition :
+def both_winner_directions_reject_a_malformed_same_origin_definition : Bool := decide <|
     (applyStimulus scenarioClosureLimit mixedDuplicateOriginProgram armed.state
         messageStimulus).outcome = .rejected ∧
       (applyStimulus scenarioClosureLimit mixedDuplicateOriginProgram armed.state
-        timerStimulus).outcome = .rejected := by
-  decide +kernel
+        timerStimulus).outcome = .rejected
 
-theorem start_closure_arms_atomically_in_two_steps :
+def start_closure_arms_atomically_in_two_steps : Bool := decide <|
     (applyStimulus 1 program initialState startStimulus).internalStepBoundExceeded =
         true ∧
       (applyStimulus 2 program initialState startStimulus).internalStepBoundExceeded =
         false ∧
       armed.internalStepBoundExceeded = false ∧
-      enabledInternalOperationCount program armed.state = 0 := by
-  decide +kernel
+      enabledInternalOperationCount program armed.state = 0
 
-theorem intermediate_prefixes_have_successful_admission_and_internal_steps :
+def intermediate_prefixes_have_successful_admission_and_internal_steps : Bool := decide <|
     (admitStimulus program initialState startStimulus).outcome = .committed ∧
       runChoices program (admitStimulus program initialState startStimulus).state
         [⟨"operation:Start"⟩] = some beforeArming ∧
       (admitStimulus program armed.state messageStimulus).outcome = .committed ∧
-      (admitStimulus program armed.state timerStimulus).outcome = .committed := by
-  decide +kernel
+      (admitStimulus program armed.state timerStimulus).outcome = .committed
 
 theorem exact_arming_is_permitted_by_the_declarative_relation :
     EventRaceArmingStep beforeArming { elementId := ⟨"EventGateway"⟩ }
@@ -288,11 +279,10 @@ theorem armed_state_has_exact_members_and_monotonic_identities :
         [{ elementId := ⟨"EventGateway"⟩, count := 1 }] := by
   decide +kernel
 
-theorem canonical_observation_exposes_only_existing_wait_surfaces :
+def canonical_observation_exposes_only_existing_wait_surfaces : Bool := decide <|
     observeStableState program armed.state = some armedObservation ∧
       observeStableState program messageWon.state = some messageWonObservation ∧
-      observeStableState program timerWon.state = some timerWonObservation := by
-  decide +kernel
+      observeStableState program timerWon.state = some timerWonObservation
 
 theorem message_winner_withdraws_timer_before_task_observation :
     messageWon.outcome = .committed ∧
@@ -304,34 +294,31 @@ theorem message_winner_withdraws_timer_before_task_observation :
       messageWon.state.logicalTimeMs = 0 := by
   decide +kernel
 
-theorem timer_winner_withdraws_message_before_task_observation :
+def timer_winner_withdraws_message_before_task_observation : Bool := decide <|
     timerWon.outcome = .committed ∧
       timerWon.internalStepBoundExceeded = false ∧
       timerWon.state.waits.map (·.task.id.value) = ["Task_Timer"] ∧
       timerWon.state.messageWaits = [] ∧
       timerWon.state.timerWaits = [] ∧
       timerWon.state.eventRaces = [] ∧
-      timerWon.state.logicalTimeMs = 1000 := by
-  decide +kernel
+      timerWon.state.logicalTimeMs = 1000
 
-theorem stale_timer_after_message_win_preserves_exact_state :
+def stale_timer_after_message_win_preserves_exact_state : Bool := decide <|
     applyStimulus scenarioClosureLimit program messageWon.state
         (.fireTimer ⟨"stale-timer"⟩ timerOccurrenceId 1000) =
       { outcome := .rejected
         state := messageWon.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
-theorem stale_message_after_timer_win_preserves_exact_state :
+def stale_message_after_timer_win_preserves_exact_state : Bool := decide <|
     applyStimulus scenarioClosureLimit program timerWon.state
         (.deliverMessage ⟨"stale-message"⟩ messageSubscriptionId
           operationChannel) =
       { outcome := .rejected
         state := timerWon.state
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
 def wrongRaceStimuli : List Stimulus :=
   [ .deliverMessage ⟨"wrong-message-channel"⟩ messageSubscriptionId
@@ -350,7 +337,7 @@ theorem every_wrong_race_stimulus_preserves_the_armed_state :
       List.replicate 4 (.rejected, armed.state) := by
   decide +kernel
 
-theorem selected_task_completion_uses_two_internal_steps :
+def selected_task_completion_uses_two_internal_steps : Bool := decide <|
     (applyStimulus 1 program messageWon.state
         completeMessageTask).internalStepBoundExceeded = true ∧
       (applyStimulus 2 program messageWon.state
@@ -358,10 +345,9 @@ theorem selected_task_completion_uses_two_internal_steps :
       (applyStimulus 1 program timerWon.state
         completeTimerTask).internalStepBoundExceeded = true ∧
       (applyStimulus 2 program timerWon.state
-        completeTimerTask).internalStepBoundExceeded = false := by
-  decide +kernel
+        completeTimerTask).internalStepBoundExceeded = false
 
-theorem both_winner_schedules_complete_without_live_surfaces :
+def both_winner_schedules_complete_without_live_surfaces : Bool := decide <|
     messageCompleted.state.control = .completed instanceId ∧
       timerCompleted.state.control = .completed instanceId ∧
       messageCompleted.state.waits = [] ∧ timerCompleted.state.waits = [] ∧
@@ -370,10 +356,9 @@ theorem both_winner_schedules_complete_without_live_surfaces :
       messageCompleted.state.timerWaits = [] ∧
       timerCompleted.state.timerWaits = [] ∧
       messageCompleted.state.eventRaces = [] ∧
-      timerCompleted.state.eventRaces = [] := by
-  decide +kernel
+      timerCompleted.state.eventRaces = []
 
-theorem lone_race_record_is_nonquiescent_and_nonresumable :
+def lone_race_record_is_nonquiescent_and_nonresumable : Bool := decide <|
     let owner := rootScopeOccurrenceId instanceId processId
     let race : EventRace :=
       { id :=
@@ -389,10 +374,9 @@ theorem lone_race_record_is_nonquiescent_and_nonresumable :
         eventRaces := [race] }
     scopeQuiescent stranded owner = false ∧
       stableStateResumable stranded = false ∧
-      eventRaceMembersValid stranded race = false := by
-  decide +kernel
+      eventRaceMembersValid stranded race = false
 
-theorem partially_armed_race_is_not_a_resumption_surface :
+def partially_armed_race_is_not_a_resumption_surface : Bool := decide <|
     let race : EventRace :=
       { id :=
           { processInstanceId := instanceId
@@ -403,10 +387,9 @@ theorem partially_armed_race_is_not_a_resumption_surface :
         timerOccurrenceId := timerOccurrenceId }
     let incomplete := { armed.state with timerWaits := [] }
     eventRaceMembersValid incomplete race = false ∧
-      stableStateResumable incomplete = false := by
-  decide +kernel
+      stableStateResumable incomplete = false
 
-theorem duplicate_member_association_is_not_a_resumption_surface :
+def duplicate_member_association_is_not_a_resumption_surface : Bool := decide <|
     eventRaceAssociationsValid ambiguousAssociationState = false ∧
       stableStateResumable ambiguousAssociationState = false ∧
       applyStimulus scenarioClosureLimit program ambiguousAssociationState
@@ -414,10 +397,9 @@ theorem duplicate_member_association_is_not_a_resumption_surface :
         { outcome := .rejected
           state := ambiguousAssociationState
           internalStepBoundExceeded := false
-          ambiguousInternalChoice := false } := by
-  decide +kernel
+          ambiguousInternalChoice := false }
 
-theorem erased_race_association_cannot_fall_back_to_standalone_waits :
+def erased_race_association_cannot_fall_back_to_standalone_waits : Bool := decide <|
     let unassociated := { armed.state with eventRaces := [] }
     applyStimulus scenarioClosureLimit program unassociated messageStimulus =
         { outcome := .rejected
@@ -428,7 +410,29 @@ theorem erased_race_association_cannot_fall_back_to_standalone_waits :
         { outcome := .rejected
           state := unassociated
           internalStepBoundExceeded := false
-          ambiguousInternalChoice := false } := by
-  decide +kernel
+          ambiguousInternalChoice := false }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("lowering_arms_one_named_message_timer_race", lowering_arms_one_named_message_timer_race),
+  ("every_source_flow_is_classified_exactly_once", every_source_flow_is_classified_exactly_once),
+  ("swapped_configuration_origins_fail_checked_binding", swapped_configuration_origins_fail_checked_binding),
+  ("both_winner_directions_reject_swapped_outputs", both_winner_directions_reject_swapped_outputs),
+  ("both_winner_directions_reject_the_wrong_race_definition", both_winner_directions_reject_the_wrong_race_definition),
+  ("both_winner_directions_require_one_unique_race_definition", both_winner_directions_require_one_unique_race_definition),
+  ("both_winner_directions_reject_a_malformed_same_origin_definition", both_winner_directions_reject_a_malformed_same_origin_definition),
+  ("start_closure_arms_atomically_in_two_steps", start_closure_arms_atomically_in_two_steps),
+  ("intermediate_prefixes_have_successful_admission_and_internal_steps", intermediate_prefixes_have_successful_admission_and_internal_steps),
+  ("canonical_observation_exposes_only_existing_wait_surfaces", canonical_observation_exposes_only_existing_wait_surfaces),
+  ("timer_winner_withdraws_message_before_task_observation", timer_winner_withdraws_message_before_task_observation),
+  ("stale_timer_after_message_win_preserves_exact_state", stale_timer_after_message_win_preserves_exact_state),
+  ("stale_message_after_timer_win_preserves_exact_state", stale_message_after_timer_win_preserves_exact_state),
+  ("selected_task_completion_uses_two_internal_steps", selected_task_completion_uses_two_internal_steps),
+  ("both_winner_schedules_complete_without_live_surfaces", both_winner_schedules_complete_without_live_surfaces),
+  ("lone_race_record_is_nonquiescent_and_nonresumable", lone_race_record_is_nonquiescent_and_nonresumable),
+  ("partially_armed_race_is_not_a_resumption_surface", partially_armed_race_is_not_a_resumption_surface),
+  ("duplicate_member_association_is_not_a_resumption_surface", duplicate_member_association_is_not_a_resumption_surface),
+  ("erased_race_association_cannot_fall_back_to_standalone_waits", erased_race_association_cannot_fall_back_to_standalone_waits)
+]
 
 end BpmnSemantics.EventBasedGatewayConformance

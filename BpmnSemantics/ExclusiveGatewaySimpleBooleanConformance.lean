@@ -25,31 +25,26 @@ theorem string_equals_expression_parses_exactly :
       some (.stringEquals "route" "review") := by
   native_decide
 
-theorem leading_whitespace_is_rejected :
-    parseSimpleBooleanExpression " isPresent(route)" = none := by
-  decide +kernel
+def leading_whitespace_is_rejected : Bool := decide <|
+    parseSimpleBooleanExpression " isPresent(route)" = none
 
-theorem missing_binding_is_not_present :
+def missing_binding_is_not_present : Bool := decide <|
     evaluateSimpleBooleanExpression (.isPresent "route") [] =
-      some false := by
-  decide +kernel
+      some false
 
-theorem null_binding_is_null :
+def null_binding_is_null : Bool := decide <|
     evaluateSimpleBooleanExpression (.isNull "route")
-      [{ name := "route", value := .null }] = some true := by
-  decide +kernel
+      [{ name := "route", value := .null }] = some true
 
-theorem matching_string_binding_is_equal :
+def matching_string_binding_is_equal : Bool := decide <|
     evaluateSimpleBooleanExpression (.stringEquals "route" "review")
-      [{ name := "route", value := .string "review" }] = some true := by
-  decide +kernel
+      [{ name := "route", value := .string "review" }] = some true
 
-theorem first_true_candidate_selects_its_output :
+def first_true_candidate_selects_its_output : Bool := decide <|
     selectConditionalOutput
       [ candidate "Flow_First" (.literal false)
       , candidate "Flow_Second" (.literal true) ]
-      defaultOutput [] = some secondOutput := by
-  decide +kernel
+      defaultOutput [] = some secondOutput
 
 theorem all_false_candidates_select_the_default :
     selectConditionalOutput
@@ -98,5 +93,14 @@ theorem selected_output_owned
           | true =>
               simp [selectConditionalOutput, evaluation] at selected
               exact Or.inr ⟨head, by simp [selected]⟩
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("leading_whitespace_is_rejected", leading_whitespace_is_rejected),
+  ("missing_binding_is_not_present", missing_binding_is_not_present),
+  ("null_binding_is_null", null_binding_is_null),
+  ("matching_string_binding_is_equal", matching_string_binding_is_equal),
+  ("first_true_candidate_selects_its_output", first_true_candidate_selects_its_output)
+]
 
 end BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance

@@ -181,10 +181,9 @@ theorem lowering_derives_branch_local_join_inputs :
           "Split") := by
   decide +kernel
 
-theorem permuted_branch_pairing_fails_definition_binding :
+def permuted_branch_pairing_fails_definition_binding : Bool := decide <|
     programWellFormed wronglyPairedProgram = true ∧
-      definitionBindingValid checkedProcess wronglyPairedProgram = false := by
-  decide +kernel
+      definitionBindingValid checkedProcess wronglyPairedProgram = false
 
 theorem one_true_selects_exactly_one_branch :
     oneWaiting.outcome = .committed ∧
@@ -194,29 +193,26 @@ theorem one_true_selects_exactly_one_branch :
         [[⟨"place:Flow_A_Join"⟩]] := by
   decide +kernel
 
-theorem both_true_selects_both_branches :
+def both_true_selects_both_branches : Bool := decide <|
     bothWaiting.outcome = .committed ∧
       bothWaiting.internalStepBoundExceeded = false ∧
       bothWaiting.state.waits.map (·.task.id.value) = ["Task_A", "Task_B"] ∧
       bothWaiting.state.selectedBranchSets.map (·.expectedInputs) =
-        [[⟨"place:Flow_A_Join"⟩, ⟨"place:Flow_B_Join"⟩]] := by
-  decide +kernel
+        [[⟨"place:Flow_A_Join"⟩, ⟨"place:Flow_B_Join"⟩]]
 
-theorem all_false_selects_only_default :
+def all_false_selects_only_default : Bool := decide <|
     defaultWaiting.outcome = .committed ∧
       defaultWaiting.state.waits.map (·.task.id.value) = ["Task_Default"] ∧
       defaultWaiting.state.selectedBranchSets.map (·.expectedInputs) =
-        [[⟨"place:Flow_Default_Join"⟩]] := by
-  decide +kernel
+        [[⟨"place:Flow_Default_Join"⟩]]
 
-theorem longest_start_closure_is_four_steps :
+def longest_start_closure_is_four_steps : Bool := decide <|
     (applyStimulus 3 program initialState
         (start [present "takeA", present "takeB"])).internalStepBoundExceeded =
         true ∧
       (applyStimulus 4 program initialState
         (start [present "takeA", present "takeB"])).internalStepBoundExceeded =
-        false := by
-  decide +kernel
+        false
 
 def bothSplitState : RuntimeState :=
   (runChoices program
@@ -231,7 +227,7 @@ def activatedBThenA : RuntimeState :=
   (runChoices program bothSplitState
     [⟨"operation:Task_B"⟩, ⟨"operation:Task_A"⟩]).getD initialState
 
-theorem both_task_activation_orders_have_equal_runtime_and_observation :
+def both_task_activation_orders_have_equal_runtime_and_observation : Bool := decide <|
     (runChoices program bothSplitState
         [⟨"operation:Task_A"⟩, ⟨"operation:Task_B"⟩]).isSome = true ∧
       (runChoices program bothSplitState
@@ -239,8 +235,7 @@ theorem both_task_activation_orders_have_equal_runtime_and_observation :
       activatedAThenB.waits.map (·.task.id.value) = ["Task_A", "Task_B"] ∧
       activatedAThenB = activatedBThenA ∧
       observeStableState program activatedAThenB =
-        observeStableState program activatedBThenA := by
-  decide +kernel
+        observeStableState program activatedBThenA
 
 theorem first_arrival_does_not_complete_selected_join :
     bothAfterA.outcome = .committed ∧
@@ -255,17 +250,15 @@ theorem both_completion_orders_reach_the_same_terminal_state :
       bothAThenB.state.selectedBranchSets = [] := by
   decide +kernel
 
-theorem terminal_closure_uses_three_internal_steps :
+def terminal_closure_uses_three_internal_steps : Bool := decide <|
     (applyStimulus 2 program bothAfterA.state
         (completeTask "Task_B")).internalStepBoundExceeded = true ∧
       (applyStimulus 3 program bothAfterA.state
-        (completeTask "Task_B")).internalStepBoundExceeded = false := by
-  decide +kernel
+        (completeTask "Task_B")).internalStepBoundExceeded = false
 
-theorem synchronize_without_selection_record_is_disabled :
+def synchronize_without_selection_record_is_disabled : Bool := decide <|
     let stranded := { bothAfterA.state with selectedBranchSets := [] }
-    synchronizeSelectedState? stranded ⟨"place:Flow_End"⟩ "Split" = none := by
-  decide +kernel
+    synchronizeSelectedState? stranded ⟨"place:Flow_End"⟩ "Split" = none
 
 theorem live_selection_blocks_scope_quiescence :
     let owner := rootScopeOccurrenceId instanceId processId
@@ -277,5 +270,16 @@ theorem live_selection_blocks_scope_quiescence :
              expectedInputs := [⟨"place:Flow_A_Join"⟩] }] }
     scopeQuiescent otherwiseQuiescent owner = false := by
   decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("permuted_branch_pairing_fails_definition_binding", permuted_branch_pairing_fails_definition_binding),
+  ("both_true_selects_both_branches", both_true_selects_both_branches),
+  ("all_false_selects_only_default", all_false_selects_only_default),
+  ("longest_start_closure_is_four_steps", longest_start_closure_is_four_steps),
+  ("both_task_activation_orders_have_equal_runtime_and_observation", both_task_activation_orders_have_equal_runtime_and_observation),
+  ("terminal_closure_uses_three_internal_steps", terminal_closure_uses_three_internal_steps),
+  ("synchronize_without_selection_record_is_disabled", synchronize_without_selection_record_is_disabled)
+]
 
 end BpmnSemantics.InclusiveGatewayConformance

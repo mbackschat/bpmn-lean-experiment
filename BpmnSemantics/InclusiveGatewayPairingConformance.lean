@@ -45,21 +45,25 @@ def pairedProgram (secondKey thirdKey : String) : Program :=
     controlPlaces := places
     operations }
 
-theorem distinct_region_keys_are_structurally_admitted :
-    programWellFormed (pairedProgram "B" "C") = true := by
-  decide +kernel
+def distinct_region_keys_are_structurally_admitted : Bool := decide <|
+    programWellFormed (pairedProgram "B" "C") = true
 
-theorem colliding_keys_preserve_graph_admission :
+def colliding_keys_preserve_graph_admission : Bool := decide <|
     programGraphWellFormedForProgram (pairedProgram "A" "C") = true ∧
-      programGraphWellFormedForProgram (pairedProgram "A" "A") = true := by
-  decide +kernel
+      programGraphWellFormedForProgram (pairedProgram "A" "A") = true
 
-theorem two_distinct_payload_pairs_cannot_share_a_selection_key :
-    programWellFormed (pairedProgram "A" "C") = false := by
-  decide +kernel
+def two_distinct_payload_pairs_cannot_share_a_selection_key : Bool := decide <|
+    programWellFormed (pairedProgram "A" "C") = false
 
-theorem three_distinct_payload_pairs_cannot_share_a_selection_key :
-    programWellFormed (pairedProgram "A" "A") = false := by
-  decide +kernel
+def three_distinct_payload_pairs_cannot_share_a_selection_key : Bool := decide <|
+    programWellFormed (pairedProgram "A" "A") = false
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("distinct_region_keys_are_structurally_admitted", distinct_region_keys_are_structurally_admitted),
+  ("colliding_keys_preserve_graph_admission", colliding_keys_preserve_graph_admission),
+  ("two_distinct_payload_pairs_cannot_share_a_selection_key", two_distinct_payload_pairs_cannot_share_a_selection_key),
+  ("three_distinct_payload_pairs_cannot_share_a_selection_key", three_distinct_payload_pairs_cannot_share_a_selection_key)
+]
 
 end BpmnSemantics.InclusiveGatewayPairingConformance

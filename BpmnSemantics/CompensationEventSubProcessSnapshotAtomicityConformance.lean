@@ -23,15 +23,14 @@ def reservationOverflowResult : TracedStimulusResult :=
       CompensationEventSubProcessSnapshotConformance.instanceId [])
 
 /-- Child-entry overflow rejects the complete start and publishes none of its earlier work. -/
-theorem child_entry_overflow_rolls_back_the_complete_stimulus :
+def child_entry_overflow_rolls_back_the_complete_stimulus : Bool := decide <|
     reservationOverflowResult.result =
         { outcome := .rejected
           state := initialState
           internalStepBoundExceeded := false
           ambiguousInternalChoice := false } ∧
       reservationOverflowResult.committedTransitions = [] ∧
-      reservationOverflowResult.flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
+      reservationOverflowResult.flowNodeOccurrenceLifecycles = []
 
 def promotionOverflowProgram : Program :=
   CompensationEventSubProcessSnapshotConformance.programWithLimits 1
@@ -49,7 +48,7 @@ def promotionOverflowResult : TracedStimulusResult :=
     (.completeUserTaskInstance ⟨"reject-child-promotion"⟩ childTaskId [])
 
 /-- Promotion overflow after prior external and internal work restores the exact pre-command state. -/
-theorem completion_overflow_discards_admission_and_internal_work :
+def completion_overflow_discards_admission_and_internal_work : Bool := decide <|
     promotionOverflowStarted.outcome = .committed ∧
       promotionOverflowResult.result =
         { outcome := .rejected
@@ -57,8 +56,7 @@ theorem completion_overflow_discards_admission_and_internal_work :
           internalStepBoundExceeded := false
           ambiguousInternalChoice := false } ∧
       promotionOverflowResult.committedTransitions = [] ∧
-      promotionOverflowResult.flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
+      promotionOverflowResult.flowNodeOccurrenceLifecycles = []
 
 def rootStartOverflowProgram : Program :=
   { CompensationEventSubProcessSnapshotConformance.rootProgram with
@@ -78,15 +76,14 @@ def rootStartOverflowResult : TracedStimulusResult :=
       CompensationEventSubProcessSnapshotConformance.instanceId [])
 
 /-- Root reservation refusal happens before the independently built running state becomes visible. -/
-theorem root_start_overflow_preserves_not_started_state :
+def root_start_overflow_preserves_not_started_state : Bool := decide <|
     rootStartOverflowResult.result =
         { outcome := .rejected
           state := initialState
           internalStepBoundExceeded := false
           ambiguousInternalChoice := false } ∧
       rootStartOverflowResult.committedTransitions = [] ∧
-      rootStartOverflowResult.flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
+      rootStartOverflowResult.flowNodeOccurrenceLifecycles = []
 
 def lowerRefusalOperation : SemanticOperation :=
   .initiate ⟨"operation:A-refusal"⟩ { elementId := ⟨"A-refusal"⟩ }
@@ -98,7 +95,7 @@ def legacyBypassStimulus : Stimulus :=
     CompensationEventSubProcessSnapshotConformance.instanceId []
 
 /-- A declaring Program cannot reach the declaration-free admission, operation, evaluation, or replay paths. -/
-theorem declaring_program_cannot_use_legacy_entry_points :
+def declaring_program_cannot_use_legacy_entry_points : Bool := decide <|
     (dispatchStimulus CompensationEventSubProcessSnapshotAdmissionConformance.program
         initialState legacyBypassStimulus).outcome = .rejected ∧
     (dispatchStimulus CompensationEventSubProcessSnapshotAdmissionConformance.program
@@ -121,19 +118,26 @@ theorem declaring_program_cannot_use_legacy_entry_points :
         initialState legacyBypassStimulus).committedTransitions = [] ∧
     replayCommittedTransitions
         CompensationEventSubProcessSnapshotAdmissionConformance.program initialState
-        [.externalStimulus legacyBypassStimulus] = none := by
-  decide +kernel
+        [.externalStimulus legacyBypassStimulus] = none
 
 def higherRefusalOperation : SemanticOperation :=
   .initiate ⟨"operation:Z-refusal"⟩ { elementId := ⟨"Z-refusal"⟩ }
     ⟨"place:Z-refusal"⟩
 
 /-- Simultaneous refusals select the detail attached to the lowest canonical operation ID. -/
-theorem refusal_detail_selection_is_canonical_not_list_ordered :
+def refusal_detail_selection_is_canonical_not_list_ordered : Bool := decide <|
     canonicalInternalOperationRefusal?
       [ .refused higherRefusalOperation (.parentContext .invalidProgram)
       , .refused lowerRefusalOperation (.parentContext .invalidState) ] =
-        some (.parentContext .invalidState) := by
-  decide +kernel
+        some (.parentContext .invalidState)
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def compensationEventSubProcessSnapshotAtomicityConformanceChecks : List (String × Bool) := [
+  ("child_entry_overflow_rolls_back_the_complete_stimulus", child_entry_overflow_rolls_back_the_complete_stimulus),
+  ("completion_overflow_discards_admission_and_internal_work", completion_overflow_discards_admission_and_internal_work),
+  ("root_start_overflow_preserves_not_started_state", root_start_overflow_preserves_not_started_state),
+  ("declaring_program_cannot_use_legacy_entry_points", declaring_program_cannot_use_legacy_entry_points),
+  ("refusal_detail_selection_is_canonical_not_list_ordered", refusal_detail_selection_is_canonical_not_list_ordered)
+]
 
 end BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance

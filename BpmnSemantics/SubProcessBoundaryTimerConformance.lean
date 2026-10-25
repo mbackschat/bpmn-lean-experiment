@@ -118,7 +118,7 @@ Without this conjunct the operation could name any element as its host, and ever
 the transition creates would be attributed to an element that does not enter the scope. `AfterScope`
 is chosen because it is a real node of this program in the parent scope, so only the binding itself
 can reject it. -/
-theorem misattributed_scope_entry_origin_is_rejected :
+def misattributed_scope_entry_origin_is_rejected : Bool := decide <|
     programWellFormed
       { program with
         operations := program.operations.map fun operation =>
@@ -126,8 +126,7 @@ theorem misattributed_scope_entry_origin_is_rejected :
           | .enterBoundedScope id _ input childEntry childScopeId boundaryTimer =>
               .enterBoundedScope id ⟨⟨"AfterScope"⟩⟩ input childEntry childScopeId
                 boundaryTimer
-          | other => other } = false := by
-  decide +kernel
+          | other => other } = false
 
 
 /-- The deadline never becomes an independent `awaitTimer`; it exists only as the scope-entry operation's own arm. Without this the program would hold a standalone Timer that no scope owns. -/
@@ -136,8 +135,8 @@ theorem boundary_timer_is_not_lowered_as_a_standalone_timer :
       | .awaitTimer .. => true
       | _ => false) = [] := by decide +kernel
 
-theorem exactly_one_scope_owns_a_boundary_deadline :
-    (boundedScopeOperations program).length = 1 := by decide +kernel
+def exactly_one_scope_owns_a_boundary_deadline : Bool := decide <|
+    (boundedScopeOperations program).length = 1
 
 def instanceId : SemanticId := ⟨"Instance_1"⟩
 
@@ -174,10 +173,10 @@ This is a correctness requirement rather than a modelling preference: `scopeQuie
 Timer wait as live work, so a child-owned deadline would make the child permanently non-quiescent and
 its normal completion unreachable. The deadline arm would still behave correctly, so no separating
 witness at the public boundary would expose the mistake. -/
-theorem deadline_is_owned_by_the_parent_occurrence :
+def deadline_is_owned_by_the_parent_occurrence : Bool := decide <|
     (armedState.timerWaits.map fun wait =>
       (wait.owner.definitionScopeId.value, wait.owner.activation)) =
-      [("scope:Process_SubProcessBoundaryTimer", 1)] := by decide +kernel
+      [("scope:Process_SubProcessBoundaryTimer", 1)]
 
 /-- The deadline arm's bridge no longer takes a `parentOwned` hypothesis, so no satisfiability witness
 belongs here.
@@ -188,14 +187,13 @@ unsatisfiable premise would have deleted the bridge rather than weakened it. The
 record removed the reason the premise existed: cancellation withdraws the deadline with the record that
 lists it, so the evaluator erases nothing and the hypothesis is discharged. What remains checkable here
 is the consequence, that the interrupted state holds no deadline at all. -/
-theorem deadline_arm_withdraws_the_parent_owned_deadline :
+def deadline_arm_withdraws_the_parent_owned_deadline : Bool := decide <|
     (do
       let deadline ← boundedScopeDeadlineWait? armedState deadlineId
       let definition ← boundedScopeDefinitionFor? program deadline
       let child ← boundedScopeChildFor? armedState definition.1 deadline
       pure (decide ((interruptScope armedState child deadline.owner
-        definition.2.output).timerWaits = []))) = some true := by
-  decide +kernel
+        definition.2.output).timerWaits = []))) = some true
 
 def quiescentVictoryState : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
@@ -216,9 +214,8 @@ theorem quiescent_completion_withdraws_the_deadline :
         ["AfterScope"] := by decide +kernel
 
 /-- The quiescence arm leaves logical time untouched, which is half of the arms' separating law. -/
-theorem quiescent_completion_preserves_logical_time :
-    quiescentVictoryState.logicalTimeMs = armedState.logicalTimeMs := by
-  decide +kernel
+def quiescent_completion_preserves_logical_time : Bool := decide <|
+    quiescentVictoryState.logicalTimeMs = armedState.logicalTimeMs
 
 def deadlineVictoryState : RuntimeState :=
   (applyStimulus scenarioClosureLimit program armedState
@@ -238,24 +235,23 @@ theorem deadline_victory_cancels_the_child_region :
         ["EscalationTask"] := by decide +kernel
 
 /-- The other half of the arms' separating law: the deadline arm advances logical time to exactly the deadline, while the quiescence arm above leaves it unchanged. -/
-theorem deadline_victory_advances_logical_time_to_the_deadline :
+def deadline_victory_advances_logical_time_to_the_deadline : Bool := decide <|
     deadlineVictoryState.logicalTimeMs = 1000 ∧
-      armedState.logicalTimeMs = 0 := by decide +kernel
+      armedState.logicalTimeMs = 0
 
 /-- The follow-on User Task identity is the capsule's separating witness, and the two arms differ on it at the approved public boundary rather than through a hidden microstep or storage order. -/
-theorem the_two_arms_differ_at_the_public_boundary :
+def the_two_arms_differ_at_the_public_boundary : Bool := decide <|
     (quiescentVictoryState.waits.map fun wait => wait.task.id.value) ≠
-      (deadlineVictoryState.waits.map fun wait => wait.task.id.value) := by
-  decide +kernel
+      (deadlineVictoryState.waits.map fun wait => wait.task.id.value)
 
 /-- The normal Sub-Process output is unreachable on the deadline arm, the analogue of `SUBERR-NORMAL-01`.
 
 Cancelling the region is not enough on its own: an implementation that cancelled the child and *also*
 emitted the normal outgoing token would satisfy every count above while running both routes. -/
-theorem normal_output_is_unreachable_on_the_deadline_arm :
+def normal_output_is_unreachable_on_the_deadline_arm : Bool := decide <|
     (deadlineVictoryState.tokens.map fun token => token.placeId.value) = [] ∧
       deadlineVictoryState.waits.all (fun wait =>
-        wait.task.id.value ≠ "AfterScope") = true := by decide +kernel
+        wait.task.id.value ≠ "AfterScope") = true
 
 /-- A firing one millisecond early leaves the armed triple exactly intact, deadline included, and still able to win at its exact instant.
 
@@ -273,22 +269,20 @@ theorem an_early_firing_preserves_the_armed_triple :
 This checked non-law exists to stop the two families from being restated as one over-general
 preservation theorem: the Error capsule preserves runtime history across an interrupting handler, while
 this arm must destroy the child region's own waits. A single law covering both would be false here. -/
-theorem interruption_does_not_preserve_child_scope_state :
+def interruption_does_not_preserve_child_scope_state : Bool := decide <|
     armedState.waits ≠ deadlineVictoryState.waits ∧
-      armedState.scopeOccurrences ≠ deadlineVictoryState.scopeOccurrences := by
-  decide +kernel
+      armedState.scopeOccurrences ≠ deadlineVictoryState.scopeOccurrences
 
 /-- Neither victory rewinds an activation counter or invents End history.
 
 The scope counter is what keeps a cancelled child from being re-entered under its old ordinal, and the
 timer counter is what keeps a withdrawn deadline from being re-armed under its own. Both victories are
 checked, because a counter reset would be invisible in the follow-on identity that separates them. -/
-theorem neither_victory_rewinds_a_counter :
+def neither_victory_rewinds_a_counter : Bool := decide <|
     quiescentVictoryState.scopeActivations = armedState.scopeActivations ∧
       quiescentVictoryState.timerActivations = armedState.timerActivations ∧
       deadlineVictoryState.scopeActivations = armedState.scopeActivations ∧
-      deadlineVictoryState.timerActivations = armedState.timerActivations := by
-  decide +kernel
+      deadlineVictoryState.timerActivations = armedState.timerActivations
 
 /-- Firing the deadline after the child already completed in time. -/
 def lateDeadlineResult : StimulusResult :=
@@ -301,11 +295,11 @@ def lateChildTaskResult : StimulusResult :=
     (.completeUserTaskInstance ⟨"late-child-task"⟩ childTaskId [])
 
 /-- After either victory the sibling stimulus is ineligible and is rejected with exact state preservation, so no pair can win twice. -/
-theorem each_victory_makes_its_sibling_ineligible :
+def each_victory_makes_its_sibling_ineligible : Bool := decide <|
     lateDeadlineResult.outcome = .rejected ∧
       lateDeadlineResult.state = quiescentVictoryState ∧
       lateChildTaskResult.outcome = .rejected ∧
-      lateChildTaskResult.state = deadlineVictoryState := by decide +kernel
+      lateChildTaskResult.state = deadlineVictoryState
 
 /-- The same graph with only the deadline's disposition flipped. -/
 def nonInterruptingDeadline : CheckedProcess :=
@@ -323,12 +317,28 @@ graph that reached lowering would silently acquire interrupting semantics. Asser
 predicate rather than `checkedWellFormed` is what makes this a fail-closed attachment rule: the
 weaker statement would still hold if the only thing refusing the graph were a profile that happens
 to pin no such pair. -/
-theorem a_non_interrupting_deadline_on_a_scope_host_is_refused_structurally :
-    checkedBoundaryTimerAttachmentValid nonInterruptingDeadline = false := by
-  decide +kernel
+def a_non_interrupting_deadline_on_a_scope_host_is_refused_structurally : Bool := decide <|
+    checkedBoundaryTimerAttachmentValid nonInterruptingDeadline = false
 
 /-- The interrupting original passes that same predicate, so the theorem above discriminates the disposition rather than some other defect the flip introduced. -/
-theorem the_interrupting_scope_host_passes_the_same_attachment_rule :
-    checkedBoundaryTimerAttachmentValid checkedProcess = true := by decide +kernel
+def the_interrupting_scope_host_passes_the_same_attachment_rule : Bool := decide <|
+    checkedBoundaryTimerAttachmentValid checkedProcess = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("misattributed_scope_entry_origin_is_rejected", misattributed_scope_entry_origin_is_rejected),
+  ("exactly_one_scope_owns_a_boundary_deadline", exactly_one_scope_owns_a_boundary_deadline),
+  ("deadline_is_owned_by_the_parent_occurrence", deadline_is_owned_by_the_parent_occurrence),
+  ("deadline_arm_withdraws_the_parent_owned_deadline", deadline_arm_withdraws_the_parent_owned_deadline),
+  ("quiescent_completion_preserves_logical_time", quiescent_completion_preserves_logical_time),
+  ("deadline_victory_advances_logical_time_to_the_deadline", deadline_victory_advances_logical_time_to_the_deadline),
+  ("the_two_arms_differ_at_the_public_boundary", the_two_arms_differ_at_the_public_boundary),
+  ("normal_output_is_unreachable_on_the_deadline_arm", normal_output_is_unreachable_on_the_deadline_arm),
+  ("interruption_does_not_preserve_child_scope_state", interruption_does_not_preserve_child_scope_state),
+  ("neither_victory_rewinds_a_counter", neither_victory_rewinds_a_counter),
+  ("each_victory_makes_its_sibling_ineligible", each_victory_makes_its_sibling_ineligible),
+  ("a_non_interrupting_deadline_on_a_scope_host_is_refused_structurally", a_non_interrupting_deadline_on_a_scope_host_is_refused_structurally),
+  ("the_interrupting_scope_host_passes_the_same_attachment_rule", the_interrupting_scope_host_passes_the_same_attachment_rule)
+]
 
 end BpmnSemantics.SubProcessBoundaryTimerConformance

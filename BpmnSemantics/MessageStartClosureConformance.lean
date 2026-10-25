@@ -26,14 +26,12 @@ theorem message_initiation_evaluator_is_sound
   initiateMessageState_sound before after outputs result
 
 /-- The first unstable prefix enables only Message initiation. -/
-theorem admitted_prefix_enables_exactly_one_operation :
-    enabledInternalOperationCount program admittedState = 1 := by
-  decide +kernel
+def admitted_prefix_enables_exactly_one_operation : Bool := decide <|
+    enabledInternalOperationCount program admittedState = 1
 
 /-- The second unstable prefix enables only the downstream User Task. -/
-theorem initiated_prefix_enables_exactly_one_operation :
-    enabledInternalOperationCount program initiatedState = 1 := by
-  decide +kernel
+def initiated_prefix_enables_exactly_one_operation : Bool := decide <|
+    enabledInternalOperationCount program initiatedState = 1
 
 /-- The exact internal trace is Message initiation followed by User Task activation. -/
 theorem exact_two_step_internal_trace :
@@ -42,7 +40,7 @@ theorem exact_two_step_internal_trace :
   decide +kernel
 
 /-- Production closure reaches one stable resumable User Task wait in two steps. -/
-theorem exact_trigger_reaches_stable_user_task_wait :
+def exact_trigger_reaches_stable_user_task_wait : Bool := decide <|
     scenarioClosureLimit = 8 ∧
       applyStimulus scenarioClosureLimit program initialState trigger =
         { outcome := .committed
@@ -50,21 +48,27 @@ theorem exact_trigger_reaches_stable_user_task_wait :
           internalStepBoundExceeded := false
           ambiguousInternalChoice := false } ∧
       enabledInternalOperationCount program waitingState = 0 ∧
-      stableStateResumable waitingState = true := by
-  decide +kernel
+      stableStateResumable waitingState = true
 
 /-- The production limit exceeds the exact two-step closure length. -/
-theorem exact_closure_length_fits_production_limit :
-    2 ≤ scenarioClosureLimit := by
-  decide +kernel
+def exact_closure_length_fits_production_limit : Bool := decide <|
+    2 ≤ scenarioClosureLimit
 
 /-- A one-step test limit reports the remaining enabled User Task operation. -/
-theorem one_step_limit_reports_overflow :
+def one_step_limit_reports_overflow : Bool := decide <|
     applyStimulus 1 program initialState trigger =
       { outcome := .rolledBack
         state := initialState
         internalStepBoundExceeded := true
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def messageStartClosureConformanceChecks : List (String × Bool) := [
+  ("admitted_prefix_enables_exactly_one_operation", admitted_prefix_enables_exactly_one_operation),
+  ("initiated_prefix_enables_exactly_one_operation", initiated_prefix_enables_exactly_one_operation),
+  ("exact_trigger_reaches_stable_user_task_wait", exact_trigger_reaches_stable_user_task_wait),
+  ("exact_closure_length_fits_production_limit", exact_closure_length_fits_production_limit),
+  ("one_step_limit_reports_overflow", one_step_limit_reports_overflow)
+]
 
 end BpmnSemantics.MessageStartConformance

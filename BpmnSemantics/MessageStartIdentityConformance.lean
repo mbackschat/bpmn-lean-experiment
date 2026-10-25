@@ -27,14 +27,13 @@ def rejectedExactly (candidateProgram : Program)
       ambiguousInternalChoice := false })
 
 /-- An ordinary None Start command cannot select a Message Start program. -/
-theorem wrong_start_kind_is_rejected_with_exact_state :
+def wrong_start_kind_is_rejected_with_exact_state : Bool := decide <|
     ordinaryStartMatchesProgram program = false ∧
       rejectedExactly program initialState
-        (.startProcess ⟨"wrong-kind"⟩ ⟨processId.value⟩ instanceId []) = true := by
-  decide +kernel
+        (.startProcess ⟨"wrong-kind"⟩ ⟨processId.value⟩ instanceId []) = true
 
 /-- The inverse cross-kind discriminator also holds: a Message trigger cannot start a None Start program. -/
-theorem message_trigger_cannot_start_none_start_program :
+def message_trigger_cannot_start_none_start_program : Bool := decide <|
     admitMessageStart? sequentialProgram initialState
         ⟨sequentialProgram.processId.value⟩ instanceId ⟨"StartEvent_1"⟩
         channel = none ∧
@@ -44,8 +43,7 @@ theorem message_trigger_cannot_start_none_start_program :
           ⟨sequentialProgram.processId.value⟩
           instanceId
           ⟨"StartEvent_1"⟩
-          channel) = true := by
-  decide +kernel
+          channel) = true
 
 /-- Equivalent one-output Message and None starts have the same post-initiation control shape under explicit identity renaming. -/
 theorem message_and_none_start_post_initiation_control_shapes_agree :
@@ -55,7 +53,7 @@ theorem message_and_none_start_post_initiation_control_shapes_agree :
   decide +kernel
 
 /-- Process and Start Event identity mismatches reject with exact state preservation. -/
-theorem process_or_start_event_mismatch_is_rejected_with_exact_state :
+def process_or_start_event_mismatch_is_rejected_with_exact_state : Bool := decide <|
     admitMessageStart? program initialState ⟨"Other_Process"⟩ instanceId
         ⟨startEventId.value⟩ channel = none ∧
       rejectedExactly program initialState
@@ -65,8 +63,7 @@ theorem process_or_start_event_mismatch_is_rejected_with_exact_state :
         ⟨"Other_Start"⟩ channel = none ∧
       rejectedExactly program initialState
         (.triggerMessageStart ⟨"wrong-start"⟩ ⟨processId.value⟩
-          instanceId ⟨"Other_Start"⟩ channel) = true := by
-  decide +kernel
+          instanceId ⟨"Other_Start"⟩ channel) = true
 
 /-- Every component of the operation-addressed Message channel participates in trigger identity. -/
 theorem every_channel_component_mismatch_is_rejected_with_exact_state :
@@ -89,7 +86,7 @@ theorem every_channel_component_mismatch_is_rejected_with_exact_state :
   decide +kernel
 
 /-- Wrong profile, broken root binding, and repeated-state triggers all preserve the exact input state. -/
-theorem profile_root_or_state_mismatch_is_rejected_with_exact_state :
+def profile_root_or_state_mismatch_is_rejected_with_exact_state : Bool := decide <|
     let wrongProfileProgram :=
       { program with
           identity :=
@@ -105,8 +102,7 @@ theorem profile_root_or_state_mismatch_is_rejected_with_exact_state :
       rejectedExactly brokenRootProgram initialState trigger = true ∧
       admitMessageStart? program waitingState ⟨processId.value⟩ instanceId
         ⟨startEventId.value⟩ channel = none ∧
-      rejectedExactly program waitingState trigger = true := by
-  decide +kernel
+      rejectedExactly program waitingState trigger = true
 
 /-- Distinct semantic instance identities create distinct root occurrences and controls. -/
 theorem distinct_fresh_instances_do_not_alias :
@@ -119,5 +115,13 @@ theorem distinct_fresh_instances_do_not_alias :
     first.control ≠ second.control ∧
       first.scopeOccurrences ≠ second.scopeOccurrences := by
   decide +kernel
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def messageStartIdentityConformanceChecks : List (String × Bool) := [
+  ("wrong_start_kind_is_rejected_with_exact_state", wrong_start_kind_is_rejected_with_exact_state),
+  ("message_trigger_cannot_start_none_start_program", message_trigger_cannot_start_none_start_program),
+  ("process_or_start_event_mismatch_is_rejected_with_exact_state", process_or_start_event_mismatch_is_rejected_with_exact_state),
+  ("profile_root_or_state_mismatch_is_rejected_with_exact_state", profile_root_or_state_mismatch_is_rejected_with_exact_state)
+]
 
 end BpmnSemantics.MessageStartConformance

@@ -34,28 +34,32 @@ def state : RuntimeState :=
     messageActivations := [{ elementId := ⟨"Handler"⟩, count := 3 }]
     activityActivations := [{ taskId := ⟨"Child"⟩, count := 7 }] }
 
-theorem retained_body_keeps_its_parent_owned_subscription_and_record :
+def retained_body_keeps_its_parent_owned_subscription_and_record : Bool := decide <|
     (cancelScopeSubtree state child .retain).scopeOccurrences = state.scopeOccurrences ∧
       (cancelScopeSubtree state child .retain).activityOccurrences = [record] ∧
       (cancelScopeSubtree state child .retain).timerWaits = [timer] ∧
-      (cancelScopeSubtree state child .retain).messageWaits = [message root 1, message root 2] := by
-  decide +kernel
+      (cancelScopeSubtree state child .retain).messageWaits = [message root 1, message root 2]
 
-theorem removal_withdraws_parent_owned_subscription_but_keeps_outer_handlers :
+def removal_withdraws_parent_owned_subscription_but_keeps_outer_handlers : Bool := decide <|
     (cancelScopeSubtree state child .remove).scopeOccurrences = [{ id := root, parent := none }] ∧
       (cancelScopeSubtree state child .remove).activityOccurrences = [] ∧
       (cancelScopeSubtree state child .remove).timerWaits = [] ∧
-      (cancelScopeSubtree state child .remove).messageWaits = [message root 1, message root 2] := by
-  decide +kernel
+      (cancelScopeSubtree state child .remove).messageWaits = [message root 1, message root 2]
 
-theorem enclosing_removal_clears_every_handler_without_reusing_identities :
+def enclosing_removal_clears_every_handler_without_reusing_identities : Bool := decide <|
     (cancelScopeSubtree state root .remove).scopeOccurrences = [] ∧
       (cancelScopeSubtree state root .remove).activityOccurrences = [] ∧
       (cancelScopeSubtree state root .remove).timerWaits = [] ∧
       (cancelScopeSubtree state root .remove).messageWaits = [] ∧
       (cancelScopeSubtree state root .remove).timerActivations = state.timerActivations ∧
       (cancelScopeSubtree state root .remove).messageActivations = state.messageActivations ∧
-      (cancelScopeSubtree state root .remove).activityActivations = state.activityActivations := by
-  decide +kernel
+      (cancelScopeSubtree state root .remove).activityActivations = state.activityActivations
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("retained_body_keeps_its_parent_owned_subscription_and_record", retained_body_keeps_its_parent_owned_subscription_and_record),
+  ("removal_withdraws_parent_owned_subscription_but_keeps_outer_handlers", removal_withdraws_parent_owned_subscription_but_keeps_outer_handlers),
+  ("enclosing_removal_clears_every_handler_without_reusing_identities", enclosing_removal_clears_every_handler_without_reusing_identities)
+]
 
 end BpmnSemantics.SubscribedScopeCancellationConformance
