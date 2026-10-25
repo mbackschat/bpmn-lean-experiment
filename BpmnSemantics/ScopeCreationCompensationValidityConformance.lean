@@ -1,6 +1,22 @@
-import BpmnSemantics.CompensationActivityRetentionConformance
-import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+module
+
+public import BpmnSemantics.CompensationActivityRetentionConformance
+public import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
+public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Compensation owner lookups under scope insertion
 
@@ -9,6 +25,8 @@ must preserve nonempty Compensation state as well as declaration-free preparatio
 test the existing Compensation predicates directly; they do not assert complete runtime validity or
 admission of a new transition composition.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ScopeCreationCompensationValidityConformance
 

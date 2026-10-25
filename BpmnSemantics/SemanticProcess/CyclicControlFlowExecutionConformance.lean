@@ -1,10 +1,28 @@
-import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+module
+
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Representative cyclic execution conformance
 
 This module owns exact representative execution and finite reviewed-choice schedules for the selected cyclic fixture. It proves no general termination, fairness, arbitrary-cycle, or concurrent-arrival claim.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

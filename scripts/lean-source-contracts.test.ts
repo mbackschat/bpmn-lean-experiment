@@ -602,16 +602,13 @@ test("maintained Lean equalities do not compare an expression with its own expec
  * the unchanged proposition under the enforced bound before revising this inventory.
  * Existing counts preserve the trusted footprint; none authorizes a new native_decide site.
  *
- * Exact null, present, missing, and malformed source-overlay JSON shapes are grouped into one
- * decision per wire owner. Grouping keeps the compiler-trusted boundary at the three parsers that
- * own the contract instead of creating one site per example.
+ * On 2026-10-25 19 sites that no proof consumed moved to executable checks, which trust the same
+ * compiler without adding an axiom to any theorem, so their modules could become Lean modules. Each
+ * remaining row stays: the Simple Boolean parse law is a guaranteeing declaration, the population fixture
+ * facts are projected by the theorems below them, and the Structured Human Work module imports proof
+ * modules that the executable-check driver may not reach.
  */
 const recordedNativeDecideSites = Object.freeze([
-  Object.freeze({ path: "BpmnSemantics/SemanticProcessJsonConformance.lean", sites: 18 }),
-  Object.freeze({
-    path: "BpmnSemantics/CompensationTriggerHandlerProgramContractConformance.lean",
-    sites: 1,
-  }),
   Object.freeze({
     path: "BpmnSemantics/ExclusiveGatewaySimpleBooleanConformance.lean",
     sites: 1,

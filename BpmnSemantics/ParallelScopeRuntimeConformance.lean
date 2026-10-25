@@ -1,11 +1,34 @@
-import BpmnSemantics.SemanticProcessJson.InternalAlternative
-import BpmnSemantics.SemanticProcess.OpenWaitProjection
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+module
+
+public import BpmnSemantics.SemanticProcessJson.InternalAlternative
+public import BpmnSemantics.SemanticProcess.OpenWaitProjection
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
+public meta import BpmnSemantics.Scenario
+public meta import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public meta import BpmnSemantics.SemanticProcess.ParallelScopeData
+public meta import BpmnSemantics.SemanticProcessContract
+public meta import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 
 /-! PMIS lifecycle fixtures distinguish exact body retirement from whole-Activity cancellation and retain unrelated ownership. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelScopeRuntimeConformance
 
@@ -201,19 +224,19 @@ def expectedEffectInputs (item : String) : List VariableBinding :=
 def armEffect (state : RuntimeState) (activation : Nat) : Option RuntimeState :=
   InternalCommutation.applyInternalOperationOccurrence? effectProgram state ⟨⟨"check"⟩, probeBody activation⟩
 
-#eval show IO Unit from do
-  let some second := armEffect effectActive 6 | throw (IO.userError "parallel effect: second body did not arm")
+def parallel_effect_arms_each_body_once_with_its_own_snapshot : Bool := Except.toBool <| show Except String Unit from do
+  let some second := armEffect effectActive 6 | throw "parallel effect: second body did not arm"
   unless second.effectWaits.map (fun wait => (wait.owner, wait.activation, wait.arguments)) ==
       [(probeBody 6, 1, expectedEffectInputs "B")] do
-    throw (IO.userError "parallel effect: second body snapshot mismatch")
-  let some both := armEffect second 5 | throw (IO.userError "parallel effect: first body did not arm")
+    throw "parallel effect: second body snapshot mismatch"
+  let some both := armEffect second 5 | throw "parallel effect: first body did not arm"
   unless both.effectWaits.map (fun wait => (wait.owner, wait.activation, wait.arguments)) ==
       [(probeBody 5, 2, expectedEffectInputs "A"), (probeBody 6, 1, expectedEffectInputs "B")] do
-    throw (IO.userError "parallel effect: occurrence identities or snapshots mismatch")
+    throw "parallel effect: occurrence identities or snapshots mismatch"
   unless both.variables.process == effectActive.variables.process && both.variables.scopes == effectActive.variables.scopes do
-    throw (IO.userError "parallel effect: arming changed Process or body data")
+    throw "parallel effect: arming changed Process or body data"
   unless (armEffect both 5).isNone do
-    throw (IO.userError "parallel effect: consumed candidate armed twice")
+    throw "parallel effect: consumed candidate armed twice"
 
 def parallel_effect_missing_population_refuses_fixture : Bool := decide <|
     armEffect { effectActive with parallelScopeControllers := [] } 5 = none ∧
@@ -226,74 +249,74 @@ def resultProgram : Program :=
     .awaitEffect ⟨"check"⟩ ⟨⟨"Check"⟩⟩ ⟨"check"⟩ ⟨"done"⟩
       { scopedEffect with outputMappings := [⟨"status", .localVariable "result"⟩] } none] }
 
-#eval show IO Unit from do
+def parallel_results_write_exactly_and_refuse_stale_or_protected_completion : Bool := Except.toBool <| show Except String Unit from do
   let some second := InternalCommutation.applyInternalOperationOccurrence? resultProgram effectActive ⟨⟨"check"⟩, probeBody 6⟩
-    | throw (IO.userError "parallel result: second body did not arm")
+    | throw "parallel result: second body did not arm"
   let some both := InternalCommutation.applyInternalOperationOccurrence? resultProgram second ⟨⟨"check"⟩, probeBody 5⟩
-    | throw (IO.userError "parallel result: first body did not arm")
+    | throw "parallel result: first body did not arm"
   let effectId : EffectOccurrenceId := ⟨⟨"applicants"⟩, ⟨"Check"⟩, 1⟩
   let result := EffectExecutionResult.success [⟨"result", .string "checked"⟩]
   let some after := completeParallelScopeEffect? resultProgram both effectId result
-    | throw (IO.userError "parallel result: mapped completion refused")
+    | throw "parallel result: mapped completion refused"
   unless (selectScopeVariables? after.variables (probeBody 6)).map (·.bindings) == some [⟨"status", .string "checked"⟩] &&
       selectScopeVariables? after.variables (probeBody 5) == selectScopeVariables? both.variables (probeBody 5) &&
       after.variables.process == both.variables.process && after.variables.activities.length == 1 &&
       after.effectWaits.length == 1 && after.tokens == [⟨⟨"done"⟩, probeBody 6⟩] do
-    throw (IO.userError "parallel result: exact write, sibling retention or disposal mismatch")
+    throw "parallel result: exact write, sibling retention or disposal mismatch"
   unless (completeParallelScopeEffect? resultProgram after effectId result).isNone &&
       (completeParallelScopeEffect? resultProgram { both with parallelScopeControllers := [] } effectId result).isNone &&
       (completeParallelScopeEffect? resultProgram both effectId (.success [])).isNone do
-    throw (IO.userError "parallel result: stale or incomplete completion accepted")
+    throw "parallel result: stale or incomplete completion accepted"
   let humanId : UserTaskInstanceId := ⟨⟨"applicants"⟩, ⟨"Review"⟩, 1⟩
   let human := activateUserTask effectActive ⟨"applicants"⟩ (probeBody 6) ⟨"check"⟩ ⟨"done"⟩ ⟨⟨"Review"⟩, none, none⟩
   let some reviewed := completeParallelScopeUserTask? effectProgram human humanId
     [⟨"approved", .boolean true⟩, ⟨"status", .string "reviewed"⟩]
-    | throw (IO.userError "parallel human result: completion refused")
+    | throw "parallel human result: completion refused"
   unless (selectScopeVariables? reviewed.variables (probeBody 6)).map (·.bindings) == some [⟨"status", .string "reviewed"⟩] &&
       reviewed.variables.process.bindings.find? (·.name == "approved") == some ⟨"approved", .boolean true⟩ &&
       selectScopeVariables? reviewed.variables (probeBody 5) == selectScopeVariables? human.variables (probeBody 5) do
-    throw (IO.userError "parallel human result: local or Process condition write mismatch")
+    throw "parallel human result: local or Process condition write mismatch"
   for name in ["applicant", "applicants", "checkApplication"] do
     unless (completeParallelScopeUserTask? effectProgram human humanId [⟨name, .null⟩]).isNone do
-      throw (IO.userError "parallel human result: protected name accepted")
+      throw "parallel human result: protected name accepted"
 
 def lifecycleProgram : Program :=
   { effectProgram with
     operations := effectProgram.operations ++ [.reachNoneEnd ⟨"end"⟩ ⟨⟨"End"⟩⟩ ⟨"done"⟩],
     operationScopes := effectProgram.operationScopes ++ [⟨⟨"end"⟩, ⟨"body"⟩⟩] }
 
-#eval show IO Unit from do
+def parallel_lifecycle_retires_every_body_in_both_orders : Bool := Except.toBool <| show Except String Unit from do
   for count in [0, 1, 2, 16] do
     for reverse in [false, true] do
       let bindings := effectReady.variables.process.bindings.map fun binding => if binding.name == "applicants" then
         ⟨"applicants", .stringList (List.replicate count "same")⟩ else binding
       let ready := { effectReady with variables := { effectReady.variables with process := { bindings } } }
       let some entered := InternalCommutation.applyInternalOperationOccurrence? lifecycleProgram ready ⟨⟨"enter"⟩, probeParent⟩
-        | throw (IO.userError "parallel lifecycle: entry refused")
+        | throw "parallel lifecycle: entry refused"
       let order := if reverse then (List.range' 5 count).reverse else List.range' 5 count
       let mut state := entered
       for activation in order do
         let some offers := InternalCommutation.deriveInternalOccurrenceFrontier? lifecycleProgram state
-          | throw (IO.userError "parallel lifecycle: incomplete frontier")
+          | throw "parallel lifecycle: incomplete frontier"
         let some offer := offers.find? (fun offer => offer.1 == ⟨⟨"check"⟩, probeBody activation⟩)
-          | throw (IO.userError "parallel lifecycle: missing effect candidate")
+          | throw "parallel lifecycle: missing effect candidate"
         state := offer.2
-      unless state.effectWaits.length == count do throw (IO.userError "parallel lifecycle: wrong effect count")
+      unless state.effectWaits.length == count do throw "parallel lifecycle: wrong effect count"
       for activation in order do
         let some wait := state.effectWaits.find? (·.owner == probeBody activation)
-          | throw (IO.userError "parallel lifecycle: missing effect wait")
+          | throw "parallel lifecycle: missing effect wait"
         let effectId : EffectOccurrenceId := ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩
         let some finished := completeParallelScopeEffect? lifecycleProgram state effectId (.success [])
-          | throw (IO.userError "parallel lifecycle: effect completion refused")
+          | throw "parallel lifecycle: effect completion refused"
         let some ended := InternalCommutation.applyInternalOperationOccurrence? lifecycleProgram finished ⟨⟨"end"⟩, probeBody activation⟩
-          | throw (IO.userError "parallel lifecycle: End refused")
+          | throw "parallel lifecycle: End refused"
         let some retired := InternalCommutation.applyInternalOperationOccurrence? lifecycleProgram ended ⟨⟨"complete"⟩, probeBody activation⟩
-          | throw (IO.userError "parallel lifecycle: body retirement refused")
+          | throw "parallel lifecycle: body retirement refused"
         state := retired
       unless state.tokens == [⟨⟨"out"⟩, probeParent⟩] && state.parallelScopeControllers.isEmpty &&
           state.variables.scopes.isEmpty && state.variables.activities.isEmpty && state.effectWaits.isEmpty &&
           state.endOccurrences == count do
-        throw (IO.userError "parallel lifecycle: cleanup or parent continuation mismatch")
+        throw "parallel lifecycle: cleanup or parent continuation mismatch"
 
 def cohortProgram : Program :=
   { lifecycleProgram with
@@ -450,57 +473,57 @@ def parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindin
       if definition.id == ⟨"body"⟩ then { definition with originElementId := ⟨"Other"⟩ } else definition }
       probeSettled = none
 
-#eval show IO Unit from do
+def occurrence_cohort_keeps_individual_steps_and_slot_assignment : Bool := Except.toBool <| show Except String Unit from do
   for count in [2, 16] do
     let bindings := effectReady.variables.process.bindings.map fun binding => if binding.name == "applicants" then
       ⟨"applicants", .stringList (List.replicate count "same")⟩ else binding
     let ready := { effectReady with variables := { effectReady.variables with process := { bindings } } }
     let some entered := applyInternalOperationOccurrence? cohortProgram ready ⟨⟨"enter"⟩, probeParent⟩
-      | throw (IO.userError "cohort entry refused")
+      | throw "cohort entry refused"
     let missingInput := { entered with
       variables := { entered.variables with
         process := { bindings := entered.variables.process.bindings.filter (·.name != "tenant") } } }
     unless (deriveInternalOccurrenceFrontier? cohortProgram missingInput).isNone do
-      throw (IO.userError "failed Service input disappeared from the complete frontier")
+      throw "failed Service input disappeared from the complete frontier"
     let some batch := prepareInternalOccurrenceBatch? cohortProgram entered
-      | throw (IO.userError s!"{count}-body occurrence cohort preparation refused")
+      | throw s!"{count}-body occurrence cohort preparation refused"
     let some successors := applyInternalOccurrenceBatch? cohortProgram entered batch
-      | throw (IO.userError "occurrence cohort application refused")
-    unless successors.length == count do throw (IO.userError "cohort lost individual steps")
-    let some final := successors.getLast? | throw (IO.userError "cohort has no final state")
+      | throw "occurrence cohort application refused"
+    unless successors.length == count do throw "cohort lost individual steps"
+    let some final := successors.getLast? | throw "cohort has no final state"
     let waiting := { final with effectActivations := [⟨⟨"Check"⟩, 9007199254740991⟩] }
     unless deriveInternalOccurrenceFrontier? cohortProgram waiting == some [] do
-      throw (IO.userError "an already-armed wait incorrectly required another issuance slot")
+      throw "an already-armed wait incorrectly required another issuance slot"
     unless final.effectWaits.map (fun wait => (wait.owner.activation, wait.activation)) ==
         (List.range count).map (fun index => (index + 5, index + 1)) && final.tokens.isEmpty do
-      throw (IO.userError "cohort did not preserve exact owner-to-slot assignment")
+      throw "cohort did not preserve exact owner-to-slot assignment"
     let reordered := { entered with
       scopeOccurrences := entered.scopeOccurrences.reverse
       variables := { entered.variables with scopes := entered.variables.scopes.reverse } }
     let some reorderedBatch := prepareInternalOccurrenceBatch? cohortProgram reordered
-      | throw (IO.userError "cohort depends on storage order")
+      | throw "cohort depends on storage order"
     unless reorderedBatch.members.filterMap (·.waitOccurrence?) == batch.members.filterMap (·.waitOccurrence?) do
-      throw (IO.userError "storage order changed reservation slots")
+      throw "storage order changed reservation slots"
     for changed in [
         { entered with parallelScopeControllers := [] },
         { entered with variables := { entered.variables with scopes := entered.variables.scopes.drop 1 } },
         { entered with scopeOccurrences := entered.scopeOccurrences.filter (·.id != probeBody 5) },
         { entered with effectActivations := [⟨⟨"Check"⟩, 1⟩] }] do
       unless (applyInternalOccurrenceBatch? cohortProgram changed batch).isNone do
-        throw (IO.userError "cohort rebound stale predecessor")
+        throw "cohort rebound stale predecessor"
     let forged := { batch with members := batch.members.reverse }
     unless (applyInternalOccurrenceBatch? cohortProgram entered forged).isNone do
-      throw (IO.userError "cohort accepted forged allocation order")
+      throw "cohort accepted forged allocation order"
     let overflow := { entered with effectActivations := [⟨⟨"Check"⟩, 9007199254740990⟩] }
     unless (prepareInternalOccurrenceBatch? cohortProgram overflow).isNone do
-      throw (IO.userError "cohort allocated beyond the safe wire limit")
+      throw "cohort allocated beyond the safe wire limit"
     let duplicates := { entered with effectActivations := [⟨⟨"Check"⟩, 0⟩, ⟨⟨"Check"⟩, 0⟩] }
     unless (prepareInternalOccurrenceBatch? cohortProgram duplicates).isNone do
-      throw (IO.userError "cohort accepted duplicate counter rows")
-    let some occupied := final.effectWaits.head? | throw (IO.userError "cohort missing collision witness")
+      throw "cohort accepted duplicate counter rows"
+    let some occupied := final.effectWaits.head? | throw "cohort missing collision witness"
     unless (prepareInternalOccurrenceBatch? cohortProgram
         { entered with effectWaits := [occupied] }).isNone do
-      throw (IO.userError "cohort reused an issued anchor above its high-water mark")
+      throw "cohort reused an issued anchor above its high-water mark"
     let humanOperations : List SemanticOperation := cohortProgram.operations.map fun operation =>
       match operation with
       | .awaitEffect id _ input output _ _ =>
@@ -508,28 +531,28 @@ def parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindin
       | _ => operation
     let humanProgram := { cohortProgram with operations := humanOperations }
     let some humanBatch := prepareInternalOccurrenceBatch? humanProgram entered
-      | throw (IO.userError "human cohort preparation refused")
+      | throw "human cohort preparation refused"
     let some humanStates := applyInternalOccurrenceBatch? humanProgram entered humanBatch
-      | throw (IO.userError "human cohort application refused")
-    let some humanFinal := humanStates.getLast? | throw (IO.userError "human cohort has no successor")
+      | throw "human cohort application refused"
+    let some humanFinal := humanStates.getLast? | throw "human cohort has no successor"
     unless humanFinal.waits.map (fun wait => (wait.owner.activation, wait.activation)) ==
         (List.range count).map (fun index => (index + 5, index + 1)) do
-      throw (IO.userError "human cohort changed owner-to-slot assignment")
+      throw "human cohort changed owner-to-slot assignment"
 
 def decodeChoiceWire (text : String) :=
   SemanticProcessJson.parseWireJson text >>= SemanticProcessJson.decodeInternalAlternative
 
-#eval show IO Unit from do
+def choice_decoder_admits_exact_occurrences_and_refuses_malformed_ones : Bool := Except.toBool <| show Except String Unit from do
   let wire := r#"{"kind":"operationOccurrence","operationId":"check","owner":{"processInstanceId":"applicants","definitionScopeId":"body","activation":2}}"#
   match decodeChoiceWire wire with
   | .ok alternative =>
       unless alternative == .operationOccurrence ⟨"check"⟩ (probeBody 2) do
-        throw (IO.userError "exact occurrence alternative changed during choice decoding")
-  | .error message => throw (IO.userError s!"exact occurrence alternative refused: {message}")
+        throw "exact occurrence alternative changed during choice decoding"
+  | .error message => throw s!"exact occurrence alternative refused: {message}"
   for activation in ["0", "-1", "1.5", "9007199254740992", "null", "\"2\""] do
     match decodeChoiceWire (wire.replace "\"activation\":2" s!"\"activation\":{activation}") with
     | .error _ => pure ()
-    | .ok _ => throw (IO.userError s!"invalid choice activation admitted: {activation}")
+    | .ok _ => throw s!"invalid choice activation admitted: {activation}"
   for (before, after) in [
       ("\"check\"", "\"\""), ("\"applicants\"", "\"\""), ("\"body\"", "\"\""),
       ("\"activation\":2", "\"activation\":2,\"extra\":true"),
@@ -538,19 +561,19 @@ def decodeChoiceWire (text : String) :=
       ("\"kind\":\"operationOccurrence\"", "\"kind\":\"operationOccurrence\",\"extra\":true")] do
     match decodeChoiceWire (wire.replace before after) with
     | .error _ => pure ()
-    | .ok _ => throw (IO.userError s!"malformed exact choice admitted: {before}")
+    | .ok _ => throw s!"malformed exact choice admitted: {before}"
   match decodeChoiceWire (wire.replace "\"activation\":2" "\"activation\":9007199254740991") with
   | .ok (.operationOccurrence _ owner) =>
       unless owner.activation == 9007199254740991 do
-        throw (IO.userError "choice decoder changed the safe activation boundary")
-  | _ => throw (IO.userError "choice decoder refused the safe activation boundary")
+        throw "choice decoder changed the safe activation boundary"
+  | _ => throw "choice decoder refused the safe activation boundary"
   match decodeChoiceWire r#"{"kind":"operation","operationId":"check"}"# with
   | .ok (.operation ⟨"check"⟩) => pure ()
-  | _ => throw (IO.userError "ordinary choice decoding changed")
+  | _ => throw "ordinary choice decoding changed"
   match decodeChoiceWire r#"{"kind":"mergeInput","operationId":"check","owner":{"processInstanceId":"applicants","definitionScopeId":"body","activation":2},"inputControlPlace":"in"}"# with
   | .ok (.mergeInput ⟨"check"⟩ owner ⟨"in"⟩) =>
-      unless owner == probeBody 2 do throw (IO.userError "Merge choice owner changed")
-  | _ => throw (IO.userError "Merge choice decoding changed")
+      unless owner == probeBody 2 do throw "Merge choice owner changed"
+  | _ => throw "Merge choice decoding changed"
 
 /-- Every executable check of this module, named for the driver's failure report. -/
 def checks : List (String × Bool) := [
@@ -571,7 +594,12 @@ def checks : List (String × Bool) := [
   ("parallel_retirement_publication_fixture_has_independent_open_projection", parallel_retirement_publication_fixture_has_independent_open_projection),
   ("parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work", parallel_early_completion_cancels_pending_waits_and_preserves_unrelated_work),
   ("parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent", parallel_completion_candidate_is_predecessor_derived_and_after_oracle_is_independent),
-  ("parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings", parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings)
+  ("parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings", parallel_completion_publication_refuses_stale_ambiguous_and_malformed_bindings),
+  ("parallel_effect_arms_each_body_once_with_its_own_snapshot", parallel_effect_arms_each_body_once_with_its_own_snapshot),
+  ("parallel_results_write_exactly_and_refuse_stale_or_protected_completion", parallel_results_write_exactly_and_refuse_stale_or_protected_completion),
+  ("parallel_lifecycle_retires_every_body_in_both_orders", parallel_lifecycle_retires_every_body_in_both_orders),
+  ("occurrence_cohort_keeps_individual_steps_and_slot_assignment", occurrence_cohort_keeps_individual_steps_and_slot_assignment),
+  ("choice_decoder_admits_exact_occurrences_and_refuses_malformed_ones", choice_decoder_admits_exact_occurrences_and_refuses_malformed_ones)
 ]
 
 end BpmnSemantics.ParallelScopeRuntimeConformance

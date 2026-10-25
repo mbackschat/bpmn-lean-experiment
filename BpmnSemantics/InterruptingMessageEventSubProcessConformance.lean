@@ -1,22 +1,40 @@
-import BpmnSemantics.SemanticProcess.ExecutionRuntime
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
-import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
-import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.ExecutionRuntime
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+public import BpmnSemantics.SemanticProcessJson.Program
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+public import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! Bounded conformance for the interrupting Message Event Sub-Process account. Strict wire witnesses
 separate declaration storage from structural admission; composed execution witnesses belong to this same owner. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InterruptingMessageEventSubProcessConformance
 

@@ -1,6 +1,24 @@
-import BpmnSemantics.SemanticProcessJson
+module
+
+public import BpmnSemantics.SemanticProcessJson
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Executable locks for language-neutral JSON and ordering behavior. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcessJsonConformance
 
@@ -103,36 +121,32 @@ def correlationAddress : CorrelatedMessageAddress :=
     channel := payloadChannel
     correlationKeyId := "correlationKey" }
 
-theorem duplicate_and_escape_equivalent_json_keys_are_rejected :
+def duplicate_and_escape_equivalent_json_keys_are_rejected : Bool := decide <|
     parseRejected "{\"id\":1,\"id\":1}" = true ∧
-      parseRejected "{\"id\":1,\"\\u0069d\":1}" = true := by
-  native_decide
+      parseRejected "{\"id\":1,\"\\u0069d\":1}" = true
 
-theorem negative_zero_spellings_are_rejected :
+def negative_zero_spellings_are_rejected : Bool := decide <|
     parseRejected "-0" = true ∧
       parseRejected "-0.0" = true ∧
-      parseRejected "-0e1" = true := by
-  native_decide
+      parseRejected "-0e1" = true
 
-def exactWireIntegerAdmissionWitness : IO Unit := do
+def exactWireIntegerAdmissionWitness : Bool := Except.toBool <| show Except String Unit from do
   unless ["1.0", "1e1", "1E+2", "1.0000000000000001",
       "9007199254740991.1", "1e-400", "1e400", "-1",
       "9007199254740992", "9007199254740993"].all parseRejected do
-    throw (IO.userError "wire integer tokens: noncanonical or inexact spelling admitted")
+    throw "wire integer tokens: noncanonical or inexact spelling admitted"
   unless ["0", "1", "9007199254740991"].all (fun text =>
       match parseWireJson text >>= decodeSafeNat with
       | .ok value => toString value == text
       | .error _ => false) do
-    throw (IO.userError "wire integer tokens: canonical value changed or refused")
+    throw "wire integer tokens: canonical value changed or refused"
   unless parseRejected "{\"value\":[0,{\"activation\":1e1}]}" &&
       parseRejected "{\"value\":[0,{\"activation\":9007199254740991.1}]}" &&
       !parseRejected "{\"value\":[0,{\"activation\":9007199254740991}]}" do
-    throw (IO.userError "wire integer tokens: nested admission mismatch")
+    throw "wire integer tokens: nested admission mismatch"
   unless !parseRejected "{\"value\":\"-0 1e1 1.0 9007199254740993\"}" &&
       !parseRejected "{\"value\":\"quoted \\\"1e1\\\" and \\\\ slash\",\"activation\":1}" do
-    throw (IO.userError "wire integer tokens: string content treated as a number")
-
-#eval exactWireIntegerAdmissionWitness
+    throw "wire integer tokens: string content treated as a number"
 
 def valueDecoded (contents : String) : Except String VariableValue :=
   parseWireJson contents >>= decodeVariableValue
@@ -180,31 +194,31 @@ def sixteenStringsJson (payload : Nat) : String :=
   listJson ((List.replicate 15 (stringJson (String.ofList (List.replicate 1000 'a')))) ++
     [stringJson (String.ofList (List.replicate (payload - 15000) 'a'))])
 
-def portableBusinessValueWireWitness : IO Unit := do
+def portableBusinessValueWireWitness : Bool := Except.toBool <| show Except String Unit from do
   unless (valueDecoded businessOrderJson).toOption ==
       some (.map [("address", .map [("city", .string "Berlin"), ("line2", .null)]),
         ("items", .list [orderItem, orderItem]), ("total", .decimal 12345 2)]) do
-    throw (IO.userError "PBV-TREE-01: the order did not decode to its exact tree")
+    throw "PBV-TREE-01: the order did not decode to its exact tree"
   unless ((valueDecoded businessOrderJson >>= fun value =>
       decodeVariableValue (encodeVariableValue value)).toOption ==
         (valueDecoded businessOrderJson).toOption) do
-    throw (IO.userError "PBV-IDENTITY-01: the order did not survive encoding and decoding")
+    throw "PBV-IDENTITY-01: the order did not survive encoding and decoding"
   unless [decimalJson "12345" "2", decimalJson "-125" "2", decimalJson "0" "0",
       decimalJson "9223372036854775807" "0", decimalJson "-9223372036854775808" "0",
       decimalJson "1" "6"].all (!valueRejected ·) do
-    throw (IO.userError "PBV-AMOUNT-01: a canonical in-range Decimal was refused")
+    throw "PBV-AMOUNT-01: a canonical in-range Decimal was refused"
   unless [decimalJson "9223372036854775808" "0", decimalJson "-9223372036854775809" "0",
       decimalJson "-0" "0", decimalJson "01" "0", decimalJson "+1" "0", decimalJson "1e2" "0",
       decimalJson "123450" "3", decimalJson "0" "1", decimalJson "1" "7", decimalJson "" "0",
       "{\"kind\":\"decimal\",\"coefficient\":12345,\"scale\":2}",
       "{\"kind\":\"decimal\",\"coefficient\":\"1\",\"scale\":\"2\"}",
       "{\"kind\":\"decimal\",\"coefficient\":\"1\",\"scale\":0,\"value\":1}"].all valueRejected do
-    throw (IO.userError "PBV-AMOUNT-01: a noncanonical or out-of-range Decimal was admitted")
+    throw "PBV-AMOUNT-01: a noncanonical or out-of-range Decimal was admitted"
   unless !valueRejected (listJson []) && !valueRejected (mapJson []) &&
       !valueRejected (listJson [nullJson, stringJson "x", decimalJson "1" "0", listJson []]) &&
       !valueRejected (mapJson [("", nullJson)]) &&
       !valueRejected (mapJson [("￿", nullJson), ("𐀀", nullJson)]) do
-    throw (IO.userError "PBV-TREE-01: an admissible List or Map was refused")
+    throw "PBV-TREE-01: an admissible List or Map was refused"
   unless valueRejected (listJson ["{\"kind\":\"stringList\",\"value\":[]}"]) &&
       valueRejected (mapJson [("b", nullJson), ("a", nullJson)]) &&
       valueRejected (mapJson [("a", nullJson), ("a", nullJson)]) &&
@@ -212,7 +226,7 @@ def portableBusinessValueWireWitness : IO Unit := do
       valueRejected "{\"kind\":\"map\",\"value\":[{\"name\":\"a\",\"value\":{\"kind\":\"null\"},\"extra\":1}]}" &&
       valueRejected "{\"kind\":\"list\",\"value\":[],\"extra\":1}" &&
       valueRejected (listJson [nullJson, nullJson, decimalJson "01" "0"]) do
-    throw (IO.userError "PBV-IDENTITY-01: a nested legacy, noncanonical or malformed tree was admitted")
+    throw "PBV-IDENTITY-01: a nested legacy, noncanonical or malformed tree was admitted"
   unless !valueRejected (nestedListJson 4) && valueRejected (nestedListJson 5) &&
       !valueRejected (listJson (List.replicate 32 nullJson)) &&
       valueRejected (listJson (List.replicate 33 nullJson)) &&
@@ -221,11 +235,9 @@ def portableBusinessValueWireWitness : IO Unit := do
       !valueRejected (listJson [stringJson (String.ofList (List.replicate 1024 'a'))]) &&
       valueRejected (listJson [stringJson (String.ofList (List.replicate 1025 'a'))]) &&
       valueRejected (mapJson [(String.ofList (List.replicate 1025 'a'), nullJson)]) do
-    throw (IO.userError "PBV-BOUND-01: an exact limit was refused or a one-over value admitted")
+    throw "PBV-BOUND-01: an exact limit was refused or a one-over value admitted"
   unless !valueRejected (stringJson (String.ofList (List.replicate 2000 'a'))) do
-    throw (IO.userError "root String arm gained the portable member byte limit")
-
-#eval portableBusinessValueWireWitness
+    throw "root String arm gained the portable member byte limit"
 
 def business_order_has_twelve_nodes_and_container_depth_three : Bool := decide <|
     businessOrder.nodeCount = 12 ∧ businessOrder.containerDepth = 3
@@ -242,17 +254,15 @@ def business_trees_keep_multiplicity_order_and_present_null : Bool := decide <|
       VariableValue.list [.integer 1, .integer 2] ≠ .list [.integer 2, .integer 1] ∧
       VariableValue.map [("line2", .null)] ≠ .map []
 
-theorem new_variable_value_arms_round_trip_without_normalization :
+def new_variable_value_arms_round_trip_without_normalization : Bool := decide <|
     variableValueDecodedAs (.integer 4250)
         (decodeVariableValue (encodeVariableValue (.integer 4250))) = true ∧
       variableValueDecodedAs (.stringList ["policy", "policy"])
           (decodeVariableValue
-            (encodeVariableValue (.stringList ["policy", "policy"]))) = true := by
-  native_decide
+            (encodeVariableValue (.stringList ["policy", "policy"]))) = true
 
-theorem unpaired_surrogate_is_rejected :
-    parseRejected "{\"id\":\"\\ud800\"}" = true := by
-  native_decide
+def unpaired_surrogate_is_rejected : Bool := decide <|
+    parseRejected "{\"id\":\"\\ud800\"}" = true
 
 def maximum_safe_wire_nat_is_accepted : Bool := decide <|
     isSafeWireNat 9007199254740991 = true
@@ -266,15 +276,13 @@ def bmp_scalar_precedes_supplementary_scalar : Bool := decide <|
 def canonically_equivalent_strings_remain_distinct : Bool := decide <|
     ("e\u0301" : String) ≠ "\u00E9"
 
-theorem scenario_unknown_field_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]},\"unexpected\":true}" = true := by
-  native_decide
+def scenario_unknown_field_is_rejected : Bool := decide <|
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]},\"unexpected\":true}" = true
 
-theorem scenario_missing_profile_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
-  native_decide
+def scenario_missing_profile_is_rejected : Bool := decide <|
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true
 
-theorem scenario_source_overlay_and_triggered_start_wire_contract :
+def scenario_source_overlay_and_triggered_start_wire_contract : Bool := decide <|
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = false ∧
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\"},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\"}},\"stimuli\":[],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = false ∧
@@ -303,13 +311,11 @@ theorem scenario_source_overlay_and_triggered_start_wire_contract :
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"cancelIncidentProcess\",\"commandId\":\"cancel\",\"processInstanceId\":\"Instance_1\",\"incidentId\":{\"effectId\":{\"processInstanceId\":\"Instance_1\",\"elementId\":\"ServiceTask_Record\",\"activation\":1},\"generation\":1,\"unexpected\":true}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"cancelIncidentProcess\",\"commandId\":\"cancel\",\"processInstanceId\":\"Instance_1\",\"incidentId\":{\"effectId\":{\"processInstanceId\":\"Instance_1\",\"elementId\":\"ServiceTask_Record\",\"activation\":1,\"unexpected\":true},\"generation\":1}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"cancelIncidentProcess\",\"commandId\":\"cancel\",\"processInstanceId\":\"\",\"incidentId\":{\"effectId\":{\"processInstanceId\":\"Instance_1\",\"elementId\":\"ServiceTask_Record\",\"activation\":1},\"generation\":1}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"startProcess\",\"commandId\":\"c\",\"processId\":\"p\",\"instanceId\":\"i\",\"initialVariables\":[{\"name\":\"empty\",\"value\":{\"kind\":\"string\",\"value\":\"\"}}]}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = false := by
-  native_decide
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"startProcess\",\"commandId\":\"c\",\"processId\":\"p\",\"instanceId\":\"i\",\"initialVariables\":[{\"name\":\"empty\",\"value\":{\"kind\":\"string\",\"value\":\"\"}}]}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = false
 
-theorem unknown_observation_and_unsafe_activation_are_rejected :
+def unknown_observation_and_unsafe_activation_are_rejected : Bool := decide <|
     scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[],\"observations\":[\"unknown\"],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true ∧
-      scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeUserTaskInstance\",\"commandId\":\"c\",\"taskId\":{\"processInstanceId\":\"i\",\"elementId\":\"t\",\"activation\":9007199254740992}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
-  native_decide
+      scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeUserTaskInstance\",\"commandId\":\"c\",\"taskId\":{\"processInstanceId\":\"i\",\"elementId\":\"t\",\"activation\":9007199254740992}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true
 
 theorem incident_generation_domain_is_exactly_literal_one :
     admitEffectIncidentGeneration 1 = .ok 1 ∧
@@ -319,27 +325,23 @@ theorem incident_generation_domain_is_exactly_literal_one :
         .error "effect incident generation must be 1" := by
   exact ⟨rfl, rfl, rfl⟩
 
-theorem null_value_with_payload_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeEffect\",\"commandId\":\"c\",\"effectId\":{\"processInstanceId\":\"i\",\"elementId\":\"e\",\"activation\":1},\"result\":{\"kind\":\"bpmnError\",\"code\":\"E\",\"message\":null,\"localPatch\":[{\"name\":\"v\",\"value\":{\"kind\":\"null\",\"value\":\"forbidden\"}}]}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
-  native_decide
+def null_value_with_payload_is_rejected : Bool := decide <|
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeEffect\",\"commandId\":\"c\",\"effectId\":{\"processInstanceId\":\"i\",\"elementId\":\"e\",\"activation\":1},\"result\":{\"kind\":\"bpmnError\",\"code\":\"E\",\"message\":null,\"localPatch\":[{\"name\":\"v\",\"value\":{\"kind\":\"null\",\"value\":\"forbidden\"}}]}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true
 
-theorem empty_bpmn_error_message_is_rejected :
-    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeEffect\",\"commandId\":\"c\",\"effectId\":{\"processInstanceId\":\"i\",\"elementId\":\"e\",\"activation\":1},\"result\":{\"kind\":\"bpmnError\",\"code\":\"E\",\"message\":\"\",\"localPatch\":[]}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true := by
-  native_decide
+def empty_bpmn_error_message_is_rejected : Bool := decide <|
+    scenarioRejected "{\"kind\":\"scenario\",\"id\":\"s\",\"profile\":\"p\",\"bpmn\":{\"id\":\"b\",\"relativePath\":\"b\",\"sha256\":\"x\",\"sourceOverlay\":null},\"stimuli\":[{\"kind\":\"completeEffect\",\"commandId\":\"c\",\"effectId\":{\"processInstanceId\":\"i\",\"elementId\":\"e\",\"activation\":1},\"result\":{\"kind\":\"bpmnError\",\"code\":\"E\",\"message\":\"\",\"localPatch\":[]}}],\"observations\":[],\"provenance\":{\"normativeRefs\":[],\"cibRevision\":\"r\",\"cibRefs\":[]}}" = true
 
-theorem checked_user_task_with_null_name_is_accepted :
-    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[{\"id\":\"scope:p\",\"parentScopeId\":null,\"originElementId\":\"p\"}],\"nodeScopes\":[{\"nodeId\":\"t\",\"scopeId\":\"scope:p\"}],\"sequenceFlowScopes\":[],\"nodes\":[{\"kind\":\"userTask\",\"id\":\"t\",\"name\":null}],\"sequenceFlows\":[]}" = true := by
-  native_decide
+def checked_user_task_with_null_name_is_accepted : Bool := decide <|
+    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[{\"id\":\"scope:p\",\"parentScopeId\":null,\"originElementId\":\"p\"}],\"nodeScopes\":[{\"nodeId\":\"t\",\"scopeId\":\"scope:p\"}],\"sequenceFlowScopes\":[],\"nodes\":[{\"kind\":\"userTask\",\"id\":\"t\",\"name\":null}],\"sequenceFlows\":[]}" = true
 
-theorem checked_process_source_overlay_wire_contract :
+def checked_process_source_overlay_wire_contract : Bool := decide <|
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\"},\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\"},\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\",\"unexpected\":true},\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = false ∧
-    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\"},\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = false := by
-  native_decide
+    checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\"},\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[],\"sequenceFlows\":[]}" = false
 
-theorem checked_node_shapes_reject_missing_extra_and_malformed_fields :
+def checked_node_shapes_reject_missing_extra_and_malformed_fields : Bool := decide <|
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[{\"id\":\"scope:p\",\"parentScopeId\":null,\"originElementId\":\"p\"}],\"nodeScopes\":[{\"nodeId\":\"t\",\"scopeId\":\"scope:p\"}],\"sequenceFlowScopes\":[],\"nodes\":[{\"kind\":\"userTask\",\"id\":\"t\"}],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"kind\":\"exclusiveMerge\"}],\"sequenceFlows\":[]}" = false ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"direction\":\"converging\",\"id\":\"m\",\"kind\":\"exclusiveMerge\"}],\"sequenceFlows\":[]}" = false ∧
@@ -366,38 +368,34 @@ theorem checked_node_shapes_reject_missing_extra_and_malformed_fields :
     checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"serviceTask\"}") = false ∧
     checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:wrong-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
     checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"\",\"protocol\":\"\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = false ∧
-    checkedProcessAccepted (checkedNodeDocument "{\"boundaryTimer\":{\"durationLiteral\":\"PT1S\",\"elementId\":\"timer\",\"outputFlowId\":\"timerOut\"},\"completionCondition\":{\"body\":\"stringEquals(completionPolicy,\\\"first\\\")\",\"language\":\"urn:bpmn-lean:expression:simple-boolean:v1\"},\"id\":\"task\",\"input\":{\"collectionAssociationId\":\"collectionAssociation\",\"collectionItemDefinitionId\":\"collectionItem\",\"dataObjectId\":\"inputObject\",\"dataObjectReferenceId\":\"inputReference\",\"inputDataItemId\":\"inputItem\",\"itemAssociationId\":\"itemAssociation\",\"loopDataInputId\":\"loopInput\",\"scalarItemDefinitionId\":\"scalarItem\",\"taskDataInputId\":\"taskInput\"},\"kind\":\"parallelMultiInstanceUserTask\",\"name\":\"Review\",\"normalOutputFlowId\":\"normalOut\",\"output\":{\"collectionAssociationId\":\"outputCollectionAssociation\",\"dataObjectId\":\"outputObject\",\"dataObjectReferenceId\":\"outputReference\",\"itemAssociationId\":\"outputItemAssociation\",\"loopDataOutputId\":\"loopOutput\",\"outputDataItemId\":\"outputItem\",\"taskDataOutputId\":\"taskOutput\"}}") = false := by
-  native_decide
+    checkedProcessAccepted (checkedNodeDocument "{\"boundaryTimer\":{\"durationLiteral\":\"PT1S\",\"elementId\":\"timer\",\"outputFlowId\":\"timerOut\"},\"completionCondition\":{\"body\":\"stringEquals(completionPolicy,\\\"first\\\")\",\"language\":\"urn:bpmn-lean:expression:simple-boolean:v1\"},\"id\":\"task\",\"input\":{\"collectionAssociationId\":\"collectionAssociation\",\"collectionItemDefinitionId\":\"collectionItem\",\"dataObjectId\":\"inputObject\",\"dataObjectReferenceId\":\"inputReference\",\"inputDataItemId\":\"inputItem\",\"itemAssociationId\":\"itemAssociation\",\"loopDataInputId\":\"loopInput\",\"scalarItemDefinitionId\":\"scalarItem\",\"taskDataInputId\":\"taskInput\"},\"kind\":\"parallelMultiInstanceUserTask\",\"name\":\"Review\",\"normalOutputFlowId\":\"normalOut\",\"output\":{\"collectionAssociationId\":\"outputCollectionAssociation\",\"dataObjectId\":\"outputObject\",\"dataObjectReferenceId\":\"outputReference\",\"itemAssociationId\":\"outputItemAssociation\",\"loopDataOutputId\":\"loopOutput\",\"outputDataItemId\":\"outputItem\",\"taskDataOutputId\":\"taskOutput\"}}") = false
 
-theorem checked_node_exact_shapes_are_accepted :
+def checked_node_exact_shapes_are_accepted : Bool := decide <|
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[{\"id\":\"scope:p\",\"parentScopeId\":null,\"originElementId\":\"p\"}],\"nodeScopes\":[{\"nodeId\":\"g\",\"scopeId\":\"scope:p\"}],\"sequenceFlowScopes\":[],\"nodes\":[{\"direction\":\"diverging\",\"id\":\"g\",\"kind\":\"eventBasedGateway\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"m\",\"kind\":\"exclusiveMerge\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"channel\":{\"kind\":\"operationMessage\",\"interfaceId\":\"i\",\"interfaceOperationId\":\"o\",\"messageId\":\"m\"},\"id\":\"start\",\"kind\":\"messageStartEvent\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"durationLiteral\":\"PT1S\",\"id\":\"start\",\"kind\":\"timerStartEvent\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[{\"id\":\"end\",\"kind\":\"terminateEndEvent\"}],\"sequenceFlows\":[]}" = true ∧
     checkedProcessAccepted (checkedNodeDocument "{\"boundaryTimer\":{\"durationLiteral\":\"PT5S\",\"elementId\":\"timer\",\"outputFlowId\":\"timerOut\"},\"completionCondition\":{\"body\":\"stringEquals(completionPolicy,\\\"first\\\")\",\"language\":\"urn:bpmn-lean:expression:simple-boolean:v1\"},\"id\":\"task\",\"input\":{\"collectionAssociationId\":\"collectionAssociation\",\"collectionItemDefinitionId\":\"collectionItem\",\"dataObjectId\":\"inputObject\",\"dataObjectReferenceId\":\"inputReference\",\"inputDataItemId\":\"inputItem\",\"itemAssociationId\":\"itemAssociation\",\"loopDataInputId\":\"loopInput\",\"scalarItemDefinitionId\":\"scalarItem\",\"taskDataInputId\":\"taskInput\"},\"kind\":\"parallelMultiInstanceUserTask\",\"name\":\"Review\",\"normalOutputFlowId\":\"normalOut\",\"output\":{\"collectionAssociationId\":\"outputCollectionAssociation\",\"dataObjectId\":\"outputObject\",\"dataObjectReferenceId\":\"outputReference\",\"itemAssociationId\":\"outputItemAssociation\",\"loopDataOutputId\":\"loopOutput\",\"outputDataItemId\":\"outputItem\",\"taskDataOutputId\":\"taskOutput\"}}") = true ∧
-    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = true := by
-  native_decide
+    checkedProcessAccepted (checkedNodeDocument "{\"descriptor\":{\"operation\":\"urn:bpmn-lean:effect-operation:probe-v1\",\"protocol\":\"urn:bpmn-lean:effect-protocol:activity-v1\"},\"id\":\"task\",\"kind\":\"configuredTask\"}") = true
 
-theorem semantic_operation_exact_shapes_are_accepted :
+def semantic_operation_exact_shapes_are_accepted : Bool := decide <|
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"race\",\"input\":\"in\",\"kind\":\"awaitEventRace\",\"message\":{\"channel\":{\"interfaceId\":\"i\",\"interfaceOperationId\":\"o\",\"kind\":\"operationMessage\",\"messageId\":\"m\"},\"configurationOrigin\":{\"elementId\":\"fm\",\"kind\":\"bpmnSequenceFlow\"},\"elementId\":\"message\",\"output\":\"om\"},\"origin\":{\"elementId\":\"g\",\"kind\":\"bpmnElement\"},\"timer\":{\"configurationOrigin\":{\"elementId\":\"ft\",\"kind\":\"bpmnSequenceFlow\"},\"durationMs\":1000,\"elementId\":\"timer\",\"output\":\"ot\"}}]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"m\",\"inputs\":[\"a\",\"b\",\"c\"],\"kind\":\"mergeExclusive\",\"origin\":{\"elementId\":\"Merge\",\"kind\":\"bpmnElement\"},\"output\":\"out\"}]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"channel\":{\"kind\":\"operationMessage\",\"interfaceId\":\"i\",\"interfaceOperationId\":\"o\",\"messageId\":\"m\"},\"id\":\"start\",\"kind\":\"initiateMessage\",\"origin\":{\"elementId\":\"Start\",\"kind\":\"bpmnElement\"},\"outputs\":[\"out\"]}]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"start\",\"kind\":\"initiateTimer\",\"origin\":{\"elementId\":\"Start\",\"kind\":\"bpmnElement\"},\"outputs\":[\"out\"],\"timer\":{\"durationMs\":1000}}]}" = true ∧
-    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\"}]}" = true := by
-  native_decide
+    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\"}]}" = true
 
-theorem semantic_process_top_level_wire_contract :
+def semantic_process_top_level_wire_contract : Bool := decide <|
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"requireChoiceSchedule\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"unknown\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000001\"},\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = true ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = false ∧
-    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":false},\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = false := by
-  native_decide
+    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":{\"id\":\"overlay\",\"sha256\":false},\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[]}" = false
 
-theorem semantic_operation_shapes_reject_missing_extra_and_malformed_fields :
+def semantic_operation_shapes_reject_missing_extra_and_malformed_fields : Bool := decide <|
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"race\",\"input\":\"in\",\"kind\":\"awaitEventRace\",\"message\":{\"channel\":{\"interfaceId\":\"i\",\"interfaceOperationId\":\"o\",\"kind\":\"operationMessage\",\"messageId\":\"m\"},\"elementId\":\"message\",\"output\":\"om\"},\"origin\":{\"elementId\":\"g\",\"kind\":\"bpmnElement\"},\"timer\":{\"configurationOrigin\":{\"elementId\":\"ft\",\"kind\":\"bpmnSequenceFlow\"},\"durationMs\":1000,\"elementId\":\"timer\",\"output\":\"ot\"}}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"m\",\"kind\":\"mergeExclusive\",\"origin\":{\"elementId\":\"Merge\",\"kind\":\"bpmnElement\"},\"output\":\"out\"}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"m\",\"inputs\":\"a\",\"kind\":\"mergeExclusive\",\"origin\":{\"elementId\":\"Merge\",\"kind\":\"bpmnElement\"},\"output\":\"out\"}]}" = false ∧
@@ -424,10 +422,9 @@ theorem semantic_operation_shapes_reject_missing_extra_and_malformed_fields :
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"}}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"unexpected\":true}]}" = false ∧
     programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":1}]}" = false ∧
-    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"scopeId\":\"scope:p\"}]}" = false := by
-  native_decide
+    programAccepted "{\"kind\":\"semanticProcess\",\"identity\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"internalSchedulingMode\":\"rejectObservableChoice\",\"processId\":\"p\",\"definitionScopes\":[],\"operationScopes\":[],\"controlPlaceScopes\":[],\"controlPlaces\":[],\"operations\":[{\"id\":\"terminate\",\"input\":\"in\",\"kind\":\"terminateScope\",\"origin\":{\"elementId\":\"end\",\"kind\":\"bpmnElement\"},\"scopeId\":\"scope:p\",\"scopeId\":\"scope:p\"}]}" = false
 
-theorem message_payload_and_correlation_checked_program_and_stimulus_wire_contracts_are_exact :
+def message_payload_and_correlation_checked_program_and_stimulus_wire_contracts_are_exact : Bool := decide <|
     checkedNodesDecodedAs
         [.payloadMessageCatchEvent ⟨"catch"⟩ payloadChannel payloadOutput]
         (checkedNodeDocument "{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"directOutput\":{\"associationId\":\"association\",\"sourceDataOutputId\":\"dataOutput\",\"sourceDataOutputName\":\"Payload\",\"targetPropertyId\":\"property\"},\"id\":\"catch\",\"kind\":\"payloadMessageCatchEvent\"}") = true ∧
@@ -479,8 +476,7 @@ theorem message_payload_and_correlation_checked_program_and_stimulus_wire_contra
             payload := { value := "settlement-reference-123" } }]
         (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":1,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true ∧
       scenarioRejected
-        (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":0,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true := by
-  native_decide
+        (scenarioDocumentWithStimulus "{\"address\":{\"channel\":{\"interfaceId\":\"interface\",\"interfaceOperationId\":\"operation\",\"kind\":\"operationMessage\",\"messageId\":\"message\"},\"correlationKeyId\":\"correlationKey\",\"definition\":{\"compiler\":\"bpmn-source-semantic-process\",\"semanticProfile\":\"profile\",\"sourceId\":\"source\",\"sourceOverlay\":null,\"sourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"processId\":\"process\"},\"commandId\":\"deliver\",\"correlationPropertyId\":\"correlationProperty\",\"ingressOrdinal\":0,\"kind\":\"deliverCorrelatedPayloadMessage\",\"payload\":{\"kind\":\"string\",\"value\":\"settlement-reference-123\"},\"processPropertyId\":\"processProperty\",\"subscriptionId\":{\"activation\":1,\"elementId\":\"catch\",\"processInstanceId\":\"instance\"}}") = true
 
 def effectResultAccepted (businessError : Bool) (names : List String) : Bool :=
   let patch := Lean.Json.arr (names.map fun name => Lean.Json.mkObj
@@ -585,7 +581,27 @@ def checks : List (String × Bool) := [
   ("effect_bpmnError_canonical_patch_wire_admission", effect_bpmnError_canonical_patch_wire_admission),
   ("sequential_scope_wire_preserves_entry_policy_and_completion_binding", sequential_scope_wire_preserves_entry_policy_and_completion_binding),
   ("sequential_scope_wire_rejects_missing_policy_and_empty_binding", sequential_scope_wire_rejects_missing_policy_and_empty_binding),
-  ("sequential_scope_completion_wire_rejects_a_second_continuation_owner", sequential_scope_completion_wire_rejects_a_second_continuation_owner)
+  ("sequential_scope_completion_wire_rejects_a_second_continuation_owner", sequential_scope_completion_wire_rejects_a_second_continuation_owner),
+  ("duplicate_and_escape_equivalent_json_keys_are_rejected", duplicate_and_escape_equivalent_json_keys_are_rejected),
+  ("negative_zero_spellings_are_rejected", negative_zero_spellings_are_rejected),
+  ("new_variable_value_arms_round_trip_without_normalization", new_variable_value_arms_round_trip_without_normalization),
+  ("unpaired_surrogate_is_rejected", unpaired_surrogate_is_rejected),
+  ("scenario_unknown_field_is_rejected", scenario_unknown_field_is_rejected),
+  ("scenario_missing_profile_is_rejected", scenario_missing_profile_is_rejected),
+  ("scenario_source_overlay_and_triggered_start_wire_contract", scenario_source_overlay_and_triggered_start_wire_contract),
+  ("unknown_observation_and_unsafe_activation_are_rejected", unknown_observation_and_unsafe_activation_are_rejected),
+  ("null_value_with_payload_is_rejected", null_value_with_payload_is_rejected),
+  ("empty_bpmn_error_message_is_rejected", empty_bpmn_error_message_is_rejected),
+  ("checked_user_task_with_null_name_is_accepted", checked_user_task_with_null_name_is_accepted),
+  ("checked_process_source_overlay_wire_contract", checked_process_source_overlay_wire_contract),
+  ("checked_node_shapes_reject_missing_extra_and_malformed_fields", checked_node_shapes_reject_missing_extra_and_malformed_fields),
+  ("checked_node_exact_shapes_are_accepted", checked_node_exact_shapes_are_accepted),
+  ("semantic_operation_exact_shapes_are_accepted", semantic_operation_exact_shapes_are_accepted),
+  ("semantic_process_top_level_wire_contract", semantic_process_top_level_wire_contract),
+  ("semantic_operation_shapes_reject_missing_extra_and_malformed_fields", semantic_operation_shapes_reject_missing_extra_and_malformed_fields),
+  ("message_payload_and_correlation_checked_program_and_stimulus_wire_contracts_are_exact", message_payload_and_correlation_checked_program_and_stimulus_wire_contracts_are_exact),
+  ("exactWireIntegerAdmissionWitness", exactWireIntegerAdmissionWitness),
+  ("portableBusinessValueWireWitness", portableBusinessValueWireWitness)
 ]
 
 end BpmnSemantics.SemanticProcessJsonConformance

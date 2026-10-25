@@ -1,12 +1,30 @@
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
+module
+
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Transaction source grammar discriminators
 
 Renaming and chain lengths are parameters of the fixture, not admission identities. The misplaced-subject mutation preserves graph cardinalities and isolates the eligible-branch obligation.
 -/
+@[expose] public section
+
 namespace BpmnSemantics.TransactionSourceConformance
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcessJson
@@ -77,18 +95,18 @@ def declarationAccepted (wire : String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
-#eval show IO Unit from do
+def transaction_strict_decoder_accept_exact_declaration : Bool := Except.toBool <| show Except String Unit from do
   unless (declarationAccepted declarationWire) == true do
-    throw (IO.userError "Transaction strict decoder: accept exact declaration")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: accept exact declaration"
+def transaction_strict_decoder_reject_null_declaration : Bool := Except.toBool <| show Except String Unit from do
   unless (declarationAccepted "null") == false do
-    throw (IO.userError "Transaction strict decoder: reject null declaration")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: reject null declaration"
+def transaction_strict_decoder_reject_retention_byte_drift : Bool := Except.toBool <| show Except String Unit from do
   unless (declarationAccepted (declarationWire.replace "4096" "4097")) == false do
-    throw (IO.userError "Transaction strict decoder: reject retention byte drift")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: reject retention byte drift"
+def transaction_strict_decoder_reject_restored_handler_input : Bool := Except.toBool <| show Except String Unit from do
   unless (declarationAccepted (declarationWire.replace "empty" "directRestoredProcessBinding")) == false do
-    throw (IO.userError "Transaction strict decoder: reject restored handler input")
+    throw "Transaction strict decoder: reject restored handler input"
 
 def nodeWireAccepted (node : String) : Bool :=
   let wire := "{\"kind\":\"checkedProcess\",\"identity\":{\"semanticProfile\":\"p\",\"sourceId\":\"s\",\"sourceOverlay\":null,\"sourceSha256\":\"x\"},\"processId\":\"p\",\"definitionScopes\":[],\"nodeScopes\":[],\"sequenceFlowScopes\":[],\"nodes\":[" ++ node ++ "],\"sequenceFlows\":[]}"
@@ -96,24 +114,24 @@ def nodeWireAccepted (node : String) : Bool :=
   | .ok _ => true
   | .error _ => false
 
-#eval show IO Unit from do
+def transaction_strict_decoder_accept_exact_transaction_method : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"transactionSubProcess\",\"id\":\"tx\",\"childScopeId\":\"child\",\"method\":\"##Compensate\"}") == true do
-    throw (IO.userError "Transaction strict decoder: accept exact Transaction method")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: accept exact Transaction method"
+def transaction_strict_decoder_reject_case_folded_transaction_method : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"transactionSubProcess\",\"id\":\"tx\",\"childScopeId\":\"child\",\"method\":\"##compensate\"}") == false do
-    throw (IO.userError "Transaction strict decoder: reject case-folded Transaction method")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: reject case-folded Transaction method"
+def transaction_strict_decoder_reject_missing_checked_method : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"transactionSubProcess\",\"id\":\"tx\",\"childScopeId\":\"child\"}") == false do
-    throw (IO.userError "Transaction strict decoder: reject missing checked method")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: reject missing checked method"
+def transaction_strict_decoder_accept_cancel_end_node : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"cancelEndEvent\",\"id\":\"cancel\"}") == true do
-    throw (IO.userError "Transaction strict decoder: accept Cancel End node")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: accept Cancel End node"
+def transaction_strict_decoder_accept_cancel_boundary_node : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"cancelBoundaryEvent\",\"id\":\"boundary\",\"attachedToRef\":\"tx\",\"outputFlowId\":\"flow\"}") == true do
-    throw (IO.userError "Transaction strict decoder: accept Cancel Boundary node")
-#eval show IO Unit from do
+    throw "Transaction strict decoder: accept Cancel Boundary node"
+def transaction_strict_decoder_reject_extra_cancel_boundary_field : Bool := Except.toBool <| show Except String Unit from do
   unless (nodeWireAccepted "{\"kind\":\"cancelBoundaryEvent\",\"id\":\"boundary\",\"attachedToRef\":\"tx\",\"outputFlowId\":\"flow\",\"cancelActivity\":false}") == false do
-    throw (IO.userError "Transaction strict decoder: reject extra Cancel Boundary field")
+    throw "Transaction strict decoder: reject extra Cancel Boundary field"
 
 def short_checked_source_is_admitted : Bool := decide <| checkedWellFormed (transactionCheckedSource "" false) = true
 def renamed_long_checked_source_is_admitted : Bool := decide <| checkedWellFormed (transactionCheckedSource "Renamed_" true) = true
@@ -147,7 +165,17 @@ def checks : List (String × Bool) := [
   ("renamed_long_lowered_program_is_well_formed", renamed_long_lowered_program_is_well_formed),
   ("transaction_lowering_omits_snapshots", transaction_lowering_omits_snapshots),
   ("transaction_start_rejects_process_data", transaction_start_rejects_process_data),
-  ("transaction_task_completion_rejects_process_data", transaction_task_completion_rejects_process_data)
+  ("transaction_task_completion_rejects_process_data", transaction_task_completion_rejects_process_data),
+  ("transaction_strict_decoder_accept_exact_declaration", transaction_strict_decoder_accept_exact_declaration),
+  ("transaction_strict_decoder_reject_null_declaration", transaction_strict_decoder_reject_null_declaration),
+  ("transaction_strict_decoder_reject_retention_byte_drift", transaction_strict_decoder_reject_retention_byte_drift),
+  ("transaction_strict_decoder_reject_restored_handler_input", transaction_strict_decoder_reject_restored_handler_input),
+  ("transaction_strict_decoder_accept_exact_transaction_method", transaction_strict_decoder_accept_exact_transaction_method),
+  ("transaction_strict_decoder_reject_case_folded_transaction_method", transaction_strict_decoder_reject_case_folded_transaction_method),
+  ("transaction_strict_decoder_reject_missing_checked_method", transaction_strict_decoder_reject_missing_checked_method),
+  ("transaction_strict_decoder_accept_cancel_end_node", transaction_strict_decoder_accept_cancel_end_node),
+  ("transaction_strict_decoder_accept_cancel_boundary_node", transaction_strict_decoder_accept_cancel_boundary_node),
+  ("transaction_strict_decoder_reject_extra_cancel_boundary_field", transaction_strict_decoder_reject_extra_cancel_boundary_field)
 ]
 
 end BpmnSemantics.TransactionSourceConformance

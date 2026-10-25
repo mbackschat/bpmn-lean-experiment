@@ -1,9 +1,28 @@
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
+public meta import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Exclusive Gateway with Simple Boolean conditions
 
 This module supplies executable locks and reusable laws for the project-owned Simple Boolean v1 evaluator and declaration-ordered conditional choice. It establishes neither XPath nor JUEL support.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 

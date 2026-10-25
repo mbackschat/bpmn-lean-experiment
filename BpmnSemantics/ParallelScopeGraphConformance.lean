@@ -1,13 +1,31 @@
-import BpmnSemantics.SemanticProcess.GraphValidation
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcessJson.CheckedProcess
-import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
-import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
-import BpmnSemantics.SemanticProcess.CommandAdmission
-import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+module
+
+public import BpmnSemantics.SemanticProcess.GraphValidation
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcessJson.CheckedProcess
+public import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
+public import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ParallelScopeGraphConformance
 open SemanticProcess
@@ -248,22 +266,18 @@ def private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys :
           (admitStimulus rawCapacityProgram state start).state == state) = true
 
 def assertRejectedResumption (name : String)
-    (variants : List (String × (RuntimeState → RuntimeState))) : IO Unit := do
+    (variants : List (String × (RuntimeState → RuntimeState))) : Except String Unit := do
   let actual := variants.map fun (label, change) => (label, commandResume? change)
-  IO.println s!"{name}: {repr actual}"
   unless actual.all (fun result => result.2 == some (.rejected, none)) do
-    throw (IO.userError s!"{name}: corrupted resumption was admitted")
+    throw s!"{name}: corrupted resumption was admitted"
 
-def private_parallel_resumption_refuses_unrelated_population_rows : IO Unit :=
+def private_parallel_resumption_refuses_unrelated_population_rows : Bool := Except.toBool <|
   assertRejectedResumption "private_parallel_resumption_refuses_unrelated_population_rows"
     [("stray-frame", strayScopeFrame), ("stray-controller", strayController)]
 
-def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : IO Unit :=
+def private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents : Bool := Except.toBool <|
   assertRejectedResumption "private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents"
     [("unissued-human", unissuedHumanWait), ("cyclic-parent", cyclicParent)]
-
-#eval private_parallel_resumption_refuses_unrelated_population_rows
-#eval private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents
 
 def private_frontier_population_retains_serial_task_capacity : Bool := decide <|
     ParallelScopeStart.checkedSourceFrontier checkedMixed (startBindings 0) = some ⟨0, 0⟩ ∧
@@ -317,7 +331,9 @@ def checks : List (String × Bool) := [
   ("private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys", private_parallel_start_capacity_refuses_all_duplicate_storage_counter_keys),
   ("private_frontier_population_retains_serial_task_capacity", private_frontier_population_retains_serial_task_capacity),
   ("weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima", weighted_contraction_keeps_nested_parallel_sums_and_serial_maxima),
-  ("parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields", parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields)
+  ("parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields", parallel_scope_wire_distinguishes_mode_and_rejects_missing_or_extra_fields),
+  ("private_parallel_resumption_refuses_unrelated_population_rows", private_parallel_resumption_refuses_unrelated_population_rows),
+  ("private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents", private_parallel_resumption_refuses_unissued_anchors_and_cyclic_parents)
 ]
 
 end BpmnSemantics.ParallelScopeGraphConformance

@@ -1,11 +1,29 @@
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.RuntimeStateInitializationConformance
+module
+
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.RuntimeStateInitializationConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Whole-command closure rollback witnesses
 
 `CLOSURE-ATOMIC-01` restores the state before external admission, including task completion and declaration-bearing reservation. Successful prefixes below reach actual enabled frontiers; no failed command supplies an intermediate fixture state. The late-choice counterexample lies outside admitted topology and checks the evaluator after accepted completion without claiming source admission.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 

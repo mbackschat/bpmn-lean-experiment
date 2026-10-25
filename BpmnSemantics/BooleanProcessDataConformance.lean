@@ -1,11 +1,29 @@
-import BpmnSemantics.SequentialUserTask
-import BpmnSemantics.SemanticProcess.JsonSupport
-import BpmnSemantics.SemanticProcess.Execution
+module
+
+public import BpmnSemantics.SequentialUserTask
+public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.Execution
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Boolean Process-data conformance
 
 This module proves the Boolean value-domain extension at the exact Process Start, User Task completion, effect-result, expression, closure, and public-projection boundaries selected by its semantic profile.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.BooleanProcessDataConformance
 

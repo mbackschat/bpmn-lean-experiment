@@ -1,7 +1,23 @@
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
+module
+
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Compensation Activity retention checkpoint
 
@@ -9,6 +25,8 @@ Kernel-decided fixtures for the approved hidden boundary-handler retention repre
 integration, source admission, handler execution, Temporal hosting, and public projection remain
 outside this checkpoint.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationActivityRetentionConformance
 

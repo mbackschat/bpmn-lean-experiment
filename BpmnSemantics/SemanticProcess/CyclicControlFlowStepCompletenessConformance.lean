@@ -1,9 +1,27 @@
-import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
+module
+
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Selected cyclic evaluator-step completeness
 
 This module proves that the classified internal-action relation contains every successful evaluator step from an actually reachable selected-program state. It adds no transition or profile behavior.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SemanticProcess
 

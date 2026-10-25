@@ -1,9 +1,28 @@
-import BpmnSemantics.SemanticProcessJson.Program
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+module
+
+public import BpmnSemantics.SemanticProcessJson.Program
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+public meta import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! Executable locks for the compensation trigger and handler Program wire contract. -/
+
+@[expose] public section
 
 set_option Elab.async false
 
@@ -97,13 +116,12 @@ def emptyRestorationProgram :=
        { restoredBody with input := .empty },
      subjectC] }
 
-theorem strict_program_decoder_and_declaration_admission_separate_identity_order_dependency_and_restoration :
+def strict_program_decoder_and_declaration_admission_separate_identity_order_dependency_and_restoration : Bool := decide <|
     programAccepted emptyCompensationProgram = true ∧
     compensationExecutionDeclarationValid validProgram = true ∧
     compensationExecutionDeclarationValid reorderedProgram = false ∧
     compensationExecutionDeclarationValid cyclicProgram = false ∧
-    compensationExecutionDeclarationValid emptyRestorationProgram = false := by
-  native_decide
+    compensationExecutionDeclarationValid emptyRestorationProgram = false
 
 def emptyDeclaration (bytes : Nat) : CompensationExecutionDeclaration :=
   { declaration with
@@ -202,7 +220,8 @@ def checks : List (String × Bool) := [
   ("execution_readers_reject_below_empty_pair_capacity", execution_readers_reject_below_empty_pair_capacity),
   ("minimum_execution_capacity_admits_a_structurally_valid_empty_state", minimum_execution_capacity_admits_a_structurally_valid_empty_state),
   ("execution_readers_keep_integer_and_upper_bounds", execution_readers_keep_integer_and_upper_bounds),
-  ("separate_retention_and_snapshot_declarations_keep_two_byte_minima", separate_retention_and_snapshot_declarations_keep_two_byte_minima)
+  ("separate_retention_and_snapshot_declarations_keep_two_byte_minima", separate_retention_and_snapshot_declarations_keep_two_byte_minima),
+  ("strict_program_decoder_and_declaration_admission_separate_identity_order_dependency_and_restoration", strict_program_decoder_and_declaration_admission_separate_identity_order_dependency_and_restoration)
 ]
 
 end BpmnSemantics.CompensationTriggerHandlerProgramContractConformance

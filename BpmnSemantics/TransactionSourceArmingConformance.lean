@@ -1,6 +1,22 @@
-import BpmnSemantics.TransactionSourceConformance
-import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+module
+
+public import BpmnSemantics.TransactionSourceConformance
+public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+import all Init.Data.Ord.String
+import all Lean.Data.Json.Basic
+import all Std.Data.TreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Raw.Basic
+import all Std.Data.DTreeMap.Internal.Def
+import all Std.Data.DTreeMap.Internal.Balancing
+import all Std.Data.DTreeMap.Internal.Operations
+import all Std.Data.DTreeMap.Internal.Queries
 
 /-! # Selected Transaction child Task arming
 
@@ -9,6 +25,8 @@ reachable post-split state. It does not prove reachable-frontier completeness fo
 Transaction graphs. The missing-register discriminator separates two enabled operation identities
 from the full predecessor validity required by those laws.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.TransactionSourceArmingConformance
 
