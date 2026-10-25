@@ -66,7 +66,7 @@ Required:
    - A fast static guard follows `public import` edges and cuts at private imports, so it gives an upper bound.
    - For every module outside a declared kernel and registry list, the transitive public importers stay within a recorded bound. The list changes only by reviewed edit, like the source-hygiene exceptions.
    - The guard measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
-   - [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) implements it with a default bound of 100 importers; [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) records the 2026-10-25 baseline of 347 wider modules, and an entry whose module falls to the default must go.
+   - [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) implements it with a default bound of 100 importers, counting only importers the semantic root builds, because the acceptance below expects witnesses to rebuild with a closed-world change. [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) declares the 15 kernel type modules and records 309 wider modules at their 2026-10-25 counts plus a tenth (at least ten). Without that headroom one new leaf failed the bound of every module it re-exports, about 200 at once, while a widely imported module that starts re-exporting another still fails. An entry whose module falls to the default must go.
    - The same guard bounds each module's hidden-edit fanout, the importers that an edit to a proof, a private declaration or a hidden body rebuilds, with a default of 10 and the four hidden hubs recorded.
 
 Optional:

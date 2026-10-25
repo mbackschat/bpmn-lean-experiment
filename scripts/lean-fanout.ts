@@ -16,6 +16,15 @@ function importGraph(sources: LeanSources) {
 }
 
 /**
+ * The modules a library root reaches through imports of any form: the build that target runs. Witness modules
+ * that only the conformance root or a driver imports fall outside the semantic library.
+ */
+export function leanLibraryModules(sources: LeanSources, root: string): Set<string> {
+  const { headers, closure } = importGraph(sources);
+  return headers.has(root) ? closure(root) : new Set();
+}
+
+/**
  * Every module whose build an edit to a module's public interface can invalidate, keyed by that module and
  * sorted by name: the static fanout that [the fanout ratchet](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)
  * bounds.
@@ -100,12 +109,18 @@ export type LeanFanoutBound = Readonly<{ module: string; bound: number }>;
  * The ratchet's findings: a recorded module above its bound, a recorded module that the default already covers
  * (its entry must go, so the list only shrinks), a recorded name that is no scanned module, and an unlisted module
  * above the default. Recorded findings come in list order, unlisted ones after them in fanout order.
+ *
+ * A `kernel` module is exempt, as required item 6 of the build modularity proposal declares: every module imports
+ * the kernel types, so their fanout grows with the library by design. A kernel module carrying a bound, or a
+ * kernel name that is no scanned module, is reported after the bounds' findings.
  */
 export function leanFanoutViolations(fanouts: ReadonlyMap<string, ReadonlyArray<string>>,
-  bounds: ReadonlyArray<LeanFanoutBound>, defaultBound: number): string[] {
-  const recorded = new Set(bounds.map(({ module }) => module));
+  bounds: ReadonlyArray<LeanFanoutBound>, defaultBound: number, kernel: ReadonlyArray<string> = []): string[] {
+  const exempt = new Set(kernel);
+  const recorded = new Set([...bounds.map(({ module }) => module), ...kernel]);
   const listed = bounds.flatMap(({ module, bound }) => {
     const count = fanouts.get(module)?.length;
+    if (exempt.has(module)) return [`${module}: a kernel module needs no recorded bound`];
     if (count === undefined) return [`${module}: recorded but not a scanned module`];
     if (count > bound) return [`${module}: ${count} importers exceed its recorded bound ${bound}`];
     if (count <= defaultBound) return [`${module}: ${count} importers fit the default bound ${defaultBound}, so its entry must go`];
@@ -113,5 +128,7 @@ export function leanFanoutViolations(fanouts: ReadonlyMap<string, ReadonlyArray<
   });
   const unlisted = [...fanouts].filter(([module, importers]) => !recorded.has(module) && importers.length > defaultBound)
     .map(([module, importers]) => `${module}: ${importers.length} importers exceed the default bound ${defaultBound} without a recorded bound`);
-  return [...listed, ...unlisted];
+  const kernelFindings = kernel.filter((module) => !fanouts.has(module))
+    .map((module) => `${module}: declared kernel but not a scanned module`);
+  return [...listed, ...kernelFindings, ...unlisted];
 }

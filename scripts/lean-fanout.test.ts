@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { leanFanoutBounds, leanFanoutDefaultBound, leanHiddenEditBounds, leanHiddenEditDefaultBound } from "./lean-fanout-bounds.ts";
-import { leanFanouts, leanFanoutViolations, leanHiddenEditFanouts } from "./lean-fanout.ts";
+import {
+  leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel, leanHiddenEditBounds, leanHiddenEditDefaultBound,
+} from "./lean-fanout-bounds.ts";
+import { leanFanouts, leanFanoutViolations, leanHiddenEditFanouts, leanLibraryModules } from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
 
@@ -62,6 +64,27 @@ test("imports outside the scanned sources and import cycles are tolerated", () =
   assert.deepEqual(fanouts.get("Pkg.B"), ["Pkg.A"]);
 });
 
+test("the library modules are what its root reaches through imports of any form", () => {
+  const sources = [
+    source("Lib.lean", "import Pkg.Owner"),
+    source("Pkg/Owner.lean", "module\n\nimport Pkg.Helper"),
+    source("Pkg/Helper.lean", "module"),
+    source("Pkg/Witness.lean", "module\n\npublic import Pkg.Owner"),
+  ];
+  assert.deepEqual([...leanLibraryModules(sources, "Lib")].sort(), ["Pkg.Helper", "Pkg.Owner"]);
+});
+
+test("a kernel module is exempt from every bound but must be a scanned module without a recorded bound", () => {
+  const fanouts = new Map([["Kernel", ["a", "b", "c"]], ["Wide", ["a", "b", "c"]]]);
+  assert.deepEqual(leanFanoutViolations(fanouts, [], 2, ["Kernel"]), [
+    "Wide: 3 importers exceed the default bound 2 without a recorded bound",
+  ]);
+  assert.deepEqual(leanFanoutViolations(fanouts, [{ module: "Kernel", bound: 3 }, { module: "Wide", bound: 3 }], 2, ["Kernel", "Gone"]), [
+    "Kernel: a kernel module needs no recorded bound",
+    "Gone: declared kernel but not a scanned module",
+  ]);
+});
+
 test("the ratchet reports growth, an unlisted wide module, a stale entry and an unknown entry", () => {
   const fanouts = new Map([["Wide", ["a", "b", "c"]], ["Grown", ["a", "b", "c"]], ["Narrow", ["a"]], ["Shrunk", ["a"]]]);
   const bounds = [{ module: "Grown", bound: 2 }, { module: "Shrunk", bound: 3 }, { module: "Gone", bound: 3 }];
@@ -78,8 +101,31 @@ test("the ratchet reports growth, an unlisted wide module, a stale entry and an 
 const librarySources = () =>
   readWorktreeSources(worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/")));
 
+/** Fanouts counting only importers the semantic root builds. */
+function semanticLibraryFanouts(sources: ReturnType<typeof librarySources>): Map<string, readonly string[]> {
+  const library = leanLibraryModules(sources, "BpmnSemantics");
+  return new Map([...leanFanouts(sources)].map(([module, importers]) =>
+    [module, importers.filter((importer) => library.has(importer))] as const));
+}
+
+// Counts only importers the semantic root builds: witnesses that only the conformance root or a driver imports
+// rebuild with a closed-world change by design (the proposal's acceptance), and the hidden-edit ratchet and the
+// cost ledger bound them instead.
 test("every library module stays within its recorded fanout bound", () => {
-  assert.deepEqual(leanFanoutViolations(leanFanouts(librarySources()), leanFanoutBounds, leanFanoutDefaultBound), []);
+  const sources = librarySources();
+  const fanouts = semanticLibraryFanouts(sources);
+  assert.deepEqual(leanFanoutViolations(fanouts, leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel), []);
+});
+
+// Anti-vacuity for the headroom: one re-export added to a module nearly every library module imports must still
+// fail, because it widens the re-exported module far beyond a tenth.
+test("a widely imported module that starts re-exporting another module fails the ratchet", () => {
+  const sources = librarySources().map(({ path, source }) => path === "BpmnSemantics/SemanticProcess/JsonSupport.lean"
+    ? { path, source: source.replace(/^module\n/u, "module\n\npublic import BpmnSemantics.SemanticProcess.TransitionTrace\n") }
+    : { path, source });
+  const fanouts = semanticLibraryFanouts(sources);
+  const findings = leanFanoutViolations(fanouts, leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel);
+  assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.TransitionTrace: ")), findings.join("\n"));
 });
 
 // A one-line proof edit to `ProgramStructuralValidation` rebuilt exactly the 264 importers this model predicted,
