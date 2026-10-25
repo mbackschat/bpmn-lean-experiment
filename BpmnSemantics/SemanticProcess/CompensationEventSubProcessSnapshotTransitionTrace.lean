@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 public import BpmnSemantics.SemanticProcess.TransitionAttempt
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Compensation attempt-aware transition trace
 

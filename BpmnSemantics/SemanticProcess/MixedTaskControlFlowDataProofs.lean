@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjecti
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! MTCF-DATA-01 carries future writer-free read obligations through admitted graph edges and actual binding merges, avoiding a fixed topology or a caller-supplied successful input evaluation. -/
 

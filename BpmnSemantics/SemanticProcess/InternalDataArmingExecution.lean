@@ -5,8 +5,8 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Data-arming execution and transition record
 

@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValid
 public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Return publication binds the selected Call cleanup to the prepared occurrence region.
 Quiescence protects the caller; continuation insertion preserves existing output multiplicity.

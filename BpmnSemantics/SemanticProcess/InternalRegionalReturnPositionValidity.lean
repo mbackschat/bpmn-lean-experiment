@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Return continuation position
 

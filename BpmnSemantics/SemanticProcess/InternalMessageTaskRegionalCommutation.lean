@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCompletion
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Regional retirement and joined Message-host insertion commute from predecessor preparations.
 The selected admission binds actual completion and Terminate execution, including continuations. -/

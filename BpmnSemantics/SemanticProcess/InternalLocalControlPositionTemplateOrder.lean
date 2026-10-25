@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! The template's sort retains each resolved place once, with strict public flow order under
 the alias refusal rule in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

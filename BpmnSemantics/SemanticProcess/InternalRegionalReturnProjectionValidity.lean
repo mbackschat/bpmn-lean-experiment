@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Return's independent projection guards follow from predecessor validators and the
 actual cleanup. Message-boundary record retention uses the independent reverse record census;

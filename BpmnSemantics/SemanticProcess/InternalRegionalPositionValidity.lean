@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Regional position preservation
 

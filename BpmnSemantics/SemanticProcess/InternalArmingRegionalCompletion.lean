@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
 public import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Return and completion retain independent arming writes. Canonical insertion/filter laws
 preserve exact collection order, including Activity-local data and bounded deadlines. -/

@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 public import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
 public import BpmnSemantics.SemanticProcess.TokenPatchMultiplicity
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Actual control-position publication for prepared scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/

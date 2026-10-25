@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationProgramV
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationMessageValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! The complete child-cancellation projector follows from predecessor validity and

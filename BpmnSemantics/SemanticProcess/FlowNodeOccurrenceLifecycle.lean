@@ -3,8 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle -/
 

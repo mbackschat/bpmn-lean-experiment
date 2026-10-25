@@ -1,4 +1,19 @@
-import { leanHeader } from "./lean-source-analysis.ts";
+import { leanHeader, type LeanHeader } from "./lean-source-analysis.ts";
+
+type LeanSources = ReadonlyArray<Readonly<{ path: string; source: string }>>;
+
+/** Each scanned module's header, and the scanned modules a module's imports reach transitively. */
+function importGraph(sources: LeanSources) {
+  const moduleOf = (path: string) => path.replace(/\.lean$/u, "").replaceAll("/", ".");
+  const headers: ReadonlyMap<string, LeanHeader> = new Map(sources.map(({ path, source }) => [moduleOf(path), leanHeader(source)] as const));
+  const closure = (module: string, seen = new Set<string>()): Set<string> => {
+    for (const { module: imported } of headers.get(module)!.imports) {
+      if (headers.has(imported) && !seen.has(imported)) closure(imported, seen.add(imported));
+    }
+    return seen;
+  };
+  return { headers, closure };
+}
 
 /**
  * Every module whose build an edit to a module's public interface can invalidate, keyed by that module and
@@ -14,9 +29,8 @@ import { leanHeader } from "./lean-source-analysis.ts";
  * This is an upper bound: an importer whose own artifact comes out unchanged stops propagation in Lake, which a
  * graph scan cannot see. Imports of modules outside `sources`, such as Lean core, are ignored.
  */
-export function leanFanouts(sources: ReadonlyArray<Readonly<{ path: string; source: string }>>): Map<string, string[]> {
-  const moduleOf = (path: string) => path.replace(/\.lean$/u, "").replaceAll("/", ".");
-  const headers = new Map(sources.map(({ path, source }) => [moduleOf(path), leanHeader(source)] as const));
+export function leanFanouts(sources: LeanSources): Map<string, string[]> {
+  const { headers, closure } = importGraph(sources);
   const reexports = new Map<string, Set<string>>();
   const reexported = (module: string): Set<string> => {
     const known = reexports.get(module);
@@ -30,15 +44,9 @@ export function leanFanouts(sources: ReadonlyArray<Readonly<{ path: string; sour
     }
     return visible;
   };
-  const closure = (module: string, seen: Set<string>): Set<string> => {
-    for (const { module: imported } of headers.get(module)!.imports) {
-      if (headers.has(imported) && !seen.has(imported)) closure(imported, seen.add(imported));
-    }
-    return seen;
-  };
   const fanouts = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   for (const [importer, header] of headers) {
-    const loaded = header.isModule ? new Set<string>() : closure(importer, new Set());
+    const loaded = header.isModule ? new Set<string>() : closure(importer);
     for (const { module: imported } of header.imports) {
       if (headers.has(imported)) for (const reached of reexported(imported)) loaded.add(reached);
     }
@@ -47,6 +55,42 @@ export function leanFanouts(sources: ReadonlyArray<Readonly<{ path: string; sour
   }
   for (const importers of fanouts.values()) importers.sort();
   return fanouts;
+}
+
+/**
+ * Every module that an edit to a module's hidden part (a proof, a private declaration or a body that is not
+ * exposed) rebuilds, keyed by that module and sorted by name.
+ *
+ * Only an `import all` importer loads the hidden part, and loading a hidden part also loads the hidden parts
+ * it imports with `import all`, so the edit follows every chain of `import all` imports; an importer that does
+ * not `import all` the module or a chain member is left alone. A plain file loads every module of its import
+ * closure whole, so each plain file that reaches the module rebuilds too (the
+ * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
+ */
+export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
+  const { headers, closure } = importGraph(sources);
+  const allImporters = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
+  const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
+  for (const [importer, header] of headers) {
+    for (const { module: imported, importsAll } of header.imports) {
+      if (importsAll && headers.has(imported)) allImporters.get(imported)!.push(importer);
+    }
+    if (!header.isModule) for (const reached of closure(importer)) plainReach.get(reached)!.push(importer);
+  }
+  return new Map([...headers.keys()].map((module) => {
+    const rebuilt = new Set<string>();
+    const pending = [module];
+    while (pending.length > 0) {
+      for (const importer of allImporters.get(pending.pop()!)!) {
+        if (rebuilt.has(importer)) continue;
+        rebuilt.add(importer);
+        pending.push(importer);
+      }
+    }
+    for (const importer of plainReach.get(module)!) rebuilt.add(importer);
+    rebuilt.delete(module);
+    return [module, [...rebuilt].sort()];
+  }));
 }
 
 /** A module allowed more importers than the default, at most `bound`; the list only shrinks. */

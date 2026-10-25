@@ -14,10 +14,9 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 public meta import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 
 /-! Executable locks for the compensation trigger and handler Program wire contract. -/

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { leanFanoutBounds, leanFanoutDefaultBound } from "./lean-fanout-bounds.ts";
-import { leanFanouts, leanFanoutViolations } from "./lean-fanout.ts";
+import { leanFanoutBounds, leanFanoutDefaultBound, leanHiddenEditBounds, leanHiddenEditDefaultBound } from "./lean-fanout-bounds.ts";
+import { leanFanouts, leanFanoutViolations, leanHiddenEditFanouts } from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
 
@@ -39,6 +39,20 @@ test("a plain file sees its whole import closure, and its own imports re-export"
   assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.AbovePlain", "Pkg.Hide", "Pkg.Plain"]);
 });
 
+test("a hidden edit follows `import all` chains and reaches plain files, but no other importer", () => {
+  const fanouts = leanHiddenEditFanouts([
+    source("Pkg/Hub.lean", "module"),
+    source("Pkg/Public.lean", "module\n\npublic import Pkg.Hub"),
+    source("Pkg/All.lean", "module\n\nimport all Pkg.Hub"),
+    source("Pkg/AboveAll.lean", "module\n\npublic import Pkg.All"),
+    source("Pkg/AllOfAll.lean", "module\n\nimport all Pkg.All"),
+    source("Pkg/Plain.lean", "import Pkg.Public"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.All", "Pkg.AllOfAll", "Pkg.Plain"]);
+  assert.deepEqual(fanouts.get("Pkg.All"), ["Pkg.AllOfAll"]);
+  assert.deepEqual(fanouts.get("Pkg.Public"), ["Pkg.Plain"]);
+});
+
 test("imports outside the scanned sources and import cycles are tolerated", () => {
   const fanouts = leanFanouts([
     source("Pkg/A.lean", "module\n\npublic import Pkg.B\npublic import Lean.Data.Json"),
@@ -61,7 +75,16 @@ test("the ratchet reports growth, an unlisted wide module, a stale entry and an 
 
 // The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-PROPOSAL.md. The oracle is the graph scan
 // above; it bounds graph shape, so a family-start kernel change needs no exemption.
+const librarySources = () =>
+  readWorktreeSources(worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/")));
+
 test("every library module stays within its recorded fanout bound", () => {
-  const paths = worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/"));
-  assert.deepEqual(leanFanoutViolations(leanFanouts(readWorktreeSources(paths)), leanFanoutBounds, leanFanoutDefaultBound), []);
+  assert.deepEqual(leanFanoutViolations(leanFanouts(librarySources()), leanFanoutBounds, leanFanoutDefaultBound), []);
+});
+
+// A one-line proof edit to `ProgramStructuralValidation` rebuilt exactly the 264 importers this model predicted,
+// in 42 minutes on one CPU (container probe, 2026-10-25), so these bounds only shrink: by replacing an
+// `import all` with a bridge lemma the hub exports, or a kernel-decided witness with an executable check.
+test("every library module stays within its recorded hidden-edit fanout bound", () => {
+  assert.deepEqual(leanFanoutViolations(leanHiddenEditFanouts(librarySources()), leanHiddenEditBounds, leanHiddenEditDefaultBound), []);
 });

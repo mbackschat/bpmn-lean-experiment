@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Compensation trigger and handler flow-node occurrences
 

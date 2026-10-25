@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 public import BpmnSemantics.SemanticProcess.CollectionOrder
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity body turnover
 

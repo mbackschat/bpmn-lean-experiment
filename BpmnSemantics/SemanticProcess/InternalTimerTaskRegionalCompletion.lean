@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPublication
 public import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Return and completion preserve the jointly inserted task, Timer, and Activity record.
 Canonical filter and erase laws retain exact list order, not only collection membership. -/

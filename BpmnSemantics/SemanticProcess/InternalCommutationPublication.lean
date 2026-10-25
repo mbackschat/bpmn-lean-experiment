@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 public import BpmnSemantics.SemanticProcess.InternalCommutation
 public import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Internal commutation publication
 

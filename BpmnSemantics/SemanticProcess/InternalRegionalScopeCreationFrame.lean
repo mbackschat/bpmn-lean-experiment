@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationOwnersh
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Complete regional preparation survives independent scope creation with the same selected region, dependencies, and publication payload. The new projected start is excluded by the original region; existing handler withdrawals retain their exact classifiers. -/
 

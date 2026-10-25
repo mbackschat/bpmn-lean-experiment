@@ -2,10 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String

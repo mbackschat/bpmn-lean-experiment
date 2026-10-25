@@ -361,3 +361,21 @@ export const leanFanoutBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames", bound: 104 },
   { module: "BpmnSemantics.SemanticProcess.CommandAdmissionLaws", bound: 102 },
 ];
+
+/**
+ * Set on 2026-10-25 above the seven plain files that still load every module of their import closure, leaving room
+ * for a bridge module that imports one hub with `import all` to export characterization lemmas.
+ */
+export const leanHiddenEditDefaultBound = 10;
+
+/**
+ * The hidden-edit counterpart, as [`leanHiddenEditFanouts`](./lean-fanout.ts) counts it: the four hubs whose bodies
+ * the module system hides, at their 2026-10-25 counts after every `import all` that the build did not need became a
+ * private import. It shrinks under the same rule.
+ */
+export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
+  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 143 },
+  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 136 },
+  { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 99 },
+  { module: "BpmnSemantics.SemanticProcess.CheckedGraphValidation", bound: 92 },
+];

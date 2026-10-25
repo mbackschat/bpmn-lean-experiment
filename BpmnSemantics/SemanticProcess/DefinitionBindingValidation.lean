@@ -4,7 +4,6 @@ public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Cross-artifact definition binding
 

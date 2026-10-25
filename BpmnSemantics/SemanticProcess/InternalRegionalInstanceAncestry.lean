@@ -2,8 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Process-instance scope ancestry
 

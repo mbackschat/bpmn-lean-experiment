@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Correlated-message internal commutation projections
 

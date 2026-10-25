@@ -4,8 +4,8 @@ public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcessJson.ParallelScopeProgramInput
 public import BpmnSemantics.SemanticProcessJson.Scenario
 public import BpmnSemantics.SemanticProcessJson.Publication
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes, exact body retirements, and real command traces.
 The command witness uses the existing evaluator and publication serializer without registering a public profile. -/

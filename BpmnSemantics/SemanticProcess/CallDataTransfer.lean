@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 public import BpmnSemantics.SemanticProcess.CallActivity
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Atomic scalar Call transfers
 

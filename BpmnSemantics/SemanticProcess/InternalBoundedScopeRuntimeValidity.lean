@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Bounded entry's child insertion uses the ordinary scope-position law. The joined Timer and
 Activity preserve that position while retaining their separate validity obligations.

@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
 public import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Transaction branch structure and operational reachability
 

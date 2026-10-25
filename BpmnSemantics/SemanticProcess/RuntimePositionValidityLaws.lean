@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.TokenStorage
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Local token removal and insertion preserve runtime position under exact owner and place bindings. -/
 

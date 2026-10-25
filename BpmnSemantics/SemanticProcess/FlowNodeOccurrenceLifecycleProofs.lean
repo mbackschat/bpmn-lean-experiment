@@ -2,9 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle fold-soundness laws
 

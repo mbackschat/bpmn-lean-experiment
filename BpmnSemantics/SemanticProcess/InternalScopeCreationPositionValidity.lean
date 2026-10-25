@@ -2,8 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
 public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Runtime-position preservation for complete scope-creation preparations under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

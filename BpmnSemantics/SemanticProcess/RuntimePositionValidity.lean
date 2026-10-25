@@ -2,8 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Runtime position validity
 

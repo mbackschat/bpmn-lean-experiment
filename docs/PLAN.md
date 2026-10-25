@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: faster Lean builds within the 5 GB local bound (owner direction 2026-10-25: get the build time down as the build modularity proposal promised), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: faster Lean builds within the 5 GB local bound (owner direction 2026-10-25), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: green hosted checks for plain-file passes 3 and 4 and the fanout ratchet; the 53 conformance modules whose executable closure reaches a proofs-only module.
+Acceptance blockers: green hosted checks for the pruning and hidden-edit ratchet; about 80 fixtures per hidden hub that kernel-decide through its bodies.
 
-Current result: seven plain files remain (three interpreted drivers, the conformance root, three fixtures); the fanout ratchet and the leaf-placement rule hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 18 with leaf placement and 10 with no plain file. The same 196-module cold conformance build fell from 767 s to 596 s on two threads; peaks stayed at or below 2.44 GiB.
+Current result: seven plain files remain; the fanout ratchets and leaf placement hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 18 with leaf placement. A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; dropping unneeded hub `import all` lines (680 to 426) halves that to 136. Cold conformance builds fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB.
 
-Effort budget: 4 hours from 06:20 UTC on 2026-10-25, renewed by the owner direction above.
+Effort budget: 4 hours from 15:20 UTC on 2026-10-25, renewed by the owner's direction that day to remove every hub that triggers huge rebuilds.
 
-Next action: land pass 3 on green checks for its exact SHA, then split the 53 conformance modules. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land the pruning on green checks for its exact SHA, then move the hub-reducing fixtures' witnesses to executable checks. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 

@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Internal commutation occurrence-projection frames
 

@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPreparationFrame
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Exact regional/local-control commutation is derived from predecessor preparation and
 footprint independence. The two evaluation orders share the complete prepared artifacts. -/

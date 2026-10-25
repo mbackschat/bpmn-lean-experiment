@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 public import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Bounded closure consumes explicit choices only after universally independent normalization,
 under the [approved choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).

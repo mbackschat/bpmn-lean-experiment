@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandSuccessProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntimePositionProofs
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Parallel command fuel sufficiency
 

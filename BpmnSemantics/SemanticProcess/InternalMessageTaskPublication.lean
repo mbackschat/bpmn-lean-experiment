@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskOpenProjection
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Message-host candidates must select the exact two newly inserted waits before the lifecycle fold.

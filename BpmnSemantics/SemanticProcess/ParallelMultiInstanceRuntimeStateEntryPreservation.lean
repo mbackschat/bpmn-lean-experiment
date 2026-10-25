@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 

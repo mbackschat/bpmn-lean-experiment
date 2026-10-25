@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Parallel command scheduler success
 

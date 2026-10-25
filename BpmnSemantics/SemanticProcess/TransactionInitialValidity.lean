@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.TokenOrder
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Transaction split-state validity
 

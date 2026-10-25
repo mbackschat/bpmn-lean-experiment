@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 public import BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
 

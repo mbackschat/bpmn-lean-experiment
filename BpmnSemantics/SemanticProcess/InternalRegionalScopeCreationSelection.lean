@@ -7,8 +7,8 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 public import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Scope creation preserves regional selectors through their exact queried populations. Fresh identity alone is insufficient: independence also protects the inserted parent and Call edges, token censuses, and quiescence. -/
 

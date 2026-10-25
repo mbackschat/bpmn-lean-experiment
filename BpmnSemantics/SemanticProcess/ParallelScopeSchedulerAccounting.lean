@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameHistoryProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeLogicalTimeProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationOwnerProofs
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Parallel scope scheduler phase accounting
 

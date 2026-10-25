@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! # Exact Transaction entry prefixes
 

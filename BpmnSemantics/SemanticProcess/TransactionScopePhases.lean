@@ -5,8 +5,8 @@ public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Transaction leaf-scope frontier classification
 

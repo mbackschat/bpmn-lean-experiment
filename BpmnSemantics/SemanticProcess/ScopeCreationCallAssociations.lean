@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 public import BpmnSemantics.SemanticProcess.CallReachability
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Call associations under scope creation
 

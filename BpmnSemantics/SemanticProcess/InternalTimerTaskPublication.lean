@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
 public import BpmnSemantics.SemanticProcess.TransitionRecord
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Timer-task publication is checked through the evaluator's lifecycle acceptance boundary.

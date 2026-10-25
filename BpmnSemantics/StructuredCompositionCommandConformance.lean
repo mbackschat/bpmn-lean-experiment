@@ -2,9 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 public import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Command witnesses exercise the actual external dispatcher, so a profile value-domain change alone cannot satisfy the required-input and ordinary-task write restrictions. -/
 

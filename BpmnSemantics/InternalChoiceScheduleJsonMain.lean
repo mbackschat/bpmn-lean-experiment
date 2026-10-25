@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcessJson.InternalAlternative
 public import BpmnSemantics.SemanticProcessJson.Program
 public import BpmnSemantics.SemanticProcessJson.Scenario
 public import BpmnSemantics.SemanticProcessJson.Publication
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! Answer-free private scheduling witnesses use the same Program, stimulus and directives in both
 interpreters. This test entrypoint does not add a profile or engine API contract.

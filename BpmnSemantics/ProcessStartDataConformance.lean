@@ -1,10 +1,10 @@
 module
 
 public import BpmnSemantics.SequentialUserTask
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # BpmnSemantics.ProcessStartDataConformance — initial Process-data locks
 

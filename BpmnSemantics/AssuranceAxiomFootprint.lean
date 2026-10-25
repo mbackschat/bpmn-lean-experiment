@@ -61,10 +61,10 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Axiom footprint of the composed assurance guarantees
 

@@ -5,9 +5,9 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.CallReachability
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Open lifecycle projection through the actual scope-creation patch from the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
