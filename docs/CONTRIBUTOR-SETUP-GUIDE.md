@@ -202,6 +202,5 @@ Each entry must match one exact pnpm exclusion; use UTC ISO timestamps.
 
 | Package | Advisory | Published | Expires | Reviewer | Risk justification |
 |---|---|---|---|---|---|
-| zod@4.6.6 | [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) | 2026-10-11T16:18:23.878Z | 2026-10-25T16:18:23.878Z | Martin Backschat (owner), 2026-10-24 | High-severity memory exhaustion while validating oversized constrained collections, reachable through Product 2's Human Task catalog decoding and structured-form validation; 4.6.6 is the first fixed release, adds no dependencies or install scripts and carries SLSA provenance, and the owner chose fixing now over the remaining day of quarantine. |
 
-The `source-map-js@1.2.2` exception approved on 2026-10-07 expired on 2026-10-14, when the release reached fourteen days, and was removed.
+The `source-map-js@1.2.2` exception approved on 2026-10-07 expired on 2026-10-14, when the release reached fourteen days, and was removed. The `zod@4.6.6` exception approved on 2026-10-24 expired on 2026-10-25 for the same reason and was removed.
