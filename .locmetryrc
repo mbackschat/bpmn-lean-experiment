@@ -1,94 +1,351 @@
 # locmetry project policy: `locmetry --schema config` owns the contract.
+#
+# Each test category owns what exists only for that lane: its cases, helpers, harness and inputs.
 version = 1
 
 [categories]
-historical = "Frozen copies kept as evidence, not maintained source"
-experiment = "Provisional, separately gated Lean experiments"
-proof = "Lean laws and preservation theorems behind the assurance claim"
-lean-witness = "Finite Lean conformance witnesses and their fixtures"
-test-harness = "Reusable test and calibration infrastructure"
-test-support = "Browser-journey helpers and Playwright configuration"
-tooling = "Repository gates, guards and generators"
-deployment = "Container and evaluation-distribution deployment"
+formal-semantics = "Lean definitions of the BPMN semantics, including theorems kept beside them in mixed modules (ASSURANCE-IMPROVEMENT-REGISTER: separation pending)"
+proof = "Lean modules named as proof owners (…Proofs, …Laws, …Preservation, …Soundness)"
+experiment = "Provisional, separately gated experiments (BpmnSemantics/Experiments, proposal-only control witnesses)"
+example = "Showcase milestone hosts and demo runtimes, runner examples and the live demo"
+differential = "Comparison against reference targets: the pinned CIB Seven 2.2.0 runner, its probes and retained evidence, and the cross-target suites over shared scenarios"
+verification-tooling = "Repository gates and guards, pipeline and lane runners, receipts, and the Lean check and emit executables"
+build-tooling = "Build and toolchain wrappers, package and Lake manifests"
+tooling = "Contributor setup, external-source provisioning, change planning, review packets, evidence reports and release tagging"
+deployment = "Container image and evaluation distribution"
+unit = "In-process suites with fakes or temporary files, and their helpers and fixtures"
+integration = "Suites that start PostgreSQL, Lean or HTTP servers or run the built packages as processes, and the optional MIWG, A12 adoption and time-skipping observation lanes"
+witness = "Finite Lean conformance witnesses, their check fixtures and fixture definitions"
+refinement = "Temporal refinement lanes: the testkit and the hosted, concurrent and serial witnesses checked against the semantic core"
+end-to-end = "Showcase acceptance through the composed platform's HTTP API and browser, with its journeys' support and Playwright configuration"
+guard = "Repository policy guards run as tests (test:infrastructure) and the tests of the repository tooling"
+archived = "Frozen copies kept as evidence, not maintained source"
 
 [[languages.mappings]]
 id = "bpmn-xml"
 match = ["**/*.bpmn"]
 language = "XML"
 
-# An override, because the frozen tree contains conventional test directories.
+# ---- Overrides: purpose decisions that must beat a built-in convention ----
+
 [[overrides]]
 id = "frozen-a12-adoption"
-match = ["adoption/a12/legacy/source-tree/**"]
+match = ["adoption/a12/legacy/**"]
 purpose = "other"
-category = "historical"
-reason = "adoption/a12/legacy/README.md: frozen copy, not a source root or build input"
+category = "archived"
+reason = "adoption/a12/legacy/README.md: frozen copy, not a source root or build input; contains conventional test folders"
+
+# ---- Rules: claim files no convention claims, or set their purpose ----
+
+[[rules]]
+id = "a12-adoption-fixtures"
+match = ["adoption/a12/current/**"]
+purpose = "test"
+category = "integration"
+reason = "adoption/a12/current/README.md: data-only inputs of the optional adoption gate, outside every product registry"
+
+[[rules]]
+id = "calibration-lanes"
+match = ["packages/temporal-adapter/testkit/calibration/**", "packages/bpmn-source/calibration/**"]
+kind = ["source"]
+purpose = "test"
+category = "integration"
+reason = "Optional MIWG, A12 and time-skipping observation lanes, not correctness gates"
+
+[[rules]]
+id = "temporal-testkit"
+match = ["packages/temporal-adapter/testkit/src/**"]
+kind = ["source"]
+purpose = "test"
+category = "refinement"
+reason = "Mutation workflows and harness that exist only for the Temporal refinement lanes"
 
 [[rules]]
 id = "project-test-suffixes"
 match = ["**/*.{integration,platform,temporal,temporal-serial,type}-test.ts"]
+kind = ["source"]
 purpose = "test"
-category = "test"
-reason = "Project test-lane suffixes beside the conventional .test.ts"
+reason = "Project test-lane suffixes beside the conventional .test.ts; refinements decide the category"
 
 [[rules]]
-id = "showcase-test-support"
-match = ["showcase/*/e2e/**", "showcase/*/playwright*.config.ts"]
+id = "showcase-e2e-support"
+match = ["showcase/*/e2e/**"]
+kind = ["source"]
 purpose = "test"
-category = "test-support"
-reason = "Support for the showcase Playwright acceptance lanes"
+category = "end-to-end"
+reason = "Fixtures and helpers of the showcase Playwright journeys"
 
 [[rules]]
-id = "test-harness"
-match = ["packages/temporal-adapter/testkit/**", "packages/bpmn-source/calibration/**"]
-purpose = "test"
-category = "test-harness"
-reason = "Temporal refinement testkit and optional calibration lanes"
+id = "showcase-hosts"
+match = ["showcase/*/src/**"]
+kind = ["source"]
+purpose = "production"
+category = "example"
+reason = "Maintained showcase hosts and demo runtimes; their acceptance suites are tests"
 
 [[rules]]
 id = "lean-experiments"
 match = ["BpmnSemantics/Experiments/**"]
+kind = ["source"]
 purpose = "production"
 category = "experiment"
 reason = "CLAUDE.md: provisional and separately gated"
 
 [[rules]]
 id = "lean-witnesses"
-match = ["BpmnSemantics/**/*Conformance.lean", "BpmnSemantics/**/*Fixture.lean", "BpmnSemantics/**/*Fixtures.lean"]
+match = [
+  "BpmnConformance.lean",
+  "BpmnSemantics/**/*Conformance.lean",
+  "BpmnSemantics/**/*CheckFixtures.lean",
+  "BpmnSemantics/**/*Fixture.lean",
+  "BpmnSemantics/**/*Fixtures.lean",
+  "BpmnSemantics/SequentialUserTask.lean",
+]
+kind = ["source"]
 purpose = "test"
-category = "lean-witness"
-reason = "Conformance modules own finite witnesses, not quantified laws"
+category = "witness"
+reason = "Finite witnesses and the fixture definitions only they use; quantified laws are proofs"
+
+[[rules]]
+id = "lean-check-executables"
+match = ["BpmnSemantics/*Main.lean", "BpmnSemantics/AssuranceAxiomFootprint.lean"]
+kind = ["source"]
+purpose = "production"
+category = "verification-tooling"
+reason = "lakefile.toml check*/emit* executables and the axiom-footprint check"
 
 [[rules]]
 id = "lean-proofs"
 match = ["BpmnSemantics/**/*{Proof,Proofs,Law,Laws,Preservation,Soundness}.lean"]
+kind = ["source"]
 purpose = "production"
 category = "proof"
-reason = "Quantified laws and preservation theorems"
+reason = "Named proof owners; mixed definition modules stay formal-semantics (no filename-only module classification)"
+
+[[rules]]
+id = "lean-semantics"
+match = ["BpmnSemantics.lean", "BpmnSemantics/**/*.lean"]
+kind = ["source"]
+purpose = "production"
+category = "formal-semantics"
+reason = "The Lean account: Semantic Process definitions, JSON admission and contracts"
+
+[[rules]]
+id = "differential-targets"
+match = ["runners/cibseven/src/main/**", "packages/differential/src/**"]
+purpose = "production"
+category = "differential"
+reason = "CLAUDE.md authority model: CIB Seven is the executable behavioral oracle, not product; the comparator serves test:differential"
+
+[[rules]]
+id = "runner-examples"
+match = ["packages/temporal-adapter/runner/examples/**"]
+kind = ["source"]
+purpose = "production"
+category = "example"
+reason = "Example Activities for the runnable MVP"
 
 [[rules]]
 id = "product-outside-src"
 match = [
-  "packages/temporal-adapter/runner/{cli,examples}/**",
+  "packages/temporal-adapter/runner/cli/**",
   "model-corpus/*.ts",
   "platform/**/migrations/*.sql",
-  "platform/**/vite.config.ts",
   "platform/apps/web/index.html",
 ]
+kind = ["source"]
 purpose = "production"
 category = "implementation"
-reason = "Maintained product source outside the conventional src layouts"
+reason = "Product source outside the conventional src layouts; model-corpus registries feed the web capability panels"
+
+[[rules]]
+id = "wire-contracts"
+match = ["contracts/schemas/**", "profiles/**"]
+kind = ["data"]
+purpose = "production"
+category = "implementation"
+reason = "contracts/README.md and profiles/README.md: published wire schemas and semantic profiles"
+
+[[rules]]
+id = "scenarios"
+match = ["scenarios/**", "model-corpus/*.json"]
+kind = ["data"]
+purpose = "test"
+category = "differential"
+reason = "Neutral scenario inputs, retained CIB Seven results and the whole-model corpus manifest the target lanes compare over"
+
+[[rules]]
+id = "examples"
+match = ["examples/**"]
+purpose = "production"
+category = "example"
+reason = "Runnable MVP example inputs"
 
 [[rules]]
 id = "deployment"
-match = ["Dockerfile", ".dockerignore", "compose.yaml", "deploy/**"]
+match = ["Dockerfile", "compose.yaml", "deploy/**"]
 purpose = "production"
 category = "deployment"
 reason = "Container image and evaluation distribution"
 
 [[rules]]
+id = "ci-workflows"
+match = [".github/workflows/**", "platform/license-policy.json"]
+purpose = "production"
+category = "verification-tooling"
+reason = "Hosted verification lanes and the license guard's allow-list"
+
+[[rules]]
+id = "build-manifests"
+match = [
+  "**/package.json",
+  "**/tsconfig*.json",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "lakefile.toml",
+  "lake-manifest.json",
+  ".github/dependabot.yml",
+  "runners/cibseven/maven-settings.xml",
+]
+kind = ["data"]
+purpose = "production"
+category = "build-tooling"
+reason = "Package, workspace, Lake and Maven manifests and dependency-update policy"
+
+[[rules]]
+id = "repository-test-fixtures"
+match = ["scripts/*-test-fixtures.ts", "scripts/mue-preview-beta-test-oracle.ts"]
+kind = ["source"]
+purpose = "test"
+category = "guard"
+reason = "Fixtures and the independent test oracle that exist only for the repository guard tests"
+
+[[rules]]
 id = "repository-tooling"
 match = ["scripts/**"]
+kind = ["source"]
 purpose = "production"
+category = "verification-tooling"
+reason = "Gates, guards and lane runners; refinements name the setup, build, oracle and release scripts"
+
+# ---- Refinements: change only the category of already-decided files ----
+
+[[refinements]]
+id = "build-wrappers"
+purpose = "production"
+match = [
+  "scripts/{lake,pnpm,pinned-toolchain,lean-memory-brake}.sh",
+  "scripts/java-home.ts",
+]
+kind = ["source"]
+category = "build-tooling"
+reason = "CLAUDE.md: the only entry points for Lean and pnpm, and their toolchain pins"
+
+[[refinements]]
+id = "oracle-tooling"
+purpose = "production"
+match = [
+  "scripts/cibseven-maven-*.ts",
+  "scripts/run-cibseven-tests.ts",
+  "scripts/test-cibseven-oracle.sh",
+  "scripts/replace-cibseven-evidence.ts",
+  "scripts/contract-cib-*.ts",
+]
+kind = ["source"]
+category = "differential"
+reason = "Builds and runs the CIB Seven runner and replaces or projects its retained evidence"
+
+[[refinements]]
+id = "contributor-tooling"
+purpose = "production"
+match = [
+  "scripts/{doctor,setup-external-sources,check-external-sources,fetch-bpmn-corpus,verify-bpmn-corpus}.sh",
+  "scripts/what-binds*.ts",
+  "scripts/lean-unfolding-sites.ts",
+  "scripts/update-bpmn-normative-labels.ts",
+  "scripts/refresh-browser-walkthrough-screenshots.ts",
+  "scripts/semantic-review-*.ts",
+  "scripts/{capsule-cost,cib-bpmn-breadth,mechanism-maturity,publication-statistics,delivery-progress}.ts",
+  "scripts/replace-a12-adoption-evidence.ts",
+  "scripts/a12-adoption-evidence.ts",
+  "scripts/project-tags.ts",
+]
+kind = ["source"]
 category = "tooling"
-reason = "Maintained gates, guards and generators; conventional tests inside stay tests"
+reason = "Setup, provisioning, change planning, review packets, evidence reports and tag:create/tag:push; no gate depends on them"
+
+[[refinements]]
+id = "live-demo"
+purpose = "production"
+match = ["scripts/live-demo.ts", "scripts/write-evaluation-showcases.ts"]
+kind = ["source"]
+category = "example"
+reason = "demo:* scripts and the evaluation showcase writer"
+
+[[refinements]]
+id = "proposal-experiments"
+purpose = "production"
+match = ["scripts/*-experiment.ts"]
+kind = ["source"]
+category = "experiment"
+reason = "Proposal-only control witnesses"
+
+[[refinements]]
+id = "repository-guards"
+purpose = "test"
+match = ["scripts/**"]
+category = "guard"
+reason = "test:infrastructure guards and tooling tests, kept apart from product tests"
+
+[[refinements]]
+id = "differential-suites"
+purpose = "test"
+match = ["packages/differential/test/**", "runners/cibseven/src/test/**"]
+category = "differential"
+reason = "test:differential with its retained comparison fixtures, and the JUnit probes run against the pinned CIB Seven engine"
+
+[[refinements]]
+id = "refinement-witnesses"
+purpose = "test"
+match = ["packages/temporal-adapter/testkit/test/**"]
+category = "refinement"
+reason = "test:temporal:built:{concurrent,hosted,hosted-serial}"
+
+[[refinements]]
+id = "showcase-acceptance"
+purpose = "test"
+match = [
+  "showcase/*/e2e/**",
+  "showcase/*/playwright*.config.ts",
+  "showcase/*/test/m[0-9]-*.test.ts",
+  "showcase/*/test/*.ts",
+]
+except = ["showcase/*/test/*.{integration,platform}-test.ts", "showcase/*/test/{audience-pacing,automated-actor,rc-showcase-actor,rc-showcase-preparation,host-log,headline-demo,screenshot-catalog,definition-overlay-transport}.test.ts"]
+category = "end-to-end"
+reason = "Milestone journeys over HTTP, Temporal and the browser, with their support"
+
+[[refinements]]
+id = "service-integration"
+purpose = "test"
+match = [
+  "**/*.integration-test.ts",
+  "**/test/postgresql/**",
+  "**/postgresql-*.test.ts",
+  "platform/apps/server/test/{composition,operator-audit-composition,static-assets,http-adapter}.test.ts",
+  "showcase/m3-human-work/test/definition-overlay-transport.test.ts",
+]
+category = "integration"
+reason = "test:*:postgresql lanes, Lean-spawning parity tests and loopback HTTP servers"
+
+[[refinements]]
+id = "in-process-suites"
+purpose = "test"
+match = [
+  "packages/**/test/**",
+  "packages/semantic-core/type-test/**",
+  "platform/**/test/**",
+  "showcase/*/test/**",
+  "model-corpus/test/**",
+]
+category = "unit"
+reason = "Package, platform and showcase-unit suites running in process with fakes, with their helpers and fixtures"

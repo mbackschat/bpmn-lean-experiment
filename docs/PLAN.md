@@ -92,11 +92,11 @@ Deliverable: the proposal's median of about ten rebuilt modules per ordinary com
 
 Acceptance blockers: the owner's choice for the Call Activity and Compensation snapshot proved lanes resting on executable checks (restore kernel decisions or relabel checked); fixtures still kernel-deciding through hidden hub bodies.
 
-Current result: seven plain files remain; ratchets hold the graph. Two fixture passes (1110 executable checks) cut 41 modules' build time from 1190 to 308 seconds. A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; with each hub's laws in a `<Hub>Laws` module it rebuilds 2 or 3 modules in 2 to 16 seconds; a body edit still rebuilds the 115 modules reducing hub bodies.
+Current result: hub laws moved out of their hubs, so a hub proof edit rebuilds 2 or 3 modules in seconds (264 in 42 minutes before). A replay of 92 commits against today's graph still gives a median of 686 rebuilt modules: no hidden edit exceeds 500, but exposed-body edits (`ProfileShapeCatalog` 42, `RuntimeStateWellFormed` 31, `EffectDataAdmission` 23, `GraphValidation` 19), signature and type changes do.
 
-Effort budget: 4 hours from 18:45 UTC on 2026-10-25, renewed by the owner's direction that day that build speed is the first goal.
+Effort budget: 4 hours from 18:45 UTC on 2026-10-25, exhausted at 22:45 UTC; renewal awaits the owner.
 
-Next action: land the hub-laws split on green checks, then restore the trigger/handler lane's kernel witnesses with the proved-lane guard and re-split the fixtures whose proved lanes name kernel theorems.
+Next action: on renewal, hide the bodies of the exposed modules the replay ranks first and move their laws out, then the trigger/handler kernel restore with the proved-lane guard.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 
