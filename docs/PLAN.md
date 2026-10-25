@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: no Lean module above 2 GiB peak, locked by Lean's own `-M2048` limit (owner decision 2026-10-25), then two local Lean threads under a 5 GB total (owner direction 2026-10-25), then the 104 plain files to modules, then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: faster Lean builds within the 5 GB local bound, then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: a cold hosted build under `-M2048` with no failing module and a cost guard that rejects any recorded row above the limit, on `main`.
+Deliverable: measurably faster cold and incremental Lean builds without a weaker claim or a raised memory limit.
 
-Acceptance blockers: green local library, `BpmnConformance` and executable-check builds; re-measured cost rows; documentation claims matching the evidence form; green hosted checks on the cold build.
+Acceptance blockers: green hosted checks for plain-file pass 2; an owner decision on leaf placement of new declarations; splitting the 53 conformance modules whose executable closure reaches a proofs-only module.
 
-Current result: `a25f3c51` landed 333 executable checks. A single kernel decision replaying a medium whole model peaks near 2 GiB, so the remaining large modules move their finite witnesses to executable checks or split consumed facts into kernel-decided parts.
+Current result: 229 finite witnesses of 25 proved-lane modules are executable checks (rows 645 s to 208 s); 58 plain files are modules, 45 stay plain (strict JSON decoder, `#eval`, `native_decide`). The same 196-module cold conformance build on two threads fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB. A 92-commit replay still rebuilds a median 650 modules, 49 with leaf placement.
 
-Effort budget: 4 hours from 02:57 UTC on 2026-10-25.
+Effort budget: 4 hours from 02:57 UTC on 2026-10-25, used through 05:55 UTC.
 
-Next action: re-measure the changed rows, push the branch for the cold hosted build, land on green checks for the exact SHA, then the thread change. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land pass 2 on green checks for its exact SHA, then the two owner decisions. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 
