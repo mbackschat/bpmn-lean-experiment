@@ -88,49 +88,9 @@ def sortBy (before : α → α → Bool) : List α → List α
   | [] => []
   | head :: tail => insertBy before head (sortBy before tail)
 
-private theorem mem_insertBy (before : α → α → Bool) (value inserted : α) (values : List α) : value ∈ insertBy before inserted values ↔ value = inserted ∨ value ∈ values := by
-  induction values with
-  | nil => simp [insertBy]
-  | cons head tail ih =>
-      simp only [insertBy]
-      split <;> simp_all [or_left_comm]
-
-private theorem mem_lifecycleSortBy (before : α → α → Bool) (value : α) (values : List α) : value ∈ sortBy before values ↔ value ∈ values := by
-  induction values with
-  | nil => simp [sortBy]
-  | cons head tail ih => simp [sortBy, mem_insertBy, ih]
-
-private theorem insertBy_perm (before : α → α → Bool) (value : α) : ∀ values, (insertBy before value values).Perm (value :: values) := by
-  intro values
-  induction values with
-  | nil => rfl
-  | cons head tail ih =>
-      simp only [insertBy]
-      split
-      · exact List.Perm.refl _
-      · exact (List.Perm.cons head ih).trans (List.Perm.swap value head tail)
-
-private theorem sortBy_perm (before : α → α → Bool) : ∀ values, (sortBy before values).Perm values := by
-  intro values
-  induction values with
-  | nil => rfl
-  | cons head tail ih => exact (insertBy_perm before head (sortBy before tail)).trans (List.Perm.cons head ih)
-
 def sortFlowNodeOccurrenceStarts : List UnnumberedFlowNodeOccurrenceStart → List UnnumberedFlowNodeOccurrenceStart := sortBy startBefore
 
-theorem mem_sortFlowNodeOccurrenceStarts (value : UnnumberedFlowNodeOccurrenceStart) (values : List UnnumberedFlowNodeOccurrenceStart) : value ∈ sortFlowNodeOccurrenceStarts values ↔ value ∈ values := by
-  exact mem_lifecycleSortBy startBefore value values
-
-theorem sortFlowNodeOccurrenceStarts_perm (values : List UnnumberedFlowNodeOccurrenceStart) : (sortFlowNodeOccurrenceStarts values).Perm values := sortBy_perm startBefore values
-
 def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List UnnumberedFlowNodeOccurrenceEnd := sortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor)
-
-theorem sortFlowNodeOccurrenceEnds_perm (values : List UnnumberedFlowNodeOccurrenceEnd) :
-    (sortFlowNodeOccurrenceEnds values).Perm values :=
-  sortBy_perm (fun left right : UnnumberedFlowNodeOccurrenceEnd => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) values
-
-theorem mem_sortFlowNodeOccurrenceEnds (value : UnnumberedFlowNodeOccurrenceEnd) (values : List UnnumberedFlowNodeOccurrenceEnd) : value ∈ sortFlowNodeOccurrenceEnds values ↔ value ∈ values := by
-  exact mem_lifecycleSortBy (fun left right => flowNodeOccurrenceAnchorBefore left.anchor right.anchor) value values
 
 @[expose] def uniqueReturnOwner? (state : RuntimeState) (id : OperationId)
     (origin : BpmnElementOrigin) : Option ScopeOccurrenceId :=
@@ -301,13 +261,6 @@ def availableAfterStarts (current : List OpenSemanticFlowNodeOccurrence)
 def removeEndedFlowNodeOccurrences (available : List OpenSemanticFlowNodeOccurrence)
     (ended : List UnnumberedFlowNodeOccurrenceEnd) : List OpenSemanticFlowNodeOccurrence :=
   available.filter fun occurrence => !(ended.map (·.anchor)).contains occurrence.anchor
-
-theorem mem_removeEndedFlowNodeOccurrences (occurrence : OpenSemanticFlowNodeOccurrence)
-    (available : List OpenSemanticFlowNodeOccurrence)
-    (ended : List UnnumberedFlowNodeOccurrenceEnd) :
-    occurrence ∈ removeEndedFlowNodeOccurrences available ended ↔
-      occurrence ∈ available ∧ !(ended.map (·.anchor)).contains occurrence.anchor = true := by
-  simp [removeEndedFlowNodeOccurrences]
 
 def applyFlowNodeOccurrenceDelta? (current : List OpenSemanticFlowNodeOccurrence)
     (delta : UnnumberedFlowNodeOccurrenceDelta) :
@@ -855,5 +808,23 @@ def flowNodeOccurrenceDeltaForOperation? (program : Program) (before after : Run
   candidateFlowNodeOccurrenceDeltaForOperation? program before after operation commandId
       transitionIndex >>= fun candidate =>
     acceptFlowNodeOccurrenceCandidate? program before after candidate
+
+private theorem insertBy_perm (before : α → α → Bool) (value : α) : ∀ values, (insertBy before value values).Perm (value :: values) := by
+  intro values
+  induction values with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [insertBy]
+      split
+      · exact List.Perm.refl _
+      · exact (List.Perm.cons head ih).trans (List.Perm.swap value head tail)
+
+private theorem sortBy_perm (before : α → α → Bool) : ∀ values, (sortBy before values).Perm values := by
+  intro values
+  induction values with
+  | nil => rfl
+  | cons head tail ih => exact (insertBy_perm before head (sortBy before tail)).trans (List.Perm.cons head ih)
+
+theorem sortFlowNodeOccurrenceStarts_perm (values : List UnnumberedFlowNodeOccurrenceStart) : (sortFlowNodeOccurrenceStarts values).Perm values := sortBy_perm startBefore values
 
 end BpmnSemantics.SemanticProcess

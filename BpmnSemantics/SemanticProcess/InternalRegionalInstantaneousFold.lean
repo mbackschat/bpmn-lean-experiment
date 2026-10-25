@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleFold
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 
 /-! Instantaneous entries sort after existing open occurrences and close in the same delta.
 Their transient anchors must neither remove nor collide with retained regional occurrences.

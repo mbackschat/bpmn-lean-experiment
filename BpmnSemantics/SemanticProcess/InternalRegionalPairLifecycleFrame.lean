@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 
 /-! Cancellation publication depends on projected anchors and live handler classification, including private Timers. Exact retained populations preserve that template without assuming publication acceptance. -/
 

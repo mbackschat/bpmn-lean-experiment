@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Scope creation frames use complete input-place censuses, including the newly produced token.
 An already-live Message-task owner remains live after the fresh scope insertion.

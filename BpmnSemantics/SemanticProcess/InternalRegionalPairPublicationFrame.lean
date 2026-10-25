@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
 public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 
 /-! A preparation frame must preserve the publication template as well as readiness. Canonical positions and lifecycle populations assemble the unchanged complete regional artifact from predecessor facts. -/
 

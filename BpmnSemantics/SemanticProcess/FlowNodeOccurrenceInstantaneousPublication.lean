@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 
 /-! Instantaneous publication preserves the independently projected open occurrence set.
 The lifecycle fold owns both freshness and same-delta closure.

@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
-import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivityLaws
 
 /-! Each successor traversal uses its own retained graph and fuel. Existing Call-removal laws establish the same derived occurrence region without assuming graph or region equality. -/
 

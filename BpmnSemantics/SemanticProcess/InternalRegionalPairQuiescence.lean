@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Return and completion select quiescent scopes. Disjoint removal cannot introduce work into a protected owner, so the original quiescence check survives. -/
 

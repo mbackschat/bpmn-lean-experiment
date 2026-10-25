@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CallActivityLaws
 
 /-! # Process-instance scope ancestry
 

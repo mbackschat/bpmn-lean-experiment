@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublica
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 
 /-! Bounded Sub-Process arming publishes its child start and control-position delta through the
 existing acceptance boundary; the attached deadline remains private under the

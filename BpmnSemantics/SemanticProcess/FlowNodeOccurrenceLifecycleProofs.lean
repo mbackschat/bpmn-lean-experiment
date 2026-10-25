@@ -4,7 +4,8 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+import BpmnSemantics.SemanticProcess.CallActivityLaws
 
 /-! # Flow-node occurrence lifecycle fold-soundness laws
 
