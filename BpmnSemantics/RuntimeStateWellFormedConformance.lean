@@ -1,7 +1,9 @@
-import BpmnSemantics.RuntimeStateActivityConformance
-import BpmnSemantics.RuntimeStateWellFormedInvariantConformance
-import BpmnSemantics.RuntimeStateWellFormedEventRaceConformance
-import BpmnSemantics.RuntimeStateWellFormedSuccessorConformance
+module
+
+public import BpmnSemantics.RuntimeStateActivityConformance
+public import BpmnSemantics.RuntimeStateWellFormedInvariantConformance
+public import BpmnSemantics.RuntimeStateWellFormedEventRaceConformance
+public import BpmnSemantics.RuntimeStateWellFormedSuccessorConformance
 
 /-! # Runtime-state well-formedness conformance
 

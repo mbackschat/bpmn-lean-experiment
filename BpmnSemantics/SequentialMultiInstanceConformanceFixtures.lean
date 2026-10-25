@@ -1,4 +1,6 @@
-import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
+module
+
+public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 
 /-! # Sequential Multi-Instance conformance fixtures
 
@@ -6,6 +8,8 @@ The shared computed lifecycle chain for the bounded Sequential Multi-Instance co
 owners. Its runtime arm is projected from the checked operation, so the chain exercises production
 execution identities and the selected profile.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SequentialMultiInstanceConformance
 

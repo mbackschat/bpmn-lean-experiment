@@ -90,9 +90,9 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: green hosted checks for plain-file pass 3 and the fanout ratchet; the seven plain roots; the 53 conformance modules whose executable closure reaches a proofs-only module.
+Acceptance blockers: green hosted checks for plain-file passes 3 and 4 and the fanout ratchet; the 53 conformance modules whose executable closure reaches a proofs-only module.
 
-Current result: 20 plain files remain, behind seven roots; the fanout ratchet and the leaf-placement rule hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 28 with leaf placement and 10 with no plain file. The same 196-module cold conformance build fell from 767 s to 596 s on two threads; peaks stayed at or below 2.44 GiB.
+Current result: seven plain files remain (three interpreted drivers, the conformance root, three fixtures); the fanout ratchet and the leaf-placement rule hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 18 with leaf placement and 10 with no plain file. The same 196-module cold conformance build fell from 767 s to 596 s on two threads; peaks stayed at or below 2.44 GiB.
 
 Effort budget: 4 hours from 06:20 UTC on 2026-10-25, renewed by the owner direction above.
 

@@ -1,5 +1,7 @@
-import BpmnSemantics.RuntimeStateActivityOccurrenceConformance
-import BpmnSemantics.RuntimeStateControllerConformance
+module
+
+public import BpmnSemantics.RuntimeStateActivityOccurrenceConformance
+public import BpmnSemantics.RuntimeStateControllerConformance
 
 /-! # Runtime-state Activity and controller conformance aggregate
 

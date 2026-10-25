@@ -1,8 +1,10 @@
-import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
-import BpmnSemantics.SequentialMultiInstanceRuntimeConformance
-import BpmnSemantics.SequentialMultiInstanceRefusalConformance
-import BpmnSemantics.SequentialMultiInstanceCanonicalJsonConformance
-import BpmnSemantics.SequentialMultiInstanceProgressConformance
+module
+
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
+public import BpmnSemantics.SequentialMultiInstanceRuntimeConformance
+public import BpmnSemantics.SequentialMultiInstanceRefusalConformance
+public import BpmnSemantics.SequentialMultiInstanceCanonicalJsonConformance
+public import BpmnSemantics.SequentialMultiInstanceProgressConformance
 
 /-! # Sequential Multi-Instance conformance
 
