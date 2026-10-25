@@ -1,5 +1,13 @@
-import BpmnSemantics.TransactionRetentionConformance
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+module
+
+public import BpmnSemantics.TransactionRetentionConformance
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Bounded Transaction cancellation witnesses
 
@@ -7,6 +15,8 @@ TXC-EMPTY-01, TXC-JOIN-01 and TXC-FAIL-01 distinguish cancellation from ordinary
 These transition witnesses extend the child-retention fixture; source admission and committed command
 publication have separate end-to-end witnesses.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.TransactionCancellationConformance
 

@@ -1,8 +1,16 @@
-import BpmnSemantics.RepeatableEventSubscriptionAdmissionConformance
-import BpmnSemantics.SemanticProcess.TransitionTrace
+module
+
+public import BpmnSemantics.RepeatableEventSubscriptionAdmissionConformance
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! ESL-MESSAGE/SPAWN/CLOSE finite command witnesses retain two overlapping handler activations.
 The quantified lifetime laws own arbitrary multiplicity; the pipeline owns source and E1/E2 parity. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RepeatableMessageLifetimeConformance
 

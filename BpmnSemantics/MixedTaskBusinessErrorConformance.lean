@@ -1,10 +1,14 @@
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
-import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.Scenario
+module
+
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Scenario
 
 /-! MBERR-DATA-01 and MBERR-PROGRESS-01 separate exceptional continuations from normal-only graph analysis. MBERR-MAP-01 and MBERR-REFUSE-01 check primitive mapping, routing and ownership. These constructed witnesses do not establish public command admission or reachable execution. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.MixedTaskBusinessErrorConformance
 open BpmnSemantics.SemanticProcess

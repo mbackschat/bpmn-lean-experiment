@@ -1,13 +1,23 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
-import BpmnSemantics.EmbeddedSubProcessCompletionConformance
-import BpmnSemantics.ActivityBoundaryTimerConformance
-import BpmnSemantics.ConfiguredTaskConformance
-import BpmnSemantics.CallActivityConformanceFixtures
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
+public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
+public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.ConfiguredTaskConformance
+public import BpmnSemantics.CallActivityConformanceFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Flow-node occurrence lifecycle program-validity conformance
 
 This module owns exact rejection witnesses for malformed runtime state and program-foreign lifecycle candidates.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

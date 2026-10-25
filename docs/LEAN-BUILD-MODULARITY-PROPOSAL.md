@@ -92,6 +92,7 @@ These come from small scratch projects, not the library, and are not retained in
 | Imported module's public interface unchanged | Dependents not rebuilt |
 | A family added to a record-of-functions kernel whose dispatch was exposed and whose all-families fixture was not a module | Rebuilt only that family, the registry and that fixture. The composition law was proved once against the interface. Hidden dispatch bodies were not tested in this run |
 | Kernel decision through hidden bodies | Fails unless every module on the reduction path is imported with `import all` |
+| Kernel decision through Lean core bodies hidden from modules | `Nat.repr`/`toString` on `Nat` and `List.mergeSort` reduce, under `decide +kernel`, `cbv` and `simp [List.mergeSort]`, once the module imports `Init.Data.Repr` or `Init.Data.List.Sort.Basic` with `import all`; the strict JSON decoder path (`decodeVariableValue`) still did not reduce with `import all` of `Lean.Data.Json.Basic`, `Lean.Data.RBMap` and the project JSON modules (scratch probes on the pinned toolchain, 2026-10-25, not retained) |
 | Bridge module (`import all` plus a `by rfl` lemma) | An edit to another family's arm or body left this family's proof and family-local fixture unrebuilt (probe output not retained) |
 | Equation-lemma trap | `simp [f]` and `simp only [f]` propagated an arm edit; `by rfl` and `by unfold f; rfl` did not; term-mode `rfl` was rejected for a hidden body (probe output not retained) |
 

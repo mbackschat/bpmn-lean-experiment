@@ -1,9 +1,20 @@
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.CompensationSourceLoweringFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.CompensationSourceLoweringFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+
 
 /-! Six ordinary wait families exercise retained preparation across a dormant snapshot declaration. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.SnapshotInternalArmingConformance
 

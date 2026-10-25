@@ -1,7 +1,9 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionConformance
-import BpmnSemantics.CompensationEventSubProcessSnapshotAtomicityConformance
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance
+public import BpmnSemantics.CompensationEventSubProcessSnapshotRootClosureConformance
+public import BpmnSemantics.CompensationEventSubProcessSnapshotErrorInterruptionConformance
+public import BpmnSemantics.CompensationEventSubProcessSnapshotAtomicityConformance
 
 /-! # Compensation Event Sub-Process snapshot integration checkpoint
 
@@ -9,3 +11,6 @@ Aggregate target for the split lifecycle, root closure, Error interruption, and 
 evidence. The split is a resource boundary: each kernel-decided evidence family compiles in its
 own process under the unchanged hard ceiling.
 -/
+
+
+@[expose] public section

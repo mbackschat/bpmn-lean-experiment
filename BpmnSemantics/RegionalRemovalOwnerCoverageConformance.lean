@@ -1,6 +1,14 @@
-import BpmnSemantics.CallActivityConformanceFixtures
-import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
-import BpmnSemantics.SemanticProcess.TerminateEnd
+module
+
+public import BpmnSemantics.CallActivityConformanceFixtures
+public import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
+public import BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Populated regional removal ownership witnesses
 
@@ -9,6 +17,8 @@ removed and surviving owners. Literal expected records are independent of the ca
 Position validity is checked; these synthetic controller populations do not claim full-state or
 profile admission, whose parallel scope-controller clause still requires an empty population.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 

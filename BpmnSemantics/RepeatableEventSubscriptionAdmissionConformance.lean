@@ -1,7 +1,17 @@
-import BpmnSemantics.ActivityBoundaryMessageConformance
+module
+
+public import BpmnSemantics.ActivityBoundaryMessageConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! Constructed checked graphs discriminate the selected subscription profile and its whole-burst
 limit. Exact XML provenance and independent lowering are owned by the source-bound pipeline. -/
+
+@[expose] public section
 
 namespace BpmnSemantics.RepeatableEventSubscriptionAdmissionConformance
 

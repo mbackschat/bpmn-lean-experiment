@@ -1,11 +1,21 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
-import BpmnSemantics.CallActivityConformanceFixtures
-import BpmnSemantics.EmbeddedSubProcessCompletionConformance
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
+public import BpmnSemantics.CallActivityConformanceFixtures
+public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Flow-node occurrence lifecycle happy-path conformance
 
 This module owns the executable witnesses for exact sequential, Call Activity, and embedded Sub-Process lifecycle pairing.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

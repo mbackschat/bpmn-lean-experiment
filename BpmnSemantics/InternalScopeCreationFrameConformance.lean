@@ -1,7 +1,15 @@
-import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
-import BpmnSemantics.SemanticProcess.ControlPositionProjection
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Independent scope-creation preparation witnesses
 
@@ -11,6 +19,8 @@ constructed fork frontiers exercise actual preparations without claiming source 
 source reachability of retained counters, or production batching. The existing Call profile supplies
 only its acyclic graph policy here; its separate profile cardinalities exclude these constructed pairs.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalScopeCreationFrameConformance
 

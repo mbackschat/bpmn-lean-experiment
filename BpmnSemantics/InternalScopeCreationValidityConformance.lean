@@ -1,6 +1,14 @@
-import BpmnSemantics.CallActivityConformanceFixtures
-import BpmnSemantics.EmbeddedSubProcessCompletionConformance
-import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+module
+
+public import BpmnSemantics.CallActivityConformanceFixtures
+public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Admitted scope-creation validity witnesses
 
@@ -9,6 +17,8 @@ preparations whose Programs and predecessor states satisfy the preservation prem
 These constructed runtime predecessors reuse the retained admitted Programs; they do not claim
 source reachability of the nonzero retained counters.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InternalScopeCreationValidityConformance
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.RootScopeFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! Standalone IL witnesses for selected-branch declaration identity. The runtime's
 `hiddenRecordDeclarationsValid` binds records by selection key, independently of join-input payload.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.InclusiveGatewayPairingConformance
 

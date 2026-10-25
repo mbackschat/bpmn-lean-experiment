@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation ownership and dependency ambiguity conformance
 
 COMPH-TRIGGER-01 requires exact live-root ownership and refuses ambiguous occurrence lifting. These kernel witnesses preserve partial selection and terminal tombstones without broadening the root-scoped checkpoint.
 -/
+
+@[expose] public section
 
 set_option Elab.async false
 

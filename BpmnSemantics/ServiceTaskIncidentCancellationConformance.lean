@@ -1,10 +1,20 @@
-import BpmnSemantics.ServiceTaskIncidentRetryConformance
+module
+
+public import BpmnSemantics.ServiceTaskIncidentRetryConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Service Task incident cancellation conformance
 
 This module owns the proved laws for incident-gated root Process cancellation. It keeps the selected
 entry rule distinct from general BPMN cancellation, modeled termination, and host cancellation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.ServiceTaskIncidentCancellationConformance
 

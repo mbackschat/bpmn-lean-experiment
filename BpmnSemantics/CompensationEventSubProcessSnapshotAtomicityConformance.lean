@@ -1,10 +1,14 @@
-import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance
+module
+
+public import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrationConformance
 
 /-! # Compensation Event Sub-Process snapshot atomic refusal
 
 Kernel-decided witnesses for root and child reservation refusal, promotion refusal after earlier work,
 empty publication on rollback, and canonical simultaneous-refusal selection.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

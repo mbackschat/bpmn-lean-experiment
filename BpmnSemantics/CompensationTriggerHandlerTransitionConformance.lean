@@ -1,9 +1,20 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRefusalSoundness
-import BpmnSemantics.SemanticProcess.Transition
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRefusalSoundness
+public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+
 
 /-! # Compensation trigger construction and frontier conformance -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerTransitionConformance
 

@@ -1,9 +1,20 @@
-import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+module
+
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
+
 
 /-! # Compensation handler completion and failure conformance -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerCompletionConformance
 

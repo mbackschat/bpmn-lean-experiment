@@ -1,13 +1,21 @@
-import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-import BpmnSemantics.MappedBoundaryErrorConformance
-import BpmnSemantics.SubProcessErrorPropagationConformance
-import BpmnSemantics.SubProcessBoundaryTimerConformance
-import BpmnSemantics.ServiceTaskIncidentCancellationConformance
+module
+
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+public import BpmnSemantics.MappedBoundaryErrorConformance
+public import BpmnSemantics.SubProcessErrorPropagationConformance
+public import BpmnSemantics.SubProcessBoundaryTimerConformance
+public import BpmnSemantics.ServiceTaskIncidentCancellationConformance
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle cancellation conformance
 
 This module owns the executable lifecycle witnesses for BPMN error, boundary interruption, and incident cancellation.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

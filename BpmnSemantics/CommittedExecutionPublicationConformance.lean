@@ -1,14 +1,24 @@
-import BpmnSemantics.CommittedExecutionPublicationFixtures
-import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.Execution
-import BpmnSemantics.SemanticProcess.ParallelScopeTransitionTraceProofs
-import BpmnSemantics.SemanticProcess.Fixtures
-import BpmnSemantics.CallActivityConformanceFixtures
+module
+
+public import BpmnSemantics.CommittedExecutionPublicationFixtures
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.Execution
+public import BpmnSemantics.SemanticProcess.ParallelScopeTransitionTraceProofs
+public import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.CallActivityConformanceFixtures
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all Init.Data.Repr
+import all Init.Data.List.Sort.Basic
 
 /-! # Committed execution publication conformance
 
 This module owns the separating executable facts for revision-free committed transition traces, strict replay, public control-position projection, and delta folding. Publication revisioning and hosting remain outside the Lean semantic authority lane.
 -/
+
+@[expose] public section
 
 namespace BpmnSemantics.CommittedExecutionPublicationConformance
 

@@ -1,9 +1,13 @@
-import BpmnSemantics.SemanticProcess.Lowering
-import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
+module
+
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
 
 /-! Kernel-checked admission and lowering witnesses separate serial data handoff, branch intersection and nested closure bounds. They supplement the quantified composition obligations; they do not establish reachable execution laws. -/
+
+@[expose] public section
 
 set_option Elab.async false
 
