@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
 public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Stored Service mapping provenance
 

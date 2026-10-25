@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalMessageTaskRuntimePreservati
 public import BpmnSemantics.SemanticProcess.InternalSubscriptionOwnerIdentity
 public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! The subscription account publishes both Task and Message anchors at atomic arming.
 Program validity uses admission-derived owner identity; existing Timer classification frames. -/

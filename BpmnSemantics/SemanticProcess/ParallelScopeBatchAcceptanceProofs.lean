@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservedTokenProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservedAnchorProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Complete ordinary frontier acceptance
 

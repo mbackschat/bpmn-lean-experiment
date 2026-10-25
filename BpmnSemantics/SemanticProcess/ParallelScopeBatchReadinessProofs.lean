@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Parallel batch reservation provenance
 

@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Pre-entry parent frontier exclusivity
 

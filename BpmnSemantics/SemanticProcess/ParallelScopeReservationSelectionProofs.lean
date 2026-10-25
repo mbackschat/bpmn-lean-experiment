@@ -2,8 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Declaration selection for parallel reservation
 

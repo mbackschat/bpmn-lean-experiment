@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeCollectionStorageProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
 public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Actual reachability supplies storage, reservation and population evidence; a later command's admission is not a capacity premise. -/
 

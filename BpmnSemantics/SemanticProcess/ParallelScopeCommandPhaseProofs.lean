@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
 public import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Parallel command phase provenance
 

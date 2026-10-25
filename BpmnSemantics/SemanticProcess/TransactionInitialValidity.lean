@@ -8,6 +8,7 @@ public import BpmnSemantics.SemanticProcess.TokenOrder
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Transaction split-state validity
 

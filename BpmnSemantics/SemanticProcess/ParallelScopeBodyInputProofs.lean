@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Repeated-body local input availability
 

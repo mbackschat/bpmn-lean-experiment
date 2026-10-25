@@ -2,9 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Internal commutation open-projection preservation
 

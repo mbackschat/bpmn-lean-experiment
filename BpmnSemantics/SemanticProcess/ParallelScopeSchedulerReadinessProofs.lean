@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.Execution
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgress
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Reserved parallel batch readiness at scheduler selection
 

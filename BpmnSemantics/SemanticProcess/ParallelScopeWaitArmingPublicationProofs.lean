@@ -7,6 +7,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTrans
 public import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! PMIS native and reserved arming use the ordinary publication insertion laws.
 Actual command and prefix history establish full Program correspondence at Running

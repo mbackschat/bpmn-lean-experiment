@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeStructuralFrontierProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Refusal-free multi-offer preparation during scoped resumption
 

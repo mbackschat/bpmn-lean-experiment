@@ -10,6 +10,7 @@ public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePre
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Activity-data activation runtime-state preservation
 

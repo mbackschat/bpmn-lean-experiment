@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalContinuationAdmission
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Completion admission and runtime position
 

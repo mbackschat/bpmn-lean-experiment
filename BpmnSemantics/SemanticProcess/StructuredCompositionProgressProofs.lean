@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. Discovery also requires the selected profile because `ordinaryExecutionFrontier` and `mergeExecutionFrontier` dispatch by profile while structural analysis remains profile-independent. -/
 

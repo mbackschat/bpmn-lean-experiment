@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierClassificationProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Reachable token-control readiness
 

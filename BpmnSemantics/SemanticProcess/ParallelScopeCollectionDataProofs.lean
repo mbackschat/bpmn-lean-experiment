@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! PMIS-DATA-01: collection preservation and provenance proofs remain outside the executable command dependency graph. -/
 

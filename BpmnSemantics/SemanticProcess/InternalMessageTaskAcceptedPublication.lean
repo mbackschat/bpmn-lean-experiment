@@ -3,8 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPublication
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! The selected subscription account publishes one atomic Task/Message delta.
 Acceptance checks the actual candidate, independent open projection, transition record, and token position. -/

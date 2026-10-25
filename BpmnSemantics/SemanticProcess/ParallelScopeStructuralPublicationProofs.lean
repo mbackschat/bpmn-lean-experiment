@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
 public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Actual Start and PMIS entry determine the complete structural owner census.
 Lifetime scope removal retains those Program bindings, so structural publication

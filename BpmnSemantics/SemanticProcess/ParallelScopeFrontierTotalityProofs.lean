@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionFrontierProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeInitialEntryProofs
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! PMIS-SELECT-01 separates discovery failure from dependent multi-offer selection.
 Actual reachability rules out failed discovery and duplicate alternatives even at

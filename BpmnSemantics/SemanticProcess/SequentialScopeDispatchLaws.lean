@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Repeated-scope dispatch contract
 

@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 public import BpmnSemantics.SemanticProcess.ProfileAdmission
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Composed Activity-data completion runtime-state preservation
 

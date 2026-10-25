@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Timer-task arming adds one public task anchor. Its new Timer is private through the exact
 Activity association, while every predecessor Timer retains its publication classification.

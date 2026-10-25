@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
 public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! SPC-AVAILABLE-01 and SPC-CLOSURE-01 connect admitted starts and local preservation laws to finite actual execution. This owner assembles reachable-state consequences without replacing the existing evaluator or its transition relations. -/
 
