@@ -94,7 +94,7 @@ Acceptance blockers: green hosted checks for plain-file pass 3 and the fanout ra
 
 Current result: 20 plain files remain, behind seven roots; the fanout ratchet and the leaf-placement rule hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 28 with leaf placement and 10 with no plain file. The same 196-module cold conformance build fell from 767 s to 596 s on two threads; peaks stayed at or below 2.44 GiB.
 
-Effort budget: renewed by the owner direction above; 4 hours from 06:20 UTC on 2026-10-25.
+Effort budget: 4 hours from 06:20 UTC on 2026-10-25, renewed by the owner direction above.
 
 Next action: land pass 3 on green checks for its exact SHA, then split the 53 conformance modules. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
