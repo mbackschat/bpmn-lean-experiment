@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.CompensationTriggerHandlerCompletionConformanceCheckFixtures
 public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
@@ -10,8 +11,6 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
-
-
 /-! # Compensation handler completion and failure conformance -/
 
 @[expose] public section
@@ -21,26 +20,6 @@ namespace BpmnSemantics.CompensationTriggerHandlerCompletionConformance
 open BpmnSemantics
 open BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 open BpmnSemantics.SemanticProcess
-
-theorem completing_b_starts_a_without_disturbing_independent_c :
-    attemptCompensationHandlerEffectCompletion program triggeredState waitB.id (.success []) =
-      .applied afterBState := by
-  decide +kernel
-
-theorem completing_independent_c_first_keeps_a_pending_until_b_finishes :
-    attemptCompensationHandlerEffectCompletion program triggeredState waitC.id (.success []) =
-      .applied afterCFirstState := by
-  decide +kernel
-
-theorem the_last_success_releases_exactly_one_continuation_and_retain_tombstones :
-    attemptCompensationHandlerEffectCompletion program afterBState waitA.id (.success []) =
-        .applied afterBThenAState ∧
-      attemptCompensationHandlerEffectCompletion program afterBThenAState waitC.id (.success []) =
-        .applied allSucceededState ∧
-      allSucceededState.tokens = [{ placeId := ⟨"place:done"⟩, owner := rootOwner }] ∧
-      allSucceededState.compensationHandlerEffectWaits = [] := by
-  decide +kernel
-
 theorem handler_error_fails_the_process_and_removes_every_live_compensation_region :
     attemptCompensationHandlerEffectCompletion program triggeredState waitC.id failureResult =
         .applied failedState ∧
@@ -53,39 +32,6 @@ theorem handler_error_fails_the_process_and_removes_every_live_compensation_regi
       failedState.activityOccurrences = [] ∧
       failedState.variables.activities = [] := by
   decide +kernel
-
-def inheritedListener : EventSubProcessMessageSubscription :=
-  { id := occurrence "InheritedListener", owner := rootOwner,
-    channel := .directMessage ⟨"InheritedMessage"⟩ }
-
-def populatedFailureBefore : RuntimeState :=
-  { triggeredState with
-    eventSubProcessMessageSubscriptions := [inheritedListener]
-    activityOccurrences :=
-      [{ processInstanceId := instanceId, activityElementId := ⟨"A"⟩, activation := 1,
-         owner := rootOwner, body := .userTask (occurrence "A"), attachedHandlers := [] }]
-    sequentialScopeControllers :=
-      [{ id := activityOccurrence "A", total := 2, completed := 0, currentItem := "first" }]
-    parallelScopeControllers := [{ id := activityOccurrence "C", total := 2, completed := 0 }]
-    variables :=
-      { process := { bindings := [{ name := "retained", value := .integer 9 }] }
-        scopes := [{ owner := rootOwner, bindings := [] }]
-        processInterfaces := [{ owner := rootOwner, inputs := [], outputs := [] }]
-        activities := [{ owner := .activityOccurrence (activityOccurrence "A"), bindings := [] }] }
-    endOccurrences := 7
-    logicalTimeMs := 13 }
-
-def selectedC : SelectedCompensationHandler :=
-  { wait := waitC, trigger := activeTrigger, handler := compensatingHandlerC }
-
-def expectedPopulatedFailure : RuntimeState :=
-  { failedState with
-    eventSubProcessMessageSubscriptions := [inheritedListener]
-    variables :=
-      { process := { bindings := [{ name := "retained", value := .integer 9 }] }
-        scopes := [], processInterfaces := [], activities := [] }
-    endOccurrences := 7
-    logicalTimeMs := 13 }
 
 /-- AA-12 preserves the existing inherited listener behavior; it is outside fail-fast cleanup. -/
 theorem populated_completeFailure_preserves_listener_and_clears_its_listed_work :
@@ -116,31 +62,6 @@ theorem terminal_and_nonempty_patch_refusals_are_declarative :
   · apply attemptCompensationHandlerEffectCompletion_refusal_sound
     exact terminal_stale_result_and_nonempty_patch_are_refused_without_a_successor.2
 
-theorem delayed_event_subprocess_context_reaches_the_new_frontier_unchanged :
-    attemptCompensationTrigger delayedProgram triggerOperation preTriggerState =
-        .applied delayedTriggeredState ∧
-      attemptCompensationHandlerEffectCompletion delayedProgram delayedTriggeredState
-          delayedWaitC.id (.success []) = .applied delayedAfterCState ∧
-      delayedAfterCWaitB.arguments =
-        [{ name := "argument", value := .string "old" }] := by
-  decide +kernel
-
-def delayedSuccessorBytes : Nat :=
-  canonicalCompensationExecutionStateUtf8Bytes delayedAfterCState.compensationTriggers
-    delayedAfterCState.compensationHandlerEffectWaits
-
-def delayedCurrentBytes : Nat :=
-  canonicalCompensationExecutionStateUtf8Bytes delayedTriggeredState.compensationTriggers
-    delayedTriggeredState.compensationHandlerEffectWaits
-
-def delayedProgramBelowSuccessor : Program :=
-  { delayedProgram with
-    compensationExecution := some
-      { delayedExecutionDeclaration with
-        limits :=
-          { delayedExecutionDeclaration.limits with
-            maxCanonicalBytes := delayedSuccessorBytes - 1 } } }
-
 theorem prospective_frontier_capacity_refusal_precedes_wait_or_context_mutation :
     delayedCurrentBytes < delayedSuccessorBytes ∧
       compensationExecutionStateValid delayedProgramBelowSuccessor delayedTriggeredState = true ∧
@@ -168,78 +89,6 @@ theorem handler_failure_is_sound_for_the_declarative_relation :
       failedState := by
   apply attemptCompensationHandlerEffectCompletion_sound
   exact handler_error_fails_the_process_and_removes_every_live_compensation_region.1
-
-def completeBStimulus : Stimulus :=
-  .completeEffect ⟨"complete-b"⟩ waitB.id (.success [])
-
-def failCStimulus : Stimulus :=
-  .completeEffect ⟨"fail-c"⟩ waitC.id failureResult
-
-theorem command_admission_dispatches_exact_compensation_success_and_failure :
-    (admitStimulusWithCompensationSnapshots program triggeredState
-        completeBStimulus).outcome = .committed ∧
-      (admitStimulusWithCompensationSnapshots program triggeredState
-        completeBStimulus).state = afterBState ∧
-      (admitStimulusWithCompensationSnapshots program triggeredState
-        failCStimulus).outcome = .committed ∧
-      (admitStimulusWithCompensationSnapshots program triggeredState
-        failCStimulus).state = failedState := by
-  decide +kernel
-
-theorem cross_family_effect_identity_collision_rejects_the_exact_submitted_state :
-    (admitStimulusWithCompensationSnapshots program effectCollisionState
-        completeBStimulus).outcome = .rejected ∧
-      (admitStimulusWithCompensationSnapshots program effectCollisionState
-        completeBStimulus).state = effectCollisionState := by
-  decide +kernel
-
-def occurrenceStart (anchor : SemanticFlowNodeOccurrenceAnchor)
-    (elementId : String) : UnnumberedFlowNodeOccurrenceStart :=
-  { anchor
-    processId := program.processId
-    elementId := ⟨elementId⟩
-    owner := rootOwner }
-
-def expectedTriggerLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
-  { started :=
-      [occurrenceStart (.wait waitB.id) "EB",
-       occurrenceStart (.compensationTrigger activeTrigger.id) "throw",
-       occurrenceStart (.compensationHandler compensatingHandlerB.identity.id) "HB",
-       occurrenceStart (.compensationHandler compensatingHandlerC.identity.id) "HC"]
-    ended := [] }
-
-def expectedBSuccessLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
-  { started :=
-      [occurrenceStart (.compensationHandler compensatingHandlerA.identity.id) "HA"]
-    ended :=
-      [{ anchor := .wait waitB.id, terminal := .completed },
-       { anchor := .compensationHandler compensatingHandlerB.identity.id,
-         terminal := .completed }] }
-
-def expectedCFailureLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
-  { started := []
-    ended :=
-      [{ anchor := .wait waitB.id, terminal := .cancelled },
-       { anchor := .compensationTrigger activeTrigger.id, terminal := .cancelled },
-       { anchor := .compensationHandler compensatingHandlerB.identity.id,
-         terminal := .cancelled },
-       { anchor := .compensationHandler compensatingHandlerC.identity.id,
-         terminal := .cancelled }] }
-
-theorem trigger_and_completion_lifecycles_preserve_private_pairing_and_public_terminals :
-    flowNodeOccurrenceDeltaForOperationWithCompensation? program preTriggerState triggeredState
-        triggerOperation ⟨"trigger-command"⟩ 1 = some expectedTriggerLifecycle ∧
-      flowNodeOccurrenceDeltaForStimulusWithCompensation? program triggeredState afterBState
-        completeBStimulus 0 = some expectedBSuccessLifecycle ∧
-      flowNodeOccurrenceDeltaForStimulusWithCompensation? program triggeredState failedState
-        failCStimulus 0 = some expectedCFailureLifecycle := by
-  decide +kernel
-
-def completeBTrace :=
-  applyStimulusTracedWithCompensationSnapshots 1 program triggeredState completeBStimulus
-
-def failCTrace :=
-  applyStimulusTracedWithCompensationSnapshots 1 program triggeredState failCStimulus
 
 private theorem complete_b_trace_has_exact_publication :
     completeBTrace.committedTransitions = [.externalStimulus completeBStimulus] ∧

@@ -90,13 +90,13 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: green hosted checks for the pruning and hidden-edit ratchet; about 80 fixtures per hidden hub that kernel-decide through its bodies.
+Acceptance blockers: green hosted checks for the fixture split; about 70 fixtures per hidden hub that still kernel-decide through its bodies.
 
-Current result: seven plain files remain; the fanout ratchets and leaf placement hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 18 with leaf placement. A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; dropping unneeded hub `import all` lines (680 to 426) halves that to 136. Cold conformance builds fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB.
+Current result: seven plain files remain; fanout ratchets and leaf placement hold the graph (replay median 641 modules as written, 18 placed). A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; pruning hub `import all` lines cut that to 125, and splitting 34 fixtures (1047 executable checks) cut their build time from 922 to 253 seconds. Cold conformance builds fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB.
 
 Effort budget: 4 hours from 15:20 UTC on 2026-10-25, renewed by the owner's direction that day to remove every hub that triggers huge rebuilds.
 
-Next action: land the pruning on green checks for its exact SHA, then move the hub-reducing fixtures' witnesses to executable checks. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land the split on green checks for its exact SHA, then the remaining blocked fixtures. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 

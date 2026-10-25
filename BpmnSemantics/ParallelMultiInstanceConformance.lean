@@ -1,12 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.TransitionTrace
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Parallel Multi-Instance conformance
 
@@ -20,6 +18,7 @@ a different schedule, and command-addressed child completion cannot be treated a
 @[expose] public section
 
 namespace BpmnSemantics.ParallelMultiInstanceConformance
+
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
@@ -90,11 +89,10 @@ def ordinaryTaskWithParallelTaskIdentity : SemanticOperation :=
 
 /-- Standalone Program admission rejects an ordinary User Task that collides with the parallel
 Multi-Instance entry's User Task declaration. -/
-theorem parallel_multi_instance_same_task_declarer_is_rejected :
-    programWaitDeclarersUnique [entryOperation, ordinaryTaskWithParallelTaskIdentity] = false := by
-  decide +kernel
+def parallel_multi_instance_same_task_declarer_is_rejected : Bool := decide <|
+    programWaitDeclarersUnique [entryOperation, ordinaryTaskWithParallelTaskIdentity] = false
 
-theorem exact_completion_pair_is_unique_and_substitution_fails_closed :
+def exact_completion_pair_is_unique_and_substitution_fails_closed : Bool := decide <|
     parallelMultiInstanceOperationsPair entryOperation completionOperation = true ∧
     parallelMultiInstanceOperationsPair entryOperation completionForAnotherEntry = false ∧
     parallelMultiInstanceOperationsPair entryOperation completionForAnotherOutput = false ∧
@@ -103,8 +101,7 @@ theorem exact_completion_pair_is_unique_and_substitution_fails_closed :
         [entryOperation, completionOperation, completionForAnotherEntry, completionForAnotherOutput]
         entryOperation = some completionOperation ∧
     parallelMultiInstanceCompletionForEntry?
-        [entryOperation, completionOperation, completionOperation] entryOperation = none := by
-  decide +kernel
+        [entryOperation, completionOperation, completionOperation] entryOperation = none
 
 def taskId (activation : Nat) : UserTaskInstanceId :=
   { processInstanceId := ⟨"ParallelMultiInstance_Foundation"⟩
@@ -123,15 +120,14 @@ def thirdSlotCompletedFirst : ParallelMultiInstanceController :=
       , .pending (taskId 2)
       , .completed (taskId 3) "Reviewed_3" ] }
 
-theorem third_slot_completion_preserves_index_and_derived_counts :
+def third_slot_completion_preserves_index_and_derived_counts : Bool := decide <|
     ((indexedParallelMultiInstanceSlots thirdSlotCompletedFirst).map fun indexed =>
         (indexed.1, indexed.2.taskId.activation, indexed.2.result?)) =
       [(0, 1, none), (1, 2, none), (2, 3, some "Reviewed_3")] ∧
     parallelPlannedInstanceCount thirdSlotCompletedFirst = 3 ∧
     parallelGeneratedInstanceCount thirdSlotCompletedFirst = 3 ∧
     parallelActiveInstanceCount thirdSlotCompletedFirst = 2 ∧
-    parallelCompletedInstanceCount thirdSlotCompletedFirst = 1 := by
-  decide +kernel
+    parallelCompletedInstanceCount thirdSlotCompletedFirst = 1
 
 def arm? : Option ParallelMultiInstanceArm :=
   ParallelMultiInstanceArm.ofOperation? entryOperation
@@ -232,44 +228,38 @@ def atomicFreshEntryWitness : Bool :=
         parallelMultiInstanceRuntimeWellFormed arm state
   | _, _ => false
 
-theorem entry_is_atomic_fresh_and_well_formed : atomicFreshEntryWitness = true := by
-  decide +kernel
+def entry_is_atomic_fresh_and_well_formed : Bool := decide <| atomicFreshEntryWitness = true
 
 /-- The named adversarial state cannot occur: index two stays index two, then early closure removes
 index zero and every sibling together with the Timer and publishes no output. -/
-theorem index_two_first_never_moves_or_leaves_an_early_closed_region :
+def index_two_first_never_moves_or_leaves_an_early_closed_region : Bool := decide <|
     afterThirdAll?.bind controllerSlotResults? =
       some [none, none, some "Reviewed_3"] ∧
     afterThirdFirst?.map (fun state =>
       (state.controller, state.liveChildren, state.lifetimeTimer, processOutput? state)) =
-      some (none, [], none, none) := by
-  decide +kernel
+      some (none, [], none, none)
 
-theorem all_policy_publishes_only_complete_input_index_order :
+def all_policy_publishes_only_complete_input_index_order : Bool := decide <|
     afterThirdAll?.map processOutput? = some none ∧
       finishedAll?.map (fun state =>
         (state.controller, state.liveChildren, state.lifetimeTimer, processOutput? state)) =
       some (none, [], none,
-        some ["Reviewed_1", "Reviewed_2", "Reviewed_3"]) := by
-  decide +kernel
+        some ["Reviewed_1", "Reviewed_2", "Reviewed_3"])
 
-theorem timer_withdraws_every_child_and_publishes_nothing :
+def timer_withdraws_every_child_and_publishes_nothing : Bool := decide <|
     timerClosedAll?.map (fun state =>
       (state.controller.isNone, state.liveChildren.isEmpty, state.lifetimeTimer.isNone,
         state.enabledOutput.map (fun output => output.value) ==
           some "place:Flow_Timer_Escalation",
         (processOutput? state).isNone)) =
-      some (true, true, true, true, true) := by
-  decide +kernel
+      some (true, true, true, true, true)
 
-theorem stale_duplicate_and_wrong_owner_refuse :
-    staleThirdRefusal = none ∧ wrongOwnerRefusal = none := by
-  decide +kernel
+def stale_duplicate_and_wrong_owner_refuse : Bool := decide <|
+    staleThirdRefusal = none ∧ wrongOwnerRefusal = none
 
 /-- Equal first-policy terminal states do not erase the command-addressed lifecycle distinction. -/
-theorem first_policy_order_is_a_trace_non_law :
-    afterThirdFirst? = afterFirstFirst? ∧ thirdFirstDelta? ≠ firstFirstDelta? := by
-  decide +kernel
+def first_policy_order_is_a_trace_non_law : Bool := decide <|
+    afterThirdFirst? = afterFirstFirst? ∧ thirdFirstDelta? ≠ firstFirstDelta?
 
 def processId : ProcessId := ⟨"Process_ParallelMultiInstanceReview"⟩
 
@@ -381,7 +371,7 @@ def firstFirstLifecycle : UnnumberedFlowNodeOccurrenceDelta :=
 
 /-- The production shared evaluator reaches one terminal state for either accepted first winner, but
 the exact command-led E1 trace and completed-versus-cancelled E2 child identities remain distinct. -/
-theorem shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law :
+def shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law : Bool := decide <|
     sharedEnteredFirst?.isSome = true ∧
       thirdFirstTrace.result.outcome = .committed ∧
       firstFirstTrace.result.outcome = .committed ∧
@@ -394,8 +384,7 @@ theorem shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law :
       thirdFirstTrace.flowNodeOccurrenceLifecycles.head? = some thirdFirstLifecycle ∧
       firstFirstTrace.flowNodeOccurrenceLifecycles.head? = some firstFirstLifecycle ∧
       thirdFirstTrace.flowNodeOccurrenceLifecycles ≠
-        firstFirstTrace.flowNodeOccurrenceLifecycles := by
-  decide +kernel
+        firstFirstTrace.flowNodeOccurrenceLifecycles
 
 def escapeClassCollection : List String :=
   ["\"", "\\", "\u0008", "\u0001"]
@@ -405,23 +394,38 @@ def escapeClassResult : String :=
 
 /-- Parallel entry uses the shared canonical JSON measure and counts quote, backslash, named-control,
 and other-control expansion at the tightened seventeen-byte boundary. -/
-theorem every_escape_class_is_counted_at_parallel_entry :
+def every_escape_class_is_counted_at_parallel_entry : Bool := decide <|
     (do
       let arm ← arm?
       enterParallelMultiInstance?
         { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 17 } }
-        (preEntryItemsWith escapeClassCollection "all")) = none := by
-  decide +kernel
+        (preEntryItemsWith escapeClassCollection "all")) = none
 
 /-- Parallel natural completion counts the same four escape classes at its final publication
 boundary. The obsolete raw candidate is thirty-four bytes and exact JSON is forty-two. -/
-theorem every_escape_class_is_counted_at_the_final_parallel_candidate_boundary :
+def every_escape_class_is_counted_at_the_final_parallel_candidate_boundary : Bool := decide <|
     (do
       let arm ← arm?
       let state ← afterFirstAll?
       completeParallelMultiInstance?
         { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 34 } }
-        state (taskId 2) (submittedResult escapeClassResult)) = none := by
-  decide +kernel
+        state (taskId 2) (submittedResult escapeClassResult)) = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("parallel_multi_instance_same_task_declarer_is_rejected", parallel_multi_instance_same_task_declarer_is_rejected),
+  ("exact_completion_pair_is_unique_and_substitution_fails_closed", exact_completion_pair_is_unique_and_substitution_fails_closed),
+  ("third_slot_completion_preserves_index_and_derived_counts", third_slot_completion_preserves_index_and_derived_counts),
+  ("atomicFreshEntryWitness", atomicFreshEntryWitness),
+  ("entry_is_atomic_fresh_and_well_formed", entry_is_atomic_fresh_and_well_formed),
+  ("index_two_first_never_moves_or_leaves_an_early_closed_region", index_two_first_never_moves_or_leaves_an_early_closed_region),
+  ("all_policy_publishes_only_complete_input_index_order", all_policy_publishes_only_complete_input_index_order),
+  ("timer_withdraws_every_child_and_publishes_nothing", timer_withdraws_every_child_and_publishes_nothing),
+  ("stale_duplicate_and_wrong_owner_refuse", stale_duplicate_and_wrong_owner_refuse),
+  ("first_policy_order_is_a_trace_non_law", first_policy_order_is_a_trace_non_law),
+  ("shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law", shared_first_policy_is_an_exact_command_and_occurrence_trace_non_law),
+  ("every_escape_class_is_counted_at_parallel_entry", every_escape_class_is_counted_at_parallel_entry),
+  ("every_escape_class_is_counted_at_the_final_parallel_candidate_boundary", every_escape_class_is_counted_at_the_final_parallel_candidate_boundary)
+]
 
 end BpmnSemantics.ParallelMultiInstanceConformance

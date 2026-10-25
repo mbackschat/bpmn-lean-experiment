@@ -1,11 +1,10 @@
 module
 
-public import BpmnSemantics.RuntimeStateActivityConformance
 public import BpmnSemantics.SubProcessBoundaryTimerConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String
@@ -55,6 +54,9 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
+public import BpmnSemantics.RuntimeStateWellFormedFixtures
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Activity body-claim uniqueness conformance
 
@@ -67,6 +69,7 @@ repeats a task claim inside that single record.
 @[expose] public section
 
 namespace BpmnSemantics.ActivityBodyClaimUniquenessConformance
+
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
@@ -103,16 +106,14 @@ def duplicateTaskBodyClaimState : RuntimeState :=
     activityActivations := armedState.activityActivations ++
       [{ taskId := ⟨"ParallelAlias"⟩, count := 1 }] }
 
-theorem duplicate_task_body_claim_is_refused :
-    runtimeStateWellFormed program instanceId duplicateTaskBodyClaimState = false := by
-  decide +kernel
+def duplicate_task_body_claim_is_refused : Bool := decide <|
+    runtimeStateWellFormed program instanceId duplicateTaskBodyClaimState = false
 
-theorem duplicate_task_body_claim_fails_only_the_claim_rule :
+def duplicate_task_body_claim_fails_only_the_claim_rule : Bool := decide <|
     activityBodyClaimsUnique duplicateTaskBodyClaimState.activityOccurrences = false ∧
       activityRecordsOwnLiveWork duplicateTaskBodyClaimState = true ∧
       attachedTimersUnambiguous duplicateTaskBodyClaimState = true ∧
-      activityIdentitiesUnique duplicateTaskBodyClaimState = true := by
-  decide +kernel
+      activityIdentitiesUnique duplicateTaskBodyClaimState = true
 
 def scopeInstanceId : SemanticId :=
   SubProcessBoundaryTimerConformance.instanceId
@@ -132,10 +133,9 @@ def liveChildScope : ScopeOccurrenceId :=
     activation := 1
   }
 
-theorem scope_negative_uses_a_live_non_root_child :
+def scope_negative_uses_a_live_non_root_child : Bool := decide <|
     { id := liveChildScope, parent := some scopeParent } ∈ scopeArmedState.scopeOccurrences ∧
-      liveChildScope ≠ scopeParent := by
-  decide +kernel
+      liveChildScope ≠ scopeParent
 
 def scopeAliasRecord : ActivityOccurrence :=
   { processInstanceId := scopeInstanceId
@@ -154,16 +154,14 @@ def duplicateScopeBodyClaimState : RuntimeState :=
         { activation with count := 2 }
       else activation }
 
-theorem duplicate_scope_body_claim_is_refused :
-    runtimeStateWellFormed scopeProgram scopeInstanceId duplicateScopeBodyClaimState = false := by
-  decide +kernel
+def duplicate_scope_body_claim_is_refused : Bool := decide <|
+    runtimeStateWellFormed scopeProgram scopeInstanceId duplicateScopeBodyClaimState = false
 
-theorem duplicate_scope_body_claim_fails_only_the_claim_rule :
+def duplicate_scope_body_claim_fails_only_the_claim_rule : Bool := decide <|
     activityBodyClaimsUnique duplicateScopeBodyClaimState.activityOccurrences = false ∧
       activityRecordsOwnLiveWork duplicateScopeBodyClaimState = true ∧
       attachedTimersUnambiguous duplicateScopeBodyClaimState = true ∧
-      activityIdentitiesUnique duplicateScopeBodyClaimState = true := by
-  decide +kernel
+      activityIdentitiesUnique duplicateScopeBodyClaimState = true
 
 def singularClaimRecord : ActivityOccurrence :=
   { parallelAliasRecord with
@@ -191,10 +189,19 @@ def repeatedTaskInsideOneRecord : ActivityOccurrence :=
 
 /-- The rule admits multiple records when their task or scope claims differ, and it does not turn a
 repeated member inside one parallel body into a second owner. -/
-theorem distinct_records_and_one_repeated_parallel_body_are_admitted :
+def distinct_records_and_one_repeated_parallel_body_are_admitted : Bool := decide <|
     activityBodyClaimsUnique [singularClaimRecord, otherTaskClaimRecord] = true ∧
       activityBodyClaimsUnique [scopeAliasRecord, otherScopeClaimRecord] = true ∧
-      activityBodyClaimsUnique [repeatedTaskInsideOneRecord] = true := by
-  decide +kernel
+      activityBodyClaimsUnique [repeatedTaskInsideOneRecord] = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("duplicate_task_body_claim_is_refused", duplicate_task_body_claim_is_refused),
+  ("duplicate_task_body_claim_fails_only_the_claim_rule", duplicate_task_body_claim_fails_only_the_claim_rule),
+  ("scope_negative_uses_a_live_non_root_child", scope_negative_uses_a_live_non_root_child),
+  ("duplicate_scope_body_claim_is_refused", duplicate_scope_body_claim_is_refused),
+  ("duplicate_scope_body_claim_fails_only_the_claim_rule", duplicate_scope_body_claim_fails_only_the_claim_rule),
+  ("distinct_records_and_one_repeated_parallel_body_are_admitted", distinct_records_and_one_repeated_parallel_body_are_admitted)
+]
 
 end BpmnSemantics.ActivityBodyClaimUniquenessConformance

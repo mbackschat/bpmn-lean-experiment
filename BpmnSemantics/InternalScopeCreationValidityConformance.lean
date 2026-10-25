@@ -2,11 +2,10 @@ module
 
 public import BpmnSemantics.CallActivityConformanceFixtures
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 
@@ -21,6 +20,7 @@ source reachability of the nonzero retained counters.
 @[expose] public section
 
 namespace BpmnSemantics.InternalScopeCreationValidityConformance
+
 
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
@@ -77,27 +77,24 @@ def admittedPreparationValid (program : Program) (instanceId : SemanticId)
           applyPreparedInternalScopeCreation? program before prepared == some after &&
           fire? program prepared.selection.operation before == some after
 
-theorem admitted_child_preparation_preserves_complete_runtime_validity :
+def admitted_child_preparation_preserves_complete_runtime_validity : Bool := decide <|
     admittedPreparationValid EmbeddedSubProcessCompletionConformance.program
-      childOwner.processInstanceId childBefore childPrepared? = true := by
-  decide +kernel
+      childOwner.processInstanceId childBefore childPrepared? = true
 
-theorem admitted_call_preparation_preserves_complete_runtime_validity :
+def admitted_call_preparation_preserves_complete_runtime_validity : Bool := decide <|
     admittedPreparationValid CallActivityConformance.program
-      callOwner.processInstanceId callBefore callPrepared? = true := by
-  decide +kernel
+      callOwner.processInstanceId callBefore callPrepared? = true
 
-theorem omitted_created_scope_invalidates_child_position :
+def omitted_created_scope_invalidates_child_position : Bool := decide <|
     (match childPrepared? with
      | none => false
      | some prepared =>
          let after := prepared.selection.apply childBefore
          !runtimePositionValid EmbeddedSubProcessCompletionConformance.program
            childOwner.processInstanceId { after with scopeOccurrences := childBefore.scopeOccurrences })
-      = true := by
-  decide +kernel
+      = true
 
-theorem wrong_called_process_payload_preserves_associations_but_invalidates_position :
+def wrong_called_process_payload_preserves_associations_but_invalidates_position : Bool := decide <|
     (match callPrepared? with
      | none => false
      | some prepared =>
@@ -107,7 +104,14 @@ theorem wrong_called_process_payload_preserves_associations_but_invalidates_posi
              { record with calledProcessId := ⟨"WrongProcess"⟩ } }
          calledProcessAssociationsValid altered &&
            !runtimePositionValid CallActivityConformance.program callOwner.processInstanceId altered)
-      = true := by
-  decide +kernel
+      = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("admitted_child_preparation_preserves_complete_runtime_validity", admitted_child_preparation_preserves_complete_runtime_validity),
+  ("admitted_call_preparation_preserves_complete_runtime_validity", admitted_call_preparation_preserves_complete_runtime_validity),
+  ("omitted_created_scope_invalidates_child_position", omitted_created_scope_invalidates_child_position),
+  ("wrong_called_process_payload_preserves_associations_but_invalidates_position", wrong_called_process_payload_preserves_associations_but_invalidates_position)
+]
 
 end BpmnSemantics.InternalScopeCreationValidityConformance

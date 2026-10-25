@@ -1,11 +1,10 @@
 module
 
-public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.ActivityDataInputOutputConformanceDefinitionFixtures
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Activity-data open lifecycle projection conformance
 
@@ -15,9 +14,8 @@ Effect-local exactness remains confined to its tagged owner family.
 
 @[expose] public section
 
-set_option Elab.async false
-
 namespace BpmnSemantics.ActivityDataInputOutputProjectionConformance
+
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
@@ -51,17 +49,15 @@ def expectedOpen : List OpenSemanticFlowNodeOccurrence :=
                 definitionScopeId := ⟨"scope:Process_ClaimAssessment"⟩
                 activation := 1 } }]
 
-theorem projectionWitnessesUseAdmittedProgramsAndStates :
+def projectionWitnessesUseAdmittedProgramsAndStates : Bool := decide <|
     [(claimProgram, active), (inputProgram, active), (outputProgram, outputActive)].all
       (fun (program, state) => programWellFormed program &&
-        runtimeStateWellFormed program claimInstanceId state) = true := by
-  decide +kernel
+        runtimeStateWellFormed program claimInstanceId state) = true
 
-theorem allThreeDataOperationsProjectTheirExactLiveTask :
+def allThreeDataOperationsProjectTheirExactLiveTask : Bool := decide <|
     projectOpenFlowNodeOccurrences? claimProgram active = some expectedOpen ∧
       projectOpenFlowNodeOccurrences? inputProgram active = some expectedOpen ∧
-      projectOpenFlowNodeOccurrences? outputProgram outputActive = some expectedOpen := by
-  decide +kernel
+      projectOpenFlowNodeOccurrences? outputProgram outputActive = some expectedOpen
 
 def wrongOutput : RuntimeState :=
   { active with waits := active.waits.map fun wait =>
@@ -86,19 +82,25 @@ def wrongWaitMetadata : RuntimeState :=
   { active with waits := active.waits.map fun wait =>
       { wait with metadata := some metadata } }
 
-theorem dataWaitsStillRequireExactProgramCorrespondence :
+def dataWaitsStillRequireExactProgramCorrespondence : Bool := decide <|
     [claimProgram, inputProgram, outputProgram].all (fun program =>
       [wrongOutput, wrongName, wrongOwner, wrongTaskMetadata, wrongWaitMetadata].all fun state =>
-        (projectOpenFlowNodeOccurrences? program state).isNone) = true := by
-  decide +kernel
+        (projectOpenFlowNodeOccurrences? program state).isNone) = true
 
 def orphanEffectScope : RuntimeState :=
   { active with variables := { active.variables with activities :=
       { owner := .effectOccurrence claimTaskInstanceId, bindings := [] } ::
         active.variables.activities } }
 
-theorem activityOwnerDoesNotLicenseAnOrphanEffectScope :
-    projectOpenFlowNodeOccurrences? claimProgram orphanEffectScope = none := by
-  decide +kernel
+def activityOwnerDoesNotLicenseAnOrphanEffectScope : Bool := decide <|
+    projectOpenFlowNodeOccurrences? claimProgram orphanEffectScope = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("projectionWitnessesUseAdmittedProgramsAndStates", projectionWitnessesUseAdmittedProgramsAndStates),
+  ("allThreeDataOperationsProjectTheirExactLiveTask", allThreeDataOperationsProjectTheirExactLiveTask),
+  ("dataWaitsStillRequireExactProgramCorrespondence", dataWaitsStillRequireExactProgramCorrespondence),
+  ("activityOwnerDoesNotLicenseAnOrphanEffectScope", activityOwnerDoesNotLicenseAnOrphanEffectScope)
+]
 
 end BpmnSemantics.ActivityDataInputOutputProjectionConformance

@@ -1,11 +1,20 @@
 module
 
 public import BpmnSemantics.ActivityActivationOrderConformance
+public import BpmnSemantics.ActivityBodyClaimUniquenessConformance
 public import BpmnSemantics.ActivityBodyTurnoverConformance
 public import BpmnSemantics.ActivityBoundaryTimerConformance
+public import BpmnSemantics.ActivityDataInputConformanceCheckFixtures
+public import BpmnSemantics.ActivityDataInputOutputAdmissionConformanceCheckFixtures
+public import BpmnSemantics.ActivityDataInputOutputConformanceCheckFixtures
+public import BpmnSemantics.ActivityDataInputOutputProjectionConformance
+public import BpmnSemantics.ActivityDataInputOutputRefusalConformanceCheckFixtures
+public import BpmnSemantics.ActivityDataOutputConformanceCheckFixtures
+public import BpmnSemantics.BooleanProcessDataConformanceCheckFixtures
 public import BpmnSemantics.BoundaryTimerProjectionConformance
 public import BpmnSemantics.BoundedScopeActivityIdentityConformance
 public import BpmnSemantics.CanonicalTokenStorageConformance
+public import BpmnSemantics.CommittedExecutionPublicationConformanceCheckFixtures
 public import BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance
 public import BpmnSemantics.CompensationEventSubProcessSnapshotAtomicityConformance
 public import BpmnSemantics.CompensationEventSubProcessSnapshotConformance
@@ -21,8 +30,10 @@ public import BpmnSemantics.CompensationSourceBindingValidProgramConformance
 public import BpmnSemantics.CompensationSourceCompatibilityConformance
 public import BpmnSemantics.CompensationSourceJsonConformance
 public import BpmnSemantics.CompensationTriggerHandlerAmbiguityConformance
+public import BpmnSemantics.CompensationTriggerHandlerCompletionConformanceCheckFixtures
 public import BpmnSemantics.CompensationTriggerHandlerProgramContractConformance
 public import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
+public import BpmnSemantics.CompensationTriggerHandlerTransitionConformanceCheckFixtures
 public import BpmnSemantics.ConcurrentEmbeddedActivationsAdmissionConformance
 public import BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 public import BpmnSemantics.ConfiguredTaskConformance
@@ -30,16 +41,27 @@ public import BpmnSemantics.EffectDataConformance
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 public import BpmnSemantics.EventBasedGatewayConformance
 public import BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
+public import BpmnSemantics.FiniteInternalArmingConformanceCheckFixtures
+public import BpmnSemantics.FiniteInternalTransitionConformanceCheckFixtures
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleHappyPathConformanceCheckFixtures
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleProgramValidityConformanceCheckFixtures
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleProjectionConformance
 public import BpmnSemantics.FlowNodeOccurrenceLifecyclePropagatedErrorConformance
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleRejectionConformance
 public import BpmnSemantics.InclusiveGatewayConformance
 public import BpmnSemantics.InclusiveGatewayPairingConformance
 public import BpmnSemantics.IntermediateCatchMessageConformance
+public import BpmnSemantics.InternalClosureAtomicityConformance
 public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
 public import BpmnSemantics.InternalRegionalHandlerPublicationConformance
 public import BpmnSemantics.InternalRegionalPrivateTimerAliasConformance
 public import BpmnSemantics.InternalScopeCreationPreparationConformance
 public import BpmnSemantics.InternalScopeCreationSelectionConformance
+public import BpmnSemantics.InternalScopeCreationValidityConformance
+public import BpmnSemantics.InterruptingMessageEventSubProcessConformanceCheckFixtures
+public import BpmnSemantics.MappedBoundaryErrorConformanceCheckFixtures
+public import BpmnSemantics.MappedSuccessConformanceCheckFixtures
+public import BpmnSemantics.MessagePayloadCatchConformanceCheckFixtures
 public import BpmnSemantics.MessageStartAdmissionConformance
 public import BpmnSemantics.MessageStartClosureConformance
 public import BpmnSemantics.MessageStartIdentityConformance
@@ -49,16 +71,20 @@ public import BpmnSemantics.NestedScopeControlConformance
 public import BpmnSemantics.NestedScopeDataConformance
 public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
 public import BpmnSemantics.ParallelBalancedTopologyConformance
+public import BpmnSemantics.ParallelMultiInstanceConformance
 public import BpmnSemantics.ParallelScopeGraphConformance
 public import BpmnSemantics.ParallelScopeRuntimeConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance
 public import BpmnSemantics.PortableHandoffConformance
+public import BpmnSemantics.ProcessStartDataConformanceCheckFixtures
 public import BpmnSemantics.ReceiveTaskConformance
 public import BpmnSemantics.RecurringTimerLifetimeConformance
+public import BpmnSemantics.RegionalRemovalOwnerCoverageConformanceCheckFixtures
 public import BpmnSemantics.RuntimeStateActivityOccurrenceConformance
 public import BpmnSemantics.RuntimeStateIdentityBoundConformance
+public import BpmnSemantics.RuntimeStateInitializationConformanceCheckFixtures
 public import BpmnSemantics.RuntimeStateWellFormedEventRaceConformance
 public import BpmnSemantics.RuntimeStateWellFormedInvariantConformance
 public import BpmnSemantics.RuntimeStateWellFormedSuccessorConformance
@@ -67,10 +93,15 @@ public import BpmnSemantics.ScopeCompletionConformance
 public import BpmnSemantics.ScopeCreationMixedBatchConformance
 public import BpmnSemantics.ScopeStorageOrderConformance
 public import BpmnSemantics.ScopeVariableDataConformance
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageConformance
 public import BpmnSemantics.SemanticProcessAdmissionConformance
+public import BpmnSemantics.SemanticProcessConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcessJsonConformance
+public import BpmnSemantics.SequentialScopeGraphConformanceCheckFixtures
 public import BpmnSemantics.SerialBusinessTaskConformance
+public import BpmnSemantics.SnapshotInternalArmingConformanceCheckFixtures
 public import BpmnSemantics.SnapshotInternalArmingSourceConformance
 public import BpmnSemantics.StructuredCompositionAdmissionConformance
 public import BpmnSemantics.StructuredCompositionCommandConformance
@@ -87,7 +118,10 @@ public import BpmnSemantics.TransactionCancellationRetentionPublicationConforman
 public import BpmnSemantics.TransactionCancellationStartConformance
 public import BpmnSemantics.TransactionCancellationTerminalPublicationConformance
 public import BpmnSemantics.TransactionRetentionConformance
+public import BpmnSemantics.TransactionSourceArmingConformanceCheckFixtures
 public import BpmnSemantics.TransactionSourceConformance
+public import BpmnSemantics.UserTaskCompletionDataConformanceCheckFixtures
+public import BpmnSemantics.UserTaskInteractionConformanceCheckFixtures
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String
 import all Init.Data.Repr
@@ -112,11 +146,20 @@ its own driver, [`CallFamilyChecksMain`](CallFamilyChecksMain.lean). -/
 
 def conformanceChecks : List (String × List (String × Bool)) := [
   ("ActivityActivationOrderConformance", BpmnSemantics.ActivityActivationOrderConformance.checks),
+  ("ActivityBodyClaimUniquenessConformance", BpmnSemantics.ActivityBodyClaimUniquenessConformance.checks),
   ("ActivityBodyTurnoverConformance", BpmnSemantics.ActivityBodyTurnoverConformance.checks),
   ("ActivityBoundaryTimerConformance", BpmnSemantics.ActivityBoundaryTimerConformance.checks),
+  ("ActivityDataInputConformance", BpmnSemantics.ActivityDataInputConformance.checks),
+  ("ActivityDataInputOutputAdmissionConformance", BpmnSemantics.ActivityDataInputOutputConformance.activityDataInputOutputAdmissionConformanceChecks),
+  ("ActivityDataInputOutputConformance", BpmnSemantics.ActivityDataInputOutputConformance.checks),
+  ("ActivityDataInputOutputProjectionConformance", BpmnSemantics.ActivityDataInputOutputProjectionConformance.checks),
+  ("ActivityDataInputOutputRefusalConformance", BpmnSemantics.ActivityDataInputOutputConformance.activityDataInputOutputRefusalConformanceChecks),
+  ("ActivityDataOutputConformance", BpmnSemantics.ActivityDataOutputConformance.checks),
+  ("BooleanProcessDataConformance", BpmnSemantics.BooleanProcessDataConformance.checks),
   ("BoundaryTimerProjectionConformance", BpmnSemantics.BoundaryTimerProjectionConformance.checks),
   ("BoundedScopeActivityIdentityConformance", BpmnSemantics.BoundedScopeActivityIdentityConformance.checks),
   ("CanonicalTokenStorageConformance", BpmnSemantics.CanonicalTokenStorageConformance.checks),
+  ("CommittedExecutionPublicationConformance", BpmnSemantics.CommittedExecutionPublicationConformance.checks),
   ("CompensationEventSubProcessSnapshotAdmissionConformance", BpmnSemantics.CompensationEventSubProcessSnapshotAdmissionConformance.checks),
   ("CompensationEventSubProcessSnapshotAtomicityConformance", BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance.compensationEventSubProcessSnapshotAtomicityConformanceChecks),
   ("CompensationEventSubProcessSnapshotConformance", BpmnSemantics.CompensationEventSubProcessSnapshotConformance.checks),
@@ -132,25 +175,40 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("CompensationSourceCompatibilityConformance", BpmnSemantics.CompensationSourceLoweringConformance.compensationSourceCompatibilityConformanceChecks),
   ("CompensationSourceJsonConformance", BpmnSemantics.CompensationSourceLoweringConformance.compensationSourceJsonConformanceChecks),
   ("CompensationTriggerHandlerAmbiguityConformance", BpmnSemantics.CompensationTriggerHandlerAmbiguityConformance.checks),
+  ("CompensationTriggerHandlerCompletionConformance", BpmnSemantics.CompensationTriggerHandlerCompletionConformance.checks),
   ("CompensationTriggerHandlerProgramContractConformance", BpmnSemantics.CompensationTriggerHandlerProgramContractConformance.checks),
   ("CompensationTriggerHandlerRuntimeConformance", BpmnSemantics.CompensationTriggerHandlerRuntimeConformance.checks),
+  ("CompensationTriggerHandlerTransitionConformance", BpmnSemantics.CompensationTriggerHandlerTransitionConformance.checks),
   ("ConcurrentEmbeddedActivationsAdmissionConformance", BpmnSemantics.ConcurrentEmbeddedActivationsConformance.concurrentEmbeddedActivationsAdmissionConformanceChecks),
   ("ConcurrentEmbeddedActivationsConformance", BpmnSemantics.ConcurrentEmbeddedActivationsConformance.checks),
   ("ConfiguredTaskConformance", BpmnSemantics.ConfiguredTaskConformance.checks),
+  ("CyclicControlFlowConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowConformanceChecks),
+  ("CyclicControlFlowReachabilityConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowReachabilityConformanceChecks),
   ("EffectDataConformance", BpmnSemantics.EffectDataConformance.checks),
   ("EmbeddedSubProcessCompletionConformance", BpmnSemantics.EmbeddedSubProcessCompletionConformance.checks),
   ("EventBasedGatewayConformance", BpmnSemantics.EventBasedGatewayConformance.checks),
   ("ExclusiveGatewaySimpleBooleanConformance", BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance.checks),
+  ("FiniteInternalArmingConformance", BpmnSemantics.FiniteInternalArmingConformance.checks),
+  ("FiniteInternalTransitionConformance", BpmnSemantics.FiniteInternalTransitionConformance.checks),
+  ("FlowNodeOccurrenceLifecycleHappyPathConformance", BpmnSemantics.FlowNodeOccurrenceLifecycleConformance.flowNodeOccurrenceLifecycleHappyPathConformanceChecks),
+  ("FlowNodeOccurrenceLifecycleProgramValidityConformance", BpmnSemantics.FlowNodeOccurrenceLifecycleConformance.flowNodeOccurrenceLifecycleProgramValidityConformanceChecks),
   ("FlowNodeOccurrenceLifecycleProjectionConformance", BpmnSemantics.FlowNodeOccurrenceLifecycleConformance.flowNodeOccurrenceLifecycleProjectionConformanceChecks),
   ("FlowNodeOccurrenceLifecyclePropagatedErrorConformance", BpmnSemantics.FlowNodeOccurrenceLifecycleConformance.flowNodeOccurrenceLifecyclePropagatedErrorConformanceChecks),
+  ("FlowNodeOccurrenceLifecycleRejectionConformance", BpmnSemantics.FlowNodeOccurrenceLifecycleConformance.flowNodeOccurrenceLifecycleRejectionConformanceChecks),
   ("InclusiveGatewayConformance", BpmnSemantics.InclusiveGatewayConformance.checks),
   ("InclusiveGatewayPairingConformance", BpmnSemantics.InclusiveGatewayPairingConformance.checks),
   ("IntermediateCatchMessageConformance", BpmnSemantics.IntermediateCatchMessageConformance.checks),
+  ("InternalClosureAtomicityConformance", BpmnSemantics.InternalClosureAtomicityConformance.checks),
   ("InternalRegionalCancellationProjectionConformance", BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness.internalRegionalCancellationProjectionConformanceChecks),
   ("InternalRegionalHandlerPublicationConformance", BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness.internalRegionalHandlerPublicationConformanceChecks),
   ("InternalRegionalPrivateTimerAliasConformance", BpmnSemantics.SemanticProcess.InternalCommutation.PrivateTimerAliasWitness.internalRegionalPrivateTimerAliasConformanceChecks),
   ("InternalScopeCreationPreparationConformance", BpmnSemantics.InternalScopeCreationPreparationConformance.checks),
   ("InternalScopeCreationSelectionConformance", BpmnSemantics.InternalScopeCreationSelectionConformance.checks),
+  ("InternalScopeCreationValidityConformance", BpmnSemantics.InternalScopeCreationValidityConformance.checks),
+  ("InterruptingMessageEventSubProcessConformance", BpmnSemantics.InterruptingMessageEventSubProcessConformance.checks),
+  ("MappedBoundaryErrorConformance", BpmnSemantics.MappedBoundaryErrorConformance.checks),
+  ("MappedSuccessConformance", BpmnSemantics.MappedSuccessConformance.checks),
+  ("MessagePayloadCatchConformance", BpmnSemantics.MessagePayloadCatchConformance.checks),
   ("MessageStartAdmissionConformance", BpmnSemantics.MessageStartConformance.messageStartAdmissionConformanceChecks),
   ("MessageStartClosureConformance", BpmnSemantics.MessageStartConformance.messageStartClosureConformanceChecks),
   ("MessageStartIdentityConformance", BpmnSemantics.MessageStartConformance.messageStartIdentityConformanceChecks),
@@ -160,16 +218,20 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("NestedScopeDataConformance", BpmnSemantics.NestedScopeDataConformance.checks),
   ("NonInterruptingBoundaryTimerConformance", BpmnSemantics.NonInterruptingBoundaryTimerConformance.checks),
   ("ParallelBalancedTopologyConformance", BpmnSemantics.ParallelBalancedTopologyConformance.checks),
+  ("ParallelMultiInstanceConformance", BpmnSemantics.ParallelMultiInstanceConformance.checks),
   ("ParallelScopeGraphConformance", BpmnSemantics.ParallelScopeGraphConformance.checks),
   ("ParallelScopeRuntimeConformance", BpmnSemantics.ParallelScopeRuntimeConformance.checks),
   ("ParallelUserTaskMetadataCompositionAdmissionConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionAdmissionConformanceChecks),
   ("ParallelUserTaskMetadataCompositionClosureConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionClosureConformanceChecks),
   ("ParallelUserTaskMetadataCompositionRuntimeConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionRuntimeConformanceChecks),
   ("PortableHandoffConformance", BpmnSemantics.PortableHandoffConformance.checks),
+  ("ProcessStartDataConformance", BpmnSemantics.ProcessStartDataConformance.checks),
   ("ReceiveTaskConformance", BpmnSemantics.ReceiveTaskConformance.checks),
   ("RecurringTimerLifetimeConformance", BpmnSemantics.RecurringTimerLifetimeConformance.checks),
+  ("RegionalRemovalOwnerCoverageConformance", BpmnSemantics.RegionalRemovalOwnerCoverageConformance.checks),
   ("RuntimeStateActivityOccurrenceConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateActivityOccurrenceConformanceChecks),
   ("RuntimeStateIdentityBoundConformance", BpmnSemantics.RuntimeStateIdentityBoundConformance.checks),
+  ("RuntimeStateInitializationConformance", BpmnSemantics.RuntimeStateInitializationConformance.checks),
   ("RuntimeStateWellFormedEventRaceConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateWellFormedEventRaceConformanceChecks),
   ("RuntimeStateWellFormedInvariantConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateWellFormedInvariantConformanceChecks),
   ("RuntimeStateWellFormedSuccessorConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateWellFormedSuccessorConformanceChecks),
@@ -180,8 +242,11 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("ScopeVariableDataConformance", BpmnSemantics.ScopeVariableDataConformance.checks),
   ("SemanticProcess.RuntimeStateCollectionStorageConformance", BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageConformance.checks),
   ("SemanticProcessAdmissionConformance", BpmnSemantics.SemanticProcessConformance.semanticProcessAdmissionConformanceChecks),
+  ("SemanticProcessConformance", BpmnSemantics.SemanticProcessConformance.checks),
   ("SemanticProcessJsonConformance", BpmnSemantics.SemanticProcessJsonConformance.checks),
+  ("SequentialScopeGraphConformance", BpmnSemantics.SequentialScopeGraphConformance.checks),
   ("SerialBusinessTaskConformance", BpmnSemantics.SerialBusinessTaskConformance.checks),
+  ("SnapshotInternalArmingConformance", BpmnSemantics.SnapshotInternalArmingConformance.checks),
   ("SnapshotInternalArmingSourceConformance", BpmnSemantics.SnapshotInternalArmingSourceConformance.checks),
   ("StructuredCompositionAdmissionConformance", BpmnSemantics.StructuredCompositionAdmissionConformance.checks),
   ("StructuredCompositionCommandConformance", BpmnSemantics.StructuredCompositionCommandConformance.checks),
@@ -198,7 +263,10 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("TransactionCancellationStartConformance", BpmnSemantics.TransactionCancellationPublicationConformance.transactionCancellationStartConformanceChecks),
   ("TransactionCancellationTerminalPublicationConformance", BpmnSemantics.TransactionCancellationPublicationConformance.transactionCancellationTerminalPublicationConformanceChecks),
   ("TransactionRetentionConformance", BpmnSemantics.TransactionRetentionConformance.checks),
-  ("TransactionSourceConformance", BpmnSemantics.TransactionSourceConformance.checks)
+  ("TransactionSourceArmingConformance", BpmnSemantics.TransactionSourceArmingConformance.checks),
+  ("TransactionSourceConformance", BpmnSemantics.TransactionSourceConformance.checks),
+  ("UserTaskCompletionDataConformance", BpmnSemantics.UserTaskCompletionDataConformance.checks),
+  ("UserTaskInteractionConformance", BpmnSemantics.UserTaskInteractionConformance.checks)
 ]
 
 def main : IO UInt32 := do

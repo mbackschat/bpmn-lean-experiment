@@ -1,11 +1,11 @@
 module
 
+public import BpmnSemantics.ActivityDataInputOutputRefusalConformanceCheckFixtures
 public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
-
 /-! # Composed Activity data-input/output refusal conformance
 
 Whole-state and direct-transition refusal decisions over the shared claim fixture. The separate
@@ -20,14 +20,6 @@ namespace BpmnSemantics.ActivityDataInputOutputConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
-
-def withExtraComposedDeclarations (count : Nat) : Program :=
-  { claimProgram with
-    operations := claimProgram.operations ++
-      (List.replicate count (claimProgram.operations.filter fun
-        | .awaitDataInputOutputUserTask .. => true
-        | _ => false)).flatten }
-
 /-- `ADIO-REFUSE-01` applies at command dispatch, including malformed Programs that cannot pass
 source admission; successful unique lookup must not decide whether the family owns the task. -/
 theorem duplicateComposedDeclarationRefusesOutputWithExactStatePreservation :
@@ -68,13 +60,6 @@ theorem twoOutputsRefuseWithExactStatePreservation :
       refused active := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
 
-def copiedScope : ActivityVariableScope :=
-  { owner := .activityOccurrence claimActivityOwner
-    bindings := [{ name := claimDirectInput.targetDataInputId, value := summary.value }] }
-
-def withLocalScopes (scopes : List ActivityVariableScope) : RuntimeState :=
-  { active with variables := { active.variables with activities := scopes } }
-
 /-- `ADIO-SCOPE-01` and `ADIO-REFUSE-01`: two scopes for one Activity cannot be resolved by order. -/
 theorem duplicateActivityOwnerRefusesWithExactStatePreservation :
     applyStimulus scenarioClosureLimit claimProgram
@@ -103,68 +88,5 @@ theorem booleanLocalValueRefusesWithExactStatePreservation :
         (completeClaim "complete-boolean-local" [decision (.string "approve")]) =
       refused (withLocalScopes [malformed]) := by
   exact applyStimulus_rejected_of_admission _ _ _ _ rfl
-
-def foreignClaimInstanceId : SemanticId := ⟨"ClaimAssessmentInstance_foreign"⟩
-
-def wrongClaimScopeOwner : ScopeOccurrenceId :=
-  { processInstanceId := claimInstanceId
-    definitionScopeId := ⟨"scope:wrong"⟩
-    activation := 1 }
-
-def wrongOutputActive : RuntimeState :=
-  { active with
-    waits := active.waits.map fun wait =>
-      { wait with output := ⟨"place:Flow_ClaimReceived_Assess"⟩ } }
-
-def wrongStaticScopeActive : RuntimeState :=
-  { active with
-    waits := active.waits.map fun wait => { wait with owner := wrongClaimScopeOwner }
-    activityOccurrences := active.activityOccurrences.map fun record =>
-      { record with owner := wrongClaimScopeOwner } }
-
-def wrongWaitProcessActive : RuntimeState :=
-  { active with
-    waits := active.waits.map fun wait => { wait with processInstanceId := foreignClaimInstanceId }
-    activityOccurrences := active.activityOccurrences.map fun record =>
-      { record with
-        body := .userTask
-          { processInstanceId := foreignClaimInstanceId
-            elementId := ⟨"UserTask_AssessClaim"⟩
-            activation := 1 } } }
-
-def wrongRecordProcessActive : RuntimeState :=
-  { active with
-    activityOccurrences := active.activityOccurrences.map fun record =>
-      { record with processInstanceId := foreignClaimInstanceId }
-    variables :=
-      { active.variables with
-        activities :=
-          [{ copiedScope with
-             owner := .activityOccurrence
-               { claimActivityOwner with processInstanceId := foreignClaimInstanceId } }] } }
-
-/-- The live wait must route to the output declared by its exact composed operation. -/
-theorem wrongLiveWaitOutputRefusesBeforeMutation :
-    completeDataInputOutputUserTask? claimProgram wrongOutputActive claimInstanceId
-      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
-  decide +kernel
-
-/-- The wait and record owner cannot substitute a static scope outside the declaring operation. -/
-theorem wrongLiveWaitStaticScopeRefusesBeforeMutation :
-    completeDataInputOutputUserTask? claimProgram wrongStaticScopeActive claimInstanceId
-      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
-  decide +kernel
-
-/-- A wait occurrence cannot claim a process distinct from its live scope owner. -/
-theorem mismatchedLiveWaitProcessOwnerRefusesBeforeMutation :
-    completeDataInputOutputUserTask? claimProgram wrongWaitProcessActive foreignClaimInstanceId
-      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
-  decide +kernel
-
-/-- An Activity record cannot claim a process distinct from its live scope owner. -/
-theorem mismatchedActivityRecordProcessOwnerRefusesBeforeMutation :
-    completeDataInputOutputUserTask? claimProgram wrongRecordProcessActive claimInstanceId
-      ⟨"UserTask_AssessClaim"⟩ 1 [decision (.string "approve")] = none := by
-  decide +kernel
 
 end BpmnSemantics.ActivityDataInputOutputConformance

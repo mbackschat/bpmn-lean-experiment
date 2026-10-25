@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.TransactionSourceArmingConformanceCheckFixtures
 public import BpmnSemantics.TransactionSourceConformance
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
@@ -17,7 +18,6 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
-
 /-! # Selected Transaction child Task arming
 
 This finite source-derived witness instantiates the existing quantified prepared-batch laws at a
@@ -34,67 +34,9 @@ open BpmnSemantics
 open BpmnSemantics.SemanticProcess
 open BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics.TransactionSourceConformance
-
-def program : Program := lowerCheckedProcess (transactionCheckedSource "" false)
-def instanceId : SemanticId := ⟨"tx-arming"⟩
-def commandId : SemanticId := ⟨"start-transaction-arming"⟩
-def childOwner : ScopeOccurrenceId :=
-  { processInstanceId := instanceId, definitionScopeId := ⟨"scope:Transaction"⟩, activation := 1 }
-
-def start : Stimulus :=
-  .startProcess commandId ⟨program.processId.value⟩ instanceId []
-
-def admitted : ExternalAdmission :=
-  admitStimulusWithCompensationSnapshots program initialState start
-
-def selectedSuccessor? (before : RuntimeState) (element : String) : Option RuntimeState := do
-  let operation ← program.operations.find? (fun operation => operation.id.value == "operation:" ++ element)
-  match attemptInternalOperation program operation before with
-  | .applied step => some step.successor
-  | .disabled _ | .refused _ _ => none
-
-def initiated : RuntimeState :=
-  (selectedSuccessor? admitted.state "RootStart").getD initialState
-def entered : RuntimeState :=
-  (selectedSuccessor? initiated "Transaction").getD initialState
-def ready : RuntimeState :=
-  (selectedSuccessor? entered "Split").getD initialState
-
-def frontier : List SemanticOperation :=
-  (snapshotInternalTransitionFrontier program ready).transitions.map (·.1)
-def prepared : List PreparedInternalArming :=
-  (prepareInternalArmingBatch? program ready frontier).getD []
-
-def childRegister : List CompensationActivityRetention :=
-  [{ owner := childOwner, nextCompletionOrdinal := 1, records := [] }]
-
-def erasedRegister : RuntimeState :=
-  { ready with compensationActivityRetentions := [] }
-
 theorem selected_program_is_source_lowered_and_admitted :
     programWellFormed program = true ∧ programProfileCapabilitiesValid program = true :=
   ⟨short_lowered_program_is_well_formed, short_lowered_program_is_profile_admitted⟩
-
-theorem selected_start_commits_without_a_premature_child_register :
-    admitted.outcome = .committed ∧ admitted.state.compensationActivityRetentions = [] := by
-  decide +kernel
-
-theorem selected_start_reaches_initiated_root :
-    selectedSuccessor? admitted.state "RootStart" = some initiated := by
-  decide +kernel
-
-theorem selected_entry_reaches_a_registered_child :
-    selectedSuccessor? initiated "Transaction" = some entered ∧
-      entered.compensationActivityRetentions = childRegister ∧
-      entered.scopeOccurrences.any (fun scope => scope.id == childOwner) = true := by
-  decide +kernel
-
-theorem selected_split_reaches_exact_child_tokens :
-    selectedSuccessor? entered "Split" = some ready ∧
-      ready.tokens = [{ placeId := ⟨"place:f5"⟩, owner := childOwner },
-        { placeId := ⟨"place:f6"⟩, owner := childOwner }] ∧
-      ready.waits = [] ∧ ready.compensationActivityRetentions = childRegister := by
-  decide +kernel
 
 theorem reached_predecessor_is_runtime_valid :
     runtimeStateWellFormed program instanceId ready = true := by
@@ -107,14 +49,6 @@ theorem reached_predecessor_has_an_open_projection :
 theorem selected_program_and_reached_predecessor_have_no_snapshots :
     program.compensationEventSubProcessSnapshots = none ∧
       ready.compensationParentContextRetentions = [] := by
-  decide +kernel
-
-theorem complete_reached_frontier_contains_only_the_two_child_tasks :
-    (snapshotInternalTransitionFrontier program ready).refusal = none ∧
-      frontier.map (·.id) = [⟨"operation:Reserve"⟩, ⟨"operation:Withdraw"⟩] ∧
-      frontier.all (fun operation => match operation with
-        | .awaitUserTask .. => true
-        | _ => false) = true := by
   decide +kernel
 
 theorem reached_frontier_retains_both_complete_preparations :
@@ -160,11 +94,6 @@ theorem every_selected_arming_permutation_agrees_in_the_production_evaluator
     reached_preparations_are_selected_and_pairwise_independent.1
     reached_preparations_are_selected_and_pairwise_independent.2.1 permutation
 
-theorem reversed_order_exercises_withdraw_before_reserve :
-    prepared.reverse.map (fun member => member.operation.id) =
-      [⟨"operation:Withdraw"⟩, ⟨"operation:Reserve"⟩] := by
-  decide +kernel
-
 theorem both_child_task_orders_have_one_defined_accepted_publication :
     ∃ final publications,
       runtimeStateWellFormed program instanceId final = true ∧
@@ -194,11 +123,5 @@ theorem every_selected_arming_order_preserves_the_same_child_register
   rw [← same]
   exact ⟨selected_arming_preserves_the_empty_child_register_and_has_no_snapshots.1,
     selected_arming_preserves_the_empty_child_register_and_has_no_snapshots.2.1⟩
-
-theorem erased_child_register_invalidates_the_same_two_task_offers :
-    runtimeStateWellFormed program instanceId erasedRegister = false ∧
-      (snapshotInternalTransitionFrontier program erasedRegister).transitions.map (fun step => step.1.id) =
-        [⟨"operation:Reserve"⟩, ⟨"operation:Withdraw"⟩] := by
-  decide +kernel
 
 end BpmnSemantics.TransactionSourceArmingConformance

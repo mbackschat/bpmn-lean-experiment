@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.ActivityDataOutputConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.Execution
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
@@ -7,7 +8,6 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
-
 /-! # Activity data-output conformance
 
 Checked facts for the bounded Activity data-output account: the concrete credit-underwriting
@@ -27,216 +27,9 @@ namespace BpmnSemantics.ActivityDataOutputConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
-
-def decisionDirectOutput : DirectActivityDataOutput :=
-  { associationId := "DataOutputAssociation_Decision"
-    sourceDataOutputId := "DataOutput_Decision"
-    sourceDataOutputName := some "Underwriting decision"
-    target := .property "Property_UnderwritingOutcome" }
-
-/-- The capsule's routing precondition. Stated as its own checked fact because every write law below
-is vacuously satisfiable by a name-merged implementation when these two identities agree. -/
-theorem declaredOutputAndAssociatedPropertyAreDistinct :
-    decisionDirectOutput.sourceDataOutputId ≠ decisionDirectOutput.target.id := by
-  decide +kernel
-
-def underwritingProcessId : ProcessId :=
-  ⟨"Process_ActivityDataOutputUnderwriting"⟩
-
-def underwritingCheckedProcess : CheckedProcess :=
-  { identity :=
-      { semanticProfile := activityDataOutputUserTaskProfileId
-        sourceId := ⟨"activity-data-output-user-task"⟩
-        sourceSha256 :=
-          "de5a4f547f30a2137f8836130f2bbf6156bed14ca8d172d4effd80de2dac0b1b" }
-    processId := underwritingProcessId
-    definitionScopes := [rootDefinitionScope underwritingProcessId]
-    nodeScopes := rootNodeScopes underwritingProcessId
-      [⟨"EndEvent_Recorded"⟩, ⟨"StartEvent_Application"⟩, ⟨"UserTask_Decide"⟩]
-    sequenceFlowScopes := rootSequenceFlowScopes underwritingProcessId
-      [⟨"Flow_Application_Decide"⟩, ⟨"Flow_Decide_Recorded"⟩]
-    nodes :=
-      [ .noneEndEvent ⟨"EndEvent_Recorded"⟩
-      , .noneStartEvent ⟨"StartEvent_Application"⟩
-      , .dataOutputUserTask ⟨"UserTask_Decide"⟩ (some "Decide credit application")
-          decisionDirectOutput ]
-    sequenceFlows :=
-      [ { id := ⟨"Flow_Application_Decide"⟩
-          sourceId := ⟨"StartEvent_Application"⟩
-          targetId := ⟨"UserTask_Decide"⟩ }
-      , { id := ⟨"Flow_Decide_Recorded"⟩
-          sourceId := ⟨"UserTask_Decide"⟩
-          targetId := ⟨"EndEvent_Recorded"⟩ } ] }
-
-def underwritingProgram : Program :=
-  lowerCheckedProcess underwritingCheckedProcess
-
-def underwritingInstanceId : SemanticId :=
-  ⟨"ActivityDataOutputInstance_1"⟩
-
-/-- A checked process identical to the registered one except that the declared `DataOutput` and its
-target `Property` share one identity. No BPMN document can express this, because both ends are
-`xsd:ID`, so admission of the lowered Program is the only boundary that can refuse it. -/
-def mergedIdentityCheckedProcess : CheckedProcess :=
-  { underwritingCheckedProcess with
-    nodes :=
-      [ .noneEndEvent ⟨"EndEvent_Recorded"⟩
-      , .noneStartEvent ⟨"StartEvent_Application"⟩
-      , .dataOutputUserTask ⟨"UserTask_Decide"⟩ (some "Decide credit application")
-          { decisionDirectOutput with
-            target := .property decisionDirectOutput.sourceDataOutputId } ] }
-
-/-- `ADOUTPUT-ROUTE-01`'s precondition made executable rather than merely asserted.
-
-Equal identities would let a name-merged completion satisfy every routed expectation in this module
-by coincidence. The registered program is admissible and the merged one is not, so the refusal is
-the identity rule rather than a validator that rejects everything. -/
-theorem mergedOutputAndPropertyIdentityIsStructurallyRejected :
-    (programWellFormed underwritingProgram,
-      programWellFormed (lowerCheckedProcess mergedIdentityCheckedProcess)) =
-      (true, false) := by
-  decide +kernel
-
-/-- The only start this capsule registers: no Process data at all, which is exactly the state in
-which the sibling input model creates neither a task nor an Activity record. -/
-def startUnderwriting : Stimulus :=
-  .startProcess ⟨"start-underwriting"⟩ ⟨underwritingProcessId.value⟩
-    underwritingInstanceId []
-
-def started : StimulusResult :=
-  applyStimulus scenarioClosureLimit underwritingProgram initialState startUnderwriting
-
-def decideTaskInstanceId : UserTaskInstanceId :=
-  { processInstanceId := underwritingInstanceId
-    elementId := ⟨"UserTask_Decide"⟩
-    activation := 1 }
-
-def decideActivityOwner : LocalDataOwner :=
-  .activityOccurrence
-    { processInstanceId := underwritingInstanceId
-      activityElementId := ⟨"UserTask_Decide"⟩
-      activation := 1 }
-
-def complete (commandId : String)
-    (submittedValues : List VariableBinding) : Stimulus :=
-  .completeUserTaskInstance ⟨commandId⟩ decideTaskInstanceId submittedValues
-
-def decideApproved : Stimulus :=
-  complete "decide-approved" [{ name := decisionDirectOutput.sourceDataOutputId
-                                value := .string "approved" }]
-
-def decideNull : Stimulus :=
-  complete "decide-null" [{ name := decisionDirectOutput.sourceDataOutputId
-                            value := .null }]
-
-def observed (result : StimulusResult) : Option StateObservation :=
-  observeStableState underwritingProgram result.state
-
-theorem tokenAloneActivatesWithNoProcessBinding :
-    (started.outcome, started.state.variables.process.bindings,
-      started.state.waits.map (·.task.id)) =
-      (CommandOutcome.committed, [], [⟨"UserTask_Decide"⟩]) := by
-  decide +kernel
-
 theorem activationConsumesTheIncomingToken :
     projectTokenMultiplicities underwritingProgram started.state =
       [(⟨"place:Flow_Application_Decide"⟩, 0), (⟨"place:Flow_Decide_Recorded"⟩, 0)] := by
-  decide +kernel
-
-/-- `ADOUTPUT-ENTRY-01`. The Activity owns exactly one local scope and it is empty.
-
-The container is armed at entry rather than at completion so the Activity owns one lifetime rather
-than two. It stays empty for that whole lifetime, because `ADOUTPUT-ATOMIC-01` fuses the fill with
-the association and the submitted value reaches Process scope without passing through here. -/
-theorem activationArmsOneEmptyActivityScope :
-    started.state.variables.activities =
-      [{ owner := decideActivityOwner, bindings := [] }] := by
-  decide +kernel
-
-/-- An Activity owning an empty scope publishes no input collection, so the empty container is not
-observable as data the task carries. -/
-theorem activeTaskPublishesNoInputCollection :
-    (observed started).map (·.openUserTasks) =
-      some
-        [{ id := decideTaskInstanceId
-           name := some "Decide credit application"
-           state := .active
-           inputs := none }] := by
-  decide +kernel
-
-def approved : StimulusResult :=
-  applyStimulus scenarioClosureLimit underwritingProgram started.state decideApproved
-
-/-- `ADOUTPUT-ROUTE-01`. The value reaches the Property the association names, and the submitted
-`DataOutput` id never becomes a Process binding of its own. -/
-theorem completionWritesTheAssociatedPropertyOnly :
-    (approved.outcome, approved.state.variables.process.bindings) =
-      (CommandOutcome.committed,
-        [{ name := decisionDirectOutput.target.id, value := .string "approved" }]) := by
-  decide +kernel
-
-/-- `ADOUTPUT-ATOMIC-01`. The wait, the Activity record, and the local scope leave in the same
-transition that performs the write. -/
-theorem completionDisposesTaskRecordAndScopeTogether :
-    (approved.state.waits, approved.state.activityOccurrences,
-      approved.state.variables.activities) = ([], [], []) := by
-  decide +kernel
-
-theorem completedProcessPublishesTheWrittenProperty :
-    (observed approved).map (fun observation =>
-      (observation.status, observation.openUserTasks, observation.variables)) =
-      some
-        (ProcessStatus.completed, [],
-          [{ name := decisionDirectOutput.target.id,
-             value := .string "approved" }]) := by
-  decide +kernel
-
-def nullDecided : StimulusResult :=
-  applyStimulus scenarioClosureLimit underwritingProgram started.state decideNull
-
-/-- A supplied explicit null makes the single required output available exactly as a String does, so
-it is written rather than treated as an omission. -/
-theorem suppliedNullIsWrittenRatherThanOmitted :
-    (nullDecided.outcome, nullDecided.state.variables.process.bindings) =
-      (CommandOutcome.committed,
-        [{ name := decisionDirectOutput.target.id, value := .null }]) := by
-  decide +kernel
-
-/-- `ADOUTPUT-ROUTE-01`'s separating non-law. Submitting the association's *target* name is a name
-the OutputSet never declares, so it is refused rather than written straight into Process scope. A
-name-merged completion would commit here and reach the same Process scope as the routed one. -/
-theorem submissionUnderTheTargetNameIsRefused :
-    applyStimulus scenarioClosureLimit underwritingProgram started.state
-        (complete "decide-under-target-name"
-          [{ name := decisionDirectOutput.target.id, value := .string "approved" }]) =
-      { outcome := .rejected
-        state := started.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
-
-/-- `ADOUTPUT-REQUIRE-01`. An omitted required output refuses with exact state preservation rather
-than completing the Activity without honouring its OutputSet. -/
-theorem omittedRequiredOutputIsRefused :
-    applyStimulus scenarioClosureLimit underwritingProgram started.state
-        (complete "decide-without-output" []) =
-      { outcome := .rejected
-        state := started.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
-
-/-- The OutputSet declares exactly one member, so a superset is refused rather than silently
-narrowed to the declared name. -/
-theorem extraSubmittedOutputIsRefused :
-    applyStimulus scenarioClosureLimit underwritingProgram started.state
-        (complete "decide-with-extra-output"
-          [ { name := decisionDirectOutput.sourceDataOutputId, value := .string "approved" }
-          , { name := "DataOutput_Unadmitted", value := .string "second" } ]) =
-      { outcome := .rejected
-        state := started.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
   decide +kernel
 
 theorem staleCompletionPreservesTheCommittedState :
@@ -246,24 +39,6 @@ theorem staleCompletionPreservesTheCommittedState :
         internalStepBoundExceeded := false
         ambiguousInternalChoice := false } := by
   decide +kernel
-
-theorem wrongActivationPreservesTheActiveState :
-    applyStimulus scenarioClosureLimit underwritingProgram started.state
-        (.completeUserTaskInstance ⟨"decide-wrong-activation"⟩
-          { decideTaskInstanceId with activation := 2 }
-          [{ name := decisionDirectOutput.sourceDataOutputId, value := .string "approved" }]) =
-      { outcome := .rejected
-        state := started.state
-        internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
-
-def repeatedOutputDeclarations (count : Nat) : Program :=
-  { underwritingProgram with
-    operations := underwritingProgram.operations.flatMap fun operation =>
-      match operation with
-      | .awaitDataOutputUserTask .. => List.replicate count operation
-      | _ => [operation] }
 
 theorem multipleOutputDeclarationsRefuseSuppliedAndOmittedOutput
     (count : Nat) (duplicated : count = 2 ∨ count = 3)

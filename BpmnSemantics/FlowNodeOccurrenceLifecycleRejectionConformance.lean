@@ -1,11 +1,11 @@
 module
 
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-public import BpmnSemantics.SequentialUserTask
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SequentialUserTaskFixtures
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Flow-node occurrence lifecycle rejection conformance
 
@@ -15,6 +15,7 @@ This module owns the executable fail-closed witnesses for anchor multiplicity an
 @[expose] public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
+
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
@@ -48,22 +49,26 @@ def crossingTransitionDelta : UnnumberedFlowNodeOccurrenceDelta :=
     ended := [] }
 
 /-- Freshness, reuse, duplicate terminal, unknown terminal, and cross-delta transition anchors all fail closed. -/
-theorem every_anchor_multiplicity_violation_is_rejected :
+def every_anchor_multiplicity_violation_is_rejected : Bool := decide <|
     applyFlowNodeOccurrenceDelta? [] duplicateStartDelta = none ∧
       applyFlowNodeOccurrenceDelta? [duplicateStart]
         { started := [duplicateStart], ended := [] } = none ∧
       applyFlowNodeOccurrenceDelta? [duplicateStart] duplicateEndDelta = none ∧
       applyFlowNodeOccurrenceDelta? []
         { started := [], ended := [{ anchor := duplicateStart.anchor, terminal := .completed }] } = none ∧
-      applyFlowNodeOccurrenceDelta? [] crossingTransitionDelta = none := by
-  decide +kernel
+      applyFlowNodeOccurrenceDelta? [] crossingTransitionDelta = none
 
 /-- Rejected and closure-bounded commands publish neither a trace nor a lifecycle. -/
-theorem every_unpublishable_command_has_no_lifecycle :
+def every_unpublishable_command_has_no_lifecycle : Bool := decide <|
     (applyStimulusTraced scenarioClosureLimit SequentialUserTask.program initialState
         (.startProcess ⟨"wrong"⟩ ⟨"Other"⟩ ⟨"Instance"⟩ [])).flowNodeOccurrenceLifecycles = [] ∧
       (applyStimulusTraced 1 SequentialUserTask.program initialState
-        SequentialUserTask.startStimulus).flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
+        SequentialUserTask.startStimulus).flowNodeOccurrenceLifecycles = []
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def flowNodeOccurrenceLifecycleRejectionConformanceChecks : List (String × Bool) := [
+  ("every_anchor_multiplicity_violation_is_rejected", every_anchor_multiplicity_violation_is_rejected),
+  ("every_unpublishable_command_has_no_lifecycle", every_unpublishable_command_has_no_lifecycle)
+]
 
 end BpmnSemantics.FlowNodeOccurrenceLifecycleConformance

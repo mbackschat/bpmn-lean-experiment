@@ -2,11 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-public import BpmnSemantics.RuntimeStateInitializationConformance
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.RuntimeStateInitializationConformanceCheckFixtures
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String
@@ -25,9 +25,8 @@ import all Std.Data.DTreeMap.Internal.Queries
 
 @[expose] public section
 
-set_option Elab.async false
-
 namespace BpmnSemantics.InternalClosureAtomicityConformance
+
 
 open BpmnSemantics.SemanticProcess
 
@@ -38,17 +37,15 @@ def completeB : Stimulus :=
   .completeUserTaskInstance ⟨"closure-complete"⟩
     { processInstanceId := parallelInstanceId, elementId := ⟨"UserTask_B"⟩, activation := 1 } []
 
-theorem start_fuel_failure_rolls_back_admission_and_internal_prefix :
+def start_fuel_failure_rolls_back_admission_and_internal_prefix : Bool := decide <|
     applyStimulus 2 parallelProgram initialState parallelStart =
       { outcome := .rolledBack, state := initialState,
-        internalStepBoundExceeded := true, ambiguousInternalChoice := false } := by
-  decide +kernel
+        internalStepBoundExceeded := true, ambiguousInternalChoice := false }
 
-theorem completion_fuel_failure_restores_exact_wait_and_ownership :
+def completion_fuel_failure_restores_exact_wait_and_ownership : Bool := decide <|
     applyStimulus 0 parallelProgram parallelAfterCompletingA completeB =
       { outcome := .rolledBack, state := parallelAfterCompletingA,
-        internalStepBoundExceeded := true, ambiguousInternalChoice := false } := by
-  decide +kernel
+        internalStepBoundExceeded := true, ambiguousInternalChoice := false }
 
 def lateAmbiguityProgram : Program :=
   { parallelProgram with
@@ -59,7 +56,7 @@ def lateAmbiguityProgram : Program :=
       { operationId := ⟨"operation:EndEvent_0"⟩,
         scopeId := ⟨"scope:Process_ParallelForkJoin"⟩ } :: parallelProgram.operationScopes }
 
-theorem late_ambiguity_has_admitted_completion_and_successful_join_prefix :
+def late_ambiguity_has_admitted_completion_and_successful_join_prefix : Bool := decide <|
     programWellFormed lateAmbiguityProgram = false ∧
       (admitStimulus lateAmbiguityProgram parallelAfterCompletingA completeB).outcome =
         .committed ∧
@@ -68,14 +65,12 @@ theorem late_ambiguity_has_admitted_completion_and_successful_join_prefix :
       (runChoices lateAmbiguityProgram parallelAfterAThenB [parallelJoinOperation]).isSome = true ∧
       enabledInternalOperationCount lateAmbiguityProgram
         ((runChoices lateAmbiguityProgram parallelAfterAThenB
-          [parallelJoinOperation]).getD initialState) = 2 := by
-  decide +kernel
+          [parallelJoinOperation]).getD initialState) = 2
 
-theorem late_ambiguity_rolls_back_external_completion_and_join :
+def late_ambiguity_rolls_back_external_completion_and_join : Bool := decide <|
     applyStimulus scenarioClosureLimit lateAmbiguityProgram parallelAfterCompletingA completeB =
       { outcome := .rolledBack, state := parallelAfterCompletingA,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := true } := by
-  decide +kernel
+        internalStepBoundExceeded := false, ambiguousInternalChoice := true }
 
 def dataStart : Stimulus :=
   .startProcess ⟨"data-start"⟩ ⟨sequentialProgram.processId.value⟩ ⟨"DataInstance"⟩
@@ -89,19 +84,17 @@ def dataCompletion : Stimulus :=
     { processInstanceId := ⟨"DataInstance"⟩, elementId := ⟨"UserTask_Approve"⟩, activation := 1 }
     [{ name := "status", value := .string "after" }]
 
-theorem completion_admission_changes_data_before_internal_closure :
+def completion_admission_changes_data_before_internal_closure : Bool := decide <|
     (admitStimulus sequentialProgram dataWaiting dataCompletion).outcome = .committed ∧
       (admitStimulus sequentialProgram dataWaiting dataCompletion).state.variables ≠
-        dataWaiting.variables := by
-  decide +kernel
+        dataWaiting.variables
 
-theorem completion_fuel_failure_restores_exact_process_data :
+def completion_fuel_failure_restores_exact_process_data : Bool := decide <|
     let result := applyStimulus 0 sequentialProgram dataWaiting dataCompletion
     result.outcome = .rolledBack ∧ result.state = dataWaiting ∧
-      result.internalStepBoundExceeded = true ∧ result.ambiguousInternalChoice = false := by
-  decide +kernel
+      result.internalStepBoundExceeded = true ∧ result.ambiguousInternalChoice = false
 
-theorem equal_admitted_successors_do_not_equate_distinct_rolled_back_inputs :
+def equal_admitted_successors_do_not_equate_distinct_rolled_back_inputs : Bool := decide <|
     let changed := { dataWaiting with waits := dataWaiting.waits.map fun wait =>
       { wait with task := { wait.task with name := some "Changed task label" } } }
     changed ≠ dataWaiting ∧
@@ -111,25 +104,22 @@ theorem equal_admitted_successors_do_not_equate_distinct_rolled_back_inputs :
       (applyStimulus 0 sequentialProgram changed dataCompletion).outcome = .rolledBack ∧
       (applyStimulus 0 sequentialProgram changed dataCompletion).state = changed ∧
       (applyStimulus 0 sequentialProgram changed dataCompletion).state ≠
-        (applyStimulus 0 sequentialProgram dataWaiting dataCompletion).state := by
-  decide +kernel
+        (applyStimulus 0 sequentialProgram dataWaiting dataCompletion).state
 
-theorem declaration_bearing_fuel_failure_erases_root_reservation :
+def declaration_bearing_fuel_failure_erases_root_reservation : Bool := decide <|
     let result := applyStimulusWithCompensationSnapshots 0
       RuntimeStateInitializationConformance.rootProgram initialState
       RuntimeStateInitializationConformance.ordinaryTrigger
     result.outcome = .rolledBack ∧ result.state = initialState ∧
-      result.internalStepBoundExceeded = true ∧ result.ambiguousInternalChoice = false := by
-  decide +kernel
+      result.internalStepBoundExceeded = true ∧ result.ambiguousInternalChoice = false
 
-theorem successful_start_and_rejected_repeat_keep_both_flags_false :
+def successful_start_and_rejected_repeat_keep_both_flags_false : Bool := decide <|
     applyStimulus scenarioClosureLimit parallelProgram initialState parallelStart =
         { outcome := .committed, state := parallelWaitingState,
           internalStepBoundExceeded := false, ambiguousInternalChoice := false } ∧
       applyStimulus scenarioClosureLimit parallelProgram parallelWaitingState parallelStart =
         { outcome := .rejected, state := parallelWaitingState,
-          internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by
-  decide +kernel
+          internalStepBoundExceeded := false, ambiguousInternalChoice := false }
 
 def emittedStart : List CommittedTransition :=
   (applyStimulusTraced scenarioClosureLimit parallelProgram initialState
@@ -145,25 +135,38 @@ def swappedDependentRecords : List CommittedTransition :=
   | [external, start, fork, taskA, taskB] => [external, fork, start, taskA, taskB]
   | records => records
 
-theorem emitted_trace_contains_the_selected_independent_and_dependent_pairs :
+def emitted_trace_contains_the_selected_independent_and_dependent_pairs : Bool := decide <|
     emittedStart.map (fun
       | .externalStimulus _ => none
       | .internalOperation record => some record.operationId.value) =
       [none, some "operation:StartEvent_1", some "operation:Gateway_Fork",
-        some "operation:UserTask_A", some "operation:UserTask_B"] := by
-  decide +kernel
+        some "operation:UserTask_A", some "operation:UserTask_B"]
 
-theorem public_replay_accepts_swapped_independent_emitted_records :
+def public_replay_accepts_swapped_independent_emitted_records : Bool := decide <|
     swappedTaskRecords ≠ emittedStart ∧
       replayCommittedTransitions parallelProgram initialState emittedStart =
         some parallelWaitingState ∧
       replayCommittedTransitions parallelProgram initialState swappedTaskRecords =
-        some parallelWaitingState := by
-  decide +kernel
+        some parallelWaitingState
 
-theorem public_replay_rejects_swapped_dependent_emitted_records :
+def public_replay_rejects_swapped_dependent_emitted_records : Bool := decide <|
     swappedDependentRecords ≠ emittedStart ∧
-      replayCommittedTransitions parallelProgram initialState swappedDependentRecords = none := by
-  decide +kernel
+      replayCommittedTransitions parallelProgram initialState swappedDependentRecords = none
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def checks : List (String × Bool) := [
+  ("start_fuel_failure_rolls_back_admission_and_internal_prefix", start_fuel_failure_rolls_back_admission_and_internal_prefix),
+  ("completion_fuel_failure_restores_exact_wait_and_ownership", completion_fuel_failure_restores_exact_wait_and_ownership),
+  ("late_ambiguity_has_admitted_completion_and_successful_join_prefix", late_ambiguity_has_admitted_completion_and_successful_join_prefix),
+  ("late_ambiguity_rolls_back_external_completion_and_join", late_ambiguity_rolls_back_external_completion_and_join),
+  ("completion_admission_changes_data_before_internal_closure", completion_admission_changes_data_before_internal_closure),
+  ("completion_fuel_failure_restores_exact_process_data", completion_fuel_failure_restores_exact_process_data),
+  ("equal_admitted_successors_do_not_equate_distinct_rolled_back_inputs", equal_admitted_successors_do_not_equate_distinct_rolled_back_inputs),
+  ("declaration_bearing_fuel_failure_erases_root_reservation", declaration_bearing_fuel_failure_erases_root_reservation),
+  ("successful_start_and_rejected_repeat_keep_both_flags_false", successful_start_and_rejected_repeat_keep_both_flags_false),
+  ("emitted_trace_contains_the_selected_independent_and_dependent_pairs", emitted_trace_contains_the_selected_independent_and_dependent_pairs),
+  ("public_replay_accepts_swapped_independent_emitted_records", public_replay_accepts_swapped_independent_emitted_records),
+  ("public_replay_rejects_swapped_dependent_emitted_records", public_replay_rejects_swapped_dependent_emitted_records)
+]
 
 end BpmnSemantics.InternalClosureAtomicityConformance
