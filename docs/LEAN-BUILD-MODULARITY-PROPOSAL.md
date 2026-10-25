@@ -66,6 +66,7 @@ Required:
    - A fast static guard follows `public import` edges and cuts at private imports, so it gives an upper bound.
    - For every module outside a declared kernel and registry list, the transitive public importers stay within a recorded bound. The list changes only by reviewed edit, like the source-hygiene exceptions.
    - The guard measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
+   - [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) implements it with a default bound of 100 importers; [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) records the 2026-10-25 baseline of 347 wider modules, and an entry whose module falls to the default must go.
 
 Optional:
 
