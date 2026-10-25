@@ -49,3 +49,12 @@ export function leanDeclarations(source: string): ReadonlyArray<LeanDeclaration>
       : [];
   });
 }
+
+/**
+ * Names the module's executable checks: `def name : Bool := decide …`, which the conformance check driver
+ * evaluates natively rather than the kernel, so such a check cannot carry a proved claim.
+ */
+export function leanExecutableChecks(source: string): ReadonlyArray<string> {
+  return [...analyzeLeanSource(source).code.matchAll(/^def ([^\s:({\[⟨]+) : Bool := decide\b/gmu)]
+    .flatMap(([, name]) => (name === undefined ? [] : [name]));
+}

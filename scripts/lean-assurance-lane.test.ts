@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 import {
   type DeclarationLookup,
+  type ExecutableCheckLookup,
   leanAssuranceFindings,
+  moduleExecutableChecks,
   runtimeProofMap,
 } from "./lean-assurance-lane.ts";
 import type { LeanDeclaration } from "./lean-declarations.ts";
@@ -18,13 +20,17 @@ const stubModules = new Map<string, ReadonlyArray<LeanDeclaration>>([
   ["BpmnSemantics/Checked.lean", [{ kind: "def", name: "finite_fixture" }]],
   // Declares nothing, like the aggregation modules AA-15 found behind four retained lanes.
   ["BpmnSemantics/Aggregate.lean", []],
+  ["BpmnSemantics/Executable.lean", [{ kind: "def", name: "finite_check" }]],
 ]);
+
+const executableChecksOf: ExecutableCheckLookup = (repositoryPath) =>
+  repositoryPath === "BpmnSemantics/Executable.lean" ? ["finite_check"] : [];
 
 const declarationsOf: DeclarationLookup = (repositoryPath) =>
   stubModules.get(repositoryPath) ?? null;
 
 function laneFindings(markdown: string, entry: string): ReadonlyArray<string> {
-  return leanAssuranceFindings(markdown, entry, declarationsOf);
+  return leanAssuranceFindings(markdown, entry, declarationsOf, executableChecksOf);
 }
 
 function lane(shape: "proved" | "checked", evidence: string): string {
@@ -183,4 +189,37 @@ test("a named guarantee may be supported by unnamed owners but not by stale refe
     ),
     ["STALE-SPEC.md: BpmnSemantics/Proved.lean#renamed_law names no declaration in that module"],
   );
+});
+
+// A proved lane rests on kernel-checked declarations: the ones it names, or, when a proposal names none,
+// every witness of the modules it links. An executable check runs natively, outside the kernel, so it may
+// carry a checked lane only (owner direction 2026-10-25 moving standalone decided checks to executable guards).
+test("a proved lane cannot rest on an executable check", () => {
+  const check = "[owner](../../BpmnSemantics/Executable.lean#finite_check)";
+  assert.deepEqual(
+    laneFindings(lane("proved", `${check} checks the finite case.`), "NAMED-CHECK-SPEC.md"),
+    ["NAMED-CHECK-SPEC.md: proved lane names BpmnSemantics/Executable.lean#finite_check, an executable check rather than a kernel-checked declaration"],
+  );
+  assert.deepEqual(
+    laneFindings(lane("proved", "[owner](../../BpmnSemantics/Executable.lean) proves the finite results."), "UNNAMED-CHECK-PROPOSAL.md"),
+    ["UNNAMED-CHECK-PROPOSAL.md: proved lane names no guaranteeing declaration, so the witnesses of BpmnSemantics/Executable.lean carry it, but finite_check is an executable check"],
+  );
+  assert.deepEqual(
+    laneFindings(lane("proved", `[owner](../../BpmnSemantics/Proved.lean#proved_law) rests on [fixtures](../../BpmnSemantics/Executable.lean).`), "SUPPORTED-BY-CHECKS-SPEC.md"),
+    [],
+  );
+  assert.deepEqual(
+    laneFindings(lane("checked", `${check} checks the finite case.`), "CHECKED-BY-CHECK-SPEC.md"),
+    [],
+  );
+});
+
+// A module's checks may live in its `…CheckFixtures` sibling, which keeps proof owners out of the check driver's
+// closure (AA-05), so the lane's module stands for both files.
+test("a module's executable checks include those of its check-fixture sibling", () => {
+  const sources = new Map([
+    ["BpmnSemantics/Witness.lean", "theorem kernel_law : True := trivial\n"],
+    ["BpmnSemantics/WitnessCheckFixtures.lean", "def finite_check : Bool := decide <| 1 = 1\n"],
+  ]);
+  assert.deepEqual(moduleExecutableChecks("BpmnSemantics/Witness.lean", (repositoryPath) => sources.get(repositoryPath) ?? null), ["finite_check"]);
 });

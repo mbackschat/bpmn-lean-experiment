@@ -90,13 +90,13 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: the owner's choice for the Call Activity and Compensation snapshot proved lanes resting on executable checks (restore kernel decisions or relabel checked); fixtures still kernel-deciding through hidden hub bodies.
+Acceptance blockers: exposed-body, signature and type edits in widely imported modules.
 
 Current result: hub laws moved out of their hubs, so a hub proof edit rebuilds 2 or 3 modules in seconds (264 in 42 minutes before). A replay of 92 commits against today's graph still gives a median of 686 rebuilt modules: no hidden edit exceeds 500, but exposed-body edits (`ProfileShapeCatalog` 42, `RuntimeStateWellFormed` 31, `EffectDataAdmission` 23, `GraphValidation` 19), signature and type changes do.
 
-Effort budget: 4 hours from 18:45 UTC on 2026-10-25, exhausted at 22:45 UTC; renewal awaits the owner.
+Effort budget: 8 hours from 23:50 UTC on 2026-10-25; the owner directed on 2026-10-26 (local time) to take as long as the build-speed deliverable needs, so each exhausted block renews.
 
-Next action: on renewal, hide the bodies of the exposed modules the replay ranks first and move their laws out, then the trigger/handler kernel restore with the proved-lane guard.
+Next action: hide the bodies of the exposed modules the replay ranks first and move their laws out, re-measuring the replay median after each.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 

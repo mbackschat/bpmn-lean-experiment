@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { type LeanDeclaration, leanDeclarations } from "./lean-declarations.ts";
+import { type LeanDeclaration, leanDeclarations, leanExecutableChecks } from "./lean-declarations.ts";
 import { maskMarkdownIgnoredRegions } from "./markdown-link-lexer.ts";
 import { headingSection } from "./markdown-sections.ts";
 
@@ -27,16 +27,41 @@ export type DeclarationLookup = (
   repositoryPath: string,
 ) => ReadonlyArray<LeanDeclaration> | null;
 
-const readModuleDeclarations: DeclarationLookup = (repositoryPath) => {
+/** Answers which executable checks a repository-relative Lean module declares; an absent module declares none. */
+export type ExecutableCheckLookup = (repositoryPath: string) => ReadonlyArray<string>;
+
+function readModuleSource(repositoryPath: string): string | null {
   try {
-    return leanDeclarations(readFileSync(path.join(projectRoot, repositoryPath), "utf8"));
+    return readFileSync(path.join(projectRoot, repositoryPath), "utf8");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return null;
     }
     throw error;
   }
+}
+
+const readModuleDeclarations: DeclarationLookup = (repositoryPath) => {
+  const source = readModuleSource(repositoryPath);
+  return source === null ? null : leanDeclarations(source);
 };
+
+/**
+ * Names a module's executable checks together with those of its `…CheckFixtures` sibling, where a module whose
+ * theorems need proof owners keeps its checks so the check driver's closure reaches none ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)).
+ */
+export function moduleExecutableChecks(
+  repositoryPath: string,
+  readSource: (repositoryPath: string) => string | null,
+): ReadonlyArray<string> {
+  return [repositoryPath, repositoryPath.replace(/\.lean$/u, "CheckFixtures.lean")].flatMap((candidate) => {
+    const source = readSource(candidate);
+    return source === null ? [] : leanExecutableChecks(source);
+  });
+}
+
+const readModuleExecutableChecks: ExecutableCheckLookup = (repositoryPath) =>
+  moduleExecutableChecks(repositoryPath, readModuleSource);
 
 function evidenceTargets(evidence: string): ReadonlyArray<EvidenceTarget> {
   return [...evidence.matchAll(/\]\(([^)\s]+)\)/gu)]
@@ -91,6 +116,31 @@ function namedDeclarationFindings(
 }
 
 /**
+ * Checks that a proved lane rests on kernel-checked declarations. The declarations it names carry it; a lane
+ * that names none (a proposal's) rests on every witness of the modules it links. An executable check is
+ * evaluated natively by the conformance check driver, outside the kernel, so it may carry a checked lane only.
+ */
+function provedOnExecutableCheckFindings(
+  entry: string,
+  leanTargets: ReadonlyArray<EvidenceTarget>,
+  executableChecksOf: ExecutableCheckLookup,
+): ReadonlyArray<string> {
+  const named = leanTargets.filter(({ declaration }) => declaration !== null);
+  if (named.length > 0) {
+    return named.flatMap(({ repositoryPath, declaration }) =>
+      executableChecksOf(repositoryPath).includes(declaration ?? "")
+        ? [`${entry}: proved lane names ${repositoryPath}#${declaration}, an executable check rather than a kernel-checked declaration`]
+        : []
+    );
+  }
+  return leanTargets.flatMap(({ repositoryPath }) =>
+    executableChecksOf(repositoryPath).map((check) =>
+      `${entry}: proved lane names no guaranteeing declaration, so the witnesses of ${repositoryPath} carry it, but ${check} is an executable check`
+    )
+  );
+}
+
+/**
  * Checks one capsule's `## Lean assurance lane` section and returns its findings.
  *
  * The section must be unique, carry exactly one closed `Lane shape:` field first and a single
@@ -103,6 +153,7 @@ export function leanAssuranceFindings(
   markdown: string,
   entry: string,
   declarationsOf: DeclarationLookup = readModuleDeclarations,
+  executableChecksOf: ExecutableCheckLookup = readModuleExecutableChecks,
 ): ReadonlyArray<string> {
   const visibleMarkdown = maskMarkdownIgnoredRegions(markdown);
   const headings = visibleMarkdown.split("\n").filter((line) => line === leanAssuranceHeading);
@@ -151,13 +202,11 @@ export function leanAssuranceFindings(
       : [`${entry}: deliberately open lane does not link ${runtimeProofMap}`];
   }
   const leanTargets = targets.filter(isLeanModule);
-  return leanTargets.length === 0
-    ? [`${entry}: ${shape} lane does not link a Lean evidence owner`]
-    : namedDeclarationFindings(
-      entry,
-      shape,
-      leanTargets,
-      declarationsOf,
-      !entry.endsWith(proposalSuffix),
-    );
+  if (leanTargets.length === 0) {
+    return [`${entry}: ${shape} lane does not link a Lean evidence owner`];
+  }
+  return [
+    ...namedDeclarationFindings(entry, shape, leanTargets, declarationsOf, !entry.endsWith(proposalSuffix)),
+    ...(shape === "proved" ? provedOnExecutableCheckFindings(entry, leanTargets, executableChecksOf) : []),
+  ];
 }
