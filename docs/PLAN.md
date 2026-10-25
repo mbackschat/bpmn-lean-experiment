@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: faster Lean builds within the 5 GB local bound, then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: faster Lean builds within the 5 GB local bound (owner direction 2026-10-25: get the build time down as the build modularity proposal promised), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
 
-Deliverable: measurably faster cold and incremental Lean builds without a weaker claim or a raised memory limit.
+Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: green hosted checks for plain-file pass 2; an owner decision on leaf placement of new declarations; splitting the 53 conformance modules whose executable closure reaches a proofs-only module.
+Acceptance blockers: green hosted checks for plain-file pass 3 and the fanout ratchet; the seven plain roots; the 53 conformance modules whose executable closure reaches a proofs-only module.
 
-Current result: 229 finite witnesses of 25 proved-lane modules are executable checks (rows 645 s to 208 s); 58 plain files are modules, 45 stay plain (strict JSON decoder, `#eval`, `native_decide`). The same 196-module cold conformance build on two threads fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB. A 92-commit replay still rebuilds a median 650 modules, 49 with leaf placement.
+Current result: 20 plain files remain, behind seven roots; the fanout ratchet and the leaf-placement rule hold the graph. A 91-commit replay rebuilds a median 641 modules as written, 28 with leaf placement and 10 with no plain file. The same 196-module cold conformance build fell from 767 s to 596 s on two threads; peaks stayed at or below 2.44 GiB.
 
-Effort budget: 4 hours from 02:57 UTC on 2026-10-25, used through 05:55 UTC.
+Effort budget: renewed by the owner direction above; 4 hours from 06:20 UTC on 2026-10-25.
 
-Next action: land pass 2 on green checks for its exact SHA, then the two owner decisions. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land pass 3 on green checks for its exact SHA, then split the 53 conformance modules. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 
