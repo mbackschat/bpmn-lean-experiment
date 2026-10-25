@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
+public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 
 /-! # Sequential Multi-Instance conformance fixtures
 

@@ -90,13 +90,13 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: green hosted checks for the fixture split; about 70 fixtures per hidden hub that still kernel-decide through its bodies.
+Acceptance blockers: the owner's choice for the Call Activity and Compensation snapshot proved lanes resting on executable checks (restore kernel decisions or relabel checked); fixtures still kernel-deciding through hidden hub bodies.
 
-Current result: seven plain files remain; fanout ratchets and leaf placement hold the graph (replay median 641 modules as written, 18 placed). A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; pruning hub `import all` lines cut that to 125, and splitting 34 fixtures (1047 executable checks) cut their build time from 922 to 253 seconds. Cold conformance builds fell from 767 s to 596 s; peaks stayed at or below 2.44 GiB.
+Current result: seven plain files remain; fanout ratchets and leaf placement hold the graph. A one-line proof edit in `ProgramStructuralValidation` rebuilt 264 modules in 42 minutes; hub `import all` pruning cut that to 125. Two fixture passes (1110 executable checks) cut 41 modules' build time from 1190 to 308 seconds; peaks stayed at or below 2.44 GiB.
 
-Effort budget: 4 hours from 15:20 UTC on 2026-10-25, renewed by the owner's direction that day to remove every hub that triggers huge rebuilds.
+Effort budget: 4 hours from 18:45 UTC on 2026-10-25, renewed by the owner's direction that day that build speed is the first goal.
 
-Next action: land the split on green checks for its exact SHA, then the remaining blocked fixtures. At 2026-10-25 16:18 UTC remove the `zod@4.6.6` exclusion and its register row.
+Next action: land the second pass on green checks, re-probe the hub edit, then restore the trigger/handler lane's kernel witnesses with the proved-lane guard and re-split the fixtures whose proved lanes name kernel theorems.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 

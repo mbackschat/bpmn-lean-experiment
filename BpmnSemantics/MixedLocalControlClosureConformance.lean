@@ -84,10 +84,9 @@ def beforeMixed : RuntimeState :=
   ((fire? program initiation (admitStimulus program initialState start).state).bind
     (fire? program fork)).getD initialState
 
-theorem fixture_is_structurally_admitted :
+def fixture_is_structurally_admitted : Bool := decide <|
     programWellFormed program = true ∧
-      (admitStimulus program initialState start).outcome = .committed := by
-  decide +kernel
+      (admitStimulus program initialState start).outcome = .committed
 
 theorem reached_frontier_contains_three_independent_preparations :
     runtimeStateWellFormed program instanceId beforeMixed = true ∧
@@ -99,11 +98,10 @@ theorem reached_frontier_contains_three_independent_preparations :
 def trace : TracedStimulusResult :=
   applyStimulusTraced 7 program initialState start
 
-theorem committed_start_closes_the_local_control_frontier :
+def committed_start_closes_the_local_control_frontier : Bool := decide <|
     trace.result.outcome = .committed ∧
       trace.result.internalStepBoundExceeded = false ∧
-      trace.result.ambiguousInternalChoice = false := by
-  decide +kernel
+      trace.result.ambiguousInternalChoice = false
 
 theorem committed_state_retains_three_user_waits_and_one_deadline :
     trace.result.state.control = .running instanceId ∧
@@ -113,13 +111,12 @@ theorem committed_state_retains_three_user_waits_and_one_deadline :
       trace.result.state.tokens = [] := by
   decide +kernel
 
-theorem committed_runtime_and_both_public_projections_are_accepted :
+def committed_runtime_and_both_public_projections_are_accepted : Bool := decide <|
     runtimeStateWellFormed program instanceId trace.result.state = true ∧
       (projectOpenFlowNodeOccurrences? program trace.result.state).isSome = true ∧
-      (projectControlPosition? program instanceId trace.result.state).isSome = true := by
-  decide +kernel
+      (projectControlPosition? program instanceId trace.result.state).isSome = true
 
-theorem committed_publication_has_one_external_and_seven_internal_rows :
+def committed_publication_has_one_external_and_seven_internal_rows : Bool := decide <|
     trace.committedTransitions.length = 8 ∧
       trace.flowNodeOccurrenceLifecycles.length = 8 ∧
       trace.committedTransitions.head? = some (.externalStimulus start) ∧
@@ -128,10 +125,9 @@ theorem committed_publication_has_one_external_and_seven_internal_rows :
         | .externalStimulus _ => none) =
         [⟨"operation:Start"⟩, ⟨"operation:Fork"⟩, ⟨"operation:Fork_Checks"⟩,
           ⟨"operation:Task_Legal"⟩, ⟨"operation:Timer_Deadline"⟩,
-          ⟨"operation:Task_Content"⟩, ⟨"operation:Task_Risk"⟩] := by
-  decide +kernel
+          ⟨"operation:Task_Content"⟩, ⟨"operation:Task_Risk"⟩]
 
-theorem committed_local_fork_lifecycle_uses_its_canonical_transition_index :
+def committed_local_fork_lifecycle_uses_its_canonical_transition_index : Bool := decide <|
     trace.committedTransitions[3]? = some (.internalOperation
       { operationId := checks.id, operationKind := .duplicate,
         origin := checks.origin, owner }) ∧
@@ -139,22 +135,30 @@ theorem committed_local_fork_lifecycle_uses_its_canonical_transition_index :
         { started :=
             [{ anchor := .transition commandId 3 0, processId,
                elementId := ⟨"Fork_Checks"⟩, owner }]
-          ended := [{ anchor := .transition commandId 3 0, terminal := .completed }] } := by
-  decide +kernel
+          ended := [{ anchor := .transition commandId 3 0, terminal := .completed }] }
 
-theorem later_insufficient_batch_fuel_restores_the_whole_command :
+def later_insufficient_batch_fuel_restores_the_whole_command : Bool := decide <|
     let refused := applyStimulusTraced 6 program initialState start
     refused.result =
         { outcome := .rolledBack, state := initialState,
           internalStepBoundExceeded := true, ambiguousInternalChoice := false } ∧
       refused.committedTransitions = [] ∧
-      refused.flowNodeOccurrenceLifecycles = [] := by
-  decide +kernel
+      refused.flowNodeOccurrenceLifecycles = []
 
-theorem noncanonical_program_storage_is_outside_the_admitted_batch_account :
+def noncanonical_program_storage_is_outside_the_admitted_batch_account : Bool := decide <|
     [operations.reverse, operations.drop 1 ++ operations.take 1].all (fun reordered =>
       !programWellFormed { program with operations := reordered } &&
-        decide (canonicalInternalOperations reordered = operations)) = true := by
-  decide +kernel
+        decide (canonicalInternalOperations reordered = operations)) = true
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def mixedLocalControlClosureConformanceChecks : List (String × Bool) := [
+  ("fixture_is_structurally_admitted", fixture_is_structurally_admitted),
+  ("committed_start_closes_the_local_control_frontier", committed_start_closes_the_local_control_frontier),
+  ("committed_runtime_and_both_public_projections_are_accepted", committed_runtime_and_both_public_projections_are_accepted),
+  ("committed_publication_has_one_external_and_seven_internal_rows", committed_publication_has_one_external_and_seven_internal_rows),
+  ("committed_local_fork_lifecycle_uses_its_canonical_transition_index", committed_local_fork_lifecycle_uses_its_canonical_transition_index),
+  ("later_insufficient_batch_fuel_restores_the_whole_command", later_insufficient_batch_fuel_restores_the_whole_command),
+  ("noncanonical_program_storage_is_outside_the_admitted_batch_account", noncanonical_program_storage_is_outside_the_admitted_batch_account)
+]
 
 end BpmnSemantics.MixedLocalControlClosureConformance

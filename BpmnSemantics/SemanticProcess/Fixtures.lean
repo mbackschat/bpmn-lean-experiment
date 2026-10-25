@@ -3,10 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.TopologyFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Semantic Process retained topology fixtures
 
@@ -19,43 +19,37 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-theorem parallel_start_creates_exact_branch_waits :
+def parallel_start_creates_exact_branch_waits : Bool := decide <|
     waitMultiplicity parallelWaitingState ⟨"UserTask_A"⟩ = 1 ∧
       waitMultiplicity parallelWaitingState ⟨"UserTask_B"⟩ = 1 ∧
-      parallelWaitingState.tokens = [] := by
-  decide +kernel
+      parallelWaitingState.tokens = []
 
-theorem parallel_task_activation_order_has_same_observation :
+def parallel_task_activation_order_has_same_observation : Bool := decide <|
     observeStableState parallelProgram parallelWaitingState =
-      observeStableState parallelProgram parallelWaitingStateBThenA := by
-  decide +kernel
+      observeStableState parallelProgram parallelWaitingStateBThenA
 
-theorem parallel_supported_closure_reaches_exact_waiting_state :
+def parallel_supported_closure_reaches_exact_waiting_state : Bool := decide <|
     (applyStimulus scenarioClosureLimit parallelProgram initialState
       (.startProcess ⟨"start-process"⟩
         ⟨"Process_ParallelForkJoin"⟩ ⟨"Instance_1"⟩ [])) =
       { outcome := .committed
         state := parallelWaitingStateFor ⟨"Instance_1"⟩
         internalStepBoundExceeded := false
-        ambiguousInternalChoice := false } := by
-  decide +kernel
+        ambiguousInternalChoice := false }
 
-theorem exact_completion_removes_only_named_occurrence :
+def exact_completion_removes_only_named_occurrence : Bool := decide <|
     waitMultiplicity parallelAfterCompletingA ⟨"UserTask_A"⟩ = 0 ∧
       waitMultiplicity parallelAfterCompletingA ⟨"UserTask_B"⟩ = 1 ∧
-      tokenMultiplicity parallelAfterCompletingA ⟨"place:Flow_AToJoin"⟩ = 1 := by
-  decide +kernel
+      tokenMultiplicity parallelAfterCompletingA ⟨"place:Flow_AToJoin"⟩ = 1
 
-theorem completion_order_independent_at_final_state :
-    parallelFinalAThenB = parallelFinalBThenA := by
-  decide +kernel
+def completion_order_independent_at_final_state : Bool := decide <|
+    parallelFinalAThenB = parallelFinalBThenA
 
-theorem synchronize_consumes_per_incoming_and_preserves_excess :
+def synchronize_consumes_per_incoming_and_preserves_excess : Bool := decide <|
     step parallelProgram excessJoinState parallelJoinOperation =
-      some excessAfterJoin := by
-  decide +kernel
+      some excessAfterJoin
 
-theorem token_projection_ignores_storage_permutation :
+def token_projection_ignores_storage_permutation : Bool := decide <|
     projectTokenMultiplicities parallelProgram
         { excessJoinState with
           tokens :=
@@ -65,8 +59,7 @@ theorem token_projection_ignores_storage_permutation :
                 ⟨"place:Flow_AToJoin"⟩
             , rootToken parallelInstanceId ⟨"Process_ParallelForkJoin"⟩
                 ⟨"place:Flow_AToJoin"⟩ ] } =
-      projectTokenMultiplicities parallelProgram excessJoinState := by
-  decide +kernel
+      projectTokenMultiplicities parallelProgram excessJoinState
 
 /-- This synthetic state is deliberately outside current admission: it locks the cross-language canonical order before mixed wait kinds become reachable. -/
 def mixedWaitProjectionProgram : Program :=
@@ -170,7 +163,7 @@ def mixedWaitProjectionState : RuntimeState :=
           bpmnErrorRoute := none } ] }
 
 /-- This four-kind lock makes a global element-ID sort disagree with semantic-kind order and reverses the two User Task definitions so the projection must also sort by element ID within a kind. -/
-theorem active_wait_projection_orders_by_semantic_kind :
+def active_wait_projection_orders_by_semantic_kind : Bool := decide <|
     (observeStableState mixedWaitProjectionProgram mixedWaitProjectionState).map
         (·.activeWaits) =
       some
@@ -188,14 +181,25 @@ theorem active_wait_projection_orders_by_semantic_kind :
             multiplicity := 1 }
         , { elementId := ⟨"D_Effect"⟩
             kind := .effect
-            multiplicity := 1 } ] := by
-  decide +kernel
+            multiplicity := 1 } ]
 
 /-- The nearest count-based join proposition is false for two offers on only the left incoming flow. -/
-theorem duplicate_left_no_right_non_law :
+def duplicate_left_no_right_non_law : Bool := decide <|
     countBasedJoinReady duplicateLeftNoRightState parallelJoinInputs = true ∧
-      perIncomingJoinReady duplicateLeftNoRightState parallelJoinInputs = false := by
-  decide +kernel
+      perIncomingJoinReady duplicateLeftNoRightState parallelJoinInputs = false
 
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def fixturesChecks : List (String × Bool) := [
+  ("parallel_start_creates_exact_branch_waits", parallel_start_creates_exact_branch_waits),
+  ("parallel_task_activation_order_has_same_observation", parallel_task_activation_order_has_same_observation),
+  ("parallel_supported_closure_reaches_exact_waiting_state", parallel_supported_closure_reaches_exact_waiting_state),
+  ("exact_completion_removes_only_named_occurrence", exact_completion_removes_only_named_occurrence),
+  ("completion_order_independent_at_final_state", completion_order_independent_at_final_state),
+  ("synchronize_consumes_per_incoming_and_preserves_excess", synchronize_consumes_per_incoming_and_preserves_excess),
+  ("token_projection_ignores_storage_permutation", token_projection_ignores_storage_permutation),
+  ("active_wait_projection_orders_by_semantic_kind", active_wait_projection_orders_by_semantic_kind),
+  ("duplicate_left_no_right_non_law", duplicate_left_no_right_non_law)
+]
 
 end BpmnSemantics.SemanticProcess

@@ -137,11 +137,11 @@ The same Semantic Process program must be supplied to the TypeScript semantic co
 
 Lane shape: checked
 
-Evidence: [The parallel fixture owner](../../BpmnSemantics/SemanticProcess/Fixtures.lean) kernel-checks the exact two-branch start, per-input join, excess-offer, completion-order, projection, and duplicate-left/no-right witnesses; those fixed programs do not prove an arbitrary three-branch fork or general parallel topology. Guaranteeing declarations: [`parallel_start_creates_exact_branch_waits`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#parallel_start_creates_exact_branch_waits), [`synchronize_consumes_per_incoming_and_preserves_excess`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#synchronize_consumes_per_incoming_and_preserves_excess), [`completion_order_independent_at_final_state`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#completion_order_independent_at_final_state), [`token_projection_ignores_storage_permutation`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#token_projection_ignores_storage_permutation), [`duplicate_left_no_right_non_law`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#duplicate_left_no_right_non_law).
+Evidence: [The parallel fixture owner](../../BpmnSemantics/SemanticProcess/Fixtures.lean) holds the exact two-branch start, per-input join, excess-offer, completion-order, projection, and duplicate-left/no-right witnesses as executable checks, run natively by the [conformance check driver](../../BpmnSemantics/ConformanceChecksMain.lean); those fixed programs do not prove an arbitrary three-branch fork or general parallel topology. Guaranteeing declarations: [`parallel_start_creates_exact_branch_waits`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#parallel_start_creates_exact_branch_waits), [`synchronize_consumes_per_incoming_and_preserves_excess`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#synchronize_consumes_per_incoming_and_preserves_excess), [`completion_order_independent_at_final_state`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#completion_order_independent_at_final_state), [`token_projection_ignores_storage_permutation`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#token_projection_ignores_storage_permutation), [`duplicate_left_no_right_non_law`](../../BpmnSemantics/SemanticProcess/Fixtures.lean#duplicate_left_no_right_non_law).
 
 This runtime-transition family maintains a declarative relation separate from the executable evaluator and a theorem that every evaluator-produced transition is admitted by that relation. The `duplicate` and `synchronize` arms name the evaluator's shared token transformations, so their bridges check dispatch into those transformations rather than independently validate the token rules. That soundness bridge does not establish completeness, determinism, BPMN fidelity, TypeScript correspondence, or CIB compatibility.
 
-The kernel-decided finite Lean fixtures and independent TypeScript witnesses establish, for their retained states:
+The executable finite Lean fixture checks and independent TypeScript witnesses establish, for their retained states:
 
 - start closure creates exactly the two branch waits and no other public wait;
 - before both incoming-flow conditions hold, no evaluator step crosses the join;
@@ -164,7 +164,7 @@ Maintained negative and mutation evidence includes:
 
 ## Rule-to-evidence matrix
 
-The cells below remain distinct claims. The Lean fork/join, excess-multiplicity, completion-order, and storage-permutation results are kernel-decided finite witnesses; the `duplicate` and `synchronize` bridges are dispatch checks. CIB's balanced positive cases do not establish the per-incoming-flow negative rule, and Temporal is a refinement lane over the TypeScript core rather than a second semantic implementation.
+The cells below remain distinct claims. The Lean fork/join, excess-multiplicity, completion-order, and storage-permutation results are finite witnesses the conformance check driver evaluates; the `duplicate` and `synchronize` bridges are dispatch checks. CIB's balanced positive cases do not establish the per-incoming-flow negative rule, and Temporal is a refinement lane over the TypeScript core rather than a second semantic implementation.
 
 | Rule | Normative/profile | Lean | Pinned CIB Seven | Independent TypeScript | Temporal refinement | Negative or mutation guard |
 |---|---|---|---|---|---|---|

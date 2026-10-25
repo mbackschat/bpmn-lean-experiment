@@ -6,10 +6,9 @@ public import BpmnSemantics.TerminateEndEventFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Separating states for the cancellation projection obligation. The existing bounded
 scope fixture supplies an actually armed state; each mutation removes only Activity
@@ -91,8 +90,7 @@ def preparedErrorSuccessor (state : RuntimeState) : Option RuntimeState := do
   let prepared ← prepareInternalRegional? errorProgram state errorOperation
   applyPreparedInternalRegional? errorProgram state prepared
 
-theorem error_program_is_well_formed : programWellFormed errorProgram = true := by
-  decide +kernel
+def error_program_is_well_formed : Bool := decide <| programWellFormed errorProgram = true
 
 def error_missing_activity_predecessor_valid : Bool := decide <| runtimeStateWellFormed errorProgram instanceId errorMissingActivities = true
 
@@ -163,7 +161,8 @@ def internalRegionalCancellationProjectionConformanceChecks : List (String × Bo
   ("intact_prepared_error_successor_projectable", intact_prepared_error_successor_projectable),
   ("divergent_deadline_predecessor_valid", divergent_deadline_predecessor_valid),
   ("divergent_deadline_projection_unchanged", divergent_deadline_projection_unchanged),
-  ("private_error_timer_is_withdrawn_without_a_public_ending", private_error_timer_is_withdrawn_without_a_public_ending)
+  ("private_error_timer_is_withdrawn_without_a_public_ending", private_error_timer_is_withdrawn_without_a_public_ending),
+  ("error_program_is_well_formed", error_program_is_well_formed)
 ]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness
