@@ -232,19 +232,21 @@ export const leanHiddenEditDefaultBound = 10;
 /**
  * The hidden-edit counterpart, as [`leanHiddenEditFanouts`](./lean-fanout.ts) counts it: the modules whose bodies the
  * module system hides, at the counts measured on 2026-10-26 after each library importer kept only the `import all`
- * lines its own build fails without. It shrinks under the same rule.
+ * lines its own build fails without, and re-counted the same day once rewrites with a hidden definition (340 sites
+ * then, such as `simp only [operationWellFormed]`) counted as exporting its body. Turning such a rewrite into `unfold`
+ * shrinks them; it shrinks under the same rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 128 },
-  { module: "BpmnSemantics.SemanticProcess.SequentialScopeRuntime", bound: 128 },
-  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 122 },
-  { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 110 },
-  { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 88 },
-  { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 84 },
-  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 81 },
+  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 764 },
+  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 433 },
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 432 },
+  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 430 },
+  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 303 },
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeRuntime", bound: 242 },
+  { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 136 },
+  { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 113 },
+  { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 98 },
+  { module: "BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission", bound: 83 },
+  { module: "BpmnSemantics.SemanticProcess.JsonSupport", bound: 80 },
   { module: "BpmnSemantics.SemanticProcess.CheckedGraphValidation", bound: 78 },
-  { module: "BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission", bound: 78 },
-  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 76 },
-  { module: "BpmnSemantics.SemanticProcess.JsonSupport", bound: 74 },
-  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 73 },
 ];

@@ -90,9 +90,16 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * imported module's whole import closure, and a plain file loads every module of its import closure whole, so each
  * of them that reaches the module rebuilds too (the
  * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
+ *
+ * An `import all` importer that rewrites with one of the module's hidden definitions (`simp [f]`, `rw [f]` and
+ * their siblings, or a named `f.eq_…` lemma) generates that definition's equation lemmas and exports them, so the
+ * hidden body becomes part of its public interface and everything loading it rebuilds as well; `unfold f` exports
+ * none. A source scan cannot see which rewrites survive elaboration, so every such rewrite counts.
  */
 export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
   const { headers, closure } = importGraph(sources);
+  const interfaceFanouts = leanFanouts(sources);
+  const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
   const hiddenLoaders = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   for (const [importer, header] of headers) {
@@ -113,10 +120,43 @@ export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[
         pending.push(importer);
       }
     }
+    const hidden = hiddenDefinitions(text.get(module)!);
+    for (const importer of [...rebuilt]) {
+      if (rewritesWith(text.get(importer)!, hidden)) for (const loader of interfaceFanouts.get(importer)!) rebuilt.add(loader);
+    }
     for (const importer of plainReach.get(module)!) rebuilt.add(importer);
     rebuilt.delete(module);
     return [module, [...rebuilt].sort()];
   }));
+}
+
+/**
+ * The short names of a module's definitions whose bodies importers cannot see: every `def` outside an
+ * `@[expose]` section and without its own `@[expose]`. A plain file exposes everything.
+ */
+function hiddenDefinitions(source: string): Set<string> {
+  const names = new Set<string>();
+  if (!leanHeader(source).isModule) return names;
+  const exposedSections: boolean[] = [];
+  for (const line of source.split("\n")) {
+    const section = /^(@\[expose\]\s+)?(?:public\s+)?section\b/u.exec(line);
+    if (section !== null) exposedSections.push(section[1] !== undefined);
+    else if (/^end\s*$/u.test(line)) exposedSections.pop();
+    const definition = /^(@\[[^\]]*\]\s*)?(?:(?:private|protected|noncomputable|partial|public)\s+)*def\s+(\S+)/u.exec(line);
+    if (definition === null || exposedSections.at(-1) === true || definition[1]?.includes("expose")) continue;
+    names.add(definition[2]!.split(".").at(-1)!);
+  }
+  return names;
+}
+
+/** Whether a source rewrites with any of `names` through a tactic that generates equation lemmas. */
+function rewritesWith(source: string, names: ReadonlySet<string>): boolean {
+  if (names.size === 0) return false;
+  const rewrite = /\b(?:simp_all|simpa|simp_arith|simp|dsimp|rw|rwa|erw|rewrite|norm_num)\??\b[^\n[]*\[([^\]]*)\]/gu;
+  for (const [, list] of source.matchAll(rewrite)) {
+    if (list!.split(",").some((argument) => names.has(argument.replace(/^\s*←?\s*/u, "").trim().split(".").at(-1)!))) return true;
+  }
+  return [...source.matchAll(/([A-Za-z0-9_']+)\.eq_(?:\d+|def|unfold)\b/gu)].some(([, name]) => names.has(name!));
 }
 
 /** A module allowed more importers than the default, at most `bound`; the list only shrinks. */

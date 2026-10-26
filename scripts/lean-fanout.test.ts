@@ -59,6 +59,25 @@ test("a `meta import` importer loads the whole import closure of what it imports
   assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.Hide", "Pkg.Meta"]);
 });
 
+// Locks the leak the first family-shape measurement found (pinned container, 2026-10-26): `simp only
+// [operationWellFormed]` in nine `import all` importers exported the hidden body's equation lemmas, so a body edit
+// changed each importer's public `.olean` and rebuilt everything loading it, while `unfold` left it unchanged.
+test("a hidden edit also reaches the loaders of an `import all` importer that rewrites with a hidden definition", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const fanouts = leanHiddenEditFanouts([
+    module("Pkg/Hub.lean", "public section\n\ndef hidden : Nat := 0\n\n@[expose] def shown : Nat := 0\n\nend"),
+    module("Pkg/Simp.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by simp only [hidden]"),
+    module("Pkg/AboveSimp.lean", "import Pkg.Simp"),
+    module("Pkg/Rw.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by\n  rw [Hub.hidden]"),
+    module("Pkg/AboveRw.lean", "import Pkg.Rw"),
+    module("Pkg/Unfolds.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by unfold hidden; rfl"),
+    module("Pkg/AboveUnfolds.lean", "import Pkg.Unfolds"),
+    module("Pkg/Shown.lean", "import all Pkg.Hub\n\ntheorem t : shown = 0 := by simp [shown]"),
+    module("Pkg/AboveShown.lean", "import Pkg.Shown"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.AboveRw", "Pkg.AboveSimp", "Pkg.Rw", "Pkg.Shown", "Pkg.Simp", "Pkg.Unfolds"]);
+});
+
 test("a hidden edit also reaches each `meta import` importer whose import closure holds the edited module", () => {
   const fanouts = leanHiddenEditFanouts([
     source("Pkg/Hub.lean", "module"),
