@@ -107,8 +107,9 @@ def contract (vertices : List RawVertex) (children : List (String × String)) :
     | none, .vertex kind => some ⟨vertex.id, kind, vertex.outputs⟩
   return (contracted, regions)
 
-/-- Tasks that run once per fork output: the target body's and those after the target. -/
-def multiplicityWeightedExtra (region : Region) (targetTasks : Nat) : Nat :=
-  (region.branches.length - 1) * (targetTasks + region.after.length)
+/-- Counted tasks that run once per fork output: the target body's and those after the target that
+`counted` selects. -/
+def multiplicityWeightedExtra (region : Region) (targetTasks : Nat) (counted : String → Bool) : Nat :=
+  (region.branches.length - 1) * (targetTasks + (region.after.filter counted).length)
 
 end BpmnSemantics.SemanticProcess.MergeRegion

@@ -73,15 +73,31 @@ test("admits a Service Task in each branch of a merge region and in its merge-ta
 });
 
 test("charges a Service Task completion that cascades through three scope completions like a User Task completion", () => {
+  // The root body holds only S1, so the deepest completion reaches the root End: the closure limit of 8.
   const nested = (last: Node) => graph([
-    chain("R", null, "P", [sub("S1", "C1"), user("After")]),
+    chain("R", null, "P", [sub("S1", "C1")]),
     chain("C1", "R", "S1", [sub("S2", "C2")]),
     chain("C2", "C1", "S2", [sub("S3", "C3")]),
     chain("C3", "C2", "S3", [user("First"), last]),
   ]);
-  const withUser = nestedScopeControlCheckedAnalysis(nested(user("Last")));
-  assert.notEqual(withUser, null);
-  assert.equal(nestedScopeControlCheckedAnalysis(nested(service("Last"))), withUser);
+  assert.equal(nestedScopeControlCheckedAnalysis(nested(user("Last"))), 8);
+  assert.equal(nestedScopeControlCheckedAnalysis(nested(service("Last"))), 8);
+});
+
+test("refuses a Service Task whose completion cascade exceeds the closure limit", () => {
+  // Forking First against the Service Task adds the join to the cascade: 9 steps.
+  const deepest: Scope = {
+    id: "C3", parent: "C2", origin: "S3",
+    nodes: [start("C3Start"), fork("C3Fork"), user("First"), service("Last"), join("C3Join"), end("C3End")],
+    flows: [["C3Start", "C3Fork"], ["C3Fork", "First"], ["C3Fork", "Last"], ["First", "C3Join"], ["Last", "C3Join"],
+      ["C3Join", "C3End"]],
+  };
+  assert.equal(nestedScopeControlCheckedAnalysis(graph([
+    chain("R", null, "P", [sub("S1", "C1")]),
+    chain("C1", "R", "S1", [sub("S2", "C2")]),
+    chain("C2", "C1", "S2", [sub("S3", "C3")]),
+    deepest,
+  ])), null);
 });
 
 test("refuses a Service Task with a mapping, an Error route or a non-Activity descriptor", () => {

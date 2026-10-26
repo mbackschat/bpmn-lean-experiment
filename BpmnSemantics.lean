@@ -13,6 +13,7 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionProgressProofs
 public import BpmnSemantics.SemanticProcess.TimerStartLaws
 public import BpmnSemantics.SemanticProcess.OpenWaitProjectionLaws
 public import BpmnSemantics.SemanticProcess.CallDataTransferLaws
+public import BpmnSemantics.SemanticProcess.ConcurrentScopeEffectLaws
 public import BpmnSemantics.SemanticProcess.ErrorPropagation
 public import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 public import BpmnSemantics.SemanticProcess.CallVariableMappingLaws

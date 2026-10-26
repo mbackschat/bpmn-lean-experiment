@@ -496,7 +496,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
                 | _ => false)) &&
     source.nodes.all (checkedNodeArityValid
       (source.identity.semanticProfile == serialBusinessTaskProfileId || source.identity.semanticProfile == portableEffectDataProfileId || source.identity.semanticProfile == nestedScopeDataProfileId || source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
-        source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft")
+        source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
+        -- CSE-ADMIT-01 binds named handlers; the nested scope-control analysis then admits only data-free ones.
+        source.identity.semanticProfile.value == embeddedCompletionProfile)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)

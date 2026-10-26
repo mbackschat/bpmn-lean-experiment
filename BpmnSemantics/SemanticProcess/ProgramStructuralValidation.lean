@@ -399,6 +399,10 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
           SerialBusinessTask.descriptorValid effect.descriptor && bpmnErrorRoute.isNone) ||
         (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId &&
           SerialBusinessTask.descriptorValid effect.descriptor) ||
+        -- CSE-ADMIT-01: data-free overlay-bound handlers beside the generic contracts below.
+        (program.identity.semanticProfile.value == "cibseven-2.2.0-embedded-subprocess-completion-draft" &&
+          SerialBusinessTask.descriptorValid effect.descriptor && effect.inputMappings.isEmpty &&
+          effect.outputMappings.isEmpty && bpmnErrorRoute.isNone) ||
         (effect.descriptor.protocol =
               "urn:bpmn-lean:effect-protocol:activity-v1" &&
             effect.descriptor.operation =

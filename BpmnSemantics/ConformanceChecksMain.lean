@@ -36,6 +36,7 @@ public import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
 public import BpmnSemantics.CompensationTriggerHandlerTransitionConformanceCheckFixtures
 public import BpmnSemantics.ConcurrentEmbeddedActivationsAdmissionConformance
 public import BpmnSemantics.ConcurrentEmbeddedActivationsConformance
+public import BpmnSemantics.ConcurrentScopeServiceTasksConformance
 public import BpmnSemantics.ConfiguredTaskConformance
 public import BpmnSemantics.EffectDataConformance
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
@@ -192,6 +193,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("CompensationTriggerHandlerTransitionConformance", BpmnSemantics.CompensationTriggerHandlerTransitionConformance.checks),
   ("ConcurrentEmbeddedActivationsAdmissionConformance", BpmnSemantics.ConcurrentEmbeddedActivationsConformance.concurrentEmbeddedActivationsAdmissionConformanceChecks),
   ("ConcurrentEmbeddedActivationsConformance", BpmnSemantics.ConcurrentEmbeddedActivationsConformance.checks),
+  ("ConcurrentScopeServiceTasksConformance", BpmnSemantics.ConcurrentScopeServiceTasksConformance.concurrentScopeServiceTasksConformanceChecks),
   ("ConfiguredTaskConformance", BpmnSemantics.ConfiguredTaskConformance.checks),
   ("CyclicControlFlowConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowConformanceChecks),
   ("CyclicControlFlowReachabilityConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowReachabilityConformanceChecks),

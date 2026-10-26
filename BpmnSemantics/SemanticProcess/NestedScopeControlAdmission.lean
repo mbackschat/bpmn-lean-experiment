@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.CheckedProcessContract
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
@@ -14,7 +15,11 @@ and their per-arrival bursts are composed here.
 
 CALLN-ADMIT-01 adds Process-root Calls: a Call is a task vertex of the caller root whose called Process
 body, a serial chain, is expanded once per call site below it, so the burst composition and the task
-bound see the call tree exactly as a Sub-Process tree. -/
+bound see the call tree exactly as a Sub-Process tree.
+
+CSE-ADMIT-01 makes a data-free, overlay-bound Service Task a task wherever a User Task is one, except in
+a called body or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task
+list that drives the bursts, the task bound and the merge-target check. -/
 
 @[expose] public section
 
@@ -26,7 +31,10 @@ open StructuredParallelBody
 def depthLimit : Nat := 3
 
 /-- Concurrent-wait ceiling shared with the parallel Multi-Instance capacity account. -/
-def userTaskLimit : Nat := 128
+def taskLimit : Nat := 128
+
+/-- CSE-ADMIT-01: the hosting preflight's concurrent-Activity ceiling, multiplicity-weighted like `taskLimit`. -/
+def serviceTaskLimit : Nat := 32
 
 /-- Call nesting below the caller root, a Call in the caller being depth one (CALLN-ADMIT-01). -/
 def callDepthLimit : Nat := 3
@@ -39,7 +47,9 @@ structure Body where
   vertices : List Vertex
   /-- The child scope of every Sub-Process vertex of this body, merge targets included. -/
   children : List (String × String)
-  userTasks : List String
+  /-- User and Service Task vertices; Service Tasks are also listed in `serviceTasks`. -/
+  tasks : List String
+  serviceTasks : List String := []
   regions : List MergeRegion.Region := []
   /-- The called Process root scope of every Call vertex of this body. -/
   calls : List (String × String) := []
@@ -50,19 +60,20 @@ structure RawBody where
   scope : String
   vertices : List MergeRegion.RawVertex
   children : List (String × String)
-  userTasks : List String
+  tasks : List String
+  serviceTasks : List String := []
   calls : List (String × String) := []
 
 def contractBody (raw : RawBody) : Option Body := do
   let (vertices, regions) ← MergeRegion.contract raw.vertices raw.children
-  return { scope := raw.scope, vertices, children := raw.children, userTasks := raw.userTasks, regions,
-           calls := raw.calls }
+  return { scope := raw.scope, vertices, children := raw.children, tasks := raw.tasks,
+           serviceTasks := raw.serviceTasks, regions, calls := raw.calls }
 
-/-- A merge target's body is a serial chain of User Tasks; it owns no Sub-Process, gateway or region. -/
+/-- A merge target's body is a serial chain of tasks; it owns no Sub-Process, gateway or region. -/
 def serialTargetBody (body : Body) : Bool :=
-  body.children.isEmpty && body.calls.isEmpty && body.regions.isEmpty && !body.userTasks.isEmpty &&
+  body.children.isEmpty && body.calls.isEmpty && body.regions.isEmpty && !body.tasks.isEmpty &&
     body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task) &&
-    (body.vertices.filter (·.kind == .task)).length == body.userTasks.length
+    (body.vertices.filter (·.kind == .task)).length == body.tasks.length
 
 /-- BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End consumes it. -/
 def reachesWork (vertices : List Vertex) : Nat → String → Bool
@@ -138,7 +149,7 @@ task charges the merge pass, `enterScope` and the target's first arming; the tar
 its End and `completeScope`, then the first task after the target or the region End's resumption. -/
 def regionTasks (bodies : List Body) (resume : String → String → Nat) (scope : String)
     (region : MergeRegion.Region) : List Nat :=
-  let targetTasks := ((bodies.find? (·.scope == region.targetScope)).map (·.userTasks.length)).getD 0
+  let targetTasks := ((bodies.find? (·.scope == region.targetScope)).map (·.tasks.length)).getD 0
   let last := fun (count index final : Nat) => if index + 1 < count then 1 else final
   let leave := 2 + if region.after.isEmpty then resume scope region.vertex else 1
   region.branches.flatMap (fun branch => (List.range branch.length).map fun index => last branch.length index 3) ++
@@ -152,12 +163,13 @@ def depthOf (parents : List (String × (String × String))) : Nat → String →
       | none => some 0
       | some (owner, _) => (depthOf parents fuel owner).map (· + 1)
 
-/-- A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01). -/
+/-- A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01,
+CSE-ADMIT-01). -/
 def serialCalledBody (body : Body) : Bool :=
   let vertices := body.vertices.filter (·.kind == .task)
-  body.children.isEmpty && body.regions.isEmpty &&
+  body.children.isEmpty && body.regions.isEmpty && body.serviceTasks.isEmpty &&
     1 ≤ vertices.length && vertices.length ≤ calledBodyVertexLimit &&
-    vertices.length == body.userTasks.length + body.calls.length &&
+    vertices.length == body.tasks.length + body.calls.length &&
     body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task)
 
 /-- The expanded call tree below one body: its copies keyed by call site, their parents and the
@@ -301,14 +313,19 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
     let expansion ← expandSite called callDepthLimit root.id.value rootBody
     let expanded := expansion.bodies ++ bodies.filter (·.scope != root.id.value)
     let allParents := parents ++ expansion.parents
-    let calledTasks := ((expansion.bodies.filter (·.scope != root.id.value)).map (·.userTasks.length)).sum
-    -- CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output.
-    let weighted := (bodies.map (·.userTasks.length)).sum + (regions.map fun region =>
-      MergeRegion.multiplicityWeightedExtra region
-        (((bodies.find? (·.scope == region.targetScope)).map (·.userTasks.length)).getD 0)).sum
+    let calledTasks := ((expansion.bodies.filter (·.scope != root.id.value)).map (·.tasks.length)).sum
+    -- CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output; CSE-ADMIT-01
+    -- weights Service Tasks the same way against their own bound.
+    let weight := fun (listed : Body → List String) => (bodies.map fun body => (listed body).length +
+      (body.regions.map fun region => MergeRegion.multiplicityWeightedExtra region
+        (((bodies.find? (·.scope == region.targetScope)).map fun target => (listed target).length).getD 0)
+        (listed body).contains).sum).sum
+    let weightedServices := weight (·.serviceTasks)
     let expandedFuel := expanded.length + 1
     if !((expansion.invoked.map (·.2)).eraseDups.length == called.length &&
-        weighted + calledTasks ≤ userTaskLimit) then none
+        weight (·.tasks) + calledTasks ≤ taskLimit && weightedServices ≤ serviceTaskLimit &&
+        -- CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
+        (called.isEmpty || weightedServices == 0)) then none
     else do
       let scans ← expanded.mapM scanBody
       -- Without Calls both rules hold vacuously; skipping their scans keeps a Call-free model's kernel
@@ -324,7 +341,7 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
         let resumed := expanded.flatMap fun body =>
           let inRegion := body.regions.flatMap fun region => region.branches.flatten ++ region.after
           if targets.contains body.scope then []
-          else (body.userTasks.filter fun task => !inRegion.contains task).map (resume body.scope)
+          else (body.tasks.filter fun task => !inRegion.contains task).map (resume body.scope)
         let regional := expanded.flatMap fun body => body.regions.flatMap (regionTasks expanded resume body.scope)
         let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans expandedFuel root.id.value)
         if maximum ≤ scenarioClosureLimit then some maximum else none
@@ -341,6 +358,8 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) :
     | .noneStartEvent _ => some (MergeRegion.RawKind.vertex .start)
     | .noneEndEvent _ => some (.vertex .finish)
     | .userTask _ _ none => some (.vertex .task)
+    | .serviceTask _ descriptor [] [] none =>
+        if SerialBusinessTask.descriptorValid descriptor then some (.vertex .task) else none
     | .embeddedSubProcess _ _ => some (.vertex .task)
     | .callActivity _ _ .empty => some (.vertex .task)
     | .parallelGateway _ .diverging => some (.vertex .fork)
@@ -368,12 +387,15 @@ def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
     let calls ← members.filterMapM fun node => match node with
       | .callActivity id calledProcessId _ => (calledRoot? source calledProcessId).map fun root => some (id.value, root)
       | _ => some none
+    let serviceTasks := members.filterMap fun node => match node with
+      | .serviceTask id .. => some id.value
+      | _ => none
     return { scope := scope.id.value, vertices := projected.map (·.1)
              children := projected.filterMap fun (vertex, child) => child.map (vertex.id, ·)
-             userTasks := members.filterMap fun node => match node with
+             tasks := members.filterMap (fun node => match node with
                | .userTask id _ _ => some id.value
-               | _ => none
-             calls }
+               | _ => none) ++ serviceTasks
+             serviceTasks, calls }
 
 /-- NSC-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted largest closure. -/
 def checkedAnalysis (source : CheckedProcess) : Option Nat := do
@@ -385,7 +407,7 @@ def controlOperationScope? (program : Program) (operation : SemanticOperation) :
   return owner.scopeId.value
 
 def operationInputs : SemanticOperation → List ControlPlaceId
-  | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .duplicate _ _ input _
+  | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .awaitEffect _ _ input .. | .duplicate _ _ input _
   | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. => [input]
   | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ => inputs
   | _ => []
@@ -428,6 +450,11 @@ def operationVertex? (program : Program) (scope : String) (operation : SemanticO
   | .initiate _ _ output => return (⟨id, .vertex .start, ← follow [output]⟩, none)
   | .awaitUserTask _ _ _ output task =>
       if task.metadata.isSome then none else return (⟨id, .vertex .task, ← follow [output]⟩, none)
+  | .awaitEffect _ _ _ output effect none =>
+      if effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
+          SerialBusinessTask.descriptorValid effect.descriptor then
+        return (⟨id, .vertex .task, ← follow [output]⟩, none)
+      else none
   | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
   | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
   | .mergeExclusive _ _ _ output => return (⟨id, .merge, ← follow [output]⟩, none)
@@ -456,11 +483,15 @@ def programBodies (program : Program) : Option (List RawBody) := do
     let start := match entries.eraseDups with
       | [entry] => [⟨childStart scope.id.value, .vertex .start, [entry]⟩]
       | _ => []
+    let serviceTasks := members.filterMap fun op => match op with
+      | .awaitEffect id .. => some id.value
+      | _ => none
     return { scope := scope.id.value, vertices := start ++ projected.map (·.1)
              children := projected.filterMap fun (vertex, child) => child.map (vertex.id, ·)
-             userTasks := members.filterMap fun op => match op with
+             tasks := members.filterMap (fun op => match op with
                | .awaitUserTask id .. => some id.value
-               | _ => none
+               | _ => none) ++ serviceTasks
+             serviceTasks
              calls := members.filterMap fun op => match op with
                | .invokeProcess id _ _ _ calledRoot .. => some (id.value, calledRoot.value)
                | _ => none }
@@ -480,7 +511,12 @@ def programAnalysis (program : Program) : Option Nat := do
   let rootCompleted := completions.filter fun op => match op with
     | .completeScope _ _ scopeId none => scopeId == root.id
     | _ => false
-  if !(program.identity.sourceOverlay.isNone && program.internalSchedulingMode == .rejectObservableChoice &&
+  -- CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it
+  -- has an effect.
+  let hasEffect := program.operations.any fun op => match op with
+    | .awaitEffect .. => true
+    | _ => false
+  if !(program.identity.sourceOverlay.isSome == hasEffect && program.internalSchedulingMode == .rejectObservableChoice &&
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
       program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty &&
       program.scopeLocalData.isEmpty && rootCompleted.length == 1 &&
