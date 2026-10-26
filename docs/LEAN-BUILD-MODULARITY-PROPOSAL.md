@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Problem
@@ -160,6 +160,25 @@ With the first four hubs hidden under that rule, the same commits' edits to them
 - An increment that adds kernel types costs one complete rebuild, at family start.
 - The serial build time of the global fixtures an ordinary increment rebuilds is measured at the first converted family. If it exceeds 15 minutes, the owner decides between registry-instantiated whole-model fixtures (required item 5) and the optional executable guards.
 - No lane shape, claim or gate is weaker, and the guards are migrated before the first conversion.
+
+## Acceptance evidence
+
+The first family built in the family shape is [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured at `8857320f`:
+
+- **Ratchet.** [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) is green. Before the measurement, `lake shake --fix` removed every library import that Lean reported unused and re-exported only what public declarations name. That cut the recorded public bounds from 196 entries summing 99,199 to 182 summing 69,144, and left twelve modules unreachable that are now imported by the semantic root.
+- **New bound entry.** `InternalArmingOrder` got one new entry, a bound of 352 for 320 importers. Three widely imported modules now re-export it because their theorem statements name `armingLexStep`, and a private import of it does not compile.
+- **No kernel type.** The family changed none of the 15 [kernel modules](../scripts/lean-fanout-bounds.ts), so rule 4's complete rebuild did not apply.
+- **Interface edits.** These stayed in the scope family's `NestedScopeControlAdmission` and `MergeRegionAdmission`.
+- **Closed-world edits.** The family's edits to `checkedWellFormed` and `operationWellFormed` added alternatives inside existing hidden bodies, which is the body-only edit that item 3 expects.
+- **Invalidation.** One public declaration added to `NestedScopeControlAdmission` rebuilt 102 modules:
+  - that module;
+  - the registry (`ProfileAdmission`, `ProfileShapeCatalog`);
+  - the ten library modules that import the registry with `import all`;
+  - 88 conformance fixtures and the conformance root.
+
+  The whole set took 732 seconds serially, on one CPU and 3 GiB in the pinned container with a warm cache. That is under the 15-minute limit, so the decision in item 5 does not arise and these fixtures stay global.
+- **Fixture imports.** The shake did not touch conformance fixtures, which may still import more than they reduce. Each changed fixture would need a [cost-ledger](../scripts/lean-module-cost.ts) re-measurement, and the acceptance already counts their rebuilds.
+- **No lane weakened.** The shake removed only imports and unused `simp` arguments. The only declarations that moved went from the proof module of the initial parallel-scope entry into a closure-proof sibling, to stay within the source-size ceiling. Three private lemmas they use became public, under distinct names. The complete Lean gate and conformance build passed afterwards.
 
 ## Independent cold-review receipt
 
