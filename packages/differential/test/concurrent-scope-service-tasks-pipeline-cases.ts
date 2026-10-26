@@ -8,7 +8,9 @@ type ConcurrentScopeEffectsName = "supplier-review-first" | "supplier-effects-fi
   "claim-fetch-first";
 
 /** The open User Tasks and effects of a State observation as sorted `Element#activation` names. */
-export function openWork(state: Pick<MutableStateObservation, "openUserTasks" | "openEffects">): readonly string[] {
+type OpenWork = ReadonlyArray<Readonly<{ id: Readonly<{ elementId: string; activation: number }> }>>;
+
+export function openWork(state: Readonly<{ openUserTasks: OpenWork; openEffects: OpenWork }>): readonly string[] {
   return [...state.openUserTasks, ...state.openEffects]
     .map(({ id }) => `${id.elementId.replace(/^(UserTask|ServiceTask)_/u, "")}#${id.activation}`).toSorted();
 }
