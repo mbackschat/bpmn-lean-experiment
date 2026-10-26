@@ -86,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: faster Lean builds within the 5 GB local bound (owner direction 2026-10-25), then batch 2's next family ([batch order](#scheduled-delivery-batches)). `PC-SCOPE-01`/`02` keep their remainders; Multi-Instance closure stays held at qualification.
+Current task: select and propose batch 2's next family ([batch order](#scheduled-delivery-batches)): concurrent host-driven waits, a Service Task effect live beside other Parallel branches, for the effect remainders of `PC-SCOPE-01` (mixed automated activities) and `PC-SCOPE-02` (effect lifetimes) and the automated branches of `PC-CF-03`; [host admission](../packages/temporal-adapter/protocol/src/host-admission.ts) refuses that composition today (`ConcurrentHostDrivenWaits`). Multi-Instance closure stays held at qualification.
 
-Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
+Deliverable: the family proposal, including its [Temporal hosting/refinement preflight](PROJECT-DESIGN.md#temporal-hostingrefinement-preflight), committed under `docs/capsules/` as its governed owner.
 
-Acceptance blockers: none; the 72 replayed commits that edit no kernel interface rebuild a median of 3.5 library modules.
+Acceptance blockers: none recorded; the build-speed deliverable met its acceptance (72 ordinary replayed commits rebuild a median of 3.5 library modules), and the two pipeline performance findings recorded at `c8f6c2ea` are fixed (`88489964` batches Temporal runs without an effect schedule; `7416f142` and `81dcc0a7` cut the guarantor Start capacity envelope from 15.8 s to 2.4 s with byte-identical estimates).
 
-Current result: `<Hub>Laws` modules, hidden bodies and re-exports limited to what public declarations name cut a 92-commit replay's median from 686 to 11.5 rebuilt library modules (the design's 11), and to 2 modules and 2 fixture seconds for the 58 commits changing no kernel type; a measured edit rebuilt exactly the predicted 59 modules. 64 more witnesses run as executable checks, so the worst of those 58 rebuilds 874 fixture seconds, inside the 15-minute limit.
+Current result: no proposal drafted.
 
-Effort budget: 8 hours from 23:50 UTC on 2026-10-25; the owner directed on 2026-10-26 (local time) to take as long as the build-speed deliverable needs, so each exhausted block renews.
+Effort budget: 4 hours from 2026-10-26 14:30 UTC for the proposal.
 
-Next action: land the build-speed branch through its pull request, then start batch 2's next family.
+Next action: land the performance branch through its pull request; inventory the effect, Parallel-region, scheduler and host-admission owners; draft the proposal.
 
-Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
+Oracle: an effect result that settles a different branch's wait, or a Parallel join released before every branch effect commits.
 
-Stop if a check cannot convert without changing its statement. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
+Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
