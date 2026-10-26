@@ -824,6 +824,85 @@
       }
     },
     {
+      "id": "supplier-screening-concurrent-checks",
+      "title": "Screen a new supplier",
+      "businessPurpose": "Screen a proposed supplier against sanctions lists and verify its bank account through two automated services while a buyer reviews the contract, approve the supplier only after all three checks finish, and activate it in the supplier system only once onboarding has completed.",
+      "cloneFamily": "supplier-screening-concurrent-checks",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-scope-service-tasks/supplier-screening.bpmn",
+        "sha256": "204e8a37f5455d9da2da9c98345f0a334dd8f6db678a9f8a23a2ff3d3b5d5b53",
+        "scenarioRelativePath": "scenarios/concurrent-scope-service-tasks/supplier-review-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-scope-effects-supplier-review-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The concurrent screening services are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
+      "id": "claim-intake-priced-assessments",
+      "title": "Take in an insurance claim",
+      "businessPurpose": "Collect the police report while a service fetches the policy record, price the damage separately for each finished intake branch through an automated pricing service so two pricings can run at once, confirm each assessment, and settle the claim only after every assessment has been confirmed.",
+      "cloneFamily": "claim-intake-priced-assessments",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-scope-service-tasks/claim-intake.bpmn",
+        "sha256": "e7b930e7a73ee1b82327556d0f08f1b242a04dc9654cc8e1f7b5e83a98a239d6",
+        "scenarioRelativePath": "scenarios/concurrent-scope-service-tasks/claim-price-two-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-scope-effects-claim-price-two-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The concurrent pricing services are protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

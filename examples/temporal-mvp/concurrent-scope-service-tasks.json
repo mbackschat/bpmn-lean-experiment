@@ -1,0 +1,57 @@
+{
+  "kind": "runnableTemporalMvp",
+  "bpmn": {
+    "file": "../../scenarios/concurrent-scope-service-tasks/supplier-screening.bpmn",
+    "sourceId": "supplier-screening",
+    "semanticProfile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "sourceOverlay": {
+      "file": "../../scenarios/concurrent-scope-service-tasks/supplier-screening-handlers.json",
+      "id": "supplier-screening-handlers",
+      "sha256": "30fa3251a5696d52d99a45a6ee53bcc19e5766dd6f79ee191bfd5de02a1790f3"
+    },
+    "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
+  },
+  "process": {
+    "instanceId": "MvpExample_concurrent_scope_service_tasks_1",
+    "initialVariables": []
+  },
+  "temporal": {
+    "address": "localhost:7233",
+    "namespace": "default",
+    "taskQueue": "bpmn-mvp",
+    "identity": "bpmn-mvp-command"
+  },
+  "interactions": [
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ReviewContract",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "elementId": "UserTask_ApproveSupplier",
+      "delayMs": 250,
+      "inputVariableNames": [],
+      "submittedValues": []
+    }
+  ],
+  "effectHandlers": [
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "sanctionsScreening",
+      "result": { "kind": "success", "localPatch": [] }
+    },
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "bankAccountVerification",
+      "result": { "kind": "success", "localPatch": [] }
+    },
+    {
+      "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+      "operation": "supplierActivation",
+      "result": { "kind": "success", "localPatch": [] }
+    }
+  ]
+}
