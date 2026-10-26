@@ -11,7 +11,9 @@ import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
   CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ObservationRequestKind, ProcessStatus,
-  ScenarioDocumentKind, SemanticOperationKind, StimulusKind, runScenario, supportsSemanticProcessScenario,
+  ScenarioDocumentKind, SemanticOperationKind, StimulusKind, applyStimulusWithTrace, initialState,
+  nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis, runScenario, semanticProcessClosureLimit,
+  supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 
@@ -156,6 +158,66 @@ test("CSE-REFUSE-01: a stale and a never-armed effect completion are rejected wi
   assert.deepEqual(steps.map(({ outcome }) => outcome), [...committed(4), CommandOutcome.Rejected, CommandOutcome.Rejected]);
   for (const step of steps.slice(3)) {
     assert.deepEqual(step.open, open("ServiceTask_PriceDamage#1", "UserTask_ConfirmAssessment#1"));
+  }
+});
+
+/** Three nested Sub-Processes whose deepest body ends with a Service Task, so its result closes all three scopes. */
+const deepServiceTask = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="D" targetNamespace="urn:deep">
+  <bpmn:process id="P" isExecutable="true">
+    <bpmn:startEvent id="S"/><bpmn:endEvent id="E"/>
+    <bpmn:subProcess id="A"><bpmn:startEvent id="AS"/><bpmn:endEvent id="AE"/>
+      <bpmn:subProcess id="B"><bpmn:startEvent id="BS"/><bpmn:endEvent id="BE"/>
+        <bpmn:subProcess id="C"><bpmn:startEvent id="CS"/><bpmn:endEvent id="CE"/>
+          <bpmn:userTask id="Review"/>
+          <bpmn:serviceTask id="Fetch" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="\${policyLookup}" camunda:asyncBefore="true"/>
+          <bpmn:sequenceFlow id="C0" sourceRef="CS" targetRef="Review"/><bpmn:sequenceFlow id="C1" sourceRef="Review" targetRef="Fetch"/>
+          <bpmn:sequenceFlow id="C2" sourceRef="Fetch" targetRef="CE"/>
+        </bpmn:subProcess>
+        <bpmn:sequenceFlow id="B0" sourceRef="BS" targetRef="C"/><bpmn:sequenceFlow id="B1" sourceRef="C" targetRef="BE"/>
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="A0" sourceRef="AS" targetRef="B"/><bpmn:sequenceFlow id="A1" sourceRef="B" targetRef="AE"/>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="R0" sourceRef="S" targetRef="A"/><bpmn:sequenceFlow id="R1" sourceRef="A" targetRef="E"/>
+  </bpmn:process>
+</bpmn:definitions>`;
+
+// The capsule's executable detector for a burst the analysis undercounts: both languages share the per-body
+// analysis, so only running each closure against the computed bound can expose it.
+test("CSE-ADMIT-01: every retained schedule runs each closure within its computed bound and reaches it", async () => {
+  const deepStart: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "P", instanceId, initialVariables: [] };
+  const schedules = [
+    ...await Promise.all(["supplier-review-first", "supplier-effects-first", "claim-price-two-first", "claim-fetch-first"]
+      .map(async name => {
+        const scenario = JSON.parse(await read(`${name}.scenario.json`)) as Scenario;
+        const model = name.startsWith("supplier") ? await supplier() : await claim();
+        return { name, ...model, stimuli: scenario.stimuli, expected: name.startsWith("supplier") ? 6 : 5 };
+      })),
+    { name: "deep Service Task", xml: deepServiceTask, overlay: (await claim()).overlay,
+      stimuli: [deepStart, stimulus({ task: "Review" }, 1), stimulus({ effect: "Fetch" }, 2)], expected: 8 },
+  ];
+  for (const { name, xml, overlay: handlers, stimuli, expected } of schedules) {
+    const compiled = await compile(xml, handlers);
+    assert.ok(compiled.status === BpmnCompilationStatus.Accepted, `${name} ${JSON.stringify(compiled.diagnostics)}`);
+    const { semanticProcess: program, checkedProcess } = compiled;
+    const bound = nestedScopeControlProgramAnalysis(program);
+    assert.equal(bound, expected, name);
+    assert.equal(nestedScopeControlCheckedAnalysis({ ...checkedProcess, flows: checkedProcess.sequenceFlows }), bound, name);
+    assert.ok(bound !== null && bound <= semanticProcessClosureLimit, name);
+    let state = initialState;
+    let longest = 0;
+    let shortBoundDiffers = false;
+    for (const next of stimuli) {
+      const atLimit = applyStimulusWithTrace(program, state, next, semanticProcessClosureLimit);
+      const atBound = applyStimulusWithTrace(program, state, next, bound);
+      assert.equal(atLimit.result.outcome, CommandOutcome.Committed, `${name} ${next.commandId}`);
+      assert.deepEqual(atBound.result, atLimit.result, `${name} ${next.commandId}`);
+      assert.equal(atLimit.result.ambiguousInternalChoice, false, `${name} ${next.commandId}`);
+      shortBoundDiffers ||= applyStimulusWithTrace(program, state, next, bound - 1).result.outcome !== atLimit.result.outcome;
+      longest = Math.max(longest, atLimit.committedTransitions.length - 1);
+      state = atLimit.result.state;
+    }
+    assert.equal(longest, bound, name);
+    assert.ok(shortBoundDiffers, name);
   }
 });
 

@@ -1,4 +1,4 @@
-import { CanonicalObservationKind } from "@bpmn-lean/semantic-core";
+import { CanonicalObservationKind, CommandOutcome } from "@bpmn-lean/semantic-core";
 import { DisagreementKind } from "@bpmn-lean/differential";
 import { TemporalCompletionDelivery, TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import { PipelineReplaySelection, TemporalCaseRelation } from "./pipeline-types.ts";
@@ -59,12 +59,18 @@ function completeWrongActivation(result: MutableScenarioResult): void {
 }
 
 /**
- * CSE-QUIESCE-01: the second Assess occurrence owns only its Price damage wait, so Intake cannot complete and Settle
- * claim is absent. Quiescence that ignored effect waits would complete Assess, then Intake, and open Settle claim.
+ * CSE-QUIESCE-01: an Assess occurrence owns only its Price damage wait from the moment it arms it. Quiescence that
+ * ignored effect waits would complete the first occurrence on arming, so the next merge arrival, Collect police
+ * report's completion, would be rejected; that rejection is the defect's first public divergence.
  */
 function quiescenceIgnoringEffects(result: MutableScenarioResult): void {
-  const settle = laterTask(result, 14, ["SettleClaim#1"]);
-  stateAt(result, 10, ["PriceDamage#2"]).openUserTasks.push(settle);
+  stateAt(result, 4, ["CollectPoliceReport#1", "PriceDamage#1"]);
+  const command = result.trace[5];
+  if (command?.kind !== CanonicalObservationKind.Command || command.outcome !== CommandOutcome.Committed) {
+    throw new Error("Concurrent scope effects calibration requires the committed Collect police report at trace[5]");
+  }
+  // Trace entries may be shared, so the mutation replaces this one instead of editing it in place.
+  result.trace[5] = { ...command, outcome: CommandOutcome.Rejected };
 }
 
 const openUserTaskCount = (index: number, expected: number) => ({
@@ -79,7 +85,12 @@ const cases = {
     inject: completeWrongActivation,
     expected: { kind: DisagreementKind.ObservationValue, path: "trace[8].openEffects[0].id.activation", expected: 1, actual: 2 },
   },
-  "claim-fetch-first": { model: "claim-intake", inject: quiescenceIgnoringEffects, expected: openUserTaskCount(10, 0) },
+  "claim-fetch-first": {
+    model: "claim-intake",
+    inject: quiescenceIgnoringEffects,
+    expected: { kind: DisagreementKind.ObservationValue, path: "trace[5].outcome", expected: CommandOutcome.Committed,
+      actual: CommandOutcome.Rejected },
+  },
 } as const satisfies Record<ConcurrentScopeEffectsName, Readonly<{
   model: string;
   inject: PipelineCase["injectMutation"];

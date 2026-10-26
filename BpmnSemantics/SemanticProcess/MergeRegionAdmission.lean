@@ -27,7 +27,7 @@ structure RawVertex where
   deriving Repr, DecidableEq
 
 /-- A recognized region, contracted to the task vertex `vertex` (the fork's id) followed by `finish`.
-Every listed task is a User Task; the target's own body is checked by the caller. -/
+Every listed task is a User Task or a data-free Service Task; the target's own body is checked by the caller. -/
 structure Region where
   vertex : String
   finish : String
@@ -40,12 +40,12 @@ structure Region where
 def predecessors (vertices : List RawVertex) (id : String) : List RawVertex :=
   vertices.filter (·.outputs.contains id)
 
-/-- A region's serial User Task: one input, one output, and no child scope. -/
+/-- A region's serial task, a User Task or a data-free Service Task: one input, one output, and no child scope. -/
 def userTask (vertices : List RawVertex) (children : List (String × String)) (vertex : RawVertex) : Bool :=
   vertex.kind == .vertex .task && (List.lookup vertex.id children).isNone && vertex.outputs.length == 1 &&
     (predecessors vertices vertex.id).length == 1
 
-/-- Walks back from a merge input through User Tasks, returning the branch in flow order and the first
+/-- Walks back from a merge input through tasks, returning the branch in flow order and the first
 vertex that is not one. -/
 def walkBack (vertices : List RawVertex) (children : List (String × String)) :
     Nat → RawVertex → List String → Option (List String × RawVertex)
@@ -57,7 +57,7 @@ def walkBack (vertices : List RawVertex) (children : List (String × String)) :
         | _ => none
       else some (branch, current)
 
-/-- Walks forward from the target's successor through User Tasks to the first vertex that is not one. -/
+/-- Walks forward from the target's successor through tasks to the first vertex that is not one. -/
 def walkForward (vertices : List RawVertex) (children : List (String × String)) :
     Nat → String → List String → Option (List String × RawVertex)
   | 0, _, _ => none

@@ -36,7 +36,7 @@ function contractedKind(kind: RawBodyNodeKind): Kind | null {
 
 /**
  * A recognized region `fork → branches → merge → target → after → End`, contracted to the task vertex `vertex` (the
- * fork's id) followed by `end`. Every task id is a User Task; the target's own body is checked by the caller.
+ * fork's id) followed by `end`. Every task id is a User Task or a data-free Service Task; the target's own body is checked by the caller.
  */
 export type MergeRegion = Readonly<{
   vertex: string;
@@ -64,7 +64,7 @@ export function contractMergeRegions(nodes: readonly RawBodyNode[], children: Re
   for (const merge of nodes.filter(({ kind }) => kind === RawBodyNodeKind.Merge)) {
     const inputs = predecessors(merge.id);
     if (merge.outputs.length !== 1 || inputs.length < 2) return null;
-    // Each branch is walked back from the merge through single-input User Tasks to the fork.
+    // Each branch is walked back from the merge through single-input tasks to the fork.
     const branches: string[][] = [];
     let fork: RawBodyNode | undefined;
     for (const last of inputs) {
