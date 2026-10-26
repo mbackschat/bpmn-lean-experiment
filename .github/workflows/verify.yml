@@ -635,3 +635,30 @@ jobs:
             test "${{ needs.verify_pipeline.result }}" = "success"
             test "${{ needs.verify_composition_parity.result }}" = "success"
           }
+
+  # Staged handoffs are restored only within their own run, so a verified run
+  # deletes them instead of leaving them to crowd the incremental `lake-` caches
+  # out of the repository's Actions cache budget. A failed run keeps them for a
+  # partial rerun. A token without cache write access (a fork pull request)
+  # leaves them to eviction and says so rather than failing a verified run.
+  release_staged_outputs:
+    name: release staged outputs
+    needs:
+      - verify-complete
+    if: always() && needs.verify-complete.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Delete this run's staged handoff caches
+        run: |
+          for stage in verify-lean-library verify-lean-checks verify-runtime; do
+            gh cache list --key "$stage-$RUNNER_OS-${{ github.run_id }}-" --limit 100 --json id --jq '.[].id' |
+              while read -r id; do
+                gh cache delete "$id" || echo "::warning::staged cache $id was not deleted"
+              done
+          done
