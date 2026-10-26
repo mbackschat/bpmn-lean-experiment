@@ -93,11 +93,11 @@ Deliverable: the family proposal, including its [Temporal hosting/refinement pre
 
 Acceptance blockers: none recorded; the build-speed deliverable met its acceptance (72 ordinary replayed commits rebuild a median of 3.5 library modules), and the two pipeline performance findings recorded at `c8f6c2ea` are fixed (`88489964` batches Temporal runs without an effect schedule; `7416f142` and `81dcc0a7` cut the guarantor Start capacity envelope from 15.8 s to 2.4 s with byte-identical estimates).
 
-Current result: no proposal drafted.
+Current result: the [concurrent scope Service Tasks proposal](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md) is drafted; its cold proposal review returned required edits, now corrected and awaiting the same reviewer's audit.
 
 Effort budget: 4 hours from 2026-10-26 14:30 UTC for the proposal.
 
-Next action: land the performance branch through its pull request; inventory the effect, Parallel-region, scheduler and host-admission owners; draft the proposal.
+Next action: obtain the correction audit, record the receipt, then implement red/green from the TypeScript admission owner outward.
 
 Oracle: an effect result that settles a different branch's wait, or a Parallel join released before every branch effect commits.
 
