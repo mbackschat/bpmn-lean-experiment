@@ -240,7 +240,8 @@ def closure_limit_bounds_the_fanout : Bool := decide <|
       (NestedScopeControl.checkedAnalysis (fanout 6 [])).isNone = true
 
 /-- NSC-ADMIT-01: a task-free branch, crossing Parallel blocks, a join fed from two scopes, a root terminal
-fork, an Exclusive Gateway and a Service Task are refused. -/
+fork, an Exclusive Gateway and a Service Task whose operation is a URN rather than an overlay identifier (the descriptor
+rule of `CSE-ADMIT-01`) are refused. -/
 def unstructured_bodies_are_refused : Bool := decide <|
     (NestedScopeControl.checkedAnalysis (fanout 2 [("QF", "QJ")])).isNone = true ∧
       (NestedScopeControl.checkedAnalysis crossing).isNone = true ∧

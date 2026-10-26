@@ -54,7 +54,9 @@ def subProcessInTarget : CheckedProcess :=
   regionWith ["A", "B"] ([sub "T" "N", start "N" "NA", task "N" "NX", finish "N" "NZ"],
     [("TA", "N"), ("N", "TZ"), ("NA", "NX"), ("NX", "NZ")]) (extraScopes := [("N", some "T")])
 
-def serviceTaskBranch : CheckedProcess :=
+/-- A branch Service Task whose operation is a URN rather than a source-overlay identifier, which the descriptor rule of
+`CSE-ADMIT-01` refuses; a data-free identifier-bound one is admitted. -/
+def nonIdentifierOperationBranch : CheckedProcess :=
   let source := region ["A", "B"]
   { source with nodes := source.nodes.map fun value => match value with
     | .userTask ⟨"B"⟩ .. => .serviceTask ⟨"B"⟩
@@ -118,8 +120,8 @@ def parallel_gateway_in_target_is_refused : Bool := decide <|
 def sub_process_in_target_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis subProcessInTarget = none
 
-def service_task_branch_is_refused : Bool := decide <|
-    NestedScopeControl.checkedAnalysis serviceTaskBranch = none
+def non_identifier_operation_branch_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis nonIdentifierOperationBranch = none
 
 def fork_output_into_merge_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis forkIntoMerge = none
@@ -153,7 +155,7 @@ def concurrentEmbeddedActivationsAdmissionConformanceChecks : List (String × Bo
   ("minimal_region_is_admitted", minimal_region_is_admitted),
   ("parallel_gateway_in_target_is_refused", parallel_gateway_in_target_is_refused),
   ("sub_process_in_target_is_refused", sub_process_in_target_is_refused),
-  ("service_task_branch_is_refused", service_task_branch_is_refused),
+  ("non_identifier_operation_branch_is_refused", non_identifier_operation_branch_is_refused),
   ("fork_output_into_merge_is_refused", fork_output_into_merge_is_refused),
   ("partial_merge_is_refused", partial_merge_is_refused),
   ("merge_fed_by_two_forks_is_refused", merge_fed_by_two_forks_is_refused),
