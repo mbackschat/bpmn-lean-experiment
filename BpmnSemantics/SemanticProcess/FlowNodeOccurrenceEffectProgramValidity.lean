@@ -372,7 +372,7 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
   have newValid : effectWaitValid program after wait = true := by
     simp_all [effectWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
     -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
-    -- private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     exact operationCount
   simp only [flowNodeOccurrenceEffectProgramValidity, Bool.and_eq_true] at prior ⊢
   obtain ⟨⟨waits, incidents⟩, localScopes⟩ := prior

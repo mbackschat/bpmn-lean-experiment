@@ -4,7 +4,7 @@
  * A converted conformance check is a `def name : Bool`, and a `*ChecksMain` driver runs only the
  * checks its modules list, so a check missing from its module's list would compile and never run.
  * Kernel decision had no such gap, because every theorem was checked by elaborating it (owner pilot
- * decision 2026-10-23, docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract).
+ * decision 2026-10-23, docs/LEAN-BUILD-MODULARITY-SPEC.md#contract).
  */
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";

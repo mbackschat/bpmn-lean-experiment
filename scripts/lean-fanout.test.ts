@@ -169,7 +169,7 @@ test("the ratchet reports growth, an unlisted wide module, a stale entry and an 
   ]);
 });
 
-// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-PROPOSAL.md. The oracle is the graph scan
+// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-SPEC.md. The oracle is the graph scan
 // above; it bounds graph shape, so a family-start kernel change needs no exemption.
 const librarySources = () =>
   readWorktreeSources(worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/")));
@@ -209,7 +209,7 @@ test("every library module stays within its recorded hidden-edit fanout bound", 
   assert.deepEqual(leanFanoutViolations(leanHiddenEditFanouts(librarySources()), leanHiddenEditBounds, leanHiddenEditDefaultBound), []);
 });
 
-// Item 2 of the build modularity proposal forbids `simp [f]` over a hidden `f`, but the hidden-edit fanout already
+// Item 2 of the build modularity specification forbids `simp [f]` over a hidden `f`, but the hidden-edit fanout already
 // counts most such importers' loaders, so only a per-importer site count catches a new rewrite.
 test("no importer adds a rewrite with a hidden definition", () => {
   assert.deepEqual(leanFanoutViolations(leanHiddenRewrites(librarySources()), leanHiddenRewriteBounds, 0, [], "rewrite sites"), []);

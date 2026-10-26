@@ -7,7 +7,7 @@ import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Semantic Process program structural validation laws
 
-The admission facts that proofs consume, apart from the definitions in [`ProgramStructuralValidation`](ProgramStructuralValidation.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)).
+The admission facts that proofs consume, apart from the definitions in [`ProgramStructuralValidation`](ProgramStructuralValidation.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)).
 -/
 
 public section
@@ -188,7 +188,7 @@ theorem programWellFormed_rejects_selectMany_declarer_collision (program : Progr
       rightDefault selectionKey ∈ program.operations.filter (fun
         | .selectMany _ _ _ _ _ key => decide (key = selectionKey)
         | _ => false) := List.mem_filter.mpr ⟨rightMember, by simp⟩
-  -- `erw` bridges the statement's and this proof's matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  -- `erw` bridges the statement's and this proof's matchers (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
   erw [singleton] at leftFiltered rightFiltered
   simp only [List.mem_singleton] at leftFiltered rightFiltered
   exact different (leftFiltered.trans rightFiltered.symm)

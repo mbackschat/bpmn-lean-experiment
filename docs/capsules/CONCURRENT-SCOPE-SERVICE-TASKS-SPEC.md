@@ -117,7 +117,7 @@ All witnesses differ at the public boundary of open User Tasks and open effects,
 
 Lane shape: proved
 
-Evidence: concurrency families are `proved` under the owner direction of 2026-10-14. The guaranteeing declarations are [`completeEffect_data_free_frame`](../../BpmnSemantics/SemanticProcess/ConcurrentScopeEffectLaws.lean#completeEffect_data_free_frame) and [`scopeQuiescent_false_of_owned_effect`](../../BpmnSemantics/SemanticProcess/ConcurrentScopeEffectLaws.lean#scopeQuiescent_false_of_owned_effect), in one new family-owned laws module beside [`EffectCompletion`](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean), never appended to a hub, as [migration step 5](../LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) requires:
+Evidence: concurrency families are `proved` under the owner direction of 2026-10-14. The guaranteeing declarations are [`completeEffect_data_free_frame`](../../BpmnSemantics/SemanticProcess/ConcurrentScopeEffectLaws.lean#completeEffect_data_free_frame) and [`scopeQuiescent_false_of_owned_effect`](../../BpmnSemantics/SemanticProcess/ConcurrentScopeEffectLaws.lean#scopeQuiescent_false_of_owned_effect), in one new family-owned laws module beside [`EffectCompletion`](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean), never appended to a hub, as the [module rules](../LEAN-BUILD-MODULARITY-SPEC.md#module-rules) require:
 
 - `CSE-ISOLATE-01`: a frame law for the pre-closure `completeEffect` with empty output mappings. The successor's effect waits are the predecessor's with exactly the addressed wait erased, `variables.activities` loses exactly that effect's scope, `variables.process` is unchanged, its tokens add exactly one token at the wait's output for its owner, and waits, message and timer waits, scope occurrences and counters are unchanged. The closure-level claim stays with the per-command sibling check of the preservation gate. An executable dispatcher check records that this profile selects the generic `completeEffect` arm.
 - `CSE-ARM-01`: no new law. The per-path arming guards named under representation already exclude a colliding occurrence on success, and the preservation gate checks that arming never fails on the retained journeys.
@@ -200,7 +200,7 @@ Acceptance requires:
 
 ## Versioning consequences
 
-Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) no wire shape changes. The profile identity, every schema and every existing Program stay byte-identical. The family changes no kernel type, so its Lean edits are body arms in existing modules plus one new laws module: the first check of contract items 3 and 5 of the [build modularity proposal](../LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract).
+Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) no wire shape changes. The profile identity, every schema and every existing Program stay byte-identical. The family changes no kernel type, so its Lean edits are body arms in existing modules plus one new laws module: the first check of contract items 3 and 5 of the [build modularity specification](../LEAN-BUILD-MODULARITY-SPEC.md#contract).
 
 `node scripts/what-binds.ts` on the grown paths names these binding guards:
 

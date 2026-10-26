@@ -3,7 +3,7 @@
  * [`leanFanouts`](./lean-fanout.ts) finds them, only importers the semantic root builds, and exempts the declared
  * kernel; every module listed here may keep at most its recorded number of such importers, and every other module
  * at most `leanFanoutDefaultBound` (required item 6 of
- * [the build modularity proposal](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)). The bounds are the
+ * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)). The bounds are the
  * counts plus a tenth, at least ten, of the 2026-10-25 graph, tightened on 2026-10-26 after each module re-exported
  * only the modules its public declarations name, and re-derived the same day once the count learned that an
  * `import all` or `meta import` loads private imports too, so a new leaf module does not trip every module its
@@ -17,7 +17,7 @@ import type { LeanFanoutBound } from "./lean-fanout.ts";
 export const leanFanoutDefaultBound = 100;
 
 /**
- * The kernel types of rule 4 of the build modularity proposal, which every family imports by design: the checked
+ * The kernel types of item 4 of the build modularity specification, which every family imports by design: the checked
  * source and Semantic Process IL contracts, the value domain, the scenario and runtime-state types.
  */
 export const leanFanoutKernel: ReadonlyArray<string> = [
@@ -254,7 +254,7 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
 /**
  * The rewrites with a hidden definition of an `import all` import that each module may keep, as
  * [`leanHiddenRewrites`](./lean-fanout.ts) counts them; every other module may keep none. Item 2 of
- * [the build modularity proposal](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) forbids them, and
+ * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract) forbids them, and
  * these predate its enforcement (counted on 2026-10-26). Turning one into `unfold` shrinks its entry; the list
  * only shrinks.
  */

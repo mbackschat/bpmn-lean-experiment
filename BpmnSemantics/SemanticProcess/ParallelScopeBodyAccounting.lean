@@ -377,7 +377,7 @@ theorem ContinuationCommandHistory.enabled_body_firing_count_zero
     rw [childEq]
     simpa only [owned, childScope] using population
   -- Derived from `completionEq` rather than restated: a module gives a restated `match` its own private
-  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  -- matcher (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
   have present := completionEq ▸ List.mem_singleton_self completion
   have completionMember : completion ∈ child := (List.mem_filter.mp present).1
   have completionKind : completion.kind = .completeParallelMultiInstanceScope := by

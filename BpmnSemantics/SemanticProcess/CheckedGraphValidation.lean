@@ -10,7 +10,7 @@ This module owns topology-independent reachability, co-reachability, and cycle r
 -/
 
 -- Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce
--- definitionally is `@[expose]` with what its body calls ([migration step 4](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)).
+-- definitionally is `@[expose]` with what its body calls ([module rules](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)).
 public section
 
 namespace BpmnSemantics.SemanticProcess

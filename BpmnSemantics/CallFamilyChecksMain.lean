@@ -14,7 +14,7 @@ failing check by module and declaration. No proof consumes these checks, so they
 decisions rather than kernel-decided theorems: kernel reduction cost the six modules about 425 s of
 single-core elaboration ([cost ledger](../scripts/lean-module-cost.ts) as of 2026-10-23), and the
 checked lane shape admits an executable guard (owner pilot decision 2026-10-23,
-[executable guards](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)). A fact a proof consumes
+[executable guards](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)). A fact a proof consumes
 stays a kernel-decided theorem. -/
 
 @[expose] public section

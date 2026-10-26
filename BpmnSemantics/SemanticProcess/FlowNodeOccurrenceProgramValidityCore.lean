@@ -126,7 +126,7 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
   simp only [callRecordValid, Bool.and_eq_true] at count
   obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true count.2)
   -- Derived from `singleton` rather than restated: a module gives a restated `match` its own private
-  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  -- matcher (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
   have selected := singleton ▸ List.mem_singleton_self operation
   obtain ⟨present, fields⟩ := List.mem_filter.mp selected
   split at fields

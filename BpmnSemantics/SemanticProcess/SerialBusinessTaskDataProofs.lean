@@ -840,7 +840,7 @@ theorem serial_patch_exists (handlers : List String) (outputs : List VariableMap
     if !(names.eraseDups.length == patch.length && names.all (fun name => patch.any (·.name == name))) then none
     else (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes))) = some bindings
   -- `erw`: `collected` carries the statement's matcher and the `change` above this proof's private one
-  -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
   erw [collected]
   simp only [Option.bind_some, count, beq_self_eq_true, covered, Bool.and_self, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
   change ∃ bindings, (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes)) = some bindings

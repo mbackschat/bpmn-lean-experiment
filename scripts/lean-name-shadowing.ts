@@ -37,7 +37,7 @@ function openedNamespaces(line: string): string[] {
  * namespace's matches and consults `open` declarations only when there are none, so such a use is never
  * ambiguous: adding or publishing the namespace declaration silently changes what an existing use means.
  * The module conversion made private helpers public, which is exactly that edit
- * ([migration step 3](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)).
+ * ([module rules](../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)).
  *
  * A namespace declaration of the same file is the author's own deliberate choice and is not reported.
  *

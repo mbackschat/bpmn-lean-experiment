@@ -733,7 +733,7 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
   have newValidBefore : timerWaitValid program state wait = true := by
     simp_all [timerWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique]
     -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
-    -- private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     exact operationCount
   have newValid : timerWaitValid program after wait = true := by
     have frame : timerWaitValid program after wait = timerWaitValid program state wait := by

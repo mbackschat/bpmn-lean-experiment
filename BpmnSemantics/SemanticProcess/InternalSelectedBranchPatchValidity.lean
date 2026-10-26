@@ -60,7 +60,7 @@ theorem InternalSelectedBranchPatch.preserves_hiddenRecordDeclarationsValid (pro
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
       | _ => false).length = 1) = true :=
     -- A term, checked up to unfolding: `inserted` carries the statement's matcher and this restatement
-    -- this proof's private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- this proof's private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     decide_eq_true (inserted record equality)
   refine Eq.trans ?_ counted
   apply congrArg (fun operations : List SemanticOperation => decide (operations.length = 1))
@@ -262,7 +262,7 @@ theorem selectedBranchSet_insert_invalid_declarer_count_refused (program : Progr
   have countFalse : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
       | _ => false).length = 1) = false :=
-    -- A term, checked up to unfolding, for the matcher split (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- A term, checked up to unfolding, for the matcher split (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     decide_eq_false invalid
   simp only [hiddenRecordDeclarationsValid, InternalSelectedBranchPatch.apply,
     insertSelectedBranchSetCanonical_eq_canonicalInsertBy, all_canonicalInsertBy]

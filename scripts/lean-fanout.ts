@@ -26,12 +26,12 @@ export function leanLibraryModules(sources: LeanSources, root: string): Set<stri
 
 /**
  * Every module whose build an edit to a module's public interface can invalidate, keyed by that module and
- * sorted by name: the static fanout that [the fanout ratchet](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)
+ * sorted by name: the static fanout that [the fanout ratchet](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)
  * bounds.
  *
  * Lake rebuilds an importer from the artifacts of everything it loads. A module loads what it imports directly,
  * of any form, and whatever those re-export through `public import`; a private import stops there, which the
- * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)
+ * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-SPEC.md#mechanism-observations-lean-v4341-2026-10-23)
  * record. An `import all` or `meta import` opens the imported module's private part, so it also loads everything
  * that module loads, private imports included: a private import of the family admission module into the profile
  * registry let an interface edit rebuild the registry's ten `import all` importers (pinned container, 2026-10-26).
@@ -89,7 +89,7 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * not `import all` the module or a chain member is left alone. A `meta import` loads the compiled form of the
  * imported module's whole import closure, and a plain file loads every module of its import closure whole, so each
  * of them that reaches the module rebuilds too (the
- * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
+ * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-SPEC.md#mechanism-observations-lean-v4341-2026-10-23)).
  *
  * An `import all` importer that rewrites with one of the module's hidden definitions (`simp [f]`, `rw [f]` and
  * their siblings, or a named `f.eq_…` lemma) generates that definition's equation lemmas and exports them, so the
@@ -170,7 +170,7 @@ function hiddenRewriteSites(source: string, names: ReadonlySet<string>): string[
 /**
  * Every rewrite with a hidden definition of a module imported with `import all`, as `Module.definition` per
  * occurrence and keyed by the rewriting module, which item 2 of
- * [the build modularity proposal](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) forbids: each one
+ * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract) forbids: each one
  * exports the definition's equation lemmas, so a body edit changes the rewriting module's public interface.
  */
 export function leanHiddenRewrites(sources: LeanSources): Map<string, string[]> {
@@ -194,7 +194,7 @@ export type LeanFanoutBound = Readonly<{ module: string; bound: number }>;
  * (its entry must go, so the list only shrinks), a recorded name that is no scanned module, and an unlisted module
  * above the default. Recorded findings come in list order, unlisted ones after them in fanout order.
  *
- * A `kernel` module is exempt, as required item 6 of the build modularity proposal declares: every module imports
+ * A `kernel` module is exempt, as item 6 of the build modularity specification declares: every module imports
  * the kernel types, so their fanout grows with the library by design. A kernel module carrying a bound, or a
  * kernel name that is no scanned module, is reported after the bounds' findings.
  */

@@ -50,12 +50,12 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 ### Lean build follow-ups
 
-[Migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) owns the steps; this list owns the class repairs found in step 3.
+The [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
 
-- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
+- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
-- Graduation: in the first family built in the family shape ([migration step 5](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)), verify contract items 3 (a family arm added by body edit alone) and 5 (registry-instantiated whole-model fixtures); then run the proposal's closure review and graduate it to a `-SPEC`, whose renamed links rebuild the 192 modules that cite it.
+- Rewrites: turn the nine `simp only [operationWellFormed]` rewriters into `unfold`, which keeps 82 library modules out of that hub's hidden-edit fanout, then shrink the [rewrite ratchet](../scripts/lean-fanout-bounds.ts) entries they leave.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
 ### Scheduled delivery batches
@@ -87,18 +87,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: close the [build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md#acceptance) by owner direction of 2026-10-26, now that its first family-shaped increment, [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), is closure-approved. Multi-Instance closure stays held at qualification.
+Current task: select batch 2's next family now that the [build modularity specification](LEAN-BUILD-MODULARITY-SPEC.md) is closure-approved (2026-10-26). Multi-Instance closure stays held at qualification.
 
-Deliverable: an ordinary family increment that rebuilds only its family's modules, the registry, the closed-world bridges and the global fixtures, with the proposal graduated to a spec.
+Deliverable: the next batch-2 family proposal (two to four rows sharing a mechanism), built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
-Acceptance blockers: the family's interface edit to its admission module invalidated 605 of 755 library modules, because shared validators re-exported family modules through unused public imports.
+Acceptance blockers: none recorded.
 
-Current result: the family is graduated; `lake shake` removes the unused imports, cutting that invalidation to 50 library modules.
+Current result: the first family-shaped increment rebuilt 312 modules, 144 of them library modules, and its global fixtures took 725 serial seconds. The fanout ratchet now counts `import all`, `meta import` and equation-lemma exports.
 
-Effort budget: 8 hours of working time from 2026-10-26 22:00 UTC; stop and reassess at the limit.
+Effort budget: 4 hours of working time to draft the family proposal; stop and reassess at the limit.
 
-Next action: commit the import shake once the full Lean gate is green, measure the global-fixture rebuild time, then the proposal's cold closure review and graduation.
+Next action: pick the batch-2 rows from the [coverage checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and draft the family proposal.
 
-Oracle: a family interface edit whose static invalidation reaches a module outside its family, the registry, the bridges and the global fixtures.
+Oracle: a selected row whose mechanism its siblings do not share, or a family edit that rebuilds a module outside the classes the [modularity acceptance](LEAN-BUILD-MODULARITY-SPEC.md#acceptance) admits.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

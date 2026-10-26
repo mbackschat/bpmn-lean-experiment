@@ -164,7 +164,7 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
   · cases state.control <;> simp_all
   · cases state.control <;> simp_all
   · dsimp only
-    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     erw [folded]
     rfl
 

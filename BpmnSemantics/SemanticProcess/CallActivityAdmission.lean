@@ -170,7 +170,7 @@ theorem callOperationsPaired_return_caller_scope (program : Program)
         have selectedMember := (List.mem_filter (p := fun value : ReturnBinding => decide (value.id = returnedId))).mpr
           ⟨actualMember, by simp [actual]⟩
         -- `erw`: `returns` carries the definition's matcher and `selectedMember` this proof's private one
-        -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+        -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
         erw [returns] at selectedMember
         have same := List.mem_singleton.mp selectedMember
         rw [← same] at selected
@@ -271,7 +271,7 @@ theorem callOperationsPaired_invokes_by_return_le_one (program : Program) (retur
   · split at paired
     · simp only [Bool.and_eq_true, List.all_eq_true] at paired
       -- Restated once so `cases` abstracts it: a module gives this proof's `match` its own private matcher
-      -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+      -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
       let invokes := program.operations.filterMap fun
         | .invokeProcess id origin input calledProcessId calledRoot calledEntry returned data =>
             some (show InvokeBinding from

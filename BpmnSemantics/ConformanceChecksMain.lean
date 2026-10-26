@@ -149,7 +149,7 @@ public import BpmnSemantics.ActivityBoundaryMessageConformanceCheckFixtures
 Runs the conformance modules' standalone checks natively and exits nonzero when any is `false`, naming each
 failing check by module and declaration. No proof consumes these checks and no proved lane names them among
 its guaranteeing declarations, which carry that lane's claim, so they are compiled `Bool` decisions rather than kernel-decided theorems (owner decision 2026-10-24,
-[executable guards](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract)); the checked lane shape
+[executable guards](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)); the checked lane shape
 admits an executable guard. A fact a proof consumes stays a kernel-decided theorem. The Call family keeps
 its own driver, [`CallFamilyChecksMain`](CallFamilyChecksMain.lean). -/
 
