@@ -1,10 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Correlated-message internal commutation projections
 

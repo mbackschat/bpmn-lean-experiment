@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+public import BpmnSemantics.SemanticProcess.ValueDomain
+import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Semantic profile admission consequences
 

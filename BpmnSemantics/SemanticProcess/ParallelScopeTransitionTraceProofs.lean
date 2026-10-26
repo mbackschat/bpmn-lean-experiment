@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Selected parallel transition-trace certificates
 

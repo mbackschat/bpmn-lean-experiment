@@ -1,8 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
+import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 
 /-! # Progress after parallel subprocess retirement
 

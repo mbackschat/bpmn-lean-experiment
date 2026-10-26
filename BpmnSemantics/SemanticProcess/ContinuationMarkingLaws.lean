@@ -2,7 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ContinuationMarking
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! Exact owned port exchanges preserve continuation credit across Human, Service and internal body execution. -/
 

@@ -15,6 +15,8 @@ public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Runtime-state well-formedness
 

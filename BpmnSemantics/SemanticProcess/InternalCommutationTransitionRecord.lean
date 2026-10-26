@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransitionTrace
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 

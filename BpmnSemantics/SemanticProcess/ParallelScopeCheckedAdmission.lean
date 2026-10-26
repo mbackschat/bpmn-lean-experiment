@@ -2,6 +2,10 @@ module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 
 /-! PMIS-ADMIT-01 checks the source graph independently of lowering; it grants no execution capability. -/
 

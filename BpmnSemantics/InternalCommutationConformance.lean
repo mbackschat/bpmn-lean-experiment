@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutation
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -15,6 +15,8 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
+public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! # Internal commutation conformance locks -/
 

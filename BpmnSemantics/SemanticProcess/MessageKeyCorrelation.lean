@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Context-backed Message key correlation
 

@@ -1,8 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Flow-node occurrence projection shape proofs
 

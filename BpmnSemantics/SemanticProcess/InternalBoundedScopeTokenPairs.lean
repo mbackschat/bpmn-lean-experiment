@@ -1,8 +1,21 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopeLocalControl
-public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-public import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
+import BpmnSemantics.SemanticProcess.InternalBoundedScopeLocalControl
+import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+import BpmnSemantics.SemanticProcess.InternalEndCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Merge and ordinary End reuse token-patch separation for bounded child entry under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).

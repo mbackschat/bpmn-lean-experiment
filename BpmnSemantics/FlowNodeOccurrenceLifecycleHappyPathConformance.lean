@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleHappyPathConformanceCheckFixtures
-public import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
+import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
 public import BpmnSemantics.CallActivityConformanceFixtures
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation

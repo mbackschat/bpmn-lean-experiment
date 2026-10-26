@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.EffectDataMapping
+import BpmnSemantics.SemanticProcess.EffectDataMapping
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 
 /-! # Structured effect-data profile admission
 

@@ -10,8 +10,8 @@ public import BpmnSemantics.SemanticProcess.Incident
 public import BpmnSemantics.SemanticProcess.IncidentCancellation
 public import BpmnSemantics.SemanticProcess.MessageStartAdmission
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcess.WaitCompletion
@@ -36,6 +36,7 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 
 /-! # Semantic Process external command admission
 

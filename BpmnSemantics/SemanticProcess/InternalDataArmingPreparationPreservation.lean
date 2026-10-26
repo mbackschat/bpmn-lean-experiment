@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Data-arming preparation preservation
 

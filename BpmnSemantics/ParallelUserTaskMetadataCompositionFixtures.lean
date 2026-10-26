@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures

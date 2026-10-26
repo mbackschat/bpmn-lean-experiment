@@ -1,9 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Bounded completion declaration binding
 

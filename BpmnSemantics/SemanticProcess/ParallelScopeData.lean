@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.Incident
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
 

@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeCounterGrowthProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterGrowthProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
 
 /-! # Cumulative parallel command counter bounds

@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
-public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 
 /-! # Scope-creation freshness
 

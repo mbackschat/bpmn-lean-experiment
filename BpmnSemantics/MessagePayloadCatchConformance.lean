@@ -1,10 +1,10 @@
 module
 
 public import BpmnSemantics.MessagePayloadCatchConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-public import BpmnSemantics.SemanticProcess.InternalCommutationCensus
-public import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.InternalCommutationCensus
+import BpmnSemantics.SemanticProcess.MessagePayloadPreservation
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

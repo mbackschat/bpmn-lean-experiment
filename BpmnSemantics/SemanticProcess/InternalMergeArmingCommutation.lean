@@ -1,7 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMergeCommutation
-public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalMergeCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 
 /-! Exact Merge and arming share the existing token-patch frame laws. The Merge preparation
 retains the chosen bucket under the [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).

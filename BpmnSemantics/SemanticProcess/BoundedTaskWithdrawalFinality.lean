@@ -1,7 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.BoundedTask
-public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 
 /-! # Boundary-Timer withdrawal finality
 

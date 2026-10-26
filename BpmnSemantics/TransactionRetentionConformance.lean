@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 
 /-! # Transaction child retention witnesses
 

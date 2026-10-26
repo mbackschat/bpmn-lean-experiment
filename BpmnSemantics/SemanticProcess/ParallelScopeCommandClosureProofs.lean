@@ -1,7 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierTotalityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierTotalityProofs
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeRecordAccounting
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! PMIS-SELECT-01 composes phase-local selection laws through actual command boundaries. Committed ingress and the exact retirement prefix supply their premises; arbitrary interleaved replay history is insufficient. -/
 

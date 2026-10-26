@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 
 /-! IMES-OBSERVE-01 separates a dormant parent listener from an executing handler scope.
 The declaration-owned projection supplements the ordinary-entry projection without weakening its predicates. -/

@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
+import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import BpmnSemantics.SemanticProcess.InternalPreparedArming
+import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 
 /-! Exact public deltas retain positive multiplicities in canonical key order, as required by
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

@@ -1,8 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRegionalFrame
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Regional retirement preserves the full bounded-entry artifact through the existing child
 read populations and removal-only resource law. No intermediate state is assumed valid.

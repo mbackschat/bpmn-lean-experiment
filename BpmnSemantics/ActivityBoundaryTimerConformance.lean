@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.ActivityBoundaryTimerFixtures
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation

@@ -1,7 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-public import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 
 /-! # Frozen batch anchor and local-frame preservation
 

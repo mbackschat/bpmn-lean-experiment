@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
 public import BpmnSemantics.SequentialUserTaskFixtures
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation

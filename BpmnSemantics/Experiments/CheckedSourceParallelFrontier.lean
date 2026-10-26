@@ -1,6 +1,9 @@
 module
 
-public import BpmnSemantics.Experiments.CheckedSourceFrontier
+import BpmnSemantics.Experiments.CheckedSourceFrontier
+public import BpmnSemantics.Experiments.CheckedSourceGraph
+public import BpmnSemantics.Experiments.CheckedSourceTransition
+public import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! # Two-token checked-source frontiers
 

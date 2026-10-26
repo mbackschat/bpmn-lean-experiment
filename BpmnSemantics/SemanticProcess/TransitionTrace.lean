@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransitionRecord
-public import BpmnSemantics.SemanticProcess.ClosureLimit
-public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import BpmnSemantics.SemanticProcess.ClosureLimit
+import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution

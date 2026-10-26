@@ -1,7 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! Bounded completion retention agrees with actual Activity and Timer withdrawal. -/
 

@@ -1,8 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
-public import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+public import BpmnSemantics.SemanticProcess.MessagePayload
+public import BpmnSemantics.SemanticProcess.WaitCompletion
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 
 /-! Completion removes a child-scope Activity, never a Multi-Instance task body.
 REG-OWN-CLOSE-01 keeps the lifetime Timers of surviving task bodies. The existing

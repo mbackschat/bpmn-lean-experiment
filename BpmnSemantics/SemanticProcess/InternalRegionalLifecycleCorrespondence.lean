@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 
 /-! Regional cancellation templates agree with the evaluator's predecessor lifecycle selector.
 The correspondence uses live projection ownership and the exact derived region, not a supplied mask.

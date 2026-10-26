@@ -1,10 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 public import BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -12,6 +12,11 @@ import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
 

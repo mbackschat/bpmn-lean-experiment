@@ -8,7 +8,11 @@ public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
 

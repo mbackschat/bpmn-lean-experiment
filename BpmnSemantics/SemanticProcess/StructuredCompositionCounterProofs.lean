@@ -1,7 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
-public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
+import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! Structured composition reaches command boundaries with canonical retained counter storage.
 The separate counter component follows the existing execution relation; lifecycle and task shape

@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+public import BpmnSemantics.WireNatural
 
 /-! # Compensation Event Sub-Process snapshot declaration
 

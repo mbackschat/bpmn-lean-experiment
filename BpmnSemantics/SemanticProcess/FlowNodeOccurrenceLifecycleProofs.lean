@@ -1,11 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 
 /-! # Flow-node occurrence lifecycle fold-soundness laws
 

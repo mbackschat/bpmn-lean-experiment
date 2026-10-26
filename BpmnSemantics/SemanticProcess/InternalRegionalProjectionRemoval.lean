@@ -1,9 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.ControlPositionContract
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 
 /-! Regional projection removal preserves ordered multiplicity through successful optional
 projection and the lifecycle's canonical ordering. Source retention stays independent of projected

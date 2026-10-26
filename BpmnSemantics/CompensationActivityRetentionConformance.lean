@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
@@ -26,6 +26,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Compensation Activity retention checkpoint
 

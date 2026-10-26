@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 
 /-! # Directed occurrence-region closure laws
 

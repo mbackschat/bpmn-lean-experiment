@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 
 /-! Normal root completion retains successful Compensation history. Quiescence rules out
 active triggers at the sole live root, while predecessor validity rules out failed triggers

@@ -1,9 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 import BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Mixed scope/arming frames retain the complete predecessor artifact required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Scope insertion

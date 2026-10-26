@@ -1,10 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeBatchAnchorProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Reachable wait reservation validity
 

@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! AOO-CANCEL-01 makes every Activity claiming a surviving Timer survive with it.
 These exact census frames include malformed populations and both root dispositions;

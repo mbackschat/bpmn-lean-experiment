@@ -1,11 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ScopePositionInsertion
-public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
-public import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
-public import BpmnSemantics.SemanticProcess.TokenPatchMultiplicity
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+import BpmnSemantics.SemanticProcess.ScopePositionInsertion
+import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
+import BpmnSemantics.SemanticProcess.TokenPatchMultiplicity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Actual control-position publication for prepared scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/

@@ -14,7 +14,7 @@ public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRe
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.Scenario
-public import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
+import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr

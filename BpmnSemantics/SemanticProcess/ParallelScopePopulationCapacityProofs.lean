@@ -1,9 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
-public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! Population capacity follows actual entry and retirement, so command composition need not assume successor capacity. -/
 

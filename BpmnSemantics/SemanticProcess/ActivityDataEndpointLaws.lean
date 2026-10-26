@@ -1,7 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
-public import BpmnSemantics.SemanticProcess.ProcessInterfaceData
+import BpmnSemantics.SemanticProcess.ProcessInterfaceData
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.ProfileCardinalities
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Typed Activity data endpoint laws
 

@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -24,6 +24,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
 
 /-! # Representative cyclic execution conformance
 

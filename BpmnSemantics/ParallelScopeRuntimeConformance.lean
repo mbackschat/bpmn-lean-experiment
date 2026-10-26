@@ -24,6 +24,8 @@ public meta import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public meta import BpmnSemantics.SemanticProcess.ParallelScopeData
 public meta import BpmnSemantics.SemanticProcessContract
 public meta import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! PMIS lifecycle fixtures distinguish exact body retirement from whole-Activity cancellation and retain unrelated ownership. -/
 

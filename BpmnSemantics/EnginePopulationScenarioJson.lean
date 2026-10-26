@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.EnginePopulationScenario
-public import BpmnSemantics.SemanticProcessJson
+import BpmnSemantics.SemanticProcessJson
+public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! # Engine-population scenario JSON admission
 

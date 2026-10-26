@@ -1,7 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingProgress
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingProgress
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Parallel Multi-Instance progress runtime-state preservation
 

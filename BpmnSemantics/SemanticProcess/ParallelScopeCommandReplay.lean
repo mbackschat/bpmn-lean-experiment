@@ -1,11 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 
 /-! PMIS-SELECT-01 checks command publication with the same exact-owner executor as closure; operation-only replay retains its existing ProgramStep domain. -/
 

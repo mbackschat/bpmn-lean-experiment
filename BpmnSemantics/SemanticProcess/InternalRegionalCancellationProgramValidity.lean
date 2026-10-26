@@ -1,7 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! Cancellation preserves immutable Program correspondence by retaining each surviving
 owner census. The selected child may itself survive; singleton preservation handles that

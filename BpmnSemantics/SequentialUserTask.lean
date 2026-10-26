@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.SequentialUserTaskFixtures
-public import BpmnSemantics.SemanticProcess.Fixtures
-public import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Execution
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle

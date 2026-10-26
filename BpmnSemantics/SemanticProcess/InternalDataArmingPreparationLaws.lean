@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 
 /-! Prepared data arming refines Activity activation and preserves the checked binding contract. -/
 

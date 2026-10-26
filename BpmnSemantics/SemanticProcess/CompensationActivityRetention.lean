@@ -3,7 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
 public import BpmnSemantics.SemanticProcess.JsonSupport
-public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Boundary Compensation Activity retention
 

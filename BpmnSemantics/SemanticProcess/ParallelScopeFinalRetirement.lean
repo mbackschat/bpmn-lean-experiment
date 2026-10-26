@@ -2,6 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeRetirementProgress
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Parent return after parallel subprocess completion
 

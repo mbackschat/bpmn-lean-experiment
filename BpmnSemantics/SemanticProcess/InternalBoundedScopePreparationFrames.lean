@@ -1,8 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 
 /-! Complete preparation frames retain the child selector, all issuance domains, and publication.
 The [complete-family outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census)

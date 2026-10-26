@@ -1,6 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
+import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
 
 /-! Timer-task and Activity-data arming retain separate task and Activity issuers.
 The complete preparations also protect both untagged wait anchors and Activity body ownership.

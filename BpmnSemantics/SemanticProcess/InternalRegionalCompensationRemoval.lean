@@ -1,6 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 
 /-! # Compensation removal and prepared regions
 

@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.Scenario
-public import BpmnSemantics.SemanticProcessJson
+import BpmnSemantics.SemanticProcessJson
 public import BpmnSemantics.SemanticProcessJson.Publication
 public import BpmnSemantics.SemanticProcessJson.Observation
 public import Lean.Data.Json
@@ -9,6 +9,8 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcessJson.DefinitionInput
+public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
 

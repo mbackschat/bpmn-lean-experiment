@@ -1,8 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Live parallel-body binding provenance
 

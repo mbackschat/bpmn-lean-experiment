@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.MessageStartConformance
+import BpmnSemantics.MessageStartConformance
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
@@ -15,6 +15,10 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.MessageStartAdmissionConformance
+public import BpmnSemantics.MessageStartClosureConformance
+public import BpmnSemantics.MessageStartIdentityConformance
+public import BpmnSemantics.MessageStartScenarioConformance
 
 /-! # Timer Start Event conformance
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+public import BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! ESL-OWN/CLOSE and the monitored-child account retain the child on firing and retire its exact
 Activity/deadline on normal completion. Declaration selection is independent of the interrupting

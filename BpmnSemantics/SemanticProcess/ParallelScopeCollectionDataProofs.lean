@@ -1,10 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! PMIS-DATA-01: collection preservation and provenance proofs remain outside the executable command dependency graph. -/
 

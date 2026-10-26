@@ -5,6 +5,7 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 
 /-! MBERR-MAP-01 and MBERR-DATA-01 connect primitive occurrence-owned Error completion to the shared continuation invariant. The successor and its data are derived from exact local-result validity, not supplied as successful-completion premises. Public admission and actual-Start preservation remain separate assembly obligations. -/
 

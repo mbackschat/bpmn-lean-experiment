@@ -1,11 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.TokenStorage
-public import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Actual body-operation continuation balance
 

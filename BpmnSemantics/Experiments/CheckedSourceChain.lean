@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.Experiments.CheckedSourceDecomposition
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 
 /-! # Declarative checked-source chains
 

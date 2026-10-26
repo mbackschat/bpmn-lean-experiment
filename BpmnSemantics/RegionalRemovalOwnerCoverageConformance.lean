@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.RegionalRemovalOwnerCoverageConformanceCheckFixtures
 public import BpmnSemantics.CallActivityConformanceFixtures
-public import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
+import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
 public import BpmnSemantics.SemanticProcess.TerminateEnd
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -18,6 +18,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 /-! # Populated regional removal ownership witnesses
 
 These direct remover and Terminate executions populate the five AA-21 collections with distinct

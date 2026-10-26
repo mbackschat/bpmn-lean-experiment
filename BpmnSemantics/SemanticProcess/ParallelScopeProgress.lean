@@ -1,12 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-public import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! # External completion and internal body-operation locality
 

@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 
 /-! # Parallel User Task metadata composition admission conformance
 

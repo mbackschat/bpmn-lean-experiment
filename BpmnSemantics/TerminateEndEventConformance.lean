@@ -14,6 +14,9 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! # Terminate End Event conformance
 

@@ -1,6 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Internal commutation Activity ownership preservation -/
 

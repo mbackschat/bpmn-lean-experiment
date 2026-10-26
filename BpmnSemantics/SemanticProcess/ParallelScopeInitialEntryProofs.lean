@@ -1,8 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Initial parallel entry blockers
 
@@ -346,10 +350,7 @@ private theorem entered_live_credit (program : Program) (entry : ParallelScopeEn
     exact clean.2.1 (child.symm.trans (congrArg ScopeOccurrenceId.definitionScopeId same))
   have raw := entered
   unfold enterParallelScope? at raw
-  split at raw <;> try contradiction
-  split at raw <;> try contradiction
-  split at raw <;> try contradiction
-  split at raw <;> try contradiction
+  iterate 4 (split at raw <;> try contradiction)
   split at raw
   · cases Option.some.inj raw
     have old : occurrence ∈ before.scopeOccurrences := member

@@ -1,8 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
-public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
-public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Transaction single-token frontier cardinality
 

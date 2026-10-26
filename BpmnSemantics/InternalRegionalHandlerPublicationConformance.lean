@@ -1,6 +1,9 @@
 module
 
-public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
+import BpmnSemantics.InternalRegionalCancellationProjectionConformance
+public import BpmnSemantics.SubProcessErrorPropagationConformance
+public import BpmnSemantics.SubProcessBoundaryTimerConformance
+public import BpmnSemantics.TerminateEndEventFixtures
 
 /-! RHP-HANDLER-01's handler-publication witnesses are executable checks that
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively, apart from the cancellation projection witnesses. -/

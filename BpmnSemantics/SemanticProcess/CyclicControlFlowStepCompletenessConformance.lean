@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -15,6 +15,8 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # Selected cyclic evaluator-step completeness
 

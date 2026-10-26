@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! Full running-state validity makes ordinary arming agree with the snapshot-aware attempt, including retention purge. -/
 

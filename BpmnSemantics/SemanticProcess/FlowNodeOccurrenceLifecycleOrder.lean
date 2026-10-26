@@ -1,8 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Flow-node occurrence lifecycle ordering laws
 

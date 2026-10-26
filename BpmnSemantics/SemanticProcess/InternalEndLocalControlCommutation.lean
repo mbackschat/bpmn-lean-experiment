@@ -1,6 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalEndCommutation
+import BpmnSemantics.SemanticProcess.InternalEndCommutation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! End/local-control commutation reuses token-patch algebra. Selected-join preparation also
 protects every competing record's readiness bucket, beyond the selected owner's input. -/

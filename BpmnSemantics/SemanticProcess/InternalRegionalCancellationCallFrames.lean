@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 
 /-! REG-OWN-FRAME-01 needs Call masks computed from the actual cancellation successor.
 Predecessor region disjointness protects both endpoints of every reachable Call edge, so the

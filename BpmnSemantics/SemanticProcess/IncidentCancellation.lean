@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
 
 /-! # Semantic Process incident cancellation
 

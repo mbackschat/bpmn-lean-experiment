@@ -1,10 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! Fixture definitions of [`SequentialUserTask`](SequentialUserTask.lean), apart from its theorems so that
 the executable closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/

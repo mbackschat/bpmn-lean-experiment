@@ -1,11 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
+import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 
 /-! Bounded Sub-Process arming publishes its child start and control-position delta through the
 existing acceptance boundary; the attached deadline remains private under the

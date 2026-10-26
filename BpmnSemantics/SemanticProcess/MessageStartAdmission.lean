@@ -1,8 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.MessageStart
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.TimerStartAdmission
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.TimerStartAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! # Message Start Event external admission
 

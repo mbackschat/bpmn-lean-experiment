@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! # Configured Task conformance
 

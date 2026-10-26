@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Canonical Call record storage
 

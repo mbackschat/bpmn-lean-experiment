@@ -1,9 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Actual parallel-body lifetime firing accounting
 

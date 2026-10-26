@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 
 /-! # Sequential Multi-Instance laws

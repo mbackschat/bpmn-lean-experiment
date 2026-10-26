@@ -1,11 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-public import BpmnSemantics.SemanticProcess.CallReachability
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.CallReachability
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivityLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! Structural lifecycle preservation for the predecessor-selected scope creation account in
 [Internal Commutation](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

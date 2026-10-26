@@ -1,7 +1,18 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
-public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Message-task arming and local control share only token dependencies. Complete regional
 separation protects the full place census and every selected-join readiness bucket.

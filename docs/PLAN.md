@@ -92,11 +92,11 @@ Deliverable: the proposal's median of about ten rebuilt modules per ordinary com
 
 Acceptance blockers: exposed-body, signature and type edits in widely imported modules.
 
-Current result: hub laws sit in `<Hub>Laws` modules, so a hub proof edit rebuilds 2 or 3 modules in seconds (264 in 42 minutes before). Hiding the bodies of the eight exposed modules a 92-commit replay ranked first cut that replay's median from 686 to 26 rebuilt library modules (96 with the fixtures the acceptance allows); 34 commits still exceed 500 through signature and type changes.
+Current result: hub laws sit in `<Hub>Laws` modules, so a hub proof edit rebuilds 2 or 3 modules in seconds (264 in 42 minutes before). Hiding eight more module bodies, keeping only needed `import all` lines and re-exporting only what public declarations name cut a 92-commit replay's median from 686 to 11.5 rebuilt library modules (the design's 11); 34 commits still exceed 500 through kernel signature and type changes.
 
 Effort budget: 8 hours from 23:50 UTC on 2026-10-25; the owner directed on 2026-10-26 (local time) to take as long as the build-speed deliverable needs, so each exhausted block renews.
 
-Next action: drop each `import all` line a library module's own build does not need, re-run the replay, then measure the fixtures' serial rebuild time against the 15-minute acceptance limit.
+Next action: confirm the replay model with one measured interface edit, then measure the fixtures' serial rebuild time against the 15-minute acceptance limit.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # User Task wait Program validity
 

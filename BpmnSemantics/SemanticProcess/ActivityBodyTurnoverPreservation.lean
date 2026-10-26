@@ -1,8 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
+import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.NestedScopeData
+import BpmnSemantics.SemanticProcess.TimerStart
+import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
 
 /-! # Activity body turnover preservation
 

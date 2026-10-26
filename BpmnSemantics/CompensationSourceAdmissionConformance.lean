@@ -6,6 +6,7 @@ import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 
 /-! # Compensation source admission and lowering conformance
 

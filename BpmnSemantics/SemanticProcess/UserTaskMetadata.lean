@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.Contract
+import BpmnSemantics.Contract
 
 /-! # User Task assignment and form metadata
 

@@ -1,12 +1,14 @@
 module
 
-public import BpmnSemantics.Experiments.CheckedSourceFrontier
-public import BpmnSemantics.Experiments.CheckedSourceParallelFrontier
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.Experiments.CheckedSourceFrontier
+import BpmnSemantics.Experiments.CheckedSourceParallelFrontier
+import BpmnSemantics.SemanticProcess.Fixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
+public import BpmnSemantics.Experiments.CheckedSourceTransition
 
 /-! # Checked-source frontier witnesses
 

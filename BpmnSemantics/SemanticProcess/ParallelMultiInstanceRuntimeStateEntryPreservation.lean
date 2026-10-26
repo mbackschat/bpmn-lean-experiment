@@ -1,9 +1,21 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
-public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.WaitCompletion
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
@@ -110,29 +122,15 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
         simpa [childState, slots, items, pendingParallelSlots, Nat.add_assoc] using staged
       have oldTaskDifferent : ∀ wait ∈ before.waits, wait.task.id ≠ arm.taskId := by
         intro wait member same
-        have present : before.waits.any (fun candidate => candidate.task.id == arm.taskId) = true := by
-          rw [List.any_eq_true]
-          exact ⟨wait, member, by simp [same]⟩
-        rw [taskWaitAbsent] at present
-        contradiction
+        simpa [same] using List.any_eq_false.mp taskWaitAbsent wait member
       have oldTimerDifferent : ∀ wait ∈ before.timerWaits,
           wait.elementId ≠ arm.boundaryTimer.elementId := by
         intro wait member same
-        have present : before.timerWaits.any (fun candidate =>
-            candidate.elementId == arm.boundaryTimer.elementId) = true := by
-          rw [List.any_eq_true]
-          exact ⟨wait, member, by simp [same]⟩
-        rw [timerWaitAbsent] at present
-        contradiction
+        simpa [same] using List.any_eq_false.mp timerWaitAbsent wait member
       have oldRecordDifferent : ∀ old ∈ before.activityOccurrences,
           old.activityElementId.value ≠ arm.taskId.value := by
         intro old member same
-        have present : before.activityOccurrences.any (fun candidate =>
-            candidate.activityElementId.value == arm.taskId.value) = true := by
-          rw [List.any_eq_true]
-          exact ⟨old, member, by simp [same]⟩
-        rw [recordAbsent] at present
-        contradiction
+        simpa [same] using List.any_eq_false.mp recordAbsent old member
       have timerFresh : ∀ old ∈ childState.timerWaits,
           timerWaitKeyMatches timerWait old = false ∧
             timerWaitKeyMatches old timerWait = false := by

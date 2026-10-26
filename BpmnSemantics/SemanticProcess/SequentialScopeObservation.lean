@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.Scenario
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 
 /-! SMIS-PUBLISH-01 derives progress from the committed current-body binding. -/
 

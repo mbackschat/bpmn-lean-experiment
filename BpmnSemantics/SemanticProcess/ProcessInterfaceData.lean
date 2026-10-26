@@ -1,7 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Passive Process interface data
 

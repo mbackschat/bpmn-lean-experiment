@@ -1,9 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
-public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Pre-entry parent frontier exclusivity
 

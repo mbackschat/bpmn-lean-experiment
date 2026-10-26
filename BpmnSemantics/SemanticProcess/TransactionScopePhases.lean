@@ -1,12 +1,18 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction leaf-scope frontier classification
 

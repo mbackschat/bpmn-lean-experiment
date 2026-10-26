@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
 
 /-! The exact serial suffix and root frame discharge the runtime ingress validator.
 This derived guard is separate from command progress and its scheduled closure assembly. -/

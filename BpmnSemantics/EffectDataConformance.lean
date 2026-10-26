@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! Finite checked witnesses of the structured effect-data profile run the credit-decision chain through the
 actual external dispatcher and its internal closure, so neither a widened result domain alone nor a widened

@@ -1,6 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionExecutionPhases
+import BpmnSemantics.SemanticProcess.TransactionExecutionPhases
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
+import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
 
 /-! # Complete Transaction reachable-frontier classification
 

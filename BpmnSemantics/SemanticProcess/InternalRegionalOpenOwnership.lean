@@ -1,10 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 
 /-! Projected open occurrences carry live ownership. A scope anchor additionally carries its
 actual parent edge, which makes region membership agree with cancellation's anchor-based account.

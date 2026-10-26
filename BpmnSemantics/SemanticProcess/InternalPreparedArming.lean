@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! Complete retained preparations implement the predecessor-only finite-batch classification account. -/
 

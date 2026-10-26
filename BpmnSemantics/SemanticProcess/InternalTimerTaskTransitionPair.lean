@@ -1,11 +1,19 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskDataFrames
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskTokenCommutation
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
+import BpmnSemantics.SemanticProcess.InternalTimerTaskOrdinaryFrames
+import BpmnSemantics.SemanticProcess.InternalTimerTaskDataFrames
+import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
+import BpmnSemantics.SemanticProcess.InternalTimerTaskTokenCommutation
+import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCommutation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalTimerTaskLocalControl
+import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
 
 /-! The finite dispatcher consumes the complete Timer-task pair laws for every prepared family.
 No family is admitted through a weaker pair-specific preparation or successor premise. -/

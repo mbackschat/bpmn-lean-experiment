@@ -1,8 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskPairProjection
+import BpmnSemantics.SemanticProcess.InternalMessageTaskPairProjection
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
+import BpmnSemantics.SemanticProcess.InternalMessageTaskRuntimePreservation
 
 /-! ESL-OWN-01 inserts the Task and subscription anchors in one projection step.
 The half-inserted state is not a publication boundary; freshness applies to both starts. -/

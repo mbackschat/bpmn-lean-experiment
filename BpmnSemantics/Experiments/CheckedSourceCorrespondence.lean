@@ -1,12 +1,15 @@
 module
 
 public import BpmnSemantics.Experiments.CheckedSourceTransition
-public import BpmnSemantics.SemanticProcess.Execution
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Fixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.Lowering
+public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # Stage 1 checked-source correspondence
 

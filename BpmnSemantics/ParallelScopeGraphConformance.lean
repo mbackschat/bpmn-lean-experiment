@@ -30,6 +30,8 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 

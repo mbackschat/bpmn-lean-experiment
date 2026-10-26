@@ -1,9 +1,9 @@
 module
 
 public import BpmnSemantics.UserTaskInteractionConformanceCheckFixtures
-public import BpmnSemantics.Conformance
-public import BpmnSemantics.SequentialUserTask
-public import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.Conformance
+import BpmnSemantics.SequentialUserTask
+import BpmnSemantics.SemanticProcess.Execution
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle

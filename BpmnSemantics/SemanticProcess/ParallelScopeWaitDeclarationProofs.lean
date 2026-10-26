@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 
 /-! # Parallel scope wait-declaration preservation
 

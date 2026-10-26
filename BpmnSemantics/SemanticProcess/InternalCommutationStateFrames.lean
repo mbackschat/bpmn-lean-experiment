@@ -1,8 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-public import BpmnSemantics.SemanticProcess.InternalCommutationProjection
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Internal commutation state-frame proofs
 

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 
 /-! # Graph-reachability laws
 

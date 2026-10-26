@@ -1,10 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
-public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Stored Service mapping provenance
 

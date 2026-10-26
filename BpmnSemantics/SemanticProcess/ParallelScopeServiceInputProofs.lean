@@ -1,11 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
-public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Service input admission and availability
 

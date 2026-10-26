@@ -1,9 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! # Parallel batch reservation provenance
 

@@ -2,7 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
-public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.ScopeCompletion
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Containing-scope termination
 

@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.TransactionSourceArmingConformanceCheckFixtures
-public import BpmnSemantics.TransactionSourceConformance
+import BpmnSemantics.TransactionSourceConformance
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
@@ -26,6 +26,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 /-! # Selected Transaction child Task arming
 
 This finite source-derived witness instantiates the existing quantified prepared-batch laws at a

@@ -1,10 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
+import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
-public import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
+import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
+import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 
 /-! Ordinary End publishes an instantaneous occurrence and one consumed token. Acceptance is
 derived from the unchanged open projection, independently of later batch numbering. -/

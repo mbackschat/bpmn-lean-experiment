@@ -1,8 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-public import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+import BpmnSemantics.SemanticProcess.InternalCommutation
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! The five local-control families use equality-keyed state atoms. Their complete predecessor
 footprints supply the frames and unit separation required by the

@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Single-operation state evaluators
 

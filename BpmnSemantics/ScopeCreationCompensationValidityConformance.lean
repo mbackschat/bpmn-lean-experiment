@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.CompensationActivityRetentionConformance
-public import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
-public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+import BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
+import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -25,6 +25,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 
 /-! # Compensation owner lookups under scope insertion
 

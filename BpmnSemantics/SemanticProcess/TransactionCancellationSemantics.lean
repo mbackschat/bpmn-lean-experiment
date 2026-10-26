@@ -1,6 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Transaction cancellation relations
 

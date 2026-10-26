@@ -1,12 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
+import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
 

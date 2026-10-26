@@ -1,8 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! Child cancellation preserves Process lookup outside the cancelled region. The
 current Call account has parentless endpoints, so a child seed removes no Call record;

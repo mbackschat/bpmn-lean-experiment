@@ -1,14 +1,20 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.CallReachability
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.CallReachability
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 
 /-! Open lifecycle projection through the actual scope-creation patch from the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

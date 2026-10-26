@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ActivityDataInput
+import BpmnSemantics.SemanticProcess.ActivityDataInput
 public import BpmnSemantics.SemanticProcess.ActivityDataOutput
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 

@@ -1,8 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
-public import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
+import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 
 /-! Regional selection reads control state, time, and owner censuses. Existing removal frames preserve those reads under regional footprint independence. -/
 

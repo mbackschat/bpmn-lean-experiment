@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.CheckedProcessContract
 
 /-! # Called-Process Call Activity identity
 

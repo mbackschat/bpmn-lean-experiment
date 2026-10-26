@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
 
 /-! # Parallel Multi-Instance shared runtime well-formedness

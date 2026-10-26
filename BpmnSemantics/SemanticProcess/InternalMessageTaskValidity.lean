@@ -1,8 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
+import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! ESL-OWN-01 requires joint Task/Message/Activity preservation. The existing insertion and
 association laws discharge each family without assuming an intermediate composite state is valid. -/

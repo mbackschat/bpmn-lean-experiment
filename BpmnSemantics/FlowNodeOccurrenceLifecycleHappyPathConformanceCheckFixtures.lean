@@ -9,6 +9,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
+public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
 
 /-! Fixture definitions and executable checks of [`FlowNodeOccurrenceLifecycleHappyPathConformance`](FlowNodeOccurrenceLifecycleHappyPathConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/

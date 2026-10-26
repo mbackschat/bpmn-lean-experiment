@@ -1,9 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
-public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.InternalCommutationCorrelationProjection
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! # Internal commutation occurrence-projection frames
 

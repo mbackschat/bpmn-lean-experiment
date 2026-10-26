@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ExecutionRuntime
-public import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.Execution
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
@@ -17,6 +17,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! # BpmnSemantics.ServiceTaskEffectConformance — exact effect-intent locks
 

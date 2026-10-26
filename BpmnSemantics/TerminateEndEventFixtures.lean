@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-public import BpmnSemantics.SemanticProcess.Scenario
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 
 /-! # Terminate End Event fixtures
 

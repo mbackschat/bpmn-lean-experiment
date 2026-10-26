@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.EffectCompletion
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! MBERR-DATA-01 and MBERR-PROGRESS-01 separate exceptional continuations from normal-only graph analysis. MBERR-MAP-01 and MBERR-REFUSE-01 check primitive mapping, routing and ownership. These constructed witnesses do not establish public command admission or reachable execution. -/
 

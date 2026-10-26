@@ -1,8 +1,21 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPublication
-public import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
+import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalPublication
+import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
+import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
+import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Return and completion preserve the jointly inserted task, Timer, and Activity record.
 Canonical filter and erase laws retain exact list order, not only collection membership. -/

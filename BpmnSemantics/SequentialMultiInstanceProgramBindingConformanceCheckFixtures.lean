@@ -1,14 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 public import BpmnSemantics.SequentialMultiInstanceDataFixtures
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic

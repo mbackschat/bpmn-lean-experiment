@@ -1,8 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Regional removal agreement
 

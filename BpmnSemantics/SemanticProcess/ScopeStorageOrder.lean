@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Scope occurrence and remaining activation-counter order laws
 

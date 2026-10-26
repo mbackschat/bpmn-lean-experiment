@@ -1,9 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 
 /-! Regional endings must pass the actual lifecycle fold before successor correspondence.
 Uniqueness and membership come from the predecessor projection and selected ending census.

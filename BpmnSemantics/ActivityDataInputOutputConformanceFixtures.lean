@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.ActivityDataInputOutputConformanceDefinitionFixtures
-public import BpmnSemantics.SemanticProcess.Execution
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -16,6 +16,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.Lowering
 /-! # Composed Activity data-input/output conformance fixtures
 
 Shared exact-source and runtime fixtures for admission and lifetime witnesses. Literal fixtures are

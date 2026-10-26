@@ -1,7 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalSelection
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
+import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalSelection
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalFrame
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Regional cleanup must retain the complete newly inserted Activity group.
 Owner separation, fresh Message identity, and the unchanged ownership graph determine the masks.

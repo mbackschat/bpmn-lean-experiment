@@ -1,8 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 
 /-! The actual Return successor preserves the complete optional wait projection.
 Owner survival follows from the actual cleanup filter, while private Timer visibility

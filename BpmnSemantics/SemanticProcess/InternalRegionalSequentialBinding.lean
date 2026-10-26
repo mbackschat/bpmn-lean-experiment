@@ -1,6 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! SMI reverse binding under regional cancellation.
 

@@ -1,7 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskLocalControl
-public import BpmnSemantics.SemanticProcess.InternalEndCommutation
+import BpmnSemantics.SemanticProcess.InternalMessageTaskLocalControl
+import BpmnSemantics.SemanticProcess.InternalEndCommutation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 
 /-! The selected None End pair uses token removal while preserving the complete Message-host
 preparation. The subscription admission certificate excludes Merge from this pair domain. -/

@@ -1,7 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Actual reservation anchor uniqueness
 

@@ -1,17 +1,19 @@
 module
 
-public import BpmnSemantics.Experiments.CheckedSourceSemantics
+import BpmnSemantics.Experiments.CheckedSourceSemantics
 public import BpmnSemantics.ParallelForkJoinConformance
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.UserTaskInteractionConformance
+import BpmnSemantics.UserTaskInteractionConformance
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.UserTaskInteractionConformanceCheckFixtures
+public import BpmnSemantics.Experiments.CheckedSourceScenario
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
 

@@ -1,11 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.Transition
-public import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.WaitCompletion
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
-public import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction scope barriers between frontier phases
 

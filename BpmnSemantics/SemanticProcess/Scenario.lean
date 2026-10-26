@@ -3,9 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.OpenWaitProjection
 public import BpmnSemantics.SemanticProcess.ScenarioAdmission
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-public import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 

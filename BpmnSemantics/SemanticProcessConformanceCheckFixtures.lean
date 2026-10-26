@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcessAdmissionConformance
+import BpmnSemantics.SemanticProcessAdmissionConformance
 public import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation

@@ -1,10 +1,10 @@
 module
 
 public import BpmnSemantics.MappedBoundaryErrorConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.ExecutionRuntime
-public import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.ExecutionRuntime
+import BpmnSemantics.SemanticProcess.Execution
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

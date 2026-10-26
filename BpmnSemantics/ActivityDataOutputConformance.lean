@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.ActivityDataOutputConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.Execution
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

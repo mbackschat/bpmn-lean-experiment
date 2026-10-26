@@ -1,8 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
-public import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
+import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
+import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Internal commutation runtime preservation
 

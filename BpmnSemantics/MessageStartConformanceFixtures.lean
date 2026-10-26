@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Message Start Event conformance fixtures
 

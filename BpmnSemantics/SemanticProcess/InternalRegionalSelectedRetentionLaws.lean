@@ -1,11 +1,16 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
-public import BpmnSemantics.SemanticProcess.InternalRegionalSelectionLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 
 /-! Ownership-closed regional selections preserve the retained data and reference fields. -/
 

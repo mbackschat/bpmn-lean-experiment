@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
 
 /-! # Ownership closure for selected regional operations
 

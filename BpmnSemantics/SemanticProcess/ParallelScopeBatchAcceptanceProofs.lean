@@ -1,8 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservedTokenProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservedAnchorProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedTokenProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedAnchorProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Complete ordinary frontier acceptance
 

@@ -1,10 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Transition
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String
@@ -16,6 +16,12 @@ import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
 public meta import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.MonitoredScope
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
 
 /-! # Exclusive Gateway with Simple Boolean conditions
 

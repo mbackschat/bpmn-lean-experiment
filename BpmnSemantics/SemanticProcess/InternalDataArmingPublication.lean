@@ -1,8 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! # Accepted data-arming publication
 

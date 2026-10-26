@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! # Parallel Multi-Instance laws
 

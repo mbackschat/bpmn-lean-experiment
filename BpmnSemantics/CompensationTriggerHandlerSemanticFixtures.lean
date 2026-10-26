@@ -1,7 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.ProfileCardinalities
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Shared compensation trigger and handler semantic fixtures -/
 

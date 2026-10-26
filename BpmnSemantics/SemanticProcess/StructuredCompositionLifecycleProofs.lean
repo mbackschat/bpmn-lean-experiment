@@ -1,11 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
-public import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
+import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! SPC-CLOSURE-01 requires reachable lifecycle and exact Activity-local shape, beyond input availability and decreasing rank. These predicates describe the existing runtime and are preserved through its actual operations and command admission. -/
 

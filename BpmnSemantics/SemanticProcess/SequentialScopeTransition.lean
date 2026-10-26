@@ -1,8 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
+import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 
 /-! # Repeated-scope preservation and reachability
 

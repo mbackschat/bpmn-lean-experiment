@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 
 /-! Discovery retains every exact Merge offer before classification under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).

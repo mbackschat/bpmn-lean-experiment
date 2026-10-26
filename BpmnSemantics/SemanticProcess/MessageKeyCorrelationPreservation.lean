@@ -1,14 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-public import BpmnSemantics.SemanticProcess.ProfileAdmission
-public import BpmnSemantics.SemanticProcess.CollectionOrder
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Message key-correlation preservation laws
 

@@ -18,6 +18,7 @@ import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 public meta import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! Executable locks for the compensation trigger and handler Program wire contract. -/
 

@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalParallelCensus
-public import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
 
 /-! Actual regional cleanup preserves complete PMI bindings by retaining whole controller,
 Activity, pending-child, and Timer groups. The predecessor flow-node ownership fact joins the

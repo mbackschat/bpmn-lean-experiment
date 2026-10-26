@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 
 /-! # Reserved arming replay of parallel scope bodies
 

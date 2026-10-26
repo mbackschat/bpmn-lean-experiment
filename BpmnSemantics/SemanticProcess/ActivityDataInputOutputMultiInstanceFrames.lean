@@ -1,6 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Multi-Instance frames for unrelated Activity-data arming
 

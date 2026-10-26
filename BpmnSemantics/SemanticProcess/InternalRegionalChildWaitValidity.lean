@@ -1,7 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 
 /-! Child completion retains every User Task and Effect wait and their exact declarations.
 Quiescence protects their live-owner census while Activity-local data remains byte-for-byte unchanged. -/

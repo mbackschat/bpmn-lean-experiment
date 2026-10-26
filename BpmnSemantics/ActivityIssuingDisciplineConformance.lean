@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Activity identity issuing-discipline preservation
 

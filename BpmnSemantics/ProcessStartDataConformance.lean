@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.ProcessStartDataConformanceCheckFixtures
-public import BpmnSemantics.SequentialUserTask
+import BpmnSemantics.ProcessStartDataConformanceCheckFixtures
+import BpmnSemantics.SequentialUserTask
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SequentialUserTaskFixtures
 /-! # BpmnSemantics.ProcessStartDataConformance — initial Process-data locks
 
 This module owns the selected CIB Seven start-variable extension for the bounded sequential User Task profile. It separates the universal fresh-state data invariant from the exact positive and negative executable witnesses.

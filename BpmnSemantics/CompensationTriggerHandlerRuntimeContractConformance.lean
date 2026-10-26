@@ -1,8 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.Scenario
-public import BpmnSemantics.SemanticProcessJsonMain
+import BpmnSemantics.SemanticProcessJsonMain
 public import Lean.Data.Json
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcessJson.Observation
 
 /-! # Compensation trigger and handler runtime contract checkpoint -/
 

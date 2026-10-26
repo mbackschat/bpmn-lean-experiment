@@ -1,9 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
+import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Declaration provenance along actual parallel-scope histories
 

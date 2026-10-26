@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.ExecutionRuntime
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! Retained topology and state fixtures are shared by executable publication probes and their proof owners. -/
 

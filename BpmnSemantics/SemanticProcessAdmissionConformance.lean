@@ -1,11 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # BpmnSemantics.SemanticProcessAdmissionConformance: admission and lowering contract checks
 

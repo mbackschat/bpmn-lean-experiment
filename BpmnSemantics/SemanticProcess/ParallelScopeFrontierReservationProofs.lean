@@ -1,6 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+public import BpmnSemantics.SemanticProcess.ParallelScopeReservationHeadroomProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Complete frontier member reservation
 

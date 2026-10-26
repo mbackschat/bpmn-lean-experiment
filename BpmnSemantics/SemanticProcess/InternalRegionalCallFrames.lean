@@ -1,8 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! REG-OWN-FRAME-01 requires re-derived Call masks, not just closure under a fixed mask.
 Disjoint forward closures preserve every reachable Call edge, including the selected-ID filter;

@@ -1,10 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetentionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionBinding
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! The Program's unique Timer declarer identifies the private bounded-scope matcher.
 AOO-JOIN-03 binds the deadline through its Activity body and tagged attachment; independent

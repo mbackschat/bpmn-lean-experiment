@@ -8,9 +8,9 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.CommandAdmission
-public import BpmnSemantics.SemanticProcess.ScenarioAdmission
-public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
-public import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.ScenarioAdmission
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.SequentialScopeHistoryTransportProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -26,6 +26,14 @@ import all BpmnSemantics.SemanticProcess.JsonSupport
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+public import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
+import BpmnSemantics.SemanticProcess.SequentialScopeOrdinaryExecutionProofs
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
 /-! SMIS-ADMIT-01: a repeated body has one paired completion and cannot choose another scope's continuation. -/
 
 @[expose] public section

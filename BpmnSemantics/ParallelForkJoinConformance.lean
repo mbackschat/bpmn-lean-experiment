@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.Conformance
+import BpmnSemantics.Conformance
+public import BpmnSemantics.SemanticProcessContract
 
 /-! Exact neutral scenario inputs for the bounded parallel fork/join differential lane. -/
 

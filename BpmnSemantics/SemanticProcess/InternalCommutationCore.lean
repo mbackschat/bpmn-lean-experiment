@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Internal commutation footprint and prepared-patch core

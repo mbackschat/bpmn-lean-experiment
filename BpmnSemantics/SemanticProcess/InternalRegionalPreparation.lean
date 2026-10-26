@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 
 /-! Complete regional preparation binds the selected removal, exact predecessor region,
 dependency footprint, and publication before invoking the existing evaluator.

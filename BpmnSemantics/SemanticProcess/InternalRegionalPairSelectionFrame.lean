@@ -1,7 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 
 /-! Selectors require exact singleton censuses, not membership alone. Footprint-protected scopes and Call records retain both the selected member and the absence of competitors. -/
 

@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! Quiescent scope completion has no live descendant or called-root closure to remove. -/
 

@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.RuntimeStateInitializationConformanceCheckFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
@@ -17,6 +17,7 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Whole-command closure rollback witnesses
 

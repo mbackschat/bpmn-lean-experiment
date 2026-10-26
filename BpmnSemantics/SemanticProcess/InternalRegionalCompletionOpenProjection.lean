@@ -1,9 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalQuiescence
-public import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalQuiescence
+import BpmnSemantics.SemanticProcess.InternalRegionalInstantaneousFold
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 
 /-! Root completion's terminal projection follows from predecessor quiescence, live ownership,
 and the selected local-data closure. Historical and issuance fields need not be empty. -/

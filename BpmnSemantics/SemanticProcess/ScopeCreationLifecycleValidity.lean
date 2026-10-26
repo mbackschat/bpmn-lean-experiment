@@ -1,7 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! Existing lifecycle owners survive fresh scope insertion under the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

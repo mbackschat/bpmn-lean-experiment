@@ -1,10 +1,12 @@
 module
 
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-public import BpmnSemantics.EventBasedGatewayConformance
-public import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.EventBasedGatewayConformance
+import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.ReceiveTaskConformance
 public import BpmnSemantics.ConfiguredTaskConformance
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
+public import BpmnSemantics.EventBasedGatewayFixtures
 
 /-! # Flow-node occurrence lifecycle projection conformance
 

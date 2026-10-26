@@ -65,6 +65,8 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 
 /-! # Axiom footprint of the composed assurance guarantees
 

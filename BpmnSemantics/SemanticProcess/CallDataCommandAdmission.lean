@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcess.CallDataAdmission
 public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Declaration-bound scalar Call command admission
 

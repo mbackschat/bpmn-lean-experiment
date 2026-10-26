@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! # Exact internal control-position delta proofs

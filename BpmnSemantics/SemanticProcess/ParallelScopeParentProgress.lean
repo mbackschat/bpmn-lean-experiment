@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Parent-spine continuation credit
 

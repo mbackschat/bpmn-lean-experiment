@@ -13,6 +13,8 @@ public import BpmnSemantics.SemanticProcess.TerminateEndLowering
 public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
+public import BpmnSemantics.SemanticProcess.GraphValidation
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Canonical checked-process lowering
 

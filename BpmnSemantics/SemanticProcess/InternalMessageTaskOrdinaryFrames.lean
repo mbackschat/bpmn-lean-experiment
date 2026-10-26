@@ -1,9 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
-public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 
 /-! Message-task and ordinary arming share the existing wait, counter, and owner-census frame laws.
 The selected subscription account requires both anchors and the joined Activity to remain atomic.

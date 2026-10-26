@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.Experiments.CheckedSourceTransition
 public import BpmnSemantics.Experiments.CheckedSourceGraph
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 
 /-! # Shared checked-source frontier laws and single-token frontiers
 

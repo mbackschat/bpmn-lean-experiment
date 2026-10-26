@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcessJson
+import BpmnSemantics.SemanticProcessJson
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
 import all Init.Data.Ord.String
@@ -15,6 +15,9 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+public import BpmnSemantics.SemanticProcessJson.DefinitionInput
+public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! Executable locks for language-neutral JSON and ordering behavior. -/
 

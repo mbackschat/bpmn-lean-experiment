@@ -1,6 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
+import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
+import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 
 /-! Complete local-control preparation survives an independent regional execution. The frame
 includes competing selected-join populations, exact token buckets, and index-free publication. -/

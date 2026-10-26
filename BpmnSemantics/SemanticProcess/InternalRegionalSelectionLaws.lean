@@ -1,7 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
-public import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
+import BpmnSemantics.SemanticProcess.InternalRegionalContinuationAdmission
+import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 
 /-! Regional selection preserves runtime position through the admitted completion and error transitions. -/
 

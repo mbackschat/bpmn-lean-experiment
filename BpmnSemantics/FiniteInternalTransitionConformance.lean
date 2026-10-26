@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.FiniteInternalTransitionConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.InternalTransitionCanonicalBatchPublication
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -15,6 +15,11 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
+public import BpmnSemantics.SemanticProcess.InternalRegionalParallelCensus
+import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
+import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 /-! A structurally admitted claim-routing frontier runs beside human review and input-bound
 coverage assessment. Admission here is Program/runtime admission, not registered XML or reachability.
 -/

@@ -4,6 +4,8 @@ public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionProgressProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 
 /-! MTCF-PROGRESS-01 connects the admitted wait-cut ranks to actual routing transitions; graph certificates alone cannot establish bounded runtime closure. Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 

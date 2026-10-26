@@ -1,8 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeRetirementProgress
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Repeated-body local input availability
 

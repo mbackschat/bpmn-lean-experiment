@@ -1,8 +1,22 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+public import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 
 /-! Child completion preserves the exact ordered wait projection. Its withdrawn Timer
 was already private, and every retained wait keeps its complete owner/Process lookup. -/

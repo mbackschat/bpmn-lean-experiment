@@ -1,11 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
@@ -13,6 +13,8 @@ public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
 
 /-! Declaration-bound Start binding policy shared by raw command dispatch and private capacity admission. -/
 

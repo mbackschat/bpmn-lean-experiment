@@ -1,11 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
+import BpmnSemantics.SemanticProcess.ActivityBodyTurnoverPreservation
 public import BpmnSemantics.SemanticProcess.ActivityDataInput
 public import BpmnSemantics.SemanticProcess.ActivityDataOutput
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Activity body-claim writer preservation
 

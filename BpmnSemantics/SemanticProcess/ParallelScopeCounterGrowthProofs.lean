@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Actual parallel body counter growth
 

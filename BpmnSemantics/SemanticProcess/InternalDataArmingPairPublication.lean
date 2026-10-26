@@ -1,6 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
+public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
+import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
+import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
 
 /-! # Accepted mixed and data-pair publication
 

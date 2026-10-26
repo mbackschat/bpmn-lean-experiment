@@ -1,8 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalEndCommutation
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+import BpmnSemantics.SemanticProcess.InternalEndCommutation
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 
 /-! End and ordinary or data arming exchange owned token removals. Protected input censuses
 preserve both complete preparations while wait identities and publication remain unchanged. -/

@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutation
 
 /-! # Exact mixed data and ordinary arming commutation
 

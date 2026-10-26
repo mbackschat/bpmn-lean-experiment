@@ -1,9 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
+import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
 public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
-public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.TransactionBranchPhases
+public import BpmnSemantics.SemanticProcess.TransactionScopePhases
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+import BpmnSemantics.SemanticProcess.TransactionCommandPhases
+import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
 
 /-! # Transaction execution-phase invariant
 

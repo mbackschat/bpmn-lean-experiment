@@ -1,9 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Regional continuation admission
 

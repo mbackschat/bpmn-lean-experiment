@@ -1,8 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Mixed local-control and arming read frames follow the complete predecessor account in the
 [Internal Commutation proposal](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

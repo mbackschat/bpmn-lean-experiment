@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 
 /-! The reviewed Sequential Multi-Instance data-role identities, apart from the program-binding proofs so
 an executable check can use them without importing a proof owner. -/

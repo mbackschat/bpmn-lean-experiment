@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 
 /-! # Normal scope completion
 

@@ -1,12 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.TokenPatch
 public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! # Local-control token-patch validity
 

@@ -1,6 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.InclusiveGateway
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Token patches retain complete unit counts for the publication bridge in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

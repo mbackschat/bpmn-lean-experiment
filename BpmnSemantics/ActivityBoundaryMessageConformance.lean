@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.CommandAdmission
 public import BpmnSemantics.SemanticProcess.InternalCommutationCensus
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
+import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.Transition

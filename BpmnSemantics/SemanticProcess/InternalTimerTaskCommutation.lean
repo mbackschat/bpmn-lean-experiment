@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! Exact Timer-task patch equality reuses the established collection insertion laws. The three
 issuers remain independent, so task separation cannot stand in for Timer separation.

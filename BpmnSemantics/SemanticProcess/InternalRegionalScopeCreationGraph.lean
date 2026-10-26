@@ -1,12 +1,20 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
-public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivityLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import BpmnSemantics.SemanticProcess.CallReachability
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 
 /-! Scope insertion adds a parent edge or a Call edge. The regional read footprint protects their source as well as their fresh destination, so an independent insertion cannot enlarge the selected occurrence region. -/
 

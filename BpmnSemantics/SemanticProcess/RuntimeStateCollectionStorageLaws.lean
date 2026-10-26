@@ -1,8 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-public import BpmnSemantics.SemanticProcess.CollectionOrder
-public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! The stricter committed-storage subset supplies the existing weak-order and unique-key facts. -/
 

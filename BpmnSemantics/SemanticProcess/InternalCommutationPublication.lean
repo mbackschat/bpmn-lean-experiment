@@ -1,9 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 public import BpmnSemantics.SemanticProcess.InternalCommutation
-public import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
+import BpmnSemantics.SemanticProcess.InternalCommutationTransitionRecord
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Internal commutation publication
 

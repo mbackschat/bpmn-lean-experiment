@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryEvaluatorPreservation
-public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryEvaluatorPreservation
+import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.ProfileAdmission
 
 /-! # Parallel Multi-Instance shared runtime-state closing selection
 

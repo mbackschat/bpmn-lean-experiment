@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
-public import BpmnSemantics.MappedBoundaryErrorConformance
+import BpmnSemantics.MappedBoundaryErrorConformance
 public import BpmnSemantics.SubProcessErrorPropagationConformance
 public import BpmnSemantics.SubProcessBoundaryTimerConformance
 public import BpmnSemantics.ServiceTaskIncidentCancellationConformance
@@ -17,6 +17,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.MappedBoundaryErrorConformanceCheckFixtures
 
 /-! # Flow-node occurrence lifecycle cancellation conformance
 

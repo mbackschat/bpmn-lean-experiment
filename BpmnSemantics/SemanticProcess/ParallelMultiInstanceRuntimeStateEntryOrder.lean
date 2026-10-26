@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPreservation
+public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Parallel Multi-Instance entry order fact
 

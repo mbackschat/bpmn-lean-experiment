@@ -1,10 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 
 /-! # Admitted token-patch position totality
 

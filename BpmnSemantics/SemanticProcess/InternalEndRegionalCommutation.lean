@@ -1,7 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalEndRegionalPreparationFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+import BpmnSemantics.SemanticProcess.InternalEndRegionalPreparationFrame
+import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+public import BpmnSemantics.SemanticProcess.TransitionTrace
+import BpmnSemantics.SemanticProcess.InternalEndPreparationLaws
+import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
+import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Actual End/regional executions commute by the existing fixed regional token action and
 relative End increment. Both complete preparations and successor facts come from predecessor

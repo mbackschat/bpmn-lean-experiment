@@ -1,10 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskPublication
+import BpmnSemantics.SemanticProcess.InternalMessageTaskPublication
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-public import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
+import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ControlPosition
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.InternalMessageTaskOpenProjection
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! The selected subscription account publishes one atomic Task/Message delta.
 Acceptance checks the actual candidate, independent open projection, transition record, and token position. -/

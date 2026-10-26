@@ -1,9 +1,9 @@
 module
 
 public import BpmnSemantics.RuntimeStateInitializationConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.Lowering
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+import BpmnSemantics.SemanticProcess.Lowering
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle

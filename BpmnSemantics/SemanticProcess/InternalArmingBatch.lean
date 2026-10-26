@@ -1,7 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
-public import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
+import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
 
 /-! Pair laws lift to arbitrary prefixes and permutations without assuming successor invariants. -/
 

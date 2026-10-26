@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Called-tree position preservation
 

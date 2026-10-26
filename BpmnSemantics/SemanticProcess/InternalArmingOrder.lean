@@ -1,7 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.WaitActivation
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Internal arming collection order: canonical insertion and distinct-key replacement laws for bounded internal arming. -/
 

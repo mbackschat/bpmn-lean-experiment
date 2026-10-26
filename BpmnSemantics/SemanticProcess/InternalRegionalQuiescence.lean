@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! Terminal Complete needs population emptiness, not just absence at one owner. RSI-OWN-01
 transfers singleton-root quiescence to each wait family; REG-OWN-CLOSE-01 separately excludes

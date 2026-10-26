@@ -1,11 +1,22 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
-public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
-public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
-public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
+import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
+import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+import BpmnSemantics.SemanticProcess.ParallelScopeReachableInvariantTransport
+import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
+import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageLaws
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! RSI-ORDER-01/RSI-UNIQ-02 storage follows actual PMIS ingress and internal steps.
 Reservation validity supplies fresh wait identities; collection storage alone is not an issuance certificate.

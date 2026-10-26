@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! Finite independent SBT witnesses retain the invoice review, validation, classification and finalization journey. They do not discharge the quantified reachable-progress obligation. -/
 

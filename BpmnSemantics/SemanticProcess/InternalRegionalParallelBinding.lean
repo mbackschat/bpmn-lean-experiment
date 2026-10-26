@@ -1,7 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import BpmnSemantics.SemanticProcess.InternalRegionalActivityValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 
 /-! Regional removal preserves each surviving parallel controller's complete pending-child and
 lifetime-Timer binding. The operation-wide weighted reverse census is a separate obligation. -/

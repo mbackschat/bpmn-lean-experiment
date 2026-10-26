@@ -1,7 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! The subscription proposal's depth-one forest and Call exclusion align live owners with
 the hosting Process through existing projection validity, without a reachability premise. -/

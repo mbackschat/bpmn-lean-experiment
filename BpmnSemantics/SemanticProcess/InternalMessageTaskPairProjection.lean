@@ -1,6 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
+import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Message-host publication requires exact Task/Message/Activity pairing in both states.
 ESL-OWN-01 preparation's fresh anchors and tagged associations keep the inserted triple separate. -/

@@ -1,9 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskScopeFrames
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskEndPairs
-public import BpmnSemantics.SemanticProcess.InternalSubscriptionPairExclusions
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCommutation
+import BpmnSemantics.SemanticProcess.InternalMessageTaskScopeFrames
+import BpmnSemantics.SemanticProcess.InternalMessageTaskEndPairs
+import BpmnSemantics.SemanticProcess.InternalSubscriptionPairExclusions
+import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCommutation
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalMessageTaskLocalControl
+import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
+import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalRetention
+import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
 
 /-! The subscription proof-domain amendment requires complete Message-host pairs with ordinary
 waits, local control, child entry, None End and regional retirement. Admission excludes other families. -/

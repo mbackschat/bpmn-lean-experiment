@@ -1,15 +1,17 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.ScopeStorageOrder
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedInitialization
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.TokenOrder
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction split-state validity
 

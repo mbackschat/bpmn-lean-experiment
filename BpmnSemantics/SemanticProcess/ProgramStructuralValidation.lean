@@ -1,16 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Data
-public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-public import BpmnSemantics.SemanticProcess.ErrorDefinition
+import BpmnSemantics.SemanticProcess.Data
+import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import BpmnSemantics.SemanticProcess.ErrorDefinition
 public import BpmnSemantics.SemanticProcess.GraphValidation
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
-public import BpmnSemantics.SemanticProcess.MessageStart
-public import BpmnSemantics.SemanticProcess.TimerStart
-public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import BpmnSemantics.SemanticProcess.InclusiveGateway
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
+import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 
 /-! # Semantic Process program structural validation
 

@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
-public import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Transaction cancellation emits one parent continuation without emitting the normal output. -/
 

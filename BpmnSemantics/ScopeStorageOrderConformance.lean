@@ -1,6 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Scope and remaining counter storage witnesses
 

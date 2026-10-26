@@ -1,9 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
-public import BpmnSemantics.SemanticProcess.Execution
-public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
+import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

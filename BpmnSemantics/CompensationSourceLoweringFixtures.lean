@@ -1,12 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Compensation source lowering fixtures
 

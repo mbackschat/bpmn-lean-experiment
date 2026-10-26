@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
+import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.CompensationSourceLoweringFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation

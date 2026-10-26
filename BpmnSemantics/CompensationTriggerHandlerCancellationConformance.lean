@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 
 /-! # Compensation handler failure cancellation conformance -/
 

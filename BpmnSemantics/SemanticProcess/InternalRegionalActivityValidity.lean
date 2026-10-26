@@ -1,7 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Retained Activity lifetime under regional cancellation
 

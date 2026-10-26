@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! Independent IL admission for IMES-ARM-01 and IMES-CLOSE-01. Exact operation, port and scope
 partitions distinguish a declaration-triggered handler from an ordinary entered child with a continuation. -/

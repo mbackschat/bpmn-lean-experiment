@@ -1,6 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Transition
+import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+public import BpmnSemantics.SemanticProcess.InternalOperationAttempt
+public import BpmnSemantics.SemanticProcess.MonitoredScope
+public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
+public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+public import BpmnSemantics.SemanticProcess.BoundedScope
+public import BpmnSemantics.SemanticProcess.BoundedTask
+public import BpmnSemantics.SemanticProcess.CyclicControlFlow
+public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.TerminateEnd
+public import BpmnSemantics.SemanticProcess.TransactionCancellation
+public import BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! # Interrupting Sub-Process Error propagation
 

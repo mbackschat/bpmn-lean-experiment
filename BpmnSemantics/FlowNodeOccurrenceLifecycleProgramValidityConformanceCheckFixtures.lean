@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.FlowNodeOccurrenceLifecycleFixtures
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
-public import BpmnSemantics.ActivityBoundaryTimerConformance
+import BpmnSemantics.ActivityBoundaryTimerConformance
 public import BpmnSemantics.ConfiguredTaskConformance
 public import BpmnSemantics.CallActivityConformanceFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
@@ -11,6 +11,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
+public import BpmnSemantics.ActivityBoundaryTimerFixtures
 
 /-! Fixture definitions and executable checks of [`FlowNodeOccurrenceLifecycleProgramValidityConformance`](FlowNodeOccurrenceLifecycleProgramValidityConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/

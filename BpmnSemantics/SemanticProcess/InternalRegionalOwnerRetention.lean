@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! RSI-OWN-01 gives every Activity a live owning scope independently of its body.
 REG-OWN-CLOSE-01 must retain that owner whenever it retains the Activity record. -/

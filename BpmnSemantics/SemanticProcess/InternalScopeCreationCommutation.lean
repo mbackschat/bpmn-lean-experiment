@@ -1,7 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-public import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.CallReachability
+import BpmnSemantics.SemanticProcess.CallStorageOrder
+import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! Exact complete-state commutation of prepared child and Call creation from the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

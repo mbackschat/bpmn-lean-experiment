@@ -1,7 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! # Admitted Fork and Join scope classification
 

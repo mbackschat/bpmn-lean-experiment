@@ -1,6 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
+import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+import BpmnSemantics.SemanticProcess.InternalPreparedArming
+import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Static signed-unit templates have canonical positive rows and exact complete-key lookup,
 as required by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

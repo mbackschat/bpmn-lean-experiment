@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.ActivityDataInputOutputAdmissionConformanceCheckFixtures
-public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
+import BpmnSemantics.ActivityDataInputOutputAdmissionConformanceCheckFixtures
+import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -14,6 +14,8 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+public import BpmnSemantics.ActivityDataInputOutputConformanceDefinitionFixtures
+import BpmnSemantics.SemanticProcess.Execution
 /-! # Composed Activity data-input/output admission conformance
 
 Exact start-binding and ready-input decisions for the claim-assessment profile. These decisions are

@@ -1,7 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
-public import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Parallel subprocess collection provenance
 

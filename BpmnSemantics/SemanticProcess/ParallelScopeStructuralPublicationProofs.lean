@@ -1,10 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
 public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! Actual Start and PMIS entry determine the complete structural owner census.
 Lifetime scope removal retains those Program bindings, so structural publication

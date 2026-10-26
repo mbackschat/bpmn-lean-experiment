@@ -1,7 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeTerminalFrontierProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeBatchAcceptanceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeTerminalFrontierProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeBatchAcceptanceProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierReservationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeProgress
 
 /-! # Structural operations in actual parallel frontiers
 

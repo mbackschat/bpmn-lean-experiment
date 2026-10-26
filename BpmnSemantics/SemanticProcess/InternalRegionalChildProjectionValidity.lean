@@ -1,7 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitPreservation
+import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitPreservation
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
+import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
+import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
+import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 
 /-! Child completion's projection associations retain exact Call roots, incident owners,
 and event-race member censuses. Each predicate is preserved from its predecessor account. -/

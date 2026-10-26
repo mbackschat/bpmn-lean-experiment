@@ -1,6 +1,13 @@
 module
 
-public import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.GraphValidation
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
+public import BpmnSemantics.SemanticProcess.CallActivityAdmission
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Checked-source graph validation
 

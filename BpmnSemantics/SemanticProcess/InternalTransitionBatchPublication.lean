@@ -1,7 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
-public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
+import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
+public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! Every mixed execution prefix publishes its original prepared value under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

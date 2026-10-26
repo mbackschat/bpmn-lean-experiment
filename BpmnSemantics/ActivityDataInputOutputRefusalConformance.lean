@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.ActivityDataInputOutputRefusalConformanceCheckFixtures
-public import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
+import BpmnSemantics.ActivityDataInputOutputConformanceFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.Execution
 /-! # Composed Activity data-input/output refusal conformance
 
 Whole-state and direct-transition refusal decisions over the shared claim fixture. The separate

@@ -1,8 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
+import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+public import BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 
 /-! SPC-CLOSURE-01's lifecycle frame: a reached composition holds no foreign execution state and keeps its one live Process root until completion retires it, preserved through the actual operations and command admission. -/
 

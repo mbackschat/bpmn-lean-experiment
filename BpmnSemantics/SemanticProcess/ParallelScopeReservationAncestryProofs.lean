@@ -1,10 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Actual parallel reservation ancestry
 

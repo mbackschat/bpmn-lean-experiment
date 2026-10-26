@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 
 /-! # Transaction cancellation and the compensation join
 

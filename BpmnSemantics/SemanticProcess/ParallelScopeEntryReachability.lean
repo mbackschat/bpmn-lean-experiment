@@ -1,11 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+public import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 
 /-! # Actual parent execution and parallel-entry uniqueness
 

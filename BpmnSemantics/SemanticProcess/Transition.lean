@@ -1,9 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.WaitActivation
+import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
-public import BpmnSemantics.SemanticProcess.BoundedScope
+import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.BoundedTask
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.InclusiveGateway
@@ -19,10 +19,10 @@ public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.CallDataTransfer
 public import BpmnSemantics.SemanticProcess.CallVariableMapping
 public import BpmnSemantics.SemanticProcess.CyclicControlFlow
-public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.MessageBoundedTask
 public import BpmnSemantics.SemanticProcess.MessageMonitoredTask

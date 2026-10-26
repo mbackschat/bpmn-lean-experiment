@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.CallActivity
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! Predecessor selection and retained patches for ordinary child entry and Call invocation in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

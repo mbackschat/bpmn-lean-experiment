@@ -1,7 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
+public import BpmnSemantics.SemanticProcess.TopologyFixtures
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! # Canonical token storage conformance
 

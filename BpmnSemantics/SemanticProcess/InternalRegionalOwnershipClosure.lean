@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! REG-OWN-CLOSE-01 separates predecessor liveness from survival under selected removal. The
 retention masks describe predecessor records only; no speculative successor supplies the condition.

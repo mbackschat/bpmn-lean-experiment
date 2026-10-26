@@ -1,8 +1,14 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingTerminal
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingTerminal
+import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Parallel Multi-Instance terminal runtime-state preservation
 

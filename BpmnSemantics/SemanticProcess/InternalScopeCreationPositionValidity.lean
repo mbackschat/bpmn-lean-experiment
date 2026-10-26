@@ -1,9 +1,19 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
-public import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivityLaws
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import BpmnSemantics.SemanticProcess.CallReachability
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Runtime-position preservation for complete scope-creation preparations under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).

@@ -2,9 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic

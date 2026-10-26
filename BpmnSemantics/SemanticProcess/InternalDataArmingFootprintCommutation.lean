@@ -1,7 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
-public import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationPreservation
 
 /-! # Composed data-pair laws from footprint independence
 

@@ -1,11 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.Transition
-public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.CollectionOrder
 
 /-! # Repeated-scope dispatch contract
 

@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 
 /-! Complete artifact frames preserve issuance populations and differently owned token buckets;

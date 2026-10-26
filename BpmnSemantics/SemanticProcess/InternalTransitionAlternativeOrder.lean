@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Exact frontier presentation uses the existing lexicographic and scope-order laws. Sorting

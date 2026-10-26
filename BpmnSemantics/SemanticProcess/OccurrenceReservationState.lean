@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! PMIS-SELECT-01 shares retained-anchor issuance checks with private command admission without importing transition publication back into admission. -/
 

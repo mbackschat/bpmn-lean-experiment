@@ -1,6 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
+import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeFrontierClassificationProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 
 /-! # Reachable Human and Service input multiplicity
 

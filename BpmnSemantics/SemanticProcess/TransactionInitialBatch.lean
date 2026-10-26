@@ -1,10 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionInitialValidity
-public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.SemanticProcess.TransactionInitialValidity
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingPublication
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! # Transaction initial Task batch
 

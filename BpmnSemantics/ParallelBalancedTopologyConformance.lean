@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
+import BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
+public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 
 /-! # Exact balanced parallel topology admission conformance
 

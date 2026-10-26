@@ -4,6 +4,11 @@ public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.ProfileAdmission
+import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import BpmnSemantics.SemanticProcess.TimerStart
+import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! Existing profile capability counts discharge the root-only Compensation proof domain
 without adding a premise to their public preservation guarantees. -/

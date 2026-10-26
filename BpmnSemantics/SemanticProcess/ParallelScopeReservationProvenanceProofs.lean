@@ -1,9 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 
 /-! # Admitted reservation identity provenance
 

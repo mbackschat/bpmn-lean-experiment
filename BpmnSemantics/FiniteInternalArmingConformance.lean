@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.FiniteInternalArmingConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 /-! An admitted claim-assessment frontier separates retained finite arming from ID-only execution. -/
 
 @[expose] public section

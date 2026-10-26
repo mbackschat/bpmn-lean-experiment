@@ -1,8 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CollectionOrder
-public import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
+import BpmnSemantics.SemanticProcess.MessageStart
+import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import BpmnSemantics.SemanticProcess.TimerStart
+import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! # Removal-only preservation
 

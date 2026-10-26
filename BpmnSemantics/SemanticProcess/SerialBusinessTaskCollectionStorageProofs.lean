@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
-public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 

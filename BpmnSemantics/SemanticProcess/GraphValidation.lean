@@ -6,6 +6,8 @@ public import BpmnSemantics.SemanticProcess.CallActivityAdmission
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.OperationControlPlaces
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 
 /-! # Fuel-bounded graph validation
 

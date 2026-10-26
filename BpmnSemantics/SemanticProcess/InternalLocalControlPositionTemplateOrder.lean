@@ -1,7 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
+import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.InternalPreparedArming
+import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 
 /-! The template's sort retains each resolved place once, with strict public flow order under
 the alias refusal rule in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

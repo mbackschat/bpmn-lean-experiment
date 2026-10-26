@@ -1,6 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 
 /-! # Declared Human and Service anchor freshness
 

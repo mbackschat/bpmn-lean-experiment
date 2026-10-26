@@ -1,9 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
 
 /-! Return preserves complete lookup results for owners outside its selected Call tree.
 Incoming Call records are retained by target Process, including all matching records;

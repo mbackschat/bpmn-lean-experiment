@@ -1,7 +1,16 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
+import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
+import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 
 /-! Bounded entry and ordinary child/Call creation share complete scope-selection laws under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).

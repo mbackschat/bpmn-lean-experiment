@@ -1,6 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
+import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 
 /-! PMI reverse binding requires a finite partition of pending children rather than equal raw
 population counts. These correspondence laws preserve multiplicity and assign completed slots

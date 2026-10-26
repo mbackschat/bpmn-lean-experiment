@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.EnginePopulationScenarioJson
 public import BpmnSemantics.SemanticProcessJson.DefinitionInput
 public import BpmnSemantics.SemanticProcessJson.Observation
+public import BpmnSemantics.SemanticProcessJson.Publication
 
 /-! Canonical JSON-lines emitter for admitted engine-population scenarios. -/
 

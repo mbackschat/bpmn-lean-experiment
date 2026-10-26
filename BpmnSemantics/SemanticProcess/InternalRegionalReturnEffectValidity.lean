@@ -1,7 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
-public import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
+import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
+import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
+public import BpmnSemantics.SemanticProcess.ControlPosition
 
 /-! Return removes local scopes by Process identity. Effect validity survives that filter
 because every matching local scope carries the retained wait's complete Effect identity;

@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
+import BpmnSemantics.FlowNodeOccurrenceLifecycleDeltaConformance
 public import BpmnSemantics.SequentialUserTaskFixtures
 
 /-! # Flow-node occurrence lifecycle fixtures

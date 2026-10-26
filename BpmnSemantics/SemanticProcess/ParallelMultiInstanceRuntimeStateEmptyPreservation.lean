@@ -1,8 +1,12 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
-public import BpmnSemantics.SemanticProcess.TokenOrder
+import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
+import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+public import BpmnSemantics.SemanticProcess.TokenPatch
+import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 
 /-! # Empty parallel Multi-Instance runtime-state preservation
 

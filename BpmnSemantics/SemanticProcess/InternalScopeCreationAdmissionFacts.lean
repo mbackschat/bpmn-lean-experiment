@@ -1,8 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
-public import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
+import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivity
 

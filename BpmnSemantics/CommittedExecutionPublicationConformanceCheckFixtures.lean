@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.CommittedExecutionPublicationFixtures
 public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.Fixtures
+import BpmnSemantics.SemanticProcess.Fixtures
 public import BpmnSemantics.CallActivityConformanceFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation

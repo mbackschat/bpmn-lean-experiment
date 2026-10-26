@@ -1,14 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
+import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
+public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! Fixture definitions and executable checks of [`InternalScopeCreationFrameConformance`](InternalScopeCreationFrameConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/

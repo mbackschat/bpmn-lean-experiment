@@ -1,10 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! # Actual lifetime parent continuation accounting
 

@@ -1,9 +1,17 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
+import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
 public import BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
+import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Timer-task publication is checked through the evaluator's lifecycle acceptance boundary.
 The attached Timer remains private; the public delta starts only the prepared User Task.

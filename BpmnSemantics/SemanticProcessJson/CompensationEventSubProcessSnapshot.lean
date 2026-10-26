@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Compensation Event Sub-Process snapshot declaration decoding
 

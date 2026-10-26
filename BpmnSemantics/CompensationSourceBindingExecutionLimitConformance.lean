@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.CompensationSourceLoweringFixtures
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 
 /-! # Compensation source execution-limit binding conformance
 

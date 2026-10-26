@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectDataAdmission
-public import BpmnSemantics.SemanticProcess.NestedScopeData
+import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Nested scope-data profile admission
 

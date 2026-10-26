@@ -1,7 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionReachableClassification
-public import BpmnSemantics.SemanticProcess.TransactionInitialBatch
+import BpmnSemantics.SemanticProcess.TransactionReachableClassification
+import BpmnSemantics.SemanticProcess.TransactionInitialBatch
+public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
+import BpmnSemantics.SemanticProcess.TransactionInitialValidity
 
 /-! # Selected Transaction scheduling guarantee
 

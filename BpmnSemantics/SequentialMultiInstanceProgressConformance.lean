@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
-public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
+import BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -55,6 +55,7 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
+public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 
 /-! # Sequential Multi-Instance progress conformance
 

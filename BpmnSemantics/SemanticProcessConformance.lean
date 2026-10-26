@@ -1,9 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcessConformanceCheckFixtures
-public import BpmnSemantics.SemanticProcessAdmissionConformance
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowClosureConformance
-public import BpmnSemantics.TimerStartConformance
+import BpmnSemantics.SemanticProcessConformanceCheckFixtures
+import BpmnSemantics.SemanticProcessAdmissionConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowClosureConformance
+import BpmnSemantics.TimerStartConformance
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -18,6 +18,8 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
+public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 /-! # BpmnSemantics.SemanticProcessConformance: runtime and evaluator contract checks
 
 These checks own generic runtime closure, resumability, and evaluator behavior. Checked-graph admission, program validation, definition binding, and lowering fixtures live in `SemanticProcessAdmissionConformance` so each kernel-decided lane has an independent build boundary.

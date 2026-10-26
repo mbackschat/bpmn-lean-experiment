@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! # Semantic-element wire decoders shared by both definition representations
 

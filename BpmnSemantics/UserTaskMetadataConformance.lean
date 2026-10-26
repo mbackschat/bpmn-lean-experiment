@@ -1,10 +1,10 @@
 module
 
-public import BpmnSemantics.BooleanProcessDataConformance
+import BpmnSemantics.BooleanProcessDataConformance
 public import BpmnSemantics.SemanticProcessJson.CheckedProcess
 public import BpmnSemantics.SemanticProcessJson.Program
-public import BpmnSemantics.SemanticProcessJsonMain
-public import BpmnSemantics.SemanticProcess.Execution
+import BpmnSemantics.SemanticProcessJsonMain
+import BpmnSemantics.SemanticProcess.Execution
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -64,6 +64,10 @@ import all BpmnSemantics.SemanticProcess.EffectDataAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+public import BpmnSemantics.BooleanProcessDataConformanceCheckFixtures
+public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcessJson.Observation
 
 /-! # User Task assignment and form metadata conformance
 

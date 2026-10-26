@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CyclicControlFlowStepCompletenessConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowStepCompletenessConformance
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
@@ -15,6 +15,10 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance
+public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
+import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
+import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
 
 /-! # Actual cyclic automatic-closure conformance
 
