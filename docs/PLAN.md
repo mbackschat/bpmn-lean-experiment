@@ -87,18 +87,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement batch 2's concurrent scope Service Task family under its approved [proposal](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md), serving the effect remainders of `PC-SCOPE-01` and `PC-SCOPE-02` and the automated branches of `PC-CF-03`. Multi-Instance closure stays held at qualification.
+Current task: close the [build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md#acceptance) by owner direction of 2026-10-26, now that its first family-shaped increment, [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), is closure-approved. Multi-Instance closure stays held at qualification.
 
-Deliverable: the admitted, hosted family with its retained models, Lean laws, pipeline agreement and Temporal recovery witness, as the proposal's acceptance states.
+Deliverable: an ordinary family increment that rebuilds only its family's modules, the registry, the closed-world bridges and the global fixtures, with the proposal graduated to a spec.
 
-Acceptance blockers: none recorded.
+Acceptance blockers: the family's interface edit to its admission module invalidated 605 of 755 library modules, because shared validators re-exported family modules through unused public imports.
 
-Current result: implemented, including `CIB-OP-0010`; focused gates and the hosted recovery witness are green.
+Current result: the family is graduated; `lake shake` removes the unused imports, cutting that invalidation to 50 library modules.
 
-Effort budget: 24 hours of working time from 2026-10-26 16:30 UTC for implementation through closure; stop and reassess at the limit.
+Effort budget: 8 hours of working time from 2026-10-26 22:00 UTC; stop and reassess at the limit.
 
-Next action: run each closure heavy lane once (complete pipeline, full Lean with `BpmnConformance`, hosted Temporal), then the cold closure review; then graduate the proposal and close the [build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) on contract items 3 and 5.
+Next action: commit the import shake once the full Lean gate is green, measure the global-fixture rebuild time, then the proposal's cold closure review and graduation.
 
-Oracle: an effect result that settles a different branch's wait, or a Parallel join released before every branch effect commits.
+Oracle: a family interface edit whose static invalidation reaches a module outside its family, the registry, the bridges and the global fixtures.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

@@ -1,9 +1,9 @@
-# Concurrent scope Service Tasks proposal
+# Concurrent scope Service Tasks specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -216,21 +216,20 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts), the private [sequential-scope effect frontier tests](../../packages/temporal-adapter/workflow/test/sequential-scope-effect-readiness.test.ts), whose concurrent frontiers must stay admitted, [Workflow-chain limits](../../packages/temporal-adapter/protocol/test/workflow-chain.test.ts), [execution publication integration](../../packages/temporal-adapter/workflow/test/execution-publication-integration.test.ts) and the [pre-release architecture guard](../../scripts/pre-release-architecture.test.ts).
 - Structure: [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts), the [profile capability dispatch guard](../../scripts/lean-profile-capability-dispatch.test.ts), [Lean fanout](../../scripts/lean-fanout.test.ts), the [semantic operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 
-### Owners this implementation grows
+### Owners this implementation grew
 
-Extract an owner before growth would exceed its review target:
 
 - source: [compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), [serial business-task source](../../packages/bpmn-source/src/serial-business-task-source.ts), [checked element projection](../../packages/bpmn-source/src/checked-element-projection.ts) and [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts);
 - TypeScript core: [nested scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts), the [Program](../../packages/semantic-core/src/semantic-program-profile-shape.ts) and [checked](../../packages/semantic-core/src/checked-process-profile-shape.ts) profile shapes;
 - Lean: [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean), [`ProfileShapeCatalog`](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean), whose remaining headroom is small enough that its new arms may require an extraction first, one new laws module and one new conformance owner;
 - Temporal: [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts), [the Workflow-chain contract](../../packages/temporal-adapter/protocol/src/workflow-chain.ts), [History capacity](../../packages/temporal-adapter/workflow/src/workflow-event-history-capacity.ts), the [frontier scheduler](../../packages/temporal-adapter/workflow/src/ordinary-effect-frontier-scheduler.ts) and [`workflow-implementation.ts`](../../packages/temporal-adapter/workflow/src/workflow-implementation.ts), from which the scheduler selection is extracted first.
 
-Growth falsifies these passages, which the implementation corrects: the Service Task exclusion of the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#required-optional-and-excluded-scope) and of the merge regions; the [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) row's operation list; the lifecycle specification's host-predicate paragraph, its statement that the ordinary-effect reservation is private component qualification, and its Workflow-chain activation-margin paragraph, which must name the profile-aware pending-Activity limit; the [repeated, nested and concurrent Calls account](REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md), whose caller-root class now excludes Service Tasks explicitly; and `CIB-EXT-0015`'s boundary sentence on concurrent execution.
+Growth falsified these passages, which the implementation corrected: the Service Task exclusion of the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#required-optional-and-excluded-scope) and of the merge regions; the [profile-parameterized admission](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md) row's operation list; the lifecycle specification's host-predicate paragraph, its statement that the ordinary-effect reservation is private component qualification, and its Workflow-chain activation-margin paragraph, which must name the profile-aware pending-Activity limit; the [repeated, nested and concurrent Calls account](REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md), whose caller-root class now excludes Service Tasks explicitly; and `CIB-EXT-0015`'s boundary sentence on concurrent execution.
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
 | Proposal | `a5656c39` | `fork-turns-none` | `approve-with-required-edits` | `f4f858f3, 56a4f100` |
-| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
+| Closure | `7b171484` | `fork-turns-none` | `approve-with-required-edits` | `1a07c994` |

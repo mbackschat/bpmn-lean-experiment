@@ -9,7 +9,7 @@ The per-command laws of the concurrent scope Service Task family (CSE-ISOLATE-01
 data-free effect completion before internal closure changes exactly the addressed wait, its Activity variable
 scope and one token, and a scope occurrence owning an effect wait is never quiescent. The closure-level
 isolation claim stays with the per-command sibling check of the preservation gate; see the
-[concurrent scope Service Tasks proposal](../../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#lean-assurance-lane).
+[concurrent scope Service Tasks proposal](../../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#lean-assurance-lane).
 -/
 
 @[expose] public section

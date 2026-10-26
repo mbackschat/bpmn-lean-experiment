@@ -66,7 +66,7 @@ Excluded:
 
 - a Call inside an embedded Sub-Process or merge-target body under this profile;
 - Parallel Gateways, Sub-Processes or Start data in a called Process;
-- Service Tasks in a called Process or in a caller that holds a Call, which the [concurrent scope Service Tasks](CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#admission) admission refuses;
+- Service Tasks in a called Process or in a caller that holds a Call, which the [concurrent scope Service Tasks](CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#admission) admission refuses;
 - every mapping attribute, `calledElementBinding`, version, version-tag and tenant attribute, and a prefixed or foreign `calledElement`;
 - boundary Events, loops or Multi-Instance on a Call Activity;
 - the shapes the concurrency rules refuse;

@@ -11,7 +11,7 @@ refused model differs from an admitted control in the one fact its name states, 
 records that the profile completes an effect through the generic `completeEffect` arm whose frame law
 `completeEffect_data_free_frame` states. Burst expectations are the TypeScript analysis's values for the same
 graphs; see the
-[concurrent scope Service Tasks proposal](../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#separating-witnesses).
+[concurrent scope Service Tasks proposal](../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#separating-witnesses).
 -/
 
 @[expose] public section

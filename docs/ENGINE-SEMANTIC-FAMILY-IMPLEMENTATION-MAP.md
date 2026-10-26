@@ -166,7 +166,7 @@ Stage A of the [repeated, nested and concurrent Calls specification](capsules/RE
 
 ## Concurrent scope Service Tasks
 
-The [concurrent scope Service Tasks account](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md) grows the same profile and owns its evidence and [receipt](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#independent-cold-review-receipt).
+The [concurrent scope Service Tasks account](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md) grows the same profile and owns its evidence and [receipt](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#independent-cold-review-receipt).
 
 **Implemented.** Lean and the core admit data-free overlay-bound Service Tasks wherever this profile admits a User Task; each occurrence's effect wait blocks scope quiescence; its result advances only that occurrence.
 
