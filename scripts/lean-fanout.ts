@@ -151,12 +151,39 @@ function hiddenDefinitions(source: string): Set<string> {
 
 /** Whether a source rewrites with any of `names` through a tactic that generates equation lemmas. */
 function rewritesWith(source: string, names: ReadonlySet<string>): boolean {
-  if (names.size === 0) return false;
+  return hiddenRewriteSites(source, names).length > 0;
+}
+
+/**
+ * The name each rewrite with one of `names` uses, once per occurrence: an argument of a `simp`- or `rw`-family
+ * tactic, or a named `f.eq_…` lemma.
+ */
+function hiddenRewriteSites(source: string, names: ReadonlySet<string>): string[] {
+  if (names.size === 0) return [];
   const rewrite = /\b(?:simp_all|simpa|simp_arith|simp|dsimp|rw|rwa|erw|rewrite|norm_num)\??\b[^\n[]*\[([^\]]*)\]/gu;
-  for (const [, list] of source.matchAll(rewrite)) {
-    if (list!.split(",").some((argument) => names.has(argument.replace(/^\s*←?\s*/u, "").trim().split(".").at(-1)!))) return true;
+  const arguments_ = [...source.matchAll(rewrite)]
+    .flatMap(([, list]) => list!.split(",").map((argument) => argument.replace(/^\s*←?\s*/u, "").trim().split(".").at(-1)!));
+  const lemmas = [...source.matchAll(/([A-Za-z0-9_']+)\.eq_(?:\d+|def|unfold)\b/gu)].map(([, name]) => name!);
+  return [...arguments_, ...lemmas].filter((name) => names.has(name));
+}
+
+/**
+ * Every rewrite with a hidden definition of a module imported with `import all`, as `Module.definition` per
+ * occurrence and keyed by the rewriting module, which item 2 of
+ * [the build modularity proposal](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) forbids: each one
+ * exports the definition's equation lemmas, so a body edit changes the rewriting module's public interface.
+ */
+export function leanHiddenRewrites(sources: LeanSources): Map<string, string[]> {
+  const { headers } = importGraph(sources);
+  const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
+  const hidden = new Map([...headers.keys()].map((module) => [module, hiddenDefinitions(text.get(module)!)]));
+  const rewrites = new Map<string, string[]>();
+  for (const [importer, header] of headers) {
+    const sites = header.imports.filter(({ module, importsAll }) => importsAll && headers.has(module))
+      .flatMap(({ module }) => hiddenRewriteSites(text.get(importer)!, hidden.get(module)!).map((name) => `${module}.${name}`));
+    rewrites.set(importer, sites.sort());
   }
-  return [...source.matchAll(/([A-Za-z0-9_']+)\.eq_(?:\d+|def|unfold)\b/gu)].some(([, name]) => names.has(name!));
+  return rewrites;
 }
 
 /** A module allowed more importers than the default, at most `bound`; the list only shrinks. */
@@ -172,19 +199,20 @@ export type LeanFanoutBound = Readonly<{ module: string; bound: number }>;
  * kernel name that is no scanned module, is reported after the bounds' findings.
  */
 export function leanFanoutViolations(fanouts: ReadonlyMap<string, ReadonlyArray<string>>,
-  bounds: ReadonlyArray<LeanFanoutBound>, defaultBound: number, kernel: ReadonlyArray<string> = []): string[] {
+  bounds: ReadonlyArray<LeanFanoutBound>, defaultBound: number, kernel: ReadonlyArray<string> = [],
+  unit = "importers"): string[] {
   const exempt = new Set(kernel);
   const recorded = new Set([...bounds.map(({ module }) => module), ...kernel]);
   const listed = bounds.flatMap(({ module, bound }) => {
     const count = fanouts.get(module)?.length;
     if (exempt.has(module)) return [`${module}: a kernel module needs no recorded bound`];
     if (count === undefined) return [`${module}: recorded but not a scanned module`];
-    if (count > bound) return [`${module}: ${count} importers exceed its recorded bound ${bound}`];
-    if (count <= defaultBound) return [`${module}: ${count} importers fit the default bound ${defaultBound}, so its entry must go`];
+    if (count > bound) return [`${module}: ${count} ${unit} exceed its recorded bound ${bound}`];
+    if (count <= defaultBound) return [`${module}: ${count} ${unit} fit the default bound ${defaultBound}, so its entry must go`];
     return [];
   });
   const unlisted = [...fanouts].filter(([module, importers]) => !recorded.has(module) && importers.length > defaultBound)
-    .map(([module, importers]) => `${module}: ${importers.length} importers exceed the default bound ${defaultBound} without a recorded bound`);
+    .map(([module, importers]) => `${module}: ${importers.length} ${unit} exceed the default bound ${defaultBound} without a recorded bound`);
   const kernelFindings = kernel.filter((module) => !fanouts.has(module))
     .map((module) => `${module}: declared kernel but not a scanned module`);
   return [...listed, ...kernelFindings, ...unlisted];

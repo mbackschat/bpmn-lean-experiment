@@ -3,8 +3,11 @@ import test from "node:test";
 
 import {
   leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel, leanHiddenEditBounds, leanHiddenEditDefaultBound,
+  leanHiddenRewriteBounds,
 } from "./lean-fanout-bounds.ts";
-import { leanFanouts, leanFanoutViolations, leanHiddenEditFanouts, leanLibraryModules } from "./lean-fanout.ts";
+import {
+  leanFanouts, leanFanoutViolations, leanHiddenEditFanouts, leanHiddenRewrites, leanLibraryModules,
+} from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
 
@@ -76,6 +79,19 @@ test("a hidden edit also reaches the loaders of an `import all` importer that re
     module("Pkg/AboveShown.lean", "import Pkg.Shown"),
   ]);
   assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.AboveRw", "Pkg.AboveSimp", "Pkg.Rw", "Pkg.Shown", "Pkg.Simp", "Pkg.Unfolds"]);
+});
+
+test("each rewrite with a hidden definition of an `import all` import is one recorded site", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", "public section\n\ndef hidden : Nat := 0\n\n@[expose] def shown : Nat := 0\n\nend"),
+    module("Pkg/Simp.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by simp only [hidden]\ntheorem u : hidden = 0 := by rw [hidden]"),
+    module("Pkg/Unfolds.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by unfold hidden; rfl"),
+    module("Pkg/Shown.lean", "import all Pkg.Hub\n\ntheorem t : shown = 0 := by simp [shown]"),
+    module("Pkg/Plainly.lean", "import Pkg.Hub\n\ntheorem t : shown = 0 := by simp [hidden]"),
+  ]);
+  assert.deepEqual(rewrites.get("Pkg.Simp"), ["Pkg.Hub.hidden", "Pkg.Hub.hidden"]);
+  assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0).map(([module]) => module), ["Pkg.Simp"]);
 });
 
 test("a hidden edit also reaches each `meta import` importer whose import closure holds the edited module", () => {
@@ -185,9 +201,25 @@ test("a widely imported module that starts re-exporting another module fails the
   assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.TransitionTrace: ")), findings.join("\n"));
 });
 
-// A one-line proof edit to `ProgramStructuralValidation` rebuilt exactly the 264 importers this model predicted,
-// in 42 minutes on one CPU (container probe, 2026-10-25), so these bounds only shrink: by replacing an
-// `import all` with a bridge lemma the hub exports, or a kernel-decided witness with an executable check.
+// A one-line proof edit to `ProgramStructuralValidation` rebuilt exactly the 264 importers the model's `import all`
+// chains predicted, in 42 minutes on one CPU (container probe, 2026-10-25); the rewrite term added since makes the
+// bound an over-approximation for proof edits, which export no equation lemmas. These bounds only shrink: by
+// replacing an `import all` with a bridge lemma the hub exports, or a kernel-decided witness with an executable check.
 test("every library module stays within its recorded hidden-edit fanout bound", () => {
   assert.deepEqual(leanFanoutViolations(leanHiddenEditFanouts(librarySources()), leanHiddenEditBounds, leanHiddenEditDefaultBound), []);
+});
+
+// Item 2 of the build modularity proposal forbids `simp [f]` over a hidden `f`, but the hidden-edit fanout already
+// counts most such importers' loaders, so only a per-importer site count catches a new rewrite.
+test("no importer adds a rewrite with a hidden definition", () => {
+  assert.deepEqual(leanFanoutViolations(leanHiddenRewrites(librarySources()), leanHiddenRewriteBounds, 0, [], "rewrite sites"), []);
+});
+
+test("one added rewrite with a hidden definition fails the rewrite ratchet", () => {
+  const path = "BpmnSemantics/SemanticProcess/ParallelScopeCommandReplay.lean";
+  const sources = librarySources().map((file) => file.path === path
+    ? { path, source: `${file.source}\ntheorem mutationProbe : True := by simp only [operationWellFormed]\n` }
+    : file);
+  const findings = leanFanoutViolations(leanHiddenRewrites(sources), leanHiddenRewriteBounds, 0, [], "rewrite sites");
+  assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay: ")), findings.join("\n"));
 });
