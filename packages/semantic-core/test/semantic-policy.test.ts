@@ -14,6 +14,7 @@ import {
   isVariableValue,
   projectOpenUserTasks,
   sameStimulus,
+  utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
   CompleteUserTaskInstanceStimulus,
@@ -30,6 +31,16 @@ test("uses the wire's Unicode scalar-value string contract", () => {
   assert.ok(compareCanonicalStrings("e\u{301}", "\u{E9}") < 0);
   assert.equal(isWellFormedWireString("\u{10000}"), true);
   assert.equal(isWellFormedWireString("\uD800"), false);
+});
+
+// Node's own encoder is the oracle for every UTF-8 width, a surrogate pair and the 1,024-unit text bound.
+test("sizes Unicode scalar strings exactly as UTF-8 and refuses lone surrogates", () => {
+  for (const value of ["", "a", "\u{7F}\u{80}", "\u{7FF}\u{800}", "\u{FFFF}\u{10000}", "e\u{301}\u{1F600}x".repeat(300)]) {
+    assert.equal(utf8ByteLength(value), Buffer.byteLength(value, "utf8"), JSON.stringify(value));
+  }
+  for (const value of ["\uD800", "a\uDC00", "\uDBFFa", "\uDC00\uD800"]) {
+    assert.throws(() => utf8ByteLength(value), /UTF-8 sizing requires Unicode scalar values/u);
+  }
 });
 
 test("projects open User Tasks directly from current semantic state", async () => {
