@@ -90,13 +90,13 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: exposed-body, signature and type edits in widely imported modules.
+Acceptance blockers: none for the median; the fixture tail above 15 minutes awaits the owner's choice under the proposal's acceptance.
 
-Current result: hub laws sit in `<Hub>Laws` modules, so a hub proof edit rebuilds 2 or 3 modules in seconds (264 in 42 minutes before). Hiding eight more module bodies, keeping only needed `import all` lines and re-exporting only what public declarations name cut a 92-commit replay's median from 686 to 11.5 rebuilt library modules (the design's 11); 34 commits still exceed 500 through kernel signature and type changes.
+Current result: `<Hub>Laws` modules, hidden bodies and re-exports limited to what public declarations name cut a 92-commit replay's median from 686 to 11.5 rebuilt library modules (the design's 11), and to 2 modules and 2 fixture seconds for the 58 commits changing no kernel type; a measured edit rebuilt exactly the predicted 59 modules. 5 of those 58 exceed the 15-minute fixture limit (at most 17.4 minutes).
 
 Effort budget: 8 hours from 23:50 UTC on 2026-10-25; the owner directed on 2026-10-26 (local time) to take as long as the build-speed deliverable needs, so each exhausted block renews.
 
-Next action: confirm the replay model with one measured interface edit, then measure the fixtures' serial rebuild time against the 15-minute acceptance limit.
+Next action: land the build-speed branch through its pull request, then start batch 2's next family.
 
 Oracle: a module that fails under `-M2048`, a recorded row above it, or a proved lane citing an executable check.
 
