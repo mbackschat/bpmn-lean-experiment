@@ -458,7 +458,7 @@ private theorem entry_normal_producer (program : Program) (analysis : ParallelSc
   cases operation <;> simp only [parallelScopeEntry?] at parsed <;> try contradiction
   rename_i id entryOrigin input childEntry childScope normalOutput collection item mappings condition
   have same := Option.some.inj parsed
-  simp only [operationWellFormed, parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
+  unfold operationWellFormed at valid; simp only [parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
   have ports := valid.1.1.1.1.2
   have normalDeclared := List.all_eq_true.mp ports normalOutput (by simp)
   have normal := congrArg ParallelScopeEntry.normalOutput same
@@ -567,7 +567,7 @@ private theorem start_output_declared (program : Program) (analysis : ParallelSc
     ∃ place ∈ program.controlPlaces, place.id = output := by
   have valid := List.all_eq_true.mp (programWellFormed_operations program
     (ParallelScopeStart.analyzeProgram_incidence_admission program analysis admitted).1) _ member
-  simp only [operationWellFormed, Bool.and_eq_true] at valid
+  unfold operationWellFormed at valid; simp only [Bool.and_eq_true] at valid
   have declared := valid.2
   change program.controlPlaces.any (fun place => decide (place.id = output)) = true at declared
   simpa using List.any_eq_true.mp declared
@@ -754,7 +754,7 @@ theorem parent_input_declared (program : Program) (analysis : ParallelScopeStart
   have declared : program.controlPlaces.any (fun place => place.id == port) = true := by
     cases operation <;> simp only [SequentialScopeProgram.operationAllowed] at permitted <;> try contradiction
     all_goals simp only [SequentialScopeControl.inputs, bodyConsumedPorts, List.mem_singleton] at input <;> try contradiction
-    all_goals simp only [operationWellFormed, parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
+    all_goals (unfold operationWellFormed at valid; simp only [parallelScopeOperationWellFormed, Bool.and_eq_true] at valid)
     all_goals first
       | (subst port; first | exact valid.2 | exact valid.1.2 | exact valid.1.1.2 | exact valid.1.1.1.2)
       | exact List.all_eq_true.mp valid.1.2 port input

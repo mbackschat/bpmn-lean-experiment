@@ -677,7 +677,8 @@ theorem admitted_body_input_declared (program : Program)
     cases operation <;> simp only [SequentialScopeControl.bodyVertex?, bind, Option.bind_some,
       Option.bind_none] at converted <;> try contradiction
     all_goals simp only [bodyConsumedPorts, SequentialScopeControl.inputs, List.mem_singleton] at input
-    all_goals simp only [operationWellFormed, Bool.and_eq_true] at valid
+    all_goals unfold operationWellFormed at valid
+    all_goals simp only [Bool.and_eq_true] at valid
     all_goals first
       | (subst port; first | exact valid.2 | exact valid.1.2 | exact valid.1.1.2 | exact valid.1.1.1.2 | exact valid.1.1.1.1.2)
       | exact List.all_eq_true.mp valid.1.2 port input

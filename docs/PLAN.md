@@ -55,7 +55,6 @@ The [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) own the rules; th
 - Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
-- Rewrites: turn the nine `simp only [operationWellFormed]` rewriters into `unfold`, which keeps 82 library modules out of that hub's hidden-edit fanout, then shrink the [rewrite ratchet](../scripts/lean-fanout-bounds.ts) entries they leave.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
 ### Scheduled delivery batches

@@ -472,7 +472,8 @@ private theorem ordinary_body_input_declared (program : Program) (analysis : Par
   have declared : program.controlPlaces.any (fun place => place.id == port) = true := by
     cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
     all_goals simp only [bodyConsumedPorts, SequentialScopeControl.inputs, List.mem_singleton] at input
-    all_goals simp only [operationWellFormed, Bool.and_eq_true] at valid
+    all_goals unfold operationWellFormed at valid
+    all_goals simp only [Bool.and_eq_true] at valid
     all_goals first
       | (subst port; first | exact valid.2 | exact valid.1.2 | exact valid.1.1.2 | exact valid.1.1.1.2 | exact valid.1.1.1.1.2)
       | exact List.all_eq_true.mp valid.1.2 port input

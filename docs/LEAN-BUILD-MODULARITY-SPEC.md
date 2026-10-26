@@ -140,7 +140,7 @@ The first family-shaped increment was [concurrent scope Service Tasks](capsules/
 
 - **Rebuild set.** It rebuilt 312 modules, 144 of them library modules, all in the classes the acceptance admits. On the graph before the import shake of `8857320f`, the same edits invalidate 831 modules (static model).
 - **Fixture time.** Its global fixtures and roots rebuilt in 725 serial seconds, so the fixture decision of contract item 5 has not arisen.
-- **Equation-lemma leak.** 82 of those library modules rebuilt only because nine `import all` importers rewrite with `simp only [operationWellFormed]`, which exports its equation lemmas.
+- **Equation-lemma leak.** 82 of those library modules rebuilt only because nine `import all` importers rewrote with `simp only [operationWellFormed]`, which exports its equation lemmas. Those nine now `unfold` it, and an edit to its body leaves their public `.olean` unchanged (local hash check, 2026-10-26).
 - **Hidden-edit bounds.** The rewrites that predate contract item 2 widen the recorded hidden-edit bounds of `ProgramStructuralValidation`, `EffectDataAdmission`, `SequentialScopeDataAdmission` and `MessageStartAdmission` to most of the build. Converting their rewriters to `unfold` shrinks them.
 
 ## Independent cold-review receipt

@@ -265,7 +265,8 @@ theorem ContinuationCommandHistory.no_second_parallel_entry
       (ParallelScopeStart.analyzeProgram_incidence_admission program analysis admitted).1) consumer (declared consumer member)
     cases consumer <;> simp only [parallelScopeEntry?] at decoded <;> try contradiction
     have same := Option.some.inj decoded
-    simp only [operationWellFormed, parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
+    unfold operationWellFormed at valid
+    simp only [parallelScopeOperationWellFormed, Bool.and_eq_true] at valid
     have port := List.all_eq_true.mp valid.1.1.1.1.2 analysis.entry.input
       (by simp [(congrArg ParallelScopeEntry.input same).symm])
     simpa only [beq_iff_eq] using List.any_eq_true.mp port

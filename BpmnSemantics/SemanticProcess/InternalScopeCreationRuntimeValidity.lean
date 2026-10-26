@@ -382,8 +382,9 @@ theorem sequentialScopeEntry_task_separate (program : Program) (operation : Sema
   clear graph paired unique admitted member repeatedHeld
   cases operation <;> simp only [operationDeclaresWaitKey, operationWaitDeclarationKeys] at declares
   all_goals try contradiction
+  all_goals unfold operationWellFormed at checked
   all_goals simp_all [userTaskWaitDeclarationKey, timerWaitDeclarationKey, messageWaitDeclarationKey,
-    operationWellFormed, SemanticOperation.origin,
+    SemanticOperation.origin,
     parallelMultiInstanceOperationWellFormed, parallelMultiInstanceExactEntry]
   all_goals exact separate (congrArg NodeId.mk (by grind))
 

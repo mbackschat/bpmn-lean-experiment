@@ -170,7 +170,8 @@ private theorem token_operation_ports (program : Program) (operation : SemanticO
       (fun _ _ different same => different (congrArg ControlPlaceId.value same))
       (strictlySortedStrings_nodup _ sorted)
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
-  all_goals simp only [operationWellFormed, Bool.and_eq_true] at valid
+  all_goals unfold operationWellFormed at valid
+  all_goals simp only [Bool.and_eq_true] at valid
   case duplicate id origin input outputs =>
     have named : origin.elementId.value.isEmpty = false := by simpa [nonempty] using valid.1.1.1.1.2
     have length : 2 ≤ outputs.length := of_decide_eq_true valid.1.1.2

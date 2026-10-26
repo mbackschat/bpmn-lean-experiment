@@ -660,12 +660,14 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
   all_goals cases operation <;> simp_all [SemanticOperation.kind, bodyConsumedPorts]
   all_goals rename_i id origin inputs output
   · have size : inputs.length ≥ 2 := by
-      with_unfolding_all simp only [operationWellFormed, Bool.and_eq_true] at structural
+      unfold operationWellFormed at structural
+      with_unfolding_all simp only [Bool.and_eq_true] at structural
       grind
     intro empty
     simp [empty] at size
   · have sorted : strictlySortedStrings (inputs.map (·.value)) = true := by
-      with_unfolding_all simp only [operationWellFormed, Bool.and_eq_true] at structural
+      unfold operationWellFormed at structural
+      with_unfolding_all simp only [Bool.and_eq_true] at structural
       exact structural.1.1.2
     exact List.Pairwise.of_map (S := (· ≠ ·)) ControlPlaceId.value
       (fun _ _ different same => different (congrArg ControlPlaceId.value same))
@@ -694,7 +696,8 @@ theorem sequentialScope_effect_runtime_declarer (program : Program) (operation :
   cases operation <;> try trivial
   rename_i id origin input output effect route
   have same : origin.elementId = effect.elementId := by
-    with_unfolding_all simp only [operationWellFormed, Bool.and_eq_true, decide_eq_true_eq] at structural
+    unfold operationWellFormed at structural
+    with_unfolding_all simp only [Bool.and_eq_true, decide_eq_true_eq] at structural
     grind
   simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, same]
 

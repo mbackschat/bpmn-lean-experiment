@@ -207,7 +207,8 @@ theorem programWellFormed_awaitEffect_elements_align (program : Program)
     (member : .awaitEffect id origin input output effect route ∈ program.operations) :
     origin.elementId = effect.elementId := by
   have operationValid := operationWellFormed_of_programWellFormed program _ valid member
-  simp only [operationWellFormed, Bool.and_eq_true, decide_eq_true_eq] at operationValid
+  unfold operationWellFormed at operationValid
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at operationValid
   exact operationValid.1.1.1.1.2
 
 /-- Every admitted ordinary internal wait operation names a nonempty waited element. -/
@@ -232,10 +233,12 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member
     generalize channelEq : message.channel = channel at operationValid
     cases channel with
-    | directMessage messageId => simp_all [operationWellFormed]
+    | directMessage messageId =>
+        unfold operationWellFormed at operationValid
+        simp_all
     | operationMessage interfaceId operationId messageId =>
-        simp only [operationWellFormed, channelEq, nonempty, Bool.and_eq_true,
-          decide_eq_true_eq] at operationValid
+        unfold operationWellFormed at operationValid
+        simp only [channelEq, nonempty, Bool.and_eq_true, decide_eq_true_eq] at operationValid
         have allNonempty := List.all_eq_true.mp operationValid.1.1.1.1.1.1.2
         have originNonempty := allNonempty origin.elementId.value (by simp)
         rw [operationValid.1.1.1.1.2] at originNonempty
@@ -245,16 +248,19 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member
     generalize channelEq : message.channel = channel at operationValid
     cases channel with
-    | directMessage messageId => simp_all [operationWellFormed]
+    | directMessage messageId =>
+        unfold operationWellFormed at operationValid
+        simp_all
     | operationMessage interfaceId operationId messageId =>
-        simp only [operationWellFormed, channelEq, nonempty, Bool.and_eq_true,
-          decide_eq_true_eq] at operationValid
+        unfold operationWellFormed at operationValid
+        simp only [channelEq, nonempty, Bool.and_eq_true, decide_eq_true_eq] at operationValid
         have allNonempty := List.all_eq_true.mp operationValid.1.1.1.1.1.1.1.2
         have originNonempty := allNonempty origin.elementId.value (by simp)
         rw [operationValid.1.1.1.1.1.2] at originNonempty
         exact originNonempty
   all_goals
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member
-    simp_all [operationWellFormed, nonempty]
+    unfold operationWellFormed at operationValid
+    simp_all [nonempty]
 
 end BpmnSemantics.SemanticProcess

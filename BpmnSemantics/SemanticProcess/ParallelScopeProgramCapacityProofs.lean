@@ -205,7 +205,8 @@ theorem analyzeProgram_fork_join_ports_nodup (program : Program) (analysis : Pro
   constructor
   · intro id origin input outputs member
     have operationValid := List.all_eq_true.mp (programWellFormed_operations program valid) _ member
-    simp only [operationWellFormed, Bool.and_eq_true] at operationValid
+    unfold operationWellFormed at operationValid
+    simp only [Bool.and_eq_true] at operationValid
     have sorted : strictlySortedStrings (outputs.map (·.value)) = true := operationValid.1.2
     apply List.Pairwise.of_map (S := (· ≠ ·)) ControlPlaceId.value
     · intro left right different same
@@ -213,7 +214,8 @@ theorem analyzeProgram_fork_join_ports_nodup (program : Program) (analysis : Pro
     · exact strictlySortedStrings_nodup _ sorted
   · intro id origin inputs output member
     have operationValid := List.all_eq_true.mp (programWellFormed_operations program valid) _ member
-    simp only [operationWellFormed, Bool.and_eq_true] at operationValid
+    unfold operationWellFormed at operationValid
+    simp only [Bool.and_eq_true] at operationValid
     have sorted : strictlySortedStrings (inputs.map (·.value)) = true := operationValid.1.1.2
     apply List.Pairwise.of_map (S := (· ≠ ·)) ControlPlaceId.value
     · intro left right different same
