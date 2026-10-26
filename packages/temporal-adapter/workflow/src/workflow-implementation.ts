@@ -1,6 +1,5 @@
 import {
   CommandOutcome,
-  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   ScenarioStepKind,
   StimulusKind,
   advanceScenario,
@@ -67,10 +66,8 @@ import {
 import {
   createBoundedDeadlineSchedulers,
 } from "./bounded-deadline-scheduler.js";
-import { createTemporalOrdinaryEffectFrontierScheduler } from "./ordinary-effect-frontier-scheduler.js";
-import {
-  createTemporalCompensationFrontierScheduler,
-} from "./compensation-frontier-scheduler.js";
+import { createTemporalEffectFrontierScheduler } from "./effect-frontier-scheduler-selection.js";
+import { ordinaryEffectFrontierHosts } from "./ordinary-effect-frontier-scheduler.js";
 import {
   createEventRaceReadinessScheduler,
 } from "./event-race-readiness-scheduler.js";
@@ -287,13 +284,11 @@ export async function runBpmnProcessWithHostEffects(
       commandPublication.execution.headRevision,
     );
   };
-  const effectScheduler = semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID
-    ? createTemporalOrdinaryEffectFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity,
-      completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus),
-      () => workflowChainFence === WorkflowChainFenceState.Rollover,
-      { limits: workflowChain, hasRetainedWork: () => runRetention !== null && runRetention.traceEntries > 0,
-        requestRollover: () => { workflowChainFence = WorkflowChainFenceState.Rollover; } })
-    : createTemporalCompensationFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity);
+  const effectScheduler = createTemporalEffectFrontierScheduler(semanticProcess, executeEffect, failEffectCapacity,
+    completion => enqueueStimulus(acceptedStimuli, pendingStimuli, completion, reserveStimulus),
+    () => workflowChainFence === WorkflowChainFenceState.Rollover,
+    { limits: workflowChain, hasRetainedWork: () => runRetention !== null && runRetention.traceEntries > 0,
+      requestRollover: () => { workflowChainFence = WorkflowChainFenceState.Rollover; } });
   const boundedDeadlineSchedulerFor = (candidate: RuntimeState) =>
     boundedDeadlineSchedulers.find((scheduler) =>
       scheduler.ownsCommittedDeadline(candidate)
@@ -703,7 +698,7 @@ export async function runBpmnProcessWithHostEffects(
       workflowChainFence === WorkflowChainFenceState.Rollover ||
       workflowChain.commandCapacity.rolloverRequested() || runRetention?.rolloverRequested === true ||
       workflowChainRolloverTriggered(workflowChain, runRetention !== null && runRetention.traceEntries > 0));
-    if (rolloverRequested && semanticProcess.identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
+    if (rolloverRequested && ordinaryEffectFrontierHosts(semanticProcess)) {
       workflowChainFence = WorkflowChainFenceState.Rollover;
     }
     if (

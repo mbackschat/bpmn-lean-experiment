@@ -27,7 +27,7 @@ export type EffectFrontierScheduler = Readonly<{
   waitForIdle: () => Promise<void>;
 }>;
 
-type Adapters = Readonly<{
+export type OrdinaryEffectFrontierAdapters = Readonly<{
   newActivitiesFenced: () => boolean;
   reserveHistory: (issuedActivities: number, requestBytes: ReadonlyArray<number>) => boolean;
   executeEffect: (request: EffectRequest) => Promise<EffectActivityResult>;
@@ -35,6 +35,17 @@ type Adapters = Readonly<{
   enqueueCompletion: (completion: Stimulus) => void;
   waitUntil: (predicate: () => boolean) => Promise<void>;
 }>;
+
+export type OrdinaryEffectFrontierHistory =
+  Readonly<{ limits: WorkflowChainEventHistoryLimits | null; hasRetainedWork: () => boolean; requestRollover: () => void }>;
+
+/** The private sequential Multi-Instance profile hosts its ordinary effects through this frontier. */
+const ordinaryEffectFrontierProfiles: ReadonlySet<string> = new Set([SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID]);
+
+/** Whether this frontier hosts the Program's effects; the rollover fence and scheduler selection share this set. */
+export function ordinaryEffectFrontierHosts(program: SemanticProcessProgram): boolean {
+  return ordinaryEffectFrontierProfiles.has(program.identity.semanticProfile);
+}
 
 enum ActivityPhase {
   Running = "running",
@@ -45,10 +56,10 @@ type Owner = { transportKey: string; phase: ActivityPhase };
 /** Owns ordinary MI effects until their callback command commits; no cancellation is admitted. */
 export function createOrdinaryEffectFrontierScheduler(
   program: SemanticProcessProgram,
-  adapters: Adapters,
+  adapters: OrdinaryEffectFrontierAdapters,
 ): EffectFrontierScheduler {
-  if (program.identity.semanticProfile !== SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
-    throw hostInvariantFailure("Ordinary effect frontier requires the private sequential MI profile");
+  if (!ordinaryEffectFrontierHosts(program)) {
+    throw hostInvariantFailure("Ordinary effect frontier requires a profile it hosts");
   }
   const owners = new Map<string, Owner>();
   let failure: { error: unknown } | undefined;
@@ -142,11 +153,11 @@ export function createOrdinaryEffectFrontierScheduler(
 
 export function createTemporalOrdinaryEffectFrontierScheduler(
   program: SemanticProcessProgram,
-  executeEffect: Adapters["executeEffect"],
-  failCapacity: Adapters["failCapacity"],
-  enqueueCompletion: Adapters["enqueueCompletion"],
-  newActivitiesFenced: Adapters["newActivitiesFenced"],
-  history: Readonly<{ limits: WorkflowChainEventHistoryLimits | null; hasRetainedWork: () => boolean; requestRollover: () => void }>,
+  executeEffect: OrdinaryEffectFrontierAdapters["executeEffect"],
+  failCapacity: OrdinaryEffectFrontierAdapters["failCapacity"],
+  enqueueCompletion: OrdinaryEffectFrontierAdapters["enqueueCompletion"],
+  newActivitiesFenced: OrdinaryEffectFrontierAdapters["newActivitiesFenced"],
+  history: OrdinaryEffectFrontierHistory,
 ): EffectFrontierScheduler {
   return createOrdinaryEffectFrontierScheduler(program, {
     executeEffect, failCapacity, enqueueCompletion, newActivitiesFenced, waitUntil: condition,
