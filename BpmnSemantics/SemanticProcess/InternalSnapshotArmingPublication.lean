@@ -1,16 +1,14 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! Ordinary arming inserts exactly one wait start while preserving the focused Compensation projection. -/
 

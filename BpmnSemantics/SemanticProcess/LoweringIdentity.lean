@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.CheckedProcessContract
 
 /-! # Canonical lowering identity
 

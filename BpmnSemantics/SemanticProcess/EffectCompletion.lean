@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.RuntimeState
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! # Semantic Process effect completion

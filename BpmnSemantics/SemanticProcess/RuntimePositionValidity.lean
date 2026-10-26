@@ -2,11 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.EffectCompletion
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
-import BpmnSemantics.SemanticProcess.ValueDomain
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Runtime position validity
 

@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
 import BpmnSemantics.SemanticProcess.InternalDataArmingRegionalPatch
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
@@ -17,6 +16,9 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 
 /-! The regional/arming pair closes both evaluation orders from the original preparations.
 Regional removal commutes with retained wait, Activity, and local-data insertion; footprint

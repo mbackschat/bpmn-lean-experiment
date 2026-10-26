@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
@@ -12,9 +10,9 @@ import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 
 /-! The joined Timer-task insertion preserves regional selection outside its live owner.
 Fresh Timer identities preserve the exact deadline census used by bounded scope completion.

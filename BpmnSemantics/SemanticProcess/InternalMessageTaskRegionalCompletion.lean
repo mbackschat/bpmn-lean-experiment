@@ -1,11 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalPublication
-import BpmnSemantics.SemanticProcess.InternalArmingRegionalCompletion
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
@@ -13,6 +7,9 @@ import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 
 /-! Completion preserves the jointly inserted Task, Message and Activity record.
 Canonical filter and erase laws retain exact list order, not only collection membership. -/

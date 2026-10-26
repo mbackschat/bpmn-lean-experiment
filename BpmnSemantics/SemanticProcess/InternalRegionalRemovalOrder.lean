@@ -1,9 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 
 /-! # Canonical order after regional removal
 

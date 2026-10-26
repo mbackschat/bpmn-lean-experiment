@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.Scenario
 public import BpmnSemantics.SemanticProcess.CallDataContract
 public import BpmnSemantics.SemanticProcess.CorrelationScalarPath
 

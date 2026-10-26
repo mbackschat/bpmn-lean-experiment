@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
-import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 

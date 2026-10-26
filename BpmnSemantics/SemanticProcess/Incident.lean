@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Semantic Process effect incidents
 

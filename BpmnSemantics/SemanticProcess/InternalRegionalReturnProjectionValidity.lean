@@ -1,10 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitPreservation
@@ -13,6 +10,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Return's independent projection guards follow from predecessor validators and the
 actual cleanup. Message-boundary record retention uses the independent reverse record census;

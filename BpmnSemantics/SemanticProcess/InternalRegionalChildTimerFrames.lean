@@ -1,13 +1,11 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerBinding
-import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Child completion preserves the complete candidate census for surviving Timers.
 Exact Activity body and tagged-handler selection keep a surviving Timer from naming

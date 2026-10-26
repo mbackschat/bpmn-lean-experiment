@@ -3,7 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.InternalOperationAttempt
-public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 
 /-! # Compensation Event Sub-Process snapshot-aware scope transitions -/
 

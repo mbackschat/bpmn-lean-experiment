@@ -1,20 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Parallel Multi-Instance evaluator soundness and invariant preservation
 

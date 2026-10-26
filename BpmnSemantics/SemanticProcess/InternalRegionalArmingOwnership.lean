@@ -1,10 +1,13 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 
 /-! Arming retains its newly allocated owners, so REG-OWN-CLOSE-01 can reuse the
 predecessor's regional reference-retention checks without inspecting a successor diff. -/

@@ -6,6 +6,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 import BpmnSemantics.SemanticProcess.TokenStorage
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Parent-spine continuation credit
 

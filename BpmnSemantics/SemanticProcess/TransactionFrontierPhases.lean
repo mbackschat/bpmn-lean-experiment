@@ -3,7 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.WaitCompletion
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 import BpmnSemantics.SemanticProcess.TokenStorage
 

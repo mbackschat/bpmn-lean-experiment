@@ -1,14 +1,11 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 
 /-! Data arming commutes with cancellation outside its owner. Actual preparation supplies
 the fresh Activity identity, so cancellation cannot discard the newly copied local binding.

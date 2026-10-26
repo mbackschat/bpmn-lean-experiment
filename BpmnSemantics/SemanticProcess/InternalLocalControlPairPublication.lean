@@ -3,8 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
-public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! Actual execution and accepted publication for independent local-control pairs under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Each operation keeps

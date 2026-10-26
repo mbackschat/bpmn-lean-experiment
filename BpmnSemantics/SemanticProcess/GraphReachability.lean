@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcessContract
 
 /-! # Bounded graph reachability
 

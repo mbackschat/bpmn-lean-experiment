@@ -2,9 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import BpmnSemantics.SemanticProcess.TokenStorage
-import BpmnSemantics.SemanticProcess.CallActivity
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! Local token removal and insertion preserve runtime position under exact owner and place bindings. -/
 

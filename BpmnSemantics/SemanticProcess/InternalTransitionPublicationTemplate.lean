@@ -10,8 +10,6 @@ import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalLocalControlLifecyclePublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDeltaProofs
@@ -24,8 +22,6 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 

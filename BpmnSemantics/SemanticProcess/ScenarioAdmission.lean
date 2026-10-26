@@ -1,18 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.MessageStartAdmission
-public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
-public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
 

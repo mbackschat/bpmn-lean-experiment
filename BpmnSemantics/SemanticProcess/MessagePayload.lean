@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Direct Message Catch Event payload mediation
 

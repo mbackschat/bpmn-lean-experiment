@@ -1,10 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! # Internal commutation transition-record bridge
 

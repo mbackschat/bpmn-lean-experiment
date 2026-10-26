@@ -3,10 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
-public import BpmnSemantics.SemanticProcess.EffectCompletion
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
-public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Compensation trigger and handler runtime validity -/
 

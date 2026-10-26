@@ -1,5 +1,7 @@
 module
 
+public import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
+public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
 public import BpmnSemantics.SequentialScopeGraphConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.GraphValidation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed

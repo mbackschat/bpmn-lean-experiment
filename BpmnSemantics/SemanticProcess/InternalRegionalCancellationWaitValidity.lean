@@ -2,8 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationTimerFrames
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 
 /-! Cancellation retains the complete owner and Event Race censuses of surviving waits.

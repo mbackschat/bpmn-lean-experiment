@@ -1,9 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
-import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
+import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 
 /-! Prepared End selections preserve runtime-state validity through the local token update. -/
 

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Independent checked admission for scalar Call data
 

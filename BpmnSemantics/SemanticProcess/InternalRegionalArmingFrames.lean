@@ -2,9 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
@@ -16,6 +13,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Regional/arming frames reuse the owner-aware footprint and exact regional observation
 filters. The consumed token's complete place census protects preparation across cancellation. -/

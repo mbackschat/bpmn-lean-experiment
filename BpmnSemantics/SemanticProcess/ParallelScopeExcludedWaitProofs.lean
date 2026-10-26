@@ -1,10 +1,10 @@
 module
 
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Excluded PMIS waits and incidents
 

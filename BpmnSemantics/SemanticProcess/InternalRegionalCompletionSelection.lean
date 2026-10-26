@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
-public import BpmnSemantics.SemanticProcess.Transition
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 
 /-! # Bounded completion withdrawal selection
 

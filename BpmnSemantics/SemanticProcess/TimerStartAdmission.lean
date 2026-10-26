@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Timer Start Event external admission
 

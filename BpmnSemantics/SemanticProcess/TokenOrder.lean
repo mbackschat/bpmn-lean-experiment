@@ -1,13 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.TokenStorage
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-public import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Canonical token order laws
 

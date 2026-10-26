@@ -2,9 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcess.CallInstanceClosure
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import Std.Data.DTreeMap.Internal.Balancing
 
 /-! # Scope-subtree cancellation
 

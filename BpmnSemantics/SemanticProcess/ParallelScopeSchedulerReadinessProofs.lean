@@ -2,16 +2,12 @@ module
 
 import BpmnSemantics.SemanticProcess.ParallelScopeBatchArmingProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeBatchIdentityProofs
-public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.ParallelScopeProgress
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Reserved parallel batch readiness at scheduler selection
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.EffectDataMapping
 
 /-! # Flow-node occurrence Effect Program validity
 

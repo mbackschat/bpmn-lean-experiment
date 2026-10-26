@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
 public import BpmnSemantics.SemanticProcess.InternalLocalControlBranchSelection
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! Predecessor selection for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

@@ -6,10 +6,10 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 
 /-! # Service input admission and availability
 

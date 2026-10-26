@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageLaws
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 

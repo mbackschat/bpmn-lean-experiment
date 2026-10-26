@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+public import BpmnSemantics.CheckedProcessContract
 
 /-! # Parallel Multi-Instance outer controller
 

@@ -4,16 +4,13 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
 import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 
 /-! Ordinary parent/body execution preserves the SMIS execution certificate. Repeated-body lifecycle and command ingress belong to the separate preservation owner; history and readiness remain above both. -/
 

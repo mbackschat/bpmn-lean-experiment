@@ -1,12 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
-public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
-public import BpmnSemantics.SemanticProcess.ControlPositionContract
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 
 /-! Fresh scope insertion preserves the exact Compensation ownership checks required by the
 [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

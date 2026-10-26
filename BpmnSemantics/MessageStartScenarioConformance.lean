@@ -1,5 +1,7 @@
 module
 
+public import BpmnSemantics.SemanticProcess.ScenarioAdmission
+public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.MessageStartConformanceFixtures
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

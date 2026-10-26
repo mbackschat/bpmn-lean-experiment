@@ -1,12 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CallDataAdmission
-public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! # Semantic Process value-domain admission
 

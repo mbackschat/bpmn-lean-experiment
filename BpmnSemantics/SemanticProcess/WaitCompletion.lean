@@ -3,8 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 public import BpmnSemantics.SemanticProcess.BoundedTask
-public import BpmnSemantics.SemanticProcess.Message
-public import BpmnSemantics.SemanticProcess.EffectCompletion
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
+public import BpmnSemantics.SemanticProcess.MonitoredTask
 
 /-! # External wait completion
 

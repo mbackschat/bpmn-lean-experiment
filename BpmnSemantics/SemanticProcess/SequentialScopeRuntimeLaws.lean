@@ -1,19 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.NestedScopeData
-public import BpmnSemantics.SemanticProcess.BoundedScopeArming
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
-public import BpmnSemantics.SemanticProcess.TokenPatch
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Repeated-scope transition laws
 

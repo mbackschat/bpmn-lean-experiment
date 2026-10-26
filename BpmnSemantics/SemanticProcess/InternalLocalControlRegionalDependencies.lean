@@ -1,8 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 
 /-! The reverse preparation frame uses regional writes against local-control reads, including
 the scope owner and competing selected-join buckets in the complete predecessor footprint. -/

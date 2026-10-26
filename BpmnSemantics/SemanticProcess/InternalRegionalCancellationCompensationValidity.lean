@@ -1,18 +1,13 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! Cancellation preserves Compensation validity through the exact retained-owner census.
 The selected operation must justify retention or removal; an empty result alone is not

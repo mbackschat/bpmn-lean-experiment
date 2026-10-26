@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! Declarative Message interruption with evaluator soundness, exact regional withdrawal and context
 frames. These local laws do not assert admission or execution of unselected cross-family compositions. -/

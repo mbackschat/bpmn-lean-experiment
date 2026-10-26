@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.ActivityDataContract
 
 /-! Shared closed endpoint decoding keeps checked and executable Activity contracts aligned. -/
 

@@ -5,11 +5,10 @@ import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Internal commutation occurrence-projection frames
 

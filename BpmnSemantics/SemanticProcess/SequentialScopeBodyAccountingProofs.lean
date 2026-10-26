@@ -3,15 +3,13 @@ module
 import BpmnSemantics.SemanticProcess.SequentialScopeBodyLifecycleProofs
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeTransition
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish actual body birth, retirement and fresh-body conservation, including current-body population and parent credit, below certificate preservation and history transport. -/
 

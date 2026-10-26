@@ -5,9 +5,7 @@ import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Complete ordinary frontiers derive prefix refusal absence and canonical publication equality in the actual snapshot batch runner. -/
 

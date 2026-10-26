@@ -1,12 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
-public import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
-import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Selected-record validity for the approved
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

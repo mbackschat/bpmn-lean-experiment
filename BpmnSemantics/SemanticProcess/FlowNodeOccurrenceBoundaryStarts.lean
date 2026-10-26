@@ -1,9 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-public import BpmnSemantics.WireNatural
-public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.EffectDataMapping
+public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Flow-node occurrence boundary starts
 

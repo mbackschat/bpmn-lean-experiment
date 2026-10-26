@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.Scenario
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Engine-population scenarios
 

@@ -4,12 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskCommutation
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 
 /-! Complete Timer-task preparation reads all three issuers and both untagged wait anchors.

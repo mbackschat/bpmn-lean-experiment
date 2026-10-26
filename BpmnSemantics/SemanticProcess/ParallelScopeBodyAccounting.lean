@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws

@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ContinuationMarking
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder

@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Activity-local frame provenance for parallel scopes

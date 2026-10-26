@@ -1,18 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
 import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalCommutationPublication
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
 
@@ -674,7 +666,7 @@ theorem transaction_frontier_attempt_iff (p : Program) (state : RuntimeState)
       operation ∈ p.operations ∧ attemptInternalOperation p operation state =
         .applied { operation, successor := after } := by
   simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions,
-    InternalCommutation.snapshot_sort_eq, InternalCommutation.mem_sortBy]
+    InternalCommutation.mem_sortBy]
   constructor
   · intro offered
     obtain ⟨attempt, member, selected⟩ := List.mem_filterMap.mp offered

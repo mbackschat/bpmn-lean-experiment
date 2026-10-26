@@ -1,9 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
@@ -22,8 +19,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! The arming publication keeps its predecessor-selected start and time across an independent
 regional execution. Only the surviving arming owner needs a Process lookup frame.

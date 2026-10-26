@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcessJson.Elements
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Compensation trigger and single-effect handler Program decoding -/
 

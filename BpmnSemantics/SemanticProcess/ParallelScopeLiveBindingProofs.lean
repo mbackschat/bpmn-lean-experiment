@@ -3,10 +3,13 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 
 /-! # Live parallel-body binding provenance
 

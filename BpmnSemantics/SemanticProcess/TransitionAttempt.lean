@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Refusable internal-transition compatibility import
 

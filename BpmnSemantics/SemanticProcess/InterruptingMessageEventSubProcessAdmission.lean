@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.CheckedProcessContract
 
 /-! Structural admission for the bounded application-withdrawal graph. The dormant handler is identified
 by declaration and ownership, never by a fixture name; generic artifact and profile admission remain separate. -/

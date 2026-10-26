@@ -3,7 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Scalar Call state validity
 

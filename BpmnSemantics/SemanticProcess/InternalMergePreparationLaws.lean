@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
-public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
+import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 
 /-! Prepared merge selections preserve runtime-state validity and leave open occurrences unchanged. -/
 

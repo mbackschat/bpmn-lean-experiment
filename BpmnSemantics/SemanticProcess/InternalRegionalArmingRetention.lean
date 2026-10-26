@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
@@ -9,8 +8,10 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 
 /-! Prepared arming freshness and predecessor ownership exclude aliases with the
 regional removal set; complete regional preparation depends on those exclusions. -/

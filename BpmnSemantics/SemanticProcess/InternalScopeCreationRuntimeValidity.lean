@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 import BpmnSemantics.SemanticProcess.CallStorageOrder
 import BpmnSemantics.SemanticProcess.ScopeCreationCompensationValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
@@ -10,8 +9,6 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.CallReachability
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
@@ -20,6 +17,7 @@ import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 
 /-! Aggregate validity of actual scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

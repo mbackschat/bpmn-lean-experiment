@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! # Regional dependency atoms
 

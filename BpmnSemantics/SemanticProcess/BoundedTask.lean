@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
-public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Activity boundary Timer
 

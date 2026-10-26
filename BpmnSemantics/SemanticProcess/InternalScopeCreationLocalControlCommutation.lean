@@ -1,9 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames

@@ -2,21 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
-public import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.Incident
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Runtime-state well-formedness
 

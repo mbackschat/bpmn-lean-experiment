@@ -1,9 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
-public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! # Compensation Event Sub-Process parent-context snapshots
 

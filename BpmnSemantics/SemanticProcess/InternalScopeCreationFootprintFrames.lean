@@ -1,10 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.CallReachability
 import BpmnSemantics.SemanticProcess.InternalCommutation

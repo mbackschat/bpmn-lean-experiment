@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.CyclicControlFlow
 
 /-! Exact alternatives separate Merge input choice from canonical presentation order under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).

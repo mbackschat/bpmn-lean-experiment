@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws

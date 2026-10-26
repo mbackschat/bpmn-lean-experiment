@@ -1,11 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Data
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 
 /-! # Parallel Multi-Instance transitions
 

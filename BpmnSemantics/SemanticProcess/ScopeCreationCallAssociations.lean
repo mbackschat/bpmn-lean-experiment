@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.CallReachability
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder

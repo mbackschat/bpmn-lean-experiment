@@ -5,14 +5,8 @@ import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.ActivityDataInput
-public import BpmnSemantics.SemanticProcess.BoundedScopeArming
-public import BpmnSemantics.SemanticProcess.NestedScopeData
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.ProcessInterfaceData
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Composed Activity data relations and laws
 

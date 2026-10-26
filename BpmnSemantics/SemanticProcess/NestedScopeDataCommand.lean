@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.WaitCompletion

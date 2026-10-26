@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 import BpmnSemantics.SemanticProcess.RecurringBoundaryTimerLaws
+import Std.Data.DTreeMap.Internal.Balancing
 
 /-! Quantified monitored-child lifetime laws establish exact subscription withdrawal and arbitrary
 parent-handler preservation under the ESL-OWN, ESL-CLOSE and ESL-TIMER account. -/

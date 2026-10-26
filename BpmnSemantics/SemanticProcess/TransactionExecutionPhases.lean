@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
-public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.TransactionBranchPhases

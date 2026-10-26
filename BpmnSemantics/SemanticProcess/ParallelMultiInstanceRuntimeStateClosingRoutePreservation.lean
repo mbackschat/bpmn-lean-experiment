@@ -1,8 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingTerminalPreservation
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Parallel Multi-Instance closing-route preservation
 

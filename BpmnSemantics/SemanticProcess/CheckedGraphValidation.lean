@@ -1,10 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.CheckedProcessContract
+public import BpmnSemantics.SemanticProcess.GraphReachability
 
 /-! # Checked BPMN graph validation
 

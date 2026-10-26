@@ -5,9 +5,11 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
 import BpmnSemantics.SemanticProcess.TokenPatchMultiplicity
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateFacts
-public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 
 /-! The publication bridge compares the retained token-unit template with independently projected
 before/after counts under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

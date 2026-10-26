@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SequentialUserTaskFixtures
-import BpmnSemantics.SemanticProcess.Fixtures
 import BpmnSemantics.SemanticProcess.Execution
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation

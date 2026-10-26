@@ -9,15 +9,10 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
-import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Timer-task arming adds one public task anchor. Its new Timer is private through the exact
 Activity association, while every predecessor Timer retains its publication classification.

@@ -6,7 +6,6 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
@@ -17,6 +16,9 @@ import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 
 /-! Complete regional preparation observes lifecycle publication as well as state.
 The arming frame therefore preserves the accepted projection, not only readiness. -/

@@ -3,7 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.CallReachability
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore

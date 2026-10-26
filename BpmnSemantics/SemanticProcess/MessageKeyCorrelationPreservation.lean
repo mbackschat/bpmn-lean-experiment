@@ -6,12 +6,9 @@ public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
-import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
+public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
 
 /-! # Message key-correlation preservation laws
 

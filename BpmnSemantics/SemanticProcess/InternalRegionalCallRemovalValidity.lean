@@ -3,8 +3,7 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
-public import BpmnSemantics.SemanticProcess.CommandAdmission
-import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! Call-tree removal keeps issuance counters and immutable declaration bindings.
 Owner liveness uses the existing exact census theorem; controller liveness additionally

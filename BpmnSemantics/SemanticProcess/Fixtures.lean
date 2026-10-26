@@ -2,11 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.TopologyFixtures
 public import BpmnSemantics.SemanticProcess.Scenario
-public import BpmnSemantics.SemanticProcess.RootScopeFixtures
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Semantic Process retained topology fixtures
 

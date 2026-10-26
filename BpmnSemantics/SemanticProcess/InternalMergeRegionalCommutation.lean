@@ -2,15 +2,14 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalMergeCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlCommutation
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPreparationFrame
-import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Regional execution reuses the local patch account for exact Merge. Complete preparations,
 valid intermediate state, and cancellation equality follow from predecessor facts under the

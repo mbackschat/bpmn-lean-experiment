@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Logical time of admitted parallel histories
 

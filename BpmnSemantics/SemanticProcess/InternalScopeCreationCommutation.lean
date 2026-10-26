@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CallReachability
 import BpmnSemantics.SemanticProcess.CallStorageOrder
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts

@@ -2,8 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 
 /-! Composed preparation validity for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

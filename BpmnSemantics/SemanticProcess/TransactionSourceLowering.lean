@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.LoweringIdentity
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Child-owned Transaction lowering -/
 @[expose] public section

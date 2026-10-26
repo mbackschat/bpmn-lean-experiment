@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Exact parent ancestry
 

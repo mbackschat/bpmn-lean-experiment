@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Direct Activity data output

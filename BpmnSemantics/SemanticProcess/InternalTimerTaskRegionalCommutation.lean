@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalCompletion
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
@@ -16,6 +15,8 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRuntimePreservation
 import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 
 /-! Regional retirement and joined Timer-task insertion commute from predecessor preparations.
 The proof binds actual Return, completion, Error, and Terminate execution, including continuations. -/

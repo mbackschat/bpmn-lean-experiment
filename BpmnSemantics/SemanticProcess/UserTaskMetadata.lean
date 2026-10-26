@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.Contract
 
 /-! # User Task assignment and form metadata
 

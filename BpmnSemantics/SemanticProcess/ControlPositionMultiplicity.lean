@@ -1,9 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.InternalMergePreparation
-public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
-public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! Public token multiplicity counts private token units, as required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

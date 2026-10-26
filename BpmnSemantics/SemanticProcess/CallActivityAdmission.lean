@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Call Activity program admission
 

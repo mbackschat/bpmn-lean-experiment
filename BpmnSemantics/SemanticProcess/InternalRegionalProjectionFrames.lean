@@ -3,9 +3,8 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Child completion deletes one scope while retaining the Call graph and hosting control.
 Quiescence protects every surviving projection lookup from the removed owner. -/

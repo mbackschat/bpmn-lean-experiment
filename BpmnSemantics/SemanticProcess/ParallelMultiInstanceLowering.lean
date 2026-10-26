@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.LoweringIdentity
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance lowering
 

@@ -1,11 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalArmingOrder
-import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Regional removal order facts
 

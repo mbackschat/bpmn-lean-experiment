@@ -1,7 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.EventBasedGateway
 
 /-! # Semantic Process Message delivery
 

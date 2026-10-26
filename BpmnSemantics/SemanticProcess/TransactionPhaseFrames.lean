@@ -1,9 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.WaitCompletion
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+public import BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! # Transaction inactive collections and live-scope control
 

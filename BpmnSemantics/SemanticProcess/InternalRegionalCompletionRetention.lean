@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 
 /-! REG-OWN-CLOSE-01 uses completion's selected root/child mask and exact deadline withdrawal.

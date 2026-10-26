@@ -1,9 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.NestedScopeData
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Collection laws for transition-level preservation
 

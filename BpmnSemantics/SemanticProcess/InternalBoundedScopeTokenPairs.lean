@@ -3,8 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeLocalControl
 import BpmnSemantics.SemanticProcess.InternalMergeCommutation
 import BpmnSemantics.SemanticProcess.InternalEndScopeCreationCommutation
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
 import BpmnSemantics.SemanticProcess.InternalEndCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
@@ -16,6 +14,9 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutatio
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 
 /-! Merge and ordinary End reuse token-patch separation for bounded child entry under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).

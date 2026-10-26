@@ -1,7 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws

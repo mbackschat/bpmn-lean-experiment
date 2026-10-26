@@ -3,10 +3,8 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeBatchAnchorProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 
 /-! # Frozen arming preparation through raw prefixes
 

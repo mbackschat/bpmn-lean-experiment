@@ -4,14 +4,6 @@ public import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-import BpmnSemantics.SemanticProcess.CollectionOrder
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
-public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! PMIS-ENTER-01, PMIS-END-01 and PMIS-CANCEL-01: atomic population entry and exact quiescent retirement. -/
 

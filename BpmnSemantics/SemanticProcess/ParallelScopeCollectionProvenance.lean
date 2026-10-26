@@ -3,8 +3,8 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 
 /-! # Parallel subprocess collection provenance
 

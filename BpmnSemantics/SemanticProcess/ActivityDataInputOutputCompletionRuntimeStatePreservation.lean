@@ -5,13 +5,12 @@ import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Composed Activity-data completion runtime-state preservation
 

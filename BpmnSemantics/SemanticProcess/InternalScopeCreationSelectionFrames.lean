@@ -1,9 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
-import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
-public import BpmnSemantics.SemanticProcess.TokenPatch
-public import BpmnSemantics.SemanticProcess.CallActivityIdentity
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder

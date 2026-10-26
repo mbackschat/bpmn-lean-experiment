@@ -1,16 +1,10 @@
 module
 
 import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
-import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 import BpmnSemantics.SemanticProcess.TokenStorage
-public import BpmnSemantics.SemanticProcess.InternalMergePreparation
-public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
-public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! Regional position removal preserves complete public keys, token multiplicity, and order.
 Projection and difference laws operate on owner predicates rather than enumerated fixtures.

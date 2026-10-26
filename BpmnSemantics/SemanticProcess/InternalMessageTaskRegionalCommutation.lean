@@ -1,8 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalCompletion
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalFrame
 import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalPublication
@@ -13,6 +11,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Regional retirement and joined Message-host insertion commute from predecessor preparations.
 The selected admission binds actual completion and Terminate execution, including continuations. -/

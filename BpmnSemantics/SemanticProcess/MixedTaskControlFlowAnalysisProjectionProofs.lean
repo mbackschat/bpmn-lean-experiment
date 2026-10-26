@@ -1,10 +1,9 @@
 module
 
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
-import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-public import BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 
 /-! What an accepted mixed-task program analysis projects from its Program: the vertex projection it analyzed, its graph, and the absent compensation and Event Sub-Process declarations. -/
 

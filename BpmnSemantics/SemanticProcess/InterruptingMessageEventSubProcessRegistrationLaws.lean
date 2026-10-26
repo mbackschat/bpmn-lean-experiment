@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistration
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! Declarative registration and its executable soundness bridge. Local laws establish exact listener

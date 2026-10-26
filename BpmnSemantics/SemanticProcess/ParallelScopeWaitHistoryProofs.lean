@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
-import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Declaration provenance along actual parallel-scope histories
 

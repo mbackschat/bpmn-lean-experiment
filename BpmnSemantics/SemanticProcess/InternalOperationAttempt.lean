@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Refusable internal operation attempts

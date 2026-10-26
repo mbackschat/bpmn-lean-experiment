@@ -3,12 +3,11 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! An independent local-control patch preserves the entire regional preparation. Selection,
 ownership closure, region membership, dependency censuses, and publication are derived separately

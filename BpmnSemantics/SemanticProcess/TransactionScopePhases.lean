@@ -1,18 +1,14 @@
 module
 
 import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
-public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 
 /-! # Transaction leaf-scope frontier classification
 
@@ -148,7 +144,7 @@ private theorem frontier_filter_bound (p : Program) (state : RuntimeState) (keep
         cases kept : keep head with
         | false => simp [kept, rest, outside head List.mem_cons_self kept]
         | true => simp [List.filterMap_cons, kept, rest]
-  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions, snapshot_sort_eq]
+  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions]
   rw [(sortBy_permutation _ _).length_eq]
   change (List.filterMap _ (InternalCommutation.sortBy _ _)).length ≤ _
   rw [((sortBy_permutation _ _).filterMap _).length_eq, List.filterMap_map]

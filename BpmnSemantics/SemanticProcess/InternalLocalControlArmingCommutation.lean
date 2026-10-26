@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames

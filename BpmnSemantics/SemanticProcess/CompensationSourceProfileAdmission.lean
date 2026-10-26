@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Exact Compensation source-checkpoint admission -/

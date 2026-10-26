@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.CheckedProcessContract
 
 /-! Public control-position values are independent of trace evaluation so predecessor preparation
 can retain exact publication templates under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

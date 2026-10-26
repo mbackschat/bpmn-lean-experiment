@@ -1,11 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Activity body turnover
 

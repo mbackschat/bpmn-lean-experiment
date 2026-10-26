@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
@@ -16,7 +15,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! Each successor traversal uses its own retained graph and fuel. Existing Call-removal laws establish the same derived occurrence region without assuming graph or region equality. -/
 

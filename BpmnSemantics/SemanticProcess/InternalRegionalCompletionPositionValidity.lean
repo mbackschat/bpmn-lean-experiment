@@ -2,13 +2,9 @@ module
 
 import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 
 /-! # Completion continuation position
 

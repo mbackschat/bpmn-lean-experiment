@@ -1,12 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
-public import BpmnSemantics.SemanticProcess.TimerStart
-public import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.EffectCompletion
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
-public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.TokenStorage
 

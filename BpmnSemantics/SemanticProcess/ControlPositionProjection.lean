@@ -3,11 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.ControlPositionContract
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.NestedScopeData
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! Public position projection and exact delta algebra depend on immutable Program bindings
 and RuntimeState rather than trace execution. This permits predecessor templates and

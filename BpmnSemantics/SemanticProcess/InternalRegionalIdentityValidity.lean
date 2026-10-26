@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! Regional removal preserves occurrence uniqueness through sublists. Membership inclusion is
 insufficient for RSI-UNIQ-02 because it forgets multiplicity; the symbolic duplicate witness separates

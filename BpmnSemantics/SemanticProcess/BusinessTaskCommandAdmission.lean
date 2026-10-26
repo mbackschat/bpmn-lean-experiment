@@ -1,9 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectCompletion
-public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! SBT-REFUSE-01 and MBERR-REFUSE-01 require complete declaration/wait/local ownership checks before any public command can mutate a business-task state. -/
 

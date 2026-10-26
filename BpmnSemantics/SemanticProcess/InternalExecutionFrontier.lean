@@ -1,7 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 
 /-! Discovery retains every exact Merge offer before classification under the

@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.TransactionExecutionPhases
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
 
@@ -58,7 +57,7 @@ theorem transaction_frontier_operations_nodup (p : Program) (roles : Transaction
     cases value <;> rfl
   have perm : ((snapshotInternalTransitionFrontier p state).transitions.map (·.1)).Perm
       (p.operations.filter (fun operation => (appliedOperation (attemptInternalOperation p operation state)).isSome)) := by
-    simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions, snapshot_sort_eq]
+    simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions]
     apply List.Perm.trans ((sortBy_permutation _ _).map Prod.fst)
     apply List.Perm.trans (((sortBy_permutation _ _).filterMap select).map Prod.fst)
     exact List.Perm.of_eq (mapped.trans (attempt_operation_filter p state p.operations))

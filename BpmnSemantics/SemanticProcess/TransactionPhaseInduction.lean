@@ -1,9 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.TransactionCommandPhases
 public import BpmnSemantics.SemanticProcess.TransactionScopePhases
 public import BpmnSemantics.SemanticProcess.TransactionBranchPhases
-import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 

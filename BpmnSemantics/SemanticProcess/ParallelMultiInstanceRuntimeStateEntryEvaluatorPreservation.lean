@@ -1,9 +1,9 @@
 module
 
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryPreservation
-public import BpmnSemantics.SemanticProcess.WaitCompletion
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Parallel Multi-Instance entry evaluator preservation
 

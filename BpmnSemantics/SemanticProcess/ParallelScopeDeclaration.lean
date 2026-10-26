@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 
 /-! PMIS-END-01 binds each parallel body completion to one immutable entry and forbids competing source identities. -/
 

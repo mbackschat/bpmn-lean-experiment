@@ -1,6 +1,6 @@
 module
 
-public import Lean.Data.Json
+public import Lean.Data.Json.Parser
 
 /-! A JSON parser that preserves wire facts erased by `Lean.Json.parse`. -/
 

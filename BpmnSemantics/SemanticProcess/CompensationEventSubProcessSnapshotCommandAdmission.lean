@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Compensation Event Sub-Process snapshot command-admission compatibility import
 

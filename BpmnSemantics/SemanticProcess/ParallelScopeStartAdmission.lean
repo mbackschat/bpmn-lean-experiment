@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission
-public import BpmnSemantics.SemanticProcess.ProfileCardinalities
 
 /-! PMIS-ADMIT-01 binds the proposed closure count to source ownership and validated Start data, without enabling execution. -/
 

@@ -1,9 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 
 /-! # Compensation trigger and handler flow-node occurrences

@@ -2,10 +2,13 @@ module
 
 import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgress
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Progress after parallel subprocess retirement
 

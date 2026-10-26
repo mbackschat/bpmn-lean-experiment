@@ -4,7 +4,6 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Admission facts for scope creation
 

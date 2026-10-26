@@ -1,10 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.InternalPreparedArming
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
-public import BpmnSemantics.SemanticProcess.TransitionRecord
-public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation

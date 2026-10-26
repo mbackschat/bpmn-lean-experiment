@@ -1,9 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
@@ -11,6 +7,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Return and completion select quiescent scopes. Disjoint removal cannot introduce work into a protected owner, so the original quiescence check survives. -/
 

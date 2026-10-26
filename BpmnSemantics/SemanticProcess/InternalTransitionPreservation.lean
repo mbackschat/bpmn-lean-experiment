@@ -6,9 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalMessageTaskAcceptedPublication
-import BpmnSemantics.SemanticProcess.InternalBoundedScopePublication
 import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeProjection
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
@@ -18,7 +16,6 @@ import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! The existing finite-prefix contract derives single-step validity, projectability, control,
 and evaluator correspondence from complete preparation; no successor certificate is assumed. -/

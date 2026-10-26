@@ -1,14 +1,13 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Error publication follows the actual child cancellation and parent continuation.
 The parent lies outside the derived region, including when its output bucket is populated.

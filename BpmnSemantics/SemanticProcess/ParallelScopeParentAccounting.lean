@@ -8,7 +8,6 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 public import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 
 /-! # Actual lifetime parent continuation accounting
 

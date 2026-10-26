@@ -1,14 +1,12 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.TokenPatch
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! # Classified internal commutation
 

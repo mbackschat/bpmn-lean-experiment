@@ -1,8 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
@@ -11,9 +9,9 @@ import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 
 /-! The joined Message-host insertion preserves regional selection outside its live owner.
 Message insertion preserves the existing Timer census and exact child-Activity lookup.

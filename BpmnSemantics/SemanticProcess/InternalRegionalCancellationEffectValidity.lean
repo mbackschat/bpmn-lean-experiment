@@ -1,10 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
-public import BpmnSemantics.SemanticProcess.Incident
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 
 /-! Effect-local data and its open or suspended wait must survive cancellation together.
 The projection's exact identity census excludes a cancelled alias from deleting a survivor's

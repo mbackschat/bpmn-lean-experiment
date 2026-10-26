@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.Transition
+public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! Exact operation metadata and strict replay remain independent of closure selection so
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) can validate

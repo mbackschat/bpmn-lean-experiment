@@ -2,8 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! Predecessor-selected completion preserves runtime position under the checked admission contract. -/
 

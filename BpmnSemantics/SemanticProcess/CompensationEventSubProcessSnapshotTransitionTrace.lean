@@ -1,10 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import BpmnSemantics.SemanticProcess.TransitionAttempt
-import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotCommandAdmission
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! # Compensation attempt-aware transition trace
 

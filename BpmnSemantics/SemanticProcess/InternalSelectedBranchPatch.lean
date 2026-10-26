@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! Selected-record algebra for the approved local-control preparation boundary in
 [the selected-join readiness amendment](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-readiness-dependency-amendment).

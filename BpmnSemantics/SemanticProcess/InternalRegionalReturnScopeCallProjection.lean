@@ -1,13 +1,12 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionValidity
 import BpmnSemantics.SemanticProcess.CallActivityLaws
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! Quiescent Return preserves all open child scopes and removes exactly its selected
 Call anchor. The Call identity injection and parent-instance binding connect actual

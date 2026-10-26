@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalTransitionBatchPublication
 import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
 public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
 import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 
 /-! Actual finite mixed publication uses ranks of complete predecessor templates under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

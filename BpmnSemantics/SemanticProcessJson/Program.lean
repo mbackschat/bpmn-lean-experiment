@@ -1,8 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcessJson.CallData
-public import BpmnSemantics.SemanticProcess.JsonSupport
-public import BpmnSemantics.SemanticProcessJson.Elements
 public import BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
 public import BpmnSemantics.SemanticProcessJson.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcessJson.CompensationTriggerHandler

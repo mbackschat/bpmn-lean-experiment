@@ -6,10 +6,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
@@ -19,9 +17,10 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! A preparation frame must preserve the publication template as well as readiness. Canonical positions and lifecycle populations assemble the unchanged complete regional artifact from predecessor facts. -/
 

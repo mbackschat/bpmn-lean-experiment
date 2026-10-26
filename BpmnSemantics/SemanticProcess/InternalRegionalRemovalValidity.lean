@@ -1,9 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Regional removal validity
 

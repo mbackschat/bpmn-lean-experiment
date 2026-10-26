@@ -4,8 +4,6 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 
 /-! # Actual parallel body retirement accounting

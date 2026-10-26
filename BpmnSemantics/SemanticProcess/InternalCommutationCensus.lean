@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.RuntimeState
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Internal commutation census
 

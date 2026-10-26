@@ -1,15 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
-import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
-public import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
-public import BpmnSemantics.SemanticProcess.Incident
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
 

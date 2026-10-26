@@ -1,12 +1,15 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgress
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Scoped parallel subprocess resumption
 

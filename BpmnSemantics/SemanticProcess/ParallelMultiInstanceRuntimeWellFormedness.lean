@@ -1,7 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
-public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
 

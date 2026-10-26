@@ -1,15 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
-import BpmnSemantics.SemanticProcess.InternalArmingRegionalPatch
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
@@ -17,6 +9,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 
 /-! Return and completion retain independent arming writes. Canonical insertion/filter laws
 preserve exact collection order, including Activity-local data and bounded deadlines. -/

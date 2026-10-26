@@ -1,19 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLaws
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.ProfileAdmission
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 

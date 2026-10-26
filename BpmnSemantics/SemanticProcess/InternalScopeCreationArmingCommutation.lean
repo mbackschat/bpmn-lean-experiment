@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.TokenOrder
 
 /-! Exact mixed scope/arming commutation uses the distinct consumed and created owners required

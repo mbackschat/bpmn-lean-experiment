@@ -1,12 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Interrupting Activity boundary Message laws
 

@@ -1,9 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.ValueDomain
+public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 
 /-! # Boundary Compensation Activity retention declaration
 

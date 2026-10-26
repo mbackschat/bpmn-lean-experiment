@@ -1,7 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.MonitoredTask
-public import BpmnSemantics.WireNatural
+public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! ESL-TIMER-01 shares one pure mutation between monitored Task and child-scope bodies.
 The caller owns exact Program/body selection and maps capacity refusal to whole-command rollback.

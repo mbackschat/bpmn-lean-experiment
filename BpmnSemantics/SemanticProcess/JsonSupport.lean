@@ -1,11 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcessContract
 import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
 import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
-public import BpmnSemantics.StrictJson
-import BpmnSemantics.WireNatural
-public import Lean.Data.Json
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.WireNatural
+public import Lean.Data.Json.FromToJson.Basic
+import BpmnSemantics.StrictJson
 
 /-! # Semantic Process JSON value support
 

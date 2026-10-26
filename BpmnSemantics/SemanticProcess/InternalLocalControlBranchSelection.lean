@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InclusiveGateway
-public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! # Local-control branch preparation
 

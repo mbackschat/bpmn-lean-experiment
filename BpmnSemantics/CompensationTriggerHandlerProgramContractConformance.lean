@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.ValueDomain
 public import BpmnSemantics.SemanticProcessJson.Program
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime

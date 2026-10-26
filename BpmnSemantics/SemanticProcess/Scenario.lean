@@ -3,10 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.OpenWaitProjection
 public import BpmnSemantics.SemanticProcess.ScenarioAdmission
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
-import BpmnSemantics.SemanticProcess.Lowering
-public import BpmnSemantics.SemanticProcess.MessageKeyCorrelation
-import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 
 /-! # Semantic Process scenario projection

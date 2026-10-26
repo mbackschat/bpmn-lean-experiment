@@ -2,15 +2,12 @@ module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.Execution
 public import BpmnSemantics.SemanticProcess.EffectCompletion
-public import BpmnSemantics.SemanticProcess.WaitActivation
-import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.TransitionTrace
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 

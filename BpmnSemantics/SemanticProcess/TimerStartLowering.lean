@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcess.InclusiveGateway
 public import BpmnSemantics.SemanticProcess.LoweringIdentity
 

@@ -1,10 +1,7 @@
 module
 
-public import BpmnSemantics.CheckedProcessContract
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
-public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
-public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! NSC-ADMIT-01 for the embedded completion profile. Each definition scope's body is projected to the
 reviewed structured-body analysis, a Sub-Process appearing in its parent as a task vertex, so

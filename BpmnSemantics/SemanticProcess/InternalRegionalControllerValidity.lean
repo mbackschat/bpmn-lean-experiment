@@ -1,16 +1,12 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Regional controller lifetime preservation
 

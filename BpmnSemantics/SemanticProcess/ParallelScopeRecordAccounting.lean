@@ -3,9 +3,9 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
 import BpmnSemantics.SemanticProcess.ParallelScopeCollectionProvenance
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
-import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
-import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Actual lifetime record population
 

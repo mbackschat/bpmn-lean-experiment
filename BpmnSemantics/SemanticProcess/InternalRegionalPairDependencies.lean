@@ -1,8 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 
 /-! The existing regional conflict predicate protects occurrence regions as well as concrete keys. These laws expose its symmetric and directional consequences without introducing a second independence account. -/
 

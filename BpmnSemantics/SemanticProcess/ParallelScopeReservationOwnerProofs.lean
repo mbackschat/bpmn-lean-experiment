@@ -6,6 +6,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 
 /-! # Actual parallel reservation owner bounds
 

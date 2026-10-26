@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
 import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
 

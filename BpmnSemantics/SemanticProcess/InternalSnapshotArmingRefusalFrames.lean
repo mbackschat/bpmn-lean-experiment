@@ -1,14 +1,13 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.Transition
 
 /-! Ordinary arming preserves unavailable refusable operations: consuming a token adds an owned wait, so scope completion cannot become newly enabled. -/
 

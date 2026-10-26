@@ -1,9 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
-import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! Fresh scope insertion retains the complete public payload. The proof uses permutations and
 identity freshness, not comparator equality for potentially different same-id payloads, under the

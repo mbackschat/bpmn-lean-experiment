@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.CallActivity
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Bounded Called-Process reachability
 

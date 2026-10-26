@@ -2,8 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 

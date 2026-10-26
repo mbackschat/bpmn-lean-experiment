@@ -1,8 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
-import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
-import BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation

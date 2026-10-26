@@ -1,9 +1,11 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 
 /-! Actual PMIS singleton and Start evidence is shared by position and publication
 preservation, as required by AA-01. The classification retains the resolved

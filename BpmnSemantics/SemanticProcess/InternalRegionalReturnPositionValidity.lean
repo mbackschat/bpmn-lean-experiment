@@ -2,13 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 
 /-! # Return continuation position
 

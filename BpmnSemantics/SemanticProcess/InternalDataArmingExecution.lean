@@ -3,11 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationLaws
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.ControlPosition
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! # Data-arming execution and transition record
 

@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.Scenario

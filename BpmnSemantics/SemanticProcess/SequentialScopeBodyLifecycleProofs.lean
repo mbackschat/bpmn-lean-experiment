@@ -1,24 +1,18 @@
 module
 
-import BpmnSemantics.SemanticProcess.SequentialScopeTransition
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
-public import BpmnSemantics.SemanticProcess.ControlPositionContract
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.Incident
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish position and identity for successful individual body creation and retirement below aggregate validity and history transport. -/
 

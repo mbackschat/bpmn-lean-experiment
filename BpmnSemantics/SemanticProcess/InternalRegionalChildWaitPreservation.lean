@@ -1,12 +1,11 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Complete wait-family preservation for child completion uses the existing validators.
 The selected withdrawal and quiescence discharge Timer-host and live-owner frames. -/

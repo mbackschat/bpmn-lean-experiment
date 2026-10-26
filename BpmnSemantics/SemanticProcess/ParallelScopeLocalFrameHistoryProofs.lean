@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Activity-local frame absence along actual parallel histories
 

@@ -4,7 +4,6 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairWithdrawalFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalLocalControlSelectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
@@ -15,6 +14,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! The complete regional selector combines protected censuses, quiescence, and bounded-handler withdrawal. These frames preserve its exact selected artifact before rebuilding preparation. -/
 

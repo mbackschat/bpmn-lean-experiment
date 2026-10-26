@@ -1,11 +1,10 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnEffectValidity
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Return removes one parentless scope and its owned Activities. Surviving Timer and
 Message waits retain their exact candidate censuses, including rejected candidates;

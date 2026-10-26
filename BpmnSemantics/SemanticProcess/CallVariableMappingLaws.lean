@@ -3,13 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.CallVariableMapping
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Call variable mapping laws
 

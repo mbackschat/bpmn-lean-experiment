@@ -1,9 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelectionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
@@ -16,6 +13,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Actual regional execution supplies the field updates and token actions used by the pair consumer. The facts follow from complete preparation rather than an assumed successor shape. -/
 

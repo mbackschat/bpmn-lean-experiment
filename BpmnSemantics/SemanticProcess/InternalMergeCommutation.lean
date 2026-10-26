@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! Exact Merge uses the existing local token-patch algebra without inheriting its unique-owner
 selector. The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome)

@@ -1,6 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcessContract
+public import BpmnSemantics.Scenario
+public import BpmnSemantics.SemanticProcess.VariableMappingContract
 
 /-! # Semantic Process bounded data mappings
 

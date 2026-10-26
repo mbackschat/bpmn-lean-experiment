@@ -1,10 +1,8 @@
 module
 
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 
 /-! # Structural frames of actual parallel command replay
 

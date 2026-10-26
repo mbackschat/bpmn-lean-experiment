@@ -1,17 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CallDataTransfer
-import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
-public import BpmnSemantics.SemanticProcess.ValueDomain
-public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.EventBasedGateway
-public import BpmnSemantics.SemanticProcess.NestedScopeData
-public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
-import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.ProcessInterfaceData
 
 /-! Scalar Call snapshots preserve caller and callee inputs beyond the local constructor-selection bridges. -/

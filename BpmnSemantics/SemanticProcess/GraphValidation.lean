@@ -3,11 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 public import BpmnSemantics.SemanticProcess.GraphReachability
 public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.OperationControlPlaces
-public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Fuel-bounded graph validation
 

@@ -1,9 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
-public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
-public import BpmnSemantics.SemanticProcess.InternalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalPairCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationCommutation
@@ -16,7 +13,6 @@ import BpmnSemantics.SemanticProcess.InternalMergeScopeCreationCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeEndCommutation
 import BpmnSemantics.SemanticProcess.InternalMergeRegionalCommutation
 import BpmnSemantics.SemanticProcess.InternalTimerTaskTransitionPair
-import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeTransitionPair
 import BpmnSemantics.SemanticProcess.InternalMessageTaskTransitionPair
 import BpmnSemantics.SemanticProcess.InternalEndCommutation
@@ -32,6 +28,8 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
+import BpmnSemantics.SemanticProcess.InternalArmingBatch
+import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

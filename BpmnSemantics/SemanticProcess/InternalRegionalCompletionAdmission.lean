@@ -1,16 +1,11 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
-import BpmnSemantics.SemanticProcess.InternalRegionalContinuationAdmission
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 
 /-! # Completion admission and runtime position
 

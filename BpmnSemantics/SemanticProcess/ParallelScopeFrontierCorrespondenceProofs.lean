@@ -4,9 +4,6 @@ public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! PMIS-SELECT-01 discovery traversals retain the same exact operation/owner offers.
 The bridge compares their canonical alternatives without choosing an execution or weakening

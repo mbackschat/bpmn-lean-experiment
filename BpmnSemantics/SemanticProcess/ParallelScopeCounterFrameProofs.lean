@@ -1,8 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Counter and hosting-control frames across actual parallel lifetime operations
 

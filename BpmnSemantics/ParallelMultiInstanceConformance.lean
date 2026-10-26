@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle

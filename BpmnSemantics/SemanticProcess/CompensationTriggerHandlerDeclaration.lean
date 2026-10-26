@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 
 /-! # Compensation trigger and single-effect handler declaration validity -/
 

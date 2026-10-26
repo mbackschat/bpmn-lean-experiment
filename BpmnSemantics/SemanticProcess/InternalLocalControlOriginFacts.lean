@@ -2,17 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
-public import BpmnSemantics.SemanticProcess.InternalMergePreparation
-public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
-public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
-public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
-public import BpmnSemantics.SemanticProcess.InternalEndPreparation
-public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
-import BpmnSemantics.SemanticProcess.InternalPreparedArming
-import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.InternalScheduledClosure
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 
 /-! Prepared origins bind public multiplicities to private places under the alias refusal rule in
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

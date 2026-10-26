@@ -1,12 +1,9 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
-import BpmnSemantics.SemanticProcess.InternalSnapshotArmingExecution
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
+import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
 
 /-! # Transaction single-token frontier cardinality
 
@@ -64,8 +61,7 @@ theorem transaction_single_token_frontier_cardinality
         simp [keep, same, input] at outside)
   have filtered : program.operations.filter keep = [selected] :=
     TransactionProgramRoles.soleConsumer_exact program token.placeId selected consumer
-  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions,
-    snapshot_sort_eq]
+  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions]
   rw [(sortBy_permutation _ _).length_eq]
   change (List.filterMap select (InternalCommutation.sortBy _ _)).length ≤ 1
   rw [((sortBy_permutation _ _).filterMap select).length_eq]
@@ -103,8 +99,7 @@ theorem transaction_token_free_frontier_cardinality
       rw [transaction_consuming_attempt_without_token program state operation input roles.execution
         roles.executionPresent roles.snapshotsAbsent consumes missing] at applied
       contradiction
-  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions,
-    snapshot_sort_eq]
+  simp only [snapshotInternalTransitionFrontier, canonicalEnabledInternalTransitions]
   rw [(sortBy_permutation _ _).length_eq]
   change (List.filterMap select (InternalCommutation.sortBy _ _)).length = 0
   rw [((sortBy_permutation _ _).filterMap select).length_eq]

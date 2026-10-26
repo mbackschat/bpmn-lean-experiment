@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.Scenario
 public import BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! Canonical observation JSON shared by the Semantic Process and engine-population runners.

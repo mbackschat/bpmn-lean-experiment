@@ -1,16 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-public import BpmnSemantics.SemanticProcess.Data
-public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcess.ErrorDefinition
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
-public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-public import BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
-public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Checked-process structural admission
 

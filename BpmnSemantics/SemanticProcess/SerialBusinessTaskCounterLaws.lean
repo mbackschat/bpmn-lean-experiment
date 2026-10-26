@@ -2,10 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
 import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
-public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
-public import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 

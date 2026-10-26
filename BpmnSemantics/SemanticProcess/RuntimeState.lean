@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.Data
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Semantic Process runtime state
 

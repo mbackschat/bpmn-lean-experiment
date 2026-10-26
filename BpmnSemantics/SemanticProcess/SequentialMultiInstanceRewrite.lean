@@ -1,11 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
-public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-public import BpmnSemantics.SemanticProcess.Data
-public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 public import BpmnSemantics.SemanticProcess.WaitActivation
-public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Sequential Multi-Instance definition facts and state rewrites
 

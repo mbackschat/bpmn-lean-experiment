@@ -1,16 +1,9 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationGraph
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
-import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.CallReachability
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
@@ -21,6 +14,8 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 
 /-! Scope creation preserves regional selectors through their exact queried populations. Fresh identity alone is insufficient: independence also protects the inserted parent and Call edges, token censuses, and quiescence. -/
 

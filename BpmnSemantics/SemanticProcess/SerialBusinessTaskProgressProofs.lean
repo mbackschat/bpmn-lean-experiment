@@ -4,7 +4,6 @@ import BpmnSemantics.SemanticProcess.SerialBusinessTaskRuntimeGuardProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 
 /-! SBT-AVAILABLE-01 and SBT-CLOSURE-01 share an accepted-start reachable invariant: exact root and local ownership, ordered remaining suffix, required-input presence and canonical Process data. The proof index is not serialized execution data.

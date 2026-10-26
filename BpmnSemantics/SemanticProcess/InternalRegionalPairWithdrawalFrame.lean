@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 

@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CallDataContract
 public import BpmnSemantics.SemanticProcessJson.ActivityData
 public import BpmnSemantics.SemanticProcessJson.Elements
 

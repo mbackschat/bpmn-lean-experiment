@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcessContract
 public import BpmnSemantics.StrictJson
+public import Lean.Data.Json.Printer
 
 /-! # Simple Boolean expression language
 

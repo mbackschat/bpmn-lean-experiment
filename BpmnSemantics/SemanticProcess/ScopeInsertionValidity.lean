@@ -1,10 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! # Fresh scope insertion and existing ownership
 

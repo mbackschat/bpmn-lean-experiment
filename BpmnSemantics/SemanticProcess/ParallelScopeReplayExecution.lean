@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-public import BpmnSemantics.SemanticProcess.CommandAdmission
 
 /-! # Executable selected parallel command replay
 

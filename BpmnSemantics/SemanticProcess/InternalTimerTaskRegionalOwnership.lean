@@ -1,14 +1,13 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 
 /-! The new Activity references its jointly inserted task and Timer, which the regional mask retains.
 Existing retained locals keep their exact record census because preparation forbids Activity aliases.

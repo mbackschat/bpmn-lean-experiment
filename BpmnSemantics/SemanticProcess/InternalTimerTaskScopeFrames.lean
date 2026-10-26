@@ -1,13 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
@@ -15,7 +10,6 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Scope creation frames use complete input-place censuses, including the newly produced token.

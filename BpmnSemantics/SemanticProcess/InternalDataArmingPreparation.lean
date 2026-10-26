@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+public import BpmnSemantics.SemanticProcess.ActivityDataInput
 
 /-! # Prepared Activity-data arming
 

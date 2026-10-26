@@ -1,14 +1,10 @@
 module
 
 import BpmnSemantics.SemanticProcess.ScopeCompletion
-import BpmnSemantics.SemanticProcess.ScopeVariableData
 public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
-public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import BpmnSemantics.SemanticProcess.EffectCompletion
-import BpmnSemantics.SemanticProcess.EffectDataMapping
 import BpmnSemantics.SemanticProcess.NestedScopeData
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 
 /-! # Sequential repeated embedded scopes
 

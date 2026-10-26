@@ -2,8 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcessJson.CallData
 public import BpmnSemantics.SemanticProcessJson.TransactionSource
-public import BpmnSemantics.SemanticProcess.JsonSupport
-public import BpmnSemantics.SemanticProcessJson.Elements
 public import BpmnSemantics.SemanticProcessJson.CompensationSource
 
 /-! # Strict checked-process wire decoding

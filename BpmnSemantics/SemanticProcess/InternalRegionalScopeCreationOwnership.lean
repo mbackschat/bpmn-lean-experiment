@@ -3,9 +3,7 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationClassifiers
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
@@ -14,6 +12,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalScopeCreationGraph
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 
 /-! Independent scope creation retains its new scope under the regional removal mask. Exact arbitrary-owner classifiers preserve all reference and local-data masks, including historical owners and attached-handler withdrawals. -/
 

@@ -1,9 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.TokenPatch
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Multi-Instance frames for unrelated Activity-data arming
 
@@ -16,7 +14,6 @@ controllers. Their record filters and independent high-water counters therefore 
 namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
-open InternalCommutation
 
 theorem sequentialController_rejects_unrelated_activity
     (program : Program) (state : RuntimeState) (inserted : ActivityOccurrence)

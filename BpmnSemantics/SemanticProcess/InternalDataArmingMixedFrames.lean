@@ -1,13 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
-import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationPreservation
 import BpmnSemantics.SemanticProcess.InternalCommutation
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! # Complete mixed data and ordinary arming frames

@@ -9,11 +9,11 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRootCompletionRuntimeValidi
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalChildOpenProjection
-public import BpmnSemantics.SemanticProcess.InternalRegionalParallelCensus
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Pair publication uses the same predecessor-selected templates and assigned transition
 indices in either execution order. Acceptance is proved against each actual successor. -/

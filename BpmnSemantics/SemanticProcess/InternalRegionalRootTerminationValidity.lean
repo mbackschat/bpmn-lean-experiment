@@ -3,11 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 import BpmnSemantics.SemanticProcess.CallActivityLaws
-public import BpmnSemantics.SemanticProcess.CommandAdmission
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.TerminateEnd
 
 /-! # Hosting-root termination position
 

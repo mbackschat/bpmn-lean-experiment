@@ -5,7 +5,8 @@ import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+public import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 
 /-! # Admitted token-patch position totality
 

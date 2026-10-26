@@ -6,6 +6,8 @@ import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 
 /-! Complete regional/arming publication composes the actual four steps. Each operation keeps
 its assigned index in either order; successor validity and accepted deltas are derived from

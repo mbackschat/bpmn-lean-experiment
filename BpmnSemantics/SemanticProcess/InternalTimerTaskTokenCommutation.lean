@@ -3,11 +3,14 @@ module
 import BpmnSemantics.SemanticProcess.InternalTimerTaskLocalControl
 import BpmnSemantics.SemanticProcess.InternalMergeCommutation
 import BpmnSemantics.SemanticProcess.InternalEndCommutation
-public import BpmnSemantics.SemanticProcess.ControlPosition
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
+public import BpmnSemantics.SemanticProcess.InternalEndPreparation
+public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import BpmnSemantics.SemanticProcess.InternalCommutation
+import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Exact Merge and ordinary End reuse token-removal frames beside Timer-task arming.
 The Merge choice remains explicit; these laws do not choose between competing offers.

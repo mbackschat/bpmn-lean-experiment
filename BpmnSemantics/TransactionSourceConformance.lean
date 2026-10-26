@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation

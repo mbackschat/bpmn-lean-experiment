@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.CheckedProcessContract
 
 /-! # Semantic-element wire decoders shared by both definition representations
 

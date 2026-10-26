@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.JsonSupport
-public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Compensation Activity retention wire decoding
 

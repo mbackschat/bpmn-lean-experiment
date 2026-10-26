@@ -7,8 +7,8 @@ public import BpmnSemantics.SemanticProcess.MessagePayload
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Message payload delivery preservation
 

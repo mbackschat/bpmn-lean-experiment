@@ -1,7 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws

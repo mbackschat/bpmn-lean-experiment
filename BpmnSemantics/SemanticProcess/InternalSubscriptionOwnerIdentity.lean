@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 
 /-! The subscription proposal's depth-one forest and Call exclusion align live owners with

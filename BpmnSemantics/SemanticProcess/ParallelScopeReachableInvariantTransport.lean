@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 
 /-! Actual PMIS command boundaries and internal prefixes share one invariant
 transport. Handlers consume predecessor invariants and actual evaluator results;

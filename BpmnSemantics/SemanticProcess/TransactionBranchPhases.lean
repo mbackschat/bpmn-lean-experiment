@@ -1,10 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
 public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! # Transaction continuation after initial arming

@@ -4,9 +4,7 @@ import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 
 /-! Timer-task validity derives the inserted task's declaration from complete predecessor

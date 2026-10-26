@@ -1,12 +1,11 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Actual Terminate position publication follows from predecessor region selection and
 the existing evaluator's removal fields. Successor validity is derived from the selected step.

@@ -1,11 +1,8 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalArmingPublicationFrame
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
@@ -13,6 +10,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 
 /-! Exact pair equality requires canonical list order, including continuation-token
 insertion and owner-filtered cancellation, rather than equality of memberships. -/

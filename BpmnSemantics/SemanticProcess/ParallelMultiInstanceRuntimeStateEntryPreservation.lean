@@ -4,8 +4,6 @@ import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.WaitCompletion
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
@@ -16,6 +14,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEmptyPrese
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 

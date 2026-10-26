@@ -4,8 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublicat
 import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
-public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
-public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Complete regional preparation determines the actual public control-position delta.
 Each family derives successor validity from the predecessor rather than assuming publication.

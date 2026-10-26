@@ -1,9 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
-import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! Reference retention agrees with Call-aware regional removal and cancellation. -/
 

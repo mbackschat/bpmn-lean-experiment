@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 

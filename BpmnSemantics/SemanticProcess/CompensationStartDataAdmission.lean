@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ValueDomain
-public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 
 /-! # Compensation checkpoint start-data admission
 

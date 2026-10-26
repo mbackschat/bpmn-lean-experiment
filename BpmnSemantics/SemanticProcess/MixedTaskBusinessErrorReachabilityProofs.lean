@@ -1,10 +1,7 @@
 module
 
-import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowClosureProofs
-public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
-public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
 

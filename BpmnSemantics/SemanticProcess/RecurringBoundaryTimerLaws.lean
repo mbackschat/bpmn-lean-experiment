@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 
 /-! Quantified recurrence laws use exact predecessor censuses and Timer high-water bounds.
 The checked mutation changes one attachment and one wait; arbitrary prior handler populations

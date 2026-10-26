@@ -5,12 +5,12 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 import BpmnSemantics.SemanticProcess.ControlPositionDifferenceAlgebra
 import BpmnSemantics.SemanticProcess.TokenPatchMultiplicity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-public import BpmnSemantics.SemanticProcess.ControlPosition
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 
 /-! Actual control-position publication for prepared scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/

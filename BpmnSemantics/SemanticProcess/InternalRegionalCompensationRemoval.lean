@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 

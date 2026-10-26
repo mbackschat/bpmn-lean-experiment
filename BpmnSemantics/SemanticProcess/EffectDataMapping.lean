@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
-public import BpmnSemantics.SemanticProcess.Data
 
 /-! # Policy-parameterized effect input mapping
 

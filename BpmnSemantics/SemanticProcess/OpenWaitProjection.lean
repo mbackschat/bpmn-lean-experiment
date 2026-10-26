@@ -1,8 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.Data
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! Public User Task and Timer occurrences are projected independently of scenario admission and execution. -/

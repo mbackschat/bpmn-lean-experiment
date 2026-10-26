@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 
 /-! ESL-OWN-01 requires atomic Task/Message/Activity preparation for source-reachable mixed
 frontiers. The existing tagged association footprint protects all three independent issuers;

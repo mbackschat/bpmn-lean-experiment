@@ -3,8 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.MessageStart
-import BpmnSemantics.SemanticProcess.TimerStart
 
 /-! Monotone Task activation issuance preserves the provenance of retained Transaction
 handler subjects, including tombstones whose child scope has been disposed. -/

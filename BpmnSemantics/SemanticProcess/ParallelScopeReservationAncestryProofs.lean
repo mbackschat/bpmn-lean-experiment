@@ -5,8 +5,9 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Actual parallel reservation ancestry
 

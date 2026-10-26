@@ -6,7 +6,6 @@ public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
 

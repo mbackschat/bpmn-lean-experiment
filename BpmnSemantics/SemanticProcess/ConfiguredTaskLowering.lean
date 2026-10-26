@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.LoweringIdentity
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Configured Task lowering
 

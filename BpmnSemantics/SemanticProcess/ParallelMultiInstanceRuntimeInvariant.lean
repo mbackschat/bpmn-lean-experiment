@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
 
 /-! # Parallel Multi-Instance family runtime invariant
 

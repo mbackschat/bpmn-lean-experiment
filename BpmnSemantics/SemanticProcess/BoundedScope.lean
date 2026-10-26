@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Interrupting Sub-Process boundary Timer: victory
 

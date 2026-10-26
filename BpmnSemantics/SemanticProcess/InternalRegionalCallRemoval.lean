@@ -1,12 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
-public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 
 /-! # Prepared regions and actual Call cleanup
 

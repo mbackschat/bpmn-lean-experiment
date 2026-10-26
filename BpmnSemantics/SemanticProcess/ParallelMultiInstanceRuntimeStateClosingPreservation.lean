@@ -4,8 +4,7 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingPro
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingRoutePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
-public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Parallel Multi-Instance closing preservation
 

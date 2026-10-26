@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation handler failure cancellation
 

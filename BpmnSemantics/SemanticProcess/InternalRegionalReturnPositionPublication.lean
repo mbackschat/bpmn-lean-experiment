@@ -1,15 +1,12 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionAlgebra
-import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.TransitionTrace
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Return publication binds the selected Call cleanup to the prepared occurrence region.
 Quiescence protects the caller; continuation insertion preserves existing output multiplicity.

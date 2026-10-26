@@ -3,7 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCallFrames
@@ -13,7 +12,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairControlFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! Regional ownership checks depend on the retained scope and Call graph, including historical identities. Exact classifier frames preserve the existing ownership-closure guards after independent removal. -/
 

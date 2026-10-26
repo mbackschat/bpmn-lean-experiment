@@ -3,12 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
-public import BpmnSemantics.SemanticProcess.EffectCompletion
-public import BpmnSemantics.SemanticProcess.TimerStart
-public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
-public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
-import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Token patches preserve canonical storage order and commute when their produced and consumed units are disjoint. -/

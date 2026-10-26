@@ -1,9 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
-public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
-public import BpmnSemantics.SemanticProcess.CallActivityAdmission
-public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcessContract
 
 /-! # Error definition admission and lowering
 

@@ -4,10 +4,8 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
-import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 
 /-! # Parallel batch reservation provenance
 

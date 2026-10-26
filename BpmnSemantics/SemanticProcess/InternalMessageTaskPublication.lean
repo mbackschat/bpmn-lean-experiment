@@ -1,20 +1,15 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalMessageTaskOpenProjection
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
-public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
 import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 
 /-! Message-host candidates must select the exact two newly inserted waits before the lifecycle fold.
 ESL-OWN-01 freshness and predecessor owner identity settle the selectors independently of projection. -/

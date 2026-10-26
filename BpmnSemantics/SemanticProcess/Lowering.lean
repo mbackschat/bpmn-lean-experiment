@@ -1,11 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransactionSourceLowering
-public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcess.ErrorDefinition
-public import BpmnSemantics.SemanticProcess.InclusiveGateway
-public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
-public import BpmnSemantics.SemanticProcess.LoweringIdentity
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
 public import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 public import BpmnSemantics.SemanticProcess.TimerStartLowering
@@ -14,7 +10,6 @@ public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcess.GraphValidation
-public import BpmnSemantics.SemanticProcess.NestedScopeData
 
 /-! # Canonical checked-process lowering
 

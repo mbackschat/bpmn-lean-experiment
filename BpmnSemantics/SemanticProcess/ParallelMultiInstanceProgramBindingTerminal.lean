@@ -1,8 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
-import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Parallel Multi-Instance terminal Program binding
 

@@ -1,19 +1,17 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairOwnershipFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairPublicationFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairCancellationFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairMixedFields
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingRetention
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
 
 /-! Complete regional pairs compose the existing preparation, execution, validity, and publication laws. Canonical token order and additive end counts are proved separately from retained-field removal before reconstructing literal RuntimeState equality. -/
 

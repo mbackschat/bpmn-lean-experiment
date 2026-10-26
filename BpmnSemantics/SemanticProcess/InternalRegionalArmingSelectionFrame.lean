@@ -1,6 +1,5 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectionFrame
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutation
@@ -10,8 +9,10 @@ import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 
 /-! Regional selection observes quiescence and exact predecessor withdrawal records.
 An independent arming patch creates work outside the selected region. -/

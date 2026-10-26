@@ -2,10 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
-public import BpmnSemantics.SemanticProcess.ControlPosition
-import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 
 /-! PMIS-SELECT-01 reservation preserves the complete operation/owner sequence.
 These laws derive identity from the actual singleton preparation calls retained by

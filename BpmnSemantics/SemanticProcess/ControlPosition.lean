@@ -1,7 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
+public import BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! # Public committed control positions
 

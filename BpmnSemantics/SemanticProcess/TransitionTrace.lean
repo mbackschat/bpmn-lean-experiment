@@ -1,13 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.TransitionRecord
-import BpmnSemantics.SemanticProcess.ClosureLimit
-import BpmnSemantics.SemanticProcess.InternalTransitionPublication
-public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # Committed semantic transition traces
 

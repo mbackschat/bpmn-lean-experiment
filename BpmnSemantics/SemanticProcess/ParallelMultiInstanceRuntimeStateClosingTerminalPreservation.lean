@@ -8,7 +8,6 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.TokenPatch
 
 /-! # Parallel Multi-Instance terminal runtime-state preservation
 

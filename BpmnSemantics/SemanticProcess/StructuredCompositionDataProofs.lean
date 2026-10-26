@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
 import all BpmnSemantics.SemanticProcess.JsonSupport
-public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 

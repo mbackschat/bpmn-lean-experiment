@@ -1,9 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
-import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
-public import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
-public import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationCompensationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
@@ -13,6 +10,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairRegionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
 
 /-! Cancellation removes derived Activity, effect, and incident populations, so pair commutation needs their exact predecessor lists rather than only disjoint root IDs. -/
 

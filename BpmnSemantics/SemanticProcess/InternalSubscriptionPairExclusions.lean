@@ -1,6 +1,5 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames

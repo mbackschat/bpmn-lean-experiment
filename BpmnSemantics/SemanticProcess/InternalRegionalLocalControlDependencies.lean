@@ -1,8 +1,7 @@
 module
 
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 
 /-! The complete regional read set protects the owner region and place-wide selectors from
 local-control writes. These are the dependencies required by INTERNAL-COMMUTATION's frame law. -/

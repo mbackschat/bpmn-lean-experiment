@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.CompensationSourceLoweringFixtures

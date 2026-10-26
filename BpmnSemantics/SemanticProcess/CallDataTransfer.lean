@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 public import BpmnSemantics.SemanticProcess.CallActivity
+import Std.Data.DTreeMap.Internal.Operations
 
 /-! # Atomic scalar Call transfers
 

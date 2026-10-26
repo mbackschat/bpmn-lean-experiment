@@ -1,5 +1,6 @@
 module
 
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.ExecutionRuntime
 public import BpmnSemantics.SemanticProcess.Lowering

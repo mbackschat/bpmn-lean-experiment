@@ -1,14 +1,13 @@
 module
 
-import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityRemoval
-public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
+public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
 
 /-! Regional removal filters canonical collections. Local-control patches commute with that
 filter only when every changed value survives and the predecessor has canonical order. -/

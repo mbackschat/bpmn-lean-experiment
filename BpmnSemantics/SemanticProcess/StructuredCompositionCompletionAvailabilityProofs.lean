@@ -7,7 +7,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
-import BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
+import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
 
 /-! Exact task lifetime and declaration ownership provide concrete admitted completion commands.
 Reached completion availability derives committed collection storage from the existing execution,

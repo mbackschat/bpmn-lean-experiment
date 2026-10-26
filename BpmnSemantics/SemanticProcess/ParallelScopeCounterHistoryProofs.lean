@@ -3,6 +3,8 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterGrowthProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Cumulative parallel command counter bounds
 

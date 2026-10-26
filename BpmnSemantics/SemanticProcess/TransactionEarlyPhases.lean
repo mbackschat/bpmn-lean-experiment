@@ -1,9 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
-import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
-import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
 

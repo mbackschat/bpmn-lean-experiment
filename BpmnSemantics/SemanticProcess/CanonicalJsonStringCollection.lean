@@ -1,7 +1,6 @@
 module
 
 public import Init.Data.ByteArray.Basic
-public import Init.Data.String.Basic
 
 /-! # Canonical JSON string collection byte measure
 

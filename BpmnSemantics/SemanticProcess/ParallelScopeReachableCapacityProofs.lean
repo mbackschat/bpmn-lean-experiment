@@ -1,14 +1,12 @@
 module
 
 import BpmnSemantics.SemanticProcess.ParallelScopePopulationCapacityProofs
-import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 import BpmnSemantics.SemanticProcess.ParallelScopeCollectionStorageProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
-public import BpmnSemantics.SemanticProcess.ParallelScopeFinalRetirement
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
@@ -17,6 +15,11 @@ import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeStructuralPublicationProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeActualStepEvidence
+import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 
 /-! Actual reachability supplies storage, reservation and population evidence; a later command's admission is not a capacity premise. -/
 

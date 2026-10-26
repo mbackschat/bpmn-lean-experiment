@@ -1,6 +1,6 @@
 module
 
-public import BpmnSemantics.SemanticProcess.CommandAdmission
+public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 
 /-! # Flow-node occurrence Program-validity core
 

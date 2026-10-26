@@ -4,8 +4,8 @@ public import BpmnSemantics.SemanticProcess.ExecutionRuntime
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletionLaws
 import BpmnSemantics.SemanticProcess.CallDataStateLaws
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! # Semantic Process external execution
 

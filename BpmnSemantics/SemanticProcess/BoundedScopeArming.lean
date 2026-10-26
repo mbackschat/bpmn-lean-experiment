@@ -1,9 +1,6 @@
 module
 
-import BpmnSemantics.SemanticProcess.ScopeCancellation
-import BpmnSemantics.SemanticProcess.ScopeCompletion
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
-public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 
 /-! # Interrupting Sub-Process boundary Timer: arming
 

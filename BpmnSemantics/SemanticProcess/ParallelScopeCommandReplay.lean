@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
-public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws

@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
-import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 
 /-! The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice)
 normalizes only singleton operations independent of every alternative. Presentation order supplies no choice.

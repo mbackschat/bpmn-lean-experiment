@@ -2,16 +2,11 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
-public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
-public import BpmnSemantics.SemanticProcess.IncidentCancellation
-public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
-public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
-public import BpmnSemantics.SemanticProcess.WaitCompletion
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
-import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+public import BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! # Error continuation position
 

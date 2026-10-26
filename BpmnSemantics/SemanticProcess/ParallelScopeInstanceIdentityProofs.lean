@@ -2,6 +2,7 @@ module
 
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 
 /-! # Actual parallel hosting-instance provenance
 

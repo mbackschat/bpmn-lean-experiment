@@ -3,8 +3,6 @@ module
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalPreparationFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPreparationFrame
-import BpmnSemantics.SemanticProcess.CallActivity
-public import BpmnSemantics.SemanticProcess.TransitionTrace
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
@@ -17,6 +15,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlSelectionFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 import BpmnSemantics.SemanticProcess.TokenOrder
+public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 
 /-! Exact regional/local-control commutation is derived from predecessor preparation and
 footprint independence. The two evaluation orders share the complete prepared artifacts. -/
