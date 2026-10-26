@@ -300,6 +300,12 @@ def call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts : Bool :=
     alteredLifecycleRefused (program .called .called) = true
 
 /-- Every executable check of this module, named for the driver's failure report. -/
+def child_child_complete_preparations_survive_both_orders : Bool := decide <|
+    pairFrames (program .child .child) = true
+
+def call_creation_still_refuses_repeated_input : Bool := decide <|
+    preparation (program .called .called) repeatedInput ⟨"C_Left"⟩ = none
+
 def checks : List (String × Bool) := [
   ("constructed_pairs_remain_outside_profile_admission", constructed_pairs_remain_outside_profile_admission),
   ("child_call_complete_preparations_survive_both_orders", child_call_complete_preparations_survive_both_orders),
@@ -319,7 +325,9 @@ def checks : List (String × Bool) := [
   ("child_call_lifecycle_is_accepted_in_both_orders", child_call_lifecycle_is_accepted_in_both_orders),
   ("call_call_lifecycle_is_accepted_in_both_orders", call_call_lifecycle_is_accepted_in_both_orders),
   ("child_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts", child_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts),
-  ("call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts", call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts)
+  ("call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts", call_lifecycle_rejects_missing_duplicate_and_wrong_identity_starts),
+  ("child_child_complete_preparations_survive_both_orders", child_child_complete_preparations_survive_both_orders),
+  ("call_creation_still_refuses_repeated_input", call_creation_still_refuses_repeated_input)
 ]
 
 end BpmnSemantics.InternalScopeCreationFrameConformance

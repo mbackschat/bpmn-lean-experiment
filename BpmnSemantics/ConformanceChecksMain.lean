@@ -138,6 +138,10 @@ import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
 import all Std.Data.DTreeMap.Raw.Basic
 import all Std.Data.TreeMap.Raw.Basic
+public import BpmnSemantics.SequentialMultiInstanceRuntimeConformance
+public import BpmnSemantics.SequentialMultiInstanceRefusalConformance
+public import BpmnSemantics.UserTaskMetadataConformanceCheckFixtures
+public import BpmnSemantics.ActivityBoundaryMessageConformanceCheckFixtures
 
 /-! # Conformance executable checks
 
@@ -154,6 +158,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("ActivityActivationOrderConformance", BpmnSemantics.ActivityActivationOrderConformance.checks),
   ("ActivityBodyClaimUniquenessConformance", BpmnSemantics.ActivityBodyClaimUniquenessConformance.checks),
   ("ActivityBodyTurnoverConformance", BpmnSemantics.ActivityBodyTurnoverConformance.checks),
+  ("ActivityBoundaryMessageConformance", BpmnSemantics.ActivityBoundaryMessageConformance.checks),
   ("ActivityBoundaryTimerConformance", BpmnSemantics.ActivityBoundaryTimerConformance.checks),
   ("ActivityDataInputConformance", BpmnSemantics.ActivityDataInputConformance.checks),
   ("ActivityDataInputOutputAdmissionConformance", BpmnSemantics.ActivityDataInputOutputConformance.activityDataInputOutputAdmissionConformanceChecks),
@@ -256,6 +261,8 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("SemanticProcessJsonConformance", BpmnSemantics.SemanticProcessJsonConformance.checks),
   ("SequentialMultiInstanceCanonicalJsonConformance", BpmnSemantics.SequentialMultiInstanceConformance.sequentialMultiInstanceCanonicalJsonConformanceChecks),
   ("SequentialMultiInstanceProgramBindingConformance", BpmnSemantics.SequentialMultiInstanceProgramBindingConformance.checks),
+  ("SequentialMultiInstanceRefusalConformance", BpmnSemantics.SequentialMultiInstanceConformance.sequentialMultiInstanceRefusalConformanceChecks),
+  ("SequentialMultiInstanceRuntimeConformance", BpmnSemantics.SequentialMultiInstanceConformance.sequentialMultiInstanceRuntimeConformanceChecks),
   ("SequentialScopeGraphConformance", BpmnSemantics.SequentialScopeGraphConformance.checks),
   ("SerialBusinessTaskConformance", BpmnSemantics.SerialBusinessTaskConformance.checks),
   ("SnapshotInternalArmingConformance", BpmnSemantics.SnapshotInternalArmingConformance.checks),
@@ -278,7 +285,8 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("TransactionSourceArmingConformance", BpmnSemantics.TransactionSourceArmingConformance.checks),
   ("TransactionSourceConformance", BpmnSemantics.TransactionSourceConformance.checks),
   ("UserTaskCompletionDataConformance", BpmnSemantics.UserTaskCompletionDataConformance.checks),
-  ("UserTaskInteractionConformance", BpmnSemantics.UserTaskInteractionConformance.checks)
+  ("UserTaskInteractionConformance", BpmnSemantics.UserTaskInteractionConformance.checks),
+  ("UserTaskMetadataConformance", BpmnSemantics.UserTaskMetadataConformance.checks)
 ]
 
 def main : IO UInt32 := do

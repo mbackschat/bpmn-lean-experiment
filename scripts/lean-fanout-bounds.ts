@@ -248,16 +248,16 @@ export const leanHiddenEditDefaultBound = 10;
  * lines its own build fails without. It shrinks under the same rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 129 },
+  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 127 },
   { module: "BpmnSemantics.SemanticProcess.SequentialScopeRuntime", bound: 126 },
-  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 122 },
-  { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 111 },
-  { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 87 },
-  { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 85 },
-  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 80 },
-  { module: "BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission", bound: 78 },
+  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 121 },
+  { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 109 },
+  { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 86 },
+  { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 83 },
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 79 },
   { module: "BpmnSemantics.SemanticProcess.CheckedGraphValidation", bound: 77 },
-  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 77 },
-  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 73 },
-  { module: "BpmnSemantics.SemanticProcess.JsonSupport", bound: 73 },
+  { module: "BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission", bound: 76 },
+  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 75 },
+  { module: "BpmnSemantics.SemanticProcess.JsonSupport", bound: 72 },
+  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 71 },
 ];

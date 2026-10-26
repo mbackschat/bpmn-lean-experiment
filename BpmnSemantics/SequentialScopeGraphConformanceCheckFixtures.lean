@@ -486,6 +486,23 @@ def delayed_join_old_body_commands_refuse_after_turnover : Bool := decide <|
       effect.outcome = .rejected ∧ effect.state = delayedJoinTurnedOver.state
 
 /-- Every executable check of this module, named for the driver's failure report. -/
+def repeated_scope_projection_publishes_exact_body_membership : Bool := decide <|
+    sequentialScopeProgress? program projectionWaiting = some [{
+      id := ⟨projectionParent.processInstanceId, ⟨"Batch"⟩, 1⟩,
+      plannedInstanceCount := 2, pendingItemCount := 1, numberOfInstances := 1,
+      numberOfActiveInstances := 1, numberOfCompletedInstances := 0, numberOfTerminatedInstances := 0,
+      activeIterations := [{
+        loopCounter := 0, body := projectionBody,
+        item := ⟨"item", .string "INV-01"⟩, bindings := [⟨"status", .null⟩],
+        userTaskIds := [⟨projectionParent.processInstanceId, ⟨"Alpha"⟩, 1⟩,
+          ⟨projectionParent.processInstanceId, ⟨"Zulu"⟩, 1⟩], effectIds := [⟨projectionParent.processInstanceId, ⟨"Validate"⟩, 1⟩] }] }]
+
+def repeated_scope_projection_refuses_duplicate_or_foreign_interactions : Bool := decide <|
+    sequentialScopeProgress? program { projectionWaiting with waits :=
+      [projectionTask "Alpha" projectionBody, projectionTask "Alpha" projectionBody] } = none ∧
+    sequentialScopeProgress? program { projectionWaiting with waits :=
+      [{ projectionTask "Alpha" projectionBody with processInstanceId := ⟨"foreign"⟩ }] } = none
+
 def checks : List (String × Bool) := [
   ("not_started_refuses_injected_scope_controller", not_started_refuses_injected_scope_controller),
   ("scope_controller_requires_a_matching_declaration", scope_controller_requires_a_matching_declaration),
@@ -522,7 +539,9 @@ def checks : List (String × Bool) := [
   ("delayed_join_last_completion_turns_over_with_fresh_waits_and_locals", delayed_join_last_completion_turns_over_with_fresh_waits_and_locals),
   ("delayed_join_runtime_validity_survives_waits_and_turnover", delayed_join_runtime_validity_survives_waits_and_turnover),
   ("delayed_join_missing_and_extra_service_results_refuse_without_mutation", delayed_join_missing_and_extra_service_results_refuse_without_mutation),
-  ("delayed_join_old_body_commands_refuse_after_turnover", delayed_join_old_body_commands_refuse_after_turnover)
+  ("delayed_join_old_body_commands_refuse_after_turnover", delayed_join_old_body_commands_refuse_after_turnover),
+  ("repeated_scope_projection_publishes_exact_body_membership", repeated_scope_projection_publishes_exact_body_membership),
+  ("repeated_scope_projection_refuses_duplicate_or_foreign_interactions", repeated_scope_projection_refuses_duplicate_or_foreign_interactions)
 ]
 
 end BpmnSemantics.SequentialScopeGraphConformance

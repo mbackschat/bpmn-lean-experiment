@@ -105,17 +105,16 @@ def review_arms_immutable_enclosing_arguments : Bool := decide <|
       [[{ name := "echo", value := .string "parent" },
         { name := "payload", value := .string "reviewed" }]]
 
-theorem local_result_fanout_and_parent_frame :
+def local_result_fanout_and_parent_frame : Bool := decide <|
     classification.outcome = .committed ∧
     classification.state.variables.process.bindings =
       [{ name := "decision", value := .null }, { name := "payload", value := .string "parent" },
        { name := "request", value := .string "reviewed" }, { name := "result", value := .string "old" },
        { name := "status", value := .null }] ∧
     classification.state.effectWaits.map (·.arguments) = [[{ name := "decision", value := .null }]] ∧
-    classification.state.variables.activities.map (·.owner) = [.effectOccurrence classificationId] := by
-  cbv
+    classification.state.variables.activities.map (·.owner) = [.effectOccurrence classificationId]
 
-theorem complete_actual_serial_journey :
+def complete_actual_serial_journey : Bool := decide <|
     finalization.outcome = .committed ∧ finalization.state.waits.map (·.task.id.value) = ["E"] ∧
     completed.outcome = .committed ∧ completed.state.control = .completed ⟨"I"⟩ ∧
     completed.state.effectWaits = [] ∧ completed.state.variables.activities = [] ∧
@@ -123,7 +122,7 @@ theorem complete_actual_serial_journey :
       [{ name := "classification", value := .string "manual" },
        { name := "decision", value := .null }, { name := "payload", value := .string "parent" },
        { name := "request", value := .string "reviewed" }, { name := "result", value := .string "old" },
-       { name := "status", value := .null }] := by cbv
+       { name := "status", value := .null }]
 
 def missing_start_refuses : Bool := decide <|
     applyStimulus 8 program initialState (.startProcess ⟨"bad"⟩ ⟨"P"⟩ ⟨"I"⟩ []) =
@@ -136,48 +135,47 @@ def empty_instance_start_refuses : Bool := decide <|
     (admitStimulus program initialState
       (.startProcess ⟨"empty-instance"⟩ ⟨"P"⟩ ⟨""⟩ initialBindings)).state = initialState
 
-theorem replayed_effect_refuses_unchanged :
+def replayed_effect_refuses_unchanged : Bool := decide <|
     applyStimulus 8 program classification.state
       (.completeEffect ⟨"stale"⟩ validationId (.success [{ name := "result", value := .null }])) =
       { outcome := .rejected, state := classification.state,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by cbv
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false }
 
-theorem incomplete_patch_refuses_unchanged :
+def incomplete_patch_refuses_unchanged : Bool := decide <|
     applyStimulus 8 program validation.state (.completeEffect ⟨"bad"⟩ validationId (.success [])) =
       { outcome := .rejected, state := validation.state,
-        internalStepBoundExceeded := false, ambiguousInternalChoice := false } := by cbv
+        internalStepBoundExceeded := false, ambiguousInternalChoice := false }
 
 def engine_context_and_keyword_handlers_refuse : Bool := decide <|
     SerialBusinessTask.descriptorValid (descriptor "execution") = false ∧
     SerialBusinessTask.descriptorValid (descriptor "authenticatedUserId") = false ∧
     SerialBusinessTask.descriptorValid (descriptor "empty") = false
 
-theorem snapshot_survives_parent_change :
+def snapshot_survives_parent_change : Bool := decide <|
     serialRuntimeAssociationsValid program
       { validation.state with variables := { validation.state.variables with
         process := { bindings := [{ name := "payload", value := .string "changed" },
-          { name := "request", value := .string "later" }] } } } = true := by cbv
+          { name := "request", value := .string "later" }] } } } = true
 
-theorem chained_input_nonlaw :
+def chained_input_nonlaw : Bool := decide <|
     evaluateEnclosingInputMappings
       [{ name := "payload", value := .string "parent" }, { name := "request", value := .string "reviewed" }]
       [{ target := "payload", expression := .enclosingVariable "request" },
        { target := "echo", expression := .enclosingVariable "payload" }] =
-      some [{ name := "echo", value := .string "parent" }, { name := "payload", value := .string "reviewed" }] := by
-  cbv
+      some [{ name := "echo", value := .string "parent" }, { name := "payload", value := .string "reviewed" }]
 
 def old_profile_does_not_admit_business_handlers : Bool := decide <|
     programProfileCapabilitiesValid { program with identity := { program.identity with
       semanticProfile := ⟨"cibseven-2.0.0-mapped-success-service-task-draft"⟩ } } = false
 
-theorem malformed_result_classes_refuse :
+def malformed_result_classes_refuse : Bool := decide <|
     [ [{ name := "result", value := .boolean true }],
       [{ name := "private", value := .string "x" }, { name := "result", value := .null }],
       [{ name := "result", value := .null }, { name := "result", value := .null }],
       [{ name := "decision", value := .null }] ].all (fun patch =>
         let result := applyStimulus 8 program validation.state
           (.completeEffect ⟨"bad"⟩ validationId (.success patch))
-        result.outcome == .rejected && result.state == validation.state) = true := by cbv
+        result.outcome == .rejected && result.state == validation.state) = true
 
 def second_distinct_source_cannot_partially_write : Bool := decide <|
     serialEffectPatch? []
@@ -219,7 +217,14 @@ def checks : List (String × Bool) := [
   ("second_distinct_source_cannot_partially_write", second_distinct_source_cannot_partially_write),
   ("empty_mapping_accepts_exact_empty_patch", empty_mapping_accepts_exact_empty_patch),
   ("handler_shadowing_refuses_bindings_and_mapping", handler_shadowing_refuses_bindings_and_mapping),
-  ("duplicate_identity_and_disconnected_chain_refuse", duplicate_identity_and_disconnected_chain_refuse)
+  ("duplicate_identity_and_disconnected_chain_refuse", duplicate_identity_and_disconnected_chain_refuse),
+  ("local_result_fanout_and_parent_frame", local_result_fanout_and_parent_frame),
+  ("complete_actual_serial_journey", complete_actual_serial_journey),
+  ("replayed_effect_refuses_unchanged", replayed_effect_refuses_unchanged),
+  ("incomplete_patch_refuses_unchanged", incomplete_patch_refuses_unchanged),
+  ("snapshot_survives_parent_change", snapshot_survives_parent_change),
+  ("chained_input_nonlaw", chained_input_nonlaw),
+  ("malformed_result_classes_refuse", malformed_result_classes_refuse)
 ]
 
 end BpmnSemantics.SerialBusinessTaskConformance

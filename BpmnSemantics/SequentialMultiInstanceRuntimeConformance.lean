@@ -104,12 +104,11 @@ set_option synthInstance.maxSize 2000
 
 The positive fact that keeps the refusals below honest, and the one the quantified laws do not supply:
 preservation across these arms is an open lane, so this is the decided instance of it. -/
-theorem every_state_of_the_run_is_well_formed :
+def every_state_of_the_run_is_well_formed : Bool := decide <|
     [entered?, afterFirstResult?, afterSecondResult?, afterThirdResult?,
       interruptedAfterFirstResult?].map
         (·.map (runtimeStateWellFormed program instanceId)) =
-      [some true, some true, some true, some true, some true] := by
-  decide +kernel
+      [some true, some true, some true, some true, some true]
 
 /-- The shared live-body invariant is not enough for an SMI controller: its body must be the exact
 User Task declared by the bound operation. A live child scope belongs to another Activity family and
@@ -119,9 +118,8 @@ def enteredWithChildScopeBody? : Option RuntimeState := do
   let record ← state.activityOccurrences.head?
   pure { state with activityOccurrences := [{ record with body := .childScope record.owner }] }
 
-theorem child_scope_body_is_not_a_valid_sequential_multi_instance_binding :
-    enteredWithChildScopeBody?.map (runtimeStateWellFormed program instanceId) = some false := by
-  decide +kernel
+def child_scope_body_is_not_a_valid_sequential_multi_instance_binding : Bool := decide <|
+    enteredWithChildScopeBody?.map (runtimeStateWellFormed program instanceId) = some false
 
 /-- The state alone is not the whole invariant. Changing the declared task name while retaining the
 same runtime wait leaves every occurrence identity live and uniquely declared, but breaks the exact
@@ -135,9 +133,8 @@ def renamedTaskProgram : Program :=
             { task with name := some "Different task" } data normalOutput boundaryTimer limits
       | operation => operation }
 
-theorem controller_binding_rejects_a_different_declared_task :
-    entered?.map (runtimeStateWellFormed renamedTaskProgram instanceId) = some false := by
-  decide +kernel
+def controller_binding_rejects_a_different_declared_task : Bool := decide <|
+    entered?.map (runtimeStateWellFormed renamedTaskProgram instanceId) = some false
 
 def sequentialMultiInstanceOperationIds : List OperationId :=
   program.operations.filterMap fun
@@ -158,30 +155,27 @@ def duplicateSequentialMultiInstanceOwnerProgram : Program :=
 
 /-- Definition admission owns malformed operation-scope structure while no matching runtime artifact
 exists, so neither the initial-state theorem nor public empty progress needs an ownership fact. -/
-theorem empty_runtime_does_not_duplicate_program_ownership_admission :
+def empty_runtime_does_not_duplicate_program_ownership_admission : Bool := decide <|
     (sequentialMultiInstanceProgramBindingsValid missingSequentialMultiInstanceOwnerProgram
         initialState,
       sequentialMultiInstanceProgramBindingsValid duplicateSequentialMultiInstanceOwnerProgram
-        initialState) = (true, true) := by
-  decide +kernel
+        initialState) = (true, true)
 
 /-- The missing and duplicate owner counterexamples separate that responsibility boundary: once the
 SMI Activity is live, both malformed definitions make its runtime binding invalid. -/
-theorem live_runtime_requires_exactly_one_operation_owner :
+def live_runtime_requires_exactly_one_operation_owner : Bool := decide <|
     (entered?.map (sequentialMultiInstanceProgramBindingsValid
         missingSequentialMultiInstanceOwnerProgram),
       entered?.map (sequentialMultiInstanceProgramBindingsValid
-        duplicateSequentialMultiInstanceOwnerProgram)) = (some false, some false) := by
-  decide +kernel
+        duplicateSequentialMultiInstanceOwnerProgram)) = (some false, some false)
 
 /-- The reverse half of the state binding: an open operation-owned Activity record cannot outlive the
 controller that carries its immutable snapshot and accumulated output slots. -/
 def enteredWithoutController? : Option RuntimeState :=
   entered?.map fun state => { state with sequentialMultiInstanceControllers := [] }
 
-theorem controller_binding_rejects_an_open_record_without_its_controller :
-    enteredWithoutController?.map (runtimeStateWellFormed program instanceId) = some false := by
-  decide +kernel
+def controller_binding_rejects_an_open_record_without_its_controller : Bool := decide <|
+    enteredWithoutController?.map (runtimeStateWellFormed program instanceId) = some false
 
 /-- A second operation-owned task wait outside the record is not another iteration. The exact profile
 has one active inner task, so advancing its high-water mark does not make the extra wait admissible. -/
@@ -196,9 +190,8 @@ def enteredWithUnrecordedTaskWait? : Option RuntimeState := do
           { activation with count := activation.count + 1 }
         else activation }
 
-theorem controller_binding_rejects_an_extra_operation_owned_task_wait :
-    enteredWithUnrecordedTaskWait?.map (runtimeStateWellFormed program instanceId) = some false := by
-  decide +kernel
+def controller_binding_rejects_an_extra_operation_owned_task_wait : Bool := decide <|
+    enteredWithUnrecordedTaskWait?.map (runtimeStateWellFormed program instanceId) = some false
 
 /-- A second operation-owned lifetime Timer outside the record is likewise surplus profile state. -/
 def enteredWithUnrecordedTimerWait? : Option RuntimeState := do
@@ -213,9 +206,8 @@ def enteredWithUnrecordedTimerWait? : Option RuntimeState := do
           { activation with count := activation.count + 1 }
         else activation }
 
-theorem controller_binding_rejects_an_extra_operation_owned_timer_wait :
-    enteredWithUnrecordedTimerWait?.map (runtimeStateWellFormed program instanceId) = some false := by
-  decide +kernel
+def controller_binding_rejects_an_extra_operation_owned_timer_wait : Bool := decide <|
+    enteredWithUnrecordedTimerWait?.map (runtimeStateWellFormed program instanceId) = some false
 
 /-- `SMI-ENTER-01`, generating arm: one task, one deadline, one record, one controller, no output.
 
@@ -261,7 +253,7 @@ The published items are the slots in index order, and the Process scope holds ex
 collection it started with plus this one output binding, canonically ordered by name. The controller,
 the record, the final inner task, and the lifetime deadline are all gone, and the only enabled route is
 the normal one. -/
-theorem final_completion_publishes_the_exact_ordered_collection_and_closes :
+def final_completion_publishes_the_exact_ordered_collection_and_closes : Bool := decide <|
     afterThirdResult?.map (fun state =>
       (state.variables.process.bindings,
         state.waits.length, state.timerWaits.length, state.activityOccurrences.length,
@@ -272,8 +264,7 @@ theorem final_completion_publishes_the_exact_ordered_collection_and_closes :
             value := .stringList ["Invoice_1", "Invoice_2", "Invoice_3"] },
           { name := "DataObjectReference_OutputResults"
             value := .stringList ["Reviewed_1", "Reviewed_2", "Reviewed_3"] }],
-          0, 0, 0, 0, ["place:Flow_Review_Completed"]) := by
-  decide +kernel
+          0, 0, 0, 0, ["place:Flow_Review_Completed"])
 
 /-- `SMI-CANCEL-01` after one accepted result: nothing published, only the boundary route enabled.
 
@@ -323,7 +314,7 @@ is exactly the stranding this withdrawal prevents: the record that named it is r
 step, leaving a wait no record owns. Both deadlines, the active task, the record, and the controller
 leave together, only the boundary route is enabled, and logical time advances to the fired instant
 rather than to the later one. -/
-theorem interruption_withdraws_both_deadlines_the_record_listed :
+def interruption_withdraws_both_deadlines_the_record_listed : Bool := decide <|
     (do
       let arm ← arm?
       let state ← enteredWithSecondDeadline?
@@ -337,8 +328,7 @@ theorem interruption_withdraws_both_deadlines_the_record_listed :
           interrupted.activityOccurrences.length,
           interrupted.sequentialMultiInstanceControllers.length,
           interrupted.tokens.map (·.placeId.value), interrupted.logicalTimeMs)) =
-      some ([5000, 6000], 0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 5000) := by
-  decide +kernel
+      some ([5000, 6000], 0, 0, 0, 0, ["place:Flow_Timer_Escalation"], 5000)
 
 /-- `SMI-ENTER-01`, empty arm: no inner instance, no deadline, and the empty collection published.
 
@@ -350,7 +340,7 @@ def emptyEntry? : Option RuntimeState := do
   let state ← preEntryWith []
   enterSequentialMultiInstance? arm state
 
-theorem empty_collection_completes_atomically_and_publishes_an_empty_collection :
+def empty_collection_completes_atomically_and_publishes_an_empty_collection : Bool := decide <|
     emptyEntry?.map (fun state =>
       (runtimeStateWellFormed program instanceId state,
         state.waits.length, state.timerWaits.length, state.activityOccurrences.length,
@@ -358,8 +348,21 @@ theorem empty_collection_completes_atomically_and_publishes_an_empty_collection 
         state.tokens.map (·.placeId.value), state.variables.process.bindings)) =
       some (true, 0, 0, 0, 0, ["place:Flow_Review_Completed"],
         [{ name := "DataObjectReference_InputItems", value := .stringList [] },
-          { name := "DataObjectReference_OutputResults", value := .stringList [] }]) := by
-  decide +kernel
+          { name := "DataObjectReference_OutputResults", value := .stringList [] }])
 
+/-- Every executable check of this module, named for the driver's failure report. -/
+def sequentialMultiInstanceRuntimeConformanceChecks : List (String × Bool) := [
+  ("every_state_of_the_run_is_well_formed", every_state_of_the_run_is_well_formed),
+  ("child_scope_body_is_not_a_valid_sequential_multi_instance_binding", child_scope_body_is_not_a_valid_sequential_multi_instance_binding),
+  ("controller_binding_rejects_a_different_declared_task", controller_binding_rejects_a_different_declared_task),
+  ("empty_runtime_does_not_duplicate_program_ownership_admission", empty_runtime_does_not_duplicate_program_ownership_admission),
+  ("live_runtime_requires_exactly_one_operation_owner", live_runtime_requires_exactly_one_operation_owner),
+  ("controller_binding_rejects_an_open_record_without_its_controller", controller_binding_rejects_an_open_record_without_its_controller),
+  ("controller_binding_rejects_an_extra_operation_owned_task_wait", controller_binding_rejects_an_extra_operation_owned_task_wait),
+  ("controller_binding_rejects_an_extra_operation_owned_timer_wait", controller_binding_rejects_an_extra_operation_owned_timer_wait),
+  ("final_completion_publishes_the_exact_ordered_collection_and_closes", final_completion_publishes_the_exact_ordered_collection_and_closes),
+  ("interruption_withdraws_both_deadlines_the_record_listed", interruption_withdraws_both_deadlines_the_record_listed),
+  ("empty_collection_completes_atomically_and_publishes_an_empty_collection", empty_collection_completes_atomically_and_publishes_an_empty_collection)
+]
 
 end BpmnSemantics.SequentialMultiInstanceConformance

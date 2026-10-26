@@ -210,14 +210,13 @@ def swapExpectedInputs : SemanticOperation → SemanticOperation
 def wronglyPairedProgram : Program :=
   { program with operations := program.operations.map swapExpectedInputs }
 
-theorem exact_checked_definition_is_admitted :
-    definitionBindingValid checkedProcess program = true := by
-  decide +kernel
+def exact_checked_definition_is_admitted : Bool := decide <|
+    definitionBindingValid checkedProcess program = true
 
-theorem inclusive_lowering_is_exact :
-    lowerCheckedProcess checkedProcess = program := by decide +kernel
+def inclusive_lowering_is_exact : Bool := decide <|
+    lowerCheckedProcess checkedProcess = program
 
-theorem lowering_derives_branch_local_join_inputs :
+def lowering_derives_branch_local_join_inputs : Bool := decide <|
     (lowerCheckedProcess checkedProcess).operations.find? (fun operation =>
         decide (operation.id.value = "operation:Split")) =
       some
@@ -234,8 +233,7 @@ theorem lowering_derives_branch_local_join_inputs :
           { output := ⟨"place:Flow_Default"⟩
             expectedJoinInput := ⟨"place:Flow_Default_Join"⟩
             origin := { elementId := ⟨"Flow_Default"⟩ } }
-          "Split") := by
-  decide +kernel
+          "Split")
 
 def permuted_branch_pairing_fails_definition_binding : Bool := decide <|
     programWellFormed wronglyPairedProgram = true ∧
@@ -335,7 +333,10 @@ def checks : List (String × Bool) := [
   ("longest_start_closure_is_four_steps", longest_start_closure_is_four_steps),
   ("both_task_activation_orders_have_equal_runtime_and_observation", both_task_activation_orders_have_equal_runtime_and_observation),
   ("terminal_closure_uses_three_internal_steps", terminal_closure_uses_three_internal_steps),
-  ("synchronize_without_selection_record_is_disabled", synchronize_without_selection_record_is_disabled)
+  ("synchronize_without_selection_record_is_disabled", synchronize_without_selection_record_is_disabled),
+  ("exact_checked_definition_is_admitted", exact_checked_definition_is_admitted),
+  ("inclusive_lowering_is_exact", inclusive_lowering_is_exact),
+  ("lowering_derives_branch_local_join_inputs", lowering_derives_branch_local_join_inputs)
 ]
 
 end BpmnSemantics.InclusiveGatewayConformance

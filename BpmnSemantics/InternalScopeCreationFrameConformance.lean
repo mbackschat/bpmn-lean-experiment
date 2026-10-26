@@ -59,9 +59,6 @@ theorem call_call_premises_hold_jointly :
   · decide +kernel
   · constructor <;> decide +kernel
 
-theorem child_child_complete_preparations_survive_both_orders :
-    pairFrames (program .child .child) = true := by decide +kernel
-
 theorem repeated_child_input_retains_one_token_and_publishes_one_consumption :
     runtimeStateWellFormed (program .child .child) owner.processInstanceId repeatedInput = true ∧
     positionPublicationMatches (program .child .child) repeatedInput ⟨"C_Left"⟩ = true ∧
@@ -75,9 +72,5 @@ theorem repeated_child_input_retains_one_token_and_publishes_one_consumption :
   constructor
   · decide +kernel
   · constructor <;> decide +kernel
-
-theorem call_creation_still_refuses_repeated_input :
-    preparation (program .called .called) repeatedInput ⟨"C_Left"⟩ = none := by
-  decide +kernel
 
 end BpmnSemantics.InternalScopeCreationFrameConformance

@@ -88,34 +88,31 @@ answers `none`, and the caller's committed state is what it was.
 
 /-- Replacing the Process input reference by its backing DataObject makes the exact source-bound
 entry fail. The runtime may not infer one identity from the other. -/
-theorem a_runtime_arm_that_looks_up_the_backing_input_object_is_refused :
+def a_runtime_arm_that_looks_up_the_backing_input_object_is_refused : Bool := decide <|
     (do
       let operation ← sequentialMultiInstanceOperationForTask?
         dataObjectInputProgram ⟨"UserTask_Review"⟩
       let arm ← SequentialMultiInstanceArm.ofOperation? operation
       let state ← preEntry?
-      enterSequentialMultiInstance? arm state) = none := by
-  decide +kernel
+      enterSequentialMultiInstance? arm state) = none
 
 /-- The exact profile admits Process-start `StringList`, not a scalar String. -/
-theorem a_scalar_process_start_binding_is_refused :
+def a_scalar_process_start_binding_is_refused : Bool := decide <|
     (applyStimulus scenarioClosureLimit program initialState
       (.startProcess ⟨"wrong-start-value-kind"⟩
         ⟨"Process_SequentialMultiInstanceReview"⟩ instanceId
         [{ name := "DataObjectReference_InputItems", value := .string "Invoice_1" }])).outcome =
-      .rejected := by
-  decide +kernel
+      .rejected
 
 /-- A result named by the wrong binding is refused, even for the right task at the right time. -/
-theorem a_result_under_the_wrong_output_binding_name_is_refused :
+def a_result_under_the_wrong_output_binding_name_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let state ← entered?
       let record ← state.activityOccurrences.head?
       let body ← activityBodyTask? record
       completeSequentialMultiInstanceInnerTask? arm state body
-        [{ name := arm.data.inputDataObjectReferenceId, value := .string "Reviewed_1" }]) = none := by
-  decide +kernel
+        [{ name := arm.data.inputDataObjectReferenceId, value := .string "Reviewed_1" }]) = none
 
 /-- A result carrying a collection where the profile admits one String is refused. -/
 theorem a_result_of_the_wrong_value_kind_is_refused :
@@ -132,7 +129,7 @@ theorem a_result_of_the_wrong_value_kind_is_refused :
 
 The identity the first iteration completed, replayed against the state that turnover produced. It names
 no live body, so no record answers for it and no result is stored twice. -/
-theorem the_previous_iterations_task_identity_is_refused :
+def the_previous_iterations_task_identity_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let entry ← entered?
@@ -140,43 +137,39 @@ theorem the_previous_iterations_task_identity_is_refused :
       let staleBody ← activityBodyTask? record
       let state ← afterFirstResult?
       completeSequentialMultiInstanceInnerTask? arm state staleBody
-        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_2" }]) = none := by
-  decide +kernel
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_2" }]) = none
 
 /-- Firing the lifetime deadline at any instant but the committed one is refused. -/
-theorem firing_the_deadline_off_its_committed_instant_is_refused :
+def firing_the_deadline_off_its_committed_instant_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let state ← afterFirstResult?
       let record ← state.activityOccurrences.head?
       let timer ← record.timerHandlerOccurrences.head?
       let deadline ← state.timerWaits.find? (timerIdNamesWait timer)
-      interruptSequentialMultiInstance? arm state timer (deadline.deadlineMs + 1)) = none := by
-  decide +kernel
+      interruptSequentialMultiInstance? arm state timer (deadline.deadlineMs + 1)) = none
 
 /-- A collection of more items than the profile admits is refused at entry.
 
 Seventeen against the profile's own sixteen, which is the exact-16-fit and exact-17-refusal pair the
 capsule's hosting budget names. The count is tested before either byte measure, so this refusal costs
 no byte reduction. -/
-theorem a_collection_of_seventeen_items_is_refused_at_entry :
+def a_collection_of_seventeen_items_is_refused_at_entry : Bool := decide <|
     (do
       let arm ← arm?
       let state ← preEntryWith (List.replicate 17 "Invoice")
-      enterSequentialMultiInstance? arm state) = none := by
-  decide +kernel
+      enterSequentialMultiInstance? arm state) = none
 
 /-- Sixteen items are admitted, which is what makes the refusal above about the bound and not the size.
 
 The complement of the exact-17 refusal. Without it, a limit of one would pass the same test. -/
-theorem a_collection_of_sixteen_items_is_admitted_at_entry :
+def a_collection_of_sixteen_items_is_admitted_at_entry : Bool := decide <|
     (do
       let arm ← arm?
       let state ← preEntryWith (List.replicate 16 "Invoice")
       let entry ← enterSequentialMultiInstance? arm state
       pure (entry.sequentialMultiInstanceControllers.map fun controller =>
-        controller.snapshot.length)) = some [16] := by
-  decide +kernel
+        controller.snapshot.length)) = some [16]
 
 /-- An item longer than the item-byte bound is refused at entry.
 
@@ -184,26 +177,24 @@ The bound is tightened to four bytes rather than exercised at the profile's five
 because a literal that long would be reduced character by character in the kernel by every fixture in
 this module. What the refusal is about is the arm's bound, and
 `arm_is_the_declared_activity_and_its_boundary_deadline` pins the profile's own numbers separately. -/
-theorem an_item_over_the_item_byte_bound_is_refused_at_entry :
+def an_item_over_the_item_byte_bound_is_refused_at_entry : Bool := decide <|
     (do
       let arm ← arm?
       let state ← preEntryWith ["Invoice_1"]
       enterSequentialMultiInstance?
-        { arm with limits := { arm.limits with maximumItemUtf8Bytes := 4 } } state) = none := by
-  decide +kernel
+        { arm with limits := { arm.limits with maximumItemUtf8Bytes := 4 } } state) = none
 
 /-- A collection whose canonical encoding exceeds the canonical-byte bound is refused at entry.
 
 Tightened for the same reason as the item bound above. Three nine-byte items encode to thirty-seven
 canonical bytes, against a bound of eight. -/
-theorem a_collection_over_the_canonical_byte_bound_is_refused_at_entry :
+def a_collection_over_the_canonical_byte_bound_is_refused_at_entry : Bool := decide <|
     (do
       let arm ← arm?
       let state ← preEntry?
       enterSequentialMultiInstance?
         { arm with
-          limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } } state) = none := by
-  decide +kernel
+          limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } } state) = none
 
 /-- Sixteen accepted results of exactly `maximumItemUtf8Bytes` bytes each. -/
 def maximalOutputCollection (result : String) : List String :=
@@ -241,7 +232,7 @@ The perturbation is the bound alone, against the same state and the same accepte
 iteration fact above stores. Tightened to eight canonical bytes for the reason the entry refusals
 give, while `sixteen_results_at_the_item_byte_bound_cross_the_canonical_collection_bound` carries the
 profile's own numbers; `"Reviewed_1"` alone encodes to fourteen. -/
-theorem a_non_final_result_over_the_candidate_collection_byte_bound_is_refused :
+def a_non_final_result_over_the_candidate_collection_byte_bound_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let state ← entered?
@@ -250,15 +241,14 @@ theorem a_non_final_result_over_the_candidate_collection_byte_bound_is_refused :
       completeSequentialMultiInstanceInnerTask?
         { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } }
         state body
-        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none := by
-  decide +kernel
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none
 
 /-- `SMI-REFUSE-01`, final arm: the completion that would publish an over-bound collection is refused.
 
 The arm the bound is really for. The measure grows with every slot, so the completion that fills the
 last one is the first that a maximal collection can cross, and a bound carried only by the non-final
 arm would leave exactly this step unchecked and publish the result. -/
-theorem a_final_result_over_the_candidate_collection_byte_bound_is_refused :
+def a_final_result_over_the_candidate_collection_byte_bound_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let state ← afterSecondResult?
@@ -267,15 +257,14 @@ theorem a_final_result_over_the_candidate_collection_byte_bound_is_refused :
       completeSequentialMultiInstanceInnerTask?
         { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 8 } }
         state body
-        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_3" }]) = none := by
-  decide +kernel
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_3" }]) = none
 
 /-- `SMI-REFUSE-01`: a submitted result longer than the item byte bound is refused.
 
 The item bound needs its own completion-side refusal rather than following from the collection bound:
 one oversized result among few can leave the array inside its own bound, so a collection measure alone
 would store it. -/
-theorem a_result_over_the_item_byte_bound_is_refused :
+def a_result_over_the_item_byte_bound_is_refused : Bool := decide <|
     (do
       let arm ← arm?
       let state ← entered?
@@ -284,8 +273,7 @@ theorem a_result_over_the_item_byte_bound_is_refused :
       completeSequentialMultiInstanceInnerTask?
         { arm with limits := { arm.limits with maximumItemUtf8Bytes := 4 } }
         state body
-        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none := by
-  decide +kernel
+        [{ name := arm.data.taskDataOutputId, value := .string "Reviewed_1" }]) = none
 
 /-- The candidate collection bound is inclusive, and one byte under the measure it is not met.
 
@@ -293,7 +281,7 @@ The complement that makes the two refusals above about their numbers rather than
 refusing everything. Stated over the predicate rather than over a completion because the positive
 completion facts above already store results at the profile's own bounds, and a second entry chain
 would be reduced here for a fact about one comparison. -/
-theorem the_candidate_collection_byte_bound_is_inclusive :
+def the_candidate_collection_byte_bound_is_inclusive : Bool := decide <|
     (do
       let arm ← arm?
       pure
@@ -302,14 +290,30 @@ theorem the_candidate_collection_byte_bound_is_inclusive :
             ["Reviewed_1"],
           withinSequentialMultiInstanceLimits
             { arm with limits := { arm.limits with maximumCanonicalCollectionUtf8Bytes := 13 } }
-            ["Reviewed_1"])) = some (true, false) := by
-  decide +kernel
+            ["Reviewed_1"])) = some (true, false)
 
 /-- The canonical measure counts the JSON array encoding, framing and separators included. -/
-theorem the_canonical_collection_measure_counts_its_json_array_encoding :
+def the_canonical_collection_measure_counts_its_json_array_encoding : Bool := decide <|
     (canonicalCollectionUtf8Bytes [], canonicalCollectionUtf8Bytes ["a"],
         canonicalCollectionUtf8Bytes ["a", "b"], canonicalCollectionUtf8Bytes batch) =
-      (2, 5, 9, 37) := by
-  decide +kernel
+      (2, 5, 9, 37)
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def sequentialMultiInstanceRefusalConformanceChecks : List (String × Bool) := [
+  ("a_runtime_arm_that_looks_up_the_backing_input_object_is_refused", a_runtime_arm_that_looks_up_the_backing_input_object_is_refused),
+  ("a_scalar_process_start_binding_is_refused", a_scalar_process_start_binding_is_refused),
+  ("a_result_under_the_wrong_output_binding_name_is_refused", a_result_under_the_wrong_output_binding_name_is_refused),
+  ("the_previous_iterations_task_identity_is_refused", the_previous_iterations_task_identity_is_refused),
+  ("firing_the_deadline_off_its_committed_instant_is_refused", firing_the_deadline_off_its_committed_instant_is_refused),
+  ("a_collection_of_seventeen_items_is_refused_at_entry", a_collection_of_seventeen_items_is_refused_at_entry),
+  ("a_collection_of_sixteen_items_is_admitted_at_entry", a_collection_of_sixteen_items_is_admitted_at_entry),
+  ("an_item_over_the_item_byte_bound_is_refused_at_entry", an_item_over_the_item_byte_bound_is_refused_at_entry),
+  ("a_collection_over_the_canonical_byte_bound_is_refused_at_entry", a_collection_over_the_canonical_byte_bound_is_refused_at_entry),
+  ("a_non_final_result_over_the_candidate_collection_byte_bound_is_refused", a_non_final_result_over_the_candidate_collection_byte_bound_is_refused),
+  ("a_final_result_over_the_candidate_collection_byte_bound_is_refused", a_final_result_over_the_candidate_collection_byte_bound_is_refused),
+  ("a_result_over_the_item_byte_bound_is_refused", a_result_over_the_item_byte_bound_is_refused),
+  ("the_candidate_collection_byte_bound_is_inclusive", the_candidate_collection_byte_bound_is_inclusive),
+  ("the_canonical_collection_measure_counts_its_json_array_encoding", the_canonical_collection_measure_counts_its_json_array_encoding)
+]
 
 end BpmnSemantics.SequentialMultiInstanceConformance

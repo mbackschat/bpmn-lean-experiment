@@ -73,23 +73,6 @@ theorem repeated_scope_requires_unique_completion : programGraphWellFormed { pro
     operations := operations ++ [.completeSequentialMultiInstanceScope ⟨"duplicate"⟩ (origin "Batch") ⟨"enter"⟩],
     operationScopes := program.operationScopes ++ [{ operationId := ⟨"duplicate"⟩, scopeId := ⟨"body"⟩ }] } = false := by decide +kernel
 
-theorem repeated_scope_projection_publishes_exact_body_membership :
-    sequentialScopeProgress? program projectionWaiting = some [{
-      id := ⟨projectionParent.processInstanceId, ⟨"Batch"⟩, 1⟩,
-      plannedInstanceCount := 2, pendingItemCount := 1, numberOfInstances := 1,
-      numberOfActiveInstances := 1, numberOfCompletedInstances := 0, numberOfTerminatedInstances := 0,
-      activeIterations := [{
-        loopCounter := 0, body := projectionBody,
-        item := ⟨"item", .string "INV-01"⟩, bindings := [⟨"status", .null⟩],
-        userTaskIds := [⟨projectionParent.processInstanceId, ⟨"Alpha"⟩, 1⟩,
-          ⟨projectionParent.processInstanceId, ⟨"Zulu"⟩, 1⟩], effectIds := [⟨projectionParent.processInstanceId, ⟨"Validate"⟩, 1⟩] }] }] := by cbv
-
-theorem repeated_scope_projection_refuses_duplicate_or_foreign_interactions :
-    sequentialScopeProgress? program { projectionWaiting with waits :=
-      [projectionTask "Alpha" projectionBody, projectionTask "Alpha" projectionBody] } = none ∧
-    sequentialScopeProgress? program { projectionWaiting with waits :=
-      [{ projectionTask "Alpha" projectionBody with processInstanceId := ⟨"foreign"⟩ }] } = none := by cbv
-
 private theorem dataAnalysis_computed : SequentialScopeData.analyze dataProgram = some dataAnalysis := by
   have raw : SequentialScopeData.requirements dataProgram =
       some { dataAnalysis with requiredProcessScalars := ["seed", "account"] } := by decide +kernel
