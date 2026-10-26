@@ -53,7 +53,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 [Migration order](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order) owns the steps; this list owns the class repairs found in step 3.
 
 - Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
-- At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each.
+- At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select and propose batch 2's next family ([batch order](#scheduled-delivery-batches)): concurrent host-driven waits, a Service Task effect live beside other Parallel branches, for the effect remainders of `PC-SCOPE-01` (mixed automated activities) and `PC-SCOPE-02` (effect lifetimes) and the automated branches of `PC-CF-03`; [host admission](../packages/temporal-adapter/protocol/src/host-admission.ts) refuses that composition today (`ConcurrentHostDrivenWaits`). Multi-Instance closure stays held at qualification.
+Current task: select and propose batch 2's next family ([batch order](#scheduled-delivery-batches)): concurrent host-driven waits, a Service Task effect live beside other Parallel branches, for the effect remainders of `PC-SCOPE-01` (mixed automated activities) and `PC-SCOPE-02` (effect lifetimes) and the automated branches of `PC-CF-03`; [host admission](../packages/temporal-adapter/protocol/src/host-admission.ts) refuses that composition today (`ConcurrentHostDrivenWaits`), and every effect-admitting profile is a serial chain ([profile admission](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md)). Multi-Instance closure stays held at qualification.
 
 Deliverable: the family proposal, including its [Temporal hosting/refinement preflight](PROJECT-DESIGN.md#temporal-hostingrefinement-preflight), committed under `docs/capsules/` as its governed owner.
 
