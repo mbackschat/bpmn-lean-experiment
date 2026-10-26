@@ -55,6 +55,7 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 - Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
+- Graduation: in the first family built in the family shape ([migration step 5](LEAN-BUILD-MODULARITY-PROPOSAL.md#migration-order)), verify contract items 3 (a family arm added by body edit alone) and 5 (registry-instantiated whole-model fixtures); then run the proposal's closure review and graduate it to a `-SPEC`, whose renamed links rebuild the 192 modules that cite it.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 
 ### Scheduled delivery batches
