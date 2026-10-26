@@ -16,6 +16,11 @@
  * property the fixture already writes is skipped, because injecting it would duplicate the attribute
  * and test XML well-formedness instead.
  *
+ * Each scenario is compiled with the source overlay its document declares, resolved by content hash
+ * from the scenario's own directory, and its element tags are matched under whichever prefixes bind
+ * the BPMN model namespace, including the default namespace. Every scenario must exercise at least
+ * one defaulted attribute, so a model the matcher cannot see fails here instead of passing vacuously.
+ *
  * Only `Boolean` defaults are in scope, excluded here by declared type rather than by name and from
  * the same recorded fact [the resolver](../src/metamodel-defaults.ts) reads, so neither side can
  * drift into covering a case the other refuses. That module owns why the other two are out.
@@ -23,6 +28,7 @@
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -33,6 +39,7 @@ import {
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const limits = Object.freeze({ maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 });
+const bpmnModelNamespace = "http://www.omg.org/spec/BPMN/20100524/MODEL";
 
 type MetamodelManifest = Readonly<{
   classes: ReadonlyArray<
@@ -52,10 +59,13 @@ type DefaultedAttribute = Readonly<{
   lexeme: string;
 }>;
 
+type SourceOverlay = Readonly<{ id: string; sha256: string; bytes: Uint8Array }>;
+
 type RegisteredScenario = Readonly<{
   id: string;
   profile: string;
   relativePath: string;
+  sourceOverlay: SourceOverlay | null;
   excluded: ReadonlyArray<string>;
 }>;
 
@@ -90,7 +100,7 @@ function concreteHeirs(owner: string): ReadonlyArray<string> {
 }
 
 function elementTag(className: string): string {
-  return `bpmn:${className.charAt(0).toLowerCase()}${className.slice(1)}`;
+  return `${className.charAt(0).toLowerCase()}${className.slice(1)}`;
 }
 
 const defaultedAttributes: ReadonlyArray<DefaultedAttribute> = manifest.properties
@@ -124,6 +134,11 @@ async function registeredScenarios(): Promise<ReadonlyArray<RegisteredScenario>>
         id: document.id,
         profile: document.profile,
         relativePath: document.bpmn.relativePath,
+        sourceOverlay: await declaredOverlay(
+          path.join(scenarioRoot, directory.name),
+          contents,
+          document.bpmn.sourceOverlay ?? null,
+        ),
         excluded: profile.excluded,
       });
     }
@@ -131,21 +146,51 @@ async function registeredScenarios(): Promise<ReadonlyArray<RegisteredScenario>>
   return collected;
 }
 
-async function admits(xml: string, semanticProfile: string): Promise<boolean> {
+/** The scenario directory's file whose bytes carry the declared overlay hash; scenario documents name an overlay only by ID and digest. */
+async function declaredOverlay(
+  directory: string,
+  contents: ReadonlyArray<string>,
+  declared: Readonly<{ id: string; sha256: string }> | null,
+): Promise<SourceOverlay | null> {
+  if (declared === null) {
+    return null;
+  }
+  for (const file of contents.filter((name) => name.endsWith(".json") && !name.endsWith(".scenario.json"))) {
+    const bytes = new Uint8Array(await readFile(path.join(directory, file)));
+    if (createHash("sha256").update(bytes).digest("hex") === declared.sha256) {
+      return { id: declared.id, sha256: declared.sha256, bytes };
+    }
+  }
+  throw new Error(`${directory} holds no overlay with digest ${declared.sha256}`);
+}
+
+async function admits(
+  xml: string,
+  semanticProfile: string,
+  sourceOverlay: SourceOverlay | null,
+): Promise<boolean> {
   const result = await compileBpmnToSemanticProcess({
     bytes: new TextEncoder().encode(xml),
     sourceId: "metamodel-default-admission",
     expectedSha256: undefined,
     semanticProfile,
-    sourceOverlay: null,
+    sourceOverlay,
     limits,
   });
   return result.status === BpmnCompilationStatus.Accepted;
 }
 
+/** The qualifiers (`""` for the default namespace) under which `xml` may write a BPMN model element. */
+function bpmnQualifiers(xml: string): ReadonlyArray<string> {
+  return [...xml.matchAll(/\bxmlns(?::([\w.-]+))?\s*=\s*"([^"]*)"/gu)]
+    .filter((declaration) => declaration[2] === bpmnModelNamespace)
+    .map((declaration) => (declaration[1] === undefined ? "" : `${declaration[1]}:`));
+}
+
 /** Every occurrence of `tag`, matched to the end of its start tag so attributes can be appended. */
 function startTags(xml: string, tag: string): RegExp {
-  return new RegExp(`<${tag}\\b[^>]*?\\s*/?>`, "gu");
+  const qualifiers = bpmnQualifiers(xml).join("|");
+  return new RegExp(`<(?:${qualifiers})${tag}\\b[^>]*?\\s*/?>`, "gu");
 }
 
 function explicitLexemeExclusion(attributeName: string): string {
@@ -166,7 +211,15 @@ test("the registry reaches every profile this guard claims to cover", () => {
   );
 });
 
-for (const { id, profile, relativePath, excluded } of scenarios) {
+for (const { id, profile, relativePath, sourceOverlay, excluded } of scenarios) {
+  test(`${id} exercises at least one defaulted attribute`, async () => {
+    const source = await readFile(path.join(projectRoot, relativePath), "utf8");
+    assert.equal(await admits(source, profile, sourceOverlay), true, "baseline");
+    assert.ok(
+      defaultedAttributes.some(({ tags }) => tags.some((tag) => startTags(source, tag).test(source))),
+      "no defaulted attribute's element occurs in the model",
+    );
+  });
   for (const attribute of defaultedAttributes) {
     const exclusion = explicitLexemeExclusion(attribute.name);
     const expected = !excluded.includes(exclusion);
@@ -195,9 +248,8 @@ for (const { id, profile, relativePath, excluded } of scenarios) {
         source,
       );
 
-      assert.equal(await admits(source, profile), true, "baseline");
       assert.equal(
-        await admits(injected, profile),
+        await admits(injected, profile, sourceOverlay),
         expected,
         expected ? "explicit default" : `declared ${exclusion}`,
       );
