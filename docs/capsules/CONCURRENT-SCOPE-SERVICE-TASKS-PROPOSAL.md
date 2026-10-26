@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: owner-approved
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Question and delivery boundary
@@ -103,11 +103,11 @@ All witnesses differ at the public boundary of open User Tasks and open effects,
 - **Supplier onboarding.** The root runs the Sub-Process *Onboard* and then *Activate supplier*, a Service Task. Onboard forks *Screen sanctions* (Service), *Verify bank account* (Service) and *Review contract* (User) into a join, then runs *Approve supplier* (User).
   - Completing *Review contract* first leaves both effects open and *Approve supplier* absent; completing the two effects in either order opens *Approve supplier* only after the second.
   - A premature-join mutation opens *Approve supplier* after the User Task and one effect.
-  - *Activate supplier* is armed only after Onboard completes; a quiescence mutation that ignores effect waits completes Onboard while an effect is open.
+  - *Activate supplier* is armed only after Onboard completes. While an effect of Onboard is open, a token also waits at its join, so the quiescence mutation runs on claim intake instead.
 - **Claim intake.** The root runs the Sub-Process *Intake* and then *Settle claim* (User). Intake forks *Collect police report* (User) and *Fetch policy* (Service) into an Exclusive merge before the Sub-Process *Assess item*, which runs *Price damage* (Service) and then *Confirm assessment* (User).
   - Both branches reach the merge, giving two live *Assess item* occurrences with *Price damage* activations 1 and 2 open at once.
   - Completing *Price damage* 2 first opens *Confirm assessment* 1 in the second occurrence and leaves *Price damage* 1 open; a wrong-activation mutation completes *Price damage* 1 instead.
-  - *Settle claim* appears only after both occurrences and Intake complete.
+  - *Settle claim* appears only after both occurrences and Intake complete. When *Price damage* 2 is the last open work, the second *Assess item* occurrence owns only that effect wait; a quiescence mutation that ignores effect waits opens *Settle claim* there.
 - **Stale and absent effects** (`CSE-REFUSE-01`). Re-sending the completion of *Price damage* 2 after it committed, while *Price damage* 1 is open, is rejected with the state unchanged; so is a completion naming a third activation that was never armed. These run on Lean and the core only: the Temporal host never offers a completion for an effect it does not own.
 - **Service Task burst.** An admission witness nests Sub-Processes to depth three and ends the deepest body with a Service Task, so the admitted maximum closure is that effect's completion cascading through three scope completions. Both languages compute the same bound, and the core closure-bound check reaches it. A twin whose cascade exceeds the closure limit only through the Service Task's completion is refused.
 - **Orders.** Reversed effect-completion and task-completion orders of each journey end in the same final observation, up to activation numbering.
@@ -125,7 +125,7 @@ Evidence: concurrency families are `proved` under the owner direction of 2026-10
 - `CSE-ADMIT-01`: rules 1–3 keep the quantified per-body certificate, which is kind-agnostic. The new vertex arms, the admission of each retained model and each refusal are fixed by executable checks run natively by [`ConformanceChecksMain`](../../BpmnSemantics/ConformanceChecksMain.lean).
 - `CSE-REFUSE-01`: executable conformance checks on the stale and absent-activation commands.
 
-Checked non-law: User Task quiescence alone does not imply scope quiescence in this profile. An executable conformance check shows a state of the supplier journey in which Onboard owns no User Task and no token but one effect wait, and `scopeQuiescent` is false.
+Checked non-law: User Task quiescence alone does not imply scope quiescence in this profile. An executable conformance check shows a state of the claim intake journey in which the second *Assess item* occurrence owns no User Task and no token but one effect wait, and `scopeQuiescent` is false. The supplier journey has no such state, because a token waits at Onboard's join while any of its effects is open.
 
 The nearest unsupported claims are that every admitted definition completes under every interleaving of effect results and human commands, and that effect arming never fails in a reachable state. Progress over newly reachable states rests on the targeted preservation gate, and non-failure of arming beyond the retained journeys rests on the open preservation lane.
 
@@ -177,7 +177,7 @@ Risks and their deciders:
 - **Concurrency with human commands.** Effect results and Updates share one queue and one semantic loop, so no two commands interleave inside a closure.
 - **Replay.** Activity scheduling order is derived from the committed frontier in its canonical projection order, so replay issues the same commands.
 
-Smallest refinement witness: a recovery test on the claim intake model replaces the Worker while both *Price damage* Activities are in flight, commits *Price damage* 2 before a *Collect police report* Update and *Price damage* 1 after it, forces one Continue-As-New while an effect wait is open but unscheduled, checks E1 and E2 against the core oracle, and replays every Run. A component test of the capacity owner holds the exact-32 fit on a fresh Run, including the pending-Activity dimension.
+Smallest refinement witness: a recovery test on the claim intake model replaces the Worker while both *Price damage* Activities are in flight, commits *Price damage* 2 before *Price damage* 1, forces one Continue-As-New that carries both effect waits unscheduled, checks E1 and E2 against the core oracle, and replays every Run. A component test of the capacity owner holds the exact-32 fit on a fresh Run, including the pending-Activity dimension. A human Update between the two results is not part of this witness: *Collect police report* must complete before the second *Price damage* activation exists, and the legacy two-second Activity timeout bounds how long a gated attempt can wait, so the registered `claim-price-two-first` schedule carries that interleaving through the complete pipeline.
 
 ## Evidence and acceptance
 

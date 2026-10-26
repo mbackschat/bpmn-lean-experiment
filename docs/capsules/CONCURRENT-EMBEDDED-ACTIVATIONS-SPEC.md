@@ -48,7 +48,7 @@ Excluded:
 - a fork output that reaches the merge without a User Task;
 - implicit Activity fan-in;
 - conditional or default flows on the merge, and divergent Exclusive Gateways;
-- re-entry through cycles; data, locals and completion values; Service and other Tasks;
+- re-entry through cycles; data, locals and completion values; Script, Send, Receive and other Tasks, and Service Tasks outside the [concurrent scope Service Tasks](CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#required-optional-and-excluded-scope) class;
 - every exclusion of the nested scope-control class.
 
 The serial merge-target body is load-bearing. A Parallel join inside it would hold tokens of two occurrences on one input place. Both languages pick a join's owner per place ([`onlyTokenOwner`](../../packages/semantic-core/src/semantic-process-scope-runtime.ts), and `onlyTokenOwner?` in [`RuntimeState`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean)), so the join could fire for neither occurrence and the Process would deadlock. The restrictions narrow admission only. Owner-addressed joins, cycles and data can later broaden the class without reinterpreting an admitted model.
@@ -142,7 +142,7 @@ All witnesses differ at the public boundary of open User Tasks, named by element
 - **Intake model.** The root runs the Sub-Process *Intake* and then *Decide*. Intake runs *Open application*, whose completion reaches the region by resumption, and then forks *Check identity*, *Check address* and *Check income* into a merge before the Sub-Process *Assess*, which runs *Score applicant*, and then reaches a None End. Three live *Assess* occurrences coexist, completing them in reverse order ends in the same final observation, and the last completion is the five-step cascade above.
 - **Depth-two region.** A model whose region lies in a depth-two body, so that its merge target's body has depth three, is admitted by both languages. It is an admission witness only; no journey runs at that depth.
 - **Orders.** Reversed arrival and completion orders of each journey end in the same final observation, up to activation numbering, which follows command order.
-- **Refusals.** Each of the following is refused before start: a merge region in the root body; a merge region in a depth-three body; a Parallel Gateway inside a merge target's body; a Sub-Process inside a merge target's body; a partial merge, where one fork output reaches its own End; a merge fed by branches of two forks; a fork output straight into the merge; a conditional flow on the merge; a Service Task in a branch; and a multiplicity-weighted task count over 128.
+- **Refusals.** Each of the following is refused before start: a merge region in the root body; a merge region in a depth-three body; a Parallel Gateway inside a merge target's body; a Sub-Process inside a merge target's body; a partial merge, where one fork output reaches its own End; a merge fed by branches of two forks; a fork output straight into the merge; a conditional flow on the merge; a branch Service Task whose operation is not an overlay identifier, since the [concurrent scope Service Tasks](CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md#admission) family admits data-free identifier-bound ones; and a multiplicity-weighted task count over 128.
 
 ## Lean assurance lane
 

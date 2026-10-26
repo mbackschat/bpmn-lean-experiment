@@ -91,13 +91,13 @@ Current task: implement batch 2's concurrent scope Service Task family under its
 
 Deliverable: the admitted, hosted family with its retained models, Lean laws, pipeline agreement and Temporal recovery witness, as the proposal's acceptance states.
 
-Acceptance blockers: none recorded; the build-speed deliverable met its acceptance (72 ordinary replayed commits rebuild a median of 3.5 library modules), and the two pipeline performance findings recorded at `c8f6c2ea` are fixed (`88489964` batches Temporal runs without an effect schedule; `7416f142` and `81dcc0a7` cut the guarantor Start capacity envelope from 15.8 s to 2.4 s with byte-identical estimates).
+Acceptance blockers: none recorded.
 
-Current result: proposal approved (receipt in the capsule); no implementation yet.
+Current result: implemented, including `CIB-OP-0010`; focused gates and the hosted recovery witness are green.
 
 Effort budget: 24 hours of working time from 2026-10-26 16:30 UTC for implementation through closure; stop and reassess at the limit.
 
-Next action: implement red/green from the TypeScript admission owner outward, then source dispatch, Lean arms and laws, hosting, scenarios and the recovery witness.
+Next action: run each closure heavy lane once (complete pipeline, full Lean with `BpmnConformance`, hosted Temporal), then the cold closure review; then graduate the proposal and close the [build modularity proposal](LEAN-BUILD-MODULARITY-PROPOSAL.md#proposed-contract) on contract items 3 and 5.
 
 Oracle: an effect result that settles a different branch's wait, or a Parallel join released before every branch effect commits.
 
