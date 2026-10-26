@@ -103,6 +103,10 @@ export function workflowChainRolloverTriggered(
  * Signal and Update ingress share the bounded semantic queue. Update resolutions add their own
  * history events and may echo every queued command byte. Timer and Activity lifecycles cannot
  * coexist under the host-readiness invariant, so the final assessment takes their larger arm.
+ * The Activity arm charges the general limit of one pending Activity. A Program whose
+ * `workflowChainPendingActivityLimit` is larger is hosted by the ordinary-effect frontier, whose
+ * History reservation projects the drain of every issued and new Activity before issuing them and
+ * so replaces this arm for it.
  */
 export function workflowChainEventHistoryActivationCostTable():
   readonly WorkflowChainEventHistoryCostRow[] {

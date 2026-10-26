@@ -7,7 +7,9 @@ import {
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   MessageChannelKind,
   SemanticOperationKind,
+  SemanticProfileId,
   isWellFormedSemanticProcessProgram,
+  nestedScopeControlProgramAnalysis,
   profileAllowsProgramShape,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -128,6 +130,13 @@ export function assessTemporalHostCapability(
         kind: TemporalHostCapabilityResultKind.Rejected,
         failure: claimed.managed.failure,
       };
+  }
+  // CSE hosting preflight: the ordinary-effect frontier hosts concurrent effect waits only of a Program the nested
+  // scope-control analysis admits, whose 32-Service-Task bound fits the frontier's pending-Activity limit.
+  if (canSplitTokens && hasHostDrivenWait &&
+      program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
+      isWellFormedSemanticProcessProgram(program) && nestedScopeControlProgramAnalysis(program) !== null) {
+    return { kind: TemporalHostCapabilityResultKind.Admitted };
   }
   if (canSplitTokens && hasHostDrivenWait) {
     return {

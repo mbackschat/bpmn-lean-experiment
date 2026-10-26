@@ -34,7 +34,7 @@ const depthLimit = 3;
 /** Concurrent-wait ceiling shared with the parallel Multi-Instance capacity account. */
 const taskLimit = 128;
 /** CSE-ADMIT-01: the concurrent-Activity ceiling of the hosting preflight, multiplicity-weighted like the task bound. */
-const serviceTaskLimit = 32;
+export const nestedScopeControlServiceTaskLimit = 32;
 /** Call nesting below the caller root, a Call in the caller being depth one (CALLN-ADMIT-01). */
 const callDepthLimit = 3;
 /** The vertices of a called Process body between its None Start and None End (CALLN-ADMIT-01). */
@@ -347,7 +347,7 @@ function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<stri
   if (forest === null) return null;
   const analyzed = analyzeTree(forest.scopes, forest.bodies, forest.called.size > 0);
   // CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
-  if (analyzed === null || analyzed.weightedServiceTasks > serviceTaskLimit ||
+  if (analyzed === null || analyzed.weightedServiceTasks > nestedScopeControlServiceTaskLimit ||
       (forest.called.size > 0 && analyzed.weightedServiceTasks > 0)) return null;
   const expanded = expandCalls(analyzed.tree, analyzed.scans, forest.called);
   if (expanded === null || analyzed.weightedTasks + expanded.calledTasks > taskLimit ||

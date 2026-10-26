@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { ProcessStatus } from "@bpmn-lean/semantic-core";
+import {
+  ProcessStatus,
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SemanticOperationKind,
+  SemanticProfileId,
+} from "@bpmn-lean/semantic-core";
+import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import {
   WorkflowChainBudgetKind,
   WorkflowChainCommandRecoveryResponseKind,
@@ -16,6 +22,7 @@ import {
   requireWorkflowChainCommandRecoveryResponse,
   requireWorkflowChainRecoveryEntry,
   workflowChainCanonicalUtf8ByteLength,
+  workflowChainPendingActivityLimit,
   workflowChainProductionLimit,
 } from "../dist/index.js";
 
@@ -286,3 +293,16 @@ function terminalReceipt() {
     },
   } as const;
 }
+
+test("bounds pending Activities per Program: 32 for concurrent scope Service Tasks, the effect count for sequential MI", () => {
+  const program = (semanticProfile: string, effects: number) => ({
+    identity: { semanticProfile },
+    operations: [
+      { kind: SemanticOperationKind.AwaitUserTask },
+      ...Array.from({ length: effects }, () => ({ kind: SemanticOperationKind.AwaitEffect })),
+    ],
+  }) as unknown as SemanticProcessProgram;
+  assert.equal(workflowChainPendingActivityLimit(program(SemanticProfileId.EmbeddedSubProcessCompletion, 3)), 32);
+  assert.equal(workflowChainPendingActivityLimit(program(SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, 3)), 3);
+  assert.equal(workflowChainPendingActivityLimit(program(SemanticProfileId.SerialBusinessTaskComposition, 3)), 1);
+});

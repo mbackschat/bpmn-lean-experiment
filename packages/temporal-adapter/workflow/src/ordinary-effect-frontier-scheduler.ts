@@ -1,5 +1,6 @@
 import {
   SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId,
   projectEffectTransportMaterial,
   projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
@@ -8,6 +9,7 @@ import {
   EffectActivityCapacityPreflightKind,
   effectTransportKey,
   preflightEffectActivityRequest,
+  workflowChainPendingActivityLimit,
 } from "@bpmn-lean/temporal-protocol";
 import type { EffectActivityResult, EffectRequest } from "@bpmn-lean/temporal-protocol";
 import { ActivityFailure, CancelledFailure, condition, workflowInfo } from "@temporalio/workflow";
@@ -39,8 +41,11 @@ export type OrdinaryEffectFrontierAdapters = Readonly<{
 export type OrdinaryEffectFrontierHistory =
   Readonly<{ limits: WorkflowChainEventHistoryLimits | null; hasRetainedWork: () => boolean; requestRollover: () => void }>;
 
-/** The private sequential Multi-Instance profile hosts its ordinary effects through this frontier. */
-const ordinaryEffectFrontierProfiles: ReadonlySet<string> = new Set([SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID]);
+/** The private sequential Multi-Instance profile and the concurrent scope Service Tasks of the embedded completion profile. */
+const ordinaryEffectFrontierProfiles: ReadonlySet<string> = new Set([
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SemanticProfileId.EmbeddedSubProcessCompletion,
+]);
 
 /** Whether this frontier hosts the Program's effects; the rollover fence and scheduler selection share this set. */
 export function ordinaryEffectFrontierHosts(program: SemanticProcessProgram): boolean {
@@ -53,7 +58,7 @@ enum ActivityPhase {
 }
 type Owner = { transportKey: string; phase: ActivityPhase };
 
-/** Owns ordinary MI effects until their callback command commits; no cancellation is admitted. */
+/** Owns ordinary effects until their callback command commits; no cancellation is admitted. */
 export function createOrdinaryEffectFrontierScheduler(
   program: SemanticProcessProgram,
   adapters: OrdinaryEffectFrontierAdapters,
@@ -61,6 +66,7 @@ export function createOrdinaryEffectFrontierScheduler(
   if (!ordinaryEffectFrontierHosts(program)) {
     throw hostInvariantFailure("Ordinary effect frontier requires a profile it hosts");
   }
+  const pendingActivityLimit = workflowChainPendingActivityLimit(program);
   const owners = new Map<string, Owner>();
   let failure: { error: unknown } | undefined;
   const occurrenceKey = (effect: ReturnType<typeof projectOpenEffects>[number]) =>
@@ -87,7 +93,11 @@ export function createOrdinaryEffectFrontierScheduler(
         ...material.descriptor, idempotencyKey: transportKey, arguments: material.arguments,
       } };
     }).filter(plan => plan.owner === undefined);
-    // SMIS hosting preflight: refuse the whole new frontier before issuing any external effect.
+    // Profile admission bounds every reachable frontier by this limit, so exceeding it is a host defect.
+    if (owners.size + plans.length > pendingActivityLimit) {
+      throw hostInvariantFailure("Ordinary effect frontier exceeds the Program's pending-Activity limit");
+    }
+    // SMIS and CSE hosting preflights: refuse the whole new frontier before issuing any external effect.
     const requestBytes: number[] = [];
     for (const plan of plans) {
       const preflight = preflightEffectActivityRequest(plan.request);
@@ -104,7 +114,7 @@ export function createOrdinaryEffectFrontierScheduler(
           const command = effectActivityResultCommand(legacyEffectActivityPolicy, state, plan.effect, result);
           switch (command.kind) {
             case "command":
-              // SMIS explicit schedules: callback arrival shares the ingress queue with human commands.
+              // Explicit effect schedules: callback arrival shares the ingress queue with human commands.
               adapters.enqueueCompletion(command.stimulus);
               owner.phase = ActivityPhase.Released;
               return;
@@ -137,7 +147,7 @@ export function createOrdinaryEffectFrontierScheduler(
           }
         } else {
           if (owner.phase === ActivityPhase.Running) {
-            throw hostInvariantFailure("Ordinary MI effect disappeared before its Activity result was released");
+            throw hostInvariantFailure("Ordinary effect disappeared before its Activity result was released");
           }
           owners.delete(key);
         }

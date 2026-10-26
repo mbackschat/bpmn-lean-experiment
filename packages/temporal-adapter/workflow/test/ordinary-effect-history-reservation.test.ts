@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { nestedScopeControlServiceTaskLimit } from "@bpmn-lean/semantic-core";
 import { WorkflowChainBudgetKind, workflowChainProductionLimit } from "@bpmn-lean/temporal-protocol";
 import { assessOrdinaryEffectHistoryReservation, OrdinaryEffectHistoryReservationKind as Kind }
   from "../dist/ordinary-effect-history-reservation.js";
+import { workflowChainHistoryEventEnvelopeBytes } from "../dist/workflow-event-history-capacity.js";
 
 const limits = { eventHistoryEventLimit: 8_000, eventHistoryByteLimit: 8 * 1024 * 1024 };
 const history = { historyLength: 0, historySize: 0 };
@@ -58,6 +60,20 @@ test("refuses a frontier that cannot fit a fresh Run without looping or splittin
   assert.equal(result.failure.budget, WorkflowChainBudgetKind.EventHistoryBytes);
   assert.equal(result.failure.configuredBound, limits.eventHistoryByteLimit);
   assert.ok(result.failure.observedValue > result.failure.configuredBound);
+});
+
+test("an exact concurrent scope Service Task frontier fits a fresh Run below its rollover triggers", () => {
+  // CSE hosting preflight: worst-case request bytes and a start History carrying the largest Continue-As-New arguments.
+  // Retained work withholds the protected overshoot reserve, so Ready means the drain fits below the triggers.
+  const limit = (kind: WorkflowChainBudgetKind) => workflowChainProductionLimit(kind);
+  const frontier = Array<number>(nestedScopeControlServiceTaskLimit).fill(limit(WorkflowChainBudgetKind.EffectActivityRequestBytes));
+  const start = { historyLength: 3, historySize: limit(WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes) +
+    3 * workflowChainHistoryEventEnvelopeBytes };
+  const result = assessOrdinaryEffectHistoryReservation({ limits, history: start, issuedActivities: 0,
+    requestBytes: frontier, hasRetainedWork: true });
+  assert.equal(result.kind, Kind.Ready);
+  assert.ok(nestedScopeControlServiceTaskLimit + limit(WorkflowChainBudgetKind.ConcurrentInFlightUpdates) <=
+    limit(WorkflowChainBudgetKind.SemanticInputQueueEntries));
 });
 
 test("drains issued work under pressure even before the fresh Run has committed a callback", () => {

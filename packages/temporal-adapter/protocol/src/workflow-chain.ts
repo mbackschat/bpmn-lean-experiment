@@ -1,11 +1,16 @@
 import {
+  SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
+  SemanticOperationKind,
+  SemanticProfileId,
   compareCanonicalStrings,
   isWellFormedWireString,
+  nestedScopeControlServiceTaskLimit,
   utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
   CommandOutcome,
   DeepReadonly,
+  SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
 
 import { isTerminalProcessReceipt } from "./lifecycle-results.js";
@@ -108,6 +113,24 @@ export function workflowChainProductionLimit(
       return 448 * 1_024;
     default:
       return assertNever(kind);
+  }
+}
+
+/**
+ * The pending-Activity ceiling of one Program's Workflow chain. The two profiles hosted by the ordinary-effect frontier
+ * issue concurrent Activities whose drain the ordinary-effect History reservation projects before issuing them: the
+ * embedded completion profile up to its admitted Service Task bound (CSE-ADMIT-01), and the sequential Multi-Instance
+ * profile up to its Service Task count, because each Service Task has at most one live occurrence while its body runs
+ * one iteration at a time. Every other profile keeps the production limit of one.
+ */
+export function workflowChainPendingActivityLimit(program: DeepReadonly<SemanticProcessProgram>): number {
+  switch (program.identity.semanticProfile) {
+    case SemanticProfileId.EmbeddedSubProcessCompletion:
+      return nestedScopeControlServiceTaskLimit;
+    case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
+      return program.operations.filter(operation => operation.kind === SemanticOperationKind.AwaitEffect).length;
+    default:
+      return workflowChainProductionLimit(WorkflowChainBudgetKind.PendingActivities);
   }
 }
 
