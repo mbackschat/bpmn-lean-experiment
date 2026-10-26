@@ -54,20 +54,20 @@ Required:
    - Definition bodies stay hidden unless kernel reduction needs them.
    - Kernel decision through hidden bodies needs `import all` of every module on the reduction path.
    - A public theorem may not name a constant that its module imports privately.
-   - Proofs characterize a dispatcher with `by rfl` or `by unfold f; rfl` lemmas, never `simp [f]`, which exports equation lemmas for every arm.
+   - Proofs characterize a dispatcher with `by rfl` or `by unfold f; rfl` lemmas, never `simp [f]`, which exports equation lemmas for every arm. On 2026-10-26, 340 rewrites with a hidden definition in 96 `import all` importers predated this rule. The hidden-edit ratchet of item 6 counts the loaders of each such importer, so any new rewrite fails it, and turning one into `unfold` shrinks it.
 3. **Kernel and families.**
    - The kernel owns the shared types and the generic composition laws.
    - Each family owns its step, admission, descriptor, proofs, and the fixtures that reduce only its own functions.
-   - The closed-world functions are named and stay above the families: program structural well-formedness, runtime-state well-formedness, scope cancellation, publication projection, the global dispatch and the profile registry. Their bodies are hidden, and consumers reason through characterization lemmas in bridge modules. Adding a family arm is expected to be a body-only edit, provided the private import of the new family leaves the public interface unchanged; the first converted family verifies this.
+   - The closed-world functions are named and stay above the families: checked-source well-formedness, program structural well-formedness, runtime-state well-formedness, scope cancellation, publication projection, the global dispatch and the profile registry. Their bodies are hidden, except where migration step 4 keeps a body that fixtures reduce exposed, and consumers reason through characterization lemmas in bridge modules. Adding a family arm is expected to be a body-only edit, provided the private import of the new family leaves the public interface unchanged; the first converted family verifies this.
    - The bridges, the proved-lane theorems over closed-world functions (such as cancellation and well-formedness preservation) and the fixtures that reduce a closed-world function rebuild whenever it changes.
 4. **Kernel types change at most once per family.** Changes to checked source, IL, value domain and runtime-state types are batched at family start and recorded in the family proposal. That one change is a complete rebuild, and may run in hosted CI. Per-family extension points in these types would remove it, but they change the IL and runtime representation and are excluded here.
 5. **Fixture placement.** A fixture that reduces only family-owned functions imports only the kernel and its family. A fixture that reduces a closed-world function is global. A multi-family whole-model fixture may instead reduce a closed-world function instantiated with only the families its model uses, if a generic lemma states that this agrees with the full registry. That design is unverified on the real code and is settled in the first converted family.
 6. **Fanout ratchet.**
-   - A fast static guard follows `public import` edges and cuts at private imports, so it gives an upper bound.
+   - A fast static guard follows `public import` edges and cuts at private imports, except that an `import all` or `meta import` also loads the private imports of what it imports, so it gives an upper bound.
    - For every module outside a declared kernel and registry list, the transitive public importers stay within a recorded bound. The list changes only by reviewed edit, like the source-hygiene exceptions.
    - The guard measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
-   - [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) implements it with a default bound of 100 importers, counting only importers the semantic root builds, because the acceptance below expects witnesses to rebuild with a closed-world change. [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) declares the 15 kernel type modules and records 309 wider modules at their 2026-10-25 counts plus a tenth (at least ten). Without that headroom one new leaf failed the bound of every module it re-exports, about 200 at once, while a widely imported module that starts re-exporting another still fails. An entry whose module falls to the default must go.
-   - The same guard bounds each module's hidden-edit fanout, the importers that an edit to a proof, a private declaration or a hidden body rebuilds, with a default of 10 and the four hidden hubs recorded.
+   - [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) implements it with a default bound of 100 importers, counting only importers the semantic root builds, because the acceptance below expects witnesses to rebuild with a closed-world change. [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) declares the 15 kernel type modules and records every wider module at its count plus a tenth (at least ten). Without that headroom one new leaf failed the bound of every module it re-exports, about 200 at once, while a widely imported module that starts re-exporting another still fails. An entry whose module falls to the default must go.
+   - The same guard bounds each module's hidden-edit fanout, the importers that an edit to a proof, a private declaration or a hidden body rebuilds, with a default of 10 and each wider module recorded at its count. That fanout includes everything that loads an `import all` importer which rewrites with one of the module's hidden definitions.
 
 Optional:
 
@@ -80,7 +80,7 @@ Excluded:
 - per-family extension points in kernel types;
 - a speculative up-front design of all remaining family semantics;
 - dropping the shared kernel;
-- raising local build threads or memory ceilings; the hosted CI pin is a separate owner decision of 2026-10-23;
+- raising local build threads or memory ceilings; the hosted CI pin (2026-10-23) and the local two-thread pin under a 4768 MiB brake (2026-10-25, [build memory](CONTRIBUTOR-SETUP-GUIDE.md#lean-decision-procedures-and-build-memory)) are separate owner decisions;
 - weakening any lane shape, claim or gate.
 
 ## Mechanism observations (Lean v4.34.1, 2026-10-23)
@@ -98,6 +98,8 @@ These come from small scratch projects, not the library, and are not retained in
 | Bridge module (`import all` plus a `by rfl` lemma) | An edit to another family's arm or body left this family's proof and family-local fixture unrebuilt (probe output not retained) |
 | Proof edited in a hidden hub of the library | Rebuilt every `import all` importer, every module that reaches the hub through a chain of `import all` imports, and every plain file above it, but no other importer: one line added to a `ProgramStructuralValidation` proof rebuilt 264 modules in 42 minutes on one contended CPU, exactly the set the hidden-edit ratchet predicts (pinned container, 2026-10-25, probe output not retained) |
 | Equation-lemma trap | `simp [f]` and `simp only [f]` propagated an arm edit; `by rfl` and `by unfold f; rfl` did not; term-mode `rfl` was rejected for a hidden body (probe output not retained) |
+| Equation lemmas in the library | Reverting the family's `operationWellFormed` arm left the public `.olean` of `ProgramStructuralValidation` unchanged and changed it in each of the nine `import all` importers that rewrite with `simp only [operationWellFormed]`. After one of them switched to `unfold`, its `.olean` stayed unchanged. Generating the lemmas in the owner instead exported them from the owner. (Local pins, 2026-10-26, hashes not retained.) |
+| `import all` and `meta import` | Both load the private imports of what they import, and a `meta import` loads its whole import closure. One public declaration added to `NestedScopeControlAdmission`, which the profile registry imports privately, rebuilt exactly the 102 modules this predicts (pinned container, 2026-10-26) |
 
 Hub functions are explicitly unfolded in few files: `programWellFormed` in 18 of the 235 that mention it, and `applyStimulus` in 7 of 84. A broader scan found 80 modules unfolding a hub function through some route, so bridge work is larger than those direct counts suggest.
 
@@ -156,29 +158,43 @@ With the first four hubs hidden under that rule, the same commits' edits to them
 ## Acceptance
 
 - The fanout ratchet is green.
-- An increment that adds no kernel type invalidates only its family's modules, the registry, the closed-world bridges and the global fixtures.
+- An increment that adds no kernel type invalidates only its family's modules, the registry, the closed-world functions it extends with their bridges and the proved-lane theorems over them (item 3), and the global fixtures.
 - An increment that adds kernel types costs one complete rebuild, at family start.
 - The serial build time of the global fixtures an ordinary increment rebuilds is measured at the first converted family. If it exceeds 15 minutes, the owner decides between registry-instantiated whole-model fixtures (required item 5) and the optional executable guards.
 - No lane shape, claim or gate is weaker, and the guards are migrated before the first conversion.
 
 ## Acceptance evidence
 
-The first family built in the family shape is [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured at `8857320f`:
+The first family built in the family shape is [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md). Its Lean increment `6aa5c42e` came before the import shake of `8857320f`. On its own graph its edits invalidate 831 modules, 605 of the 755 library modules (static count of the corrected ratchet model).
 
-- **Ratchet.** [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) is green. Before the measurement, `lake shake --fix` removed every library import that Lean reported unused and re-exported only what public declarations name. That cut the recorded public bounds from 196 entries summing 99,199 to 182 summing 69,144, and left twelve modules unreachable that are now imported by the semantic root.
-- **New bound entry.** `InternalArmingOrder` got one new entry, a bound of 352 for 320 importers. Three widely imported modules now re-export it because their theorem statements name `armingLexStep`, and a private import of it does not compile.
-- **No kernel type.** The family changed none of the 15 [kernel modules](../scripts/lean-fanout-bounds.ts), so rule 4's complete rebuild did not apply.
-- **Interface edits.** These stayed in the scope family's `NestedScopeControlAdmission` and `MergeRegionAdmission`.
-- **Closed-world edits.** The family's edits to `checkedWellFormed` and `operationWellFormed` added alternatives inside existing hidden bodies, which is the body-only edit that item 3 expects.
-- **Invalidation.** One public declaration added to `NestedScopeControlAdmission` rebuilt 102 modules:
-  - that module;
-  - the registry (`ProfileAdmission`, `ProfileShapeCatalog`);
-  - the ten library modules that import the registry with `import all`;
-  - 88 conformance fixtures and the conformance root.
+It was measured on the shaken graph, at the `686065c5` Lean tree:
+- **Snapshot.** The pinned container started warm from the same tree with the increment reversed: the edited bodies, the two new modules and their root registrations.
+- **Limits.** One CPU and 3 GiB.
+- **Gap.** The new laws module came from the cache, so its build time is missing.
 
-  The whole set took 732 seconds serially, on one CPU and 3 GiB in the pinned container with a warm cache. That is under the 15-minute limit, so the decision in item 5 does not arise and these fixtures stay global.
-- **Fixture imports.** The shake did not touch conformance fixtures, which may still import more than they reduce. Each changed fixture would need a [cost-ledger](../scripts/lean-module-cost.ts) re-measurement, and the acceptance already counts their rebuilds.
-- **No lane weakened.** The shake removed only imports and unused `simp` arguments. The only declarations that moved went from the proof module of the initial parallel-scope entry into a closure-proof sibling, to stay within the source-size ceiling. Three private lemmas they use became public, under distinct names. The complete Lean gate and conformance build passed afterwards.
+- **Rebuild set.** The increment rebuilt 312 modules, 144 of them library modules:
+  - the family's `NestedScopeControlAdmission` and `MergeRegionAdmission`;
+  - the registry `ProfileAdmission` and `ProfileShapeCatalog`;
+  - the registry's eight `import all` bridges;
+  - the closed-world functions the family extends:
+    - `checkedWellFormed` in `CheckedProcessAdmission`, with its four library loaders (`DefinitionBindingValidation`, `SemanticProcessJson`, its `DefinitionInput` and `SemanticProcessJsonMain`);
+    - `operationWellFormed` in `ProgramStructuralValidation`, with its 44 `import all` importers, the proved-lane theorems of item 3;
+  - 82 proof modules that load one of the nine importers whose `simp only [operationWellFormed]` exported the body;
+  - 168 global fixtures and roots.
+  Every class is one the acceptance admits. Without the nine rewrites, the ratchet model predicts 62 library modules.
+- **Fixture time.** With the library prebuilt, the fixtures and roots rebuilt in 725 seconds serially, under the 15-minute limit, so the decision in item 5 does not arise and the fixtures stay global. The whole increment took 1,412 seconds.
+- **Item 3.** The edit to `operationWellFormed` added an alternative inside its hidden body. `checkedWellFormed` stays exposed under migration step 4: about 40 conformance fixtures kernel-decide it, and hiding it would spare one of those 62 library modules.
+- **Kernel.** The family changed none of the 15 [kernel modules](../scripts/lean-fanout-bounds.ts), so rule 4's complete rebuild did not arise.
+- **Ratchet.** The ratchet is green, and its model now counts the loads of `import all` and `meta import` and the equation-lemma exports. It reproduces the synthetic edit's 102 modules exactly and misses none of the family's 312. Only that synthetic edit, one added public declaration, was measured at `8857320f`.
+- **Import shake.** `lake shake --fix`, run at `8857320f` over the library, removed or narrowed imports Lean reported unused and re-exported what public declarations name. It also:
+  - added the imports that fixtures had reached through removed re-exports, re-measuring six fixtures' [cost rows](../scripts/lean-module-cost.ts);
+  - dropped `public import BpmnSemantics.Scenario` from the kernel module `CheckedProcessContract`, a one-time complete rebuild;
+  - removed one `open` and the unused `simp` argument `snapshot_sort_eq` at five sites, leaving other unused arguments;
+  - imported twelve modules the root no longer reached.
+
+  `686065c5` then imported `InternalArmingOrder` privately where only proofs name it, so it needs no bound entry.
+- **Declaration moves.** These were the only ones: some closure laws moved from the initial parallel-scope entry proofs into a sibling to stay within the source-size ceiling, and three private lemmas they use became public under distinct names.
+- **Gates.** No statement, lane, gate or ceiling changed. The complete Lean gate passed at `8857320f`, and the complete library and conformance build passed at `686065c5`.
 
 ## Independent cold-review receipt
 
