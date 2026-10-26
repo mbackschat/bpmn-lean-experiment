@@ -246,7 +246,8 @@ export function assessStartCapacityEnvelope(
     const request = exceededEffectRequest(journey, configuredEffects);
     if (request !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: request };
   }
-  const each = journeys.map((journey) => estimateStartCapacity(start, program, journey));
+  const measure = canonicalMeasure();
+  const each = journeys.map((journey) => estimateStartCapacity(start, program, journey, measure));
   const estimates = Object.fromEntries(startCapacityEnvelopeBudgets.map((budget) =>
     [budget, largest(each.map((estimate) => estimate[budget]))])) as StartCapacityEstimates;
   const exceeded = startCapacityEnvelopeBudgets.find((budget) => estimates[budget] > configured[budget]);
@@ -284,15 +285,46 @@ type Journey = DeepReadonly<{
   start: ProcessStartStimulus;
   program: SemanticProcessProgram;
   journey: StartCapacityJourney;
+  measure: Measure;
 }>;
+
+/**
+ * Canonical UTF-8 byte lengths shared by every journey of one assessment.
+ *
+ * The journeys share the Program, the Start and their prefix artifacts, so `value` encodes each object once, keyed
+ * by identity; the artifacts are immutable for the assessment. `parts` sizes an array the envelope assembles from
+ * its members, exactly as canonical JSON joins them (`[`, members separated by `,`, `]`). Encoding every copy
+ * again cost 5.7 s of an 8 s guarantor-loan envelope (profiled 2026-10-26).
+ */
+type Measure = Readonly<{
+  value: (value: unknown) => number;
+  parts: (parts: ReadonlyArray<unknown>) => number;
+}>;
+
+function canonicalMeasure(): Measure {
+  const known = new WeakMap<object, number>();
+  const value = (subject: unknown): number => {
+    if (typeof subject !== "object" || subject === null) return measured(subject);
+    const cached = known.get(subject);
+    if (cached !== undefined) return cached;
+    const bytes = measured(subject);
+    known.set(subject, bytes);
+    return bytes;
+  };
+  return {
+    value,
+    parts: (parts) => parts.reduce<number>((total, part) => total + value(part), 2 + Math.max(parts.length - 1, 0)),
+  };
+}
 
 function estimateStartCapacity(
   start: ProcessStartStimulus,
   program: SemanticProcessProgram,
   journey: StartCapacityJourney,
+  measure: Measure,
 ): StartCapacityEstimates {
-  const subject: Journey = { start, program, journey };
-  const instanceWeight = measured(start.instanceId) + measured(program.processId);
+  const subject: Journey = { start, program, journey, measure };
+  const instanceWeight = measure.value(start.instanceId) + measure.value(program.processId);
   const commandWeight = longestCommandId(subject);
   return Object.fromEntries(startCapacityEnvelopeBudgets.map((budget) => {
     const { fixedBytes, instanceIdCopies, commandIdCopies, perBatch } = startCapacityBookkeepingAllowance[budget];
@@ -313,34 +345,34 @@ function estimateStartCapacity(
  * returns the current and every batch of the Run; a successor carries state, current and the original Start.
  */
 function artifactBytes(budget: StartCapacityEnvelopeBudget, subject: Journey): number {
-  const { start, program, journey } = subject;
+  const { start, program, journey, measure } = subject;
   const steps = journey.steps;
   switch (budget) {
     case WorkflowChainBudgetKind.SemanticProcessProgramBytes:
-      return measured(program);
+      return measure.value(program);
     case WorkflowChainBudgetKind.InitialStartStimulusBytes:
-      return measured(start);
+      return measure.value(start);
     case WorkflowChainBudgetKind.SemanticStimulusBytes:
-      return largest(steps.slice(1).map(({ stimulus }) => measured(stimulus)));
+      return largest(steps.slice(1).map(({ stimulus }) => measure.value(stimulus)));
     case WorkflowChainBudgetKind.CommittedRuntimeStateBytes:
-      return largest(steps.map(({ committed }) => measured(committed.state)));
+      return largest(steps.map(({ committed }) => measure.value(committed.state)));
     case WorkflowChainBudgetKind.PublicationBatchBytes:
-      return largest(steps.map((_, index) => measured(batchParts(subject, index, index + 1))));
+      return largest(steps.map((_, index) => measure.parts(batchParts(subject, index, index + 1))));
     case WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes:
       return largest(waitingHeads(subject).flatMap((index) => [
-        measured(publicationContinuationParts(subject, index)),
-        measured(hostContinuationParts(subject, index)),
+        measure.parts(publicationContinuationParts(subject, index)),
+        measure.parts(hostContinuationParts(subject, index)),
       ]));
     case WorkflowChainBudgetKind.QueryResponseBytes:
-      return largest(steps.map((_, index) => measured(queryParts(subject, index))));
+      return largest(steps.map((_, index) => measure.parts(queryParts(subject, index))));
     case WorkflowChainBudgetKind.TerminalResultEnvelopeBytes:
-      return measured([terminalObservation(subject), program.identity, ledgerEntries(subject, steps.length - 1)]);
+      return measure.parts([terminalObservation(subject), program.identity, ledgerEntries(subject, steps.length - 1)]);
     case WorkflowChainBudgetKind.ContinueAsNewCarriedArgumentsBytes:
       return largest(waitingHeads(subject).map((index) => successorBytes(subject, index)));
     case WorkflowChainBudgetKind.CommandRecoveryLedgerBytes:
-      return measured(ledgerEntries(subject, steps.length - 1));
+      return measure.parts(ledgerEntries(subject, steps.length - 1));
     case WorkflowChainBudgetKind.RetainedRunTraceAndPublicationBytes:
-      return measured(batchParts(subject, 0, steps.length).concat(steps.flatMap(
+      return measure.parts(batchParts(subject, 0, steps.length).concat(steps.flatMap(
         ({ committed }) => [committed.observations],
       )));
     default:
@@ -403,11 +435,12 @@ function hostContinuationParts(subject: Journey, headIndex: number): unknown[] {
 function successorBytes(subject: Journey, headIndex: number): number {
   const head = subject.journey.steps[headIndex];
   if (head === undefined) throw new TypeError("Capacity journey has no such head");
-  return measured(subject.start) + measured(subject.program) +
-    measured(hostContinuationParts(subject, headIndex)) +
-    measured(head.committed.state) +
-    measured(ledgerEntries(subject, headIndex)) +
-    measured(publicationContinuationParts(subject, headIndex));
+  const { measure } = subject;
+  return measure.value(subject.start) + measure.value(subject.program) +
+    measure.parts(hostContinuationParts(subject, headIndex)) +
+    measure.value(head.committed.state) +
+    measure.parts(ledgerEntries(subject, headIndex)) +
+    measure.parts(publicationContinuationParts(subject, headIndex));
 }
 
 /** Every step after which the Process waits and may continue as new; the last step is terminal. */
@@ -447,7 +480,7 @@ function longestOutcome(): CommandOutcome {
 
 /** The Start's command ID is caller-chosen, the future ones are the reserved length; the longer bounds a batch. */
 function longestCommandId(subject: Journey): number {
-  return largest(subject.journey.steps.map(({ stimulus }) => measured(stimulusCommandId(stimulus))));
+  return largest(subject.journey.steps.map(({ stimulus }) => subject.measure.value(stimulusCommandId(stimulus))));
 }
 
 function requirePublication(

@@ -112,15 +112,8 @@ export function runStartCapacityJourney(
     return choice;
   };
   for (let state = first.committed.state; state.control.kind === "running"; state = steps[steps.length - 1]!.committed.state) {
-    if (steps.length > program.operations.length) {
-      throw new TypeError("The capacity journey did not terminate within its serial chain");
-    }
-    const effect = projectOpenEffects(state);
-    const next = state.messageWaits.length > 0
-      ? { stimulus: payloadDeliveryFor(program, state, steps.length, sentinel), effect: null }
-      : state.userTaskWaits.length === 1 && effect.length === 0
-      ? { stimulus: completionFor(program, state, steps.length, sentinel, choose), effect: null }
-      : effectCompletionFor(program, state, effect, sentinel);
+    requireSerialChain(program, steps.length);
+    const next = nextStep(program, state, steps.length, sentinel, choose);
     steps.push(commit(program, state, next.stimulus, next.effect));
   }
   return { steps, reservedTargets };
@@ -144,17 +137,76 @@ export function startCapacityJourneys(
   const first = runStartCapacityJourney(start, program);
   const total = first.reservedTargets.reduce((product, targets) => product * targets, 1);
   if (total > maximumReservedCompletionJourneys) return null;
-  const journeys = [first];
-  for (let ordinal = 1; ordinal < total; ordinal += 1) {
-    let rest = ordinal;
-    const choices = first.reservedTargets.map((targets) => {
-      const choice = rest % targets;
-      rest = Math.floor(rest / targets);
-      return choice;
+  const byOrdinal = new Map<number, StartCapacityJourney>();
+  branchJourneys(program, fullAllowanceValue(), [first.steps[0]], [], 0, byOrdinal);
+  return Array.from({ length: total }, (_, ordinal) => {
+    const journey = byOrdinal.get(ordinal);
+    if (byOrdinal.size !== total || journey === undefined ||
+        journey.reservedTargets.some((targets, index) => targets !== first.reservedTargets[index]) ||
+        journey.reservedTargets.length !== first.reservedTargets.length) {
+      throw new TypeError("A reserved completion choice changed the waits of the capacity journey");
+    }
+    return journey;
+  });
+}
+
+/**
+ * Extends `steps` to every terminal journey, branching at each reserved completion, and files each under the
+ * ordinal of its choices, the first choice varying fastest. Journeys share the steps before their first differing
+ * choice instead of replaying them: the guarantor loan's 288 journeys of seven steps commit 2,016 steps one by one
+ * but share all but about 500 (counted 2026-10-26).
+ */
+function branchJourneys(
+  program: SemanticProcessProgram,
+  sentinel: BusinessValue,
+  steps: [StartCapacityJourneyStep, ...StartCapacityJourneyStep[]],
+  reservedTargets: number[],
+  ordinal: number,
+  byOrdinal: Map<number, StartCapacityJourney>,
+): void {
+  for (let state = steps[steps.length - 1]!.committed.state; state.control.kind === "running"; state = steps[steps.length - 1]!.committed.state) {
+    requireSerialChain(program, steps.length);
+    let offered = null as number | null;
+    const next = nextStep(program, state, steps.length, sentinel, (targets) => {
+      offered = targets;
+      return 0;
     });
-    journeys.push(runStartCapacityJourney(start, program, choices));
+    if (offered === null) {
+      steps.push(commit(program, state, next.stimulus, next.effect));
+      continue;
+    }
+    const targets = offered;
+    const weight = reservedTargets.reduce((product, count) => product * count, 1);
+    for (let choice = 0; choice < targets; choice += 1) {
+      const chosen = choice === 0 ? next : nextStep(program, state, steps.length, sentinel, () => choice);
+      branchJourneys(program, sentinel, [...steps, commit(program, state, chosen.stimulus, chosen.effect)],
+        [...reservedTargets, targets], ordinal + choice * weight, byOrdinal);
+    }
+    return;
   }
-  return journeys;
+  byOrdinal.set(ordinal, { steps, reservedTargets });
+}
+
+/** The stimulus completing the single open wait, and the Activity exchange behind it for an effect. */
+function nextStep(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  ordinal: number,
+  sentinel: BusinessValue,
+  choose: (targets: number) => number,
+): { stimulus: Stimulus; effect: StartCapacityEffectExchange | null } {
+  const effect = projectOpenEffects(state);
+  return state.messageWaits.length > 0
+    ? { stimulus: payloadDeliveryFor(program, state, ordinal, sentinel), effect: null }
+    : state.userTaskWaits.length === 1 && effect.length === 0
+    ? { stimulus: completionFor(program, state, ordinal, sentinel, choose), effect: null }
+    : effectCompletionFor(program, state, effect, sentinel);
+}
+
+function requireSerialChain(program: SemanticProcessProgram, steps: number): void {
+  if (steps > program.operations.length) {
+    throw new TypeError("The capacity journey did not terminate within its serial chain");
+  }
 }
 
 /**
