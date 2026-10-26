@@ -58,8 +58,8 @@ test("terminates the concurrent scope Service Task example with its configured h
     submitCancellation: async () => { throw new Error("Unexpected cancellation"); },
   }, async () => {
     // A host wait completes the open effect with the smallest operation name, so the order is deterministic.
-    const [effect] = (await readState()).openEffects.toSorted((left, right) =>
-      left.descriptor.operation.localeCompare(right.descriptor.operation));
+    const [effect] = (await readState()).openEffects.toSorted(({ descriptor: left }, { descriptor: right }) =>
+      left.operation < right.operation ? -1 : left.operation > right.operation ? 1 : 0);
     if (effect === undefined) return;
     operations.push(effect.descriptor.operation);
     const result = await activities.executeBpmnEffect({ ...effect.descriptor, arguments: effect.arguments,

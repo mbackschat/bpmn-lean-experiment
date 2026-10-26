@@ -54,7 +54,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ]],
   ["embeddedSubProcess", "restriction", [
     "The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks",
-    "a Sub-Process completes exactly when it owns no token, User Task or child scope",
+    "a Sub-Process completes exactly when it owns no token, User Task, open effect or child scope",
     "continues once at its own parent without touching concurrent work outside it",
     "a Start or completion closure of more than eight steps or a hosting instance identity above 256 UTF-8 bytes is refused before Workflow start",
     "CIB agreement is retained only for the one-level fixture",
@@ -79,7 +79,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ]],
   ["parallelGateway", "restriction", [
     "paired forks and joins of two or more branches inside Sub-Process bodies",
-    "a fork whose User Task branches all end at one Exclusive merge into a Sub-Process",
+    "a fork whose task branches all end at one Exclusive merge into a Sub-Process",
   ]],
   ["exclusiveGateway", "restriction", ["which passes each arriving token on its own"]],
 ];
