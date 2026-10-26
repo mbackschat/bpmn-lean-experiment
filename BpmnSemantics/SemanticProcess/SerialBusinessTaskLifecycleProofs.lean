@@ -6,11 +6,7 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! SBT-RESULT-01 and SBT-REFUSE-01 expose actual atomic completion and predecessor-preserving refusal. The unified reachable invariant uses the exact root lifetime, foreign-state absence and issuance frame preserved by these real transitions. -/
 

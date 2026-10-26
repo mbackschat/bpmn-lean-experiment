@@ -4,7 +4,6 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
 public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! Actual Start and PMIS entry determine the complete structural owner census.

@@ -3,14 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingProgressPreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingRoutePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
-import all BpmnSemantics.SemanticProcess.JsonSupport
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.MessageStartAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Parallel Multi-Instance closing preservation
 

@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Scoped parallel subprocess resumption

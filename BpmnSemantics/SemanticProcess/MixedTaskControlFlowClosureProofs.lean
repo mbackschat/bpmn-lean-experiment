@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! MTCF-PROGRESS-01 bounds whole scheduled runs: from the per-firing position progress in [`MixedTaskControlFlowProgressProofs`](MixedTaskControlFlowProgressProofs.lean), every scheduled closure from an admitted start is finite and its counters only grow. -/
 

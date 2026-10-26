@@ -4,7 +4,6 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Actual parallel reservation ancestry

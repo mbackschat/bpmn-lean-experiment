@@ -5,8 +5,6 @@ public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 

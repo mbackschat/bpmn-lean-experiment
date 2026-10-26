@@ -5,7 +5,6 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Actual parent execution and parallel-entry uniqueness

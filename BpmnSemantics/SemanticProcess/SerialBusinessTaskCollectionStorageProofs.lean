@@ -3,10 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
 public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! Serial and mixed-task root frontiers admit unique ordered committed collections.
 Generic completion dispatch names the storage premise; reached consumers derive it from
