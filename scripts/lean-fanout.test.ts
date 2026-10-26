@@ -31,6 +31,44 @@ test("propagation continues through public imports and stops at a private one", 
   assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.Hide", "Pkg.Reexport", "Pkg.ViaReexport"]);
 });
 
+// Locks the leak the modularity closure review found: `ProfileShapeCatalog` imports the family's admission module
+// privately, and its `import all` importers rebuilt on an interface edit the private import was assumed to stop.
+test("an `import all` importer loads the private imports of what it opens, along `import all` chains", () => {
+  const fanouts = leanFanouts([
+    source("Pkg/Kernel.lean", "module"),
+    source("Pkg/Hide.lean", "module\n\nimport Pkg.Kernel"),
+    source("Pkg/Opens.lean", "module\n\nimport all Pkg.Hide"),
+    source("Pkg/OpensOpener.lean", "module\n\nimport all Pkg.Opens"),
+    source("Pkg/AboveOpener.lean", "module\n\npublic import Pkg.Opens"),
+    source("Pkg/Plainly.lean", "module\n\nimport Pkg.Hide"),
+    source("Pkg/HideTwice.lean", "module\n\nimport Pkg.Hide"),
+    source("Pkg/OpensTwice.lean", "module\n\nimport all Pkg.HideTwice"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.Hide", "Pkg.Opens", "Pkg.OpensOpener"]);
+});
+
+// The same probe's two remaining rebuilds carried only `public meta import`s: compile-time code loads the compiled
+// form of the whole import closure, private links included.
+test("a `meta import` importer loads the whole import closure of what it imports", () => {
+  const fanouts = leanFanouts([
+    source("Pkg/Kernel.lean", "module"),
+    source("Pkg/Hide.lean", "module\n\nimport Pkg.Kernel"),
+    source("Pkg/HideTwice.lean", "module\n\nimport Pkg.Hide"),
+    source("Pkg/Meta.lean", "module\n\npublic meta import Pkg.HideTwice"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.Hide", "Pkg.Meta"]);
+});
+
+test("a hidden edit also reaches each `meta import` importer whose import closure holds the edited module", () => {
+  const fanouts = leanHiddenEditFanouts([
+    source("Pkg/Hub.lean", "module"),
+    source("Pkg/Mid.lean", "module\n\nimport Pkg.Hub"),
+    source("Pkg/Meta.lean", "module\n\npublic meta import Pkg.Mid"),
+    source("Pkg/AllOfMeta.lean", "module\n\nimport all Pkg.Meta"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.AllOfMeta", "Pkg.Meta"]);
+});
+
 test("a plain file sees its whole import closure, and its own imports re-export", () => {
   const fanouts = leanFanouts([
     source("Pkg/Kernel.lean", "module"),

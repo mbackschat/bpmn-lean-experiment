@@ -32,8 +32,10 @@ export function leanLibraryModules(sources: LeanSources, root: string): Set<stri
  * Lake rebuilds an importer from the artifacts of everything it loads. A module loads what it imports directly,
  * of any form, and whatever those re-export through `public import`; a private import stops there, which the
  * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)
- * record. A plain file loads its whole import closure and re-exports every import, so a hidden-body edit
- * still rebuilds it.
+ * record. An `import all` or `meta import` opens the imported module's private part, so it also loads everything
+ * that module loads, private imports included: a private import of the family admission module into the profile
+ * registry let an interface edit rebuild the registry's ten `import all` importers (pinned container, 2026-10-26).
+ * A plain file loads its whole import closure and re-exports every import, so a hidden-body edit still rebuilds it.
  *
  * This is an upper bound: an importer whose own artifact comes out unchanged stops propagation in Lake, which a
  * graph scan cannot see. Imports of modules outside `sources`, such as Lean core, are ignored.
@@ -53,12 +55,24 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
     }
     return visible;
   };
-  const fanouts = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
-  for (const [importer, header] of headers) {
-    const loaded = header.isModule ? new Set<string>() : closure(importer);
-    for (const { module: imported } of header.imports) {
-      if (headers.has(imported)) for (const reached of reexported(imported)) loaded.add(reached);
+  const loads = new Map<string, Set<string>>();
+  const loadedBy = (module: string): Set<string> => {
+    const known = loads.get(module);
+    if (known !== undefined) return known;
+    const header = headers.get(module)!;
+    const loaded = header.isModule ? new Set<string>() : closure(module);
+    loads.set(module, loaded);
+    for (const { module: imported, importsAll, isMeta } of header.imports) {
+      if (!headers.has(imported)) continue;
+      for (const reached of reexported(imported)) loaded.add(reached);
+      if (importsAll) for (const reached of loadedBy(imported)) loaded.add(reached);
+      if (isMeta) for (const reached of closure(imported)) loaded.add(reached);
     }
+    return loaded;
+  };
+  const fanouts = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
+  for (const importer of headers.keys()) {
+    const loaded = new Set(loadedBy(importer));
     loaded.delete(importer);
     for (const module of loaded) fanouts.get(module)!.push(importer);
   }
@@ -72,17 +86,20 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  *
  * Only an `import all` importer loads the hidden part, and loading a hidden part also loads the hidden parts
  * it imports with `import all`, so the edit follows every chain of `import all` imports; an importer that does
- * not `import all` the module or a chain member is left alone. A plain file loads every module of its import
- * closure whole, so each plain file that reaches the module rebuilds too (the
+ * not `import all` the module or a chain member is left alone. A `meta import` loads the compiled form of the
+ * imported module's whole import closure, and a plain file loads every module of its import closure whole, so each
+ * of them that reaches the module rebuilds too (the
  * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
  */
 export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
   const { headers, closure } = importGraph(sources);
-  const allImporters = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
+  const hiddenLoaders = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   for (const [importer, header] of headers) {
-    for (const { module: imported, importsAll } of header.imports) {
-      if (importsAll && headers.has(imported)) allImporters.get(imported)!.push(importer);
+    for (const { module: imported, importsAll, isMeta } of header.imports) {
+      if (!headers.has(imported)) continue;
+      if (importsAll) hiddenLoaders.get(imported)!.push(importer);
+      if (isMeta) for (const reached of [imported, ...closure(imported)]) hiddenLoaders.get(reached)!.push(importer);
     }
     if (!header.isModule) for (const reached of closure(importer)) plainReach.get(reached)!.push(importer);
   }
@@ -90,7 +107,7 @@ export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[
     const rebuilt = new Set<string>();
     const pending = [module];
     while (pending.length > 0) {
-      for (const importer of allImporters.get(pending.pop()!)!) {
+      for (const importer of hiddenLoaders.get(pending.pop()!)!) {
         if (rebuilt.has(importer)) continue;
         rebuilt.add(importer);
         pending.push(importer);
