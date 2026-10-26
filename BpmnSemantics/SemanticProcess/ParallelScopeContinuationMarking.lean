@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Actual body-operation continuation balance
 

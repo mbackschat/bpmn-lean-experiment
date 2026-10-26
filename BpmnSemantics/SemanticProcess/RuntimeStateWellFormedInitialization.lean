@@ -6,6 +6,8 @@ public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 
 /-! # Runtime-state well-formedness at initialization
 

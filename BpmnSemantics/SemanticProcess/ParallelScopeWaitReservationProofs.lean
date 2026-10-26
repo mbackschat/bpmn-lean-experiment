@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeLiveBindingProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationHeadroomProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Reachable wait reservation
 

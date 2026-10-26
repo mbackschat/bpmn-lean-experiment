@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Repeated-scope transition laws
 

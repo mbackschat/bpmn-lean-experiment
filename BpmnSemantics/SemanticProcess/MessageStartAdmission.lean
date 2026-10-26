@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 This module owns exact resolved-trigger admission against the Message Start profile and its single admitted IL start operation. It creates no subscription and performs no routing.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

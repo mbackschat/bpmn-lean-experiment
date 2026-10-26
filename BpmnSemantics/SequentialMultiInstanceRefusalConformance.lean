@@ -54,6 +54,14 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.JsonSupport
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Sequential Multi-Instance refusal conformance
 

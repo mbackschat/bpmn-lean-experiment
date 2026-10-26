@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import all BpmnSemantics.SemanticProcess.JsonSupport
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! Existing profile capability counts discharge the root-only Compensation proof domain
 without adding a premise to their public preservation guarantees. -/

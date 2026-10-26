@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.TransactionBranchPhases
 public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Transaction command admission and continuation
 

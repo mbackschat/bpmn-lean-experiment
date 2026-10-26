@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeBodyInputProofs
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Live parallel-body binding provenance
 

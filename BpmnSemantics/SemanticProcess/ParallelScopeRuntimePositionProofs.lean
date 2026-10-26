@@ -7,6 +7,7 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidit
 public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! Actual PMIS reachability must establish token/place bindings before command
 publication can consume runtime position validity. Occurrence publication alone

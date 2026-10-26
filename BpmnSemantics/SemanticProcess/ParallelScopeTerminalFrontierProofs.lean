@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Root completion in an actual parallel frontier
 

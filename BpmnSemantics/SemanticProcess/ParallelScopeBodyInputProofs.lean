@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEffectMappingProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Repeated-body local input availability
 

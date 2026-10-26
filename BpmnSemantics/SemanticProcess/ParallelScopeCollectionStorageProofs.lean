@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
 public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! RSI-ORDER-01/RSI-UNIQ-02 storage follows actual PMIS ingress and internal steps.
 Reservation validity supplies fresh wait identities; collection storage alone is not an issuance certificate.

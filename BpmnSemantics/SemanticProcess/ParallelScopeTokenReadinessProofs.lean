@@ -5,6 +5,9 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierClassificationProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! # Reachable token-control readiness
 

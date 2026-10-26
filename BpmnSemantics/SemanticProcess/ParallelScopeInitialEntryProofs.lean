@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeBodyAccounting
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Initial parallel entry blockers
 

@@ -33,6 +33,10 @@ public import BpmnSemantics.SemanticProcess.CommandStartBindings
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataCommand
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! # Semantic Process external command admission
 

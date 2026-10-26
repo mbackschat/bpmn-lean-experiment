@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchAnchorProofs
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Frozen arming preparation through raw prefixes
 

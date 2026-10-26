@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import all BpmnSemantics.SemanticProcess.JsonSupport
 
 /-! SPC-AVAILABLE-01 separates computed predecessor obligations from runtime lookup. Binding-presence and uniqueness laws connect actual start/completion rewrites to the data facts used by the reachable-state argument. -/
 

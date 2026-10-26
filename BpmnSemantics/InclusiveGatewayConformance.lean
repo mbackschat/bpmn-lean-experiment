@@ -48,6 +48,14 @@ import all Init.Data.String.Substring
 import all Init.Data.String.TakeDrop
 import all Init.Data.String.Termination
 import all Init.Data.String.ToSlice
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.JsonSupport
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Structured Inclusive Gateway conformance
 

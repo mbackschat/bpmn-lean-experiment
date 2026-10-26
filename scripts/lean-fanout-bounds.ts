@@ -355,13 +355,23 @@ export const leanFanoutBounds: ReadonlyArray<LeanFanoutBound> = [
 export const leanHiddenEditDefaultBound = 10;
 
 /**
- * The hidden-edit counterpart, as [`leanHiddenEditFanouts`](./lean-fanout.ts) counts it: the four hubs whose bodies
- * the module system hides, at their 2026-10-25 counts after every `import all` that the build did not need became a
- * private import. It shrinks under the same rule.
+ * The hidden-edit counterpart, as [`leanHiddenEditFanouts`](./lean-fanout.ts) counts it: the modules whose bodies the
+ * module system hides, at the counts measured when each was hidden (the four hubs on 2026-10-25 after every `import
+ * all` that the build did not need became a private import, the eight modules a commit replay ranked first on
+ * 2026-10-26 after each importer kept only the `import all` lines its build errors named). It shrinks under the same
+ * rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeRuntime", bound: 139 },
   { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 132 },
   { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 125 },
+  { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 115 },
+  { module: "BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission", bound: 97 },
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 95 },
+  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 93 },
+  { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 92 },
   { module: "BpmnSemantics.SemanticProcess.CallActivity", bound: 88 },
   { module: "BpmnSemantics.SemanticProcess.CheckedGraphValidation", bound: 81 },
+  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 80 },
+  { module: "BpmnSemantics.SemanticProcess.JsonSupport", bound: 78 },
 ];

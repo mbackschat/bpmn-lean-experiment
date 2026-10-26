@@ -24,7 +24,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 This module selects profile capabilities and the closed graph policy shared by the two independently implemented graph validators. Cardinality calculations are owned by `ProfileCardinalities`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

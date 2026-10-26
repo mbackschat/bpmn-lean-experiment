@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Semantic profile admission consequences
 

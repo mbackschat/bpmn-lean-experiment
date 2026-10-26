@@ -6,6 +6,14 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.JsonSupport
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 /-! # Composed Activity data-input/output refusal conformance
 
 Whole-state and direct-transition refusal decisions over the shared claim fixture. The separate

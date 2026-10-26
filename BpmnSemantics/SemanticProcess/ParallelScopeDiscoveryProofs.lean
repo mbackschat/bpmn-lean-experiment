@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeInputMultiplicityProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Total discovery for reachable parallel scopes
 

@@ -16,7 +16,7 @@ preamble differs, and it is restated here instead of parameterizing `SerialBusin
 because three serial proof modules unfold that definition.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

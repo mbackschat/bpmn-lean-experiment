@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Activity body turnover preservation
 

@@ -7,6 +7,7 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Timer-task arming preserves the three independent issuer bounds and the existing runtime
 collections. The joint wait/Activity obligations come from `InternalTimerTaskValidity`.

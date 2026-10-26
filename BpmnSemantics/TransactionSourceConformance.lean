@@ -18,6 +18,7 @@ import all Std.Data.DTreeMap.Internal.Def
 import all Std.Data.DTreeMap.Internal.Balancing
 import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Transaction source grammar discriminators
 

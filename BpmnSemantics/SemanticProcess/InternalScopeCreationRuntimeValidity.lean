@@ -8,6 +8,7 @@ public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralVali
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Aggregate validity of actual scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

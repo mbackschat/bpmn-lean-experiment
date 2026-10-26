@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Reachable reservation ordinal headroom
 

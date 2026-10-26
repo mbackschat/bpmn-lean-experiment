@@ -8,6 +8,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! SMIS-ADMIT-01 retains full runtime validity and actual projectability for successful individual transitions through admission and lifecycle contracts, below certificate preservation and scheduler transport. -/
 

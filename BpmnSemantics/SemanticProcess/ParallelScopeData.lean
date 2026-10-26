@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.EffectCompletion
 
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

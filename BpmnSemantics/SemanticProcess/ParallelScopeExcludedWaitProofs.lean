@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandClosureProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Excluded PMIS waits and incidents
 

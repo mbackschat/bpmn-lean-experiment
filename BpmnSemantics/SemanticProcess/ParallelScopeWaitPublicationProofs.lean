@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
 public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 public import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! PMIS entry, completion and retirement preserve the full wait projection
 contract, including the Service wait/local-data bijection. Declaration provenance

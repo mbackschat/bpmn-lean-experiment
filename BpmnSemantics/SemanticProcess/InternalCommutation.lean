@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Classified internal commutation
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 public import BpmnSemantics.SemanticProcess.TransactionCompensationArmingPreservation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Internal commutation runtime preservation
 

@@ -7,6 +7,7 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
 import all Init.Data.List.Sort.Basic
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! Constructed checked graphs discriminate the selected subscription profile and its whole-burst
 limit. Exact XML provenance and independent lowering are owned by the source-bound pipeline. -/

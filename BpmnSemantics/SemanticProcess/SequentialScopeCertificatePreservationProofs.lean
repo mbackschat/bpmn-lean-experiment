@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
 public import BpmnSemantics.SemanticProcess.SequentialScopeOrdinaryExecutionProofs
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! SMIS-ADMIT-01 preserves the joint execution certificate through repeated-body lifecycle and Human/effect command ingress. Ordinary execution is imported from its separate owner; scheduler history and readiness remain above both. -/
 

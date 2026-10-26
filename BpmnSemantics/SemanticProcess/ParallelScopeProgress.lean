@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 public import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # External completion and internal body-operation locality
 

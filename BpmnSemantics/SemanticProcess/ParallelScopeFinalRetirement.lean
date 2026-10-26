@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeRetirementProgress
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Parent return after parallel subprocess completion
 

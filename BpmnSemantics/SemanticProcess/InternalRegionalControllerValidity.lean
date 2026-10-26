@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 public import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Regional controller lifetime preservation
 

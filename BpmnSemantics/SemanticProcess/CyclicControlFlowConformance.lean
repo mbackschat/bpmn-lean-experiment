@@ -49,6 +49,14 @@ import all Init.Data.String.Substring
 import all Init.Data.String.TakeDrop
 import all Init.Data.String.Termination
 import all Init.Data.String.ToSlice
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.JsonSupport
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 /-! # Resumption-bounded cyclic control-flow conformance
 
 This module owns proved locks for the reviewed three-input Exclusive Merge, the exact User Task resumption cut, and the representative repeat/exit process. It proves no general termination, fairness, arbitrary-cycle, concurrent-arrival, nested-scope, or host-runtime claim.

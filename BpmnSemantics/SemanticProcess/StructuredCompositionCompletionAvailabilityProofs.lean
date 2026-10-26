@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! Exact task lifetime and declaration ownership provide concrete admitted completion commands.
 Reached completion availability derives committed collection storage from the existing execution,

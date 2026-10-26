@@ -3,6 +3,11 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! # Service input admission and availability
 

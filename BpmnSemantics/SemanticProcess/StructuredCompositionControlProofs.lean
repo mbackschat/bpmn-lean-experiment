@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! SPC-CONTINUE-01 follows the actual evaluator from a committed start through internal steps and accepted or rejected User Task completions. Admission excludes foreign operation families; the control-unit bound is derived at start and preserved across those transitions. -/
 

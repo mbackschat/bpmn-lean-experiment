@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
 public import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Ordinary parent/body execution preserves the SMIS execution certificate. Repeated-body lifecycle and command ingress belong to the separate preservation owner; history and readiness remain above both. -/
 

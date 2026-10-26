@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 
 /-! MTCF-SOURCE-01, MTCF-DATA-01 and MTCF-PROGRESS-01 require independent checked-graph and Program analysis; writer barriers and wait cuts prevent later writes or resumptions from justifying first-entry data or internal progress. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

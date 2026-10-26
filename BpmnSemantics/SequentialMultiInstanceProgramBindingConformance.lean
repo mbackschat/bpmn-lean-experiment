@@ -61,6 +61,7 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 /-! # Sequential Multi-Instance program binding conformance
 
 The checked fixture preserves the complete reviewed data-role graph and lowers it to the distinct

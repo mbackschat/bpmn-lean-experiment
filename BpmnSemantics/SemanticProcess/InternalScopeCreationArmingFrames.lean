@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 public import BpmnSemantics.SemanticProcess.InternalLocalControlArmingCommutation
 import BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Mixed scope/arming frames retain the complete predecessor artifact required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Scope insertion

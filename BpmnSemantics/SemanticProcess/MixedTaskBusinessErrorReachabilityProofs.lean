@@ -1,6 +1,12 @@
 module
 
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import BpmnSemantics.SemanticProcess.MixedTaskControlFlowClosureProofs
 
 /-! MBERR-CATCH-01, MBERR-MAP-01 and MBERR-PROGRESS-01 derive attached Error completion and bounded resumption from an actual committed Start. Route selection belongs to the current wait; shared Error codes supply no authority to select another Service Task's continuation. -/
 

@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Actual parallel reservation owner bounds
 

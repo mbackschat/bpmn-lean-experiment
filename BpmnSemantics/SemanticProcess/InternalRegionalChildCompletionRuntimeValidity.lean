@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionCompensati
 public import BpmnSemantics.SemanticProcess.InternalRegionalChildProjectionValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the

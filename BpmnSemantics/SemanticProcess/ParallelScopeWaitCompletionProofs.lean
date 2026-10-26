@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
 
 /-! # Wait declarations across parallel-scope command completion
 

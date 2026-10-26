@@ -12,6 +12,10 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! Declaration-bound Start binding policy shared by raw command dispatch and private capacity admission. -/
 

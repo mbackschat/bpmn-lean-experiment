@@ -15,7 +15,7 @@ SMIS-ENTER-01 and SMIS-END-01 separate outer token consumption from fresh body i
 Body-local initialization and disposal are atomic; the outer Activity retains the sole child reference.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

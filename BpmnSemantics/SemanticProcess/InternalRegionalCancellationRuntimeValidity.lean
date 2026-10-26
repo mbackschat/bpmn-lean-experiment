@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptan
 public import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
 public import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
 public import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! Aggregate cancellation preservation composes the established collection proofs.
 Position and Compensation depend on whether the selected occurrence is a child or the

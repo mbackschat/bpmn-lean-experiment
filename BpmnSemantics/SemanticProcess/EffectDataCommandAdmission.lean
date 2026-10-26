@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.EffectCompletion
 public import BpmnSemantics.SemanticProcess.EffectDataAdmission
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
 
 /-! # Structured effect-data command boundary
 

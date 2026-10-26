@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.MessagePayload
 public import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Message payload delivery preservation
 

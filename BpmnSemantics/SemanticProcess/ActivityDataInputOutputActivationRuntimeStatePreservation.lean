@@ -11,6 +11,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstance
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Activity-data activation runtime-state preservation
 

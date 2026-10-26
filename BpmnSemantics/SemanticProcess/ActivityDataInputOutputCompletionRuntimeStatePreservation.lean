@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomain
 public import BpmnSemantics.SemanticProcess.ProfileAdmission
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputActivationRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Composed Activity-data completion runtime-state preservation
 

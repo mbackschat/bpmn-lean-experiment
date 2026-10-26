@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! SMIS-ADMIT-01 and SMIS-DATA-01 separate pre-entry Process requirements from initialized body lookup. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeData
 

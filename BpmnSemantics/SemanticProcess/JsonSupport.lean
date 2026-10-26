@@ -12,7 +12,7 @@ public import Lean.Data.Json
 This module owns the strict reusable decoders for safe wire integers, identities, Message channels, variables, and typed effect results. Document-role decoders and cross-artifact validation remain in `SemanticProcessJson`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

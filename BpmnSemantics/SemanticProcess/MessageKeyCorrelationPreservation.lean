@@ -8,6 +8,7 @@ public import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 
 /-! # Message key-correlation preservation laws
 

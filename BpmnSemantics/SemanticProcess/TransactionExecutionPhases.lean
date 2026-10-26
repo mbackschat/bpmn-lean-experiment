@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
 public import BpmnSemantics.SemanticProcess.TransactionPhaseFrames
 public import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 
 /-! # Transaction execution-phase invariant
 

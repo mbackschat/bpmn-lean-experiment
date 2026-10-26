@@ -8,6 +8,10 @@ public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 
