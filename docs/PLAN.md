@@ -88,7 +88,7 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: select batch 2's next family now that the [build modularity specification](LEAN-BUILD-MODULARITY-SPEC.md) is closure-approved (2026-10-26). Multi-Instance closure stays held at qualification.
 
-Deliverable: the next batch-2 family proposal (two to four rows sharing a mechanism), built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: the next batch-2 family proposal (every open row sharing its mechanism), built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
 Acceptance blockers: none recorded.
 
