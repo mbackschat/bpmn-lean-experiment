@@ -97,7 +97,10 @@
       "BPMN 2.0.2 §13.3.4",
       "BPMN 2.0.2 §13.4.1"
     ],
-    "cibRevision": "not-applicable",
-    "cibRefs": []
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-OP-0010"
+    ]
   }
 }
