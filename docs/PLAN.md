@@ -90,7 +90,7 @@ Current task: faster Lean builds within the 5 GB local bound (owner direction 20
 
 Deliverable: the proposal's median of about ten rebuilt modules per ordinary commit, with no weaker claim or raised memory limit.
 
-Acceptance blockers: none; the median's remaining gap to 10 comes from body edits that proofs unfold.
+Acceptance blockers: none; the 72 replayed commits that edit no kernel interface rebuild a median of 3.5 library modules.
 
 Current result: `<Hub>Laws` modules, hidden bodies and re-exports limited to what public declarations name cut a 92-commit replay's median from 686 to 11.5 rebuilt library modules (the design's 11), and to 2 modules and 2 fixture seconds for the 58 commits changing no kernel type; a measured edit rebuilt exactly the predicted 59 modules. 64 more witnesses run as executable checks, so the worst of those 58 rebuilds 874 fixture seconds, inside the 15-minute limit.
 
