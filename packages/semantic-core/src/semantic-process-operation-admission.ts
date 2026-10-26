@@ -588,6 +588,11 @@ function isSupportedEffectContract(
 ): boolean {
   if (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return (bpmnErrorRoute === null || isWellFormedBpmnErrorRoute(bpmnErrorRoute, placeIds)) && serialBusinessEffectAdmitted(effect);
   if (semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || isSerialChainProfile(semanticProfile) || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect, new Set(), serialChainRulesForProfile(semanticProfile));
+  // CSE-ADMIT-01 adds data-free overlay-bound handlers to the embedded completion profile beside the generic contracts
+  // below; its nested scope-control analysis then admits only the data-free ones.
+  if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion && bpmnErrorRoute === null &&
+      Array.isArray(effect.inputMappings) && effect.inputMappings.length === 0 && Array.isArray(effect.outputMappings) &&
+      effect.outputMappings.length === 0 && serialBusinessEffectAdmitted(effect)) return true;
   if (
     !isRecord(effect.descriptor) ||
     !hasOnlyKeys(effect.descriptor, ["protocol", "operation"]) ||

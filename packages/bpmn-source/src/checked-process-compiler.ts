@@ -12,7 +12,6 @@ import type {
   CheckedNode,
   CheckedSequenceFlow,
   CheckedProcess,
-  SourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
@@ -43,6 +42,7 @@ import {
   projectCheckedNodes,
   projectCheckedSequenceFlows,
 } from "./checked-element-projection.js";
+import type { ServiceTaskSourceBinding } from "./checked-element-projection.js";
 import {
   containedLocus,
   definitionsLocus,
@@ -119,8 +119,9 @@ export function compileCheckedProcess(
   source: BpmnSourceIdentity,
   semanticProfile: string,
   classifyForeignAttributes: ForeignAttributeClassification,
-  sourceOverlay: SourceOverlayIdentity | null,
+  serviceTaskBinding: ServiceTaskSourceBinding | null,
 ): CheckedCompilationProjection {
+  const sourceOverlay = serviceTaskBinding?.sourceOverlay ?? null;
   const capability = preservationCapability(semanticProfile);
   const configuredTaskPolicy =
     configuredTaskProjectionPolicyForProfile(semanticProfile);
@@ -158,7 +159,7 @@ export function compileCheckedProcess(
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion && rootElements !== undefined &&
       rootElements.length > 1) {
     return compileProcessForest(definitions, rootElements, rootElementsLocus, classification, source,
-      semanticProfile, capability, configuredTaskPolicy, sourceOverlay);
+      semanticProfile, capability, configuredTaskPolicy, serviceTaskBinding);
   }
   const rootSelection: RootDefinitionSelectionResult = rootElements === undefined
     ? { selection: undefined, rejections: [] }
@@ -198,6 +199,7 @@ export function compileCheckedProcess(
     capability,
     configuredTaskPolicy,
     semanticProfile,
+    serviceTaskBinding,
   );
   if (projected.kind === ProcessProjectionKind.Refused) {
     return unsupported([], projected.evidence);
@@ -288,8 +290,9 @@ function compileProcessForest(
   semanticProfile: string,
   capability: ReturnType<typeof preservationCapability>,
   configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
-  sourceOverlay: SourceOverlayIdentity | null,
+  serviceTaskBinding: ServiceTaskSourceBinding | null,
 ): CheckedCompilationProjection {
+  const sourceOverlay = serviceTaskBinding?.sourceOverlay ?? null;
   const classification: ElementRejection[] = [...documentClassification];
   if (rootElements.length > processForestRootLimit ||
       !rootElements.every(({ $type }) => $type === bpmnTypes.processType)) {
@@ -310,7 +313,8 @@ function compileProcessForest(
   for (const [index, entry] of classified.entries()) {
     const process = rootElements[index]!;
     const result = projectClassifiedProcess(entry, definitions,
-      { process, messageArtifacts: undefined, errorArtifact: undefined }, capability, configuredTaskPolicy, semanticProfile);
+      { process, messageArtifacts: undefined, errorArtifact: undefined }, capability, configuredTaskPolicy, semanticProfile,
+      serviceTaskBinding);
     if (result.kind === ProcessProjectionKind.Refused) return unsupported([], result.evidence);
     projected.push(result);
   }
@@ -454,6 +458,7 @@ export function projectClassifiedProcess(
   capability: ReturnType<typeof preservationCapability>,
   configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
   semanticProfile: string,
+  serviceTaskBinding: ServiceTaskSourceBinding | null = null,
 ): ProjectedProcess | ProcessRefusal {
   const refused = (evidence: string): ProcessRefusal =>
     ({ kind: ProcessProjectionKind.Refused, classification: [], evidence });
@@ -473,6 +478,7 @@ export function projectClassifiedProcess(
     capability,
     configuredTaskPolicy,
     semanticProfile,
+    serviceTaskBinding,
   );
   const nodeScopes = projectOwnership(
     classified.sourceNodes,

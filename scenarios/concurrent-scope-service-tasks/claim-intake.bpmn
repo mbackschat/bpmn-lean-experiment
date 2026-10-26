@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_ClaimIntake" targetNamespace="https://bpmn-lean.local/scenarios/concurrent-scope-service-tasks">
+  <bpmn:process id="Process_ClaimIntake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimReported" name="Claim reported">
+      <bpmn:outgoing>Flow_ReportedToIntake</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Intake" name="Claim intake">
+      <bpmn:incoming>Flow_ReportedToIntake</bpmn:incoming>
+      <bpmn:outgoing>Flow_IntakeToSettle</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Intake">
+        <bpmn:outgoing>Flow_IntakeToEvidenceFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_EvidenceFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_IntakeToEvidenceFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_EvidenceForkToCollectPoliceReport</bpmn:outgoing>
+        <bpmn:outgoing>Flow_EvidenceForkToFetchPolicy</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_CollectPoliceReport" name="Collect police report">
+        <bpmn:incoming>Flow_EvidenceForkToCollectPoliceReport</bpmn:incoming>
+        <bpmn:outgoing>Flow_CollectPoliceReportToEvidenceMerge</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:serviceTask id="ServiceTask_FetchPolicy" name="Fetch policy record" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${policyLookup}" camunda:asyncBefore="true">
+        <bpmn:incoming>Flow_EvidenceForkToFetchPolicy</bpmn:incoming>
+        <bpmn:outgoing>Flow_FetchPolicyToEvidenceMerge</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="Gateway_EvidenceMerge" gatewayDirection="Converging">
+        <bpmn:incoming>Flow_CollectPoliceReportToEvidenceMerge</bpmn:incoming>
+        <bpmn:incoming>Flow_FetchPolicyToEvidenceMerge</bpmn:incoming>
+        <bpmn:outgoing>Flow_EvidenceMergeToAssessItem</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:subProcess id="SubProcess_AssessItem" name="Assess evidence item">
+        <bpmn:incoming>Flow_EvidenceMergeToAssessItem</bpmn:incoming>
+        <bpmn:outgoing>Flow_AssessItemToIntakeDone</bpmn:outgoing>
+        <bpmn:startEvent id="StartEvent_AssessItem">
+          <bpmn:outgoing>Flow_AssessItemToPriceDamage</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="ServiceTask_PriceDamage" name="Price damage" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${damagePricing}" camunda:asyncBefore="true">
+          <bpmn:incoming>Flow_AssessItemToPriceDamage</bpmn:incoming>
+          <bpmn:outgoing>Flow_PriceDamageToConfirmAssessment</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:userTask id="UserTask_ConfirmAssessment" name="Confirm assessment">
+          <bpmn:incoming>Flow_PriceDamageToConfirmAssessment</bpmn:incoming>
+          <bpmn:outgoing>Flow_ConfirmAssessmentToAssessed</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="EndEvent_Assessed">
+          <bpmn:incoming>Flow_ConfirmAssessmentToAssessed</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_AssessItemToPriceDamage" sourceRef="StartEvent_AssessItem" targetRef="ServiceTask_PriceDamage"/>
+        <bpmn:sequenceFlow id="Flow_PriceDamageToConfirmAssessment" sourceRef="ServiceTask_PriceDamage" targetRef="UserTask_ConfirmAssessment"/>
+        <bpmn:sequenceFlow id="Flow_ConfirmAssessmentToAssessed" sourceRef="UserTask_ConfirmAssessment" targetRef="EndEvent_Assessed"/>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_IntakeDone">
+        <bpmn:incoming>Flow_AssessItemToIntakeDone</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_IntakeToEvidenceFork" sourceRef="StartEvent_Intake" targetRef="Gateway_EvidenceFork"/>
+      <bpmn:sequenceFlow id="Flow_EvidenceForkToCollectPoliceReport" sourceRef="Gateway_EvidenceFork" targetRef="UserTask_CollectPoliceReport"/>
+      <bpmn:sequenceFlow id="Flow_EvidenceForkToFetchPolicy" sourceRef="Gateway_EvidenceFork" targetRef="ServiceTask_FetchPolicy"/>
+      <bpmn:sequenceFlow id="Flow_CollectPoliceReportToEvidenceMerge" sourceRef="UserTask_CollectPoliceReport" targetRef="Gateway_EvidenceMerge"/>
+      <bpmn:sequenceFlow id="Flow_FetchPolicyToEvidenceMerge" sourceRef="ServiceTask_FetchPolicy" targetRef="Gateway_EvidenceMerge"/>
+      <bpmn:sequenceFlow id="Flow_EvidenceMergeToAssessItem" sourceRef="Gateway_EvidenceMerge" targetRef="SubProcess_AssessItem"/>
+      <bpmn:sequenceFlow id="Flow_AssessItemToIntakeDone" sourceRef="SubProcess_AssessItem" targetRef="EndEvent_IntakeDone"/>
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_SettleClaim" name="Settle claim">
+      <bpmn:incoming>Flow_IntakeToSettle</bpmn:incoming>
+      <bpmn:outgoing>Flow_SettleToSettled</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_ClaimSettled" name="Claim settled">
+      <bpmn:incoming>Flow_SettleToSettled</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ReportedToIntake" sourceRef="StartEvent_ClaimReported" targetRef="SubProcess_Intake"/>
+    <bpmn:sequenceFlow id="Flow_IntakeToSettle" sourceRef="SubProcess_Intake" targetRef="UserTask_SettleClaim"/>
+    <bpmn:sequenceFlow id="Flow_SettleToSettled" sourceRef="UserTask_SettleClaim" targetRef="EndEvent_ClaimSettled"/>
+  </bpmn:process>
+</bpmn:definitions>

@@ -282,6 +282,14 @@ const dispatchFixtures = {
     sourceOverlay: effectDataOverlay(SemanticProfileId.NestedEmbeddedScopeData, ["approveOrder", "checkCompliance", "publishOrder"]),
     find: '<startEvent id="A"',
   },
+  embeddedScope: {
+    path: "the embedded scope Service Task reader",
+    source: new URL("../../../scenarios/concurrent-scope-service-tasks/supplier-screening.bpmn", import.meta.url),
+    sourceId: "supplier-screening", semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion,
+    sourceOverlay: effectDataOverlay(SemanticProfileId.EmbeddedSubProcessCompletion,
+      ["bankAccountVerification", "sanctionsScreening", "supplierActivation"]),
+    find: '<bpmn:startEvent id="StartEvent_SupplierProposed"',
+  },
   sequentialMultiInstanceSubProcess: {
     path: "the sequential MI Sub-Process reader", source: sequentialScopeSource, sourceId: "invoice-batch",
     semanticProfile: sequentialScopeProfile, sourceOverlay: sequentialScopeOverlay(),

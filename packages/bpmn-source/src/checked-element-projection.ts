@@ -24,6 +24,7 @@ import {
 import type {
   CheckedNode,
   CheckedSequenceFlow,
+  SourceOverlayIdentity,
 } from "@bpmn-lean/semantic-core";
 
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
@@ -100,6 +101,15 @@ const camundaNamespace = "http://camunda.org/schema/1.0/bpmn";
 const effectProtocol = "urn:bpmn-lean:effect:probe-v1";
 const effectHandlerExpression = "${bpmnLeanEffectHandler}";
 
+/**
+ * A profile's overlay-bound Service Task reader. Without one, a Service Task projects only as the probe binding of
+ * `CIB-EXT-0001`; with one, the profile's overlay decides the handler (CSE-ADMIT-01).
+ */
+export type ServiceTaskSourceBinding = Readonly<{
+  sourceOverlay: SourceOverlayIdentity;
+  project: (element: ElementRecord, definitions: ElementRecord) => CheckedNode | undefined;
+}>;
+
 export function projectCheckedNodes(
   elements: ReadonlyArray<ElementRecord>,
   flows: ReadonlyArray<CheckedSequenceFlow>,
@@ -108,6 +118,7 @@ export function projectCheckedNodes(
   capability: PreservationCapability | undefined,
   configuredTaskPolicy: ConfiguredTaskProjectionPolicy | undefined,
   semanticProfile: string,
+  serviceTaskBinding: ServiceTaskSourceBinding | null = null,
 ): ReadonlyArray<CheckedNode> | undefined {
   const projected = elements.map((source) => {
     const element = executedProjectionView(source, capability);
@@ -195,7 +206,9 @@ export function projectCheckedNodes(
           rootSelection.messageArtifacts,
         );
       case bpmnTypes.serviceTaskType:
-        return projectServiceTask(element, definitions, id);
+        return serviceTaskBinding === null
+          ? projectServiceTask(element, definitions, id)
+          : serviceTaskBinding.project(element, definitions);
       case bpmnTypes.taskType:
         return configuredTaskPolicy === undefined
           ? undefined

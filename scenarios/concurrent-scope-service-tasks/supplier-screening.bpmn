@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_SupplierOnboarding" targetNamespace="https://bpmn-lean.local/scenarios/concurrent-scope-service-tasks">
+  <bpmn:process id="Process_SupplierOnboarding" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SupplierProposed" name="Supplier proposed">
+      <bpmn:outgoing>Flow_ProposedToOnboard</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Onboard" name="Onboard supplier">
+      <bpmn:incoming>Flow_ProposedToOnboard</bpmn:incoming>
+      <bpmn:outgoing>Flow_OnboardToActivate</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_Onboard">
+        <bpmn:outgoing>Flow_OnboardToChecksFork</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="Gateway_ChecksFork" gatewayDirection="Diverging">
+        <bpmn:incoming>Flow_OnboardToChecksFork</bpmn:incoming>
+        <bpmn:outgoing>Flow_ChecksForkToScreenSanctions</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ChecksForkToVerifyBankAccount</bpmn:outgoing>
+        <bpmn:outgoing>Flow_ChecksForkToReviewContract</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:serviceTask id="ServiceTask_ScreenSanctions" name="Screen sanctions lists" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${sanctionsScreening}" camunda:asyncBefore="true">
+        <bpmn:incoming>Flow_ChecksForkToScreenSanctions</bpmn:incoming>
+        <bpmn:outgoing>Flow_ScreenSanctionsToChecksJoin</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="ServiceTask_VerifyBankAccount" name="Verify bank account" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${bankAccountVerification}" camunda:asyncBefore="true">
+        <bpmn:incoming>Flow_ChecksForkToVerifyBankAccount</bpmn:incoming>
+        <bpmn:outgoing>Flow_VerifyBankAccountToChecksJoin</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:userTask id="UserTask_ReviewContract" name="Review supplier contract">
+        <bpmn:incoming>Flow_ChecksForkToReviewContract</bpmn:incoming>
+        <bpmn:outgoing>Flow_ReviewContractToChecksJoin</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:parallelGateway id="Gateway_ChecksJoin" gatewayDirection="Converging">
+        <bpmn:incoming>Flow_ScreenSanctionsToChecksJoin</bpmn:incoming>
+        <bpmn:incoming>Flow_VerifyBankAccountToChecksJoin</bpmn:incoming>
+        <bpmn:incoming>Flow_ReviewContractToChecksJoin</bpmn:incoming>
+        <bpmn:outgoing>Flow_ChecksJoinToApproveSupplier</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="UserTask_ApproveSupplier" name="Approve supplier">
+        <bpmn:incoming>Flow_ChecksJoinToApproveSupplier</bpmn:incoming>
+        <bpmn:outgoing>Flow_ApproveSupplierToOnboarded</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_Onboarded">
+        <bpmn:incoming>Flow_ApproveSupplierToOnboarded</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_OnboardToChecksFork" sourceRef="StartEvent_Onboard" targetRef="Gateway_ChecksFork"/>
+      <bpmn:sequenceFlow id="Flow_ChecksForkToScreenSanctions" sourceRef="Gateway_ChecksFork" targetRef="ServiceTask_ScreenSanctions"/>
+      <bpmn:sequenceFlow id="Flow_ChecksForkToVerifyBankAccount" sourceRef="Gateway_ChecksFork" targetRef="ServiceTask_VerifyBankAccount"/>
+      <bpmn:sequenceFlow id="Flow_ChecksForkToReviewContract" sourceRef="Gateway_ChecksFork" targetRef="UserTask_ReviewContract"/>
+      <bpmn:sequenceFlow id="Flow_ScreenSanctionsToChecksJoin" sourceRef="ServiceTask_ScreenSanctions" targetRef="Gateway_ChecksJoin"/>
+      <bpmn:sequenceFlow id="Flow_VerifyBankAccountToChecksJoin" sourceRef="ServiceTask_VerifyBankAccount" targetRef="Gateway_ChecksJoin"/>
+      <bpmn:sequenceFlow id="Flow_ReviewContractToChecksJoin" sourceRef="UserTask_ReviewContract" targetRef="Gateway_ChecksJoin"/>
+      <bpmn:sequenceFlow id="Flow_ChecksJoinToApproveSupplier" sourceRef="Gateway_ChecksJoin" targetRef="UserTask_ApproveSupplier"/>
+      <bpmn:sequenceFlow id="Flow_ApproveSupplierToOnboarded" sourceRef="UserTask_ApproveSupplier" targetRef="EndEvent_Onboarded"/>
+    </bpmn:subProcess>
+    <bpmn:serviceTask id="ServiceTask_ActivateSupplier" name="Activate supplier in purchasing" implementation="urn:bpmn-lean:effect-protocol:activity-v1" camunda:delegateExpression="${supplierActivation}" camunda:asyncBefore="true">
+      <bpmn:incoming>Flow_OnboardToActivate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ActivateToActive</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_SupplierActive" name="Supplier active">
+      <bpmn:incoming>Flow_ActivateToActive</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ProposedToOnboard" sourceRef="StartEvent_SupplierProposed" targetRef="SubProcess_Onboard"/>
+    <bpmn:sequenceFlow id="Flow_OnboardToActivate" sourceRef="SubProcess_Onboard" targetRef="ServiceTask_ActivateSupplier"/>
+    <bpmn:sequenceFlow id="Flow_ActivateToActive" sourceRef="ServiceTask_ActivateSupplier" targetRef="EndEvent_SupplierActive"/>
+  </bpmn:process>
+</bpmn:definitions>

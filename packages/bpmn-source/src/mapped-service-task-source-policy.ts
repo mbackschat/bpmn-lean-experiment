@@ -53,7 +53,8 @@ export function selectMappedServiceTaskSourcePolicy(
   semanticProfile: string,
   overlay: AdmittedSourceOverlay | null,
 ): SourcePolicySelection {
-  if ((semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || semanticProfile === SemanticProfileId.PortableBusinessEffectData || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) {
+  if ((semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || semanticProfile === SemanticProfileId.PortableBusinessEffectData || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ||
+    semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     if (overlay === null || overlay.semanticProfile !== semanticProfile || overlay.inertAttributes.length > 0 ||
       overlay.effectBindings.length === 0 || hasDuplicateSourceBinding(overlay.effectBindings) ||
       !overlay.effectBindings.every(({ source, descriptor }) => isSerialBusinessIdentifier(descriptor.operation) &&

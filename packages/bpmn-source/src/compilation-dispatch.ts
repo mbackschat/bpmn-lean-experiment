@@ -1,5 +1,6 @@
 import { compileTransactionSourceCheckedProcess } from "./transaction-source.js";
 import { compileNestedScopeDataSource } from "./nested-scope-data-source.js";
+import { compileEmbeddedScopeSource } from "./embedded-scope-service-task-source.js";
 import { compileSequentialScopeSource } from "./multi-instance-scope-source-compiler.js";
 import { compileEffectDataSource, compileMixedTaskBusinessErrorSource, compileMixedTaskControlFlowSource, compileSerialBusinessTaskSource } from "./serial-business-task-source.js";
 import {
@@ -81,6 +82,7 @@ export const CompilationDispatchId = Object.freeze({
   SerialBusinessTasks: "serialBusinessTasks",
   PortableBusinessEffectData: "portableBusinessEffectData",
   NestedEmbeddedScopeData: "nestedEmbeddedScopeData",
+  EmbeddedScope: "embeddedScope",
   Generic: "generic",
   MappedSuccessServiceTask: "mappedSuccessServiceTask",
   MappedBoundaryErrorServiceTask: "mappedBoundaryErrorServiceTask",
@@ -135,6 +137,7 @@ export const compilationDispatches: ReadonlyArray<CompilationDispatch> =
     { id: CompilationDispatchId.SerialBusinessTasks, semanticProfile: SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID, reader: compileSerialBusinessTaskSource },
     { id: CompilationDispatchId.PortableBusinessEffectData, semanticProfile: SemanticProfileId.PortableBusinessEffectData, reader: compileEffectDataSource },
     { id: CompilationDispatchId.NestedEmbeddedScopeData, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, reader: compileNestedScopeDataSource },
+    { id: CompilationDispatchId.EmbeddedScope, semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, reader: compileEmbeddedScopeSource },
     { id: CompilationDispatchId.SequentialMultiInstanceSubProcess, semanticProfile: SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, reader: compileSequentialScopeSource },
     {
       id: CompilationDispatchId.MappedSuccessServiceTask,
@@ -337,6 +340,7 @@ export function compileDispatchedCheckedProcess(
     case CompilationDispatchId.SerialBusinessTasks:
     case CompilationDispatchId.PortableBusinessEffectData:
     case CompilationDispatchId.NestedEmbeddedScopeData:
+    case CompilationDispatchId.EmbeddedScope:
     case CompilationDispatchId.SequentialMultiInstanceSubProcess:
     case CompilationDispatchId.SequentialMultiInstanceUserTask:
     case CompilationDispatchId.ParallelMultiInstanceUserTask:
