@@ -6,3 +6,10 @@ This directory contains two exact BPMN 2.0.2 sources and their handler overlays 
 - The [claim intake source](claim-intake.bpmn) collects a police report and fetches the policy record in parallel. Both branches merge into their own Assess evidence item occurrence, whose Price damage Service Task runs before Confirm assessment, so two Price damage effects of one element are open at once. Its [handler overlay](claim-intake-handlers.json) binds the two named handlers.
 
 The focused [source and journey test](../../packages/bpmn-source/test/concurrent-scope-service-tasks-source.test.ts) drives both journeys through the semantic core in both effect orders, rejects a stale and a never-armed effect completion, and locks the refused source mutations.
+
+Four answer-free schedules are registered as standards-only pipeline cases, each with one seeded mutation. Their effect completions carry content-bound command IDs, so the Temporal run releases each concurrent Activity result in the scenario's order:
+
+- [Supplier, review first](supplier-review-first.scenario.json) completes the contract review, then sanctions screening, then bank verification. Its mutation opens Approve supplier after the review and one effect, as a premature join would.
+- [Supplier, effects first](supplier-effects-first.scenario.json) completes both effects in reverse order before the review. Its mutation opens Approve supplier while the review is still open.
+- [Claim, Price damage 2 first](claim-price-two-first.scenario.json) completes the second Assess occurrence's Price damage while the first one's stays open. Its mutation applies that completion to the other activation.
+- [Claim, policy first](claim-fetch-first.scenario.json) fetches the policy before the police report and completes the first Assess occurrence while the second owns only its Price damage wait. Its mutation opens Settle claim at that point, as quiescence that ignored effect waits would.

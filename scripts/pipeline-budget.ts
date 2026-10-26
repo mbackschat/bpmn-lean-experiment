@@ -67,7 +67,7 @@ export function leanDriverBatchTimeoutMsFor(caseCount: number): number {
  * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
  * intact and must keep the hosted CI budget at least 50% above it.
  */
-export const defaultWarmBudgetMs = 172_900;
+export const defaultWarmBudgetMs = 178_100;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.

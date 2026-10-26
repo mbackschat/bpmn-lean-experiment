@@ -1,0 +1,124 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-scope-effects-claim-price-two-first",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "claim-intake",
+    "relativePath": "scenarios/concurrent-scope-service-tasks/claim-intake.bpmn",
+    "sha256": "e7b930e7a73ee1b82327556d0f08f1b242a04dc9654cc8e1f7b5e83a98a239d6",
+    "sourceOverlay": {
+      "id": "claim-intake-handlers",
+      "sha256": "656118dde8b2bb3e02db03072dbb92ccad56d817ba09a482ace0990eaf362f29"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ClaimIntake",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-police-report",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CollectPoliceReport",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_FetchPolicy",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_PriceDamage",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-assessment",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ConfirmAssessment",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_PriceDamage",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-assessment-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ConfirmAssessment",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-settle-claim",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_SettleClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.3",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 §13.4.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
