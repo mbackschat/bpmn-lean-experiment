@@ -87,17 +87,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select and propose batch 2's next family ([batch order](#scheduled-delivery-batches)): concurrent host-driven waits, a Service Task effect live beside other Parallel branches, for the effect remainders of `PC-SCOPE-01` (mixed automated activities) and `PC-SCOPE-02` (effect lifetimes) and the automated branches of `PC-CF-03`; [host admission](../packages/temporal-adapter/protocol/src/host-admission.ts) refuses that composition today (`ConcurrentHostDrivenWaits`), and every effect-admitting profile is a serial chain ([profile admission](PROFILE-PARAMETERIZED-ADMISSION-SPEC.md)). Multi-Instance closure stays held at qualification.
+Current task: implement batch 2's concurrent scope Service Task family under its approved [proposal](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md), serving the effect remainders of `PC-SCOPE-01` and `PC-SCOPE-02` and the automated branches of `PC-CF-03`. Multi-Instance closure stays held at qualification.
 
-Deliverable: the family proposal, including its [Temporal hosting/refinement preflight](PROJECT-DESIGN.md#temporal-hostingrefinement-preflight), committed under `docs/capsules/` as its governed owner.
+Deliverable: the admitted, hosted family with its retained models, Lean laws, pipeline agreement and Temporal recovery witness, as the proposal's acceptance states.
 
 Acceptance blockers: none recorded; the build-speed deliverable met its acceptance (72 ordinary replayed commits rebuild a median of 3.5 library modules), and the two pipeline performance findings recorded at `c8f6c2ea` are fixed (`88489964` batches Temporal runs without an effect schedule; `7416f142` and `81dcc0a7` cut the guarantor Start capacity envelope from 15.8 s to 2.4 s with byte-identical estimates).
 
-Current result: the [concurrent scope Service Tasks proposal](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-PROPOSAL.md) is drafted; its cold proposal review returned required edits, now corrected and awaiting the same reviewer's audit.
+Current result: proposal approved (receipt in the capsule); no implementation yet.
 
-Effort budget: 4 hours from 2026-10-26 14:30 UTC for the proposal.
+Effort budget: 24 hours of working time from 2026-10-26 16:30 UTC for implementation through closure; stop and reassess at the limit.
 
-Next action: obtain the correction audit, record the receipt, then implement red/green from the TypeScript admission owner outward.
+Next action: implement red/green from the TypeScript admission owner outward, then source dispatch, Lean arms and laws, hosting, scenarios and the recovery witness.
 
 Oracle: an effect result that settles a different branch's wait, or a Parallel join released before every branch effect commits.
 
