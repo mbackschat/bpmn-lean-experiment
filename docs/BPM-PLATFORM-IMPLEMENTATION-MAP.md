@@ -80,7 +80,7 @@ The RC acceptance-host repair is classified non-material: it applies the existin
 - recovery of legacy engine instances that predate the confirmed-start publication contract
 - BPMN diagram editing, a public raw-sidecar format, automatic layout for multiple root Processes, collaborations, Call Activities without complete source DI, groups, annotations, Data Store References, or multi-source Data Associations
 - Conversation `messageFlowRef` parsing in the private Product 2 diagram parser: its pinned upstream descriptor still uses the plural property. The admitted correlation model has no source DI and its selected Triggers journey claims no diagram; the semantic compiler's existing correction and execution remain independent.
-- a race-free teardown of [the overlay-upgrade PostgreSQL test](../platform/apps/server/test/postgresql/postgresql-definition-overlay-upgrade.test.ts): on 2026-10-24 (run 40107006304, `d05ad9eb`, no platform input changed since a green `ce2c3715`) its forced database drop terminated a connection still open after `runtime.close()`, whose client had no error listener, failing the file after its test passed; a rerun of the same SHA passed. The owning client is unidentified; the migration runner and the runtime pool both close before the drop.
+- a [PostgreSQL runtime](../platform/foundation/postgresql-runtime/src/postgresql-runtime.ts) `close()` that waits for disconnection: pg-pool 3.14's `end()` resolves before its clients disconnect (source reading, not reproduced locally). The pool error listener absorbs a later server termination, which caused the overlay-upgrade suite's teardown failures in hosted runs 40107006304 and 40328497613.
 
 ## Evidence owners
 

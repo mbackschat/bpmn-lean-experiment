@@ -101,3 +101,57 @@ test(
     }
   },
 );
+
+// Locks the overlay-upgrade suite's teardown failure (hosted runs 40107006304 and 40328497613): without a pool
+// error listener, the server ending an idle pooled connection escapes as an uncaught exception, which fails this file.
+test(
+  "absorbs the server ending an idle pooled connection",
+  { skip: baseUrl === undefined ? "BPMN_TEST_POSTGRES_URL is not set" : false },
+  async () => {
+    await withProbeRuntime(async ({ runtime, admin, applicationName, liveBackends }) => {
+      await runtime.query({ text: "SELECT 1" });
+      const terminated = await admin.query(
+        "SELECT pg_terminate_backend(pid) AS terminated FROM pg_stat_activity WHERE application_name = $1",
+        [applicationName],
+      );
+      assert.deepEqual(terminated.rows, [{ terminated: true }]);
+      await runtime.close();
+      assert.equal(await liveBackends(), 0);
+    });
+  },
+);
+
+async function withProbeRuntime(
+  run: (probe: Readonly<{
+    runtime: ReturnType<typeof createPostgresqlRuntime>;
+    admin: pg.Client;
+    applicationName: string;
+    liveBackends: () => Promise<number>;
+  }>) => Promise<void>,
+): Promise<void> {
+  assert.ok(baseUrl !== undefined);
+  const applicationName = `bpmn-runtime-close-${randomUUID()}`;
+  const admin = new pg.Client({ connectionString: baseUrl });
+  await admin.connect();
+  const runtime = createPostgresqlRuntime({
+    connectionString: baseUrl,
+    applicationName,
+    maxConnections: 2,
+    connectionTimeoutMs: 2_000,
+    idleTimeoutMs: 10_000,
+    queryTimeoutMs: 2_000,
+    statementTimeoutMs: 2_000,
+    lockTimeoutMs: 2_000,
+    idleInTransactionSessionTimeoutMs: 2_000,
+  });
+  const liveBackends = async (): Promise<number> => (await admin.query<{ count: number }>(
+    "SELECT count(*)::int AS count FROM pg_stat_activity WHERE application_name = $1",
+    [applicationName],
+  )).rows[0]?.count ?? -1;
+  try {
+    await run({ runtime, admin, applicationName, liveBackends });
+  } finally {
+    await runtime.close();
+    await admin.end();
+  }
+}

@@ -78,20 +78,24 @@ export function createPostgresqlRuntime(
   options: PostgresqlRuntimeOptions,
 ): PostgresqlRuntime {
   validateOptions(options);
-  return createPostgresqlRuntimeWithPool(
-    new pg.Pool({
-      connectionString: options.connectionString,
-      application_name: options.applicationName,
-      max: options.maxConnections,
-      connectionTimeoutMillis: options.connectionTimeoutMs,
-      idleTimeoutMillis: options.idleTimeoutMs,
-      query_timeout: options.queryTimeoutMs,
-      statement_timeout: options.statementTimeoutMs,
-      lock_timeout: options.lockTimeoutMs,
-      idle_in_transaction_session_timeout:
-        options.idleInTransactionSessionTimeoutMs,
-    }),
-  );
+  const pool = new pg.Pool({
+    connectionString: options.connectionString,
+    application_name: options.applicationName,
+    max: options.maxConnections,
+    connectionTimeoutMillis: options.connectionTimeoutMs,
+    idleTimeoutMillis: options.idleTimeoutMs,
+    query_timeout: options.queryTimeoutMs,
+    statement_timeout: options.statementTimeoutMs,
+    lock_timeout: options.lockTimeoutMs,
+    idle_in_transaction_session_timeout:
+      options.idleInTransactionSessionTimeoutMs,
+  });
+  // pg-pool re-emits an idle connection's error on the pool after it has discarded that client, and an
+  // unhandled 'error' event is an uncaught exception: a database restart, failover or forced drop would end
+  // the process. The next query opens a fresh connection, and a checked-out client's error reaches its
+  // caller's query instead, so this event has nothing left to recover.
+  pool.on("error", () => undefined);
+  return createPostgresqlRuntimeWithPool(pool);
 }
 
 class PoolBackedPostgresqlRuntime implements PostgresqlRuntime {
