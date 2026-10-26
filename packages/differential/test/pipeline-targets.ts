@@ -94,37 +94,18 @@ export async function runTemporalTargets(
         },
       ],
     );
-  const executions = new Array<
-    TemporalScenarioExecution | undefined
-  >(items.length);
-  const ordinaryEntries = items
-    .map((item, index) => ({ item, index }))
-    .filter(
-      ({ item }) =>
-        item.options.effectExecutionSchedule === undefined,
-    );
-  const effectEntries = items
-    .map((item, index) => ({ item, index }))
-    .filter(
-      ({ item }) =>
-        item.options.effectExecutionSchedule !== undefined,
-    );
-  const ordinaryPromise = runner.runScenarios(
-    ordinaryEntries.map(({ item }) => item),
-  );
-  // The two same-intent schedules deliberately use isolated stores. Running
-  // them sequentially avoids inventing a host execution ID in EffectRequest
-  // merely to route concurrent harness registrations for the same key.
-  for (const { item, index } of effectEntries) {
-    executions[index] = await runner.runScenario(
+  // Every run executes one at a time. Concurrent batches broke timing-dependent cases on the shared
+  // Temporal server: ordered-effect Activities missed their 5 s start deadline (hosted runs 40336067821
+  // and 40338683649), and bounded-deadline races and 10 s wait-state observations failed locally
+  // (2026-10-26). Effect runs must stay serial regardless, because a case's primary and isolation runs
+  // register the same transport keys in the runner's one probe registry.
+  const executions: TemporalScenarioExecution[] = [];
+  for (const item of items) {
+    executions.push(await runner.runScenario(
       item.scenario,
       item.semanticProcess,
       item.options,
-    );
-  }
-  const ordinaryExecutions = await ordinaryPromise;
-  for (const [ordinaryIndex, { index }] of ordinaryEntries.entries()) {
-    executions[index] = ordinaryExecutions[ordinaryIndex];
+    ));
   }
   const results = new Map<string, TemporalCaseExecution>();
   // Every target batch is keyed by scenario identity, because the comparison layer reads all of them
