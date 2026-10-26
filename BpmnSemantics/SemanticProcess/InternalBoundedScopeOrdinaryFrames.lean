@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames

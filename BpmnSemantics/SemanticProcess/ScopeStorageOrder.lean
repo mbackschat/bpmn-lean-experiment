@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder

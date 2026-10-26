@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRuntimePreservation
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation

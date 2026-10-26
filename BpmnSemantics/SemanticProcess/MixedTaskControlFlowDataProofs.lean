@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs

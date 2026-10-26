@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws

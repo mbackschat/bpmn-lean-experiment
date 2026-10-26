@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 

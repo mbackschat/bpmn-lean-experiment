@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies

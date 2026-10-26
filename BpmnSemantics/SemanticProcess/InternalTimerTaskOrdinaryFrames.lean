@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming

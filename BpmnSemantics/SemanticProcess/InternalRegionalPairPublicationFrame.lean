@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalPairFootprintFrame
 import BpmnSemantics.SemanticProcess.InternalRegionalPairSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalPairLifecycleFrame

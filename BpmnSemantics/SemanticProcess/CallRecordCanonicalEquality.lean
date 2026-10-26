@@ -3,7 +3,9 @@ module
 import all BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
-public import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
+public import BpmnSemantics.SemanticProcess.CallActivity
+public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 
 /-! Exact canonical Call storage requires the unique caller/element anchors of the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).

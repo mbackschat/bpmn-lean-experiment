@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitAnchorFreshnessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterHistoryProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws

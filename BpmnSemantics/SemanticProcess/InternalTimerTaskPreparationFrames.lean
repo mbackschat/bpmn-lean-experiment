@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTimerTaskCommutation
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies

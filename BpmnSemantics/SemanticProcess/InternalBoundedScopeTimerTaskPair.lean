@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTimerTaskScopeFrames
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation

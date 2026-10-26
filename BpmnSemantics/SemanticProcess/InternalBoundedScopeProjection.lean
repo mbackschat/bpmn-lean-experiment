@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
