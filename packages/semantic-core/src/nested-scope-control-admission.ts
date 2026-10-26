@@ -9,6 +9,7 @@ import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { ParallelBodyNodeKind as Kind } from "./structured-parallel-body-analysis.js";
 import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
 import { RawBodyNodeKind, contractMergeRegions, multiplicityWeightedExtra } from "./merge-region-admission.js";
+import { serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
 import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 
@@ -22,12 +23,18 @@ import type { DefinitionScope } from "./semantic-value-contract.js";
  * CALLN-ADMIT-01 adds Process-root Calls: a Call is a task vertex of the caller root whose called Process body, a serial
  * chain, is expanded once per call site below it, so the burst composition and the task bound see the call tree exactly
  * as a Sub-Process tree.
+ *
+ * CSE-ADMIT-01 makes a data-free, overlay-bound Service Task a task wherever a User Task is one, except in a called body
+ * or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task list that drives the bursts,
+ * the task bound and the merge-target check.
  */
 
 /** Definition depth of the deepest admitted Sub-Process body below the root. */
 const depthLimit = 3;
 /** Concurrent-wait ceiling shared with the parallel Multi-Instance capacity account. */
-const userTaskLimit = 128;
+const taskLimit = 128;
+/** CSE-ADMIT-01: the concurrent-Activity ceiling of the hosting preflight, multiplicity-weighted like the task bound. */
+const serviceTaskLimit = 32;
 /** Call nesting below the caller root, a Call in the caller being depth one (CALLN-ADMIT-01). */
 const callDepthLimit = 3;
 /** The vertices of a called Process body between its None Start and None End (CALLN-ADMIT-01). */
@@ -40,7 +47,9 @@ type RawBody = Readonly<{
   children: ReadonlyMap<string, string>;
   /** The called Process root scope of every Call vertex of this body. */
   calls: ReadonlyMap<string, string>;
-  userTasks: readonly string[];
+  /** User and Service Task vertices; Service Tasks are also listed in `serviceTasks`. */
+  tasks: readonly string[];
+  serviceTasks: readonly string[];
 }>;
 
 type Body = Omit<RawBody, "nodes"> & Readonly<{ nodes: readonly ParallelBodyNode[]; regions: readonly MergeRegion[] }>;
@@ -56,12 +65,12 @@ function contractBodies(raw: ReadonlyMap<string, RawBody> | null): Map<string, B
   return bodies;
 }
 
-/** A merge target's body is a serial chain of User Tasks; it owns no Sub-Process, gateway or region. */
+/** A merge target's body is a serial chain of tasks; it owns no Sub-Process, gateway or region. */
 function serialTargetBody(body: Body | undefined): body is Body {
   return body !== undefined && body.children.size === 0 && body.calls.size === 0 && body.regions.length === 0 &&
-    body.userTasks.length > 0 &&
+    body.tasks.length > 0 &&
     body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task) &&
-    body.nodes.filter(({ kind }) => kind === Kind.Task).length === body.userTasks.length;
+    body.nodes.filter(({ kind }) => kind === Kind.Task).length === body.tasks.length;
 }
 
 type Tree = Readonly<{ root: string; bodies: ReadonlyMap<string, Body>; parent: ReadonlyMap<string, Readonly<{ scope: string; vertex: string }>> }>;
@@ -82,7 +91,7 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
 
 /** Validates the scope tree and every body, returning the tree with its per-body scans. */
 function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, callsRoot: boolean):
-  Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number }> | null {
+  Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number; weightedServiceTasks: number }> | null {
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   // Equal sizes alone admit a body in an undeclared scope beside a declared scope without one.
   if (roots.length !== 1 || bodies.size !== scopes.length || !scopes.every(({ id }) => bodies.has(id))) return null;
@@ -116,24 +125,28 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
       rootBody.regions.length > 0 || [...bodies.values()].some(body => body.scope !== root && body.calls.size > 0)) return null;
   const regions = [...bodies.values()].flatMap(({ regions }) => regions);
   if (!regions.every(({ targetScope }) => serialTargetBody(bodies.get(targetScope)))) return null;
-  // CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output.
-  const weighted = [...bodies.values()].reduce((count, body) => count + body.userTasks.length, 0) +
-    regions.reduce((extra, region) => extra + multiplicityWeightedExtra(region, bodies.get(region.targetScope)!.userTasks.length), 0);
+  // CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output; CSE-ADMIT-01 weights
+  // Service Tasks the same way against their own bound.
+  const weight = (listed: (body: Body) => readonly string[]): number =>
+    [...bodies.values()].reduce((count, body) => count + listed(body).length + body.regions.reduce((extra, region) =>
+      extra + multiplicityWeightedExtra(region, listed(bodies.get(region.targetScope)!).length,
+        task => listed(body).includes(task)), 0), 0);
   const scans = new Map<string, ParallelBodyScans>();
   for (const body of bodies.values()) {
     const scan = parallelBodyScans(body.nodes);
     if (scan === undefined || !branchesStartWithWork(body.nodes)) return null;
     scans.set(body.scope, scan);
   }
-  return { tree: { root, bodies, parent }, scans, weightedTasks: weighted };
+  return { tree: { root, bodies, parent }, scans, weightedTasks: weight(({ tasks }) => tasks),
+    weightedServiceTasks: weight(({ serviceTasks }) => serviceTasks) };
 }
 
-/** A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01). */
+/** A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01, CSE-ADMIT-01). */
 function serialCalledBody(body: Body | undefined): body is Body {
   const vertices = body?.nodes.filter(({ kind }) => kind === Kind.Task) ?? [];
   return body !== undefined && body.children.size === 0 && body.regions.length === 0 &&
     vertices.length >= 1 && vertices.length <= calledBodyVertexLimit &&
-    vertices.length === body.userTasks.length + body.calls.size &&
+    body.serviceTasks.length === 0 && vertices.length === body.tasks.length + body.calls.size &&
     body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task);
 }
 
@@ -197,7 +210,7 @@ function expandCalls(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>, 
       if (depth > callDepthLimit || calledBody === undefined) return false;
       const site = `${key}>${vertex}`;
       reached.add(definition);
-      calledTasks += calledBody.userTasks.length;
+      calledTasks += calledBody.tasks.length;
       children.set(vertex, site);
       parent.set(site, { scope: key, vertex });
       allScans.set(site, calledScans.get(definition)!);
@@ -307,7 +320,7 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
   const leaveTarget = (scope: string, region: MergeRegion): number =>
     2 + (region.after.length > 0 ? 1 : resume(scope, region.vertex));
   const regionTasks = (scope: string, region: MergeRegion): readonly number[] => {
-    const targetTasks = tree.bodies.get(region.targetScope)!.userTasks;
+    const targetTasks = tree.bodies.get(region.targetScope)!.tasks;
     return [
       ...region.branches.flatMap(branch => branch.map((_, index) => index + 1 < branch.length ? 1 : 3)),
       ...targetTasks.map((_, index) => index + 1 < targetTasks.length ? 1 : leaveTarget(scope, region)),
@@ -320,7 +333,7 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
   for (const body of tree.bodies.values()) {
     const inRegion = new Set(body.regions.flatMap(({ branches, after }) => [...branches.flat(), ...after]));
     if (!targets.has(body.scope)) {
-      for (const task of body.userTasks) if (!inRegion.has(task)) maximum = Math.max(maximum, resume(body.scope, task));
+      for (const task of body.tasks) if (!inRegion.has(task)) maximum = Math.max(maximum, resume(body.scope, task));
     }
     for (const region of body.regions) maximum = Math.max(maximum, ...regionTasks(body.scope, region));
   }
@@ -333,9 +346,11 @@ function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<stri
   const forest = splitForest(scopes, bodies);
   if (forest === null) return null;
   const analyzed = analyzeTree(forest.scopes, forest.bodies, forest.called.size > 0);
-  if (analyzed === null) return null;
+  // CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
+  if (analyzed === null || analyzed.weightedServiceTasks > serviceTaskLimit ||
+      (forest.called.size > 0 && analyzed.weightedServiceTasks > 0)) return null;
   const expanded = expandCalls(analyzed.tree, analyzed.scans, forest.called);
-  if (expanded === null || analyzed.weightedTasks + expanded.calledTasks > userTaskLimit ||
+  if (expanded === null || analyzed.weightedTasks + expanded.calledTasks > taskLimit ||
       !invokesEachDefinitionOnce(expanded) || !sharesNoCallBearingDefinition(expanded, forest.called)) return null;
   const burst = maximumBurst(expanded.tree, expanded.scans);
   return burst <= semanticProcessClosureLimit ? burst : null;
@@ -358,11 +373,19 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   flows: readonly CheckedSequenceFlow[];
 }>;
 
+/** CSE-ADMIT-01: no mapping, no Error route, and the serial business-task Activity descriptor. */
+function dataFreeServiceTask(effect: Readonly<{ inputMappings: readonly unknown[]; outputMappings: readonly unknown[] }>,
+  bpmnErrorRoute: unknown): boolean {
+  return effect.inputMappings.length === 0 && effect.outputMappings.length === 0 && bpmnErrorRoute === null &&
+    serialBusinessEffectAdmitted(effect);
+}
+
 function checkedKind(node: CheckedNode): RawBodyNodeKind | null {
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
+    case CheckedNodeKind.ServiceTask: return dataFreeServiceTask(node, node.bpmnErrorRoute) ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.EmbeddedSubProcess: return RawBodyNodeKind.Task;
     case CheckedNodeKind.CallActivity: return node.data.kind === CallDataKind.Empty ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.ExclusiveMerge: return RawBodyNodeKind.Merge;
@@ -400,8 +423,9 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, RawBo
       }
       vertices.push({ id: node.id, kind, outputs: graph.flows.filter(({ sourceId }) => sourceId === node.id).map(({ targetId }) => targetId) });
     }
-    bodies.set(scope, { scope, nodes: vertices, children, calls,
-      userTasks: nodes.filter(({ kind }) => kind === CheckedNodeKind.UserTask).map(({ id }) => id) });
+    const serviceTasks = nodes.filter(({ kind }) => kind === CheckedNodeKind.ServiceTask).map(({ id }) => id);
+    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks,
+      tasks: [...nodes.filter(({ kind }) => kind === CheckedNodeKind.UserTask).map(({ id }) => id), ...serviceTasks] });
   }
   return bodies;
 }
@@ -416,6 +440,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
     case SemanticOperationKind.AwaitUserTask:
+    case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
@@ -471,6 +496,10 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
         case SemanticOperationKind.Initiate: kind = RawBodyNodeKind.Start; outputs = follow([operation.output]); break;
         case SemanticOperationKind.AwaitUserTask:
           kind = RawBodyNodeKind.Task; outputs = operation.task.metadata === undefined ? follow([operation.output]) : null; break;
+        case SemanticOperationKind.AwaitEffect:
+          kind = RawBodyNodeKind.Task;
+          outputs = dataFreeServiceTask(operation.effect, operation.bpmnErrorRoute) ? follow([operation.output]) : null;
+          break;
         case SemanticOperationKind.Duplicate: kind = RawBodyNodeKind.Fork; outputs = follow(operation.outputs); break;
         case SemanticOperationKind.Synchronize: kind = RawBodyNodeKind.Join; outputs = follow([operation.output]); break;
         case SemanticOperationKind.MergeExclusive: kind = RawBodyNodeKind.Merge; outputs = follow([operation.output]); break;
@@ -498,8 +527,9 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
       if (outputs === null) return null;
       vertices.push({ id: operation.id, kind, outputs });
     }
-    bodies.set(scope, { scope, nodes: vertices, children, calls,
-      userTasks: members.filter(({ kind }) => kind === SemanticOperationKind.AwaitUserTask).map(({ id }) => id) });
+    const serviceTasks = members.filter(({ kind }) => kind === SemanticOperationKind.AwaitEffect).map(({ id }) => id);
+    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks,
+      tasks: [...members.filter(({ kind }) => kind === SemanticOperationKind.AwaitUserTask).map(({ id }) => id), ...serviceTasks] });
   }
   // Every return pairs with exactly one invocation, so no called root completes without a caller to continue.
   const invokes = operations.filter(({ kind }) => kind === SemanticOperationKind.InvokeProcess);
@@ -530,7 +560,9 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
 
 /** NSC-ADMIT-01 over the Program, independent of the checked graph; `null` refuses it. */
 export function nestedScopeControlProgramAnalysis(program: SemanticProcessProgram): number | null {
-  if (program.identity.sourceOverlay !== null ||
+  // CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it has an effect.
+  const hasEffect = program.operations.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
+  if ((program.identity.sourceOverlay !== null) !== hasEffect ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
       program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined ||
@@ -546,13 +578,13 @@ const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
   SemanticOperationKind.Initiate, SemanticOperationKind.EnterScope, SemanticOperationKind.AwaitUserTask,
   SemanticOperationKind.Duplicate, SemanticOperationKind.Synchronize, SemanticOperationKind.ReachNoneEnd,
   SemanticOperationKind.CompleteScope, SemanticOperationKind.MergeExclusive, SemanticOperationKind.InvokeProcess,
-  SemanticOperationKind.ReturnProcess,
+  SemanticOperationKind.ReturnProcess, SemanticOperationKind.AwaitEffect,
 ]);
 
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
   CheckedNodeKind.ParallelGateway, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.ExclusiveMerge,
-  CheckedNodeKind.CallActivity,
+  CheckedNodeKind.CallActivity, CheckedNodeKind.ServiceTask,
 ]);
 
 /** The operation alphabet and the lower scope bound; the analyses above bound depth, tasks and bursts. */

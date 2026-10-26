@@ -109,7 +109,7 @@ export function contractMergeRegions(nodes: readonly RawBodyNode[], children: Re
   return { nodes: contracted, regions };
 }
 
-/** Tasks that run once per fork output: the target body's and those after the target. */
-export function multiplicityWeightedExtra(region: MergeRegion, targetTasks: number): number {
-  return (region.branches.length - 1) * (targetTasks + region.after.length);
+/** Counted tasks that run once per fork output: the target body's and those after the target that `counted` selects. */
+export function multiplicityWeightedExtra(region: MergeRegion, targetTasks: number, counted: (task: string) => boolean): number {
+  return (region.branches.length - 1) * (targetTasks + region.after.filter(counted).length);
 }
