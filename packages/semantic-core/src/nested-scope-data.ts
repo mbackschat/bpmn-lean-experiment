@@ -1,10 +1,13 @@
 import type { EffectOccurrenceId, VariableBinding, VariableValue } from "./contract.js";
-import { EffectMappingValuePolicy, effectMappingAcceptsValue } from "./effect-mapping-value-policy.js";
+import { effectMappingAcceptsValue, effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
+import type { EffectMappingValuePolicy } from "./effect-mapping-value-policy.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { VariableMappingCallData } from "./call-data-contract.js";
 import { mergeProcessVariableBindings, projectActivityVariableScopeResultUnder } from "./semantic-process-data.js";
 import { SemanticOperationKind as SemanticOperationKindValue } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticOperationKind, SemanticProcessProgram } from "./semantic-process-contract.js";
+import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
+import type { DataGateProgram } from "./scope-data-bearing.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { compareScopeOccurrenceIds, sameScopeOccurrence } from "./semantic-process-state.js";
 import type {
@@ -25,13 +28,15 @@ import { compareCanonicalStrings } from "./wire.js";
  * the Program, the live occurrences and the scoped variables, matching the independent Lean account in `NestedScopeData`.
  */
 
-const itemPolicy = EffectMappingValuePolicy.SingletonBusinessItem;
-
 /** NSD-TASK-01: one value allowance, the per-value limit of the portable value contract. */
 export const nestedScopePatchByteLimit = 16_384;
 
-export function nestedScopeDataProgram(program: Pick<SemanticProcessProgram, "identity">): boolean {
-  return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+/**
+ * The nested scope-data profile, and a data-bearing Program of the embedded completion profile, whose frames resolve by
+ * the same occurrence chain; every value check takes that Program's effect policy.
+ */
+export function nestedScopeDataProgram(program: DataGateProgram): boolean {
+  return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData || embeddedScopeDataBearing(program);
 }
 
 /** Only the nested profile consults its table; admission separately refuses a table under any other profile. */
@@ -114,10 +119,10 @@ function resolveOwner(program: SemanticProcessProgram, occurrences: readonly Run
   return selectFrame(variables, root) === undefined ? null : { kind: "calledRoot", owner: root };
 }
 
-function uniqueValue(bindings: readonly VariableBinding[], name: string): VariableValue | undefined {
+function uniqueValue(policy: EffectMappingValuePolicy, bindings: readonly VariableBinding[], name: string): VariableValue | undefined {
   const matching = bindings.filter(binding => binding.name === name);
   const value = matching.length === 1 ? matching[0]!.value : undefined;
-  return value !== undefined && effectMappingAcceptsValue(itemPolicy, value, true) ? value : undefined;
+  return value !== undefined && effectMappingAcceptsValue(policy, value, true) ? value : undefined;
 }
 
 function selectFrame(variables: ScopedVariables, owner: ScopeOccurrenceId): ScopeVariableScope | undefined {
@@ -144,12 +149,13 @@ export type NestedScopeRead =
 const absent = { kind: NestedScopeReadKind.Absent } as const;
 const refused = { kind: NestedScopeReadKind.Refused } as const;
 
-/** One name of one binding list: absent when unbound, refused when repeated or outside the item domain. */
-export function readBindingOutcome(bindings: readonly VariableBinding[], name: string): NestedScopeRead {
+/** One name of one binding list: absent when unbound, refused when repeated or outside the Program's value domain. */
+export function readBindingOutcome(policy: EffectMappingValuePolicy, bindings: readonly VariableBinding[],
+  name: string): NestedScopeRead {
   const matching = bindings.filter(binding => binding.name === name);
   if (matching.length === 0) return absent;
   const value = matching.length === 1 ? matching[0]!.value : undefined;
-  return value !== undefined && effectMappingAcceptsValue(itemPolicy, value, true)
+  return value !== undefined && effectMappingAcceptsValue(policy, value, true)
     ? { kind: NestedScopeReadKind.Present, value } : refused;
 }
 
@@ -159,11 +165,11 @@ export function resolveNestedScopeRead(program: SemanticProcessProgram, occurren
   const owner = resolveOwner(program, occurrences, variables, reader, name);
   if (owner === null) return refused;
   switch (owner.kind) {
-    case "process": return readBindingOutcome(variables.process.bindings, name);
+    case "process": return readBindingOutcome(effectMappingValuePolicyForProgram(program), variables.process.bindings, name);
     case "calledRoot": return absent;
     case "frame": {
       const frame = selectFrame(variables, owner.owner);
-      return frame === undefined ? refused : readBindingOutcome(frame.bindings, name);
+      return frame === undefined ? refused : readBindingOutcome(effectMappingValuePolicyForProgram(program), frame.bindings, name);
     }
   }
 }
@@ -274,7 +280,7 @@ export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: 
   const values: VariableBinding[] = [];
   for (const mapping of record.localOutputs) {
     if (mapping.expression.kind !== MappingExpressionKind.LocalVariable) return null;
-    const value = uniqueValue(frame.bindings, mapping.expression.name);
+    const value = uniqueValue(effectMappingValuePolicyForProgram(program), frame.bindings, mapping.expression.name);
     if (value === undefined) return null;
     values.push(cloneVariableBinding({ name: mapping.target, value }));
   }
@@ -302,7 +308,7 @@ export function nestedScopeFramesValid(program: SemanticProcessProgram, state: R
       const names = frame.bindings.map(binding => binding.name);
       return new Set(names).size === names.length && names.length === record.localInputs.length &&
         record.localInputs.every(input => names.includes(input.target)) &&
-        frame.bindings.every(binding => effectMappingAcceptsValue(itemPolicy, binding.value, true));
+        frame.bindings.every(binding => effectMappingAcceptsValue(effectMappingValuePolicyForProgram(program), binding.value, true));
     });
 }
 
@@ -319,7 +325,7 @@ function calledRootFrameValid(program: SemanticProcessProgram, state: RuntimeSta
   const allowed = calledRootPatchNames(data);
   return new Set(names).size === names.length && data.inputs.every(({ target }) => names.includes(target)) &&
     names.every(name => allowed.has(name)) &&
-    frame.bindings.every(binding => effectMappingAcceptsValue(itemPolicy, binding.value, true));
+    frame.bindings.every(binding => effectMappingAcceptsValue(effectMappingValuePolicyForProgram(program), binding.value, true));
 }
 
 /** CVM-TASK-01: the names a called-root frame may hold, the input targets and the output sources. */
@@ -371,7 +377,7 @@ export function nestedScopePatchAdmitted(program: SemanticProcessProgram, state:
   owner: ScopeOccurrenceId, patch: readonly VariableBinding[]): boolean {
   const declared = nestedScopeDeclaredNames(program, state, owner);
   if (!patch.every((binding, index) => index === 0 || compareCanonicalStrings(patch[index - 1]!.name, binding.name) < 0) ||
-      !patch.every(binding => declared.has(binding.name) && effectMappingAcceptsValue(itemPolicy, binding.value, true))) {
+      !patch.every(binding => declared.has(binding.name) && effectMappingAcceptsValue(effectMappingValuePolicyForProgram(program), binding.value, true))) {
     return false;
   }
   const entries = [];
@@ -391,7 +397,7 @@ export function completeNestedScopeEffectData(program: SemanticProcessProgram,
   wait: Readonly<{ id: EffectOccurrenceId; owner: ScopeOccurrenceId; outputMappings: readonly VariableMapping[] }>,
   localPatch: readonly VariableBinding[]): ScopedVariables | null {
   if (wait.id.processInstanceId !== wait.owner.processInstanceId) return null;
-  const projected = projectActivityVariableScopeResultUnder(itemPolicy, variables, wait.id, wait.outputMappings,
+  const projected = projectActivityVariableScopeResultUnder(effectMappingValuePolicyForProgram(program), variables, wait.id, wait.outputMappings,
     localPatch, true);
   return projected === null ? null : writeNestedScopeVariables(program, occurrences, projected.variables, wait.owner,
     projected.outputs);

@@ -13,7 +13,9 @@ import {
   isVariablePatch,
   runtimeStateCarriesOnlyProfilePortableValues,
 } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, VariableBinding } from "@bpmn-lean/semantic-core";
+import type { DataGateProgram, RuntimeState, VariableBinding } from "@bpmn-lean/semantic-core";
+const gateProgram = (semanticProfile: string): DataGateProgram =>
+  ({ identity: { semanticProfile } as DataGateProgram["identity"], operations: [] });
 
 const surfaces = [
   "processStart",
@@ -33,7 +35,7 @@ type VariableWriteSurface = typeof surfaces[number];
 type CompiledValueDomain = Readonly<{
   VariableWriteSurface: Readonly<Record<string, string>>;
   profileAllowsVariableBindings: (
-    semanticProfile: string,
+    program: DataGateProgram,
     surface: VariableWriteSurface,
     bindings: ReadonlyArray<VariableBinding>,
   ) => boolean;
@@ -472,7 +474,7 @@ test("closes every registered profile and write surface over the exact typed val
     const expected = expectedCapabilities.get(profile) ?? {};
     for (const surface of surfaces) {
       assert.equal(
-        compiled.profileAllowsVariableBindings(profile, surface, []),
+        compiled.profileAllowsVariableBindings(gateProgram(profile), surface, []),
         true,
         `${profile} ${surface} must admit the empty patch`,
       );
@@ -480,7 +482,7 @@ test("closes every registered profile and write surface over the exact typed val
         const binding = bindings.get(kind);
         assert.ok(binding !== undefined);
         assert.equal(
-          compiled.profileAllowsVariableBindings(profile, surface, [binding]),
+          compiled.profileAllowsVariableBindings(gateProgram(profile), surface, [binding]),
           expected[surface]?.kinds.includes(kind) ?? false,
           `${profile} ${surface} ${kind}`,
         );
@@ -494,7 +496,7 @@ test("admits only String values at the Compensation checkpoint Process-start sur
   for (const surface of surfaces) {
     assert.equal(
       compiled.profileAllowsVariableBindings(
-        COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+        gateProgram(COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID),
         surface,
         [],
       ),
@@ -503,7 +505,7 @@ test("admits only String values at the Compensation checkpoint Process-start sur
     for (const binding of bindings.values()) {
       assert.equal(
         compiled.profileAllowsVariableBindings(
-          COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
+          gateProgram(COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID),
           surface,
           [binding],
         ),
@@ -518,12 +520,12 @@ test("fails closed for unknown profiles and requires every nonempty cell's decla
   const compiled = await importCompiledValueDomain();
   for (const surface of surfaces) {
     assert.equal(
-      compiled.profileAllowsVariableBindings("unknown-profile", surface, []),
+      compiled.profileAllowsVariableBindings(gateProgram("unknown-profile"), surface, []),
       false,
     );
     assert.equal(
       compiled.profileAllowsVariableBindings(
-        "unknown-profile",
+        gateProgram("unknown-profile"),
         surface,
         [bindings.get(VariableValueKind.String)!],
       ),
@@ -532,7 +534,7 @@ test("fails closed for unknown profiles and requires every nonempty cell's decla
   }
   assert.equal(
     compiled.profileAllowsVariableBindings(
-      SemanticProfileId.UserTask,
+      gateProgram(SemanticProfileId.UserTask),
       "unknown-surface" as VariableWriteSurface,
       [],
     ),
@@ -632,7 +634,7 @@ test("does not inherit String or Null writes into preservation and composition p
         const binding = bindings.get(kind);
         assert.ok(binding !== undefined);
         assert.equal(
-          compiled.profileAllowsVariableBindings(profile, surface, [binding]),
+          compiled.profileAllowsVariableBindings(gateProgram(profile), surface, [binding]),
           false,
           `${profile} ${surface} ${kind}`,
         );
@@ -659,7 +661,7 @@ test("refuses a well-formed recursive portable value at every surface of every p
           (profile === SemanticProfileId.PortableBusinessEffectData && surface === "effectCompletion") ||
           profile === SemanticProfileId.NestedEmbeddedScopeData);
         assert.equal(
-          compiled.profileAllowsVariableBindings(profile, surface, [binding]),
+          compiled.profileAllowsVariableBindings(gateProgram(profile), surface, [binding]),
           selected,
           `${profile} ${surface} ${kind}`,
         );
@@ -676,11 +678,11 @@ test("refuses a carried portable value under every admitted profile that selects
     // These widen a write path, so restoration requires a SingletonBusinessItem instead; their own tests own that rule.
     if (profile === SemanticProfileId.PortableBusinessValuesHandoff || profile === SemanticProfileId.PortableBusinessEffectData ||
       profile === SemanticProfileId.PortableBusinessMessagePayload || profile === SemanticProfileId.NestedEmbeddedScopeData) continue;
-    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(string)), true, profile);
+    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), carrying(string)), true, profile);
     for (const kind of portableKinds) {
       const binding = bindings.get(kind);
       assert.ok(binding !== undefined);
-      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, carrying(binding)), false, `${profile} ${kind}`);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), carrying(binding)), false, `${profile} ${kind}`);
     }
   }
 });
@@ -731,7 +733,7 @@ test("refuses a portable value at every carried RuntimeState path", () => {
   const map = bindings.get(VariableValueKind.Map);
   assert.ok(map !== undefined);
   for (const [path, state] of statesCarryingAtEveryPath(map)) {
-    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(SemanticProfileId.UserTaskPreservedNotation, state), false, path);
+    assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(SemanticProfileId.UserTaskPreservedNotation), state), false, path);
   }
 });
 
@@ -745,12 +747,12 @@ test("the serial handoff accepts a SingletonBusinessItem and refuses any other v
     named({ kind: VariableValueKind.String, value: "a".repeat(1025) })];
   for (const candidate of accepted) {
     for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
-      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(handoff, state), true, `${path} ${candidate.value.kind}`);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(handoff), state), true, `${path} ${candidate.value.kind}`);
     }
   }
   for (const candidate of refused) {
     for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
-      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(handoff, state), false, `${path} ${candidate.value.kind}`);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(handoff), state), false, `${path} ${candidate.value.kind}`);
     }
   }
 });
@@ -761,17 +763,17 @@ test("the structured effect-data profile bounds a Start String and admits a Sing
   const profile = SemanticProfileId.PortableBusinessEffectData;
   const named = (value: VariableBinding["value"]): VariableBinding => ({ name: "candidate", value });
   const text = (length: number) => named({ kind: VariableValueKind.String, value: "a".repeat(length) });
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [text(1024)]), true);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [text(1025)]), false);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [named({ kind: VariableValueKind.Null })]), true);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "processStart", [bindings.get(VariableValueKind.Map)!]), false);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [text(1024)]), true);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [text(1025)]), false);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [bindings.get(VariableValueKind.Map)!]), true);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "effectCompletion", [bindings.get(VariableValueKind.List)!]), false);
-  assert.equal(compiled.profileAllowsVariableBindings(profile, "userTaskCompletion", [text(1)]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "processStart", [text(1024)]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "processStart", [text(1025)]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "processStart", [named({ kind: VariableValueKind.Null })]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "processStart", [bindings.get(VariableValueKind.Map)!]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "effectCompletion", [text(1024)]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "effectCompletion", [text(1025)]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "effectCompletion", [bindings.get(VariableValueKind.Map)!]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "effectCompletion", [bindings.get(VariableValueKind.List)!]), false);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(profile), "userTaskCompletion", [text(1)]), false);
   // Existing profiles keep their meaning: a 1,025-byte Start String is still a legacy String.
-  assert.equal(compiled.profileAllowsVariableBindings(SemanticProfileId.SerialBusinessTaskComposition, "processStart", [text(1025)]), true);
+  assert.equal(compiled.profileAllowsVariableBindings(gateProgram(SemanticProfileId.SerialBusinessTaskComposition), "processStart", [text(1025)]), true);
 });
 
 test("the structured effect-data profile accepts a SingletonBusinessItem and refuses any other value at every carried path", () => {
@@ -783,12 +785,12 @@ test("the structured effect-data profile accepts a SingletonBusinessItem and ref
     named({ kind: VariableValueKind.String, value: "a".repeat(1025) })];
   for (const candidate of accepted) {
     for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
-      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, state), true, `${path} ${candidate.value.kind}`);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), state), true, `${path} ${candidate.value.kind}`);
     }
   }
   for (const candidate of refused) {
     for (const [path, state] of statesCarryingAtEveryPath(candidate)) {
-      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, state), false, `${path} ${candidate.value.kind}`);
+      assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), state), false, `${path} ${candidate.value.kind}`);
     }
   }
 });

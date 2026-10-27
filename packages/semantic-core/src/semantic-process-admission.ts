@@ -1,6 +1,8 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
-import { isScopeLocalDataTable, nestedScopeProgramAnalysis, nestedScopeStimulusDataAdmitted } from "./nested-scope-data-admission.js";
+import { isScopeLocalDataTable, nestedScopeProgramAnalysis } from "./nested-scope-data-admission.js";
+import { scopeDataStimulusAdmitted } from "./scope-data-stimulus-admission.js";
 import { nestedScopeControlProgramAnalysis } from "./nested-scope-control-admission.js";
+import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
 import { sequentialScopeProgramAdmitted } from "./sequential-scope-program-admission.js";
 import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
 import { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
@@ -97,12 +99,14 @@ export function repeatableSubscriptionPreparationAdmitted(program: SemanticProce
 /**
  * The embedded completion profile admits its exact multiset class or the nested scope-control class (NSC-ADMIT-01).
  * This is a profile capability, as in Lean's `programProfileCapabilitiesValid`, checked beside the exact shape rather
- * than inside structural well-formedness.
+ * than inside structural well-formedness. The exact class is data-free, so a data-bearing Program takes the nested
+ * class, whose analysis also decides its data (CSD-ADMIT-01).
  */
 function embeddedCompletionProgramAdmitted(program: SemanticProcessProgram): boolean {
   const { semanticProfile } = program.identity;
   return semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion ||
-    requiredProgramShapeAllows(semanticProfile, program.operations, program.definitionScopes.length) ||
+    (!embeddedScopeDataBearing(program) &&
+      requiredProgramShapeAllows(semanticProfile, program.operations, program.definitionScopes.length)) ||
     nestedScopeControlProgramAnalysis(program) !== null;
 }
 
@@ -124,7 +128,7 @@ export function supportsSemanticProcessScenario(
     embeddedCompletionProgramAdmitted(program) &&
     program.identity.semanticProfile === scenario.profile &&
     scenario.stimuli.every((stimulus) =>
-      profileAllowsStimulusValueDomain(scenario.profile, stimulus)
+      profileAllowsStimulusValueDomain(program, stimulus)
     ) &&
     program.identity.sourceId === scenario.bpmn.id &&
     program.identity.sourceSha256 === scenario.bpmn.sha256 &&
@@ -135,7 +139,7 @@ export function supportsSemanticProcessScenario(
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
-    nestedScopeStimulusDataAdmitted(program, start) &&
+    scopeDataStimulusAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     portableHandoffStimulusDataAdmitted(program, start) &&
@@ -158,11 +162,11 @@ export function supportsSemanticProcessExecution(
       program.definitionScopes.length,
     ) &&
     embeddedCompletionProgramAdmitted(program) &&
-    profileAllowsStimulusValueDomain(program.identity.semanticProfile, start) &&
+    profileAllowsStimulusValueDomain(program, start) &&
     callDataStimulusDataAdmitted(program, start) &&
     mixedTaskControlStimulusDataAdmitted(program, start) &&
     serialBusinessStimulusDataAdmitted(program, start) &&
-    nestedScopeStimulusDataAdmitted(program, start) &&
+    scopeDataStimulusAdmitted(program, start) &&
     sequentialScopeStimulusDataAdmitted(program, start) &&
     structuredCompositionStimulusDataAdmitted(program, start) &&
     portableHandoffStimulusDataAdmitted(program, start) &&
@@ -274,7 +278,8 @@ export function isWellFormedSemanticProcessProgram(
       )) ||
     (hasCompensationExecution &&
       !isCompensationExecutionDeclaration(value.compensationExecution)) ||
-    (hasScopeLocalData && (identity.semanticProfile !== SemanticProfileId.NestedEmbeddedScopeData ||
+    (hasScopeLocalData && ((identity.semanticProfile !== SemanticProfileId.NestedEmbeddedScopeData &&
+      identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion) ||
       !isScopeLocalDataTable(value.scopeLocalData))) ||
     (hasMessageEventSubProcesses && (!Array.isArray(value.interruptingMessageEventSubProcesses) ||
       !value.interruptingMessageEventSubProcesses.every(isInterruptingMessageEventSubProcessDeclaration))) ||

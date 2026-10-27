@@ -17,7 +17,7 @@ import {
   completeActivityVariableScopeUnder,
   createEffectLocalDataOwner,
   effectMappingAcceptsValue,
-  effectMappingValuePolicyForProfile,
+  effectMappingValuePolicyForProgram,
   evaluateInputMappings,
   evaluateInputMappingsUnder,
   inputMappingSnapshotMatches,
@@ -44,7 +44,7 @@ const structured = () => map(["entries", { kind: VariableValueKind.List, value: 
 
 test("only the structured effect-data and nested scope-data profiles select SingletonBusinessItem; unknown profiles stay scalar", () => {
   for (const profile of [...Object.values(SemanticProfileId), "unknown-profile", ""]) {
-    assert.equal(effectMappingValuePolicyForProfile(profile),
+    assert.equal(effectMappingValuePolicyForProgram({ identity: { semanticProfile: profile } as never, operations: [] }),
       profile === SemanticProfileId.PortableBusinessEffectData || profile === SemanticProfileId.NestedEmbeddedScopeData
         ? EffectMappingValuePolicy.SingletonBusinessItem : EffectMappingValuePolicy.Scalar, profile);
   }

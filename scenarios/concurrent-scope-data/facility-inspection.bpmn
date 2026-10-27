@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FacilityInspection" targetNamespace="urn:bpmn-lean:facility-inspection">
+  <process id="Process_FacilityInspection" name="Inspect a facility" isExecutable="true">
+    <startEvent id="InspectionRequested" name="Inspection requested" />
+    <subProcess id="Inspection" name="Inspection">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="findings">open</camunda:inputParameter>
+          <camunda:inputParameter name="result">none</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="InspectionOpened" name="Inspection opened" />
+      <parallelGateway id="ChecksFork" name="Run checks" />
+      <subProcess id="ElectricalCheck" name="Electrical check">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="result">pending-electrical</camunda:inputParameter>
+            <camunda:outputParameter name="electricalResult">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="ElectricalCheckOpened" name="Electrical check opened" />
+        <userTask id="RecordElectricalFindings" name="Record findings" />
+        <endEvent id="ElectricalCheckClosed" name="Electrical check closed" />
+        <sequenceFlow id="Flow_ElectricalOpened" sourceRef="ElectricalCheckOpened" targetRef="RecordElectricalFindings" />
+        <sequenceFlow id="Flow_ElectricalRecorded" sourceRef="RecordElectricalFindings" targetRef="ElectricalCheckClosed" />
+      </subProcess>
+      <subProcess id="FireSafetyCheck" name="Fire safety check">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="result">${result}</camunda:inputParameter>
+            <camunda:outputParameter name="fireResult">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="FireSafetyCheckOpened" name="Fire safety check opened" />
+        <userTask id="RecordFireSafetyFindings" name="Record findings" />
+        <endEvent id="FireSafetyCheckClosed" name="Fire safety check closed" />
+        <sequenceFlow id="Flow_FireSafetyOpened" sourceRef="FireSafetyCheckOpened" targetRef="RecordFireSafetyFindings" />
+        <sequenceFlow id="Flow_FireSafetyRecorded" sourceRef="RecordFireSafetyFindings" targetRef="FireSafetyCheckClosed" />
+      </subProcess>
+      <parallelGateway id="ChecksJoin" name="Checks done" />
+      <serviceTask id="Summarize" name="Summarize" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${inspectionSummary}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="electricalResult">${electricalResult}</camunda:inputParameter>
+            <camunda:inputParameter name="findings">${findings}</camunda:inputParameter>
+            <camunda:inputParameter name="fireResult">${fireResult}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="InspectionClosed" name="Inspection closed" />
+      <sequenceFlow id="Flow_InspectionOpened" sourceRef="InspectionOpened" targetRef="ChecksFork" />
+      <sequenceFlow id="Flow_ForkElectrical" sourceRef="ChecksFork" targetRef="ElectricalCheck" />
+      <sequenceFlow id="Flow_ForkFireSafety" sourceRef="ChecksFork" targetRef="FireSafetyCheck" />
+      <sequenceFlow id="Flow_ElectricalDone" sourceRef="ElectricalCheck" targetRef="ChecksJoin" />
+      <sequenceFlow id="Flow_FireSafetyDone" sourceRef="FireSafetyCheck" targetRef="ChecksJoin" />
+      <sequenceFlow id="Flow_ChecksJoined" sourceRef="ChecksJoin" targetRef="Summarize" />
+      <sequenceFlow id="Flow_Summarized" sourceRef="Summarize" targetRef="InspectionClosed" />
+    </subProcess>
+    <endEvent id="InspectionReported" name="Inspection reported" />
+    <sequenceFlow id="Flow_InspectionRequested" sourceRef="InspectionRequested" targetRef="Inspection" />
+    <sequenceFlow id="Flow_InspectionDone" sourceRef="Inspection" targetRef="InspectionReported" />
+  </process>
+</definitions>

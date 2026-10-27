@@ -47,7 +47,7 @@ import type {
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import { evaluateInputMappingsUnder } from "./semantic-process-data.js";
-import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { evaluateNestedEffectInputs, nestedScopeDataProgram } from "./nested-scope-data.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
@@ -405,7 +405,7 @@ export function deriveInternalTransitionFootprint(
         : nestedScopeDataProgram(program)
         ? evaluateNestedEffectInputs(program, state, owner, operation.effect.inputMappings)
         : evaluateInputMappingsUnder(
-          effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+          effectMappingValuePolicyForProgram(program),
           operation.effect.inputMappings,
           state.variables.process.bindings,
         );

@@ -38,6 +38,7 @@ const variables: ScopedVariables = {
     { owner: secondPrice, bindings: [{ name: "adjuster", value: { kind: Value.Null } }, { name: "estimate", value: string("4200") }] },
   ],
   activities: [],
+  processInterfaces: [],
 };
 
 test("each live occurrence of one definition reads its own frame", () => {

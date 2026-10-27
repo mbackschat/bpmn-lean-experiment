@@ -229,8 +229,9 @@ test("CSE-ADMIT-01: each source mutation outside the admitted class is refused b
   await assertRefused("no asyncBefore", xml.replace(screen, 'camunda:delegateExpression="${sanctionsScreening}"'), handlers);
   await assertRefused("asyncAfter", xml.replace(screen, `${screen} camunda:asyncAfter="true"`), handlers);
   await assertRefused("unbound delegate", xml.replace("${sanctionsScreening}", "${unknownHandler}"), handlers);
-  await assertRefused("input mapping", xml.replace(`${screen}>`, `${screen}><bpmn:extensionElements><camunda:inputOutput>` +
-    '<camunda:inputParameter name="supplier">acme</camunda:inputParameter></camunda:inputOutput></bpmn:extensionElements>'), handlers);
+  // A mapping makes the model data-bearing (CSD-ADMIT-01); an expression beyond an exact name stays outside the class.
+  await assertRefused("expression input mapping", xml.replace(`${screen}>`, `${screen}><bpmn:extensionElements><camunda:inputOutput>` +
+    '<camunda:inputParameter name="supplier">${vendor.name}</camunda:inputParameter></camunda:inputOutput></bpmn:extensionElements>'), handlers);
   await assertRefused("Script Task", xml.replace('<bpmn:userTask id="UserTask_ReviewContract" name="Review supplier contract">',
     '<bpmn:scriptTask id="UserTask_ReviewContract" name="Review supplier contract" scriptFormat="javascript">')
     .replace("</bpmn:userTask>\n      <bpmn:parallelGateway id=\"Gateway_ChecksJoin\"", "</bpmn:scriptTask>\n      <bpmn:parallelGateway id=\"Gateway_ChecksJoin\""),

@@ -386,7 +386,7 @@ function projectKeyedCall(element: ElementRecord, id: string): CheckedNode | und
     : undefined;
 }
 
-function classifyGateway(
+export function classifyGateway(
   element: ElementRecord,
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,

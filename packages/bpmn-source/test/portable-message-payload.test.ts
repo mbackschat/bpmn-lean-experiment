@@ -20,6 +20,9 @@ import {
 } from "./portable-message-payload-fixture.ts";
 import type { PayloadSourceIds } from "./portable-message-payload-fixture.ts";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import type { DataGateProgram } from "@bpmn-lean/semantic-core";
+const gateProgram = (semanticProfile: string): DataGateProgram =>
+  ({ identity: { semanticProfile } as DataGateProgram["identity"], operations: [] });
 
 async function program(ids: PayloadSourceIds = shipmentIds, profile: string = messagePayloadProfile): Promise<SemanticProcessProgram> {
   const compiled = await compilePayloadSource(ids, profile);
@@ -162,13 +165,13 @@ test("restoration requires every carried value to be a SingletonBusinessItem, an
   const withProperty = (value: VariableValue): RuntimeState => ({
     ...reviewing, variables: { ...reviewing.variables, process: { bindings: [{ name: shipmentIds.property, value }] } },
   });
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(messagePayloadProfile, reviewing), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(messagePayloadProfile, withProperty(utf8Text(1024))), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(messagePayloadProfile, withProperty(list(text("P-1")))), false, "root List");
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(messagePayloadProfile, withProperty(utf8Text(1025))), false, "over-long root String");
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(messagePayloadProfile,
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(messagePayloadProfile), reviewing), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(messagePayloadProfile), withProperty(utf8Text(1024))), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(messagePayloadProfile), withProperty(list(text("P-1")))), false, "root List");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(messagePayloadProfile), withProperty(utf8Text(1025))), false, "over-long root String");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(messagePayloadProfile),
     withProperty({ kind: VariableValueKind.StringList, value: ["a"] })), false, "root stringList");
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(SemanticProfileId.MessagePayloadCatch, reviewing), false, "closed profile");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(SemanticProfileId.MessagePayloadCatch), reviewing), false, "closed profile");
 });
 
 type Tamperable = { kind: string; value?: unknown };

@@ -2,7 +2,10 @@ import { CheckedNodeKind, SemanticProfileId } from "@bpmn-lean/semantic-core";
 import { compileCheckedProcess } from "./checked-process-compiler.js";
 import { BpmnSourceDiagnosticCode } from "./contracts.js";
 import type { BpmnSourceIdentity, CheckedCompilationProjection } from "./contracts.js";
+import { locateContainedElements } from "./admission-diagnostics.js";
 import { selectMappedServiceTaskSourcePolicy } from "./mapped-service-task-source-policy.js";
+import { asElement, asElementArray } from "./moddle-graph.js";
+import { compileEmbeddedScopeDataSource } from "./nested-scope-data-source.js";
 import {
   exactForeignAttributeRejections, foreignAttributeConsumingTypes, foreignAttributeRejections,
 } from "./preserved-element-classification.js";
@@ -17,12 +20,16 @@ const semanticProfile = SemanticProfileId.EmbeddedSubProcessCompletion;
  * the generic scoped compiler. With one, Service Tasks bind their handlers through the serial business-task binding of
  * `CIB-EXT-0015`, the only foreign attributes admitted are their delegate and async-before markers, and the model must
  * contain a Service Task, because the overlay is admitted exactly when it binds one.
+ *
+ * A model whose Sub-Process or Service Task carries a `camunda:inputOutput` is data-bearing (CSD-ADMIT-01) and is read
+ * by the scope-data reader instead, so every data-free model keeps exactly its earlier compilation.
  */
 export function compileEmbeddedScopeSource(
   root: unknown,
   source: BpmnSourceIdentity,
   overlay: AdmittedSourceOverlay | null,
 ): CheckedCompilationProjection {
+  if (declaresData(root)) return compileEmbeddedScopeDataSource(root, source, overlay);
   if (overlay === null) {
     return compileCheckedProcess(root, source, semanticProfile, (definitions, located) =>
       foreignAttributeRejections(definitions, located, foreignAttributeConsumingTypes(semanticProfile)), null);
@@ -40,6 +47,13 @@ export function compileEmbeddedScopeSource(
       !compiled.checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.ServiceTask)
     ? unsupported("A source overlay is admitted only for a model with a Service Task.")
     : compiled;
+}
+
+function declaresData(root: unknown): boolean {
+  const definitions = asElement(root);
+  return definitions !== undefined && [...locateContainedElements(definitions).keys()].some(element =>
+    (element.$type === "bpmn:SubProcess" || element.$type === "bpmn:ServiceTask") &&
+    (asElementArray(asElement(element.extensionElements)?.values) ?? []).some(value => value.$type === "camunda:inputOutput"));
 }
 
 function unsupported(evidence: string): CheckedCompilationProjection {

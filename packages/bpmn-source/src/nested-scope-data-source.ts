@@ -1,5 +1,5 @@
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
-import { projectUserTaskMetadata } from "./checked-element-projection.js";
+import { classifyGateway, projectExclusiveMerge, projectUserTaskMetadata } from "./checked-element-projection.js";
 import {
   CallDataKind, CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SemanticProfileId, callDataInterfaceValid,
   compareCanonicalStrings, isWellFormedWireString, nestedScopeCheckedAnalysis,
@@ -22,7 +22,6 @@ import { projectSerialBusinessServiceTask } from "./serial-business-task-source.
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
 const camunda = "http://camunda.org/schema/1.0/bpmn";
-const semanticProfile = SemanticProfileId.NestedEmbeddedScopeData;
 /** One more level than NSD-ADMIT-01 admits, so the reader's recursion stays bounded while admission decides depth. */
 const readerDepthLimit = 4;
 
@@ -37,13 +36,61 @@ type Collected = {
 };
 
 /**
+ * What one scope-data profile's reader admits beyond the shared element grammar: Parallel gateways and Exclusive
+ * merges for the embedded completion profile (CSD-ADMIT-01), a mapped Call for the nested scope-data profile.
+ */
+type ScopeDataReader = Readonly<{
+  semanticProfile: string;
+  gateways: boolean;
+  calls: boolean;
+  /** Whether a model needs the overlay even without a Service Task; otherwise it binds one exactly when it has one. */
+  overlayRequired: boolean;
+  /** The profile's own analysis, beside the shared checked admission, and its refusal evidence. */
+  admitted: (checkedProcess: CheckedProcess) => boolean;
+  refusal: string;
+}>;
+
+const nestedScopeDataReader: ScopeDataReader = {
+  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: false, calls: true, overlayRequired: true,
+  admitted: checkedProcess => nestedScopeCheckedAnalysis(checkedProcess) !== null,
+  refusal: "The checked graph does not satisfy nested scope-data admission.",
+};
+
+// Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
+const embeddedScopeDataReader: ScopeDataReader = {
+  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, calls: false, overlayRequired: false,
+  admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
+    checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.ServiceTask),
+  refusal: "The checked graph does not satisfy concurrent scope-data admission.",
+};
+
+/** A model of the embedded completion profile without a Service Task binds no handler (CSE-ADMIT-01). */
+const noBindings: MappedServiceTaskSourcePolicy = { sourceOverlay: null, effectBindings: [], inertAttributes: [] };
+
+/**
  * NSD-ADMIT-01's source reader: serial scopes of None Start, User Task, mapped Service Task, ordinary embedded
  * Sub-Process and None End. A Sub-Process `camunda:inputOutput` becomes that child scope's `scopeLocalData` record;
  * the parameter grammar is the Service Task's (CIB-EXT-0015), and independent checked admission decides the rest.
  */
 export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceIdentity,
   overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
-  const selection = selectMappedServiceTaskSourcePolicy(semanticProfile, overlay);
+  return compileScopeDataSource(root, source, overlay, nestedScopeDataReader);
+}
+
+/**
+ * CSD-ADMIT-01's reader for a data-bearing embedded completion model: the same elements and declarations, plus
+ * Parallel gateways and Exclusive merges, in one executable Process without a Call.
+ */
+export function compileEmbeddedScopeDataSource(root: unknown, source: BpmnSourceIdentity,
+  overlay: AdmittedSourceOverlay | null): CheckedCompilationProjection {
+  return compileScopeDataSource(root, source, overlay, embeddedScopeDataReader);
+}
+
+function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overlay: AdmittedSourceOverlay | null,
+  reader: ScopeDataReader): CheckedCompilationProjection {
+  const { semanticProfile } = reader;
+  const selection = overlay === null && !reader.overlayRequired ? { policy: noBindings, rejection: null }
+    : selectMappedServiceTaskSourcePolicy(semanticProfile, overlay);
   if (selection.policy === null) return unsupported(selection.rejection);
   const definitions = asElement(root);
   if (definitions?.$type !== "bpmn:Definitions" || !hasOnlyModelledKeys(definitions,
@@ -55,7 +102,7 @@ export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceId
       type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
   const processes = asElementArray(definitions.rootElements);
-  if (processes === undefined || processes.length < 1 || processes.length > 2 || !processes.every(process =>
+  if (processes === undefined || processes.length < 1 || processes.length > (reader.calls ? 2 : 1) || !processes.every(process =>
     process.$type === "bpmn:Process" && process.isExecutable === true &&
     hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]))) {
     return unsupported("Expected one executable root Process, or a caller and one called Process.");
@@ -70,7 +117,7 @@ export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceId
     roots.push({ processId, scopeId });
     collected.scopes.push({ id: scopeId, parentScopeId: null, originElementId: processId });
     collected.ids.push(processId);
-    const failure = readScope(elements, scopeId, 0, definitions, selection.policy, collected);
+    const failure = readScope(elements, scopeId, 0, definitions, selection.policy, reader, collected);
     if (failure !== null) return unsupported(failure);
   }
   const caller = callerProcess(roots, collected);
@@ -92,15 +139,15 @@ export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceId
       scopeLocalData: [...collected.records].sort((a, b) => compareCanonicalStrings(a.scopeId, b.scopeId)),
     }),
   };
-  return nestedScopeCheckedAnalysis(checkedProcess) !== null &&
+  return reader.admitted(checkedProcess) &&
       isAdmittedCheckedProcess({ ...checkedProcess, flows: checkedProcess.sequenceFlows }, definitions.expressionLanguage, semanticProfile)
     ? { checkedProcess, diagnostics: [] }
-    : unsupported("The checked graph does not satisfy nested scope-data admission.");
+    : unsupported(reader.refusal);
 }
 
 /** Reads one scope's flow elements into `collected`; returns the rejection evidence, or `null`. */
 function readScope(elements: readonly ElementRecord[], scopeId: string, depth: number, definitions: ElementRecord,
-  policy: MappedServiceTaskSourcePolicy, collected: Collected): string | null {
+  policy: MappedServiceTaskSourcePolicy, reader: ScopeDataReader, collected: Collected): string | null {
   const flows = projectMappedSuccessSequenceFlows(elements.filter(element => element.$type === "bpmn:SequenceFlow"));
   if (flows === undefined) return "Sequence Flows exceed the unconditional flow contract.";
   for (const flow of flows) {
@@ -117,7 +164,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
       case "bpmn:UserTask": {
         const id = readId(element);
         if (id !== undefined) node = projectUserTaskMetadata(element, definitions, id,
-          typeof element.name === "string" ? element.name : null, semanticProfile);
+          typeof element.name === "string" ? element.name : null, reader.semanticProfile);
         break;
       }
       case "bpmn:ServiceTask": node = projectSerialBusinessServiceTask(element, definitions, policy); break;
@@ -137,12 +184,17 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
           collected.records.push({ scopeId: childScopeId, localInputs: mappings.inputMappings,
             localOutputs: mappings.outputMappings });
         }
-        const failure = readScope(children, childScopeId, depth + 1, definitions, policy, collected);
+        const failure = readScope(children, childScopeId, depth + 1, definitions, policy, reader, collected);
         if (failure !== null) return failure;
         node = { kind: CheckedNodeKind.EmbeddedSubProcess, id, childScopeId };
         break;
       }
-      case "bpmn:CallActivity": node = projectMappedCall(element); break;
+      case "bpmn:CallActivity": node = reader.calls ? projectMappedCall(element) : undefined; break;
+      case "bpmn:ParallelGateway":
+      case "bpmn:ExclusiveGateway":
+        if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
+        node = projectGateway(element, flows, reader.semanticProfile);
+        break;
       default: return "The flow element is outside the nested scope-data contract.";
     }
     if (node === undefined) return "A flow element exceeds the nested scope-data contract.";
@@ -150,6 +202,15 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
     collected.nodeScopes.push({ nodeId: node.id, scopeId });
   }
   return null;
+}
+
+/** CSD-ADMIT-01's gateways: a paired Parallel fork or join, or a converging Exclusive merge of any width. */
+function projectGateway(element: ElementRecord, flows: readonly CheckedSequenceFlow[], profile: string): CheckedNode | undefined {
+  const id = readId(element);
+  if (id === undefined) return undefined;
+  if (element.$type === "bpmn:ExclusiveGateway") return projectExclusiveMerge(element, id, flows, true);
+  const direction = classifyGateway(element, id, flows, profile);
+  return direction === undefined ? undefined : { kind: CheckedNodeKind.ParallelGateway, id, direction };
 }
 
 /**

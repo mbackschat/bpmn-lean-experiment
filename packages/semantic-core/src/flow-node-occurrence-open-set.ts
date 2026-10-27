@@ -30,7 +30,7 @@ import {
   effectIncidentAssociationsAreValid,
 } from "./semantic-process-incident-validation.js";
 import { inputMappingSnapshotMatchesUnder } from "./semantic-process-data.js";
-import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import {
   ControlStateKind,
   sameOccurrence,
@@ -617,7 +617,7 @@ function waitMatchesEffect(
       operation.output === wait.output &&
       sameJson(operation.effect.descriptor, wait.descriptor) &&
       inputMappingSnapshotMatchesUnder(
-        effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+        effectMappingValuePolicyForProgram(program),
         operation.effect.inputMappings,
         wait.arguments,
       ) &&

@@ -1,5 +1,6 @@
 import type { VariableMappingCallData } from "./call-data-contract.js";
 import { VariableValueKind } from "./contract.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import type { VariableBinding } from "./contract.js";
 import {
   NestedScopeReadKind, readBindingOutcome, resolveNestedScopeRead, writeNestedScopeVariables,
@@ -48,11 +49,12 @@ export function evaluateCallInputs(program: SemanticProcessProgram, state: Runti
 }
 
 /** CVM-OUT-01: the output values, every source read from the called-root frame alone. */
-export function evaluateCallOutputs(state: RuntimeState, calledRoot: ScopeOccurrenceId,
+export function evaluateCallOutputs(program: SemanticProcessProgram, state: RuntimeState, calledRoot: ScopeOccurrenceId,
   data: VariableMappingCallData): readonly VariableBinding[] | null {
   const frames = state.variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, calledRoot));
   const frame = frames.length === 1 ? frames[0] : undefined;
-  return frame === undefined ? null : copyValues(data.outputs, name => readBindingOutcome(frame.bindings, name));
+  return frame === undefined ? null : copyValues(data.outputs, name =>
+    readBindingOutcome(effectMappingValuePolicyForProgram(program), frame.bindings, name));
 }
 
 /** CVM-IN-01 and CVM-ISOLATE-01: the Call record, the called root and its frame are created by one rewrite. */
@@ -80,7 +82,7 @@ export function returnCalledProcessWithMappings(program: SemanticProcessProgram,
   data: VariableMappingCallData, state: RuntimeState): RuntimeState | null {
   const selected = selectReturnCalledProcess(operation, state);
   if (selected === null) return null;
-  const values = evaluateCallOutputs(state, selected.record.calledRoot, data);
+  const values = evaluateCallOutputs(program, state, selected.record.calledRoot, data);
   const returned = values === null ? null : returnCalledProcess(operation, state);
   if (values === null || returned === null) return null;
   const { caller } = selected.record;

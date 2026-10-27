@@ -7,9 +7,11 @@ import type {
   VariableBinding,
   VariableValue,
 } from "./contract.js";
-import { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { EffectMappingValuePolicy, effectMappingAcceptsValue, effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { PropertyPathValuePolicy, propertyPathAcceptsValue, propertyPathValuePolicyForProfile } from "./property-path-value-policy.js";
 import { carriedVariablePatches } from "./runtime-state-carried-values.js";
+import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
+import type { DataGateProgram } from "./scope-data-bearing.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import {
   MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID,
@@ -106,22 +108,26 @@ const admittedSemanticProfiles: ReadonlySet<string> = new Set(
   ],
 );
 
-/** Selects which typed Process-data values one profile admits at one external write surface. */
+/**
+ * Selects which typed Process-data values one Program admits at one external write surface: its profile decides,
+ * except that a data-bearing embedded completion Program widens that profile's empty surfaces (CSD-VALUE-01).
+ */
 export function profileAllowsVariableBindings(
-  semanticProfile: string,
+  program: DataGateProgram,
   surface: VariableWriteSurface,
   bindings: ReadonlyArray<VariableBinding>,
 ): boolean {
+  const { semanticProfile } = program.identity;
   if (
     !isVariablePatch(bindings) ||
     !isAdmissionProfile(semanticProfile)
   ) {
     return false;
   }
-  const allowedKinds = profileValueDomain(semanticProfile, surface);
+  const allowedKinds = profileValueDomain(semanticProfile, embeddedScopeDataBearing(program), surface);
   // The kind table cannot state the SingletonBusinessItem String bound, so each widened path's policy is consulted too.
   const propertyPolicy = propertyPathValuePolicyForProfile(semanticProfile);
-  const effectPolicy = effectMappingValuePolicyForProfile(semanticProfile);
+  const effectPolicy = effectMappingValuePolicyForProgram(program);
   return allowedKinds !== null &&
     bindings.every(({ value }) => allowedKinds.includes(value.kind) &&
       (propertyPolicy === PropertyPathValuePolicy.Scalar || propertyPathAcceptsValue(propertyPolicy, value)) &&
@@ -158,6 +164,7 @@ function surfaceValueDomain(
  */
 function profileValueDomain(
   semanticProfile: SemanticProfile,
+  dataBearing: boolean,
   surface: VariableWriteSurface,
 ): ReadonlyArray<VariableValueKind> | null {
   switch (semanticProfile) {
@@ -276,12 +283,17 @@ function profileValueDomain(
         singletonBusinessItemValueDomain,
         singletonBusinessItemValueDomain,
       );
+    case SemanticProfileId.EmbeddedSubProcessCompletion:
+      // CSD-VALUE-01: a data-bearing Program takes bounded Strings and present nulls at every surface; the effect
+      // policy states the byte bound. A data-free Program keeps every surface empty.
+      return dataBearing
+        ? surfaceValueDomain(surface, stringNullValueDomain, stringNullValueDomain, stringNullValueDomain)
+        : surfaceValueDomain(surface);
     case TRANSACTION_CANCELLATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.ActivityBoundaryTimer:
     case SemanticProfileId.ActivityBoundaryMessage:
     case SemanticProfileId.CalledProcessCallActivity:
     case SemanticProfileId.ConfiguredTask:
-    case SemanticProfileId.EmbeddedSubProcessCompletion:
     case SemanticProfileId.EventBasedGatewayMessageTimer:
     case SemanticProfileId.IntermediateCatchMessage:
     case SemanticProfileId.MessagePayloadCatch:
@@ -317,19 +329,21 @@ function profileValueDomain(
  * surface, a carried or restored Decimal, List or Map was never committed (PBV-INGRESS-01); legacy scalar kinds are
  * not profile-checked there. Under a profile that widens the Property path, effect mapping or Message payload, every
  * value at every carried path must instead be a SingletonBusinessItem, because those paths copy only that domain: a
- * root List or an over-long root String cannot be the result of any admitted command (PBV-EFF-01, PBV-MSG-01).
+ * root List or an over-long root String cannot be the result of any admitted command (PBV-EFF-01, PBV-MSG-01). A
+ * data-bearing embedded completion Program likewise carries only bounded Strings and nulls (CSD-VALUE-01).
  */
 export function runtimeStateCarriesOnlyProfilePortableValues(
-  semanticProfile: string,
+  program: DataGateProgram,
   state: RuntimeState,
 ): boolean {
+  const { semanticProfile } = program.identity;
   const propertyPolicy = propertyPathValuePolicyForProfile(semanticProfile);
-  const effectPolicy = effectMappingValuePolicyForProfile(semanticProfile);
+  const effectPolicy = effectMappingValuePolicyForProgram(program);
   if (propertyPolicy === PropertyPathValuePolicy.SingletonBusinessItem) {
     return carriedVariablePatches(state)
       .every((bindings) => bindings.every(({ value }) => propertyPathAcceptsValue(propertyPolicy, value)));
   }
-  if (effectPolicy === EffectMappingValuePolicy.SingletonBusinessItem) {
+  if (effectPolicy !== EffectMappingValuePolicy.Scalar) {
     return carriedVariablePatches(state)
       .every((bindings) => bindings.every(({ value }) => effectMappingAcceptsValue(effectPolicy, value, true)));
   }
@@ -346,30 +360,31 @@ export function runtimeStateCarriesOnlyProfilePortableValues(
 function profileSelectsPortableValue(semanticProfile: string): boolean {
   return isAdmissionProfile(semanticProfile) &&
     Object.values(VariableWriteSurface).some((surface) =>
-      profileValueDomain(semanticProfile, surface)?.some((kind) => portableValueKinds.includes(kind)) ?? false);
+      profileValueDomain(semanticProfile, false, surface)?.some((kind) => portableValueKinds.includes(kind)) ?? false);
 }
 
 /** Applies the profile value domain to every variable-bearing external stimulus. */
 export function profileAllowsStimulusValueDomain(
-  semanticProfile: string,
+  program: DataGateProgram,
   stimulus: Stimulus,
 ): boolean {
+  const { semanticProfile } = program.identity;
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
       return profileAllowsVariableBindings(
-        semanticProfile,
+        program,
         VariableWriteSurface.ProcessStart,
         stimulus.initialVariables,
       );
     case StimulusKind.CompleteUserTaskInstance:
       return profileAllowsVariableBindings(
-        semanticProfile,
+        program,
         VariableWriteSurface.UserTaskCompletion,
         stimulus.submittedValues,
       );
     case StimulusKind.CompleteEffect:
       return profileAllowsVariableBindings(
-        semanticProfile,
+        program,
         VariableWriteSurface.EffectCompletion,
         stimulus.result.localPatch,
       );

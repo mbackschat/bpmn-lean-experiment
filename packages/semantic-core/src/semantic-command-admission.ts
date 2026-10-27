@@ -1,5 +1,5 @@
 import { PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
-import { nestedScopeStimulusDataAdmitted } from "./nested-scope-data-admission.js";
+import { scopeDataStimulusAdmitted } from "./scope-data-stimulus-admission.js";
 import { completeNestedScopeEffectData, nestedScopeDataProgram } from "./nested-scope-data.js";
 import { parallelScopeCommandCapacity } from "./parallel-scope-command-admission.js";
 import { completeParallelScopeEffect, hasParallelScopeDefinition } from "./parallel-scope-data.js";
@@ -9,7 +9,7 @@ import { mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-
 import { sequentialScopeStimulusDataAdmitted } from "./sequential-scope-data-admission.js";
 import { serialBusinessStimulusDataAdmitted } from "./serial-business-task-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
-import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { callDataStateIsValid } from "./call-data-state-validation.js";
 import { deliverEventSubProcessMessage } from "./interrupting-message-event-subprocess-runtime.js";
 import { callDataStimulusDataAdmitted } from "./call-data-command-admission.js";
@@ -176,7 +176,7 @@ function admissibleCommittedState(
     program,
     state.control.kind === ControlStateKind.NotStarted ? "" : state.control.instanceId,
     state,
-  ) && runtimeStateCarriesOnlyProfilePortableValues(program.identity.semanticProfile, state);
+  ) && runtimeStateCarriesOnlyProfilePortableValues(program, state);
 }
 
 function activityDataInputOutputStartDataAdmitted(
@@ -215,7 +215,7 @@ function admitValidated(
     !callDataStimulusDataAdmitted(program, stimulus) ||
     !mixedTaskControlStimulusDataAdmitted(program, stimulus) ||
     !serialBusinessStimulusDataAdmitted(program, stimulus) ||
-    !nestedScopeStimulusDataAdmitted(program, stimulus) ||
+    !scopeDataStimulusAdmitted(program, stimulus) ||
     !sequentialScopeStimulusDataAdmitted(program, stimulus) ||
     !structuredCompositionStimulusDataAdmitted(program, stimulus) ||
     !portableHandoffStimulusDataAdmitted(program, stimulus) ||
@@ -227,10 +227,7 @@ function admitValidated(
     (stimulus.kind === StimulusKind.StartProcess &&
       (!compensationStartDataAdmitted(program, stimulus) ||
         !activityDataInputOutputStartDataAdmitted(program, stimulus))) ||
-    !profileAllowsStimulusValueDomain(
-      program.identity.semanticProfile,
-      stimulus,
-    )
+    !profileAllowsStimulusValueDomain(program, stimulus)
   ) {
     return { outcome: CommandOutcome.Rejected, state };
   }
@@ -478,7 +475,7 @@ function admitValidated(
         : nestedScopeDataProgram(program)
         ? completeNestedScopeEffectData(program, state.scopeOccurrences, state.variables, wait, stimulus.result.localPatch)
         : completeActivityVariableScopeUnder(
-        effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+        effectMappingValuePolicyForProgram(program),
         state.variables,
         wait.id,
         wait.outputMappings,

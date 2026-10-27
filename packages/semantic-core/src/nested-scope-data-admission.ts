@@ -5,8 +5,7 @@ import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedProcess } from "./checked-process-contract.js";
 import { EffectExecutionResultKind, StimulusKind } from "./contract.js";
 import type { Stimulus, VariableBinding } from "./contract.js";
-import { EffectMappingValuePolicy, effectMappingAcceptsValue } from "./effect-mapping-value-policy.js";
-import { nestedScopeDataProgram } from "./nested-scope-data.js";
+import { effectMappingAcceptsValue, effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { InternalSchedulingMode, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
@@ -70,7 +69,11 @@ function strictlySorted(names: readonly string[]): boolean {
   return names.every((name, index) => index === 0 || compareCanonicalStrings(names[index - 1]!, name) < 0);
 }
 
-function recordValid(handlers: ReadonlySet<string>, record: ScopeLocalData): boolean {
+/**
+ * NSD-ADMIT-01's declaration rule, which CSD-ADMIT-01 reuses: one to eight inputs and at most eight outputs, every name
+ * an admitted identifier outside the handler namespace, each output copying an input of the same scope.
+ */
+export function scopeLocalRecordAdmitted(handlers: ReadonlySet<string>, record: ScopeLocalData): boolean {
   const inputs = new Set(record.localInputs.map(({ target }) => target));
   return record.localInputs.length > 0 && record.localInputs.length <= declarationLimit &&
     record.localOutputs.length <= declarationLimit &&
@@ -227,7 +230,7 @@ function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[]
       !calls.every(call => call.scope !== root && variableMappingsValid(call.data) &&
         callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
-      !records.every(record => children.includes(record.scopeId) && recordValid(handlers, record))) return null;
+      !records.every(record => children.includes(record.scopeId) && scopeLocalRecordAdmitted(handlers, record))) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);
   const calledVertices = new Set(walked?.called ?? []);
   if (walked === null || new Set(walked.visited).size !== walked.visited.length ||
@@ -442,33 +445,31 @@ export function nestedScopeProgramStartNames(program: SemanticProcessProgram): N
   return analyze(vertices, program.scopeLocalData ?? [], program.definitionScopes, root.id, start.id, handlers);
 }
 
-const itemValue = (binding: VariableBinding["value"]): boolean =>
-  effectMappingAcceptsValue(EffectMappingValuePolicy.SingletonBusinessItem, binding, true);
-
 /**
- * NSD-AVAILABLE-01 and the profile's Start domain: admitted names, each a `SingletonBusinessItem`, covering every
- * required name, a present null included. A completion patch's name rule is NSD-TASK-01's, checked against the
- * committed state by the command path; here it keeps only the shared identifier and value rules.
+ * NSD-AVAILABLE-01, CSD-AVAILABLE-01 and the Start domain of a Program whose frames resolve by the occurrence chain:
+ * admitted names, each within the Program's effect policy, covering every required name, a present null included. A
+ * completion patch's name rule is NSD-TASK-01's, checked against the committed state by the command path; here it
+ * keeps only the shared identifier and value rules. `names` is the Program's own analysis, which every command
+ * re-runs, as the Lean completions do, so a refused Program commits nothing.
  */
-export function nestedScopeStimulusDataAdmitted(program: SemanticProcessProgram, stimulus: Stimulus): boolean {
-  if (!nestedScopeDataProgram(program)) return true;
-  // Every command re-checks Program admission, as the Lean completions do, so a refused Program commits nothing.
-  const names = nestedScopeProgramStartNames(program);
-  if (names === null) return false;
+export function scopeDataStimulusWithin(program: SemanticProcessProgram, stimulus: Stimulus,
+  names: NestedScopeStartNames): boolean {
   const { required, optional } = names;
   const handlers = programHandlers(program);
+  const policy = effectMappingValuePolicyForProgram(program);
+  const value = (binding: VariableBinding["value"]): boolean => effectMappingAcceptsValue(policy, binding, true);
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
       // CVM-START-01 restricts Start names only in Programs with a Call, keeping every earlier admission unchanged.
       return stimulus.instanceId.length > 0 &&
-        serialBusinessBindingsAdmitted(stimulus.initialVariables, handlers, itemValue) &&
+        serialBusinessBindingsAdmitted(stimulus.initialVariables, handlers, value) &&
         required.every(name => stimulus.initialVariables.some(binding => binding.name === name)) &&
         (optional === null || stimulus.initialVariables.every(({ name }) => required.includes(name) || optional.includes(name)));
     case StimulusKind.CompleteUserTaskInstance:
-      return serialBusinessBindingsAdmitted(stimulus.submittedValues, handlers, itemValue);
+      return serialBusinessBindingsAdmitted(stimulus.submittedValues, handlers, value);
     case StimulusKind.CompleteEffect:
       return stimulus.result.kind === EffectExecutionResultKind.Success &&
-        serialBusinessBindingsAdmitted(stimulus.result.localPatch, handlers, itemValue);
+        serialBusinessBindingsAdmitted(stimulus.result.localPatch, handlers, value);
     default:
       return false;
   }

@@ -1,4 +1,4 @@
-import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { evaluateNestedEffectInputs, nestedScopeDataProgram } from "./nested-scope-data.js";
 import { hasSequentialScopeDefinition } from "./sequential-scope-binding.js";
 import { evaluateSequentialScopeInputs } from "./sequential-scope-data.js";
@@ -160,7 +160,7 @@ export function deriveInternalOrdinaryArmingPatch(
         : nestedScopeDataProgram(program)
         ? evaluateNestedEffectInputs(program, state, owner, operation.effect.inputMappings)
         : evaluateInputMappingsUnder(
-          effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+          effectMappingValuePolicyForProgram(program),
           operation.effect.inputMappings,
           state.variables.process.bindings,
         );

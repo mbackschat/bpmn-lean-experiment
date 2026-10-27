@@ -36,14 +36,26 @@ const effectDataRules: SerialChainRules = Object.freeze({
   humanTasks: SerialChainHumanTasks.Forbidden, literalByteLimit: 1024, valuePolicy: EffectMappingValuePolicy.SingletonBusinessItem,
 });
 
+// CSD-ADMIT-01 keeps the literal ceiling of the effect-data rules inside the bounded String domain of CSD-VALUE-01.
+const embeddedScopeDataRules: SerialChainRules = Object.freeze({
+  humanTasks: SerialChainHumanTasks.Required, literalByteLimit: 1024, valuePolicy: EffectMappingValuePolicy.BoundedString,
+});
+
 /**
  * The rules of a serial-chain profile; any other profile that reuses the grammar keeps the serial rules. The nested
- * scope-data profile reuses the effect-data mapping rules; its own admission, not `humanTasks`, decides Human Tasks.
+ * scope-data profile reuses the effect-data mapping rules, and the embedded completion profile takes the bounded String
+ * rules that only its data-bearing Programs consult; their own admissions, not `humanTasks`, decide Human Tasks.
  */
 export function serialChainRulesForProfile(semanticProfile: string): SerialChainRules {
-  return semanticProfile === SemanticProfileId.PortableBusinessEffectData ||
-      semanticProfile === SemanticProfileId.NestedEmbeddedScopeData
-    ? effectDataRules : serialBusinessTaskRules;
+  switch (semanticProfile) {
+    case SemanticProfileId.PortableBusinessEffectData:
+    case SemanticProfileId.NestedEmbeddedScopeData:
+      return effectDataRules;
+    case SemanticProfileId.EmbeddedSubProcessCompletion:
+      return embeddedScopeDataRules;
+    default:
+      return serialBusinessTaskRules;
+  }
 }
 
 /** Profiles whose Program and checked graph are one serial chain, as opposed to profiles that merely reuse its mappings. */

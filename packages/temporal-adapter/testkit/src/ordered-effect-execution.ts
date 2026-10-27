@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 import { Context } from "@temporalio/activity";
 import {
-  CommandOutcome, ControlStateKind, StimulusKind, applyStimulus, effectMappingValuePolicyForProfile, initialState,
+  CommandOutcome, ControlStateKind, StimulusKind, applyStimulus, effectMappingValuePolicyForProgram, initialState,
   projectCompensationEffectTransportMaterial, projectEffectTransportMaterial, projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
 import type { CompleteEffectStimulus, EffectMappingValuePolicy, Scenario, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
@@ -33,7 +33,7 @@ export class OrderedEffectExecution {
   private readonly argumentPolicy: EffectMappingValuePolicy;
 
   constructor(scenario: Scenario, program: SemanticProcessProgram) {
-    this.argumentPolicy = effectMappingValuePolicyForProfile(program.identity.semanticProfile);
+    this.argumentPolicy = effectMappingValuePolicyForProgram(program);
     let state = initialState;
     for (const stimulus of scenario.stimuli) {
       if (stimulus.kind === StimulusKind.CompleteEffect) {

@@ -13,7 +13,7 @@ import {
 } from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { inputMappingSnapshotMatchesUnder } from "./semantic-process-data.js";
-import { effectMappingValuePolicyForProfile } from "./effect-mapping-value-policy.js";
+import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { sequentialScopeBindingForEntry } from "./sequential-scope-binding.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
@@ -136,7 +136,7 @@ export function candidateLongLivedStarts(
         candidate.output === operation.output &&
         sameJson(candidate.descriptor, operation.effect.descriptor) &&
         inputMappingSnapshotMatchesUnder(
-          effectMappingValuePolicyForProfile(program.identity.semanticProfile),
+          effectMappingValuePolicyForProgram(program),
           operation.effect.inputMappings,
           candidate.arguments,
         ) &&

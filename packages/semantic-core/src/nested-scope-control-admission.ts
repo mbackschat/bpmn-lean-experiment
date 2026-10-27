@@ -1,5 +1,10 @@
 import { CallDataKind } from "./call-data-contract.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
+import { concurrentScopeRequiredStartNames, enclosingReads } from "./concurrent-scope-data-availability.js";
+import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
+import { scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
+import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
+import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
 import { parallelBodyScans } from "./parallel-body-burst-analysis.js";
 import type { ParallelBodyScans } from "./parallel-body-burst-analysis.js";
@@ -9,9 +14,10 @@ import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { ParallelBodyNodeKind as Kind } from "./structured-parallel-body-analysis.js";
 import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
 import { RawBodyNodeKind, contractMergeRegions, multiplicityWeightedExtra } from "./merge-region-admission.js";
-import { serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
+import { serialBusinessEffectAdmitted, serialChainRulesForProfile } from "./serial-business-task-policy.js";
 import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
-import type { DefinitionScope } from "./semantic-value-contract.js";
+import type { DefinitionScope, ScopeLocalData, VariableMapping } from "./semantic-value-contract.js";
+import { compareCanonicalStrings } from "./wire.js";
 
 /**
  * NSC-ADMIT-01 for the embedded completion profile, an independent transcription of the Lean `NestedScopeControl`
@@ -27,6 +33,9 @@ import type { DefinitionScope } from "./semantic-value-contract.js";
  * CSE-ADMIT-01 makes a data-free, overlay-bound Service Task a task wherever a User Task is one, except in a called body
  * or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task list that drives the bursts,
  * the task bound and the merge-target check.
+ *
+ * CSD-ADMIT-01 admits data in a model without a Call: Sub-Process declarations and mapped Service Tasks under the bounded
+ * String rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw bodies.
  */
 
 /** Definition depth of the deepest admitted Sub-Process body below the root. */
@@ -50,6 +59,8 @@ type RawBody = Readonly<{
   /** User and Service Task vertices; Service Tasks are also listed in `serviceTasks`. */
   tasks: readonly string[];
   serviceTasks: readonly string[];
+  /** The reads and writes of each mapped Service Task vertex; empty in a data-free model. */
+  accesses: ReadonlyMap<string, ScopeDataAccess>;
 }>;
 
 type Body = Omit<RawBody, "nodes"> & Readonly<{ nodes: readonly ParallelBodyNode[]; regions: readonly MergeRegion[] }>;
@@ -340,6 +351,37 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
   return maximum;
 }
 
+/** A model's data: its scope declarations and handler names, or `null` for a data-free model. */
+type ModelData = Readonly<{ records: readonly ScopeLocalData[]; handlers: ReadonlySet<string> }>;
+
+/** The admitted largest closure and, for a data-bearing model, its required Start names. */
+type Admitted = Readonly<{ burst: number; required: readonly string[] }>;
+
+/**
+ * CSD-ADMIT-01's data rules over a tree whose control is already admitted: declarations sorted by scope, each on a
+ * Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 over the raw bodies.
+ */
+function admittedData(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody>, data: ModelData):
+  readonly string[] | null {
+  const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
+  const { records, handlers } = data;
+  if (roots.length !== 1 || !records.every(({ scopeId }, index) =>
+      index === 0 || compareCanonicalStrings(records[index - 1]!.scopeId, scopeId) < 0) ||
+      !records.every(record => record.scopeId !== roots[0]!.id && raw.has(record.scopeId) &&
+        scopeLocalRecordAdmitted(handlers, record))) return null;
+  const accesses = new Map([...raw.values()].flatMap(({ accesses }) => [...accesses]));
+  return concurrentScopeRequiredStartNames(roots[0]!.id, raw, records, accesses);
+}
+
+function admittedModel(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
+  data: ModelData | null): Admitted | null {
+  const burst = admittedBurst(scopes, raw);
+  if (burst === null || raw === null) return null;
+  if (data === null) return { burst, required: [] };
+  const required = admittedData(scopes, raw, data);
+  return required === null ? null : { burst, required };
+}
+
 function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null): number | null {
   const bodies = contractBodies(raw);
   if (bodies === null) return null;
@@ -371,6 +413,7 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   nodeScopes: readonly Readonly<{ nodeId: string; scopeId: string }>[];
   nodes: readonly CheckedNode[];
   flows: readonly CheckedSequenceFlow[];
+  scopeLocalData?: readonly ScopeLocalData[];
 }>;
 
 /** CSE-ADMIT-01: no mapping, no Error route, and the serial business-task Activity descriptor. */
@@ -380,14 +423,30 @@ function dataFreeServiceTask(effect: Readonly<{ inputMappings: readonly unknown[
     serialBusinessEffectAdmitted(effect);
 }
 
-function checkedKind(node: CheckedNode): RawBodyNodeKind | null {
+const scopeDataRules = serialChainRulesForProfile(SemanticProfileId.EmbeddedSubProcessCompletion);
+
+/** CSD-ADMIT-01: in a data-bearing model a Service Task may map data under the bounded String rules. */
+function admittedServiceTask(effect: Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }>,
+  bpmnErrorRoute: unknown, data: ModelData | null): boolean {
+  return data === null ? dataFreeServiceTask(effect, bpmnErrorRoute)
+    : bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect, data.handlers, scopeDataRules);
+}
+
+function accessOf(effect: Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }>):
+  ScopeDataAccess {
+  return { reads: enclosingReads(effect.inputMappings), writes: effect.outputMappings.map(({ target }) => target) };
+}
+
+/** CSD-ADMIT-01 excludes every Call Activity from a data-bearing model. */
+function checkedKind(node: CheckedNode, data: ModelData | null): RawBodyNodeKind | null {
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
-    case CheckedNodeKind.ServiceTask: return dataFreeServiceTask(node, node.bpmnErrorRoute) ? RawBodyNodeKind.Task : null;
+    case CheckedNodeKind.ServiceTask: return admittedServiceTask(node, node.bpmnErrorRoute, data) ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.EmbeddedSubProcess: return RawBodyNodeKind.Task;
-    case CheckedNodeKind.CallActivity: return node.data.kind === CallDataKind.Empty ? RawBodyNodeKind.Task : null;
+    case CheckedNodeKind.CallActivity:
+      return data === null && node.data.kind === CallDataKind.Empty ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.ExclusiveMerge: return RawBodyNodeKind.Merge;
     case CheckedNodeKind.ParallelGateway:
       return node.direction === GatewayDirection.Diverging ? RawBodyNodeKind.Fork
@@ -396,7 +455,16 @@ function checkedKind(node: CheckedNode): RawBodyNodeKind | null {
   }
 }
 
-function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, RawBody> | null {
+/** A checked graph carries data exactly when a scope declares a local or a Service Task maps one. */
+function checkedData(graph: NestedScopeControlCheckedGraph): ModelData | null {
+  const services = graph.nodes.flatMap(node => node.kind === CheckedNodeKind.ServiceTask ? [node] : []);
+  const records = graph.scopeLocalData ?? [];
+  return records.length === 0 && services.every(({ inputMappings, outputMappings }) =>
+      inputMappings.length === 0 && outputMappings.length === 0) ? null
+    : { records, handlers: new Set(services.map(({ descriptor }) => descriptor.operation)) };
+}
+
+function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | null): Map<string, RawBody> | null {
   const calledRoot = (processId: string): string | undefined => {
     const roots = graph.definitionScopes.filter(({ parentScopeId, originElementId }) =>
       parentScopeId === null && originElementId === processId);
@@ -412,9 +480,11 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, RawBo
     const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     const calls = new Map<string, string>();
+    const accesses = new Map<string, ScopeDataAccess>();
     for (const node of nodes) {
-      const kind = checkedKind(node);
+      const kind = checkedKind(node, data);
       if (kind === null) return null;
+      if (node.kind === CheckedNodeKind.ServiceTask) accesses.set(node.id, accessOf(node));
       if (node.kind === CheckedNodeKind.EmbeddedSubProcess) children.set(node.id, node.childScopeId);
       if (node.kind === CheckedNodeKind.CallActivity) {
         const root = calledRoot(node.calledProcessId);
@@ -424,15 +494,25 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph): Map<string, RawBo
       vertices.push({ id: node.id, kind, outputs: graph.flows.filter(({ sourceId }) => sourceId === node.id).map(({ targetId }) => targetId) });
     }
     const serviceTasks = nodes.filter(({ kind }) => kind === CheckedNodeKind.ServiceTask).map(({ id }) => id);
-    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks,
+    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks, accesses,
       tasks: [...nodes.filter(({ kind }) => kind === CheckedNodeKind.UserTask).map(({ id }) => id), ...serviceTasks] });
   }
   return bodies;
 }
 
-/** NSC-ADMIT-01 over the checked graph; `null` refuses it, otherwise the admitted largest closure. */
+function checkedModel(graph: NestedScopeControlCheckedGraph): Admitted | null {
+  const data = checkedData(graph);
+  return admittedModel(graph.definitionScopes, checkedBodies(graph, data), data);
+}
+
+/** NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `null` refuses it, otherwise the admitted largest closure. */
 export function nestedScopeControlCheckedAnalysis(graph: NestedScopeControlCheckedGraph): number | null {
-  return admittedBurst(graph.definitionScopes, checkedBodies(graph));
+  return checkedModel(graph)?.burst ?? null;
+}
+
+/** CSD-AVAILABLE-01's required Start names over the checked graph, empty for a data-free model. */
+export function nestedScopeControlCheckedStartNames(graph: NestedScopeControlCheckedGraph): readonly string[] | null {
+  return checkedModel(graph)?.required ?? null;
 }
 
 function inputsOf(operation: SemanticOperation): readonly string[] {
@@ -455,7 +535,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
 /** The lowered child Start is elided; this synthetic vertex stands for the child's entry place. */
 const childStart = (scope: string): string => `start:${scope}`;
 
-function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | null {
+function programBodies(program: SemanticProcessProgram, data: ModelData | null): Map<string, RawBody> | null {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
   const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
   const returns = program.operations.filter((operation): operation is ReturnProcessOperation =>
@@ -485,6 +565,7 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
     const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     const calls = new Map<string, string>();
+    const accesses = new Map<string, ScopeDataAccess>();
     const follow = (places: readonly string[]): string[] | null => {
       const targets = places.map(place => consumer(scope, place));
       return targets.every(target => target !== undefined) ? targets as string[] : null;
@@ -498,7 +579,8 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
           kind = RawBodyNodeKind.Task; outputs = operation.task.metadata === undefined ? follow([operation.output]) : null; break;
         case SemanticOperationKind.AwaitEffect:
           kind = RawBodyNodeKind.Task;
-          outputs = dataFreeServiceTask(operation.effect, operation.bpmnErrorRoute) ? follow([operation.output]) : null;
+          outputs = admittedServiceTask(operation.effect, operation.bpmnErrorRoute, data) ? follow([operation.output]) : null;
+          accesses.set(operation.id, accessOf(operation.effect));
           break;
         case SemanticOperationKind.Duplicate: kind = RawBodyNodeKind.Fork; outputs = follow(operation.outputs); break;
         case SemanticOperationKind.Synchronize: kind = RawBodyNodeKind.Join; outputs = follow([operation.output]); break;
@@ -515,7 +597,7 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
         case SemanticOperationKind.InvokeProcess: {
           const returned = returns.filter(({ id }) => id === operation.returnOperationId);
           kind = RawBodyNodeKind.Task;
-          outputs = returned.length !== 1 || returned[0]!.calledRootScopeId !== operation.calledRootScopeId ||
+          outputs = data !== null || returned.length !== 1 || returned[0]!.calledRootScopeId !== operation.calledRootScopeId ||
               returned[0]!.calledProcessId !== operation.calledProcessId || operation.data.kind !== CallDataKind.Empty ||
               consumer(operation.calledRootScopeId, operation.calledEntry) === undefined
             ? null : follow([returned[0]!.callerOutput]);
@@ -528,7 +610,7 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
       vertices.push({ id: operation.id, kind, outputs });
     }
     const serviceTasks = members.filter(({ kind }) => kind === SemanticOperationKind.AwaitEffect).map(({ id }) => id);
-    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks,
+    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks, accesses,
       tasks: [...members.filter(({ kind }) => kind === SemanticOperationKind.AwaitUserTask).map(({ id }) => id), ...serviceTasks] });
   }
   // Every return pairs with exactly one invocation, so no called root completes without a caller to continue.
@@ -558,20 +640,36 @@ function programBodies(program: SemanticProcessProgram): Map<string, RawBody> | 
   return bodies;
 }
 
-/** NSC-ADMIT-01 over the Program, independent of the checked graph; `null` refuses it. */
+/** NSC-ADMIT-01 and CSD-ADMIT-01 over the Program, independent of the checked graph; `null` refuses it. */
 export function nestedScopeControlProgramAnalysis(program: SemanticProcessProgram): number | null {
+  return programModel(program)?.burst ?? null;
+}
+
+/** CSD-AVAILABLE-01's required Start names over the Program, empty for a data-free Program. */
+export function nestedScopeControlProgramStartNames(program: SemanticProcessProgram): readonly string[] | null {
+  return programModel(program)?.required ?? null;
+}
+
+function programModel(program: SemanticProcessProgram): Admitted | null {
   // CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it has an effect.
   const hasEffect = program.operations.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
   if ((program.identity.sourceOverlay !== null) !== hasEffect ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
       program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined ||
-      program.scopeLocalData !== undefined) return null;
+      (program.scopeLocalData !== undefined && program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion)) {
+    return null;
+  }
   const root = program.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === program.processId);
   const rootCompletion = program.operations.filter(operation =>
     operation.kind === SemanticOperationKind.CompleteScope && operation.scopeId === root?.id && operation.parentOutput === null);
-  return rootCompletion.length === 1 ? admittedBurst(program.definitionScopes, programBodies(program)) : null;
+  const data: ModelData | null = embeddedScopeDataBearing(program) ? {
+    records: program.scopeLocalData ?? [],
+    handlers: new Set(program.operations.flatMap(operation =>
+      operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),
+  } : null;
+  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data), data) : null;
 }
 
 const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([

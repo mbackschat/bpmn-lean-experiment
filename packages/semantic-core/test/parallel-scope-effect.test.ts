@@ -238,8 +238,10 @@ test("a true human condition waits for the whole body, then cancels siblings and
   const humanEnd = { ...end, id: "humanEnd", input: "humanDone", origin: origin("HumanEnd") };
   const complete = { kind: Op.CompleteParallelMultiInstanceScope, id: "complete", origin: entry.origin, entryOperationId: entry.id } as const;
   const operations = [repeated, fork, service, task, end, humanEnd, complete];
-  const selected = { ...program, operations, operationScopes: operations.map(operation => ({ operationId: operation.id,
-    scopeId: operation.id === entry.id ? "root" : "body" })) };
+  // The fixture's mapped effect would make an embedded completion Program data-bearing, so the parallel profile is named.
+  const selected = { ...program, identity: { ...program.identity, semanticProfile: "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" },
+    operations, operationScopes: operations.map(operation => ({ operationId: operation.id,
+      scopeId: operation.id === entry.id ? "root" : "body" })) };
   const initial = ready(["A", "B"]);
   const before = { ...initial, variables: { ...initial.variables, process: { bindings: [
     ...initial.variables.process.bindings.slice(0, 2), { name: "approved", value: { kind: Value.Boolean, value: false } } as const,

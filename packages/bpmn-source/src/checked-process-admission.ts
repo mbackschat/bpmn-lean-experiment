@@ -83,8 +83,11 @@ export function isAdmittedCheckedProcess(
       structuredCompositionCheckedGraph(graph)) &&
     (semanticProfile !== SemanticProfileId.PortableBusinessValuesHandoff || portableHandoffCheckedGraph(graph)) &&
     (!isSerialChainProfile(semanticProfile) || serialBusinessCheckedGraph(graph, serialChainRulesForProfile(semanticProfile))) &&
+    // The exact class is data-free, so a data-bearing graph takes the nested class, which also decides its data.
     (semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion ||
-      requiredCheckedShapeAllows(semanticProfile, graph.nodes, graph.definitionScopes.length) ||
+      ((graph.scopeLocalData ?? []).length === 0 && graph.nodes.every(node => node.kind !== CheckedNodeKind.ServiceTask ||
+        (node.inputMappings.length === 0 && node.outputMappings.length === 0)) &&
+        requiredCheckedShapeAllows(semanticProfile, graph.nodes, graph.definitionScopes.length)) ||
       nestedScopeControlCheckedAnalysis(graph) !== null) &&
     hasSelectedParallelTopology(semanticProfile, graph) &&
     hasSelectedStructuredHumanWorkTopology(semanticProfile, graph) &&

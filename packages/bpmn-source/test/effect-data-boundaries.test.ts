@@ -18,6 +18,9 @@ import {
   assessment, chainXml, compileCredit, creditNames, creditTasks, creditXml, effectDataProfile, list, nothing, protocol, text,
 } from "./effect-data-fixture.ts";
 import { compile as compileSerial, profile as serialProfile } from "./serial-business-task-fixture.ts";
+import type { DataGateProgram } from "@bpmn-lean/semantic-core";
+const gateProgram = (semanticProfile: string): DataGateProgram =>
+  ({ identity: { semanticProfile } as DataGateProgram["identity"], operations: [] });
 
 const binding = (name: string, value: VariableValue): VariableBinding => ({ name, value });
 const names = creditNames;
@@ -121,9 +124,9 @@ test("the serial business-task profile refuses the same structured result and a 
   assert.deepEqual(result.state, atEffect);
 
   const { state } = await atNotify();
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(effectDataProfile, state), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(serialProfile, state), false);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(SemanticProfileId.ServiceTaskEffect, state), false);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(effectDataProfile), state), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(serialProfile), state), false);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(SemanticProfileId.ServiceTaskEffect), state), false);
 });
 
 test("restoration under the profile requires every carried value to be a SingletonBusinessItem", async () => {
@@ -133,24 +136,24 @@ test("restoration under the profile requires every carried value to be a Singlet
     ...state,
     effectWaits: state.effectWaits.map((wait) => ({ ...wait, arguments: [binding("assessment", value)] })),
   });
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot(assessment())), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot(nothing)), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot(text("a".repeat(1024)))), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot(list(nothing))), false, "root List in an open snapshot");
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot(text("a".repeat(1025)))), false, "over-long root String in an open snapshot");
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withSnapshot({ kind: VariableValueKind.StringList, value: ["a"] })), false);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot(assessment())), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot(nothing)), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot(text("a".repeat(1024)))), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot(list(nothing))), false, "root List in an open snapshot");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot(text("a".repeat(1025)))), false, "over-long root String in an open snapshot");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withSnapshot({ kind: VariableValueKind.StringList, value: ["a"] })), false);
 
   const withProperty = (value: VariableValue): RuntimeState => ({
     ...state, variables: { ...state.variables, process: { bindings: [...state.variables.process.bindings, binding("extra", value)] } },
   });
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withProperty(assessment())), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withProperty(list())), false, "root List Property");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withProperty(assessment())), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withProperty(list())), false, "root List Property");
 
   const withLocal = (value: VariableValue): RuntimeState => ({
     ...state, variables: { ...state.variables, activities: state.variables.activities.map((scope) => ({ ...scope, bindings: [binding("assessment", value)] })) },
   });
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withLocal(assessment())), true);
-  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(profile, withLocal(list())), false, "root List Activity local");
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withLocal(assessment())), true);
+  assert.equal(runtimeStateCarriesOnlyProfilePortableValues(gateProgram(profile), withLocal(list())), false, "root List Activity local");
 });
 
 // Lean's EffectData.commandAdmitted refuses these states through bindingsValidUnder and inputSnapshotMatchesUnder.

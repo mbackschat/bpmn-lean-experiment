@@ -16,6 +16,7 @@ import {
 import type {
   CheckedCompensation,
   CheckedInterruptingMessageEventSubProcess,
+  ScopeLocalData,
   CheckedNode,
   CheckedSequenceFlow,
   DefinitionScope,
@@ -33,6 +34,7 @@ export type CheckedProcessGraph = Readonly<{
   flows: ReadonlyArray<CheckedSequenceFlow>;
   compensation?: CheckedCompensation;
   interruptingMessageEventSubProcesses?: ReadonlyArray<CheckedInterruptingMessageEventSubProcess>;
+  scopeLocalData?: ReadonlyArray<ScopeLocalData>;
 }>;
 
 type AdmittedCheckedProcessGraph = Readonly<{

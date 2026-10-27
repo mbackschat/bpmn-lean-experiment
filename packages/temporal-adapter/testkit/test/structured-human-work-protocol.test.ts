@@ -6,7 +6,7 @@ import {
   StimulusKind,
   VariableValueKind,
   effectMappingAcceptsValue,
-  effectMappingValuePolicyForProfile,
+  effectMappingValuePolicyForProgram,
 } from "@bpmn-lean/semantic-core";
 import type {
   EffectTransportMaterial,
@@ -119,7 +119,7 @@ test("keeps the new value arms outside the profile's effect mapping, not the tra
     arguments: [{ name: "value", value: integer }],
   };
   assert.match(canonicalEffectTransportEncoding(material), /"value"/u);
-  const policy = effectMappingValuePolicyForProfile(material.definition.semanticProfile);
+  const policy = effectMappingValuePolicyForProgram({ identity: { semanticProfile: material.definition.semanticProfile } as never, operations: [] });
   assert.equal(policy, EffectMappingValuePolicy.Scalar);
   for (const value of [integer, { kind: VariableValueKind.StringList, value: ["a"] } as const]) {
     assert.equal(effectMappingAcceptsValue(policy, value, true), false, value.kind);
