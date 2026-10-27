@@ -8,7 +8,8 @@
  * only the modules its public declarations name, and re-derived the same day once the count learned that an
  * `import all` or `meta import` loads private imports too, so a new leaf module does not trip every module its
  * imports re-export, while a module that turns into a hub still fails. The list only shrinks: an entry whose module falls to
- * the default fails until it is removed, and raising a bound or adding an entry is a reviewed edit.
+ * the default fails until it is removed, and raising a bound or adding an entry is a reviewed edit that records the
+ * graph of the commit making it under the same rule.
  */
 
 import type { LeanFanoutBound } from "./lean-fanout.ts";
@@ -92,6 +93,7 @@ export const leanFanoutBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.RuntimeStateWellFormed", bound: 577 },
   { module: "BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime", bound: 568 },
   { module: "BpmnSemantics.SemanticProcess.PropertyPathValuePolicy", bound: 566 },
+  { module: "BpmnSemantics.SemanticProcess.ScopeDataBearing", bound: 561 },
   { module: "BpmnSemantics.SemanticProcess.EffectMappingValuePolicy", bound: 558 },
   { module: "BpmnSemantics.SemanticProcess.EffectDataMapping", bound: 524 },
   { module: "BpmnSemantics.SemanticProcess.WaitActivation", bound: 523 },
@@ -170,7 +172,10 @@ export const leanFanoutBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.InternalRegionalFootprint", bound: 244 },
   { module: "BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission", bound: 244 },
   { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 240 },
+  { module: "BpmnSemantics.SemanticProcess.MergeRegionAdmission", bound: 240 },
+  { module: "BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability", bound: 239 },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeDataAdmission", bound: 238 },
+  { module: "BpmnSemantics.SemanticProcess.NestedScopeControlAdmission", bound: 238 },
   { module: "BpmnSemantics.SemanticProcess.PortableHandoffAdmission", bound: 237 },
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeCheckedAdmission", bound: 234 },
   { module: "BpmnSemantics.SemanticProcess.WaitCompletion", bound: 234 },
@@ -237,11 +242,11 @@ export const leanHiddenEditDefaultBound = 10;
  * shrinks them; it shrinks under the same rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 764 },
-  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 433 },
-  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 432 },
-  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 430 },
-  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 303 },
+  { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 765 },
+  { module: "BpmnSemantics.SemanticProcess.EffectDataAdmission", bound: 434 },
+  { module: "BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission", bound: 433 },
+  { module: "BpmnSemantics.SemanticProcess.MessageStartAdmission", bound: 431 },
+  { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 304 },
   { module: "BpmnSemantics.SemanticProcess.SequentialScopeRuntime", bound: 242 },
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeData", bound: 136 },
   { module: "BpmnSemantics.SemanticProcess.ProfileShapeCatalog", bound: 113 },

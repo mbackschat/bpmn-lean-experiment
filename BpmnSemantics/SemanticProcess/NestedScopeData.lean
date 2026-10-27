@@ -23,16 +23,34 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- The nested scope-data profile, and a data-bearing embedded completion Program, whose frames resolve by
+the same occurrence chain; every value check takes that Program's effect policy. -/
 def nestedScopeDataProgram (program : Program) : Bool :=
-  program.identity.semanticProfile == nestedScopeDataProfileId
+  program.identity.semanticProfile == nestedScopeDataProfileId || embeddedScopeDataBearing program
 
 theorem nestedScopeDataProgram_of_profile_value {program : Program} {value : String}
     (selected : program.identity.semanticProfile.value = value)
-    (distinct : value ≠ nestedScopeDataProfileId.value := by decide +kernel) : nestedScopeDataProgram program = false := by
-  simp only [nestedScopeDataProgram, beq_eq_false_iff_ne]
+    (distinct : value ≠ nestedScopeDataProfileId.value := by decide +kernel)
+    (otherScope : value ≠ embeddedCompletionProfileId.value := by decide +kernel) :
+    nestedScopeDataProgram program = false := by
+  simp only [nestedScopeDataProgram, embeddedScopeDataBearing_of_profile_value selected otherScope, Bool.or_false,
+    beq_eq_false_iff_ne]
   intro same
   apply distinct
   rw [← selected, same]
+
+/-- A scalar effect policy excludes every Program whose frames resolve by the occurrence chain. -/
+theorem nestedScopeDataProgram_false_of_scalar {program : Program}
+    (scalar : programEffectMappingValuePolicy program = .scalar) : nestedScopeDataProgram program = false := by
+  unfold programEffectMappingValuePolicy at scalar
+  cases bearing : embeddedScopeDataBearing program with
+  | true => simp [bearing] at scalar
+  | false =>
+      cases nested : program.identity.semanticProfile == nestedScopeDataProfileId with
+      | false => simp [nestedScopeDataProgram, bearing, nested]
+      | true =>
+          simp only [beq_iff_eq] at nested
+          simp [bearing, effectMappingValuePolicy, nested] at scalar
 
 namespace NestedScopeData
 
@@ -123,28 +141,29 @@ def resolveOwner? (scopes : List ScopeVariableScope) : List ScopeOccurrenceId �
           else resolveOwner? scopes rest name
       | _ => none
 
-/-- NSD-READ-01 from the occurrence `reader`; every value is re-validated as a `SingletonBusinessItem`,
-so a stored binding is never trusted for having been written earlier. -/
+/-- NSD-READ-01 from the occurrence `reader`; every value is re-validated under the Program's effect
+policy, so a stored binding is never trusted for having been written earlier. -/
 def read? (program : Program) (occurrences : List RuntimeScopeOccurrence) (variables : ScopedVariables)
     (reader : ScopeOccurrenceId) (name : String) : Option VariableValue := do
   let chain ← occurrenceChain occurrences reader
   match ← resolveOwner? variables.scopes chain name with
   | .process =>
       match calledRootOf? program chain with
-      | none => enclosingVariableUnder? .singletonBusinessItem variables.process.bindings name
+      | none => enclosingVariableUnder? (programEffectMappingValuePolicy program) variables.process.bindings name
       | some _ => none
   | .frame owner =>
       let frame ← selectScopeVariables? variables owner
-      enclosingVariableUnder? .singletonBusinessItem frame.bindings name
+      enclosingVariableUnder? (programEffectMappingValuePolicy program) frame.bindings name
 
 /-- A binding read that keeps absence apart from refusal: `some none` for no binding, `none` for a
-repeated binding or a value outside the item domain. Call mappings copy an absent name as a present
-null (CVM-IN-01, CVM-OUT-01) but never fabricate one for a refused read. -/
-def bindingOutcome? (bindings : List VariableBinding) (name : String) : Option (Option VariableValue) :=
+repeated binding or a value outside the Program's value domain. Call mappings copy an absent name as a
+present null (CVM-IN-01, CVM-OUT-01) but never fabricate one for a refused read. -/
+def bindingOutcome? (policy : EffectMappingValuePolicy) (bindings : List VariableBinding) (name : String) :
+    Option (Option VariableValue) :=
   match bindings.filter (·.name == name) with
   | [] => some none
   | [binding] =>
-      if EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value then some (some binding.value)
+      if policy.admits true binding.value then some (some binding.value)
       else none
   | _ => none
 
@@ -156,13 +175,13 @@ def readOutcome? (program : Program) (occurrences : List RuntimeScopeOccurrence)
   match ← resolveOwner? variables.scopes chain name with
   | .process =>
       match calledRootOf? program chain with
-      | none => bindingOutcome? variables.process.bindings name
+      | none => bindingOutcome? (programEffectMappingValuePolicy program) variables.process.bindings name
       | some root =>
           let [_] := framesAt variables.scopes root | none
           some none
   | .frame owner =>
       let frame ← selectScopeVariables? variables owner
-      bindingOutcome? frame.bindings name
+      bindingOutcome? (programEffectMappingValuePolicy program) frame.bindings name
 
 /-- NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process binding, or
 the called-root frame's binding when the chain ends at a called root (CVM-RESOLVE-01, as CIB's
@@ -211,7 +230,7 @@ def initializeFrame? (program : Program) (state : RuntimeState) (childScopeId : 
   | none => some state
   | some record => do
       let (child, parent) ← occurrenceWithParent? state childScopeId
-      let bindings ← evaluateInputMappingsUnder? .singletonBusinessItem
+      let bindings ← evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
         (read? program state.scopeOccurrences state.variables parent) record.localInputs
       if !scopeVariableNamesUnique bindings || state.variables.scopes.any (·.owner == child) then none
       else
@@ -233,7 +252,7 @@ def writeOutputs? (program : Program) (state : RuntimeState) (scopeId : Definiti
       let frame ← selectScopeVariables? state.variables child
       let values ← record.localOutputs.mapM fun mapping => match mapping.expression with
         | .localVariable source => do
-            let value ← enclosingVariableUnder? .singletonBusinessItem frame.bindings source
+            let value ← enclosingVariableUnder? (programEffectMappingValuePolicy program) frame.bindings source
             some ({ name := mapping.target, value } : VariableBinding)
         | _ => none
       let variables ← writeAll? program state.scopeOccurrences state.variables parent values

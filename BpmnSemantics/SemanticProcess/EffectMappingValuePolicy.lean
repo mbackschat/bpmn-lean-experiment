@@ -2,12 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 public import BpmnSemantics.SemanticProcess.JsonSupport
+public import BpmnSemantics.SemanticProcess.ScopeDataBearing
 
 /-! # Effect-mapping value policy
 
 Which typed values a Service Task's effect mapping may carry: the enclosing values copied into an
 argument snapshot, the snapshot itself, and the result patch read from the Activity-local scope. The
-policy is derived from the exact Program profile and is never a wire flag, per the
+policy is derived from the exact Program, its profile and, for the embedded completion profile, whether
+it carries data, and is never a wire flag, per the
 [structured effect-data amendment](../../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#runtime-ownership-and-acceptance).
 It is the effect-side analogue of `PropertyPathValuePolicy`; the two are independent because a profile
 may widen one path only.
@@ -30,10 +32,14 @@ inductive EffectMappingValuePolicy where
   | scalar
   /-- `SingletonBusinessItem`, whose Null is always a present value. -/
   | singletonBusinessItem
+  /-- CSD-VALUE-01: a String within the item policy's root bound, or a Null that is always present. The
+  embedded completion profile selects it for data-bearing Programs only. -/
+  | boundedString
   deriving Repr, DecidableEq
 
 /-- `allowNull` is the scalar contract's per-call distinction; the item arm ignores it. The item arm also
-re-validates the whole tree, so a snapshot or patch is never trusted for having come from an earlier write. -/
+re-validates the whole tree, so a snapshot or patch is never trusted for having come from an earlier write;
+the bounded String arm ignores it too. -/
 def EffectMappingValuePolicy.admits : EffectMappingValuePolicy → Bool → VariableValue → Bool
   | .scalar, _, .string _ => true
   | .scalar, allowNull, .null => allowNull
@@ -42,6 +48,10 @@ def EffectMappingValuePolicy.admits : EffectMappingValuePolicy → Bool → Vari
   | .singletonBusinessItem, _, value =>
       PropertyPathValuePolicy.singletonBusinessItem.admits value &&
         BpmnSemantics.SemanticProcessJson.variableValueWellFormed value
+  | .boundedString, _, .string value => value.utf8ByteSize ≤ 1024
+  | .boundedString, _, .null => true
+  | .boundedString, _, .boolean _ | .boundedString, _, .integer _ | .boundedString, _, .stringList _
+  | .boundedString, _, .decimal _ _ | .boundedString, _, .list _ | .boundedString, _, .map _ => false
 
 /-- Only the structured effect-data and nested scope-data profiles widen effect mapping; every other
 profile, including an unknown one, keeps the scalar contract. -/
@@ -49,30 +59,47 @@ def effectMappingValuePolicy (profile : ProfileId) : EffectMappingValuePolicy :=
   if profile = portableEffectDataProfileId ∨ profile = nestedScopeDataProfileId then .singletonBusinessItem
   else .scalar
 
-abbrev programEffectMappingValuePolicy (program : Program) : EffectMappingValuePolicy :=
-  effectMappingValuePolicy program.identity.semanticProfile
+/-- A data-bearing embedded completion Program widens its profile's scalar contract to bounded Strings
+(CSD-VALUE-01); its profile selects `scalar`, so no other selection changes. -/
+def programEffectMappingValuePolicy (program : Program) : EffectMappingValuePolicy :=
+  if embeddedScopeDataBearing program then .boundedString
+  else effectMappingValuePolicy program.identity.semanticProfile
 
 theorem programEffectMappingValuePolicy_eq_scalar {program : Program}
     (other : program.identity.semanticProfile ≠ portableEffectDataProfileId)
-    (otherNested : program.identity.semanticProfile ≠ nestedScopeDataProfileId) :
+    (otherNested : program.identity.semanticProfile ≠ nestedScopeDataProfileId)
+    (dataFree : embeddedScopeDataBearing program = false) :
     programEffectMappingValuePolicy program = .scalar := by
-  simp [programEffectMappingValuePolicy, effectMappingValuePolicy, other, otherNested]
+  simp [programEffectMappingValuePolicy, effectMappingValuePolicy, other, otherNested, dataFree]
 
 /-- The reading used by profile-specific proofs, which know their own profile identity. -/
 theorem programEffectMappingValuePolicy_eq_scalar_of_profile {program : Program} {profile : ProfileId}
     (same : program.identity.semanticProfile = profile) (other : profile ≠ portableEffectDataProfileId)
-    (otherNested : profile ≠ nestedScopeDataProfileId := by decide +kernel) :
+    (otherNested : profile ≠ nestedScopeDataProfileId := by decide +kernel)
+    (otherScope : profile.value ≠ embeddedCompletionProfileId.value := by decide +kernel) :
     programEffectMappingValuePolicy program = .scalar :=
   programEffectMappingValuePolicy_eq_scalar (same ▸ other) (same ▸ otherNested)
+    (embeddedScopeDataBearing_of_profile_value (congrArg ProfileId.value same) otherScope)
 
 /-- The reading used by proofs that know their Program only by its profile string, such as the Multi-Instance families. -/
 theorem programEffectMappingValuePolicy_eq_scalar_of_value {program : Program} {value : String}
     (same : program.identity.semanticProfile.value = value) (other : value ≠ portableEffectDataProfileId.value)
-    (otherNested : value ≠ nestedScopeDataProfileId.value := by decide +kernel) :
+    (otherNested : value ≠ nestedScopeDataProfileId.value := by decide +kernel)
+    (otherScope : value ≠ embeddedCompletionProfileId.value := by decide +kernel) :
     programEffectMappingValuePolicy program = .scalar :=
   programEffectMappingValuePolicy_eq_scalar
     (fun profile => other (same.symm.trans (congrArg ProfileId.value profile)))
     (fun profile => otherNested (same.symm.trans (congrArg ProfileId.value profile)))
+    (embeddedScopeDataBearing_of_profile_value same otherScope)
+
+/-- The item policy of the two profiles that select it, whatever their Program carries. -/
+theorem programEffectMappingValuePolicy_of_item_profile {program : Program}
+    (item : program.identity.semanticProfile = portableEffectDataProfileId ∨
+      program.identity.semanticProfile = nestedScopeDataProfileId) :
+    programEffectMappingValuePolicy program = .singletonBusinessItem := by
+  have dataFree : embeddedScopeDataBearing program = false := by
+    rcases item with same | same <;> exact embeddedScopeDataBearing_of_profile_value (congrArg ProfileId.value same)
+  simp [programEffectMappingValuePolicy, effectMappingValuePolicy, dataFree, item]
 
 theorem effectMappingValuePolicy_portableEffectData :
     effectMappingValuePolicy portableEffectDataProfileId = .singletonBusinessItem := by
@@ -87,6 +114,13 @@ theorem singletonBusinessItem_refuses_overlong_string (allowNull : Bool) {value 
     (over : 1024 < value.utf8ByteSize) :
     EffectMappingValuePolicy.singletonBusinessItem.admits allowNull (.string value) = false := by
   simp [EffectMappingValuePolicy.admits, PropertyPathValuePolicy.admits]
+  omega
+
+/-- CSD-VALUE-01 shares that bound. -/
+theorem boundedString_refuses_overlong_string (allowNull : Bool) {value : String}
+    (over : 1024 < value.utf8ByteSize) :
+    EffectMappingValuePolicy.boundedString.admits allowNull (.string value) = false := by
+  simp [EffectMappingValuePolicy.admits]
   omega
 
 end BpmnSemantics.SemanticProcess

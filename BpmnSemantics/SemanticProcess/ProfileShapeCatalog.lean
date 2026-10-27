@@ -582,9 +582,10 @@ def checkedExactShapeValid (source : CheckedProcess) : Bool :=
     | none => false
 
 /-- Exact checked node and definition-scope cardinalities selected by the profile. Only the nested
-scope-data profile may declare scope locals. -/
+scope-data and embedded completion profiles may declare scope locals. -/
 def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
-  (source.scopeLocalData.isEmpty || source.identity.semanticProfile == nestedScopeDataProfileId) &&
+  (source.scopeLocalData.isEmpty || source.identity.semanticProfile == nestedScopeDataProfileId ||
+    source.identity.semanticProfile == embeddedCompletionProfileId) &&
   if source.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
     (SequentialScopeChecked.analyze source).isSome
   else if source.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
@@ -610,7 +611,9 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   if source.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionCheckedGraph source
   else if source.identity.semanticProfile.value == embeddedCompletionProfile then
-    checkedExactShapeValid source || (NestedScopeControl.checkedAnalysis source).isSome
+    -- The exact class is data-free, so a data-bearing graph takes the nested class (CSD-ADMIT-01).
+    ((NestedScopeControl.checkedData source).isNone && checkedExactShapeValid source) ||
+      (NestedScopeControl.checkedAnalysis source).isSome
   else checkedExactShapeValid source
 
 def operationPayloadCapabilitiesValid (profile : String)
@@ -729,9 +732,10 @@ def programCapabilityDispatched (profile : ProfileId) : Bool :=
     profile.value == embeddedCompletionProfile
 
 /-- Exact operation and definition-scope cardinalities selected by the profile. Only the nested
-scope-data profile may declare scope locals. -/
+scope-data and embedded completion profiles may declare scope locals. -/
 def programProfileCapabilitiesValid (program : Program) : Bool :=
-  (program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId) &&
+  (program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId ||
+    program.identity.semanticProfile == embeddedCompletionProfileId) &&
   if program.identity.semanticProfile.value == "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" then
     SequentialScopeProgram.admitted program
   else if program.identity.semanticProfile == interruptingMessageEventSubProcessProfileId then
@@ -744,7 +748,8 @@ def programProfileCapabilitiesValid (program : Program) : Bool :=
   else if program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId then
     repeatableSubscriptionProgramGraph program
   else if program.identity.semanticProfile.value == embeddedCompletionProfile then
-    programExactShapeValid program || (NestedScopeControl.programAnalysis program).isSome
+    (!embeddedScopeDataBearing program && programExactShapeValid program) ||
+      (NestedScopeControl.programAnalysis program).isSome
   else programUndispatchedCapabilities program
 
 end BpmnSemantics.SemanticProcess

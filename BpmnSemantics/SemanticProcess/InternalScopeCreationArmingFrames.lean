@@ -10,6 +10,8 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlArmingFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.NestedScopeChainBridge
+import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
@@ -79,22 +81,150 @@ theorem scopeArming_untouched_input (selected : InternalScopeCreationSelection)
     exact not_mem_right_of_listsDisjoint _ _ separated.1.1.1 _ written (scopeArming_input_read arm)
   exact ⟨distinct _ (by simp), distinct _ (by simp)⟩
 
+/-! Inserting an occurrence whose identity no live occurrence carries keeps every occurrence chain that
+already resolves, because each visited link is a live identity (CSD-CHAIN-01), so a nested read that
+succeeded before a scope creation reads the same value after it. -/
+
+private theorem occurrenceChainWithin_insert_fresh (occurrences : List RuntimeScopeOccurrence) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ occurrences, occurrence.id ≠ created.id) :
+    ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
+      NestedScopeData.occurrenceChainWithin occurrences fuel owner = some chain →
+      NestedScopeData.occurrenceChainWithin (insertScopeOccurrence created occurrences) fuel owner = some chain
+  | 0, _, _, walked => by simp [NestedScopeData.occurrenceChainWithin] at walked
+  | fuel + 1, owner, chain, walked => by
+      unfold NestedScopeData.occurrenceChainWithin at walked ⊢
+      cases filtered : occurrences.filter (·.id == owner) with
+      | nil => simp [filtered] at walked
+      | cons occurrence rest =>
+          cases rest with
+          | cons _ _ => simp [filtered] at walked
+          | nil =>
+              have member : occurrence ∈ occurrences.filter (·.id == owner) := by simp [filtered]
+              obtain ⟨present, same⟩ := List.mem_filter.mp member
+              have differs : (created.id == owner) = false := by
+                simp only [beq_iff_eq] at same
+                simp only [beq_eq_false_iff_ne]
+                intro equal
+                exact fresh occurrence present (same.trans equal.symm)
+              rw [insertScopeOccurrence, filter_canonicalInsertBy_rejected scopeOccurrenceBefore (fun scope => scope.id == owner)
+                created occurrences differs, filtered]
+              simp only [filtered] at walked
+              cases parent : occurrence.parent with
+              | none => simpa [parent] using walked
+              | some parentId =>
+                  simp only [parent] at walked ⊢
+                  obtain ⟨tail, rest, rfl⟩ := Option.map_eq_some_iff.mp walked
+                  have inserted := occurrenceChainWithin_insert_fresh occurrences created fresh fuel parentId tail rest
+                  simp only [insertScopeOccurrence] at inserted
+                  simp [inserted]
+
+private theorem occurrenceChain_insert_fresh (occurrences : List RuntimeScopeOccurrence) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ occurrences, occurrence.id ≠ created.id)
+    (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (chained : NestedScopeData.occurrenceChain occurrences owner = some chain) :
+    NestedScopeData.occurrenceChain (insertScopeOccurrence created occurrences) owner = some chain := by
+  have inserted := occurrenceChainWithin_insert_fresh occurrences created fresh _ owner chain chained
+  have grown := NestedScopeData.occurrenceChainWithin_mono (insertScopeOccurrence created occurrences) occurrences.length 1
+    owner chain inserted
+  have length : ∀ values : List RuntimeScopeOccurrence,
+      (insertScopeOccurrence created values).length = values.length + 1 := by
+    intro values
+    induction values with
+    | nil => rfl
+    | cons current rest grown =>
+        simp only [insertScopeOccurrence, canonicalInsertBy] at grown ⊢
+        split <;> simp [grown]
+  simpa [NestedScopeData.occurrenceChain, length occurrences] using grown
+
+/-- A nested read that succeeded before a fresh occurrence is inserted reads the same value after it. -/
+private theorem read?_insert_fresh (occurrences : List RuntimeScopeOccurrence) (program : Program) (variables : ScopedVariables) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ occurrences, occurrence.id ≠ created.id) (reader : ScopeOccurrenceId)
+    (name : String) (value : VariableValue) (found : NestedScopeData.read? program occurrences variables reader name = some value) :
+    NestedScopeData.read? program (insertScopeOccurrence created occurrences) variables reader name = some value := by
+  unfold NestedScopeData.read? at found ⊢
+  cases chained : NestedScopeData.occurrenceChain occurrences reader with
+  | none => simp [chained] at found
+  | some chain =>
+      simpa [occurrenceChain_insert_fresh occurrences created fresh reader chain chained, chained] using found
+
+/-- Input evaluation consults its reader only on enclosing names, so a reader that returns every earlier
+present value again yields the same snapshot. -/
+private theorem evaluateInputMappingsInOrderUnder_of_widened (policy : EffectMappingValuePolicy)
+    (before after : String → Option VariableValue)
+    (widened : ∀ name value, before name = some value → after name = some value) :
+    ∀ (mappings : List VariableMapping) (bindings : List VariableBinding),
+      evaluateInputMappingsInOrderUnder policy before mappings = some bindings →
+      evaluateInputMappingsInOrderUnder policy after mappings = some bindings
+  | [], _, evaluated => evaluated
+  | mapping :: rest, bindings, evaluated => by
+      have tailOf := evaluateInputMappingsInOrderUnder_of_widened policy before after widened rest
+      cases expression : mapping.expression with
+      | stringLiteral literal =>
+          simp only [evaluateInputMappingsInOrderUnder, expression] at evaluated ⊢
+          cases restValue : evaluateInputMappingsInOrderUnder policy before rest with
+          | none => simp [restValue] at evaluated
+          | some tail =>
+              simp only [restValue] at evaluated
+              simp [tailOf tail restValue, ← evaluated]
+      | enclosingVariable name =>
+          simp only [evaluateInputMappingsInOrderUnder, expression] at evaluated ⊢
+          cases read : inputLookupUnder? policy before name with
+          | none => simp [read] at evaluated
+          | some value =>
+              have readAfter : inputLookupUnder? policy after name = some value := by
+                unfold inputLookupUnder? at read ⊢
+                obtain ⟨raw, found, admitted⟩ := Option.bind_eq_some_iff.mp read
+                exact Option.bind_eq_some_iff.mpr ⟨raw, widened _ _ found, admitted⟩
+              cases restValue : evaluateInputMappingsInOrderUnder policy before rest with
+              | none => simp [read, restValue] at evaluated
+              | some tail =>
+                  simp only [read, restValue] at evaluated
+                  simp [readAfter, tailOf tail restValue, ← evaluated]
+      | localVariable _ => simp [evaluateInputMappingsInOrderUnder, expression] at evaluated
+
+private theorem evaluateInputMappingsUnder?_of_widened (policy : EffectMappingValuePolicy)
+    (before after : String → Option VariableValue)
+    (widened : ∀ name value, before name = some value → after name = some value)
+    (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (evaluated : evaluateInputMappingsUnder? policy before mappings = some bindings) :
+    evaluateInputMappingsUnder? policy after mappings = some bindings := by
+  simp only [evaluateInputMappingsUnder?, bind, Option.bind_eq_some_iff] at evaluated ⊢
+  obtain ⟨ordered, canonical, evaluated⟩ := evaluated
+  exact ⟨ordered, canonical, evaluateInputMappingsInOrderUnder_of_widened policy before after widened ordered bindings evaluated⟩
+
+/-- Scope creation keeps the arming's own snapshot: a nested read walks only live links, which a fresh
+occurrence never replaces (CSD-CHAIN-01). Other mappings may differ, because a walk that failed before
+the creation may resolve through the created occurrence. -/
 theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeState)
     (scopeOperation : SemanticOperation) (scope : InternalScopeCreationSelection)
     (scopeFound : selectInternalScopeCreation? state scopeOperation = some scope)
     (owner : ScopeOccurrenceId) (id : OperationId) (origin : BpmnElementOrigin)
     (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
     (evaluated : (evaluateEffectInputs? program state owner effect.inputMappings).isNone = false) :
-    (∀ mappings, evaluateEffectInputs? program (scope.apply state) owner mappings =
-      evaluateEffectInputs? program state owner mappings) ∧
+    evaluateEffectInputs? program (scope.apply state) owner effect.inputMappings =
+      evaluateEffectInputs? program state owner effect.inputMappings ∧
     scopedEffectInputReads? program (scope.apply state) owner (.awaitEffect id origin input output effect route) =
       scopedEffectInputReads? program state owner (.awaitEffect id origin input output effect route) := by
+  have applied : (scope.apply state).scopeOccurrences = insertScopeOccurrence scope.created state.scopeOccurrences ∧
+      (scope.apply state).variables = state.variables := by
+    cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind]
   cases scopeSelected : sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner with
   | false =>
       constructor
-      · intro mappings
-        simp only [evaluateEffectInputs?, scopeSelected]
-        cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind]
+      · simp only [evaluateEffectInputs?, scopeSelected, applied.1, applied.2, Bool.false_eq_true, ↓reduceIte]
+          at evaluated ⊢
+        cases nested : nestedScopeDataProgram program with
+        | false => rfl
+        | true =>
+            have fresh := selectInternalScopeCreation_fresh state scopeOperation scope scopeFound
+            simp only [nested, ↓reduceIte] at evaluated ⊢
+            cases value : evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
+                (NestedScopeData.read? program state.scopeOccurrences state.variables owner) effect.inputMappings with
+            | none => simp [value] at evaluated
+            | some bindings =>
+                exact evaluateInputMappingsUnder?_of_widened _ _ _
+                  (fun name found read => read?_insert_fresh _ program _ scope.created fresh owner name
+                    found read) _ _ value
       · simp only [scopedEffectInputReads?, scopeSelected]
         rfl
   | true =>
@@ -109,8 +239,7 @@ theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeSt
             cases kind : scope.kind <;> simpa only [InternalScopeCreationSelection.apply, kind, sequentialScopeBindingForOwner?,
               sequentialScopeBindingForEntry?] using inserted
           constructor
-          · intro mappings
-            simp only [evaluateEffectInputs?, scopeSelected]
+          · simp only [evaluateEffectInputs?, scopeSelected]
             simp [evaluateSequentialScopeInputs?, binding, afterBinding]
             cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind, readSequentialScopeVariable?]
           · simp only [scopedEffectInputReads?, scopeSelected]
@@ -122,8 +251,9 @@ theorem prepared_scopeCreation_input_frames (program : Program) (state : Runtime
     (operation : SemanticOperation) (patch : InternalArmingPatch)
     (prepared : prepareInternalArm? program state operation = some patch) :
     (match operation with
-      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program (scope.apply state) patch.owner mappings =
-          evaluateEffectInputs? program state patch.owner mappings
+      | .awaitEffect _ _ _ _ effect _ =>
+          evaluateEffectInputs? program (scope.apply state) patch.owner effect.inputMappings =
+            evaluateEffectInputs? program state patch.owner effect.inputMappings
       | _ => True) ∧
     scopedEffectInputReads? program (scope.apply state) patch.owner operation =
       scopedEffectInputReads? program state patch.owner operation := by

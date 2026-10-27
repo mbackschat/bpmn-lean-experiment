@@ -68,7 +68,7 @@ def returnState? (program : Program) (state : RuntimeState) (id : OperationId) (
   else
     let record ← scalarReturnRecord? state id origin
     let frame ← selectScopeVariables? state.variables record.calledRoot
-    let values ← copyValues? (NestedScopeData.bindingOutcome? frame.bindings) outputs
+    let values ← copyValues? (NestedScopeData.bindingOutcome? (programEffectMappingValuePolicy program) frame.bindings) outputs
     let returned ← returnProcessState? state id origin calledProcessId calledRootScopeId callerOutput
     let variables ← NestedScopeData.writeAll? program returned.scopeOccurrences returned.variables record.caller values
     some { returned with variables }

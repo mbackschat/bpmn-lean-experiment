@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
 
 /-! NSC-ADMIT-01 for the embedded completion profile. Each definition scope's body is projected to the
 reviewed structured-body analysis, a Sub-Process appearing in its parent as a task vertex, so
@@ -16,7 +18,11 @@ bound see the call tree exactly as a Sub-Process tree.
 
 CSE-ADMIT-01 makes a data-free, overlay-bound Service Task a task wherever a User Task is one, except in
 a called body or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task
-list that drives the bursts, the task bound and the merge-target check. -/
+list that drives the bursts, the task bound and the merge-target check.
+
+CSD-ADMIT-01 admits data in a model without a Call: Sub-Process declarations and mapped Service Tasks
+under the bounded String rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw
+bodies by `ConcurrentScopeData`. -/
 
 @[expose] public section
 
@@ -343,11 +349,87 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
         let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans expandedFuel root.id.value)
         if maximum ≤ scenarioClosureLimit then some maximum else none
 
+/-- A data-bearing model's declarations, handler names and mapped Service Task accesses. -/
+structure Data where
+  records : List ScopeLocalData
+  handlers : List String
+  accesses : List (String × ConcurrentScopeData.Access)
+
+def serviceAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
+  { reads := SerialBusinessTask.readNames inputs, writes := outputs.map (·.target) }
+
+/-- CSD-ADMIT-01's data rules over a tree whose control is already admitted: declarations sorted by scope,
+each on a Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 over the raw bodies. -/
+def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Data) : Option (List String) := do
+  let root ← StructuredComposition.unique? (scopes.filter (·.parentScopeId.isNone))
+  let bodies := raw.map fun body => ({ scope := body.scope, vertices := body.vertices, children := body.children } :
+    ConcurrentScopeData.Body)
+  if !(strictlySortedStrings (data.records.map (·.scopeId.value)) &&
+      data.records.all (fun record => record.scopeId != root.id && raw.any (·.scope == record.scopeId.value) &&
+        NestedScopeData.recordValid data.handlers record)) then none
+  else ConcurrentScopeData.requiredStartNames root.id.value bodies data.records data.accesses
+
+/-- The admitted largest closure and, for a data-bearing model, its required Start names. -/
+def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (data : Option Data) :
+    Option (Nat × List String) := do
+  let burst ← analyze scopes (← raw.mapM contractBody)
+  match data with
+  | none => return (burst, [])
+  | some data => return (burst, ← admittedData scopes raw data)
+
+/-- A single scope admits nothing: the class needs a Sub-Process or a Call, and a called root is a second
+scope. -/
+theorem analyze_one_scope (allScopes : List DefinitionScope) (allBodies : List Body)
+    (one : allScopes.length = 1) : analyze allScopes allBodies = none := by
+  cases analyzed : analyze allScopes allBodies with
+  | none => rfl
+  | some burst =>
+      exfalso
+      obtain ⟨only, rfl⟩ := List.length_eq_one_iff.mp one
+      unfold analyze at analyzed
+      simp only [bind, Option.bind_eq_some_iff] at analyzed
+      obtain ⟨root, rootFound, called, calledFound, analyzed⟩ := analyzed
+      generalize (allBodies.flatMap fun body => body.calls.map (·.2)).eraseDups = calledRoots
+        at rootFound calledFound analyzed
+      have notCalled : calledRoots.contains only.id.value = false := by
+        clear analyzed calledFound
+        cases parentless : only.parentScopeId.isNone <;>
+          cases contained : calledRoots.contains only.id.value <;>
+          simp_all [StructuredComposition.unique?, List.filter]
+      cases calledRoots with
+      | cons first rest =>
+          clear analyzed
+          rw [List.mapM_cons] at calledFound
+          obtain ⟨_, headFound, _⟩ := Option.bind_eq_some_iff.mp calledFound
+          obtain ⟨_, _, headFound⟩ := Option.bind_eq_some_iff.mp headFound
+          clear rootFound calledFound
+          split at headFound
+          · cases parentless : only.parentScopeId.isNone <;> simp_all [List.filter]
+          · contradiction
+      | nil =>
+          rw [List.mapM_nil] at calledFound
+          obtain rfl : called = [] := (Option.some.inj calledFound).symm
+          obtain ⟨_, _, analyzed⟩ := analyzed
+          clear rootFound
+          split at analyzed
+          · contradiction
+          · rename_i admitted
+            clear analyzed
+            simp only [Bool.not_eq_true', Bool.not_eq_false, Bool.and_eq_true, beq_iff_eq] at admitted
+            simp at admitted
+            -- Admission requires a parent link (no Call was admitted), but one scope has no child.
+            obtain ⟨⟨⟨⟨⟨⟨⟨⟨_, noChildren⟩, body, member, child⟩, _⟩, _⟩, _⟩, _⟩, _⟩, _⟩ := admitted
+            have zero := List.sum_eq_zero_iff_forall_eq_nat.mp noChildren body.children.length
+              (List.mem_map.mpr ⟨body, by simpa using member, rfl⟩)
+            exact child (List.eq_nil_of_length_eq_zero zero)
+
 def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId.value
 
-def checkedVertex? (source : CheckedProcess) (node : CheckedNode) :
+/-- CSD-ADMIT-01 excludes every Call Activity from a data-bearing model and lets its Service Tasks map data
+under the bounded String rules. -/
+def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : CheckedNode) :
     Option (MergeRegion.RawVertex × Option String) := do
   let id := node.id.value
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
@@ -355,10 +437,14 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) :
     | .noneStartEvent _ => some (MergeRegion.RawKind.vertex .start)
     | .noneEndEvent _ => some (.vertex .finish)
     | .userTask _ _ none => some (.vertex .task)
-    | .serviceTask _ descriptor [] [] none =>
-        if SerialBusinessTask.descriptorValid descriptor then some (.vertex .task) else none
+    | .serviceTask _ descriptor inputs outputs none =>
+        match data with
+        | none => if inputs.isEmpty && outputs.isEmpty && SerialBusinessTask.descriptorValid descriptor
+            then some (.vertex .task) else none
+        | some data => if NestedScopeData.serviceValid data.handlers descriptor inputs outputs
+            then some (.vertex .task) else none
     | .embeddedSubProcess _ _ => some (.vertex .task)
-    | .callActivity _ _ .empty => some (.vertex .task)
+    | .callActivity _ _ .empty => if data.isNone then some (.vertex .task) else none
     | .parallelGateway _ .diverging => some (.vertex .fork)
     | .parallelGateway _ .converging => some (.vertex .join)
     | .exclusiveMerge _ => some .merge
@@ -374,13 +460,23 @@ def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option
     scope.parentScopeId.isNone && scope.originElementId.value == calledProcessId.value)
   return root.id.value
 
-def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
+/-- A checked graph carries data exactly when a scope declares a local or a Service Task maps one. -/
+def checkedData (source : CheckedProcess) : Option Data :=
+  let services := source.nodes.filterMap fun node => match node with
+    | .serviceTask id _ inputs outputs _ => some (id.value, inputs, outputs)
+    | _ => none
+  if source.scopeLocalData.isEmpty && services.all (fun (_, inputs, outputs) => inputs.isEmpty && outputs.isEmpty)
+  then none
+  else some { records := source.scopeLocalData, handlers := SerialBusinessTask.checkedHandlers source
+              accesses := services.map fun (id, inputs, outputs) => (id, serviceAccess inputs outputs) }
+
+def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List RawBody) := do
   if !(source.sequenceFlows.all fun flow => flow.condition.isNone &&
       (controlCheckedScope? source flow.sourceId).isSome && controlCheckedScope? source flow.sourceId == controlCheckedScope? source flow.targetId)
   then none
   else source.definitionScopes.mapM fun scope => do
     let members := source.nodes.filter fun node => controlCheckedScope? source node.id == some scope.id.value
-    let projected ← members.mapM (checkedVertex? source)
+    let projected ← members.mapM (checkedVertex? source data)
     let calls ← members.filterMapM fun node => match node with
       | .callActivity id calledProcessId _ => (calledRoot? source calledProcessId).map fun root => some (id.value, root)
       | _ => some none
@@ -394,10 +490,20 @@ def checkedBodies (source : CheckedProcess) : Option (List RawBody) := do
                | _ => none) ++ serviceTasks
              serviceTasks, calls }
 
-/-- NSC-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted largest closure. -/
-def checkedAnalysis (source : CheckedProcess) : Option Nat := do
+def checkedModel (source : CheckedProcess) : Option (Nat × List String) := do
   if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
-  else analyze source.definitionScopes (← (← checkedBodies source).mapM contractBody)
+  else
+    let data := checkedData source
+    admittedModel source.definitionScopes (← checkedBodies source data) data
+
+/-- NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted
+largest closure. -/
+def checkedAnalysis (source : CheckedProcess) : Option Nat :=
+  (checkedModel source).map (·.1)
+
+/-- CSD-AVAILABLE-01's required Start names over the checked graph, empty for a data-free model. -/
+def checkedStartNames (source : CheckedProcess) : Option (List String) :=
+  (checkedModel source).map (·.2)
 
 def controlOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique? (program.operationScopes.filter (·.operationId == operation.id))
@@ -439,7 +545,7 @@ def isCallReturn : SemanticOperation → Bool
 /-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
 def childStart (scope : String) : String := "start:" ++ scope
 
-def operationVertex? (program : Program) (scope : String) (operation : SemanticOperation) :
+def operationVertex? (program : Program) (data : Option Data) (scope : String) (operation : SemanticOperation) :
     Option (MergeRegion.RawVertex × Option String) := do
   let id := operation.id.value
   let follow := fun (places : List ControlPlaceId) => places.mapM (consumer? program scope)
@@ -448,10 +554,12 @@ def operationVertex? (program : Program) (scope : String) (operation : SemanticO
   | .awaitUserTask _ _ _ output task =>
       if task.metadata.isSome then none else return (⟨id, .vertex .task, ← follow [output]⟩, none)
   | .awaitEffect _ _ _ output effect none =>
-      if effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
-          SerialBusinessTask.descriptorValid effect.descriptor then
-        return (⟨id, .vertex .task, ← follow [output]⟩, none)
-      else none
+      let admitted := match data with
+        | none => effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
+            SerialBusinessTask.descriptorValid effect.descriptor
+        | some data => NestedScopeData.serviceValid data.handlers effect.descriptor effect.inputMappings
+            effect.outputMappings
+      if admitted then return (⟨id, .vertex .task, ← follow [output]⟩, none) else none
   | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
   | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
   | .mergeExclusive _ _ _ output => return (⟨id, .merge, ← follow [output]⟩, none)
@@ -459,17 +567,18 @@ def operationVertex? (program : Program) (scope : String) (operation : SemanticO
   | .enterScope _ _ _ _ child =>
       return (⟨id, .vertex .task, ← follow [← controlParentOutput? program child]⟩, some child.value)
   | .invokeProcess _ _ _ _ calledRoot calledEntry returnOperationId .empty => do
+      if data.isSome then none
       let output ← callerOutput? program calledRoot returnOperationId
       let _ ← consumer? program calledRoot.value calledEntry
       return (⟨id, .vertex .task, ← follow [output]⟩, none)
   | _ => none
 
-def programBodies (program : Program) : Option (List RawBody) := do
+def programBodies (program : Program) (data : Option Data) : Option (List RawBody) := do
   let operations := program.operations.filter fun op => !StructuredComposition.isScopeCompletion op && !isCallReturn op
   program.definitionScopes.mapM fun scope => do
     let members ← (operations.filterM fun op => do
       return (← controlOperationScope? program op) == scope.id.value)
-    let projected ← members.mapM (operationVertex? program scope.id.value)
+    let projected ← members.mapM (operationVertex? program data scope.id.value)
     let entries ← operations.filterMapM fun op => match op with
       | .enterScope _ _ _ childEntry child =>
           if child == scope.id then (consumer? program scope.id.value childEntry).map some else some none
@@ -493,8 +602,16 @@ def programBodies (program : Program) : Option (List RawBody) := do
                | .invokeProcess id _ _ _ calledRoot .. => some (id.value, calledRoot.value)
                | _ => none }
 
-/-- NSC-ADMIT-01 over the Program, independent of the checked graph; `none` refuses it. -/
-def programAnalysis (program : Program) : Option Nat := do
+/-- A data-bearing embedded completion Program's declarations, handlers and mapped Service Tasks. -/
+def programData (program : Program) : Option Data :=
+  if embeddedScopeDataBearing program then
+    some { records := program.scopeLocalData, handlers := SerialBusinessTask.programHandlers program
+           accesses := program.operations.filterMap fun op => match op with
+             | .awaitEffect id _ _ _ effect _ => some (id.value, serviceAccess effect.inputMappings effect.outputMappings)
+             | _ => none }
+  else none
+
+def programModel (program : Program) : Option (Nat × List String) := do
   let root ← StructuredComposition.unique? (program.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == program.processId.value)
   let completions := program.operations.filter StructuredComposition.isScopeCompletion
@@ -516,7 +633,8 @@ def programAnalysis (program : Program) : Option Nat := do
   if !(program.identity.sourceOverlay.isSome == hasEffect && program.internalSchedulingMode == .rejectObservableChoice &&
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
       program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty &&
-      program.scopeLocalData.isEmpty && rootCompleted.length == 1 &&
+      (program.scopeLocalData.isEmpty || program.identity.semanticProfile == embeddedCompletionProfileId) &&
+      rootCompleted.length == 1 &&
       completions.length + calledRoots.length == program.definitionScopes.length &&
       -- Every return pairs with exactly one invocation, so no called root completes without a caller.
       (program.operations.filter isCallReturn).all (fun returned =>
@@ -524,6 +642,32 @@ def programAnalysis (program : Program) : Option Nat := do
           | .invokeProcess _ _ _ _ _ _ returnOperationId _ => returnOperationId == returned.id
           | _ => false).length == 1) &&
       program.operations.all fun op => (controlOperationScope? program op).isSome) then none
-  else analyze program.definitionScopes (← (← programBodies program).mapM contractBody)
+  else
+    let data := programData program
+    admittedModel program.definitionScopes (← programBodies program data) data
+
+/-- NSC-ADMIT-01 and CSD-ADMIT-01 over the Program, independent of the checked graph; `none` refuses it. -/
+def programAnalysis (program : Program) : Option Nat :=
+  (programModel program).map (·.1)
+
+theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
+    programAnalysis program = none := by
+  simp only [programAnalysis, programModel, admittedModel, bind, Option.bind, analyze_one_scope _ _ one]
+  repeat' first | rfl | split | simp
+
+/-- CSD-AVAILABLE-01's required Start names over the Program, empty for a data-free Program. -/
+def programStartNames (program : Program) : Option (List String) :=
+  (programModel program).map (·.2)
+
+/-- CSD-VALUE-01 and CSD-AVAILABLE-01 at Start of a data-bearing Program: admitted names outside the
+handler namespace, each within the bounded String policy, covering every required name; a present null
+counts as present. -/
+def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
+  match programStartNames program with
+  | none => false
+  | some required =>
+      EffectData.bindingsValidUnder (programEffectMappingValuePolicy program)
+          (SerialBusinessTask.programHandlers program) bindings &&
+        required.all fun name => bindings.any (·.name == name)
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl

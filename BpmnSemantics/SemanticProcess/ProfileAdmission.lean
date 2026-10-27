@@ -20,7 +20,8 @@ namespace BpmnSemantics.SemanticProcess
 theorem programProfileCapabilitiesValid_of_undispatched (program : Program)
     (undispatched : programCapabilityDispatched program.identity.semanticProfile = false) :
     programProfileCapabilitiesValid program =
-      ((program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId) &&
+      ((program.scopeLocalData.isEmpty || program.identity.semanticProfile == nestedScopeDataProfileId ||
+        program.identity.semanticProfile == embeddedCompletionProfileId) &&
         (program.interruptingMessageEventSubProcesses.isEmpty && programUndispatchedCapabilities program)) := by
   simp only [programCapabilityDispatched, Bool.or_eq_false_iff, decide_eq_false_iff_not] at undispatched
   obtain ⟨⟨⟨⟨⟨repeatedScope, messageHandler⟩, callData⟩, transaction⟩, subscription⟩, embedded⟩ := undispatched

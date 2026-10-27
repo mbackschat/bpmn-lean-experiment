@@ -55,7 +55,7 @@ section Walk
 
 variable (occurrences : List RuntimeScopeOccurrence)
 
-private theorem within_succ : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
+theorem occurrenceChainWithin_succ : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
     occurrenceChainWithin occurrences fuel owner = some chain →
     occurrenceChainWithin occurrences (fuel + 1) owner = some chain
   | 0, _, _, walked => by simp [occurrenceChainWithin] at walked
@@ -70,21 +70,21 @@ private theorem within_succ : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chai
           | none => simp [rest] at walked
           | some tail =>
               simp only [rest, Option.map_some] at walked
-              simp only [within_succ fuel parent tail rest, Option.map_some, *]
+              simp only [occurrenceChainWithin_succ fuel parent tail rest, Option.map_some, *]
       · contradiction
 
-private theorem within_mono (fuel more : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+theorem occurrenceChainWithin_mono (fuel more : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
     (walked : occurrenceChainWithin occurrences fuel owner = some chain) :
     occurrenceChainWithin occurrences (fuel + more) owner = some chain := by
   induction more with
   | zero => exact walked
-  | succ more grown => exact within_succ occurrences _ owner chain grown
+  | succ more grown => exact occurrenceChainWithin_succ occurrences _ owner chain grown
 
 private theorem within_unique (fuel fuel' : Nat) (owner : ScopeOccurrenceId) (chain chain' : List ScopeOccurrenceId)
     (walked : occurrenceChainWithin occurrences fuel owner = some chain)
     (walked' : occurrenceChainWithin occurrences fuel' owner = some chain') : chain = chain' := by
-  have left := within_mono occurrences fuel fuel' owner chain walked
-  have right := within_mono occurrences fuel' fuel owner chain' walked'
+  have left := occurrenceChainWithin_mono occurrences fuel fuel' owner chain walked
+  have right := occurrenceChainWithin_mono occurrences fuel' fuel owner chain' walked'
   rw [Nat.add_comm] at right
   exact Option.some.inj (left.symm.trans right)
 

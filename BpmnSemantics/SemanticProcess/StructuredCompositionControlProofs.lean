@@ -483,7 +483,7 @@ theorem completion_admission_cases
                   · exact Or.inl rfl
           | false =>
               have nestedRefused := NestedScopeData.completeUserTask?_unadmitted program before taskId bindings
-                (NestedScopeData.programAnalysis_one_scope program oneScope)
+                (NestedScopeData.programAdmitted_one_scope program oneScope)
               cases nested : nestedScopeDataProgram program
               case true => simp [nestedRefused]
               cases completed : completeUserTask before taskId.processInstanceId

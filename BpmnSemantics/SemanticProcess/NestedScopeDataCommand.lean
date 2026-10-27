@@ -2,13 +2,15 @@ module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.WaitCompletion
 
 /-! # Nested scope-data command writes
 
-User Task and Service Task completion for `nestedScopeDataProfileId`: both write through the scope
+User Task and Service Task completion for `nestedScopeDataProfileId` and for data-bearing embedded
+completion Programs (CSD-CHAIN-01): both write through the scope
 chain of the completed wait's owner (`NSD-WRITE-01`) instead of merging into Process data. A
 completion patch may name only frame-declared names on that chain (`NSD-TASK-01`), which is a
 profile admission restriction: CIB would create a root binding for an undeclared name.
@@ -58,13 +60,13 @@ def declaredNames (program : Program) (state : RuntimeState) (owner : ScopeOccur
     | none => []
   framed ++ sources
 
-/-- NSD-TASK-01: distinct names in canonical order, each declared on the owner's chain, each an
-admitted `SingletonBusinessItem`, and the whole patch within one value allowance. -/
+/-- NSD-TASK-01: distinct names in canonical order, each declared on the owner's chain, each within the
+Program's effect policy, and the whole patch within one value allowance. -/
 def patchAdmitted (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (patch : List VariableBinding) : Bool :=
   strictlySortedStrings (patch.map (·.name)) &&
     patch.all (fun binding => (declaredNames program state owner).contains binding.name &&
-      EffectMappingValuePolicy.singletonBusinessItem.admits true binding.value) &&
+      (programEffectMappingValuePolicy program).admits true binding.value) &&
     (patchUtf8Bytes? patch).any (· ≤ patchByteLimit)
 
 /-- CVM-REFUSE-01: besides the running root, a task may belong to a called instance that a live Call
@@ -73,12 +75,23 @@ def calledTaskOfHost (state : RuntimeState) (host : SemanticId) (taskId : UserTa
   state.calledProcessOccurrences.any fun record =>
     record.caller.processInstanceId == host && record.calledRoot.processInstanceId == taskId.processInstanceId
 
+/-- The admission both completions re-check: the nested scope-control analysis for a data-bearing
+embedded completion Program (CSD-ADMIT-01), otherwise the nested scope-data profile's serial analysis. -/
+def programAdmitted (program : Program) : Bool :=
+  if embeddedScopeDataBearing program then (NestedScopeControl.programAnalysis program).isSome
+  else (programAnalysis program).isSome
+
+/-- Neither analysis admits a single scope, so a one-scope Program completes no task through this path. -/
+theorem programAdmitted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
+    programAdmitted program = false := by
+  simp [programAdmitted, programAnalysis_one_scope program one, NestedScopeControl.programAnalysis_one_scope program one]
+
 /-- Both completions re-check Program admission, as the parallel Multi-Instance stimulus gate does, so
-a Program of this profile that admission refuses completes no task. -/
+a Program that admission refuses completes no task. -/
 def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserTaskInstanceId)
     (values : List VariableBinding) : Option RuntimeState := do
   let [wait] := state.waits.filter (taskIdNamesWait taskId) | none
-  if (programAnalysis program).isNone || wait.processInstanceId != wait.owner.processInstanceId ||
+  if !programAdmitted program || wait.processInstanceId != wait.owner.processInstanceId ||
       !patchAdmitted program state wait.owner values then none
   else
     let successor ← completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId
@@ -86,21 +99,21 @@ def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserT
     some { successor with variables }
 
 theorem completeUserTask?_unadmitted (program : Program) (state : RuntimeState) (taskId : UserTaskInstanceId)
-    (values : List VariableBinding) (unadmitted : programAnalysis program = none) :
+    (values : List VariableBinding) (unadmitted : programAdmitted program = false) :
     completeUserTask? program state taskId values = none := by
   unfold completeUserTask?
   split <;> simp [unadmitted]
 
-/-- The result patch is validated and projected exactly as for the structured effect-data profile;
-only the landing owner of each output differs. -/
+/-- The result patch is validated and projected exactly as for the structured effect-data profile, under
+the Program's effect policy; only the landing owner of each output differs. -/
 def completeEffect? (program : Program) (state : RuntimeState) (effectId : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState := do
   let [wait] := state.effectWaits.filter (effectIdNamesWait effectId) | none
   let .success patch := result | none
-  if (programAnalysis program).isNone || wait.processInstanceId != wait.owner.processInstanceId || wait.bpmnErrorRoute.isSome then none
+  if !programAdmitted program || wait.processInstanceId != wait.owner.processInstanceId || wait.bpmnErrorRoute.isSome then none
   else
     let [_] := state.variables.activities.filter (activityScopeMatches effectId) | none
-    let writes ← serialEffectPatchUnder? .singletonBusinessItem (SerialBusinessTask.programHandlers program)
+    let writes ← serialEffectPatchUnder? (programEffectMappingValuePolicy program) (SerialBusinessTask.programHandlers program)
       wait.outputMappings [] patch
     let released := { state.variables with
       activities := state.variables.activities.filter fun scope => !activityScopeMatches effectId scope }

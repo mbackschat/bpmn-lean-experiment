@@ -199,7 +199,8 @@ theorem readOutcome?_frame (program : Program) (occurrences : List RuntimeScopeO
     (resolved : resolveOwner? variables.scopes chain name =
       some (.frame owner)) :
     readOutcome? program occurrences variables reader name =
-      (selectScopeVariables? variables owner).bind fun frame => bindingOutcome? frame.bindings name := by
+      (selectScopeVariables? variables owner).bind fun frame =>
+        bindingOutcome? (programEffectMappingValuePolicy program) frame.bindings name := by
   simp only [readOutcome?, chained, resolved, bind, Option.bind]
 
 private theorem merge_mem_self (existing : List VariableBinding) (binding : VariableBinding) :
@@ -360,7 +361,7 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
     (initialized : initializeFrame? program state childScopeId = some result) :
     ∃ child parent bindings,
       occurrenceWithParent? state childScopeId = some (child, parent) ∧
-      evaluateInputMappingsUnder? .singletonBusinessItem
+      evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
           (read? program state.scopeOccurrences state.variables parent)
           record.localInputs = some bindings ∧
       result = { state with variables := { state.variables with
@@ -373,7 +374,7 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
   | some pair =>
       obtain ⟨child, parent⟩ := pair
       simp only [located] at initialized
-      cases evaluated : evaluateInputMappingsUnder? .singletonBusinessItem
+      cases evaluated : evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
           (read? program state.scopeOccurrences state.variables parent)
           record.localInputs with
       | none => simp [evaluated] at initialized

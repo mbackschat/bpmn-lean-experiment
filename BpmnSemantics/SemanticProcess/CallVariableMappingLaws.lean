@@ -178,7 +178,7 @@ theorem returnState?_writes_outputs_from_caller (program : Program) (before afte
     ∃ record frame values returned,
       scalarReturnRecord? before id origin = some record ∧
       selectScopeVariables? before.variables record.calledRoot = some frame ∧
-      copyValues? (bindingOutcome? frame.bindings) outputs = some values ∧
+      copyValues? (bindingOutcome? (programEffectMappingValuePolicy program) frame.bindings) outputs = some values ∧
       returnProcessState? before id origin calledProcessId calledRootScopeId callerOutput = some returned ∧
       writeAll? program returned.scopeOccurrences returned.variables record.caller values = some after.variables := by
   unfold returnState? at result
@@ -284,7 +284,7 @@ theorem invokeState?_reads_caller_frames (program : Program) (before after : Run
         mapping.expression = .enclosingVariable name →
         resolveOwner? before.variables.scopes chain name = some (.frame owner) →
         ∃ frame value, selectScopeVariables? before.variables owner = some frame ∧
-          bindingOutcome? frame.bindings name = some value ∧
+          bindingOutcome? (programEffectMappingValuePolicy program) frame.bindings name = some value ∧
           ({ name := mapping.target, value := value.getD .null } : VariableBinding) ∈ bindings := by
   obtain ⟨caller, bindings, owned, copied, _⟩ := invokeState?_installs_snapshot program before after origin input
     calledProcessId calledRootScopeId calledEntry returnOperationId inputs outputs invoked

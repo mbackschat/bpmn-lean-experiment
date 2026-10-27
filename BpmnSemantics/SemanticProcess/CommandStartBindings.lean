@@ -7,6 +7,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
@@ -77,6 +78,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
     EffectData.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = nestedScopeDataProfileId then
     NestedScopeData.startBindingsAdmitted program bindings
+  else if embeddedScopeDataBearing program then
+    NestedScopeControl.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = callDataCheckpointProfileId then
     callDataStartBindingsAdmitted program bindings
   else if program.identity.semanticProfile = structuredCompositionCheckpointProfileId then
@@ -97,7 +100,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
     (bindings : List VariableBinding)
     (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId) :
     admitted program instanceId bindings = structuredCompositionStartBindingsAdmitted program bindings := by
-  simp [admitted, profile, ParallelScopeStart.programSelected]
+  simp [admitted, profile, ParallelScopeStart.programSelected,
+    embeddedScopeDataBearing_of_profile_value (congrArg ProfileId.value profile)]
 
 @[simp] theorem admitted_mixedTaskControlFlow (program : Program) (instanceId : SemanticId)
     (bindings : List VariableBinding)

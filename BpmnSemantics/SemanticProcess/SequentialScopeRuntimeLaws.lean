@@ -132,9 +132,9 @@ theorem evaluateSequentialScopeInputs_snapshot (program : Program) (state : Runt
 /-- The repeated-scope family is a scalar profile, so its input context never carries a structured value. -/
 theorem sequentialScopeProgramSelected_effectMapping_scalar (program : Program)
     (selected : sequentialScopeProgramSelected program = true) :
-    programEffectMappingValuePolicy program = .scalar := by
-  apply programEffectMappingValuePolicy_eq_scalar <;> intro same <;>
-    simp [sequentialScopeProgramSelected, same, portableEffectDataProfileId, nestedScopeDataProfileId] at selected
+    programEffectMappingValuePolicy program = .scalar :=
+  programEffectMappingValuePolicy_eq_scalar_of_value (by simpa [sequentialScopeProgramSelected] using selected)
+    (by decide +kernel)
 
 /-- Every input context produces a snapshot that the Program's own effect-mapping policy accepts. -/
 theorem evaluateEffectInputs_snapshotUnder (program : Program) (state : RuntimeState)
@@ -150,12 +150,7 @@ theorem evaluateEffectInputs_snapshotUnder (program : Program) (state : RuntimeS
     rw [scalar, inputSnapshotMatchesUnder_scalar]
     exact evaluateSequentialScopeInputs_snapshot program state owner mappings bindings evaluated
   · split at evaluated
-    · rename_i nested
-      have item : programEffectMappingValuePolicy program = .singletonBusinessItem := by
-        simp only [nestedScopeDataProgram, beq_iff_eq] at nested
-        simp [programEffectMappingValuePolicy, effectMappingValuePolicy, nested]
-      rw [item]
-      exact evaluateInputMappingsUnder?_snapshot _ _ mappings bindings evaluated
+    · exact evaluateInputMappingsUnder?_snapshot _ _ mappings bindings evaluated
     · exact evaluateEnclosingInputMappingsUnder_snapshot _ _ mappings bindings evaluated
 
 /-- The scalar reading of `evaluateEffectInputs_snapshotUnder`, for profiles that select the scalar policy. -/
@@ -184,15 +179,6 @@ theorem canonical_input_snapshot_target_order :
 
 theorem canonical_input_duplicate_targets_refused :
     evaluateEnclosingInputMappings [] [⟨"a", .stringLiteral "one"⟩, ⟨"a", .stringLiteral "two"⟩] = none := by decide +kernel
-
-/-- A scalar effect policy excludes the nested scope-data profile, whose policy is the item domain. -/
-theorem nestedScopeDataProgram_false_of_scalar {program : Program}
-    (scalar : programEffectMappingValuePolicy program = .scalar) : nestedScopeDataProgram program = false := by
-  cases nested : nestedScopeDataProgram program with
-  | false => rfl
-  | true =>
-      simp only [nestedScopeDataProgram, beq_iff_eq] at nested
-      simp [programEffectMappingValuePolicy, effectMappingValuePolicy, nested] at scalar
 
 /-- Families without repeated-scope declarations retain ordinary Process input evaluation. -/
 theorem evaluateEffectInputs_without_repeated_scope (program : Program) (state : RuntimeState)

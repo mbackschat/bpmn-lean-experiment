@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmissio
 public import BpmnSemantics.SemanticProcess.CallDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
@@ -73,12 +74,15 @@ def businessTaskScenarioStartAdmitted (program : Program) (stimuli : List Stimul
           else SerialBusinessTask.startBindingsAdmitted program bindings
     | _ => false
 
-/-- NSD-AVAILABLE-01: a supported scenario starts with a Process Start carrying every scope-chain-required
-name, as TypeScript scenario support requires; any other first stimulus is unsupported under the profile. -/
+/-- NSD-AVAILABLE-01 and CSD-AVAILABLE-01: a supported scenario starts with a Process Start carrying every
+scope-chain-required name, as TypeScript scenario support requires; any other first stimulus is
+unsupported under the profile. -/
 def nestedScopeScenarioStartAdmitted (program : Program) : Stimulus → Bool
   | .startProcess _ _ instanceId bindings =>
       !nestedScopeDataProgram program ||
-        (!instanceId.value.isEmpty && NestedScopeData.startBindingsAdmitted program bindings)
+        (!instanceId.value.isEmpty && if embeddedScopeDataBearing program
+          then NestedScopeControl.startBindingsAdmitted program bindings
+          else NestedScopeData.startBindingsAdmitted program bindings)
   | _ => !nestedScopeDataProgram program
 
 /-- CDATA-RESUME-01 and COMPSTART-DATA-01 require the selected initializing data before a supported scenario can enter its first Process. -/
@@ -116,14 +120,19 @@ def scenarioEffectBindingsSupported (profile : ProfileId) (bindings : List Varia
 /-- Whole-scenario support scans every stimulus independently of execution; supported-domain wrong names, occurrences and result sets remain executable negative commands. -/
 def scenarioStimulusDomainSupported (program : Program) (stimulus : Stimulus) : Bool :=
   let profile := program.identity.semanticProfile
+  -- CSD-VALUE-01: a data-bearing embedded completion Program takes bounded Strings and present nulls at
+  -- every surface, which its effect policy states.
+  let bounded := fun (bindings : List VariableBinding) =>
+    bindings.all fun binding => EffectMappingValuePolicy.boundedString.admits true binding.value
+  let bearing := embeddedScopeDataBearing program
   match stimulus with
     | .startProcess _ _ _ bindings =>
-        scenarioProcessDataBindingsSupported profile .processStart bindings
+        if bearing then bounded bindings else scenarioProcessDataBindingsSupported profile .processStart bindings
     | .completeUserTaskInstance _ _ bindings =>
-        scenarioProcessDataBindingsSupported profile .userTaskCompletion bindings
+        if bearing then bounded bindings else scenarioProcessDataBindingsSupported profile .userTaskCompletion bindings
     | .completeEffect _ _ (.success bindings)
     | .completeEffect _ _ (.bpmnError _ _ bindings) =>
-        scenarioEffectBindingsSupported profile bindings
+        if bearing then bounded bindings else scenarioEffectBindingsSupported profile bindings
     | .triggerMessageStart .. | .triggerTimerStart .. | .deliverMessage .. | .fireTimer .. => true
     | .deliverPayloadMessage _ _ _ payload => variableValueAdmitted profile .messagePayload payload
     | .deliverCorrelatedPayloadMessage _ => profile == messageKeyCorrelationProfileId

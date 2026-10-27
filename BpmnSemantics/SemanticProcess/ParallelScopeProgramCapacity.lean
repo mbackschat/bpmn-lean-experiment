@@ -165,9 +165,6 @@ theorem analyzed_not_nested (program : Program) (analysis : ProgramAnalysis)
   | false => simp [analyzeProgram, selected] at admitted
   | true =>
       simp only [programSelected, beq_iff_eq] at selected
-      simp only [nestedScopeDataProgram, beq_eq_false_iff_ne, ne_eq]
-      intro same
-      rw [same] at selected
-      exact absurd selected (by decide +kernel)
+      exact nestedScopeDataProgram_of_profile_value selected
 
 end BpmnSemantics.SemanticProcess.ParallelScopeStart

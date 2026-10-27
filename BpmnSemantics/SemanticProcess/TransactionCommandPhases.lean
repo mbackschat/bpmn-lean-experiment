@@ -251,7 +251,8 @@ private theorem transaction_start_bindings_admitted (p : Program) (roles : Trans
     (instanceId : SemanticId) (submitted : List VariableBinding)
     (admitted : CommandStartBindings.admitted p instanceId submitted = true) :
     processDataBindingsAdmitted transactionCancellationCheckpointProfileId .processStart submitted = true := by
-  simpa [CommandStartBindings.admitted, CommandStartBindings.parallelMultiInstanceProgramAdmitted,
+  simpa [embeddedScopeDataBearing_of_profile_value (congrArg ProfileId.value roles.profileSelected),
+    CommandStartBindings.admitted, CommandStartBindings.parallelMultiInstanceProgramAdmitted,
     CommandStartBindings.sequentialMultiInstanceProgramAdmitted, ParallelScopeStart.programSelected,
     roles.profileSelected, transactionCancellationCheckpointProfileId, mixedTaskControlFlowProfileId,
     mixedTaskBusinessErrorProfileId, serialBusinessTaskProfileId, callDataCheckpointProfileId,

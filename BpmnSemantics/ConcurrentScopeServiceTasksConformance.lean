@@ -83,7 +83,10 @@ def deepestForked : CheckedProcess :=
 def supplierWithScreen (screen : CheckedNode) : CheckedProcess :=
   { supplier with nodes := supplier.nodes.map fun value => if value.id.value == "Screen" then screen else value }
 
+/-- Both directions are malformed under the data rules of CSD-ADMIT-01: an input never copies a local, and an
+output only copies one. A well-formed mapping makes the model data-bearing instead. -/
 def mapping : VariableMapping := { target := "screening", expression := .localVariable "screening" }
+def enclosingOutput : VariableMapping := { target := "screening", expression := .enclosingVariable "screening" }
 
 def errorRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"ScreenFailed"⟩, boundaryEventName := none, attachedToRef := ⟨"Screen"⟩
@@ -181,11 +184,11 @@ def service_task_burst_reaches_the_closure_limit : Bool := decide <|
 def service_task_burst_beyond_the_closure_limit_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis deepestForked = none
 
-def service_task_with_input_mapping_is_refused : Bool := decide <|
+def service_task_with_malformed_input_mapping_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [mapping] [] none)) = none
 
-def service_task_with_output_mapping_is_refused : Bool := decide <|
-    NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [] [mapping] none)) = none
+def service_task_with_malformed_output_mapping_is_refused : Bool := decide <|
+    NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [] [enclosingOutput] none)) = none
 
 def service_task_with_error_route_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [] [] (some errorRoute))) = none
@@ -277,8 +280,8 @@ def concurrentScopeServiceTasksConformanceChecks : List (String × Bool) := [
   ("claim_analyses_agree_on_its_burst", claim_analyses_agree_on_its_burst),
   ("service_task_burst_reaches_the_closure_limit", service_task_burst_reaches_the_closure_limit),
   ("service_task_burst_beyond_the_closure_limit_is_refused", service_task_burst_beyond_the_closure_limit_is_refused),
-  ("service_task_with_input_mapping_is_refused", service_task_with_input_mapping_is_refused),
-  ("service_task_with_output_mapping_is_refused", service_task_with_output_mapping_is_refused),
+  ("service_task_with_malformed_input_mapping_is_refused", service_task_with_malformed_input_mapping_is_refused),
+  ("service_task_with_malformed_output_mapping_is_refused", service_task_with_malformed_output_mapping_is_refused),
   ("service_task_with_error_route_is_refused", service_task_with_error_route_is_refused),
   ("service_task_with_foreign_protocol_is_refused", service_task_with_foreign_protocol_is_refused),
   ("service_tasks_without_overlay_are_refused", service_tasks_without_overlay_are_refused),

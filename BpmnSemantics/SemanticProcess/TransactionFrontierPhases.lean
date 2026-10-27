@@ -175,8 +175,7 @@ theorem transaction_entry_initializes_selected_child
 completions are exactly the undeclared ones. -/
 theorem TransactionAdmittedRoles.not_nested {p : Program} (roles : TransactionAdmittedRoles p) :
     nestedScopeDataProgram p = false := by
-  simp only [nestedScopeDataProgram, roles.profileSelected, beq_eq_false_iff_ne]
-  decide +kernel
+  exact nestedScopeDataProgram_of_profile_value (congrArg ProfileId.value roles.profileSelected)
 
 /-- The live branch, handler or child prevents its owning scope's normal completion. -/
 inductive TransactionScopeBarrier (state : RuntimeState) (owner : ScopeOccurrenceId) : Prop where
