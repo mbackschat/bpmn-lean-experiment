@@ -88,8 +88,7 @@ export function completeOrdinaryUserTask(
     : hasSequentialScopeDefinition(program, wait.owner)
     ? writeSequentialScopeValues(program, staged, wait.owner, stimulus.submittedValues, SequentialScopeWriteKind.UserTask)
     : nestedScopeDataProgram(program)
-    ? writeNestedScopeVariables(program, staged.variables, wait.owner.processInstanceId,
-      wait.owner.definitionScopeId, stimulus.submittedValues)
+    ? writeNestedScopeVariables(program, staged.scopeOccurrences, staged.variables, wait.owner, stimulus.submittedValues)
     : { ...staged.variables, process: { bindings: mergeProcessVariableBindings(staged.variables.process.bindings, stimulus.submittedValues) } };
   if (variables === null) return null;
   return {

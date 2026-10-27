@@ -476,7 +476,7 @@ function admitValidated(
       const variables = hasSequentialScopeDefinition(program, wait.owner)
         ? completeSequentialScopeEffectData(program, state, wait, stimulus.result.localPatch)
         : nestedScopeDataProgram(program)
-        ? completeNestedScopeEffectData(program, state.variables, wait, stimulus.result.localPatch)
+        ? completeNestedScopeEffectData(program, state.scopeOccurrences, state.variables, wait, stimulus.result.localPatch)
         : completeActivityVariableScopeUnder(
         effectMappingValuePolicyForProfile(program.identity.semanticProfile),
         state.variables,

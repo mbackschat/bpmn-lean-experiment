@@ -8,7 +8,7 @@ import type { SemanticOperation, SemanticOperationKind, SemanticProcessProgram }
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { compareScopeOccurrenceIds, sameScopeOccurrence } from "./semantic-process-state.js";
 import type {
-  CalledProcessOccurrence, RuntimeState, ScopedVariables, ScopeOccurrenceId, ScopeVariableScope,
+  CalledProcessOccurrence, RuntimeScopeOccurrence, RuntimeState, ScopedVariables, ScopeOccurrenceId, ScopeVariableScope,
 } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { ScopeLocalData, VariableMapping } from "./semantic-value-contract.js";
@@ -19,10 +19,10 @@ import { compareCanonicalStrings } from "./wire.js";
  * Frame resolution, initialization, outputs and completion writes of the nested scope-data profile, per the
  * nested scope data specification's stable rules (NSD-INIT-01 to NSD-RETIRE-01).
  *
- * The chain is walked over definition scopes, selecting the live frame of each one in the reading instance. The
- * profile's admission activates every definition at most once per instance, so that frame is the actual ancestor's;
- * a definition with more than one live frame refuses rather than choosing by storage order. Every operation reads only
- * the Program and the scoped variables, matching the independent Lean account in `NestedScopeData`.
+ * The chain is walked over live scope occurrences, from the performing occurrence through its parents to its instance
+ * root, selecting each frame by exact owner (CSD-CHAIN-01 of the concurrent scope data proposal). Two live occurrences
+ * of one definition are therefore two owners, and a sibling's frame is never on the chain. Every operation reads only
+ * the Program, the live occurrences and the scoped variables, matching the independent Lean account in `NestedScopeData`.
  */
 
 const itemPolicy = EffectMappingValuePolicy.SingletonBusinessItem;
@@ -41,21 +41,22 @@ export function nestedScopeRecord(program: SemanticProcessProgram, scopeId: stri
   return records.length === 1 ? records[0] : undefined;
 }
 
-/** `scopeId` and its ancestors, innermost first; the scope count bounds a cyclic parent relation. */
-export function nestedDefinitionChain(program: SemanticProcessProgram, scopeId: string): readonly string[] {
-  const chain: string[] = [];
-  let current: string | null = scopeId;
-  for (let fuel = program.definitionScopes.length; fuel > 0 && current !== null; fuel -= 1) {
-    chain.push(current);
-    const matching = program.definitionScopes.filter((scope): boolean => scope.id === current);
-    current = matching.length === 1 ? matching[0]!.parentScopeId : null;
+/**
+ * `owner` and its live ancestors, innermost first, ending at the parentless instance root. An occurrence that is not
+ * live, or a parent link the fuel cannot finish, refuses with `null` rather than resolving past a gap.
+ */
+export function nestedOccurrenceChain(occurrences: readonly RuntimeScopeOccurrence[],
+  owner: ScopeOccurrenceId): readonly ScopeOccurrenceId[] | null {
+  const chain: ScopeOccurrenceId[] = [];
+  let current: ScopeOccurrenceId | null = owner;
+  for (let fuel = occurrences.length; fuel > 0 && current !== null; fuel -= 1) {
+    const at: ScopeOccurrenceId = current;
+    const matching = occurrences.filter(({ id }) => sameScopeOccurrence(id, at));
+    if (matching.length !== 1) return null;
+    chain.push(at);
+    current = matching[0]!.parent;
   }
-  return chain;
-}
-
-function framesOf(variables: ScopedVariables, instanceId: string, scopeId: string): readonly ScopeVariableScope[] {
-  return variables.scopes.filter(frame =>
-    frame.owner.processInstanceId === instanceId && frame.owner.definitionScopeId === scopeId);
+  return current === null ? chain : null;
 }
 
 /**
@@ -98,21 +99,19 @@ type Owner =
   | Readonly<{ kind: "calledRoot"; owner: ScopeOccurrenceId }>
   | Readonly<{ kind: "process" }>;
 
-/** NSD-READ-01 and NSD-WRITE-01: the nearest chain scope whose frame declares `name`, a present null included. */
-function resolveOwner(program: SemanticProcessProgram, variables: ScopedVariables, instanceId: string,
-  chain: readonly string[], name: string): Owner | null {
-  for (const scopeId of chain) {
-    const frames = framesOf(variables, instanceId, scopeId);
+/** NSD-READ-01 and NSD-WRITE-01: the nearest chain occurrence whose frame declares `name`, a present null included. */
+function resolveOwner(program: SemanticProcessProgram, occurrences: readonly RuntimeScopeOccurrence[],
+  variables: ScopedVariables, owner: ScopeOccurrenceId, name: string): Owner | null {
+  const chain = nestedOccurrenceChain(occurrences, owner);
+  if (chain === null) return null;
+  for (const occurrence of chain) {
+    const frames = variables.scopes.filter(frame => sameScopeOccurrence(frame.owner, occurrence));
     if (frames.length > 1) return null;
-    const frame = frames[0];
-    if (frame !== undefined && frame.bindings.some(binding => binding.name === name)) {
-      return { kind: "frame", owner: frame.owner };
-    }
+    if (frames[0]?.bindings.some(binding => binding.name === name)) return { kind: "frame", owner: occurrence };
   }
-  const last = chain[chain.length - 1];
-  if (last === undefined || !mappedCalledRoot(program, last)) return { kind: "process" };
-  const roots = framesOf(variables, instanceId, last);
-  return roots.length === 1 ? { kind: "calledRoot", owner: roots[0]!.owner } : null;
+  const root = chain[chain.length - 1];
+  if (root === undefined || !mappedCalledRoot(program, root.definitionScopeId)) return { kind: "process" };
+  return selectFrame(variables, root) === undefined ? null : { kind: "calledRoot", owner: root };
 }
 
 function uniqueValue(bindings: readonly VariableBinding[], name: string): VariableValue | undefined {
@@ -134,7 +133,7 @@ export enum NestedScopeReadKind {
 
 /**
  * The three outcomes a Call mapping distinguishes: an absent name becomes a present null (CVM-IN-01, CVM-OUT-01), while a
- * refused resolution (two live frames of one definition, a repeated binding, a value outside the domain) disables the
+ * refused resolution (a chain through an occurrence that is not live, a repeated binding, a value outside the domain) disables the
  * step rather than fabricating a null.
  */
 export type NestedScopeRead =
@@ -155,9 +154,9 @@ export function readBindingOutcome(bindings: readonly VariableBinding[], name: s
 }
 
 /** NSD-READ-01 with its three outcomes; a called-root chain ends at its own frame (CVM-RESOLVE-01's isolation). */
-export function resolveNestedScopeRead(program: SemanticProcessProgram, variables: ScopedVariables,
-  instanceId: string, scopeId: string, name: string): NestedScopeRead {
-  const owner = resolveOwner(program, variables, instanceId, nestedDefinitionChain(program, scopeId), name);
+export function resolveNestedScopeRead(program: SemanticProcessProgram, occurrences: readonly RuntimeScopeOccurrence[],
+  variables: ScopedVariables, reader: ScopeOccurrenceId, name: string): NestedScopeRead {
+  const owner = resolveOwner(program, occurrences, variables, reader, name);
   if (owner === null) return refused;
   switch (owner.kind) {
     case "process": return readBindingOutcome(variables.process.bindings, name);
@@ -170,16 +169,16 @@ export function resolveNestedScopeRead(program: SemanticProcessProgram, variable
 }
 
 /** NSD-READ-01; every value is re-validated as a `SingletonBusinessItem`, never trusted for an earlier write. */
-export function readNestedScopeVariable(program: SemanticProcessProgram, variables: ScopedVariables,
-  instanceId: string, scopeId: string, name: string): VariableValue | undefined {
-  const read = resolveNestedScopeRead(program, variables, instanceId, scopeId, name);
+export function readNestedScopeVariable(program: SemanticProcessProgram, occurrences: readonly RuntimeScopeOccurrence[],
+  variables: ScopedVariables, reader: ScopeOccurrenceId, name: string): VariableValue | undefined {
+  const read = resolveNestedScopeRead(program, occurrences, variables, reader, name);
   return read.kind === NestedScopeReadKind.Present ? read.value : undefined;
 }
 
 /** NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process or called-root binding. */
-function writeOne(program: SemanticProcessProgram, variables: ScopedVariables, instanceId: string,
-  scopeId: string, binding: VariableBinding): ScopedVariables | null {
-  const owner = resolveOwner(program, variables, instanceId, nestedDefinitionChain(program, scopeId), binding.name);
+function writeOne(program: SemanticProcessProgram, occurrences: readonly RuntimeScopeOccurrence[],
+  variables: ScopedVariables, writer: ScopeOccurrenceId, binding: VariableBinding): ScopedVariables | null {
+  const owner = resolveOwner(program, occurrences, variables, writer, binding.name);
   if (owner === null) return null;
   if (owner.kind === "process") {
     return { ...variables, process: { bindings: mergeProcessVariableBindings(variables.process.bindings, [binding]) } };
@@ -190,12 +189,13 @@ function writeOne(program: SemanticProcessProgram, variables: ScopedVariables, i
     ? { ...candidate, bindings: mergeProcessVariableBindings(candidate.bindings, [binding]) } : candidate) };
 }
 
-export function writeNestedScopeVariables(program: SemanticProcessProgram, variables: ScopedVariables,
-  instanceId: string, scopeId: string, bindings: readonly VariableBinding[]): ScopedVariables | null {
+export function writeNestedScopeVariables(program: SemanticProcessProgram,
+  occurrences: readonly RuntimeScopeOccurrence[], variables: ScopedVariables, writer: ScopeOccurrenceId,
+  bindings: readonly VariableBinding[]): ScopedVariables | null {
   let current: ScopedVariables | null = variables;
   for (const binding of bindings) {
     if (current === null) return null;
-    current = writeOne(program, current, instanceId, scopeId, binding);
+    current = writeOne(program, occurrences, current, writer, binding);
   }
   return current;
 }
@@ -228,7 +228,7 @@ export function evaluateNestedInputs(mappings: readonly VariableMapping[],
 export function evaluateNestedEffectInputs(program: SemanticProcessProgram, state: RuntimeState,
   owner: ScopeOccurrenceId, mappings: readonly VariableMapping[]): readonly VariableBinding[] | null {
   return evaluateNestedInputs(mappings, name =>
-    readNestedScopeVariable(program, state.variables, owner.processInstanceId, owner.definitionScopeId, name));
+    readNestedScopeVariable(program, state.scopeOccurrences, state.variables, owner, name));
 }
 
 function occurrenceWithParent(state: RuntimeState, scopeId: string):
@@ -250,7 +250,7 @@ export function initializeNestedScopeFrame(program: SemanticProcessProgram, stat
   if (located === null) return null;
   const { child, parent } = located;
   const bindings = evaluateNestedInputs(record.localInputs, name =>
-    readNestedScopeVariable(program, state.variables, parent.processInstanceId, parent.definitionScopeId, name));
+    readNestedScopeVariable(program, state.scopeOccurrences, state.variables, parent, name));
   if (bindings === null || state.variables.scopes.some(frame => sameScopeOccurrence(frame.owner, child))) return null;
   const insertion = state.variables.scopes.findIndex(frame => compareScopeOccurrenceIds(child, frame.owner) < 0);
   const index = insertion < 0 ? state.variables.scopes.length : insertion;
@@ -278,8 +278,7 @@ export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: 
     if (value === undefined) return null;
     values.push(cloneVariableBinding({ name: mapping.target, value }));
   }
-  const variables = writeNestedScopeVariables(program, state.variables, located.parent.processInstanceId,
-    located.parent.definitionScopeId, values);
+  const variables = writeNestedScopeVariables(program, state.scopeOccurrences, state.variables, located.parent, values);
   return variables === null ? null : { ...state, variables };
 }
 
@@ -352,16 +351,15 @@ export function completeDeclaredScope(program: SemanticProcessProgram,
  */
 export function nestedScopeDeclaredNames(program: SemanticProcessProgram, state: RuntimeState,
   owner: ScopeOccurrenceId): ReadonlySet<string> {
-  const chain = nestedDefinitionChain(program, owner.definitionScopeId);
-  const last = chain[chain.length - 1] ?? owner.definitionScopeId;
-  if (mappedCalledRoot(program, last)) {
-    const roots = state.scopeOccurrences.filter(({ id, parent }) =>
-      parent === null && id.processInstanceId === owner.processInstanceId && id.definitionScopeId === last);
-    const called = roots.length === 1 ? calledRootMappings(program, state.calledProcessOccurrences, roots[0]!.id) : undefined;
+  const chain = nestedOccurrenceChain(state.scopeOccurrences, owner);
+  const root = chain?.[chain.length - 1];
+  if (chain === null || root === undefined) return new Set();
+  if (mappedCalledRoot(program, root.definitionScopeId)) {
+    const called = calledRootMappings(program, state.calledProcessOccurrences, root);
     return called === undefined ? new Set() : calledRootPatchNames(called);
   }
-  return new Set(chain.flatMap(scopeId =>
-    framesOf(state.variables, owner.processInstanceId, scopeId).flatMap(frame => frame.bindings.map(({ name }) => name))));
+  return new Set(chain.flatMap(occurrence => state.variables.scopes
+    .filter(frame => sameScopeOccurrence(frame.owner, occurrence)).flatMap(frame => frame.bindings.map(({ name }) => name))));
 }
 
 /**
@@ -388,12 +386,13 @@ export function nestedScopePatchAdmitted(program: SemanticProcessProgram, state:
  * NSD-WRITE-01 for a successful effect result: the patch is validated and projected exactly as for the structured
  * effect-data profile, and only the landing owner of each output differs. BPMN Error results are not admitted.
  */
-export function completeNestedScopeEffectData(program: SemanticProcessProgram, variables: ScopedVariables,
+export function completeNestedScopeEffectData(program: SemanticProcessProgram,
+  occurrences: readonly RuntimeScopeOccurrence[], variables: ScopedVariables,
   wait: Readonly<{ id: EffectOccurrenceId; owner: ScopeOccurrenceId; outputMappings: readonly VariableMapping[] }>,
   localPatch: readonly VariableBinding[]): ScopedVariables | null {
   if (wait.id.processInstanceId !== wait.owner.processInstanceId) return null;
   const projected = projectActivityVariableScopeResultUnder(itemPolicy, variables, wait.id, wait.outputMappings,
     localPatch, true);
-  return projected === null ? null : writeNestedScopeVariables(program, projected.variables,
-    wait.owner.processInstanceId, wait.owner.definitionScopeId, projected.outputs);
+  return projected === null ? null : writeNestedScopeVariables(program, occurrences, projected.variables, wait.owner,
+    projected.outputs);
 }

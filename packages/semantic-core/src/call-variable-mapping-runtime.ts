@@ -43,8 +43,8 @@ function copyValues(mappings: readonly VariableMapping[], read: (name: string) =
 /** CVM-IN-01: the called-root frame's bindings, read along the Call's enclosing chain by NSD-READ-01. */
 export function evaluateCallInputs(program: SemanticProcessProgram, state: RuntimeState, caller: ScopeOccurrenceId,
   data: VariableMappingCallData): readonly VariableBinding[] | null {
-  return copyValues(data.inputs, name => resolveNestedScopeRead(program, state.variables, caller.processInstanceId,
-    caller.definitionScopeId, name));
+  return copyValues(data.inputs, name => resolveNestedScopeRead(program, state.scopeOccurrences, state.variables, caller,
+    name));
 }
 
 /** CVM-OUT-01: the output values, every source read from the called-root frame alone. */
@@ -84,7 +84,6 @@ export function returnCalledProcessWithMappings(program: SemanticProcessProgram,
   const returned = values === null ? null : returnCalledProcess(operation, state);
   if (values === null || returned === null) return null;
   const { caller } = selected.record;
-  const variables = writeNestedScopeVariables(program, returned.variables, caller.processInstanceId,
-    caller.definitionScopeId, values);
+  const variables = writeNestedScopeVariables(program, returned.scopeOccurrences, returned.variables, caller, values);
   return variables === null ? null : { ...returned, variables };
 }
