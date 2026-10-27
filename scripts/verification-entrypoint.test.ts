@@ -360,6 +360,25 @@ test("staged job handoffs restore an earlier attempt of the same run", async () 
   }
 });
 
+// Staged handoffs are per-run caches that no later run restores, yet they count against the
+// repository's 10 GB Actions cache budget (measured 2026-10-27: 9.3 of 10.1 GiB), where LRU
+// eviction then removes the incremental `lake-` caches every run does restore. Deleting them only
+// after `verify-complete` succeeds keeps them for a partial rerun of a failed run.
+test("a verified run releases exactly its own staged handoffs", async () => {
+  const workflow = await readFile(verificationWorkflowPath, "utf8");
+  const staged = [...workflow.matchAll(/uses: actions\/cache@\S+[^\n]*\n(?: {8}[^\n]*\n)*? {10}key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/gu)]
+    .map((match) => match[1]);
+  assert.deepEqual([...new Set(staged)].sort(), ["verify-lean-checks", "verify-lean-library", "verify-runtime"]);
+  const release = workflow.match(/\n  release_staged_outputs:\n[\s\S]*$/u)?.[0];
+  assert.ok(release !== undefined, "the workflow releases its staged handoffs");
+  assert.match(release, /needs:\n      - verify-complete\n/u);
+  assert.match(release, /if: always\(\) && needs\.verify-complete\.result == 'success'\n/u);
+  assert.match(release, /permissions:\n      actions: write\n/u);
+  const prefixes = release.match(/for stage in ([a-z -]+); do/u)?.[1]?.split(" ");
+  assert.deepEqual(prefixes?.sort(), [...new Set(staged)].sort());
+  assert.match(release, /--key "\$stage-\$RUNNER_OS-\$\{\{ github\.run_id \}\}-"/u);
+});
+
 test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
   const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
     readFile(pipelineTestPath, "utf8"),
