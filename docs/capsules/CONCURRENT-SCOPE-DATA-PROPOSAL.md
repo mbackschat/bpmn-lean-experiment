@@ -37,7 +37,15 @@ The [nested scope-data account](NESTED-EMBEDDED-SCOPE-DATA-SPEC.md) is serial. I
 - Input mappings run on the new scope execution against its parent. Output mappings run in `ExecutionEntity.destroy` before the locals are removed (lines 518–572).
 - Concurrent executions are non-scope children, so a non-local write from a concurrent branch reaches the frames the scope execution would. Those are the frames this account's occurrence chain consults.
 
-**Evidence and classification.** That two live executions of one Sub-Process definition each get their own store is inferred from these code paths. The nearest engine tests cover Multi-Instance and two different definitions. The family therefore runs the claim-assessment model below on the CIB oracle as calibration. `CIB-EXT-0020`'s boundary widens from serial nesting to concurrent and same-definition occurrences, and its value clause gains this profile's bounded String domain, with these citations and that calibration. `CIB-EXT-0021` is unchanged, because no mapped Call is admitted here.
+**Evidence and classification.** That two live executions of one Sub-Process definition each get their own store is inferred from these code paths. The nearest engine tests cover Multi-Instance and two different definitions. The family therefore runs the claim-assessment model below on the CIB oracle as calibration. Four register entries change, each with these citations and that calibration:
+
+- **`CIB-EXT-0020`.** Its boundary widens from serial nesting to concurrent and same-definition occurrences. Its value clause gains this profile's bounded String domain. Its User Task clause, which writes a completion patch into the nearest declaring frame, applies over the occurrence chain.
+- **`CIB-EXT-0015`.** Its embedded-completion-profile clause, which today admits only data-free overlay-bound Service Tasks, widens to Service Task input and output mappings in data-bearing Programs.
+- **`CIB-EXT-0006`** (Start installs initial Process variables) and **`CIB-EXT-0005`** (User Task completion installs submitted variables) apply to this profile's data-bearing Programs. The `NSD-TASK-01` restriction stays the profile admission restriction recorded there: a patch name outside the declaring frames is refused instead of being created at the root.
+
+`CIB-EXT-0021` is unchanged, because no mapped Call is admitted here.
+
+The profile artifact stays byte-identical. Its `relationships` list keeps its pinned content, as it already does for `CIB-EXT-0015` and `CIB-EXT-0021` under this profile. The new relationship references live in the scenarios' provenance and in the profile README paragraph below.
 
 ## Required, optional and excluded scope
 
@@ -60,15 +68,18 @@ Excluded:
 - BPMN `property` and `dataObject` declarations;
 - every exclusion of the current profile.
 
-These restrictions narrow admission only. Cycles and Calls later broaden the class without reinterpreting an admitted model, because the occurrence chain already gives a re-entered or called occurrence its own frames. This profile's value domain stays bounded String or null for every admitted Program, and structured concurrent data belongs to the `DATA` profile or a new profile. Widening it in place would change the value contract of accepted Programs.
+These restrictions narrow admission only. Cycles and Calls later broaden the class without reinterpreting an admitted model, because the occurrence chain already gives a re-entered or called occurrence its own frames. Structured concurrent data is a scope choice for a later increment, in the `DATA` profile or a new one; it needs a concurrent capacity account for values of up to 16 KiB, which this family does not attempt.
 
 ## Profile and public contract
 
 The `SCOPE` family profile `cibseven-2.2.0-embedded-subprocess-completion-draft` grows in place under the [cumulative profile rule](../../contracts/README.md). It already owns the concurrency, the merge regions and the concurrent effect hosting this family needs. The `DATA` profile would have to admit all of that, and it would also need a concurrent capacity account for `SingletonBusinessItem` values of up to 16 KiB. The `DATA` profile keeps its serial admission and its structured domain.
 
-The profile's value domain changes from empty to bounded String or present null. This applies to Start bindings, User Task completion patches, effect arguments and results, and scope locals. A new `boundedString` arm of [`EffectMappingValuePolicy`](../../BpmnSemantics/SemanticProcess/EffectMappingValuePolicy.lean) and its TypeScript counterpart admits `.string s` with at most 1,024 UTF-8 bytes (the existing root-String bound of `PBV-EFF-01`) and `.null` as a present value. The surface value domains in [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts) and the Lean value domains map this profile to that arm.
+For data-bearing Programs only, the value domain changes from empty to bounded String or present null. This applies to Start bindings, User Task completion patches, effect arguments and results, and scope locals.
+- **New policy arm.** A new `boundedString` arm of [`EffectMappingValuePolicy`](../../BpmnSemantics/SemanticProcess/EffectMappingValuePolicy.lean) and its TypeScript counterpart admits `.string s` with at most 1,024 UTF-8 bytes (the existing root-String bound of `PBV-EFF-01`) and `.null` as a present value.
+- **Selected by Program, not profile.** Today both value-domain accounts are keyed by profile alone: `profileValueDomain` and `profileAllowsVariableBindings` in [semantic-profile-value-domain.ts](../../packages/semantic-core/src/semantic-profile-value-domain.ts), and `effectMappingValuePolicy`. Each gains the data-bearing predicate that also gates `nestedScopeDataProgram`.
+- **Data-free Programs unchanged.** A data-free Program of this profile keeps empty surface domains and the `scalar` policy, so the [cross-target domain matrix](../../packages/differential/test/scenario-value-domain-expectations.ts) keeps this profile's data-free row unchanged. The matrix gains a separate data-bearing row for the claim-assessment scenario.
 
-No wire shape changes. Programs gain the existing optional `scopeLocalData` table, which [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) today rejects outside the `DATA` profile. [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts) today limits effect mappings to the `DATA` and serial profiles; both widen to this profile for data-bearing models. The profile artifact stays byte-identical. The [profile README](../../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md) gains a paragraph that supersedes its data exclusions and discloses the capacity limit below, and the new scenarios cite `CIB-EXT-0020`.
+No wire shape changes. Programs gain the existing optional `scopeLocalData` table, which [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) today rejects outside the `DATA` profile. [Operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), at 722 of 800 lines, today limits effect mappings to the `DATA`, serial, Multi-Instance and mixed-task checkpoint profiles. Both widen to this profile, for data-bearing Programs only. The profile artifact stays byte-identical. The [profile README](../../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md) gains a paragraph that supersedes its data exclusions and discloses the capacity limit below, and the new scenarios cite `CIB-EXT-0020`.
 
 ## Representation and runtime ownership
 
@@ -91,9 +102,28 @@ No wire shape changes. Programs gain the existing optional `scopeLocalData` tabl
 
 It writes `scopeVariableScope` of the new frame. Two sibling entries read the same parents and write different new frames, so they form an independent batch.
 
-**Completion and merge-target entry stay unprepared singletons.** In the admitted class, every Parallel branch and every merge branch reaches a task or Sub-Process before any join, merge or End. A command ends exactly one wait. So a closure's co-enabled offers arise only after a fork, and they are task armings and Sub-Process entries. A scope becomes quiescent only through the single token of the command that ended its last wait, so its completion is the only offer of that frontier. A merge-target entry follows its own branch's task-completing command, so it is a singleton too. Singletons execute unprepared (`selectInternalExecutionFrontier`, `[offer] => .execute`). The regional completion selection stays unchanged.
+**Representation of the prepared entry.** The existing scope-creation contract states that the patch "updates only its selected counter and preserves unrelated fields", and the proved lanes of the [scope-creation preparation prerequisite](../INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite) rest on it. A frame-carrying arm of `InternalScopeCreationKind` would reopen every one of them. The declared entry is therefore a separate prepared constructor: the unchanged `InternalScopeCreationSelection` plus the evaluated frame. Its application is the existing `apply` followed by one frame insertion that changes only `variables.scopes`. Every existing law over `apply` stays as it is. The composed patch re-establishes, at the same proved strength:
+- refinement to `enterDeclaredScope?`;
+- aggregate `runtimeStateWellFormed` preservation, from `apply`'s preservation and the frame insertion's variables-only frame;
+- complete footprint frames for declared/declared, declared/undeclared and declared/arming pairs;
+- literal-state commutation of two declared entries, and of a declared entry with an arming and with local control, from distinct-owner frame insertion commutation;
+- membership in finite batch induction;
+- unchanged publication, because frames are not published and the publication stays numbering-free.
 
-**Arming reads.** For a data-bearing Program, nested input arming in `scopedEffectInputReads?` ([InternalCommutationCore](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean)) reads the same precise atoms as entry. Today it claims `.activityPopulation` instead, and every region owns that atom ([InternalRegionalDependencies](../../BpmnSemantics/SemanticProcess/InternalRegionalDependencies.lean)). An arming with mappings beside a sibling's regional entry would therefore conflict. The TypeScript [transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) changes the same way. A new frame law takes the population claim's place: nested input evaluation is unchanged when the consulted frames, chain links and Process names are unchanged. This joins the premises of `prepared_arm_read_frame`.
+The commutation proposal's scope-creation section is amended to name the declared constructor.
+
+**Completion and merge-target entry stay unprepared singletons.** A command ends exactly one wait, so a closure starts from one token, and co-enabled offers arise only after a fork. Admission guarantees that each such offer is a task arming or a Sub-Process entry:
+- every structured body holds a task on every Start-to-End path (`parallel-body-burst-analysis.ts`, consumed whole by `structured-parallel-body-analysis.ts`);
+- every fork branch starts with work (`branchesStartWithWork` in [nested scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts));
+- merge targets are serial bodies holding at least one task, and merge branches are non-empty runs of User or Service Tasks ([merge-region admission](../../packages/semantic-core/src/merge-region-admission.ts)).
+
+So a scope becomes quiescent only through the single token of the command that ended its last wait, and its completion is the only offer of that frontier. A merge-target entry follows its own branch's task-completing command, so it is a singleton too. Singletons execute unprepared (`selectInternalExecutionFrontier`, `[offer] => .execute`), and the regional completion selection stays unchanged. The argument reopens when gateway conditions, wait-free paths, Multi-Instance or cycles are admitted.
+
+**Arming reads.** For a data-bearing Program, nested input arming in `scopedEffectInputReads?` ([InternalCommutationCore](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean)) reads the same precise atoms as entry instead of claiming `.activityPopulation`. The TypeScript [transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts) changes the same way.
+
+The reason is a proof obligation, not a schedule difference. Outside regions, the population read conflicts only with writes of `.activityOccurrence` or `.activityPopulation`, which no prepared family of this profile makes, so neither retained model separates the two claims at runtime. But `prepared_arm_process_input_frames` needs the population claim to be absent. Occurrence-chain resolution reads `scopeOccurrences`, and a declared entry writes a frame, so the read set must name what the evaluation consults.
+
+A new frame law discharges `prepared_arm_read_frame`'s existing `effectInputsFrame` premise for nested arming: nested input evaluation is unchanged when the consulted frames, chain links and Process names are unchanged.
 
 **Counters.** Per-element activation counters stay shared by design, as in the concurrent activations account. Per-occurrence counters stay out of scope.
 
@@ -116,13 +146,18 @@ The nearest wrong algorithms are:
 
 ## Capacity
 
-This family claims no static capacity envelope for the profile, and it does not change capacity enforcement. The profile admits no Start capacity envelope today, only the 256-byte hosting-identity bound, which stays. Hosted budgets are enforced at runtime before any commit:
-- **Committed state and publication batch.** The [candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) measures every successor. If it exceeds either budget, the Workflow does not commit it and retains a typed capacity failure.
-- **Effect requests and History.** Each effect request passes its byte preflight before issue. The [ordinary-effect History reservation](../../packages/temporal-adapter/workflow/src/ordinary-effect-history-reservation.ts) sums the actual request bytes before issuing a frontier.
+This family claims no static capacity envelope for the profile, and it does not change capacity enforcement. The profile admits no Start capacity envelope today, only the 256-byte hosting-identity bound, which stays. Hosted budgets are enforced at runtime, at two points:
+- **Before commit: committed state and publication batch.** The [candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) measures every successor. If it exceeds either budget, the Workflow does not commit it and retains a typed capacity failure.
+- **After commit: effect requests and History.** The frontier scheduler runs the effect request byte preflight and the [ordinary-effect History reservation](../../packages/temporal-adapter/workflow/src/ordinary-effect-history-reservation.ts), which sums the actual request bytes, after the commit that armed the effects (`ordinary-effect-frontier-scheduler.ts`). If either is exceeded, `failCapacity` fails the Workflow as a nonretryable typed host failure. The process then stops with committed effect waits that are never issued.
 
-The concurrent scope Service Tasks account's exact-32 fresh-Run fit assumed fixed request bytes. For data-bearing Programs it holds only through that runtime reservation, which refuses before issue.
+A business process of this profile can therefore stop with a typed capacity failure when its data grows, in either of those two ways. This is a step back from the `DATA` profile, which refuses an over-budget Start before Workflow creation. The profile README and About disclose the limit.
 
-A business process of this profile can therefore stop with a typed capacity failure when its data grows. The profile README and About disclose this limit. A Program-level envelope for concurrent data needs a computed control-state bound per budget, which this family does not attempt.
+It satisfies the rows' acceptance because those rows require business behaviour and its evidence, not a capacity envelope. [PROJECT-DESIGN](../PROJECT-DESIGN.md) makes no capacity claim before the production baseline. The refusal is typed and fail-closed through existing mechanisms, so it is neither silent nor a workaround. A Program-level envelope for concurrent data needs a computed control-state bound per budget, which this family does not attempt.
+
+Three owners change with this account:
+- the [concurrent scope Service Tasks preflight](CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#temporal-hosting-and-refinement-preflight): its exact-32 fresh-Run fit and "request bytes are fixed" hold only for data-free Programs;
+- the [lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md)'s ordinary-effect paragraph: it names the post-commit refusal for data-bearing frontiers;
+- the [nested scope-data question](NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#question-and-delivery-boundary): its "concurrent-wait Start capacity account" premise for `PC-SCOPE-01` is replaced by this disclosed runtime limit.
 
 The retained models are measured within every budget with escape-heavy values: each of their data slots holds a 1,024-byte String of control characters, whose canonical encoding is about six bytes per byte. Every copy is counted, including effect arguments held both in the wait and in its Activity scope. The measurement is a protocol component test, not a claim about other Programs.
 
@@ -130,9 +165,10 @@ The retained models are measured within every budget with escape-heavy values: e
 
 - `CSD-ADMIT-01`: admission accepts exactly the required and optional scope above. It rejects every exclusion, every parser warning and every String literal input over 1,024 UTF-8 bytes.
 - `CSD-VALUE-01`: every value at every surface of this profile is a String of at most 1,024 UTF-8 bytes or a present null. Anything else is refused atomically at the surface that introduces it.
-- `CSD-CHAIN-01`: the chain of an occurrence is that occurrence followed by its live parent occurrences, up to its instance root. `NSD-READ-01`, `NSD-WRITE-01`, `NSD-INIT-01`, `NSD-OUTPUT-01`, `NSD-RETIRE-01`, `NSD-TASK-01` and `CVM-RESOLVE-01` hold with this chain in place of the definition chain. The two chains name the same frames whenever both premises hold:
+- `CSD-CHAIN-01`: the chain of an occurrence is that occurrence followed by its live parent occurrences, up to its instance root. `NSD-READ-01`, `NSD-WRITE-01`, `NSD-INIT-01`, `NSD-OUTPUT-01`, `NSD-RETIRE-01`, `NSD-TASK-01` and `CVM-RESOLVE-01` hold with this chain in place of the definition chain. The two chains name the same frames whenever all three premises hold:
   - every definition on the chain has exactly one live occurrence;
-  - each occurrence's parent occurrence belongs to its definition's `parentScopeId`.
+  - each occurrence's parent occurrence belongs to its definition's `parentScopeId`;
+  - every frame's owner is a live occurrence of the same instance. This is the core's `nestedScopeFrameOwnershipMismatch` check, whose Lean preservation stays open in the nested scope-data account.
 - `CSD-ISOLATE-01`: a read, write, input or output never consults or changes a frame that is not on the performing occurrence's chain. Two live occurrences of one definition never share a frame or a local.
 - `CSD-INIT-01`: each entering occurrence, ordinary or merge-target, evaluates its inputs against its own parent occurrence's chain before its frame exists.
 - `CSD-RETIRE-01`: each completing occurrence, ordinary or merge-target, writes its outputs through its parent occurrence's chain and disposes exactly its own frame.
@@ -149,28 +185,33 @@ Two whole models with business purposes and one measurement model carry the witn
 - **Claim damage assessment.** The root body holds one *Handle claim* Sub-Process. Its body holds the merge region, because root-body merge regions are excluded:
   - *Inspect vehicle* and *Inspect property* run on two fork branches and merge into *Price damage*, which therefore runs twice concurrently.
   - *Price damage* declares `estimate = "pending"` and `adjuster = ${noAdjuster}`. The Start binds `noAdjuster` to null and `adjuster` to `"desk"`, and a root *Review claim* User Task after *Handle claim* maps nothing.
-  - Inside *Price damage*, the *Fetch rates* Service Task maps `${estimate}` and `${adjuster}`. *Assess damage* writes `estimate`. The Sub-Process outputs `estimate` to `lastEstimate`, which no enclosing scope declares, so the output lands at the Process.
-- **Facility inspection.** An outer *Inspection* Sub-Process declares `findings`. Its body forks straight into two declaring Sub-Processes, *Electrical check* and *Fire safety check*:
-  - each declares a local `result` and outputs it to `electricalResult` or `fireResult`, which no enclosing scope declares;
-  - each holds a *Record findings* User Task that writes the outer `findings` and its own `result`;
-  - after the join, *Summarize*, a Service Task, maps `${findings}`, `${electricalResult}` and `${fireResult}`.
+  - The *Price damage* body is the serial chain *Assess damage* (User Task) then *Fetch rates* (Service Task). *Assess damage* writes `estimate`. *Fetch rates* maps `${estimate}` and `${adjuster}`.
+  - The Sub-Process outputs `estimate` to `lastEstimate`, which no enclosing scope declares, so the output lands at the Process.
+  - In the retained journey, the first occurrence completes *Assess damage* with the empty patch, and the second completes it with `estimate = "4200"`.
+- **Facility inspection.** An outer *Inspection* Sub-Process declares `findings = "open"` and `result = "none"`. Its body forks straight into two declaring Sub-Processes:
+  - *Electrical check* declares `result = "pending-electrical"`, a literal that shadows the outer `result`.
+  - *Fire safety check* declares `result = ${result}`, which reads the outer `result` through its own parent chain.
+  - Each holds a *Record findings* User Task that may write the outer `findings` and its own `result`. Each outputs its `result` to `electricalResult` or `fireResult`, which no enclosing scope declares.
+  - After the join, *Summarize*, a Service Task, maps `${findings}`, `${electricalResult}` and `${fireResult}`.
+  - In the retained journey, the fire-safety *Record findings* omits `result`, so its initial value reaches `fireResult` and the *Summarize* argument.
 - **Capacity measurement.** The two models above, with every data slot filled with the escape-heavy value.
 
 | Rule | Witness | Lane placement | Seeded mutation it must catch |
 |---|---|---|---|
 | `CSD-CHAIN-01`, `CSD-ISOLATE-01` | The second *Price damage* occurrence completes *Assess damage* with `estimate = "4200"`. The first occurrence keeps `"pending"`. Its *Fetch rates* effect, armed earlier, shows `"pending"`, and the second occurrence's *Fetch rates* shows `"4200"`. | Compiled Lean and the cross-target matrix; core; pipeline; CIB calibration | Resolve by definition; flatten both occurrences into one frame; refuse two live frames. |
 | `NSD-READ-01` over the chain | Both *Fetch rates* effects show `adjuster = null` although the Process `adjuster` is `"desk"`. | Compiled Lean; core; pipeline | Read the Process before the frames. |
-| `CSD-INIT-01`, ordinary entry | The fork enters both checks in one closure. Each frame holds its own initial `result`, and both read the outer `findings` initial value. | Compiled Lean; core; pipeline | Evaluate the second entry against the first sibling's frame. |
+| `CSD-INIT-01`, ordinary entry | The fork enters both checks in one closure. *Fire safety check*'s `result` initializes to the outer `"none"`, not to *Electrical check*'s `"pending-electrical"`, and *Summarize* shows `fireResult = "none"`. | Compiled Lean; core; pipeline | Evaluate the second entry against the first sibling's frame. |
 | `CSD-INIT-01`, merge-target entry | The two *Price damage* entries follow two separate inspection commands. Each frame holds `"pending"` and the null, read from the same *Handle claim* chain. | Compiled Lean; core; pipeline | Skip the declared hook on occurrence-addressed entry. |
 | `CSD-RETIRE-01` | Both *Price damage* occurrences output `estimate` to `lastEstimate`, in both completion orders. The Process holds the later completer's value by explicit command order, and each frame is gone after its completion. | Compiled Lean; core; pipeline | Skip outputs or disposal on occurrence-addressed completion. |
-| `CSD-PREPARE-01` | The facility fork commits both prepared entries as one independent batch, without `ambiguousInternalChoice`. The core checks each prepared patch against the evaluator after every committed step of every registered schedule. | Core; compiled Lean; pipeline | Keep declared scopes out of the prepared path; keep the population claim on nested arming. |
+| `CSD-PREPARE-01` | The facility fork commits both prepared entries as one independent batch, without `ambiguousInternalChoice`. The core checks each prepared patch against the evaluator after every committed step of every registered schedule. | Core; compiled Lean; pipeline | Keep declared scopes out of the prepared path. |
+| Arming read set | The nested arming footprint names every consulted frame, chain link and Process name, and no `.activityPopulation`. | The internal commutation census; the Lean frame law | Keep the population claim on nested arming. |
 | `NSD-WRITE-01` over the chain, `CSD-ISOLATE-01` | Each *Record findings* writes the outer `findings`, its nearest declaring owner, and its own `result`. The sibling's `result` is never visible. *Summarize* shows the last-written `findings`. | Compiled Lean; core; pipeline | Write to the innermost frame; write to the Process. |
 | `CSD-AVAILABLE-01` | *Summarize* reads both check outputs after the join without Start bindings. A model variant in which *Fire safety check* reads `${electricalResult}` makes it a required Start binding. | Source; TypeScript; a Lean law over the analysis predicate | Count a sibling branch's write as available; intersect at a Parallel join. |
 | `CSD-VALUE-01`, `CSD-REFUSE-01` | A patch value of exactly 1,024 bytes commits. A 1,025-byte value and a Boolean are `rejected` with the state unchanged. | Compiled Lean and the value-domain matrix; core | Commit a partial patch; admit an unbounded String. |
 | `CSD-CHAIN-01` bridge | Under its two premises, occurrence-chain resolution equals definition-chain resolution. | A Lean law | Change resolution for single-occurrence chains. |
 | Preservation | Every registered `DATA` and data-free `SCOPE` scenario keeps its retained expectations. | Core; pipeline | Route a data-free Program through the nested-data arms. |
 | Capacity | Both models fit every budget with escape-heavy values in every slot. | Protocol component test | Count one copy of each effect argument; measure ASCII values. |
-| `CSD-ADMIT-01` | Each exclusion is refused, including a Call Activity in a data-bearing model and a re-entry cycle. The retained models compile. | Source; Lean admission check | Admit a Call beside data. |
+| `CSD-ADMIT-01` | Each exclusion is refused, including a Call Activity in a data-bearing model and a re-entry cycle. The retained models compile. | Source; compiled Lean admission check | Admit a Call beside data. |
 
 ## Lean assurance lane
 
@@ -181,9 +222,9 @@ Evidence: the occurrence-chain mechanism and its prepared entry are proved. Admi
 - **Nearest owner.** Resolution selects the first frame on the occurrence chain that declares the name, otherwise the Process. This restates `resolveOwner?_frame_nearest`.
 - **Exact write and off-chain isolation.** A write changes exactly the resolved frame or binding (`write?_frame`, `write?_process`). A new law adds that every frame whose owner is not on the writer's chain is unchanged.
 - **Initialization and retirement on both paths.** The `initializeFrame?_reads_parent_chain` and `completeScopeState?_retires_frame` laws carry over to `enterConcurrentScopeState?` and `completeScopeOccurrenceState?` with their declared hooks. The [merge-target occurrence laws](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean) gain the frame facts.
-- **Bridge.** Under the two premises of `CSD-CHAIN-01`, occurrence-chain resolution equals definition-chain resolution.
-- **Prepared entry.** The prepared declared entry patch equals the declared entry evaluator's result, extending `selectInternalScopeCreation_refines`.
-- **Frame read law.** Nested input evaluation and entry input evaluation are unchanged when the consulted frames, chain links and Process names are unchanged. This joins the premises of `prepared_arm_read_frame` and its scope-creation counterpart.
+- **Bridge.** Under the three premises of `CSD-CHAIN-01`, occurrence-chain resolution equals definition-chain resolution.
+- **Prepared entry.** The composed declared-entry patch re-establishes the laws listed under representation: refinement, aggregate validity, footprint frames, commutation, batch membership and unchanged publication. Each one composes the existing `apply` law with a variables-only law for the frame insertion.
+- **Frame read law.** Nested input evaluation and entry input evaluation are unchanged when the consulted frames, chain links and Process names are unchanged. It discharges the `effectInputsFrame` premise of `prepared_arm_read_frame` and the corresponding premise of the scope-creation read frames.
 
 Open, and recorded as such: there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice`. The structural argument under representation and the core's check on every registered schedule support it, and the laws above make each executed patch sound.
 
@@ -212,8 +253,8 @@ The two models carry answer-free scenarios with registered pipeline cases, seede
 
 Acceptance: Lean, core and pipeline agree on every scenario of this profile and of the `DATA` profile, and the hosted pipeline passes once at family closure. Then the following clauses are evidenced, and each row's remaining clauses are recorded in the checklist:
 - the concurrent embedded-owner clauses of `PC-DATA-04`;
-- the concurrent-occurrence data clause of `PC-SCOPE-02`;
-- the data clause of `PC-SCOPE-01`.
+- the clause of `PC-SCOPE-02` that two live same-definition occurrences never share mutable locals;
+- the `PC-DATA-04` prerequisite of `PC-SCOPE-01`, for its nested scopes with concurrent mixed activities.
 
 ## Common-mode risks
 
@@ -241,20 +282,24 @@ An owner that `what-binds` reports near its 800-line review target has its touch
   - in TypeScript, [internal-operation-occurrence.ts](../../packages/semantic-core/src/internal-operation-occurrence.ts) and [semantic-process-scope-runtime.ts](../../packages/semantic-core/src/semantic-process-scope-runtime.ts).
 - **Preparation and footprints:**
   - in Lean, the [scope-creation selection](../../BpmnSemantics/SemanticProcess/InternalScopeCreationSelection.lean) and [InternalCommutationCore](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean);
-  - in TypeScript, the [transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), which is near its target, and the scope-creation counterpart.
+  - in Lean, for the composed declared-entry laws, [runtime validity](../../BpmnSemantics/SemanticProcess/InternalScopeCreationRuntimeValidity.lean), [footprint frames](../../BpmnSemantics/SemanticProcess/InternalScopeCreationFootprintFrames.lean), [commutation](../../BpmnSemantics/SemanticProcess/InternalScopeCreationCommutation.lean), [arming commutation](../../BpmnSemantics/SemanticProcess/InternalScopeCreationArmingCommutation.lean), [local-control commutation](../../BpmnSemantics/SemanticProcess/InternalScopeCreationLocalControlCommutation.lean) and the [transition batch](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean);
+  - in TypeScript, the [transition footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), which is near its target, the [scope-creation preparation](../../packages/semantic-core/src/internal-transition-scope-creation-preparation.ts) and [patch](../../packages/semantic-core/src/internal-transition-scope-creation-patch.ts), and the [transition batch](../../packages/semantic-core/src/internal-transition-batch.ts);
+  - the [commutation proposal](../INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite)'s scope-creation section.
 - **Admission:**
   - [nested scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts) and [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts);
-  - [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) and [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts);
+  - [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts) and [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), which is near its target;
   - their Lean counterparts.
 - **Values:** the Lean [effect mapping value policy](../../BpmnSemantics/SemanticProcess/EffectMappingValuePolicy.lean) and its [TypeScript counterpart](../../packages/semantic-core/src/effect-mapping-value-policy.ts), the [surface value domains](../../packages/semantic-core/src/semantic-profile-value-domain.ts) and the Lean value domains.
 - **Source:** [compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts) and the Sub-Process mapping source.
-- **Registration:** the [relation register](../CIB-BPMN-RELATION-REGISTER.md) entry `CIB-EXT-0020`, the profile README, scenarios, pipeline cases, the value-domain matrix, the corpus, About, and the capacity component test beside the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts).
+- **Continuation:** [workflow continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts), whose incoming continuation and restoration must accept this profile's frames.
+- **Capacity owners amended:** the concurrent scope Service Tasks preflight, the lifecycle specification and the nested scope-data question, as stated under capacity.
+- **Registration:** the [relation register](../CIB-BPMN-RELATION-REGISTER.md) entries `CIB-EXT-0020`, `CIB-EXT-0015`, `CIB-EXT-0005` and `CIB-EXT-0006`, the profile README, scenarios, pipeline cases, the value-domain matrix, the corpus, About, and the capacity component test beside the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts).
 
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8fd67bb1` | `not-recorded` | `pending` | `not-applicable` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
