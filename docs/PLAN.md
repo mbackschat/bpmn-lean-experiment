@@ -92,11 +92,11 @@ Deliverable: the family through registration and its closure review, built under
 
 Acceptance blockers: none recorded.
 
-Current result: the proposal is approved; occurrence-chain resolution has a red TypeScript test.
+Current result: occurrence-chain resolution and the Program-gated scope data admission (CSD-1, CSD-2) are green in TypeScript and Lean (`99cb3861`; script guards 837/837, conformance checks 1213/1213).
 
 Effort budget: 16 hours of working time to family closure; stop and reassess at the limit.
 
-Next action: make occurrence-chain resolution green in TypeScript, then in Lean, before the gate, admission and merge-target hooks.
+Next action: CSD-3, the merge-target hooks, prepared declared entry and arming read atoms, red in TypeScript first; then CSD-4 models, scenarios and registration.
 
 Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
 
