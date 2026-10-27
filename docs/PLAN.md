@@ -86,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select batch 2's next family now that the [build modularity specification](LEAN-BUILD-MODULARITY-SPEC.md) is closure-approved (2026-10-26). Multi-Instance closure stays held at qualification.
+Current task: cold design review of the [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification.
 
-Deliverable: the next batch-2 family proposal (every open row sharing its mechanism), built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: an approved proposal, then its implementation through registration under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
-Acceptance blockers: none recorded.
+Acceptance blockers: the proposal's cold design review.
 
-Current result: the first family-shaped increment rebuilt 312 modules, 144 of them library modules, and its global fixtures took 725 serial seconds. The fanout ratchet now counts `import all`, `meta import` and equation-lemma exports.
+Current result: the proposal moves scope-data resolution from the definition chain to the live occurrence chain, admits bounded String data and concurrent mapped Calls in the concurrent scope profile, and prepares declared scope entry and completion. No row closes: re-entry waits for `PC-CF-06`, gateways for `PC-CF-02` to `PC-CF-04`.
 
-Effort budget: 4 hours of working time to draft the family proposal; stop and reassess at the limit.
+Effort budget: 16 hours of working time from review approval to family closure; stop and reassess at the limit.
 
-Next action: pick the batch-2 rows from the [coverage checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and draft the family proposal.
+Next action: obtain the cold review, apply required corrections, then implement occurrence-chain resolution first.
 
-Oracle: a selected row whose mechanism its siblings do not share, or a family edit that rebuilds a module outside the classes the [modularity acceptance](LEAN-BUILD-MODULARITY-SPEC.md#acceptance) admits.
+Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
