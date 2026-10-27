@@ -77,6 +77,23 @@ export type ReviewPacketGate = Readonly<{
   outputSha256: string;
 }>;
 
+/** The changed lines of one guard-bound owner, listed so a raised bound reaches the reviewer as a relaxation. */
+export type ReviewPacketGuardRelaxation = Readonly<{ path: string; added: ReadonlyArray<string>; removed: ReadonlyArray<string> }>;
+
+/**
+ * The files that own guard bounds, exceptions and budgets. A change to one can relax a gate without failing it, so the
+ * review prompt requires each listed line to be root-caused (Finding 83 of the process ledger).
+ */
+export const guardBoundOwners: ReadonlyArray<string> = [
+  "lakefile.toml",
+  "package.json",
+  "scripts/cibseven-maven-budget.ts",
+  "scripts/lean-fanout-bounds.ts",
+  "scripts/lean-module-cost.ts",
+  "scripts/pipeline-budget.ts",
+  "scripts/source-hygiene-policy.ts",
+];
+
 export type SemanticReviewPacketInput = Readonly<{
   stage: ReviewPacketStage;
   baseline: string;
@@ -86,12 +103,13 @@ export type SemanticReviewPacketInput = Readonly<{
   changedSections: ReadonlyArray<ReviewPacketSection>;
   routedSections: ReadonlyArray<ReviewPacketSection>;
   rootGates: ReadonlyArray<ReviewPacketGate>;
+  guardRelaxations: ReadonlyArray<ReviewPacketGuardRelaxation>;
   migrationMatrix?: ValidatedDocumentMigrationMatrix;
 }>;
 
 export type SemanticReviewPacket = SemanticReviewPacketInput & Readonly<{
   kind: "semanticReviewPacket";
-  format: "semantic-review-packet/v2";
+  format: "semantic-review-packet/v3";
   packetSha256: string;
 }>;
 
@@ -288,9 +306,9 @@ export function assembleSemanticReviewPacket(
   const canonicalSections = (sections: ReadonlyArray<ReviewPacketSection>): ReadonlyArray<ReviewPacketSection> => [...sections]
     .sort((left, right) => compareExactStrings(left.path, right.path) || compareExactStrings(left.headingPath ?? "", right.headingPath ?? "") || compareExactStrings(left.revision, right.revision))
     .map(({ path: filePath, headingPath, revision, sha256: digest }) => ({ path: filePath, headingPath, revision, sha256: digest }));
-  const body: SemanticReviewPacketInput & { readonly kind: "semanticReviewPacket"; readonly format: "semantic-review-packet/v2" } = {
+  const body: SemanticReviewPacketInput & { readonly kind: "semanticReviewPacket"; readonly format: "semantic-review-packet/v3" } = {
     kind: "semanticReviewPacket",
-    format: "semantic-review-packet/v2",
+    format: "semantic-review-packet/v3",
     stage: input.stage,
     baseline: input.baseline,
     target: input.target,
@@ -322,6 +340,9 @@ export function assembleSemanticReviewPacket(
         elapsedMs,
         outputSha256,
       })),
+    guardRelaxations: [...input.guardRelaxations]
+      .sort((left, right) => compareExactStrings(left.path, right.path))
+      .map(({ path: filePath, added, removed }) => ({ path: filePath, added: [...added], removed: [...removed] })),
     ...(input.migrationMatrix === undefined
       ? {}
       : { migrationMatrix: input.migrationMatrix }),
@@ -459,6 +480,13 @@ function parseNumstat(baseline: string, target: string): ReadonlyArray<ReviewPac
   });
 }
 
+function guardRelaxation(baseline: string, target: string, filePath: string): ReviewPacketGuardRelaxation {
+  const lines = gitText(["diff", "--no-ext-diff", "--no-color", "--unified=0", baseline, target, "--", filePath]).split("\n");
+  const changed = (sign: "+" | "-") => lines.filter((line) => line.startsWith(sign) && !line.startsWith(`${sign}${sign}${sign} `))
+    .map((line) => line.slice(1));
+  return { path: filePath, added: changed("+"), removed: changed("-") };
+}
+
 function gitBlobSha256(revision: string, filePath: string): string | null {
   const object = `${revision}:${filePath}`;
   const exists = spawnSync("git", ["cat-file", "-e", object], {
@@ -536,6 +564,8 @@ function runCli(arguments_: ReadonlyArray<string>): void {
     changedSections,
     routedSections: parseRoutes(target, parsed.routes),
     rootGates: parseGateRecords(parsed.gatesPath),
+    guardRelaxations: changedFiles.flatMap(({ path: filePath }) =>
+      guardBoundOwners.includes(filePath) ? [guardRelaxation(baseline, target, filePath)] : []),
     ...(migrationMatrix === undefined ? {} : { migrationMatrix }),
   });
   process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);

@@ -253,6 +253,7 @@ const packetInput = {
       outputSha256: "e".repeat(64),
     },
   ],
+  guardRelaxations: [],
 } as const satisfies SemanticReviewPacketInput;
 
 test("the semantic review packet is deterministic and digest-sensitive", () => {
@@ -284,6 +285,7 @@ test("the semantic review packet is deterministic and digest-sensitive", () => {
       exitStatus,
       command,
     })),
+    guardRelaxations: [],
   });
   const permuted = assembleSemanticReviewPacket({
     ...packetInput,
@@ -645,7 +647,7 @@ test("the CLI derives Learn more even when the manual route names Quick start", 
     const result = runPacketCli(repository, [...packetCliArguments(), "--route", "README.md::Reader > Quick start"]);
     assert.equal(result.status, 0, result.stderr);
     const packet = JSON.parse(result.stdout) as { format: string; changedFiles: Array<{ path: string }>; changedSections: Array<{ headingPath: string; revision: string }>; packetSha256: string };
-    assert.equal(packet.format, "semantic-review-packet/v2");
+    assert.equal(packet.format, "semantic-review-packet/v3");
     assert.deepEqual(packet.changedSections.map(({ headingPath, revision }) => [headingPath, revision]), [
       ["Reader > Learn more", "baseline"], ["Reader > Learn more", "target"],
     ]);
@@ -655,6 +657,29 @@ test("the CLI derives Learn more even when the manual route names Quick start", 
     const rerun = runPacketCli(repository, [...packetCliArguments(), "--route", "README.md::Reader > Quick start"]);
     assert.equal(rerun.status, 0, rerun.stderr);
     assert.equal((JSON.parse(rerun.stdout) as { packetSha256: string }).packetSha256, packet.packetSha256);
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+// A raised guard bound must reach the reviewer as a listed relaxation, never only as a line count among changed files:
+// the modularity closure approved a ratchet whose bounds had been raised instead of root-caused (Finding 83).
+test("the CLI lists every changed line of a guard-bound owner as a relaxation", async () => {
+  const repository = await mkdtemp(path.join(os.tmpdir(), "review-guard-relaxation-"));
+  try {
+    await initializeReviewRepository(repository);
+    await mkdir(path.join(repository, "scripts"), { recursive: true });
+    const bounds = 'export const bounds = [\n  { module: "A", bound: 120 },\n];\n';
+    await writeFile(path.join(repository, "scripts/lean-fanout-bounds.ts"), bounds);
+    commitAll(repository, "baseline bounds");
+    await writeFile(path.join(repository, "scripts/lean-fanout-bounds.ts"), bounds.replace("bound: 120", "bound: 765"));
+    await writeFile(path.join(repository, "BpmnSemantics/Example.lean"), "def example := false\n");
+    commitAll(repository, "raise a bound");
+    const result = runPacketCli(repository);
+    assert.equal(result.status, 0, result.stderr);
+    const packet = JSON.parse(result.stdout) as { guardRelaxations: Array<{ path: string; added: string[]; removed: string[] }> };
+    assert.deepEqual(packet.guardRelaxations, [{ path: "scripts/lean-fanout-bounds.ts",
+      added: ['  { module: "A", bound: 765 },'], removed: ['  { module: "A", bound: 120 },'] }]);
   } finally {
     await rm(repository, { recursive: true, force: true });
   }

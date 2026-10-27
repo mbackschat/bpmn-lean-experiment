@@ -141,7 +141,7 @@ node scripts/semantic-review-packet.ts \
   --gates <temporary-root-gate-records.json>
 ```
 
-Dependency-free `semantic-review-packet/v2` resolves full commits, requires baseline strict ancestry to target and target ancestry to `HEAD`, hashes full capsule/routed heading-path sections and records deterministic no-rename Git text line counts. Only pinned Maven-wrapper JAR/Linux-UI snapshot PNG binaries are admitted, with exact before/after SHA-256; other Git binaries, including NUL-bearing source/Markdown, reject. Sorted validated gates yield one `packetSha256`. Duplicate/missing routes, duplicate commands, malformed gates, unregistered binaries and bad ancestry reject. Repeat `--route`; reviewers check completeness.
+Dependency-free `semantic-review-packet/v3` resolves full commits, requires baseline strict ancestry to target and target ancestry to `HEAD`, hashes full capsule/routed heading-path sections and records deterministic no-rename Git text line counts. Only pinned Maven-wrapper JAR/Linux-UI snapshot PNG binaries are admitted, with exact before/after SHA-256; other Git binaries, including NUL-bearing source/Markdown, reject. Each changed guard-bound owner (`guardBoundOwners` in the generator: fanout bounds, module costs, source-hygiene exceptions, pipeline and Maven budgets, Lake and package configuration) is listed in `guardRelaxations` with its exact added and removed lines, so a relaxed bound reaches the reviewer as such. Sorted validated gates yield one `packetSha256`. Duplicate/missing routes, duplicate commands, malformed gates, unregistered binaries and bad ancestry reject. Repeat `--route`; reviewers check completeness.
 
 Both immutable trees derive changed Markdown heading paths from ordered unit-digest sequences: duplicates/order count, unrelated ordinal shifts do not. References use `{ path, headingPath, revision, sha256 }`; revision selects baseline/target, null heading means full file. New/deleted documents, renamed/deleted/repeated headings, pre-heading changes and out-of-unit structural/fenced changes retain before/after file references. The full capsule gets file references; other changes stay in `changedFiles`. Navigation proves neither consistency nor affected-owner completeness. Historical digests keep original formats; format changes require no dependent review open.
 
@@ -189,11 +189,14 @@ Work read-only. Read the capsule in full and the exact routed sections of other 
 
 Check affected claims and exclusions in unchanged owner passages. Use the what-binds map set and the boundary-specific owners to identify this context; the changed-section inventory does not establish semantic routing completeness. Report missing owner context rather than treating absence from the diff as evidence of consistency.
 
+Goal fidelity comes before conformance. Quote the owner direction the target serves, from the document's status or the owner's own words, and judge the target against that direction rather than against the document's own acceptance. State whether the acceptance, completely satisfied, implies the direction. Name every exception, admission or "stays as before" clause, measure its worst case, and report a clause whose worst case defeats the direction as a required finding, however faithfully the implementation follows it. For a quantitative or universal claim ("never", "only", "at most"), choose your own worst-case probe input by measurement, never the author's sample, and treat a median, a historical replay or one measured instance as no evidence for it. Report every guard bound raised, entry added or exception granted between baseline and target as a required finding unless the target records its root cause and why the bound cannot hold.
+
 For Lean work, assess proof architecture using [Lean proof design and review](docs/REVIEW-POLICY.md#lean-proof-design-and-review). Inspect the composed guarantee, premises, invariant strength, shared transition contracts, induction interfaces and dependency direction. Distinguish necessary semantic cases from repeated implementation unfolding. Report concrete abstraction gaps and the smallest sufficient correction, or explain the evidence supporting the existing model; green compilation alone is insufficient.
 
 Required output:
 VERDICT: APPROVE | APPROVE WITH REQUIRED EDITS | REJECT
 Decisive reason
+Goal fidelity: the owner direction quoted, whether the acceptance implies it, each exception clause with its measured worst case, and each relaxed guard bound
 Findings, each with classification, exact locus, unsupported or violated claim, evidence, and smallest sufficient correction
 Common-mode risks and the nearest unsupported claim
 Focused gates and environmental limitations
@@ -239,6 +242,7 @@ Gates validate repository facts, not runtime. Under `b361681`, cold/combined tok
 
 After the full gate is green, independently review:
 
+- Goal fidelity: whether the acceptance, completely satisfied, delivers the owner direction, with every exception clause's measured worst case and every relaxed guard bound root-caused.
 - Exact established and nearest unsupported claims; realistic counterexamples and checked non-laws.
 - Shared flawed fixture, interpretation, projection or calibration risks; observations depend only on admitted state and explicit inputs.
 - Lean-law usefulness/hypotheses and every prose quantifier's quantified theorem or explicit exhaustive enumeration; finite fixtures/representative permutations do not suffice.

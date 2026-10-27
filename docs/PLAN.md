@@ -86,18 +86,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the approved [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification.
+Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md#problem) promise (owner direction, 2026-10-27). 988 of 1,022 Lean files open `@[expose] public section`, so a definition-body edit rebuilds the whole public import cone; the concurrent scope data Lean increment `99cb3861` invalidated 782 of about 865 modules. The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after its TypeScript prepared entry `2d8db0e7`.
 
-Deliverable: the family through registration and its closure review, built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: bodies hidden by default in every family, with a body-edit fanout ratchet, re-checked by container rebuild probes.
 
 Acceptance blockers: none recorded.
 
-Current result: occurrence-chain resolution and the Program-gated scope data admission (CSD-1, CSD-2) are green in TypeScript and Lean (`99cb3861`; script guards 837/837, conformance checks 1213/1213).
+Current result: a body edit to `NestedScopeData` rebuilt exactly the 61 modules of its public cone that one target loads, as the body-edit model predicts; 280 library modules exceed 10 body-edit importers, 226 exceed 100.
 
-Effort budget: 16 hours of working time to family closure; stop and reassess at the limit.
+Effort budget: 80 hours of working time; the owner lifted the cap for this outcome on 2026-10-27, so reaching it records progress and continues.
 
-Next action: CSD-3, the merge-target hooks, prepared declared entry and arming read atoms, red in TypeScript first; then CSD-4 models, scenarios and registration.
+Next action: hide every hub body, restore reduction through `import all` where a build needs it, then remeasure.
 
-Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
+Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
