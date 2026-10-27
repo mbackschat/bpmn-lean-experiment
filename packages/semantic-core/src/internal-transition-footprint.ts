@@ -48,7 +48,8 @@ import type {
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import { evaluateInputMappingsUnder } from "./semantic-process-data.js";
 import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
-import { evaluateNestedEffectInputs, nestedScopeDataProgram } from "./nested-scope-data.js";
+import { evaluateNestedEffectInputs, nestedScopeDataProgram, nestedScopeReadSet } from "./nested-scope-data.js";
+import type { NestedScopeReadSet } from "./nested-scope-data.js";
 import { matchesEffectLocalDataOwner } from "./local-data-owner.js";
 import { isWellFormedWireString } from "./wire.js";
 import { hasSequentialScopeDefinition, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
@@ -432,6 +433,10 @@ export function deriveInternalTransitionFootprint(
             return assertNever(mapping.expression);
         }
       }
+      // CSD arming reads: a nested evaluation consults exactly its chain links, frames and fall-through Process names.
+      const nestedReads = binding === undefined && nestedScopeDataProgram(program)
+        ? nestedScopeReadSet(program, state, owner, processNames) : undefined;
+      if (nestedReads === null) return null;
       return waitFootprint(
         program,
         state,
@@ -444,10 +449,9 @@ export function deriveInternalTransitionFootprint(
         state.effectWaits.map(({ id }) => id),
         owner.processInstanceId,
         inputNames,
-        [...new Set(processNames)],
+        [...new Set(nestedReads?.processNames ?? processNames)],
         binding === undefined
-          // NSD-READ-01 reads scope frames that no atom names individually, so it claims the Activity population.
-          ? nestedScopeDataProgram(program) ? [{ kind: InternalTransitionStateAtomKind.ActivityPopulation }] : []
+          ? nestedReads === undefined ? [] : nestedScopeReadAtoms(nestedReads)
           : [
           // SMIS-IDENTITY-01 selects a unique declaration record across the Activity population.
           { kind: InternalTransitionStateAtomKind.ActivityPopulation },
@@ -508,6 +512,15 @@ export function internalTransitionFootprintsAreIndependent(
 ): boolean {
   return internalTransitionStateFootprintsAreIndependent(left, right) &&
     publicationSetsAreDisjoint(left.publications, right.publications);
+}
+
+/** The chain links and consulted frames of a nested read set; its Process names are claimed by the caller. */
+export function nestedScopeReadAtoms(reads: NestedScopeReadSet): InternalTransitionStateAtom[] {
+  return [
+    ...reads.links.map(({ id, parent }) =>
+      ({ kind: InternalTransitionStateAtomKind.ScopeParent, occurrence: id, parent }) as const),
+    ...reads.frames.map(owner => ({ kind: InternalTransitionStateAtomKind.ScopeVariableScope, owner }) as const),
+  ];
 }
 
 export function internalTransitionStateFootprintsAreIndependent(

@@ -143,7 +143,8 @@ export function selectChildScopeEntry(
   return { child: freshChildScope(state, parent, entry.childScopeId) };
 }
 
-function freshChildScope(state: RuntimeState, parent: ScopeOccurrenceId, childScopeId: string): ScopeOccurrenceId {
+/** The occurrence {@link enterConcurrentChildScope} issues: the definition's next activation under `parent`. */
+export function freshChildScope(state: RuntimeState, parent: ScopeOccurrenceId, childScopeId: string): ScopeOccurrenceId {
   const activation =
     (state.scopeActivations.find(
       ({ elementId }) => elementId === childScopeId,

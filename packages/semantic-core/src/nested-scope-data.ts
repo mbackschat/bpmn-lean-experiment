@@ -119,6 +119,35 @@ function resolveOwner(program: SemanticProcessProgram, occurrences: readonly Run
   return selectFrame(variables, root) === undefined ? null : { kind: "calledRoot", owner: root };
 }
 
+/**
+ * What resolving `names` from `reader` consults: every chain link, each chain frame up to the one that declares a
+ * name (all of them when it falls through), and the Process names that fall through. These are the precise read atoms
+ * of a nested input evaluation; `null` when the chain cannot be walked.
+ */
+export type NestedScopeReadSet = Readonly<{
+  links: readonly RuntimeScopeOccurrence[];
+  frames: readonly ScopeOccurrenceId[];
+  processNames: readonly string[];
+}>;
+
+export function nestedScopeReadSet(program: SemanticProcessProgram, state: RuntimeState, reader: ScopeOccurrenceId,
+  names: readonly string[]): NestedScopeReadSet | null {
+  const chain = nestedOccurrenceChain(state.scopeOccurrences, reader);
+  if (chain === null) return null;
+  const frames: ScopeOccurrenceId[] = [];
+  const processNames: string[] = [];
+  for (const name of names) {
+    const owner = resolveOwner(program, state.scopeOccurrences, state.variables, reader, name);
+    if (owner === null) return null;
+    const consulted = owner.kind === "frame" ? chain.findIndex(occurrence => sameScopeOccurrence(occurrence, owner.owner)) + 1
+      : chain.length;
+    frames.push(...chain.slice(0, consulted).filter(occurrence => !frames.some(frame => sameScopeOccurrence(frame, occurrence))));
+    if (owner.kind === "process") processNames.push(name);
+  }
+  const links = chain.map(id => state.scopeOccurrences.find(occurrence => sameScopeOccurrence(occurrence.id, id))!);
+  return { links, frames, processNames };
+}
+
 function uniqueValue(policy: EffectMappingValuePolicy, bindings: readonly VariableBinding[], name: string): VariableValue | undefined {
   const matching = bindings.filter(binding => binding.name === name);
   const value = matching.length === 1 ? matching[0]!.value : undefined;
@@ -245,37 +274,56 @@ function occurrenceWithParent(state: RuntimeState, scopeId: string):
 }
 
 /**
- * NSD-INIT-01 after the entry rewrite: inputs read the parent's whole chain before the new frame exists, so neither
- * declaration order nor a sibling input can influence a value. A scope without a record leaves the state unchanged.
+ * NSD-INIT-01 for the occurrence `child` of `parent`: inputs read the parent's whole chain before the child's frame
+ * exists, so neither declaration order nor a sibling input can influence a value. Reading the pre-entry state gives the
+ * same values, because entry adds only the child, whose frame is not on its parent's chain.
  */
+export function evaluateNestedScopeFrame(program: SemanticProcessProgram, state: RuntimeState, record: ScopeLocalData,
+  child: ScopeOccurrenceId, parent: ScopeOccurrenceId): ScopeVariableScope | null {
+  const bindings = evaluateNestedInputs(record.localInputs, name =>
+    readNestedScopeVariable(program, state.scopeOccurrences, state.variables, parent, name));
+  return bindings === null || state.variables.scopes.some(frame => sameScopeOccurrence(frame.owner, child)) ? null
+    : { owner: { ...child }, bindings: mergeProcessVariableBindings([], bindings) };
+}
+
+/** Inserts a frame at its canonical owner position; only `variables.scopes` changes. */
+export function insertNestedScopeFrame(variables: ScopedVariables, frame: ScopeVariableScope): ScopedVariables {
+  const insertion = variables.scopes.findIndex(candidate => compareScopeOccurrenceIds(frame.owner, candidate.owner) < 0);
+  const index = insertion < 0 ? variables.scopes.length : insertion;
+  return { ...variables, scopes: [...variables.scopes.slice(0, index), frame, ...variables.scopes.slice(index)] };
+}
+
+/** NSD-INIT-01 after a definition-addressed entry rewrite; a scope without a record leaves the state unchanged. */
 export function initializeNestedScopeFrame(program: SemanticProcessProgram, state: RuntimeState,
   childScopeId: string): RuntimeState | null {
   const record = nestedScopeRecord(program, childScopeId);
   if (record === undefined) return state;
   const located = occurrenceWithParent(state, childScopeId);
-  if (located === null) return null;
-  const { child, parent } = located;
-  const bindings = evaluateNestedInputs(record.localInputs, name =>
-    readNestedScopeVariable(program, state.scopeOccurrences, state.variables, parent, name));
-  if (bindings === null || state.variables.scopes.some(frame => sameScopeOccurrence(frame.owner, child))) return null;
-  const insertion = state.variables.scopes.findIndex(frame => compareScopeOccurrenceIds(child, frame.owner) < 0);
-  const index = insertion < 0 ? state.variables.scopes.length : insertion;
-  const frame = { owner: { ...child }, bindings: mergeProcessVariableBindings([], bindings) };
-  return { ...state, variables: { ...state.variables,
-    scopes: [...state.variables.scopes.slice(0, index), frame, ...state.variables.scopes.slice(index)] } };
+  return located === null ? null : initializeNestedScopeFrameAt(program, state, record, located.child, located.parent);
 }
 
-/**
- * NSD-OUTPUT-01 before the completion rewrite disposes the frame: every source is read from the completing frame
- * before any write, and the writes start at the parent, so no output can change another output's source.
- */
+function initializeNestedScopeFrameAt(program: SemanticProcessProgram, state: RuntimeState, record: ScopeLocalData,
+  child: ScopeOccurrenceId, parent: ScopeOccurrenceId): RuntimeState | null {
+  const frame = evaluateNestedScopeFrame(program, state, record, child, parent);
+  return frame === null ? null : { ...state, variables: insertNestedScopeFrame(state.variables, frame) };
+}
+
+/** NSD-OUTPUT-01 before a definition-addressed completion rewrite disposes the frame. */
 export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: RuntimeState,
   scopeId: string): RuntimeState | null {
   const record = nestedScopeRecord(program, scopeId);
   if (record === undefined) return state;
   const located = occurrenceWithParent(state, scopeId);
-  if (located === null) return null;
-  const frame = selectFrame(state.variables, located.child);
+  return located === null ? null : writeNestedScopeOutputsAt(program, state, record, located.child, located.parent);
+}
+
+/**
+ * NSD-OUTPUT-01 for the completing occurrence `child`: every source is read from its frame before any write, and the
+ * writes start at `parent`, so no output can change another output's source.
+ */
+function writeNestedScopeOutputsAt(program: SemanticProcessProgram, state: RuntimeState, record: ScopeLocalData,
+  child: ScopeOccurrenceId, parent: ScopeOccurrenceId): RuntimeState | null {
+  const frame = selectFrame(state.variables, child);
   if (frame === undefined) return null;
   const values: VariableBinding[] = [];
   for (const mapping of record.localOutputs) {
@@ -284,7 +332,7 @@ export function writeNestedScopeOutputs(program: SemanticProcessProgram, state: 
     if (value === undefined) return null;
     values.push(cloneVariableBinding({ name: mapping.target, value }));
   }
-  const variables = writeNestedScopeVariables(program, state.scopeOccurrences, state.variables, located.parent, values);
+  const variables = writeNestedScopeVariables(program, state.scopeOccurrences, state.variables, parent, values);
   return variables === null ? null : { ...state, variables };
 }
 
@@ -347,6 +395,34 @@ export function completeDeclaredScope(program: SemanticProcessProgram,
   complete: (state: RuntimeState) => RuntimeState | null): RuntimeState | null {
   if (operation.parentOutput === null) return complete(state);
   const written = writeNestedScopeOutputs(program, state, operation.scopeId);
+  return written === null ? null : complete(written);
+}
+
+/**
+ * CSD-INIT-01 for a merge target, entered by occurrence beside live siblings: `enter` issues `child` under `parent`,
+ * whose chain the inputs read. An undeclared child keeps exactly `enter`.
+ */
+export function enterDeclaredScopeOccurrence(program: SemanticProcessProgram, childScopeId: string,
+  child: ScopeOccurrenceId, parent: ScopeOccurrenceId, enter: () => RuntimeState | null): RuntimeState | null {
+  const entered = enter();
+  const record = nestedScopeRecord(program, childScopeId);
+  return entered === null || record === undefined ? entered
+    : initializeNestedScopeFrameAt(program, entered, record, child, parent);
+}
+
+/**
+ * CSD-RETIRE-01 for a merge target completed by occurrence: `owner` writes its outputs through its own parent's chain
+ * before `complete` disposes exactly its frame. Root completion and undeclared scopes keep exactly `complete`.
+ */
+export function completeDeclaredScopeOccurrence(program: SemanticProcessProgram,
+  operation: Extract<SemanticOperation, { kind: SemanticOperationKind.CompleteScope }>, state: RuntimeState,
+  owner: ScopeOccurrenceId, complete: (state: RuntimeState) => RuntimeState | null): RuntimeState | null {
+  const record = nestedScopeRecord(program, operation.scopeId);
+  if (operation.parentOutput === null || record === undefined) return complete(state);
+  const occurrences = state.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner));
+  const parent = occurrences.length === 1 ? occurrences[0]!.parent : null;
+  if (parent === null || owner.definitionScopeId !== operation.scopeId) return null;
+  const written = writeNestedScopeOutputsAt(program, state, record, owner, parent);
   return written === null ? null : complete(written);
 }
 

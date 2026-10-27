@@ -4,9 +4,11 @@ import { LocalDataOwnerKind } from "./local-data-owner.js";
 import { createUserTaskWait, createEffectWait } from "./semantic-process-wait-runtime.js";
 import { applyParallelScopeOperation } from "./parallel-scope-runtime.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
-import { completeScope, completeScopeOccurrence, enterConcurrentChildScope, selectScopeCompletion } from "./semantic-process-scope-runtime.js";
+import {
+  completeScope, completeScopeOccurrence, enterConcurrentChildScope, freshChildScope, selectScopeCompletion,
+} from "./semantic-process-scope-runtime.js";
 import { isMergeTargetOperation } from "./merge-target-operations.js";
-import { completeDeclaredScope } from "./nested-scope-data.js";
+import { completeDeclaredScope, completeDeclaredScopeOccurrence, enterDeclaredScopeOccurrence } from "./nested-scope-data.js";
 import { duplicate, synchronize, reachNoneEnd } from "./semantic-process-control-flow-runtime.js";
 import { resolveInternalOperationOccurrence, internalOperationOccurrences } from "./internal-transition-alternative.js";
 import type { InternalOperationOccurrence } from "./internal-transition-alternative.js";
@@ -34,10 +36,15 @@ export function applyInternalOperationOccurrence(
     }
     case SemanticOperationKind.EnterScope:
       return isMergeTargetOperation(program, operation) && unit(operation.input)
-        ? enterConcurrentChildScope(state, owner, operation) : null;
+        ? enterDeclaredScopeOccurrence(program, operation.childScopeId,
+          freshChildScope(state, owner, operation.childScopeId), owner, () => enterConcurrentChildScope(state, owner, operation))
+        : null;
     case SemanticOperationKind.CompleteScope: {
       // CEA-QUIESCE-01 confines lookup by occurrence to merge targets; every other completion keeps the declared-scope wrapper.
-      if (isMergeTargetOperation(program, operation)) return completeScopeOccurrence(operation, state, owner);
+      if (isMergeTargetOperation(program, operation)) {
+        return completeDeclaredScopeOccurrence(program, operation, state, owner,
+          (written) => completeScopeOccurrence(operation, written, owner));
+      }
       const selected = selectScopeCompletion(operation, state);
       return selected !== null && sameScopeOccurrence(selected.occurrence.id, owner) ? completeDeclaredScope(program, operation, state, (written) => completeScope(operation, written)) : null;
     }

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimDamageAssessment" targetNamespace="urn:bpmn-lean:claim-damage-assessment">
+  <process id="Process_ClaimDamageAssessment" name="Assess claim damage" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <subProcess id="HandleClaim" name="Handle claim">
+      <startEvent id="ClaimOpened" name="Claim opened" />
+      <parallelGateway id="InspectionsFork" name="Inspect" />
+      <userTask id="InspectVehicle" name="Inspect vehicle" />
+      <userTask id="InspectProperty" name="Inspect property" />
+      <exclusiveGateway id="InspectionDone" name="Inspection done" />
+      <subProcess id="PriceDamage" name="Price damage">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="estimate">pending</camunda:inputParameter>
+            <camunda:inputParameter name="adjuster">${noAdjuster}</camunda:inputParameter>
+            <camunda:outputParameter name="lastEstimate">${estimate}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="PricingOpened" name="Pricing opened" />
+        <userTask id="AssessDamage" name="Assess damage" />
+        <serviceTask id="FetchRates" name="Fetch rates" implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                     camunda:delegateExpression="${rateLookup}" camunda:asyncBefore="true">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="adjuster">${adjuster}</camunda:inputParameter>
+              <camunda:inputParameter name="estimate">${estimate}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </serviceTask>
+        <endEvent id="PricingClosed" name="Pricing closed" />
+        <sequenceFlow id="Flow_PricingOpened" sourceRef="PricingOpened" targetRef="AssessDamage" />
+        <sequenceFlow id="Flow_DamageAssessed" sourceRef="AssessDamage" targetRef="FetchRates" />
+        <sequenceFlow id="Flow_RatesFetched" sourceRef="FetchRates" targetRef="PricingClosed" />
+      </subProcess>
+      <endEvent id="ClaimHandled" name="Claim handled" />
+      <sequenceFlow id="Flow_ClaimOpened" sourceRef="ClaimOpened" targetRef="InspectionsFork" />
+      <sequenceFlow id="Flow_InspectVehicle" sourceRef="InspectionsFork" targetRef="InspectVehicle" />
+      <sequenceFlow id="Flow_InspectProperty" sourceRef="InspectionsFork" targetRef="InspectProperty" />
+      <sequenceFlow id="Flow_VehicleInspected" sourceRef="InspectVehicle" targetRef="InspectionDone" />
+      <sequenceFlow id="Flow_PropertyInspected" sourceRef="InspectProperty" targetRef="InspectionDone" />
+      <sequenceFlow id="Flow_PriceDamage" sourceRef="InspectionDone" targetRef="PriceDamage" />
+      <sequenceFlow id="Flow_DamagePriced" sourceRef="PriceDamage" targetRef="ClaimHandled" />
+    </subProcess>
+    <userTask id="ReviewClaim" name="Review claim" />
+    <endEvent id="ClaimClosed" name="Claim closed" />
+    <sequenceFlow id="Flow_ClaimReceived" sourceRef="ClaimReceived" targetRef="HandleClaim" />
+    <sequenceFlow id="Flow_ClaimHandled" sourceRef="HandleClaim" targetRef="ReviewClaim" />
+    <sequenceFlow id="Flow_ClaimReviewed" sourceRef="ReviewClaim" targetRef="ClaimClosed" />
+  </process>
+</definitions>

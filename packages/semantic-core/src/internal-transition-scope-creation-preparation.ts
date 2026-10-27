@@ -111,9 +111,22 @@ export function deriveInternalEnterScopePreparation(
     { kind: SemanticOperationKind.EnterScope }
   >,
 ): PreparedInternalScopeCreation | null {
-  // TXC-CANCEL-01 requires child-register creation and NSD-INIT-01 a frame write; the ordinary scope patch has neither.
-  if (program.compensationActivityRetention?.definitionScopeId === operation.childScopeId ||
-      nestedScopeRecord(program, operation.childScopeId) !== undefined) return null;
+  // NSD-INIT-01 adds a frame write, which the declared entry composes on top of this unchanged control.
+  return nestedScopeRecord(program, operation.childScopeId) === undefined
+    ? deriveInternalEnterScopeControl(program, state, operation) : null;
+}
+
+/** The child-scope creation control of an entry, whether or not the child declares locals. */
+export function deriveInternalEnterScopeControl(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: Extract<
+    SemanticOperation,
+    { kind: SemanticOperationKind.EnterScope }
+  >,
+): PreparedInternalScopeCreation | null {
+  // TXC-CANCEL-01 requires child-register creation, which the ordinary scope patch lacks.
+  if (program.compensationActivityRetention?.definitionScopeId === operation.childScopeId) return null;
   const owner = onlyTokenOwner(state, operation.input);
   if (owner === undefined) {
     return null;

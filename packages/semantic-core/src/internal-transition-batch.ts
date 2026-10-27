@@ -16,6 +16,12 @@ import {
   deriveInternalScopeCreationPreparation,
 } from "./internal-transition-scope-creation-preparation.js";
 import type { PreparedInternalScopeCreation } from "./internal-transition-scope-creation-preparation.js";
+import {
+  applyPreparedInternalDeclaredScopeEntry,
+  deriveInternalDeclaredScopeEntryPreparation,
+} from "./internal-transition-declared-entry-preparation.js";
+import type { PreparedInternalDeclaredScopeEntry } from "./internal-transition-declared-entry-preparation.js";
+import { nestedScopeRecord } from "./nested-scope-data.js";
 import { applyPreparedInternalBoundedScope, deriveInternalBoundedScopePreparation } from "./internal-transition-bounded-scope-preparation.js";
 import type { PreparedInternalBoundedScope } from "./internal-transition-bounded-scope-preparation.js";
 import {
@@ -55,6 +61,7 @@ export enum PreparedInternalTransitionFamily {
   Arming = "arming",
   LocalControl = "localControl",
   ScopeCreation = "scopeCreation",
+  DeclaredScopeEntry = "declaredScopeEntry",
   BoundedScope = "boundedScope",
   Regional = "regional",
   OrdinaryEnd = "ordinaryEnd",
@@ -66,6 +73,7 @@ export type PreparedInternalTransition = Readonly<
   | PreparedInternalArming & { family: PreparedInternalTransitionFamily.Arming }
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
+  | PreparedInternalDeclaredScopeEntry & { family: PreparedInternalTransitionFamily.DeclaredScopeEntry }
   | PreparedInternalBoundedScope & { family: PreparedInternalTransitionFamily.BoundedScope; owner: ScopeOccurrenceId }
   | PreparedInternalEnd & { family: PreparedInternalTransitionFamily.OrdinaryEnd }
   | PreparedInternalExclusiveMergeInput & { family: PreparedInternalTransitionFamily.MergeInput }
@@ -121,13 +129,16 @@ export function deriveInternalTransitionPreparation(
         ? null : { family: PreparedInternalTransitionFamily.Regional,
           operation: prepared.selection.operation, owner: prepared.selection.owner, ...prepared };
     }
-    case SemanticOperationKind.EnterScope:
-    case SemanticOperationKind.InvokeProcess: {
-      if (candidate.owner === null) return null;
-      const prepared = deriveInternalScopeCreationPreparation(program, state, candidate.operation);
+    case SemanticOperationKind.EnterScope: {
+      if (candidate.owner === null || nestedScopeRecord(program, candidate.operation.childScopeId) === undefined) {
+        return scopeCreationMember(program, state, candidate.operation, candidate.owner);
+      }
+      const prepared = deriveInternalDeclaredScopeEntryPreparation(program, state, candidate.operation);
       return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
-        ? null : { family: PreparedInternalTransitionFamily.ScopeCreation, ...prepared };
+        ? null : { family: PreparedInternalTransitionFamily.DeclaredScopeEntry, ...prepared };
     }
+    case SemanticOperationKind.InvokeProcess:
+      return scopeCreationMember(program, state, candidate.operation, candidate.owner);
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.Choose:
@@ -145,6 +156,18 @@ export function deriveInternalTransitionPreparation(
   }
 }
 
+function scopeCreationMember(
+  program: SemanticProcessProgram,
+  state: RuntimeState,
+  operation: PreparedInternalScopeCreation["operation"],
+  owner: ScopeOccurrenceId | null,
+): PreparedInternalTransition | null {
+  if (owner === null) return null;
+  const prepared = deriveInternalScopeCreationPreparation(program, state, operation);
+  return prepared === null || !sameScopeOccurrence(prepared.owner, owner)
+    ? null : { family: PreparedInternalTransitionFamily.ScopeCreation, ...prepared };
+}
+
 /** INTERNAL-COMMUTATION requires every member and every pair from the same complete predecessor frontier. */
 export function prepareInternalTransitionBatch(
   program: SemanticProcessProgram,
@@ -159,6 +182,7 @@ export function prepareInternalTransitionBatch(
     prepared.push(member);
   }
   if (canonicalUniqueInternalAlternatives(prepared.map(({ alternative }) => alternative)) === null) return null;
+  if (!declaredEntryBatchPremiseHolds(prepared)) return null;
   for (let left = 0; left < prepared.length; left += 1) {
     for (let right = left + 1; right < prepared.length; right += 1) {
       const first = prepared[left]!;
@@ -168,6 +192,17 @@ export function prepareInternalTransitionBatch(
     }
   }
   return prepared;
+}
+
+/**
+ * The declared entry's batch premise (CSD-PREPARE-01): its commutation is established only beside scope creations,
+ * ordinary armings and local control, so any other companion refuses the batch rather than commit unproved order.
+ */
+function declaredEntryBatchPremiseHolds(prepared: ReadonlyArray<PreparedInternalTransition>): boolean {
+  return !prepared.some(({ family }) => family === PreparedInternalTransitionFamily.DeclaredScopeEntry) ||
+    prepared.every(({ family }) => family === PreparedInternalTransitionFamily.DeclaredScopeEntry ||
+      family === PreparedInternalTransitionFamily.ScopeCreation || family === PreparedInternalTransitionFamily.Arming ||
+      family === PreparedInternalTransitionFamily.LocalControl);
 }
 
 export function preparedInternalTransitionsAreIndependent(
@@ -222,6 +257,10 @@ export function applyPreparedInternalTransition(
     case PreparedInternalTransitionFamily.ScopeCreation: {
       const { family: _family, ...scopeCreation } = prepared;
       return applyPreparedInternalScopeCreation(program, state, scopeCreation);
+    }
+    case PreparedInternalTransitionFamily.DeclaredScopeEntry: {
+      const { family: _family, ...declared } = prepared;
+      return applyPreparedInternalDeclaredScopeEntry(program, state, declared);
     }
   }
 }
