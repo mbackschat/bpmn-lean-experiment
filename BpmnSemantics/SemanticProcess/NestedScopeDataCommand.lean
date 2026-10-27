@@ -47,16 +47,10 @@ which the callee may set before return although no input copied them. The source
 Call whose live record created this instance's called root (CALLN-FRAME-01). -/
 def declaredNames (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId) :
     List String :=
-  let chain := definitionChain program.definitionScopes owner.definitionScopeId
-  let framed := chain.flatMap fun scopeId =>
-    (framesOf state.variables.scopes owner.processInstanceId scopeId).flatMap fun frame =>
-      frame.bindings.map (·.name)
-  let mappings := calledRootOf? program chain >>= fun scopeId =>
-    match state.scopeOccurrences.filter (fun occurrence =>
-        occurrence.parent.isNone && occurrence.id.processInstanceId == owner.processInstanceId &&
-          occurrence.id.definitionScopeId == scopeId) with
-    | [root] => calledRootMappings? program state.calledProcessOccurrences root.id
-    | _ => none
+  let chain := (occurrenceChain state.scopeOccurrences owner).getD []
+  let framed := chain.flatMap fun occurrence =>
+    (framesAt state.variables.scopes occurrence).flatMap fun frame => frame.bindings.map (·.name)
+  let mappings := calledRootOf? program chain >>= calledRootMappings? program state.calledProcessOccurrences
   let sources := match mappings with
     | some (_, outputs) => outputs.filterMap fun mapping => match mapping.expression with
         | .localVariable name => some name
@@ -88,8 +82,7 @@ def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserT
       !patchAdmitted program state wait.owner values then none
   else
     let successor ← completeOrdinaryUserTaskWithCompensation? completeUserTask program state taskId
-    let variables ← writeAll? program successor.variables wait.owner.processInstanceId
-      wait.owner.definitionScopeId values
+    let variables ← writeAll? program successor.scopeOccurrences successor.variables wait.owner values
     some { successor with variables }
 
 theorem completeUserTask?_unadmitted (program : Program) (state : RuntimeState) (taskId : UserTaskInstanceId)
@@ -111,7 +104,7 @@ def completeEffect? (program : Program) (state : RuntimeState) (effectId : Effec
       wait.outputMappings [] patch
     let released := { state.variables with
       activities := state.variables.activities.filter fun scope => !activityScopeMatches effectId scope }
-    let variables ← writeAll? program released wait.owner.processInstanceId wait.owner.definitionScopeId writes
+    let variables ← writeAll? program state.scopeOccurrences released wait.owner writes
     some { state with
       effectWaits := state.effectWaits.erase wait
       variables

@@ -49,7 +49,7 @@ def invokeState? (program : Program) (state : RuntimeState) (origin : BpmnElemen
   else
     let caller ← onlyTokenOwner? state input
     let bindings ← copyValues?
-      (NestedScopeData.readOutcome? program state.variables caller.processInstanceId caller.definitionScopeId) inputs
+      (NestedScopeData.readOutcome? program state.scopeOccurrences state.variables caller) inputs
     let invoked ← invokeProcessState? state origin input calledProcessId calledRootScopeId calledEntry returnOperationId
     let root := scalarInvocationRoot state caller origin calledRootScopeId
     if invoked.variables.scopes.any (·.owner == root) then none
@@ -70,8 +70,7 @@ def returnState? (program : Program) (state : RuntimeState) (id : OperationId) (
     let frame ← selectScopeVariables? state.variables record.calledRoot
     let values ← copyValues? (NestedScopeData.bindingOutcome? frame.bindings) outputs
     let returned ← returnProcessState? state id origin calledProcessId calledRootScopeId callerOutput
-    let variables ← NestedScopeData.writeAll? program returned.variables record.caller.processInstanceId
-      record.caller.definitionScopeId values
+    let variables ← NestedScopeData.writeAll? program returned.scopeOccurrences returned.variables record.caller values
     some { returned with variables }
 
 end CallVariableMapping

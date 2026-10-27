@@ -145,7 +145,7 @@ def evaluateEffectInputs? (program : Program) (state : RuntimeState)
     evaluateSequentialScopeInputs? program state owner mappings
   else if nestedScopeDataProgram program then
     evaluateInputMappingsUnder? .singletonBusinessItem
-      (NestedScopeData.read? program state.variables owner.processInstanceId owner.definitionScopeId) mappings
+      (NestedScopeData.read? program state.scopeOccurrences state.variables owner) mappings
   else evaluateEnclosingInputMappingsUnder (programEffectMappingValuePolicy program)
     state.variables.process.bindings mappings
 

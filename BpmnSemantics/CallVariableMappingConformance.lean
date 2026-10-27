@@ -285,7 +285,8 @@ def absent_input_source_copies_a_present_null : Bool := decide <|
 resolving through the caller hierarchy is not the isolated read. -/
 def called_reads_do_not_reach_the_caller_namesake : Bool := decide <|
     (started.state.variables.process.bindings.any (· == { name := "applicant", value := text "Ada" }) &&
-      NestedScopeData.readOutcome? program started.state.variables calledInstance (scope "Q") "applicant" ==
+      NestedScopeData.readOutcome? program started.state.scopeOccurrences started.state.variables
+        { processInstanceId := calledInstance, definitionScopeId := scope "Q", activation := 1 } "applicant" ==
         some none) = true
 
 /-- CVM-TASK-01: a called patch naming a caller-only name is rejected unchanged. -/

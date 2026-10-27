@@ -8,8 +8,9 @@ public import BpmnSemantics.SemanticProcess.ScopeCompletion
 Quantified read, write and initialization laws for the frame operations of `NestedScopeData`, with
 the nearest checked non-law, per the
 [nested scope data specification](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#lean-assurance-lane).
-The laws hold for every Program, chain and frame population; they need no runtime well-formedness
-because a definition with more than one live frame makes resolution refuse rather than choose.
+The laws hold for every Program, live occurrence chain and frame population; they need no runtime
+well-formedness because an occurrence with more than one frame makes resolution refuse rather than
+choose.
 -/
 
 @[expose] public section
@@ -18,38 +19,36 @@ namespace BpmnSemantics.SemanticProcess.NestedScopeData
 
 open BpmnSemantics
 
-/-- Whether a frame of `scopeId` in the instance declares `name`, a present null included. -/
-def declares (variables : ScopedVariables) (instanceId : SemanticId) (scopeId : DefinitionScopeId)
-    (name : String) : Bool :=
-  (framesOf variables.scopes instanceId scopeId).any fun frame => frame.bindings.any (·.name == name)
+/-- Whether a frame of `occurrence` declares `name`, a present null included. -/
+def declares (variables : ScopedVariables) (occurrence : ScopeOccurrenceId) (name : String) : Bool :=
+  (framesAt variables.scopes occurrence).any fun frame => frame.bindings.any (·.name == name)
 
 /-- NSD-READ-01, frame case: resolution selects the unique frame of the first chain scope that declares
-the name, and no earlier chain scope declares it. -/
-theorem resolveOwner?_frame_nearest (variables : ScopedVariables) (instanceId : SemanticId)
-    (name : String) :
-    ∀ (chain : List DefinitionScopeId) (owner : ScopeOccurrenceId),
-      resolveOwner? variables.scopes instanceId chain name = some (.frame owner) →
-      ∃ pre scopeId post frame, chain = pre ++ scopeId :: post ∧
-        framesOf variables.scopes instanceId scopeId = [frame] ∧ frame.owner = owner ∧
+the name, and no earlier chain occurrence declares it. -/
+theorem resolveOwner?_frame_nearest (variables : ScopedVariables) (name : String) :
+    ∀ (chain : List ScopeOccurrenceId) (owner : ScopeOccurrenceId),
+      resolveOwner? variables.scopes chain name = some (.frame owner) →
+      ∃ pre occurrence post frame, chain = pre ++ occurrence :: post ∧
+        framesAt variables.scopes occurrence = [frame] ∧ frame.owner = owner ∧
         frame.bindings.any (·.name == name) = true ∧
-        ∀ earlier ∈ pre, declares variables instanceId earlier name = false
+        ∀ earlier ∈ pre, declares variables earlier name = false
   | [], owner, resolved => by simp [resolveOwner?] at resolved
-  | scopeId :: rest, owner, resolved => by
-      have later : ∀ owner, resolveOwner? variables.scopes instanceId rest name = some (.frame owner) →
-          declares variables instanceId scopeId name = false →
-          ∃ pre scopeId' post frame, scopeId :: rest = pre ++ scopeId' :: post ∧
-            framesOf variables.scopes instanceId scopeId' = [frame] ∧ frame.owner = owner ∧
+  | occurrence :: rest, owner, resolved => by
+      have later : ∀ owner, resolveOwner? variables.scopes rest name = some (.frame owner) →
+          declares variables occurrence name = false →
+          ∃ pre occurrence' post frame, occurrence :: rest = pre ++ occurrence' :: post ∧
+            framesAt variables.scopes occurrence' = [frame] ∧ frame.owner = owner ∧
             frame.bindings.any (·.name == name) = true ∧
-            ∀ earlier ∈ pre, declares variables instanceId earlier name = false := by
+            ∀ earlier ∈ pre, declares variables earlier name = false := by
         intro owner resolved absent
         obtain ⟨pre, found, post, frame, chain, frames, owned, declared, earlier⟩ :=
-          resolveOwner?_frame_nearest variables instanceId name rest owner resolved
-        refine ⟨scopeId :: pre, found, post, frame, by simp [chain], frames, owned, declared, ?_⟩
+          resolveOwner?_frame_nearest variables name rest owner resolved
+        refine ⟨occurrence :: pre, found, post, frame, by simp [chain], frames, owned, declared, ?_⟩
         intro candidate member
         rcases List.mem_cons.mp member with same | member
         · exact same ▸ absent
         · exact earlier candidate member
-      cases frames : framesOf variables.scopes instanceId scopeId with
+      cases frames : framesAt variables.scopes occurrence with
       | nil =>
           simp only [resolveOwner?, frames] at resolved
           exact later owner resolved (by simp [declares, frames])
@@ -59,26 +58,25 @@ theorem resolveOwner?_frame_nearest (variables : ScopedVariables) (instanceId : 
               by_cases declared : frame.bindings.any (·.name == name) = true
               · simp only [resolveOwner?, frames, declared, ite_true, Option.some.injEq,
                   Owner.frame.injEq] at resolved
-                exact ⟨[], scopeId, rest, frame, rfl, frames, resolved, declared, by simp⟩
+                exact ⟨[], occurrence, rest, frame, rfl, frames, resolved, declared, by simp⟩
               · simp only [resolveOwner?, frames, declared, Bool.false_eq_true, ite_false] at resolved
                 exact later owner resolved (by simpa [declares, frames] using declared)
           | cons _ _ => simp [resolveOwner?, frames] at resolved
 
-/-- NSD-READ-01, Process case: the Process decides only when no chain scope declares the name. -/
-theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (instanceId : SemanticId)
-    (name : String) :
-    ∀ (chain : List DefinitionScopeId),
-      resolveOwner? variables.scopes instanceId chain name = some .process →
-      ∀ scopeId ∈ chain, declares variables instanceId scopeId name = false
+/-- NSD-READ-01, Process case: the Process decides only when no chain occurrence declares the name. -/
+theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (name : String) :
+    ∀ (chain : List ScopeOccurrenceId),
+      resolveOwner? variables.scopes chain name = some .process →
+      ∀ occurrence ∈ chain, declares variables occurrence name = false
   | [], _ => by simp
-  | scopeId :: rest, resolved => by
-      cases frames : framesOf variables.scopes instanceId scopeId with
+  | occurrence :: rest, resolved => by
+      cases frames : framesAt variables.scopes occurrence with
       | nil =>
           simp only [resolveOwner?, frames] at resolved
           intro candidate member
           rcases List.mem_cons.mp member with same | member
           · simp [same, declares, frames]
-          · exact resolveOwner?_process_undeclared variables instanceId name rest resolved candidate member
+          · exact resolveOwner?_process_undeclared variables name rest resolved candidate member
       | cons frame tail =>
           cases tail with
           | nil =>
@@ -88,44 +86,121 @@ theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (instance
                 intro candidate member
                 rcases List.mem_cons.mp member with same | member
                 · simpa [same, declares, frames] using declared
-                · exact resolveOwner?_process_undeclared variables instanceId name rest resolved candidate member
+                · exact resolveOwner?_process_undeclared variables name rest resolved candidate member
           | cons _ _ => simp [resolveOwner?, frames] at resolved
+
+/-- CVM-ISOLATE-01 and CSD-ISOLATE-01, frame side: resolution selects only the frame of an occurrence
+on the resolving chain, so a called-owned read or write never selects a caller frame, and an
+occurrence never selects a sibling occurrence's frame. -/
+theorem resolveOwner?_frame_on_chain (variables : ScopedVariables) (chain : List ScopeOccurrenceId)
+    (name : String) (owner : ScopeOccurrenceId)
+    (resolved : resolveOwner? variables.scopes chain name = some (.frame owner)) :
+    owner ∈ chain := by
+  obtain ⟨_, occurrence, _, frame, split, frames, same, _, _⟩ :=
+    resolveOwner?_frame_nearest variables name chain owner resolved
+  have member : frame ∈ framesAt variables.scopes occurrence := by simp [frames]
+  simp only [framesAt, List.mem_filter, beq_iff_eq] at member
+  rw [← same, member.2, split]
+  simp
+
+/-- Updating, in place, only the frames of one chain occurrence leaves every off-chain frame as it was. -/
+private theorem off_chain_map (chain : List ScopeOccurrenceId) (owner : ScopeOccurrenceId) (onChain : owner ∈ chain)
+    (update : ScopeVariableScope → List VariableBinding) :
+    ∀ scopes : List ScopeVariableScope,
+      (scopes.map fun frame => if frame.owner = owner then { frame with bindings := update frame } else frame).filter
+          (fun frame => decide (frame.owner ∉ chain)) =
+        scopes.filter fun frame => decide (frame.owner ∉ chain)
+  | [] => rfl
+  | frame :: rest => by
+      have later := off_chain_map chain owner onChain update rest
+      by_cases same : frame.owner = owner
+      · simp only [List.map_cons, same, ite_true, List.filter_cons, onChain, not_true_eq_false,
+          decide_false, Bool.false_eq_true, ite_false]
+        exact later
+      · simp only [List.map_cons, same, ite_false, List.filter_cons]
+        split
+        · rw [later]
+        · exact later
+
+private theorem calledRootOf?_on_chain (program : Program) (chain : List ScopeOccurrenceId)
+    (root : ScopeOccurrenceId) (called : calledRootOf? program chain = some root) : root ∈ chain := by
+  unfold calledRootOf? at called
+  split at called
+  · rename_i last found
+    split at called
+    · cases called; exact List.mem_of_getLast? found
+    · contradiction
+  · contradiction
+
+/-- CSD-ISOLATE-01, write side: a write from `writer` leaves every frame whose owner is not on the
+writer's live occurrence chain unchanged, so a sibling occurrence's frame never changes. -/
+theorem write?_off_chain_unchanged (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables result : ScopedVariables) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (binding : VariableBinding) (chained : occurrenceChain occurrences writer = some chain)
+    (written : write? program occurrences variables writer binding = some result) :
+    result.scopes.filter (fun frame => decide (frame.owner ∉ chain)) =
+      variables.scopes.filter fun frame => decide (frame.owner ∉ chain) := by
+  unfold write? at written
+  simp only [chained, bind, Option.bind] at written
+  split at written
+  · contradiction
+  · rename_i owner resolved
+    cases owner with
+    | process =>
+        split at written
+        · cases written; rfl
+        · rename_i root called
+          split at written
+          · rename_i frame frames
+            cases written
+            have member : frame ∈ framesAt variables.scopes root := by simp [frames]
+            simp only [framesAt, List.mem_filter, beq_iff_eq] at member
+            exact off_chain_map chain frame.owner (member.2 ▸ calledRootOf?_on_chain program chain root called) _ _
+          · contradiction
+    | frame owner =>
+        cases selected : selectScopeVariables? variables owner <;> simp [selected] at written
+        cases written
+        exact off_chain_map chain owner (resolveOwner?_frame_on_chain variables chain binding.name owner resolved) _ _
 
 /-- NSD-WRITE-01, frame case: the write updates the resolved frame alone and leaves the Process, the
 Activity scopes and every other frame unchanged. -/
-theorem write?_frame (program : Program) (variables result : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (binding : VariableBinding) (owner : ScopeOccurrenceId)
-    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name =
+theorem write?_frame (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables result : ScopedVariables) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (binding : VariableBinding) (owner : ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences writer = some chain)
+    (resolved : resolveOwner? variables.scopes chain binding.name =
       some (.frame owner))
-    (written : write? program variables instanceId scopeId binding = some result) :
+    (written : write? program occurrences variables writer binding = some result) :
     result = { variables with scopes := variables.scopes.map fun frame =>
       if frame.owner = owner then
         { frame with bindings := mergeProcessVariableBindings frame.bindings [binding] }
       else frame } := by
-  simp only [write?, resolved, bind, Option.bind] at written
+  simp only [write?, chained, resolved, bind, Option.bind] at written
   cases selected : selectScopeVariables? variables owner <;> simp [selected] at written
   exact written.symm
 
 /-- NSD-WRITE-01, Process case outside a called instance: the write creates or replaces the Process
 binding and changes no frame. -/
-theorem write?_process (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (binding : VariableBinding)
-    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name =
+theorem write?_process (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (binding : VariableBinding) (chained : occurrenceChain occurrences writer = some chain)
+    (resolved : resolveOwner? variables.scopes chain binding.name =
       some .process)
-    (hosted : calledRootOf? program (definitionChain program.definitionScopes scopeId) = none) :
-    write? program variables instanceId scopeId binding = some { variables with process :=
+    (hosted : calledRootOf? program chain = none) :
+    write? program occurrences variables writer binding = some { variables with process :=
       { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } } := by
-  simp [write?, resolved, hosted]
+  simp [write?, chained, resolved, hosted]
 
 /-- NSD-READ-01's frame case as an evaluator: once resolution selects a frame, the read is that
 frame's binding outcome and never consults the Process binding. -/
-theorem readOutcome?_frame (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (name : String) (owner : ScopeOccurrenceId)
-    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) name =
+theorem readOutcome?_frame (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (reader : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (name : String) (owner : ScopeOccurrenceId) (chained : occurrenceChain occurrences reader = some chain)
+    (resolved : resolveOwner? variables.scopes chain name =
       some (.frame owner)) :
-    readOutcome? program variables instanceId scopeId name =
+    readOutcome? program occurrences variables reader name =
       (selectScopeVariables? variables owner).bind fun frame => bindingOutcome? frame.bindings name := by
-  simp only [readOutcome?, resolved, bind, Option.bind]
+  simp only [readOutcome?, chained, resolved, bind, Option.bind]
 
 private theorem merge_mem_self (existing : List VariableBinding) (binding : VariableBinding) :
     binding ∈ mergeProcessVariableBindings existing [binding] :=
@@ -163,22 +238,21 @@ private theorem resolveOwner?_map_declared (scopes : List ScopeVariableScope)
     (update : ScopeVariableScope → ScopeVariableScope) (owner : ∀ frame, (update frame).owner = frame.owner)
     (names : ∀ frame ∈ scopes, ∀ name,
       (update frame).bindings.any (·.name == name) = frame.bindings.any (·.name == name))
-    (instanceId : SemanticId) (name : String) :
-    ∀ chain, resolveOwner? (scopes.map update) instanceId chain name = resolveOwner? scopes instanceId chain name
+    (name : String) :
+    ∀ chain, resolveOwner? (scopes.map update) chain name = resolveOwner? scopes chain name
   | [] => rfl
-  | scopeId :: rest => by
-      have frames : framesOf (scopes.map update) instanceId scopeId =
-          (framesOf scopes instanceId scopeId).map update := by
-        simp only [framesOf, List.filter_map, Function.comp_def, owner]
-      have later := resolveOwner?_map_declared scopes update owner names instanceId name rest
+  | occurrence :: rest => by
+      have frames : framesAt (scopes.map update) occurrence = (framesAt scopes occurrence).map update := by
+        simp only [framesAt, List.filter_map, Function.comp_def, owner]
+      have later := resolveOwner?_map_declared scopes update owner names name rest
       simp only [resolveOwner?, frames]
-      cases selected : framesOf scopes instanceId scopeId with
+      cases selected : framesAt scopes occurrence with
       | nil => simpa using later
       | cons frame tail =>
           cases tail with
           | nil =>
               have member : frame ∈ scopes := by
-                have : frame ∈ framesOf scopes instanceId scopeId := by rw [selected]; simp
+                have : frame ∈ framesAt scopes occurrence := by rw [selected]; simp
                 exact (List.mem_filter.mp this).1
               simp [names frame member, owner, later]
           | cons _ _ => simp
@@ -186,25 +260,27 @@ private theorem resolveOwner?_map_declared (scopes : List ScopeVariableScope)
 /-- One frame write keeps the Process binding and every resolution, adds the written binding to its
 frame, and keeps every binding of another name in place. -/
 private theorem write?_frame_step (program : Program) (variables result : ScopedVariables)
-    (instanceId : SemanticId) (scopeId : DefinitionScopeId) (binding : VariableBinding) (owner : ScopeOccurrenceId)
-    (resolved : resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) binding.name =
+    (occurrences : List RuntimeScopeOccurrence) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (binding : VariableBinding) (owner : ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences writer = some chain)
+    (resolved : resolveOwner? variables.scopes chain binding.name =
       some (.frame owner))
-    (written : write? program variables instanceId scopeId binding = some result) :
+    (written : write? program occurrences variables writer binding = some result) :
     result.process = variables.process ∧
-      (∀ name, resolveOwner? result.scopes instanceId (definitionChain program.definitionScopes scopeId) name =
-        resolveOwner? variables.scopes instanceId (definitionChain program.definitionScopes scopeId) name) ∧
+      (∀ name, resolveOwner? result.scopes chain name =
+        resolveOwner? variables.scopes chain name) ∧
       (∀ frame ∈ result.scopes, frame.owner = owner → binding ∈ frame.bindings) ∧
       (∀ (kept : VariableBinding) (keptOwner : ScopeOccurrenceId), kept.name ≠ binding.name →
         (∀ frame ∈ variables.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) →
         ∀ frame ∈ result.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) := by
-  rw [write?_frame program variables result instanceId scopeId binding owner resolved written]
+  rw [write?_frame program occurrences variables result writer chain binding owner chained resolved written]
   obtain ⟨_, scope, _, declared, _, frames, owned, declares, _⟩ :=
-    resolveOwner?_frame_nearest variables instanceId binding.name _ owner resolved
+    resolveOwner?_frame_nearest variables binding.name _ owner resolved
   have only : ∀ frame ∈ variables.scopes, frame.owner = owner → frame = declared := by
     intro frame member same
-    have declaredMember : declared ∈ framesOf variables.scopes instanceId scope := by rw [frames]; simp
-    have selected : frame ∈ framesOf variables.scopes instanceId scope := by
-      simp only [framesOf, List.mem_filter] at declaredMember ⊢
+    have declaredMember : declared ∈ framesAt variables.scopes scope := by rw [frames]; simp
+    have selected : frame ∈ framesAt variables.scopes scope := by
+      simp only [framesAt, List.mem_filter] at declaredMember ⊢
       exact ⟨member, by rw [same, ← owned]; exact declaredMember.2⟩
     rw [frames] at selected
     simpa using selected
@@ -234,15 +310,17 @@ private theorem write?_frame_step (program : Program) (variables result : Scoped
 
 /-- NSD-WRITE-01 over a whole binding list: when every name resolves to a frame and no name repeats,
 the writes leave the Process binding unchanged and each binding lands in its resolved frame. -/
-theorem writeAll?_frames (program : Program) (instanceId : SemanticId) (scopeId : DefinitionScopeId) :
+theorem writeAll?_frames (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences writer = some chain) :
     ∀ (values : List VariableBinding) (variables result : ScopedVariables),
-      writeAll? program variables instanceId scopeId values = some result →
+      writeAll? program occurrences variables writer values = some result →
       (values.map (·.name)).Nodup →
-      (∀ value ∈ values, ∃ owner, resolveOwner? variables.scopes instanceId
-        (definitionChain program.definitionScopes scopeId) value.name = some (.frame owner)) →
+      (∀ value ∈ values, ∃ owner, resolveOwner? variables.scopes
+        chain value.name = some (.frame owner)) →
       result.process = variables.process ∧
-        (∀ value ∈ values, ∀ owner, resolveOwner? variables.scopes instanceId
-          (definitionChain program.definitionScopes scopeId) value.name = some (.frame owner) →
+        (∀ value ∈ values, ∀ owner, resolveOwner? variables.scopes
+          chain value.name = some (.frame owner) →
           ∀ frame ∈ result.scopes, frame.owner = owner → value ∈ frame.bindings) ∧
         (∀ (kept : VariableBinding) (keptOwner : ScopeOccurrenceId), kept.name ∉ values.map (·.name) →
           (∀ frame ∈ variables.scopes, frame.owner = keptOwner → kept ∈ frame.bindings) →
@@ -258,9 +336,9 @@ theorem writeAll?_frames (program : Program) (instanceId : SemanticId) (scopeId 
       · rename_i middle wrote
         obtain ⟨owner, resolved⟩ := resolvedAll value List.mem_cons_self
         obtain ⟨process, same, landed, kept⟩ :=
-          write?_frame_step program variables middle instanceId scopeId value owner resolved wrote
+          write?_frame_step program variables middle occurrences writer chain value owner chained resolved wrote
         simp only [List.map_cons, List.nodup_cons] at distinct
-        obtain ⟨restProcess, restLanded, restKept⟩ := writeAll?_frames program instanceId scopeId rest middle result
+        obtain ⟨restProcess, restLanded, restKept⟩ := writeAll?_frames program occurrences writer chain chained rest middle result
           written distinct.2 (fun other member => by
             rw [same]; exact resolvedAll other (List.mem_cons_of_mem _ member))
         refine ⟨restProcess.trans process, ?_, ?_⟩
@@ -283,7 +361,7 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
     ∃ child parent bindings,
       occurrenceWithParent? state childScopeId = some (child, parent) ∧
       evaluateInputMappingsUnder? .singletonBusinessItem
-          (read? program state.variables parent.processInstanceId parent.definitionScopeId)
+          (read? program state.scopeOccurrences state.variables parent)
           record.localInputs = some bindings ∧
       result = { state with variables := { state.variables with
         scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
@@ -296,7 +374,7 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
       obtain ⟨child, parent⟩ := pair
       simp only [located] at initialized
       cases evaluated : evaluateInputMappingsUnder? .singletonBusinessItem
-          (read? program state.variables parent.processInstanceId parent.definitionScopeId)
+          (read? program state.scopeOccurrences state.variables parent)
           record.localInputs with
       | none => simp [evaluated] at initialized
       | some bindings =>
@@ -326,6 +404,11 @@ def nonLawProgram : Program :=
 
 def nonLawOwner (name : String) : ScopeOccurrenceId :=
   { processInstanceId := ⟨"I"⟩, definitionScopeId := nonLawScope name, activation := 1 }
+
+def nonLawOccurrences : List RuntimeScopeOccurrence :=
+  [ { id := nonLawOwner "C", parent := some (nonLawOwner "O") }
+  , { id := nonLawOwner "O", parent := some (nonLawOwner "P") }
+  , { id := nonLawOwner "P", parent := none } ]
 
 def nonLawVariables : ScopedVariables :=
   { emptyScopedVariables with scopes :=
@@ -359,10 +442,39 @@ theorem completeScopeState?_retires_frame (state completed : RuntimeState) (scop
   · contradiction
 
 theorem innermost_write_is_not_the_nearest_owner_write :
-    write? nonLawProgram nonLawVariables ⟨"I"⟩ (nonLawScope "C")
+    write? nonLawProgram nonLawOccurrences nonLawVariables (nonLawOwner "C")
         { name := "status", value := .string "approved" } ≠
       some (innermostWrite nonLawVariables (nonLawOwner "C")
         { name := "status", value := .string "approved" }) := by
+  decide +kernel
+
+/-! ## Sibling occurrences
+
+CSD-CHAIN-01 and CSD-ISOLATE-01 on the smallest separating state: two live occurrences of the order
+approval definition under one parent each hold a frame declaring `status`. The definition-chain account
+refused this state because one definition had two live frames. -/
+
+def siblingOwner (activation : Nat) : ScopeOccurrenceId :=
+  { processInstanceId := ⟨"I"⟩, definitionScopeId := nonLawScope "O", activation }
+
+def siblingOccurrences : List RuntimeScopeOccurrence :=
+  [ { id := siblingOwner 1, parent := some (nonLawOwner "P") }
+  , { id := siblingOwner 2, parent := some (nonLawOwner "P") }
+  , { id := nonLawOwner "P", parent := none } ]
+
+def siblingVariables : ScopedVariables :=
+  { emptyScopedVariables with scopes :=
+      [ { owner := siblingOwner 1, bindings := [{ name := "status", value := .string "open" }] }
+      , { owner := siblingOwner 2, bindings := [{ name := "status", value := .string "held" }] } ] }
+
+theorem sibling_occurrences_resolve_and_write_their_own_frames :
+    (occurrenceChain siblingOccurrences (siblingOwner 1)).bind (resolveOwner? siblingVariables.scopes · "status") =
+        some (.frame (siblingOwner 1)) ∧
+      (occurrenceChain siblingOccurrences (siblingOwner 2)).bind (resolveOwner? siblingVariables.scopes · "status") =
+        some (.frame (siblingOwner 2)) ∧
+      (write? nonLawProgram siblingOccurrences siblingVariables (siblingOwner 2)
+          { name := "status", value := .string "approved" }).map (·.scopes.head?) =
+        some (siblingVariables.scopes.head?) := by
   decide +kernel
 
 end BpmnSemantics.SemanticProcess.NestedScopeData

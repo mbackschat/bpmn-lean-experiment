@@ -10,12 +10,11 @@ Name resolution, frame initialization and output writes for `nestedScopeDataProf
 A frame is the existing occurrence-keyed `ScopeVariableScope`; a scope's declarations are the
 Program's `scopeLocalData` record for its definition.
 
-The chain is walked over definition scopes, selecting the live frame of each one in the reading
-instance. Under the profile's admission every definition is activated at most once per instance, so
-that frame is the frame of the actual ancestor occurrence. A definition with more than one live frame
-refuses instead of choosing by storage order, so a later repeated-activation account must replace
-this lookup rather than inherit an arbitrary choice. Every operation here depends only on the Program
-and `ScopedVariables`, never on scope-occurrence bookkeeping.
+The chain is walked over live scope occurrences, from the performing occurrence through its parents to
+its instance root, selecting each frame by exact owner (CSD-CHAIN-01 of the
+[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#stable-rules)).
+Two live occurrences of one definition are two owners, so a sibling's frame is never on the chain.
+Every operation depends only on the Program, the live occurrences and `ScopedVariables`.
 -/
 
 @[expose] public section
@@ -46,27 +45,26 @@ def recordFor? (program : Program) (scopeId : DefinitionScopeId) : Option ScopeL
     | _ => none
   else none
 
-def parentScope? (scopes : List DefinitionScope) (scopeId : DefinitionScopeId) : Option DefinitionScopeId :=
-  match scopes.filter (·.id == scopeId) with
-  | [scope] => scope.parentScopeId
-  | _ => none
+/-- `owner` and its live ancestors, innermost first, ending at the parentless instance root. An
+occurrence that is not live exactly once, or a parent walk the fuel cannot finish, refuses rather than
+resolving past a gap. -/
+def occurrenceChainWithin (occurrences : List RuntimeScopeOccurrence) :
+    Nat → ScopeOccurrenceId → Option (List ScopeOccurrenceId)
+  | 0, _ => none
+  | fuel + 1, owner =>
+      match occurrences.filter (·.id == owner) with
+      | [occurrence] =>
+          match occurrence.parent with
+          | none => some [owner]
+          | some parent => (occurrenceChainWithin occurrences fuel parent).map (owner :: ·)
+      | _ => none
 
-/-- `scopeId` and its ancestors, innermost first; the fuel bound terminates a cyclic parent relation. -/
-def chainWithin (scopes : List DefinitionScope) : Nat → DefinitionScopeId → List DefinitionScopeId
-  | 0, _ => []
-  | fuel + 1, scopeId => scopeId :: match parentScope? scopes scopeId with
-      | some parent => chainWithin scopes fuel parent
-      | none => []
+def occurrenceChain (occurrences : List RuntimeScopeOccurrence) (owner : ScopeOccurrenceId) :
+    Option (List ScopeOccurrenceId) :=
+  occurrenceChainWithin occurrences occurrences.length owner
 
-/-- Takes only the scope table, not the Program, so a Program differing elsewhere (for example in
-erased Compensation snapshots) yields a definitionally equal chain without unfolding the walk. -/
-def definitionChain (scopes : List DefinitionScope) (scopeId : DefinitionScopeId) : List DefinitionScopeId :=
-  chainWithin scopes scopes.length scopeId
-
-def framesOf (scopes : List ScopeVariableScope) (instanceId : SemanticId) (scopeId : DefinitionScopeId) :
-    List ScopeVariableScope :=
-  scopes.filter fun frame =>
-    frame.owner.processInstanceId == instanceId && frame.owner.definitionScopeId == scopeId
+def framesAt (scopes : List ScopeVariableScope) (owner : ScopeOccurrenceId) : List ScopeVariableScope :=
+  scopes.filter (·.owner == owner)
 
 /-- Whether `scopeId` is the root of a variable-mapping called Process: some invocation targets it and
 every one carries mappings. Its frame stands in for the called instance's Process data
@@ -100,11 +98,11 @@ def calledRootMappings? (program : Program) (calls : List CalledProcessOccurrenc
     | _ => none
   else none
 
-/-- The called root a definition chain ends at, if any; resolution from it never reaches the hosting
+/-- The called root an occurrence chain ends at, if any; resolution from it never reaches the hosting
 instance's Process data. -/
-def calledRootOf? (program : Program) (chain : List DefinitionScopeId) : Option DefinitionScopeId :=
+def calledRootOf? (program : Program) (chain : List ScopeOccurrenceId) : Option ScopeOccurrenceId :=
   match chain.getLast? with
-  | some scopeId => if mappedCalledRoot program scopeId then some scopeId else none
+  | some root => if mappedCalledRoot program root.definitionScopeId then some root else none
   | none => none
 
 inductive Owner where
@@ -112,26 +110,25 @@ inductive Owner where
   | process
   deriving Repr, DecidableEq
 
-/-- NSD-READ-01 and NSD-WRITE-01: the nearest chain scope whose frame declares `name`, a present
+/-- NSD-READ-01 and NSD-WRITE-01: the nearest chain occurrence whose frame declares `name`, a present
 null included, else the Process. Only the frames are an argument, so resolution is definitionally
 unaffected by Activity-local or Process data. -/
-def resolveOwner? (scopes : List ScopeVariableScope) (instanceId : SemanticId) :
-    List DefinitionScopeId → String → Option Owner
+def resolveOwner? (scopes : List ScopeVariableScope) : List ScopeOccurrenceId → String → Option Owner
   | [], _ => some .process
-  | scopeId :: rest, name =>
-      match framesOf scopes instanceId scopeId with
-      | [] => resolveOwner? scopes instanceId rest name
+  | occurrence :: rest, name =>
+      match framesAt scopes occurrence with
+      | [] => resolveOwner? scopes rest name
       | [frame] =>
           if frame.bindings.any (·.name == name) then some (.frame frame.owner)
-          else resolveOwner? scopes instanceId rest name
+          else resolveOwner? scopes rest name
       | _ => none
 
-/-- NSD-READ-01 from the scope `scopeId` of instance `instanceId`; every value is re-validated as a
-`SingletonBusinessItem`, so a stored binding is never trusted for having been written earlier. -/
-def read? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (name : String) : Option VariableValue := do
-  let chain := definitionChain program.definitionScopes scopeId
-  match ← resolveOwner? variables.scopes instanceId chain name with
+/-- NSD-READ-01 from the occurrence `reader`; every value is re-validated as a `SingletonBusinessItem`,
+so a stored binding is never trusted for having been written earlier. -/
+def read? (program : Program) (occurrences : List RuntimeScopeOccurrence) (variables : ScopedVariables)
+    (reader : ScopeOccurrenceId) (name : String) : Option VariableValue := do
+  let chain ← occurrenceChain occurrences reader
+  match ← resolveOwner? variables.scopes chain name with
   | .process =>
       match calledRootOf? program chain with
       | none => enclosingVariableUnder? .singletonBusinessItem variables.process.bindings name
@@ -152,15 +149,16 @@ def bindingOutcome? (bindings : List VariableBinding) (name : String) : Option (
   | _ => none
 
 /-- NSD-READ-01 with absence kept apart from refusal; an undeclared name at a called root is absent. -/
-def readOutcome? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (name : String) : Option (Option VariableValue) := do
-  let chain := definitionChain program.definitionScopes scopeId
-  match ← resolveOwner? variables.scopes instanceId chain name with
+def readOutcome? (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (reader : ScopeOccurrenceId) (name : String) :
+    Option (Option VariableValue) := do
+  let chain ← occurrenceChain occurrences reader
+  match ← resolveOwner? variables.scopes chain name with
   | .process =>
       match calledRootOf? program chain with
       | none => bindingOutcome? variables.process.bindings name
       | some root =>
-          let [_] := framesOf variables.scopes instanceId root | none
+          let [_] := framesAt variables.scopes root | none
           some none
   | .frame owner =>
       let frame ← selectScopeVariables? variables owner
@@ -169,17 +167,17 @@ def readOutcome? (program : Program) (variables : ScopedVariables) (instanceId :
 /-- NSD-WRITE-01: update the nearest declaring frame, else create or replace the Process binding, or
 the called-root frame's binding when the chain ends at a called root (CVM-RESOLVE-01, as CIB's
 `setVariable` creates on the process instance); never create a local and never touch another frame. -/
-def write? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) (binding : VariableBinding) : Option ScopedVariables := do
-  let chain := definitionChain program.definitionScopes scopeId
-  match ← resolveOwner? variables.scopes instanceId chain binding.name with
+def write? (program : Program) (occurrences : List RuntimeScopeOccurrence) (variables : ScopedVariables)
+    (writer : ScopeOccurrenceId) (binding : VariableBinding) : Option ScopedVariables := do
+  let chain ← occurrenceChain occurrences writer
+  match ← resolveOwner? variables.scopes chain binding.name with
   | .process =>
       match calledRootOf? program chain with
       | none =>
           some { variables with process :=
             { bindings := mergeProcessVariableBindings variables.process.bindings [binding] } }
       | some root =>
-          let [frame] := framesOf variables.scopes instanceId root | none
+          let [frame] := framesAt variables.scopes root | none
           some { variables with scopes := variables.scopes.map fun candidate =>
             if candidate.owner = frame.owner then
               { candidate with bindings := mergeProcessVariableBindings candidate.bindings [binding] }
@@ -191,11 +189,11 @@ def write? (program : Program) (variables : ScopedVariables) (instanceId : Seman
           { frame with bindings := mergeProcessVariableBindings frame.bindings [binding] }
         else frame }
 
-def writeAll? (program : Program) (variables : ScopedVariables) (instanceId : SemanticId)
-    (scopeId : DefinitionScopeId) : List VariableBinding → Option ScopedVariables
+def writeAll? (program : Program) (occurrences : List RuntimeScopeOccurrence) (variables : ScopedVariables)
+    (writer : ScopeOccurrenceId) : List VariableBinding → Option ScopedVariables
   | [] => some variables
   | binding :: rest => do
-      writeAll? program (← write? program variables instanceId scopeId binding) instanceId scopeId rest
+      writeAll? program occurrences (← write? program occurrences variables writer binding) writer rest
 
 /-- The unique live occurrence of `scopeId` together with its live parent occurrence. -/
 def occurrenceWithParent? (state : RuntimeState) (scopeId : DefinitionScopeId) :
@@ -214,7 +212,7 @@ def initializeFrame? (program : Program) (state : RuntimeState) (childScopeId : 
   | some record => do
       let (child, parent) ← occurrenceWithParent? state childScopeId
       let bindings ← evaluateInputMappingsUnder? .singletonBusinessItem
-        (read? program state.variables parent.processInstanceId parent.definitionScopeId) record.localInputs
+        (read? program state.scopeOccurrences state.variables parent) record.localInputs
       if !scopeVariableNamesUnique bindings || state.variables.scopes.any (·.owner == child) then none
       else
         let frame : ScopeVariableScope :=
@@ -238,8 +236,7 @@ def writeOutputs? (program : Program) (state : RuntimeState) (scopeId : Definiti
             let value ← enclosingVariableUnder? .singletonBusinessItem frame.bindings source
             some ({ name := mapping.target, value } : VariableBinding)
         | _ => none
-      let variables ←
-        writeAll? program state.variables parent.processInstanceId parent.definitionScopeId values
+      let variables ← writeAll? program state.scopeOccurrences state.variables parent values
       some { state with variables }
 
 /-- Frame installation touches only data, so every control, wait and occurrence fact survives it. -/

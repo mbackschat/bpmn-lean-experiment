@@ -47,13 +47,15 @@ theorem copyValues?_refused (read : String → Option (Option VariableValue)) (n
 
 /-- CVM-ISOLATE-01, write side: from a chain that ends at a called root, a write never touches the
 hosting Process binding, Activity-local data or Process interfaces; only frames change. -/
-theorem write?_called_keeps_process (program : Program) (variables result : ScopedVariables)
-    (instanceId : SemanticId) (scopeId : DefinitionScopeId) (binding : VariableBinding) (root : DefinitionScopeId)
-    (called : calledRootOf? program (definitionChain program.definitionScopes scopeId) = some root)
-    (written : write? program variables instanceId scopeId binding = some result) :
+theorem write?_called_keeps_process (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables result : ScopedVariables) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (binding : VariableBinding) (root : ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences writer = some chain)
+    (called : calledRootOf? program chain = some root)
+    (written : write? program occurrences variables writer binding = some result) :
     result = { variables with scopes := result.scopes } := by
   unfold write? at written
-  simp only [bind, Option.bind] at written
+  simp only [chained, bind, Option.bind] at written
   split at written
   · contradiction
   · rename_i owner _
@@ -69,28 +71,16 @@ theorem write?_called_keeps_process (program : Program) (variables result : Scop
 
 /-- CVM-ISOLATE-01, read side: from a chain that ends at a called root, a read is independent of the
 hosting Process binding. -/
-theorem readOutcome?_called_ignores_process (program : Program) (variables : ScopedVariables)
-    (process : ProcessVariableScope) (instanceId : SemanticId) (scopeId : DefinitionScopeId) (name : String)
-    (root : DefinitionScopeId)
-    (called : calledRootOf? program (definitionChain program.definitionScopes scopeId) = some root) :
-    readOutcome? program { variables with process } instanceId scopeId name =
-      readOutcome? program variables instanceId scopeId name := by
+theorem readOutcome?_called_ignores_process (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (process : ProcessVariableScope) (reader : ScopeOccurrenceId)
+    (chain : List ScopeOccurrenceId) (name : String) (root : ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences reader = some chain)
+    (called : calledRootOf? program chain = some root) :
+    readOutcome? program occurrences { variables with process } reader name =
+      readOutcome? program occurrences variables reader name := by
   unfold readOutcome?
-  simp only [called]
+  simp only [chained, called, bind, Option.bind]
   rfl
-
-/-- CVM-ISOLATE-01, frame side: resolution selects only a frame of the resolving instance, so a
-called-owned read or write never selects a caller frame. -/
-theorem resolveOwner?_frame_same_instance (variables : ScopedVariables) (instanceId : SemanticId)
-    (chain : List DefinitionScopeId) (name : String) (owner : ScopeOccurrenceId)
-    (resolved : resolveOwner? variables.scopes instanceId chain name = some (.frame owner)) :
-    owner.processInstanceId = instanceId := by
-  obtain ⟨_, scopeId, _, frame, _, frames, same, _, _⟩ :=
-    resolveOwner?_frame_nearest variables instanceId name chain owner resolved
-  have member : frame ∈ framesOf variables.scopes instanceId scopeId := by simp [frames]
-  simp only [framesOf, List.mem_filter, Bool.and_eq_true, beq_iff_eq] at member
-  rw [← same]
-  exact member.2.1
 
 /-- CVM-IN-01: a mapped invocation installs exactly one frame for the derived called root, holding
 the input copies read along the caller's chain in the predecessor state. -/
@@ -102,8 +92,7 @@ theorem invokeState?_installs_snapshot (program : Program) (before after : Runti
       returnOperationId inputs outputs = some after) :
     ∃ caller bindings,
       onlyTokenOwner? before input = some caller ∧
-      copyValues? (readOutcome? program before.variables caller.processInstanceId caller.definitionScopeId)
-        inputs = some bindings ∧
+      copyValues? (readOutcome? program before.scopeOccurrences before.variables caller) inputs = some bindings ∧
       (after.variables.scopes.filter fun frame =>
         decide (frame.owner = scalarInvocationRoot before caller origin calledRootScopeId)) =
         [calledRootFrame (scalarInvocationRoot before caller origin calledRootScopeId) bindings] := by
@@ -130,12 +119,15 @@ theorem invokeState?_installs_snapshot (program : Program) (before after : Runti
       rw [absent] at perm
       exact List.perm_singleton.mp perm
 
-private theorem write?_frame_owners (program : Program) (variables result : ScopedVariables)
-    (instanceId : SemanticId) (scopeId : DefinitionScopeId) (binding : VariableBinding)
-    (written : write? program variables instanceId scopeId binding = some result) :
+private theorem write?_frame_owners (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables result : ScopedVariables) (writer : ScopeOccurrenceId) (binding : VariableBinding)
+    (written : write? program occurrences variables writer binding = some result) :
     result.scopes.map (·.owner) = variables.scopes.map (·.owner) := by
   unfold write? at written
   simp only [bind, Option.bind] at written
+  split at written
+  · contradiction
+  simp only [] at written
   split at written
   · contradiction
   · rename_i owner _
@@ -161,9 +153,10 @@ private theorem write?_frame_owners (program : Program) (variables result : Scop
         split <;> rfl
 
 /-- Writes update bindings in place; they never create or remove a frame. -/
-theorem writeAll?_frame_owners (program : Program) (instanceId : SemanticId) (scopeId : DefinitionScopeId) :
+theorem writeAll?_frame_owners (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (writer : ScopeOccurrenceId) :
     ∀ (bindings : List VariableBinding) (variables result : ScopedVariables),
-      writeAll? program variables instanceId scopeId bindings = some result →
+      writeAll? program occurrences variables writer bindings = some result →
       result.scopes.map (·.owner) = variables.scopes.map (·.owner)
   | [], _, _, written => by simp [writeAll?] at written; rw [written]
   | binding :: rest, variables, result, written => by
@@ -171,8 +164,8 @@ theorem writeAll?_frame_owners (program : Program) (instanceId : SemanticId) (sc
       split at written
       · contradiction
       · rename_i middle wrote
-        rw [writeAll?_frame_owners program instanceId scopeId rest middle result written,
-          write?_frame_owners program variables middle instanceId scopeId binding wrote]
+        rw [writeAll?_frame_owners program occurrences writer rest middle result written,
+          write?_frame_owners program occurrences variables middle writer binding wrote]
 
 /-- CVM-OUT-01: a mapped return reads every output from the predecessor's called-root frame alone and
 writes them by NSD-WRITE-01 from the Call's enclosing occurrence after disposal, so each lands at its
@@ -187,8 +180,7 @@ theorem returnState?_writes_outputs_from_caller (program : Program) (before afte
       selectScopeVariables? before.variables record.calledRoot = some frame ∧
       copyValues? (bindingOutcome? frame.bindings) outputs = some values ∧
       returnProcessState? before id origin calledProcessId calledRootScopeId callerOutput = some returned ∧
-      writeAll? program returned.variables record.caller.processInstanceId record.caller.definitionScopeId values =
-        some after.variables := by
+      writeAll? program returned.scopeOccurrences returned.variables record.caller values = some after.variables := by
   unfold returnState? at result
   split at result
   · contradiction
@@ -286,23 +278,22 @@ theorem invokeState?_reads_caller_frames (program : Program) (before after : Run
       returnOperationId inputs outputs = some after) :
     ∃ caller bindings,
       onlyTokenOwner? before input = some caller ∧
-      copyValues? (readOutcome? program before.variables caller.processInstanceId caller.definitionScopeId)
-        inputs = some bindings ∧
+      copyValues? (readOutcome? program before.scopeOccurrences before.variables caller) inputs = some bindings ∧
+      ∀ (chain : List ScopeOccurrenceId), occurrenceChain before.scopeOccurrences caller = some chain →
       ∀ mapping ∈ inputs, ∀ (name : String) (owner : ScopeOccurrenceId),
         mapping.expression = .enclosingVariable name →
-        resolveOwner? before.variables.scopes caller.processInstanceId
-          (definitionChain program.definitionScopes caller.definitionScopeId) name = some (.frame owner) →
+        resolveOwner? before.variables.scopes chain name = some (.frame owner) →
         ∃ frame value, selectScopeVariables? before.variables owner = some frame ∧
           bindingOutcome? frame.bindings name = some value ∧
           ({ name := mapping.target, value := value.getD .null } : VariableBinding) ∈ bindings := by
   obtain ⟨caller, bindings, owned, copied, _⟩ := invokeState?_installs_snapshot program before after origin input
     calledProcessId calledRootScopeId calledEntry returnOperationId inputs outputs invoked
   refine ⟨caller, bindings, owned, copied, ?_⟩
-  intro mapping member name owner expression resolved
+  intro chain chained mapping member name owner expression resolved
   obtain ⟨binding, bindingMember, one⟩ := copyValues?_mem _ inputs bindings copied mapping member
   unfold copyValue? at one
-  simp only [expression, readOutcome?_frame program before.variables caller.processInstanceId
-    caller.definitionScopeId name owner resolved, bind, Option.bind_eq_some_iff, Option.some.injEq] at one
+  simp only [expression, readOutcome?_frame program before.scopeOccurrences before.variables caller chain name owner
+    chained resolved, bind, Option.bind_eq_some_iff, Option.some.injEq] at one
   obtain ⟨value, ⟨frame, selected, outcome⟩, rfl⟩ := one
   exact ⟨frame, value, selected, outcome, bindingMember⟩
 
@@ -318,13 +309,10 @@ theorem returnState?_outputs_land_in_caller_frames (program : Program) (before a
       scalarReturnRecord? before id origin = some record ∧
       returnProcessState? before id origin calledProcessId calledRootScopeId callerOutput = some returned ∧
       values.map (·.name) = outputs.map (·.target) ∧
-      ((∀ value ∈ values, ∃ owner, resolveOwner? returned.variables.scopes record.caller.processInstanceId
-          (definitionChain program.definitionScopes record.caller.definitionScopeId) value.name =
-            some (.frame owner)) →
+      ∀ (chain : List ScopeOccurrenceId), occurrenceChain returned.scopeOccurrences record.caller = some chain →
+      ((∀ value ∈ values, ∃ owner, resolveOwner? returned.variables.scopes chain value.name = some (.frame owner)) →
         after.variables.process = returned.variables.process ∧
-          ∀ value ∈ values, ∀ owner, resolveOwner? returned.variables.scopes record.caller.processInstanceId
-            (definitionChain program.definitionScopes record.caller.definitionScopeId) value.name =
-              some (.frame owner) →
+          ∀ value ∈ values, ∀ owner, resolveOwner? returned.variables.scopes chain value.name = some (.frame owner) →
             ∀ frame ∈ after.variables.scopes, frame.owner = owner → value ∈ frame.bindings) := by
   have distinct : (outputs.map (·.target)).Nodup := by
     unfold returnState? at result
@@ -338,8 +326,8 @@ theorem returnState?_outputs_land_in_caller_frames (program : Program) (before a
     returnState?_writes_outputs_from_caller program before after id origin calledProcessId calledRootScopeId
       callerOutput inputs outputs result
   have names := copyValues?_names _ outputs values copied
-  refine ⟨record, values, returned, selected, controlled, names, fun resolvedAll => ?_⟩
-  obtain ⟨process, landed, _⟩ := NestedScopeData.writeAll?_frames program _ _ values returned.variables
+  refine ⟨record, values, returned, selected, controlled, names, fun chain chained resolvedAll => ?_⟩
+  obtain ⟨process, landed, _⟩ := NestedScopeData.writeAll?_frames program _ _ chain chained values returned.variables
     after.variables wrote (names ▸ distinct) resolvedAll
   exact ⟨process, landed⟩
 
