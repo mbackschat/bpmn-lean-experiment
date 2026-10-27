@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: cold design review of the [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification.
+Current task: implement the approved [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification.
 
-Deliverable: an approved proposal, then its implementation through registration under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: the family through registration and its closure review, built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
-Acceptance blockers: the proposal's cold design review.
+Acceptance blockers: none recorded.
 
-Current result: the proposal moves scope-data resolution from the definition chain to the live occurrence chain, admits bounded String data and concurrent mapped Calls in the concurrent scope profile, and prepares declared scope entry and completion. No row closes: re-entry waits for `PC-CF-06`, gateways for `PC-CF-02` to `PC-CF-04`.
+Current result: the proposal is approved; occurrence-chain resolution has a red TypeScript test.
 
-Effort budget: 16 hours of working time from review approval to family closure; stop and reassess at the limit.
+Effort budget: 16 hours of working time to family closure; stop and reassess at the limit.
 
-Next action: obtain the cold review, apply required corrections, then implement occurrence-chain resolution first.
+Next action: make occurrence-chain resolution green in TypeScript, then in Lean, before the gate, admission and merge-target hooks.
 
 Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
 

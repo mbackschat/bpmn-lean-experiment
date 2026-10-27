@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -234,7 +234,7 @@ Evidence: the occurrence-chain mechanism and its prepared entry are proved. Admi
 - **Prepared entry.** The composed declared-entry patch re-establishes the laws listed under representation: refinement, aggregate validity, footprint frames, commutation, batch membership and unchanged publication. Each one composes the existing `apply` law with a variables-only law for the frame insertion.
 - **Frame read law.** Nested input evaluation and entry input evaluation are unchanged when the consulted frames, chain links and Process names are unchanged. It discharges the `effectInputsFrame` premise of `prepared_arm_read_frame` and the corresponding premise of the scope-creation read frames.
 
-Open, and recorded as such: there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice`. The structural argument under representation and the core's check on every registered schedule support it, and the laws above make each executed patch sound.
+Open, and recorded as such: there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice`, and none that admitted Programs satisfy the declared entry's batch premise. The structural argument under representation and the core's check on every registered schedule support it, and the laws above make each executed patch sound.
 
 ## Temporal hosting and refinement preflight
 
@@ -307,8 +307,8 @@ An owner that `what-binds` reports near its 800-line review target has its touch
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `8fd67bb1` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8fd67bb1` | `fork-turns-none` | `approve-with-required-edits` | `fda4a8a4, 01f536a9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first proposal review of `0359b168` rejected an earlier account. That account included concurrent mapped Calls and a static capacity envelope, and it lacked the merge-target data path. This account is a material redesign and takes a new cold review.
+The first proposal review of `0359b168` rejected an earlier account that included concurrent mapped Calls and a static capacity envelope and lacked the merge-target data path. The redesign `8fd67bb1` took a new cold review with seven required findings. The same reviewer's first correction audit of `fda4a8a4` closed five of them. Its second audit, of `01f536a9`, closed the batch-premise and bridge-premise gaps and approved. Proposal packet digest: `0c6df762783fa7bcbc426b70ebcd1050a125d732a75e77e96ef87c52c773f8f7`. Approval selects this account only; implementation, Lean compilation, hosting and public qualification remain open.
