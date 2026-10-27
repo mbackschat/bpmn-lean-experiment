@@ -374,7 +374,7 @@ test("a verified run releases exactly its own staged handoffs", async () => {
   assert.match(release, /needs:\n      - verify-complete\n/u);
   assert.match(release, /if: always\(\) && needs\.verify-complete\.result == 'success'\n/u);
   assert.match(release, /permissions:\n      actions: write\n/u);
-  const prefixes = release.match(/for stage in ([a-z -]+); do/u)?.[1].split(" ");
+  const prefixes = release.match(/for stage in ([a-z -]+); do/u)?.[1]?.split(" ");
   assert.deepEqual(prefixes?.sort(), [...new Set(staged)].sort());
   assert.match(release, /--key "\$stage-\$RUNNER_OS-\$\{\{ github\.run_id \}\}-"/u);
 });
