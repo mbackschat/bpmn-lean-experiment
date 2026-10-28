@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implemented
+Lifecycle: implementation-in-progress
 Review: closure-approved for the 2026-10-26 contract; the 2026-10-28 changes to contract item 6, the acceptance and the current boundary passed the same reviewer's correction audit on 2026-10-28
 
 ## Problem
@@ -141,7 +141,7 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
 
 ## Current boundary
 
-**Hidden-by-default bodies are not delivered.** At `7bedde10` (2026-10-28), 988 of the 1,024 library files open an `@[expose] public section`, so most body edits still rebuild a whole public cone: 275 modules exceed the body-edit default, the widest at 944 importers. The body-edit ratchet records that graph and only shrinks; [PLAN](PLAN.md#exact-resume-point) owns the conversion. An uncommitted first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
+**Hidden-by-default bodies are not delivered.** Contract item 2 is open, so this document returns to `-PROPOSAL` in the commit that lands the conversion, whose Lean files cite it (owner direction, 2026-10-28). At `7bedde10` (2026-10-28), 988 of the 1,024 library files open an `@[expose] public section`, so most body edits still rebuild a whole public cone: 275 modules exceed the body-edit default, the widest at 944 importers. The body-edit ratchet records that graph and only shrinks; [PLAN](PLAN.md#exact-resume-point) owns the conversion. An uncommitted first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
 
 The first family-shaped increment was [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured in the pinned container on one CPU, 2026-10-26.
 
