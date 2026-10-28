@@ -81,14 +81,15 @@ Excluded:
 - **Exposure.**
   - A hub definition that importers reduce implicitly (`rfl`, a definitional `exact`, an anonymous-constructor `rfl`) is `@[expose]`, together with every hub definition its body calls, as the build's "not unfolded because their definition is not exposed" notes list.
   - `import all` serves explicit unfolding and tactic-mode reduction.
-  - A hub body stays exposed when its reduced closure covers nearly all of it, or when hiding saves little. This applies to `ScopeCancellation`, `runtimeStateWellFormed` and its closure, and `checkedWellFormed`, which about 40 conformance fixtures kernel-decide.
+  - The closed-world functions keep their bodies hidden like every other hub. Their reduction closures span 226 library modules, and exposed, a body edit in one of them rebuilds a median of 640 importers (scratch conversion of `7bedde10`, 2026-10-28); the fixtures that kernel-decide them open what they unfold instead (next rule).
 - **Laws modules.** A hidden hub's theorems live in a `<Hub>Laws` module that imports the hub with `import all`, so a proof edit rebuilds only that module's `import all` importers. The exception is laws an executable closure consumes, which stay beside their definitions (AA-05 keeps proof-only modules out of those closures).
 - **Distinct names.** A helper made public gets a distinct name whenever a file could resolve it unqualified next to another declaration of the same short name, because a newly public name can silently change what a statement means. [`lean-name-shadowing.ts`](../scripts/lean-name-shadowing.ts) checks this.
+- **Kernel-decided fixtures.** A module that kernel-decides through hidden bodies opens with `import all` exactly the modules whose bodies its decisions unfold. [`lean-fixture-owners.ts`](../scripts/lean-fixture-owners.ts) prints those lines from one plain-file compile whose diagnostics list every unfolded definition. A static call graph over-approximates: a fixture deciding `applyStimulus` unfolded bodies from 72 modules of the function's 200-module closure. A hub module opening a function's whole closure for its fixtures was measured and rejected, because its fixtures would rebuild about 7.7 times as often as exact opening requires (scratch conversion, 2026-10-28).
 - **Plain files.** These stay plain, with every file that imports them: files that interpret library code (`#eval`, or a driver run through `./scripts/lake.sh run`), proof-consumed `native_decide` owners, and fixtures whose decision does not reduce inside a module. A driver the library imports runs as its declared executable instead. Lean core bodies hidden from modules reduce once their owners are imported with `import all` (see the observations below). A plain file rebuilds on every edit to what it imports.
 
 ## Mechanism observations (Lean v4.34.1, 2026-10-23)
 
-These come from small scratch projects, not the library, and are not retained in the repository.
+These come from small scratch projects or scratch conversions of the library, and are not retained in the repository.
 
 | Observation | Result |
 |---|---|
@@ -103,6 +104,8 @@ These come from small scratch projects, not the library, and are not retained in
 | Equation-lemma trap | `simp [f]` and `simp only [f]` propagated an arm edit; `by rfl` and `by unfold f; rfl` did not; term-mode `rfl` was rejected for a hidden body (probe output not retained) |
 | Equation lemmas in the library | Reverting the family's `operationWellFormed` arm left the public `.olean` of `ProgramStructuralValidation` unchanged and changed it in each of the nine `import all` importers that rewrite with `simp only [operationWellFormed]`. After one of them switched to `unfold`, its `.olean` stayed unchanged. Generating the lemmas in the owner instead exported them from the owner. (Local pins, 2026-10-26, hashes not retained.) |
 | `import all` and `meta import` | Both load the private imports of what they import, and a `meta import` loads its whole import closure. One public declaration added to `NestedScopeControlAdmission`, which the profile registry imports privately, rebuilt exactly the 102 modules this predicts (pinned container, 2026-10-26) |
+| `import all` of a module that only opens others | The importer sees what that module opens: a fixture compiled identically, at the same 970 MB peak, through such a module and with the same lines written directly (scratch conversion, 2026-10-28) |
+| Diagnostics at threshold 0 (`set_option diagnostics true`, `diagnostics.threshold 0`) | List every definition the kernel and the elaborator unfolded. The modules hiding those bodies were exactly what each file's module form needed: `MessageStartAdmissionConformance` compiled with its 30 and `EventBasedGatewayConformance` with its 72 and no other `import all` line, where the earlier step-by-step repair had not converged (scratch conversion, 2026-10-28) |
 
 Hub functions are explicitly unfolded in few files: `programWellFormed` in 18 of the 235 that mention it, and `applyStimulus` in 7 of 84. A broader scan found 80 modules unfolding a hub function through some route, so bridge work is larger than those direct counts suggest.
 
