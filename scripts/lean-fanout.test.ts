@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
 import {
-  leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel, leanHiddenEditBounds, leanHiddenEditDefaultBound,
-  leanHiddenRewriteBounds,
+  leanBodyEditBounds, leanBodyEditDefaultBound, leanExposedDefinitionAllowance, leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel,
+  leanHiddenEditBounds, leanHiddenEditDefaultBound, leanHiddenRewriteBounds, leanOpeningImportBound,
 } from "./lean-fanout-bounds.ts";
 import {
-  leanFanouts, leanFanoutViolations, leanHiddenEditFanouts, leanHiddenRewrites, leanLibraryModules,
+  leanBodyEditFanouts, leanExposedDefinitions, leanFanouts, leanFanoutViolations, leanHiddenEditFanouts,
+  leanHiddenRewrites, leanLibraryModules, leanOpeningImportLines, brokenDebtRecords, needlessRaises, unexplainedAllowanceRises, unexplainedBoundRises,
+  type LeanFanoutBound,
 } from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
@@ -92,6 +99,50 @@ test("each rewrite with a hidden definition of an `import all` import is one rec
   ]);
   assert.deepEqual(rewrites.get("Pkg.Simp"), ["Pkg.Hub.hidden", "Pkg.Hub.hidden"]);
   assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0).map(([module]) => module), ["Pkg.Simp"]);
+});
+
+// Lean resolves a rewrite argument to a binder of the enclosing declaration before a global constant, so a hypothesis
+// or a projection of a local value that shares a hidden definition's name realizes nothing; counting those names made
+// the model report 1,787 sites where DumpLeaks found 33 leaking definitions (container build, 2026-10-28).
+test("a binder of the enclosing declaration, or a projection of one, is no rewrite site", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", "public section\n\ndef admitted : Bool := true\n\ndef completion : Nat := 0\n\nend"),
+    module("Pkg/Local.lean", [
+      "import all Pkg.Hub",
+      "",
+      "theorem bound (admitted : 1 = 1) : True := by simp [admitted]",
+      "theorem projected (pair : Nat × Nat) : True := by",
+      "  obtain ⟨completion, _⟩ := pair",
+      "  simp [pair.completion, completion]",
+      "theorem continued (pair : Nat × Nat × Nat) : True := by",
+      "  rcases pair with ⟨first, second,",
+      "    completion⟩",
+      "  rename_i other",
+      "    admitted",
+      "  simp [completion, admitted, congrArg completion rfl]",
+      "theorem real : admitted = true := by simp [admitted]",
+      "theorem called : True := by",
+      "  change (do let result ← admitted; pure result) = _",
+      "  simp [admitted]",
+    ].join("\n")),
+  ]);
+  // `let result ← admitted` binds `result`, so the second `simp [admitted]` is a site as well.
+  assert.deepEqual(rewrites.get("Pkg.Local"), ["Pkg.Hub.admitted", "Pkg.Hub.admitted"]);
+});
+
+// `grind [f]` and `unfold` of a recursive `f` realize equation lemmas as `simp [f]` does: such sites left 49 library
+// modules exporting a hidden body (DumpLeaks over the pinned container build, 2026-10-27).
+test("a grind argument and an unfold of a recursive hidden definition are rewrite sites", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const hub = "public section\n\ndef flat : Nat := 0\n\ndef count : List Nat → Nat\n  | [] => 0\n  | _ :: rest => count rest + 1\n\nend";
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", hub),
+    module("Pkg/Grind.lean", "import all Pkg.Hub\n\ntheorem t : flat = 0 := by grind [flat]"),
+    module("Pkg/Recursive.lean", "import all Pkg.Hub\n\ntheorem t : count [] = 0 := by unfold count; rfl"),
+    module("Pkg/Flat.lean", "import all Pkg.Hub\n\ntheorem t : flat = 0 := by unfold flat; rfl"),
+  ]);
+  assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0), [["Pkg.Grind", ["Pkg.Hub.flat"]], ["Pkg.Recursive", ["Pkg.Hub.count"]]]);
 });
 
 test("a hidden edit also reaches each `meta import` importer whose import closure holds the edited module", () => {
@@ -222,4 +273,279 @@ test("one added rewrite with a hidden definition fails the rewrite ratchet", () 
     : file);
   const findings = leanFanoutViolations(leanHiddenRewrites(sources), leanHiddenRewriteBounds, 0, [], "rewrite sites");
   assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay: ")), findings.join("\n"));
+});
+
+// The owner direction of the build modularity specification: ordinary edits never rebuild the library. Its first
+// closure bounded interface and hidden-edit fanouts but no body edit of an exposed module, so 988 exposed files made
+// every such edit an interface edit (Finding 83). The oracle is a container probe: a body edit to `NestedScopeData`
+// rebuilt exactly the 61 modules of its public cone one target loads, which this model predicts (2026-10-27).
+// A rewrite site is any bracketed argument list after a word, not a list of tactic names: a cold review recreated the
+// documented 82-module equation-lemma leak with `simp only` and its list on the next line, and with `rw_mod_cast`,
+// while every guard stayed green (2026-10-28). Counting a term-level list application too only over-approximates.
+test("every spelling of a rewrite argument list, and a local simp attribute, is a rewrite site", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const proofs = [
+    "by simp only\n    [hidden]",
+    "by rw_mod_cast [hidden]",
+    "by push_cast [hidden]",
+    "by simp [↓ hidden]",
+    "by simp [← hidden]",
+    "by grind [= hidden]",
+    "by simp [foo (bar [1, 2]), hidden]",
+    "by simp (config := {}) [hidden]",
+    "by nth_rewrite 2 [hidden]",
+  ];
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", "public section\n\ndef hidden : Nat := 0\n\nend"),
+    module("Pkg/Proofs.lean", ["import all Pkg.Hub", "",
+      ...proofs.map((proof, at) => `theorem t${at} : hidden = 0 := ${proof}`),
+      "attribute [local simp] hidden",
+      "theorem ascribed (n : Nat) : (hidden n : Nat) = 0 := by simp [hidden]",
+      "theorem inBinder (n : Nat) (h : (hidden n : Nat) = 0) : True := by simp [hidden] at h",
+      "theorem aliased : True := by simp [(hidden ·), @hidden]",
+      "def listed : List Nat := [hidden]"].join("\n")),
+  ]);
+  assert.equal(rewrites.get("Pkg.Proofs")!.length, proofs.length + 5);
+});
+
+test("a body edit rebuilds an exposed module's public cone but only a hidden module's `import all` loaders", () => {
+  const sources = [
+    { path: "Pkg/Exposed.lean", source: "module\n\n@[expose] public section\n\ndef value : Nat := 0\n\nend\n" },
+    { path: "Pkg/Hidden.lean", source: "module\n\npublic section\n\ndef value : Nat := 0\n\nend\n" },
+    { path: "Pkg/Shown.lean", source: "module\n\npublic section\n\n@[expose] def value : Nat := 0\n\nend\n" },
+    { path: "Pkg/Importer.lean", source: "module\n\npublic import Pkg.Exposed\npublic import Pkg.Hidden\npublic import Pkg.Shown\n" },
+    { path: "Pkg/Above.lean", source: "module\n\npublic import Pkg.Importer\n" },
+    { path: "Pkg/Opener.lean", source: "module\n\nimport all Pkg.Hidden\n" },
+  ];
+  const fanouts = leanBodyEditFanouts(sources);
+  assert.deepEqual(fanouts.get("Pkg.Exposed"), ["Pkg.Above", "Pkg.Importer"]);
+  assert.deepEqual(fanouts.get("Pkg.Hidden"), ["Pkg.Opener"]);
+  // A definition exposed on its own leaves the module's other bodies hidden and is named instead.
+  assert.deepEqual(fanouts.get("Pkg.Shown"), []);
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Shown"), ["value"]);
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Hidden"), []);
+});
+
+// The scanner follows Lean v4.34.1's own rules, so no spelling of an exposure escapes it: `sectionHeader` takes
+// `@[expose]? public? noncomputable? meta?` (Lean/Parser/Command.lean:308), every `section`, `namespace` and `mutual`
+// scope inherits its parent's attributes and `end Name` closes one scope per name component
+// (Lean/Elab/BuiltinCommand.lean:45-70), and a non-Prop `instance` is exposed by default
+// (Lean/Elab/MutualDef.lean:1349). A cold review found each of these spellings reported as hidden (2026-10-28).
+test("every spelling Lean exposes a body by is an exposure", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Noncomputable.lean", "@[expose] public noncomputable section\n\ndef value : Nat := 0\n\nend"),
+    module("Pkg/Meta.lean", "@[expose] public noncomputable meta section\n\ndef value : Nat := 0"),
+    module("Pkg/Nested.lean", "@[expose] public section\n\nsection Bodies\n\ndef value : Nat := 0"),
+    module("Pkg/Namespaced.lean", "@[expose] public section\n\nnamespace A.B\n\nend A.B\n\nnamespace C\n\ndef value : Nat := 0\n\nend C"),
+    module("Pkg/AfterMutual.lean", "@[expose] public section\n\nmutual\ndef even : Nat → Bool\n  | _ => true\nend\n\ndef value : Nat := 0"),
+    module("Pkg/Hidden.lean", "public section\n\nnamespace A\n\nend A\n\ndef value : Nat := 0\n\nend"),
+    module("Pkg/Importer.lean", [
+      "Noncomputable", "Meta", "Nested", "Namespaced", "AfterMutual", "Hidden"].map((name) => `public import Pkg.${name}`).join("\n")),
+    module("Pkg/Above.lean", "public import Pkg.Importer"),
+  ];
+  const fanouts = leanBodyEditFanouts(sources);
+  for (const name of ["Noncomputable", "Meta", "Nested", "Namespaced", "AfterMutual"]) {
+    assert.deepEqual(fanouts.get(`Pkg.${name}`), ["Pkg.Above", "Pkg.Importer"], name);
+  }
+  assert.deepEqual(fanouts.get("Pkg.Hidden"), []);
+});
+
+test("an `@[expose]` on its own line and a non-Prop instance expose one definition each", () => {
+  const sources = [{ path: "Pkg/Shown.lean", source: [
+    "module", "", "public section", "",
+    "/-- documented -/", "@[expose]", "def shown : Nat := 0", "",
+    "@[simp]", "def hidden : Nat := 0", "",
+    "instance instShown : Inhabited Nat := ⟨0⟩", "",
+    "instance : Repr Unit := ⟨fun _ _ => \"()\"⟩", "",
+    "private instance : Inhabited Unit := ⟨()⟩", "", "end", ""].join("\n") }];
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Shown"), ["instShown", "instance : Repr Unit", "shown"]);
+});
+
+// An indented command is still a command, and attributes and modifiers may span lines before their keyword; a cold
+// review hid exposures behind each (2026-10-28).
+test("indented commands and attributes or modifiers split across lines expose as Lean reads them", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Indented.lean", "@[expose] public section\n\n  section Inner\n  end Inner\n\ndef value : Nat := 0"),
+    module("Pkg/Split.lean", "public section\n\n@[simp,\n  expose]\ndef split : Nat := 0\n\n@[expose] public\ndef modifier : Nat := 0\n\n  @[expose] def indented : Nat := 0\n\nend"),
+    module("Pkg/Importer.lean", "public import Pkg.Indented"),
+  ];
+  assert.deepEqual(leanBodyEditFanouts(sources).get("Pkg.Indented"), ["Pkg.Importer"]);
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Split"), ["indented", "modifier", "split"]);
+});
+
+test("a section header Lean's grammar does not admit fails closed", () => {
+  assert.throws(() => leanBodyEditFanouts([{ path: "Pkg/Odd.lean", source: "module\n\npublic @[expose] section\n" }]),
+    /unrecognized section header/u);
+});
+
+// Bounds only shrink, and a module may keep an exposed body only through a recorded entry whose reason the bounds
+// file states; kernel type modules are exempt as for the interface ratchet.
+test("every module's body edit stays within its recorded body-edit bound", () => {
+  assert.deepEqual(leanFanoutViolations(leanBodyEditFanouts(librarySources()), leanBodyEditBounds,
+    leanBodyEditDefaultBound, leanFanoutKernel, "body-edit importers"), []);
+});
+
+// Anti-vacuity: re-exposing one hidden hub must fail in every spelling, as the original conversion's blanket exposure
+// would have.
+test("re-exposing a hidden hub's bodies fails the body-edit ratchet in every spelling", () => {
+  const path = "BpmnSemantics/SemanticProcess/FlowNodeOccurrenceLifecycle.lean";
+  for (const header of ["@[expose] public section", "@[expose] public noncomputable section",
+    "@[expose] public meta section", "@[expose] public section\n\nsection Bodies"]) {
+    const sources = librarySources().map((file) => file.path === path
+      ? { path, source: file.source.replace(/^public section$/mu, header) }
+      : file);
+    const findings = leanFanoutViolations(leanBodyEditFanouts(sources), leanBodyEditBounds, leanBodyEditDefaultBound,
+      leanFanoutKernel, "body-edit importers");
+    assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle: ")), header);
+  }
+});
+
+// Each individually exposed body in a module whose interface edit rebuilds more than the body-edit default is an
+// interface edit by necessity, so the allowance names it; a name no longer exposed must leave the allowance.
+test("every exposed definition of a wide module is named in the reviewed allowance", () => {
+  const sources = librarySources();
+  const interfaceFanouts = leanFanouts(sources);
+  const kernel = new Set(leanFanoutKernel);
+  const findings: string[] = [];
+  for (const [module, names] of leanExposedDefinitions(sources)) {
+    const allowed = new Set(leanExposedDefinitionAllowance[module]?.names ?? []);
+    if (!kernel.has(module) && (interfaceFanouts.get(module)?.length ?? 0) > leanBodyEditDefaultBound) {
+      for (const name of names) if (!allowed.has(name)) findings.push(`${module}.${name}: exposed without an allowance entry`);
+    }
+    for (const name of allowed) if (!names.includes(name)) findings.push(`${module}.${name}: allowed but no longer exposed, so its entry must go`);
+  }
+  for (const module of Object.keys(leanExposedDefinitionAllowance)) {
+    if (!interfaceFanouts.has(module)) findings.push(`${module}: allowance names no scanned module`);
+  }
+  assert.deepEqual(findings, []);
+});
+
+// A bound raised to fit the graph instead of root-causing the growth protects nothing: the hidden-edit bounds of an
+// uncommitted conversion were regenerated from a graph 10,830 `import all` lines heavier than needed before anyone asked
+// why (process ledger, Finding 84). A rise above a base commit therefore states its reason in the entry, which the review
+// packet shows the reviewer; the string itself proves nothing.
+test("a bound or allowance above a base commit's needs a stated reason", () => {
+  const previous = [{ module: "Pkg.Hub", bound: 40 }, { module: "Pkg.Wide", bound: 30 }];
+  const current = [
+    { module: "Pkg.Hub", bound: 40 },
+    { module: "Pkg.Wide", bound: 31 },
+    { module: "Pkg.New", bound: 12 },
+    { module: "Pkg.Explained", bound: 50, raised: "fixture reduces the body (probe 2026-10-28)", raisedFrom: 40 },
+    { module: "Pkg.Shrunk", bound: 9 },
+  ];
+  assert.deepEqual(unexplainedBoundRises(previous, current, 10), [
+    "Pkg.Wide: bound 31 exceeds the base's 30 without a stated reason and the bound it rose from",
+    "Pkg.New: bound 12 exceeds the base's 10 without a stated reason and the bound it rose from",
+  ]);
+  assert.deepEqual(unexplainedBoundRises([{ module: "Pkg.Hub", bound: 40 }], [{ module: "Pkg.Hub", bound: 41, raised: " " }], 10),
+    ["Pkg.Hub: bound 41 exceeds the base's 40 without a stated reason and the bound it rose from"], "a blank reason states nothing");
+  assert.deepEqual(unexplainedAllowanceRises({ "Pkg.Hub": { names: ["kept"] } }, {
+    "Pkg.Hub": { names: ["kept", "added"] },
+    "Pkg.New": { names: ["first"] },
+    "Pkg.Explained": { names: ["first"], raised: "a Decidable instance reduces it" },
+  }), [
+    "Pkg.Hub: allows added beyond the base without a stated reason",
+    "Pkg.New: allows first beyond the base without a stated reason",
+  ]);
+});
+
+// A stated reason records why a bound rose and, in `raisedFrom`, the bound it rose from. A regression's reason goes
+// once the bound falls back to `raisedFrom`; judging that against base commits instead erased every reason the moment
+// its branch merged, while the bounds stayed high (cold review, 2026-10-28).
+test("a stated reason needs the bound it rose from, and goes once the bound falls back to it", () => {
+  assert.deepEqual(unexplainedBoundRises([], [
+    { module: "Pkg.Unanchored", bound: 40, raised: "a reason without its starting bound" },
+    { module: "Pkg.Anchored", bound: 40, raised: "a reason", raisedFrom: 30 },
+  ], 10), ["Pkg.Unanchored: bound 40 exceeds the base's 10 without a stated reason and the bound it rose from"]);
+  assert.deepEqual(needlessRaises([
+    { module: "Pkg.Back", bound: 30, raised: "shrunk back by the conversion", raisedFrom: 30 },
+    { module: "Pkg.Still", bound: 31, raised: "still above", raisedFrom: 30 },
+    { module: "Pkg.Unanchored", bound: 31, raised: "no starting bound" },
+  ]), ["Pkg.Back", "Pkg.Unanchored"]);
+});
+
+// A debt record must not vanish while its bound stays high, nor start from an invented bound: either would hide a
+// regression the base still shows (cold review, 2026-10-28).
+test("a debt record stays until its bound falls back, and starts from the base's bound", () => {
+  const previous = [{ module: "Pkg.Debt", bound: 40, raised: "known regression", raisedFrom: 30 }, { module: "Pkg.Old", bound: 20 }];
+  assert.deepEqual(brokenDebtRecords(previous, [
+    { module: "Pkg.Debt", bound: 40 },
+    { module: "Pkg.Old", bound: 25, raised: "rose again", raisedFrom: 22 },
+  ], 10), [
+    "Pkg.Debt: drops the record of its rise from 30 while its bound stays at 40",
+    "Pkg.Old: records a rise from 22, but the base's bound is 20",
+  ]);
+  assert.deepEqual(brokenDebtRecords(previous, [
+    { module: "Pkg.Debt", bound: 30 },
+    { module: "Pkg.Old", bound: 25, raised: "rose again", raisedFrom: 20 },
+  ], 10), []);
+});
+
+/** The commits a rise is judged against: the last commit, and the merge base with `origin/main`, so the check still holds once the rise is committed. */
+function baseCommits(): string[] {
+  const mergeBase = execFileSync("git", ["merge-base", "HEAD", "origin/main"], { encoding: "utf8" }).trim();
+  return [...new Set(["HEAD", mergeBase])];
+}
+
+async function committedBounds(commit: string) {
+  const committed = execFileSync("git", ["show", `${commit}:scripts/lean-fanout-bounds.ts`], { encoding: "utf8" });
+  const file = path.join(mkdtempSync(path.join(tmpdir(), "lean-fanout-bounds-")), "lean-fanout-bounds.ts");
+  writeFileSync(file, committed);
+  return import(pathToFileURL(file).href);
+}
+
+test("no recorded bound, allowance or kernel entry rises above a base commit's without a stated reason", async () => {
+  for (const commit of baseCommits()) {
+    const previous = await committedBounds(commit);
+    const findings = [
+      ...unexplainedBoundRises(previous.leanFanoutBounds, leanFanoutBounds, previous.leanFanoutDefaultBound),
+      ...unexplainedBoundRises(previous.leanHiddenEditBounds, leanHiddenEditBounds, previous.leanHiddenEditDefaultBound),
+      ...unexplainedBoundRises(previous.leanHiddenRewriteBounds, leanHiddenRewriteBounds, 0),
+      ...brokenDebtRecords(previous.leanFanoutBounds, leanFanoutBounds, previous.leanFanoutDefaultBound),
+      ...brokenDebtRecords(previous.leanHiddenEditBounds, leanHiddenEditBounds, previous.leanHiddenEditDefaultBound),
+      ...brokenDebtRecords(previous.leanHiddenRewriteBounds, leanHiddenRewriteBounds, 0),
+      // A ratchet's first recording is its baseline, so a ratchet the base lacks has nothing to rise above.
+      ...(previous.leanBodyEditBounds === undefined ? []
+        : unexplainedBoundRises(previous.leanBodyEditBounds, leanBodyEditBounds, previous.leanBodyEditDefaultBound)),
+      ...(previous.leanExposedDefinitionAllowance === undefined ? []
+        : unexplainedAllowanceRises(previous.leanExposedDefinitionAllowance, leanExposedDefinitionAllowance)),
+      ...leanFanoutKernel.filter((module) => !previous.leanFanoutKernel.includes(module))
+        .map((module) => `${module}: joins the kernel, which exempts it from every bound; only an owner decision adds one`),
+    ];
+    for (const [name, before, after] of [
+      ["leanFanoutDefaultBound", previous.leanFanoutDefaultBound, leanFanoutDefaultBound],
+      ["leanHiddenEditDefaultBound", previous.leanHiddenEditDefaultBound, leanHiddenEditDefaultBound],
+      ["leanBodyEditDefaultBound", previous.leanBodyEditDefaultBound ?? leanBodyEditDefaultBound, leanBodyEditDefaultBound],
+      ["leanOpeningImportBound", previous.leanOpeningImportBound ?? leanOpeningImportBound, leanOpeningImportBound],
+    ] as const) {
+      if (after > before) findings.push(`${name}: ${after} exceeds the base's ${before}; a default or total rises only by owner decision`);
+    }
+    assert.deepEqual(findings, [], commit);
+  }
+});
+
+test("no stated reason outlives the rise it explains", () => {
+  const findings = [leanFanoutBounds, leanHiddenEditBounds, leanHiddenRewriteBounds, leanBodyEditBounds]
+    .flatMap((bounds) => needlessRaises(bounds)).map((module) => `${module}: its stated reason outlives the rise, so it must go`);
+  assert.deepEqual(findings, []);
+});
+
+// `import all` and `meta import` open a module's hidden part, so every such line widens what a body edit of the opened
+// module rebuilds. The library held 13,002 `import all` lines on 2026-10-28 where its builds needed far fewer, because a
+// repair added the whole import closure and its trimming step was never run; the total may only shrink, without stale
+// headroom.
+test("the library's opening imports stay within their recorded total, without stale headroom", () => {
+  const count = leanOpeningImportLines(librarySources());
+  assert.ok(count <= leanOpeningImportBound, `${count} opening imports exceed the recorded ${leanOpeningImportBound}`);
+  assert.ok(leanOpeningImportBound - count <= 50,
+    `the recorded ${leanOpeningImportBound} leaves more than 50 lines of headroom over ${count}; lower it`);
+});
+
+test("an `import all` or `meta import` line counts once per importing module, and a plain or public import not at all", () => {
+  assert.equal(leanOpeningImportLines([
+    { path: "Pkg/A.lean", source: "module\n\nimport all Pkg.B\npublic import Pkg.C\nimport Pkg.D\nmeta import Pkg.F\n" },
+    { path: "Pkg/E.lean", source: "module\n\nimport all Pkg.B\nimport all Pkg.C\n" },
+  ]), 4);
 });

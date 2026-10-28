@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md#problem) promise (owner direction, 2026-10-27). 988 of 1,022 Lean files open `@[expose] public section`, so a definition-body edit rebuilds the whole public import cone; the concurrent scope data Lean increment `99cb3861` invalidated 782 of about 865 modules. The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after its TypeScript prepared entry `2d8db0e7`.
+Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 (Lean merge-target hooks, prepared declared entry, arming read atoms) and CSD-4 (models, scenarios, registration, capacity test, documentation, closure review) remain. Pull request #38 is the owner's to land.
 
-Deliverable: bodies hidden by default in every family, with a body-edit fanout ratchet, re-checked by container rebuild probes.
+Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: none recorded.
+Acceptance blockers: the eight bounds whose `raised` names this conversion must fall to their `raisedFrom`; they are kept instead of reverting `99cb3861` under the session's delegated authority, pending explicit owner confirmation.
 
-Current result: a body edit to `NestedScopeData` rebuilt exactly the 61 modules of its public cone that one target loads, as the body-edit model predicts; 280 library modules exceed 10 body-edit importers, 226 exceed 100.
+Current result: the first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)). At `7bedde10`, 275 modules exceed 10 body-edit importers, the widest at 944.
 
-Effort budget: 80 hours of working time; the owner lifted the cap for this outcome on 2026-10-27, so reaching it records progress and continues.
+Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: hide every hub body, restore reduction through `import all` where a build needs it, then remeasure.
+Next action: commit the guards, then convert one hub at a time, each a declared and reviewed step under [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) with `import all` minimized from the start.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 

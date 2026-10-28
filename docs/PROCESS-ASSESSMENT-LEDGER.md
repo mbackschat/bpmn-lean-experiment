@@ -30,6 +30,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 13. **Outward action.** Before anything was published under the owner's identity — an issue, comment, pull request, push or post — did the owner see its exact text, and did their approval name that act rather than a direction?
 14. **Gate cadence.** Which complete gate did I start, and was the batch it qualifies already final, or did I use it to discover consumers that a focused dependent build would have found? Which edit, including a comment-only one, invalidates a widely imported module and therefore the whole downstream build? Which known failure blocks downstream modules from being checked, and is its approved fix applied before the gate? Did I enumerate a failure class statically before rebuilding to find its next instance? When I selected focused tests for a changed exported contract, did an import census of that export choose them, or did I pick the consumers I remembered?
 15. **Failure attribution.** For each gate failure I attributed to a known class such as host load, did I read the failing run's own log for the signature of every open entry in the [Temporal defects ledger](TEMPORAL-DEFECTS-LEDGER.md), and which line separates my attribution from that defect?
+16. **Proxy calibration.** Which count did I act on that a model computed rather than measured, and when did I last compare that model with ground truth on the current tree?
 
 ## Escalation rule
 
@@ -50,10 +51,10 @@ Dispositions are a closed set:
 |---|---|---|
 | Plan scope, bounds and required consumers | [01](#finding-01), [05](#finding-05), [07](#finding-07), [16](#finding-16), [17](#finding-17), [26](#finding-26), [27](#finding-27), [52](#finding-52), [58](#finding-58), [77](#finding-77) | [01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01), [17](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-17), [58](process-assessment/VERIFICATION-LEDGER.md#finding-58) |
 | Establish claims and independent semantic evidence | [02](#finding-02), [11](#finding-11), [12](#finding-12), [41](#finding-41), [42](#finding-42), [43](#finding-43), [44](#finding-44), [46](#finding-46), [47](#finding-47), [48](#finding-48), [51](#finding-51), [54](#finding-54), [62](#finding-62) | [02](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-02), [12](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-12), [46](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-46), [47](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-47), [54](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-54) |
-| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78), [82](#finding-82) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
+| Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78), [82](#finding-82), [85](#finding-85) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
 | Maintain owned facts and complete correction sweeps | [06](#finding-06), [10](#finding-10), [14](#finding-14), [15](#finding-15), [37](#finding-37), [45](#finding-45), [55](#finding-55), [59](#finding-59) | [06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06), [14](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-14), [15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15), [45](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-45) |
-| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
+| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80), [83](#finding-83), [84](#finding-84) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
 | Preserve identity, wire values and canonical order | [23](#finding-23), [35](#finding-35), [36](#finding-36), [50](#finding-50), [71](#finding-71) | [50](process-assessment/VERIFICATION-LEDGER.md#finding-50) |
 | Design and verify user journeys | [28](#finding-28), [29](#finding-29), [69](#finding-69), [70](#finding-70) | In the current records |
 | Bound helper processes and outward actions | [56](#finding-56), [73](#finding-73), [74](#finding-74), [81](#finding-81) | In the current records |
@@ -1575,6 +1576,57 @@ Evidence
 **First observed:** `PC-SCOPE-02` semantic checkpoint review on 2026-10-21.
 
 The full Lean library was red at the `890b010f` placeholder, so the checkpoint built only the closures of its own conformance modules while it edited shared owners: the frontier, occurrence application, replay, the relation and the lifecycle record. The reviewer found the gap; the corrections' full builds then exposed 24 consumer modules in other profiles that needed repair, and a latent umbrella import collision from the placeholder commit itself. Lake keeps building independent targets past a failed module, so the gate could have been run and its failing set compared with the known one. Review question: when a complete gate is known red, was it still run after shared-owner edits, and does its failing-module set equal the known baseline?
+
+### Finding 83
+
+A specification whose acceptance was weaker than the owner direction was implemented, measured and approved against its own acceptance, so the direction failed while every gate passed.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [body-edit fanout ratchet](../scripts/lean-fanout.test.ts), [guard relaxations in the review packet](../scripts/semantic-review-packet.ts), [goal-fidelity review prompt](REVIEW-POLICY.md#review-prompt)
+
+**First observed:** the concurrent scope data Lean increment `99cb3861` on 2026-10-27, after the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md) closure of 2026-10-26.
+
+The owner directed that ordinary work never need a complete Lean rebuild. The whole-library conversion `ce2c3715` exposed every body, and only 12 hubs were hidden afterwards; the specification admitted a body "kept exposed" and the modules that load it, the stopping measure was a replay median over past commits, and the closure review approved the admission itself. No guard measured what a body edit costs in an exposed module, and failing hidden-edit bounds were raised rather than root-caused. The next family's body edits then invalidated 782 of about 865 modules. The controls: a body-edit fanout ratchet computes the rebuild set of every module's body edit; the review packet lists each changed guard-bound line as a relaxation; and the review prompt requires the reviewer to judge the acceptance against the quoted owner direction, measure every exception clause's worst case with a self-chosen probe, and reject medians and single instances as evidence for universal claims.
+
+### Finding 84
+
+A bulk repair script ran without a declared target effect or an independent check, and a green build was taken as its success, so it reversed the outcome it served.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [`import all` total ratchet and bound-rise reasons](../scripts/lean-fanout.test.ts), [minimizer declaration](../scripts/lean-import-all-minimize.ts), [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change)
+
+**First observed:** the uncommitted build modularity conversion of 2026-10-27 and 2026-10-28, reverted to `7bedde10` before any commit.
+
+Hiding hub bodies broke proofs in their importers. A repair script answered each break with `import all` for the module's whole import closure and left trimming to a comment; a second script redirected imports without checking their use and dropped 1,177, whose repair added more. `import all` lines grew from 2,172 to 13,002 and import lines from 8,018 to 45,122, with 331 new files, 28 files above the size ceiling and 49,880 more Lean lines, while every build was green. Each `import all` reopens a body the conversion hid, so the scripts undid the outcome. Nothing measured the contract metric or the net size against `HEAD`, no review sits between a family's proposal and closure, and no check was delegated. The controls: the fan-out test ratchets the library's `import all` total and rejects any bound above the last commit's without a stated reason, and Rule 2 requires every bulk script to declare its intention, scope and target effect, an approving review before it runs and an independent check after.
+
+### Finding 85
+
+A static model's counts drove containment work before the model was calibrated against measured ground truth, so the work targeted 1,787 sites where 33 leaks existed.
+
+Instances
+: 1
+
+Disposition
+: `review question`
+
+Evidence
+: [self-assessment question 16](#self-assessment-questions)
+
+**First observed:** the equation-lemma containment of the build modularity conversion on 2026-10-27.
+
+The rewrite-site model matched names textually, so a proof's local binder that shadowed a hidden definition counted as a rewrite with it. Containment treated every reported site as a leak and added equations modules and `try unfold` scaffolding before the model was compared with the leak dump of the exported `.olean` files. Calibrated, the binder-aware model reports 225 sites covering every dumped leak, and [a test](../scripts/lean-fanout.test.ts) locks the binder class.
 
 ## Update rule
 

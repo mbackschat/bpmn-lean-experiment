@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: implemented
-Review: closure-approved
+Review: closure-approved for the 2026-10-26 contract; the 2026-10-28 changes to contract item 6, the acceptance and the current boundary passed the same reviewer's correction audit on 2026-10-28
 
 ## Problem
 
@@ -42,7 +42,7 @@ Required:
    - If an ordinary increment's global fixtures exceed 15 minutes of serial build, the owner decides between two remedies:
      - registry-instantiated whole-model fixtures, which reduce a closed-world function instantiated with only the families the model uses, and need a generic lemma stating agreement with the full registry;
      - more executable guards.
-6. **Fanout ratchet.** [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) bounds two static fanouts per module, with the model in [`lean-fanout.ts`](../scripts/lean-fanout.ts) and the bounds in [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts). Both are upper bounds.
+6. **Fanout ratchet.** [`lean-fanout.test.ts`](../scripts/lean-fanout.test.ts) bounds three static fanouts per module and the library's opening imports, with the model in [`lean-fanout.ts`](../scripts/lean-fanout.ts) and the bounds in [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts). Both are upper bounds.
    - **Interface fanout.** This counts the importers an interface edit rebuilds. It follows `public import` and cuts at a private import, except that `import all` loads the private imports of what it opens and `meta import` loads its whole import closure.
      - It counts only importers the semantic root builds.
      - The default bound is 100.
@@ -51,7 +51,12 @@ Required:
    - **Hidden-edit fanout.** This counts the importers an edit to a proof, a private declaration or a hidden body rebuilds: `import all` chains, `meta import` closures and plain files.
      - It includes everything that loads an `import all` importer which rewrites with one of the module's hidden definitions.
      - The default bound is 10, and every wider module is recorded at its count.
-   - **Bounds.** Bounds only shrink. An entry whose module falls to the default must go, and raising a bound or adding an entry is a reviewed edit, like the source-hygiene exceptions. The ratchet measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
+   - **Body-edit fanout.** This counts the importers an edit to a definition body rebuilds: the interface fanout for a module with an exposed scope, otherwise the hidden-edit fanout. The scan follows Lean's own scope rules, so every section-header spelling, nested and namespace scope, attribute line and non-Prop `instance` counts as the exposure it is, and a section header outside Lean's grammar fails closed.
+     - The default bound is 10, and every wider module is recorded at its count plus the interface fanout's headroom.
+     - A definition a wide module exposes on its own, `@[expose]`, an `abbrev` or an `instance`, is named in the exposed-definition allowance.
+   - **Opening imports.** The library's `import all` and `meta import` lines are bounded in total, with at most 50 lines of headroom, and [`lean-import-all-minimize.ts`](../scripts/lean-import-all-minimize.ts) drops each one, and each plain import it would leave, that a module compiles without.
+   - **Rewrite sites.** A rewrite site is any element of a bracketed argument list after a word or a closing parenthesis, whatever the tactic, including a `(f ·)` alias, a local `simp` attribute, a named equation or functional-induction lemma, or an `unfold` of a recursive definition, unless a binder of the enclosing declaration shadows the name.
+   - **Bounds.** Bounds only shrink. An entry whose module falls to the default must go. A bound or allowance entry above that of the last commit or of the merge base with `origin/main` records in `raised` why, and in `raisedFrom` the bound it rose from: either genuine interface growth a review accepted, or a known regression with the change that removes it, whose reason goes once the bound falls back to `raisedFrom`. `raised` never answers growth that a firing guard or a Rule 2 check reports; such growth is reverted and root-caused first, and keeping it needs an owner exception. The [review packet](../scripts/semantic-review-packet.ts) shows the reviewer each reason together with every change to the model, its test and the import parser. A kernel addition, a default or a total rises only by owner decision. The ratchet measures graph shape, not commits, so the once-per-family kernel change needs no exemption.
 7. **Executable guards for standalone checks** (owner decision, 2026-10-24).
    - **What moves.** A standalone finite check runs as a compiled executable guard over retained data, through [`ConformanceChecksMain`](../BpmnSemantics/ConformanceChecksMain.lean) and the [native-driver helper](../scripts/lean-native-driver.ts). Its evidence names the guard, never a kernel decision, and its JSON decoders join the trusted base.
    - **What stays kernel-decided.** A check stays kernel-decided when any proof or tool names it, when a `Lane shape: proved` document links or names it or its module, or when its module's executable closure reaches a proofs-only module (the [import-boundary guard](../scripts/lean-import-boundaries.test.ts)).
@@ -129,12 +134,14 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
 ## Acceptance
 
 - The fanout ratchet is green.
-- An increment that adds no kernel type invalidates only its family's modules, the registry, the closed-world functions it extends with their bridges, the proved-lane theorems over them and, for a body kept exposed, every module that loads it (item 3), and the global fixtures.
+- An increment that adds no kernel type invalidates only its family's modules, the registry, the closed-world functions it extends with their bridges, the proved-lane theorems over them and the global fixtures. A body edit rebuilds only the modules that load the body: the `import all` importers and the fixtures that reduce it, plus, for a definition named in the exposed-definition allowance, its public cone.
 - An increment that adds kernel types costs one complete rebuild, at family start.
 - The serial build time of the global fixtures an ordinary increment rebuilds is measured at the first converted family. If it exceeds 15 minutes, the owner decides between registry-instantiated whole-model fixtures (required item 5) and the optional executable guards.
 - No lane shape, claim or gate is weaker, and the guards are migrated before the first conversion.
 
 ## Current boundary
+
+**Hidden-by-default bodies are not delivered.** At `7bedde10` (2026-10-28), 988 of the 1,024 library files open an `@[expose] public section`, so most body edits still rebuild a whole public cone: 275 modules exceed the body-edit default, the widest at 944 importers. The body-edit ratchet records that graph and only shrinks; [PLAN](PLAN.md#exact-resume-point) owns the conversion. An uncommitted first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
 
 The first family-shaped increment was [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured in the pinned container on one CPU, 2026-10-26.
 

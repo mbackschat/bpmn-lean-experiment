@@ -81,15 +81,20 @@ export type ReviewPacketGate = Readonly<{
 export type ReviewPacketGuardRelaxation = Readonly<{ path: string; added: ReadonlyArray<string>; removed: ReadonlyArray<string> }>;
 
 /**
- * The files that own guard bounds, exceptions and budgets. A change to one can relax a gate without failing it, so the
- * review prompt requires each listed line to be root-caused (Finding 83 of the process ledger).
+ * The files that own guard bounds, exceptions and budgets, and the fan-out model, its test and the import parser they
+ * rely on, which count against those bounds: a model change that lowers a count relaxes the gate as surely as a raised bound (a name-based exemption once
+ * did, cold review of 2026-10-28). A change to one can relax a gate without failing it, so the review prompt requires
+ * each listed line to be root-caused (Finding 83 of the process ledger).
  */
 export const guardBoundOwners: ReadonlyArray<string> = [
   "lakefile.toml",
   "package.json",
   "scripts/cibseven-maven-budget.ts",
   "scripts/lean-fanout-bounds.ts",
+  "scripts/lean-fanout.test.ts",
+  "scripts/lean-fanout.ts",
   "scripts/lean-module-cost.ts",
+  "scripts/lean-source-analysis.ts",
   "scripts/pipeline-budget.ts",
   "scripts/source-hygiene-policy.ts",
 ];
