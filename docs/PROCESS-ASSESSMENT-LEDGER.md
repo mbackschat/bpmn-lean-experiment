@@ -31,6 +31,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 14. **Gate cadence.** Which complete gate did I start, and was the batch it qualifies already final, or did I use it to discover consumers that a focused dependent build would have found? Which edit, including a comment-only one, invalidates a widely imported module and therefore the whole downstream build? Which known failure blocks downstream modules from being checked, and is its approved fix applied before the gate? Did I enumerate a failure class statically before rebuilding to find its next instance? When I selected focused tests for a changed exported contract, did an import census of that export choose them, or did I pick the consumers I remembered?
 15. **Failure attribution.** For each gate failure I attributed to a known class such as host load, did I read the failing run's own log for the signature of every open entry in the [Temporal defects ledger](TEMPORAL-DEFECTS-LEDGER.md), and which line separates my attribution from that defect?
 16. **Proxy calibration.** Which count did I act on that a model computed rather than measured, and when did I last compare that model with ground truth on the current tree?
+17. **Script premises.** Which behaviour of the compiler or build tool does each bulk script's rule assume, and which source line or ground-truth probe established it before the script ran? For a rule that answers an error, does the error name the cause, or only where the tool stopped?
 
 ## Escalation rule
 
@@ -54,7 +55,7 @@ Dispositions are a closed set:
 | Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78), [82](#finding-82), [85](#finding-85) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
 | Maintain owned facts and complete correction sweeps | [06](#finding-06), [10](#finding-10), [14](#finding-14), [15](#finding-15), [37](#finding-37), [45](#finding-45), [55](#finding-55), [59](#finding-59) | [06](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-06), [14](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-14), [15](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-15), [45](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-45) |
-| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80), [83](#finding-83), [84](#finding-84) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
+| Delegate, review and commit complete outcomes | [04](#finding-04), [20](#finding-20), [30](#finding-30), [49](#finding-49), [53](#finding-53), [61](#finding-61), [63](#finding-63), [64](#finding-64), [65](#finding-65), [79](#finding-79), [80](#finding-80), [83](#finding-83), [84](#finding-84), [86](#finding-86) | [04](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-04), [20](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-20), [30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30), [63](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-63) |
 | Preserve identity, wire values and canonical order | [23](#finding-23), [35](#finding-35), [36](#finding-36), [50](#finding-50), [71](#finding-71) | [50](process-assessment/VERIFICATION-LEDGER.md#finding-50) |
 | Design and verify user journeys | [28](#finding-28), [29](#finding-29), [69](#finding-69), [70](#finding-70) | In the current records |
 | Bound helper processes and outward actions | [56](#finding-56), [73](#finding-73), [74](#finding-74), [81](#finding-81) | In the current records |
@@ -1627,6 +1628,23 @@ Evidence
 **First observed:** the equation-lemma containment of the build modularity conversion on 2026-10-27.
 
 The rewrite-site model matched names textually, so a proof's local binder that shadowed a hidden definition counted as a rewrite with it. Containment treated every reported site as a leak and added equations modules and `try unfold` scaffolding before the model was compared with the leak dump of the exported `.olean` files. Calibrated, the binder-aware model reports 225 sites covering every dumped leak, and [a test](../scripts/lean-fanout.test.ts) locks the binder class.
+
+### Finding 86
+
+A declared and reviewed bulk script rested on an unverified premise about Lean's behaviour, so its result was wrong while it stayed inside its declaration.
+
+Instances
+: 2
+
+Disposition
+: `unguardable`
+
+Evidence
+: [self-assessment question 17](#self-assessment-questions), [minimizer chain tests](../scripts/lean-import-all-minimize.test.ts)
+
+**First observed:** the `import all` minimizer of the build modularity conversion on 2026-10-28.
+
+The minimizer assumed a module's imports change only its own private scope, but `import all` opens transitively along chains and a plain file opens its whole closure (Lean v4.34.1 `Environment.lean:2125-2182`, `Elab/Import.lean:150-156`), so its trim broke importers it never compiled; tests now lock chains, drivers and build scope. The step B repair driver then assumed a stuck `decide` means a decision that does not reduce inside a module, and made 125 fixtures plain, although Lean names only the outermost stuck definition and an `import all` of the hidden callee below it repairs the decision; one plain fixture then exceeded the `-M2048` ceiling, and a round that could not change a plain file repeated for nine rounds. Both results were reverted in full. Each script did what its declaration said, so a declaration check cannot see the class, and the driver is a one-off that Rule 3 keeps out of the repository; question 17 stands in for the guard.
 
 ## Update rule
 
