@@ -23,8 +23,11 @@
  * lines, the second over the plain imports the first leaves.
  *
  * The tree must compile before the run, except the modules `--failing` names and the modules importing them: those
- * keep their environment through inherited lines and are neither compiled nor built. A compile failure of any other
- * start, a compile that ends in anything but success or an elaboration error, or a failed level build stops the run.
+ * keep their environment through inherited lines and are neither compiled nor built. The run builds every other module
+ * it covers first and stops when that fails, before any search; a level search that ran for hours on a module the
+ * round builds never compiled ended only when it reached that module (scratch conversion, 2026-10-28). A compile
+ * failure of any other start, a compile that ends in anything but success or an elaboration error, or a failed level
+ * build stops the run as well.
  *
  * Variants are written in place, with the originals saved under `.lake/import-all-minimize/originals`, which a run
  * refuses to start over; one `./scripts/lake.sh env` worker per level compiles them, at most `--parallel` at a time,
@@ -362,6 +365,10 @@ export async function minimizeImportAlls(root: string, sources: ReadonlyArray<st
   const searched = new Set<string>();
   let jobs = 0;
   try {
+    const ready = levels.flat().filter((module) => !blocked.has(module));
+    if (ready.length > 0 && await host.build(ready) !== 0) {
+      throw new Error("the run's modules must build before the run: name those that do not with --failing");
+    }
     for (const [index, level] of levels.entries()) {
       const after = new Map(current);
       rmSync(path.join(directory, "stop"), { force: true });

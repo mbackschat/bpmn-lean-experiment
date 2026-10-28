@@ -296,9 +296,15 @@ test("a compile that neither succeeds nor reports an elaboration error stops and
     new Map([["A", {}], ["X", {}]]), /status 137/u, new Map([["A", "137"]]));
 });
 
-test("a module that does not compile from its start stops and restores the run", async () => {
-  await assertRestoredFailure({ A: ["module", "import all X"], X: ["module"] }, ["A.lean"],
-    new Map([["A", { bodies: ["Never"] }], ["X", {}]]), /does not compile from its start/u);
+test("a module that does not build before the run stops it before any search", async () => {
+  const texts = { A: ["module", "import all X"], X: ["module"] };
+  const root = fakeTree(texts);
+  const { host } = fakeBuild(root, new Map([["A", { bodies: ["Never"] }], ["X", {}]]));
+  const searched = { ...host, startWorker: () => assert.fail("the search started") };
+  await assert.rejects(minimizeImportAlls(root, files(texts), ["A.lean"], searched, 2, { libraries: ["A", "X"], executables: [] }),
+    /must build before the run/u);
+  assert.deepEqual(snapshot(root, files(texts)), [["module", "import all X", "", "def x := 1"].join("\n"), ["module", "", "def x := 1"].join("\n")]);
+  assert.ok(!existsSync(path.join(root, ".minimize", "originals")));
 });
 
 test("a run refuses `import all` lines it cannot edit and the originals of an interrupted run", async () => {
