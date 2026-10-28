@@ -56,7 +56,7 @@ const typeScriptSites: ReadonlyArray<Site> = [
   ["internal-transition-local-control-preparation.ts", "deriveInternalSynchronizePreparation", "commonTokenOwner", "placeOwner"],
   ["internal-transition-parallel-multi-instance-preparation.ts", "deriveInternalParallelMultiInstancePreparation", "onlyTokenOwner", "outsideAlphabet"],
   ["internal-transition-regional-preparation.ts", "selectRegionalTransition", "onlyTokenOwner", "placeOwner"],
-  ["internal-transition-scope-creation-preparation.ts", "deriveInternalEnterScopePreparation", "onlyTokenOwner", "placeOwner"],
+  ["internal-transition-scope-creation-preparation.ts", "deriveInternalEnterScopeControl", "onlyTokenOwner", "placeOwner"],
   ["internal-transition-scope-creation-preparation.ts", "deriveInternalInvokeProcessPreparation", "onlyTokenOwner", "placeOwner"],
   ["internal-transition-sequential-multi-instance-preparation.ts", "deriveInternalSequentialMultiInstancePreparation", "onlyTokenOwner", "outsideAlphabet"],
   ["interrupting-message-event-subprocess-runtime.ts", "armEventSubProcessMessageSubscriptions", byDefinitionScope, "outsideAlphabet"],
