@@ -362,6 +362,18 @@ test("an `@[expose]` on its own line and a non-Prop instance expose one definiti
   assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Shown"), ["instShown", "instance : Repr Unit", "shown"]);
 });
 
+// An anonymous instance is named by its class alone, so the allowance can list it: a name taken from the header's first
+// line kept binder text, or nothing when the class followed on a later line (2026-10-29).
+test("an anonymous instance is named by its class, without binders, across header lines", () => {
+  const sources = [{ path: "Pkg/Shown.lean", source: [
+    "module", "", "public section", "",
+    "instance (n : Nat) [Inhabited Unit] {α : Type} (h : (n, n) = (n, n)) : Repr (Fin n) := ⟨fun _ _ => \"\"⟩", "",
+    "instance (priority := low) (n : Nat) :", "    Decidable (n = n)", "    := isTrue rfl", "",
+    "instance (n : Nat) : Inhabited", "    (Fin (n + 1)) where", "  default := 0", "", "end", ""].join("\n") }];
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Shown"),
+    ["instance : Decidable (n = n)", "instance : Inhabited (Fin (n + 1))", "instance : Repr (Fin n)"]);
+});
+
 // An indented command is still a command, and attributes and modifiers may span lines before their keyword; a cold
 // review hid exposures behind each (2026-10-28).
 test("indented commands and attributes or modifiers split across lines expose as Lean reads them", () => {

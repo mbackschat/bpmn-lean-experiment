@@ -376,7 +376,8 @@ function declarations(source: string): Declaration[] {
   const found: Declaration[] = [];
   // Attributes and modifiers that precede their keyword on earlier lines, joined until the declaration or section.
   let pending = "";
-  for (const [index, raw] of source.split("\n").entries()) {
+  const lines = source.split("\n");
+  for (const [index, raw] of lines.entries()) {
     if (raw.trim() === "") continue;
     const line = pending === "" ? raw.trim() : `${pending} ${raw.trim()}`;
     if (openAttribute(line) || declarationPrefix.test(line)) {
@@ -395,7 +396,7 @@ function declarations(source: string): Declaration[] {
     const declaration = declarationLine.exec(line);
     if (declaration !== null) {
       const [, attributes = "", modifiers, keyword, rest] = declaration;
-      found.push({ line: index, keyword: keyword!, name: declarationName(keyword!, rest!), attributes,
+      found.push({ line: index, keyword: keyword!, name: declarationName(keyword!, declarationHeader(rest!, lines.slice(index + 1))), attributes,
         isPrivate: /\bprivate\b/u.test(modifiers!), inExposedScope: exposed.at(-1)! });
     }
   }
@@ -427,10 +428,44 @@ function withoutComments(source: string): string {
 }
 
 /** A definition's short name; an anonymous instance is named by its class, as `instance : Repr Unit`. */
-function declarationName(keyword: string, rest: string): string {
-  const named = /^([^\s:(\[{]+)/u.exec(rest)?.[1];
+/**
+ * A declaration's short name, or for an anonymous instance `instance : <class>`: Lean's generated name cannot be
+ * derived here, so the class, without the binders before it, stands in. `header` is the text after the keyword, joined
+ * across lines up to the body.
+ */
+function declarationName(keyword: string, header: string): string {
+  const named = /^([^\s:(\[{⦃]+)/u.exec(header)?.[1];
   if (named !== undefined) return keyword === "instance" ? named : named.split(".").at(-1)!;
-  return `instance : ${rest.replace(/^(?:\([^)]*\)\s*)?:\s*/u, "").replace(/\s*(?::=|where)[\s\S]*$/u, "").trim()}`;
+  const type = withoutLeadingBinders(header).replace(/^:\s*/u, "").replace(/\s*(?::=|\bwhere\b)[\s\S]*$/u, "");
+  return `instance : ${type.replace(/\s+/gu, " ").trim()}`;
+}
+
+const binderClosers: Readonly<Record<string, string>> = { "(": ")", "[": "]", "{": "}", "⦃": "⦄" };
+
+/** `text` after its leading bracketed binder groups, each skipped with its nested brackets. */
+function withoutLeadingBinders(text: string): string {
+  let at = 0;
+  for (;;) {
+    while (/\s/u.test(text[at] ?? "")) at += 1;
+    if (binderClosers[text[at] ?? ""] === undefined) return text.slice(at);
+    let depth = 0;
+    do {
+      if (binderClosers[text[at]!] !== undefined) depth += 1;
+      else if (Object.values(binderClosers).includes(text[at]!)) depth -= 1;
+      at += 1;
+    } while (depth > 0 && at < text.length);
+  }
+}
+
+/** The declaration header from `rest` on, joined with the following lines until the body starts (`:=`, `where`, `|`). */
+function declarationHeader(rest: string, following: ReadonlyArray<string>): string {
+  const ended = (text: string) => /:=|\bwhere\b/u.test(withoutLeadingBinders(text));
+  let header = rest;
+  for (const line of following) {
+    if (ended(header) || /^\s*\|/u.test(line)) break;
+    header = `${header} ${line.trim()}`;
+  }
+  return header;
 }
 
 /**
