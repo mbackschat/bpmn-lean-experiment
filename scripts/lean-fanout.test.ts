@@ -8,12 +8,12 @@ import { pathToFileURL } from "node:url";
 
 import {
   leanBodyEditBounds, leanBodyEditDefaultBound, leanExposedDefinitionAllowance, leanFanoutBounds, leanFanoutDefaultBound, leanFanoutKernel,
-  leanHiddenEditBounds, leanHiddenEditDefaultBound, leanHiddenRewriteBounds, leanOpeningImportBound,
+  leanHiddenEditBounds, leanHiddenEditDefaultBound, leanHiddenRewriteBounds, leanOpeningImportBound, leanOwnerDecidedRises,
 } from "./lean-fanout-bounds.ts";
 import {
   leanBodyEditFanouts, leanExposedDefinitions, leanFanouts, leanFanoutViolations, leanHiddenEditFanouts,
-  leanHiddenRewrites, leanLibraryModules, leanOpeningImportLines, brokenDebtRecords, needlessRaises, unexplainedAllowanceRises, unexplainedBoundRises,
-  type LeanFanoutBound,
+  leanHiddenRewrites, leanLibraryModules, leanOpeningImportLines, brokenDebtRecords, needlessRaises, settledOwnerDecisions,
+  unexplainedAllowanceRises, unexplainedBoundRises, undecidedSettingRises, type LeanFanoutBound,
 } from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
@@ -483,6 +483,45 @@ test("a debt record stays until its bound falls back, and starts from the base's
   ], 10), []);
 });
 
+// A default or total rises only by an owner decision, recorded in its own commit before the rise, so that an agent
+// cannot approve its own rise in the commit making it (owner decision B, 2026-10-29).
+test("a default or total rises only to the extent an owner decision committed before the rise allows", () => {
+  const decision = { setting: "leanOpeningImportBound", from: 100, to: 500, decision: "Owner decision X (2026-10-29): why" };
+  assert.deepEqual(undecidedSettingRises([
+    ["leanOpeningImportBound", 100, 400],
+    ["leanFanoutDefaultBound", 100, 110],
+  ], [decision], [decision]), [
+    "leanFanoutDefaultBound: 110 exceeds the base's 100; a default or total rises only by owner decision",
+  ]);
+  assert.deepEqual(undecidedSettingRises([["leanOpeningImportBound", 100, 600]], [decision], [decision]), [
+    "leanOpeningImportBound: 600 exceeds the base's 100 beyond the owner decision's 500",
+  ]);
+  assert.deepEqual(undecidedSettingRises([["leanOpeningImportBound", 200, 400]], [decision], [decision]), [
+    "leanOpeningImportBound: 400 exceeds the base's 200; a default or total rises only by owner decision",
+  ]);
+  assert.deepEqual(undecidedSettingRises([["leanOpeningImportBound", 100, 400]], [decision], []), [
+    "leanOpeningImportBound: the owner decision for its rise from 100 must be committed before the rise",
+  ]);
+  assert.deepEqual(undecidedSettingRises([["leanOpeningImportBound", 100, 400]], [{ ...decision, decision: " " }],
+    [{ ...decision, decision: " " }]), [
+    "leanOpeningImportBound: 400 exceeds the base's 100; a default or total rises only by owner decision",
+  ]);
+});
+
+test("an owner decision goes once the main line carries its rise", () => {
+  const decision = { setting: "leanOpeningImportBound", from: 100, to: 500, decision: "Owner decision X (2026-10-29): why" };
+  assert.deepEqual(settledOwnerDecisions([decision], { leanOpeningImportBound: 100 }), []);
+  assert.deepEqual(settledOwnerDecisions([decision], {}), []);
+  assert.deepEqual(settledOwnerDecisions([decision], { leanOpeningImportBound: 500 }), [
+    "leanOpeningImportBound: the main line already carries the owner decision's 500, so its record must go",
+  ]);
+});
+
+test("every recorded owner decision is still needed", async () => {
+  const mainLine = execFileSync("git", ["merge-base", "HEAD", "origin/main"], { encoding: "utf8" }).trim();
+  assert.deepEqual(settledOwnerDecisions(leanOwnerDecidedRises, await committedBounds(mainLine)), []);
+});
+
 /** The commits a rise is judged against: the last commit, and the merge base with `origin/main`, so the check still holds once the rise is committed. */
 function baseCommits(): string[] {
   const mergeBase = execFileSync("git", ["merge-base", "HEAD", "origin/main"], { encoding: "utf8" }).trim();
@@ -497,6 +536,7 @@ async function committedBounds(commit: string) {
 }
 
 test("no recorded bound, allowance or kernel entry rises above a base commit's without a stated reason", async () => {
+  const committedDecisions = (await committedBounds("HEAD")).leanOwnerDecidedRises ?? [];
   for (const commit of baseCommits()) {
     const previous = await committedBounds(commit);
     const findings = [
@@ -514,14 +554,12 @@ test("no recorded bound, allowance or kernel entry rises above a base commit's w
       ...leanFanoutKernel.filter((module) => !previous.leanFanoutKernel.includes(module))
         .map((module) => `${module}: joins the kernel, which exempts it from every bound; only an owner decision adds one`),
     ];
-    for (const [name, before, after] of [
+    findings.push(...undecidedSettingRises([
       ["leanFanoutDefaultBound", previous.leanFanoutDefaultBound, leanFanoutDefaultBound],
       ["leanHiddenEditDefaultBound", previous.leanHiddenEditDefaultBound, leanHiddenEditDefaultBound],
       ["leanBodyEditDefaultBound", previous.leanBodyEditDefaultBound ?? leanBodyEditDefaultBound, leanBodyEditDefaultBound],
       ["leanOpeningImportBound", previous.leanOpeningImportBound ?? leanOpeningImportBound, leanOpeningImportBound],
-    ] as const) {
-      if (after > before) findings.push(`${name}: ${after} exceeds the base's ${before}; a default or total rises only by owner decision`);
-    }
+    ], leanOwnerDecidedRises, committedDecisions));
     assert.deepEqual(findings, [], commit);
   }
 });

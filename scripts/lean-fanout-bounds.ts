@@ -12,7 +12,7 @@
  * graph of the commit making it under the same rule.
  */
 
-import type { LeanExposureAllowance, LeanFanoutBound } from "./lean-fanout.ts";
+import type { LeanExposureAllowance, LeanFanoutBound, LeanOwnerDecidedRise } from "./lean-fanout.ts";
 
 /** Set on 2026-10-25 above the converted graph's median fanout of 30, leaving a family leaf room for its family, the registry and its fixtures. */
 export const leanFanoutDefaultBound = 100;
@@ -404,10 +404,19 @@ export const leanHiddenRewriteBounds: ReadonlyArray<LeanFanoutBound> = [
 /**
  * The `import all` and `meta import` lines the library may hold in total, as
  * [`leanOpeningImportLines`](./lean-fanout.ts) counts them. Each opens a module's hidden part and so widens what a
- * body edit of that module rebuilds. Recorded at the graph of `7bedde10` (2026-10-28); the total only shrinks and keeps
- * at most 50 lines of headroom.
+ * body edit of that module rebuilds. Recorded at the graph of `7bedde10` (2026-10-28); the total keeps at most 50 lines
+ * of headroom and rises only by a decision in `leanOwnerDecidedRises`.
  */
 export const leanOpeningImportBound = 2179;
+
+/**
+ * The owner decisions that let a default or total above rise, each committed before the rise it allows and removed
+ * once the main line carries it ([the rise guard](./lean-fanout.test.ts)).
+ */
+export const leanOwnerDecidedRises: ReadonlyArray<LeanOwnerDecidedRise> = [
+  { setting: "leanOpeningImportBound", from: 2179, to: 11946,
+    decision: "Owner decision B (2026-10-29): the hidden-bodies conversion hides definition bodies by default, so the proofs that unfold a body open its module with `import all`; the minimizer proved each line necessary (11,322 `import all`, 624 `meta import`, 613 of them for the `privateEquations` helper), and their rebuild cost is counted in the restated body-edit target (mean 118, p90 490 modules)" },
+];
 
 /** Set on 2026-10-28 equal to the hidden-edit default: a body edit should rebuild no more than a hidden one. */
 export const leanBodyEditDefaultBound = 10;

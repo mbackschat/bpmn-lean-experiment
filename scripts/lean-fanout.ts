@@ -494,6 +494,40 @@ export function unexplainedAllowanceRises(previous: LeanExposureAllowance, curre
 }
 
 /**
+ * An owner's decision that a default bound or total `setting` may rise from `from` to at most `to`; `decision` names
+ * the decision, its date and its reason.
+ */
+export type LeanOwnerDecidedRise = Readonly<{ setting: string; from: number; to: number; decision: string }>;
+
+/**
+ * The rises of a default or total, each `[setting, base value, current value]`, that no owner decision allows: one
+ * with no decision for its starting value, one beyond the decision's `to`, or one whose decision `committed`, the
+ * last commit's decisions, lacks, so that the decision lands in its own commit before the rise it allows.
+ */
+export function undecidedSettingRises(rises: ReadonlyArray<readonly [string, number, number]>,
+  decided: ReadonlyArray<LeanOwnerDecidedRise>, committed: ReadonlyArray<LeanOwnerDecidedRise>): string[] {
+  return rises.flatMap(([setting, before, after]) => {
+    if (after <= before) return [];
+    const decision = decided.find((entry) => entry.setting === setting && entry.from === before && entry.decision.trim());
+    if (decision === undefined) return [`${setting}: ${after} exceeds the base's ${before}; a default or total rises only by owner decision`];
+    if (after > decision.to) return [`${setting}: ${after} exceeds the base's ${before} beyond the owner decision's ${decision.to}`];
+    return committed.some((entry) => entry.setting === setting && entry.from === before && entry.to === decision.to
+      && entry.decision === decision.decision) ? []
+      : [`${setting}: the owner decision for its rise from ${before} must be committed before the rise`];
+  });
+}
+
+/** The decisions whose rise the main line, given as its recorded settings, already carries, so their record must go. */
+export function settledOwnerDecisions(decided: ReadonlyArray<LeanOwnerDecidedRise>,
+  mainLine: Readonly<Record<string, unknown>>): string[] {
+  return decided.flatMap(({ setting, to }) => {
+    const value = mainLine[setting];
+    return typeof value === "number" && value >= to
+      ? [`${setting}: the main line already carries the owner decision's ${to}, so its record must go`] : [];
+  });
+}
+
+/**
  * The `import all` and `meta import` lines of the given sources: each opens the imported module's hidden part, so each
  * widens what a body edit of that module rebuilds.
  */
