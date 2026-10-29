@@ -511,6 +511,20 @@ test("a debt record stays until its bound falls back, and starts from the base's
   ], 10), []);
 });
 
+// A module the base already records as risen may rise further: its debt still starts where the main line's bound was,
+// so the base's own `raisedFrom` carries on, but the further rise states its own reason. Requiring the base's current
+// bound as `raisedFrom` made a rise that both base commits judge impossible to record (2026-10-29).
+test("a further rise keeps the debt record's start and states its own reason", () => {
+  const previous = [{ module: "Pkg.Debt", bound: 40, raised: "known regression", raisedFrom: 30 }];
+  assert.deepEqual(brokenDebtRecords(previous, [{ module: "Pkg.Debt", bound: 50, raised: "a second cause", raisedFrom: 30 }], 10), []);
+  assert.deepEqual(brokenDebtRecords(previous, [{ module: "Pkg.Debt", bound: 50, raised: "known regression", raisedFrom: 30 }], 10), [
+    "Pkg.Debt: rises further from 40 to 50 with the reason of its earlier rise",
+  ]);
+  assert.deepEqual(brokenDebtRecords(previous, [{ module: "Pkg.Debt", bound: 50, raised: "a second cause", raisedFrom: 40 }], 10), [
+    "Pkg.Debt: drops the record of its rise from 30 while its bound stays at 50",
+  ]);
+});
+
 // A default or total rises only by an owner decision, recorded in its own commit before the rise, so that an agent
 // cannot approve its own rise in the commit making it (owner decision B, 2026-10-29).
 test("a default or total rises only to the extent an owner decision committed before the rise allows", () => {

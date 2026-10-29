@@ -510,17 +510,21 @@ export function needlessRaises(current: ReadonlyArray<LeanFanoutBound>): string[
 
 /**
  * The entries of `current` that break a debt record against a base commit: one the base records as risen whose
- * reason or starting bound is gone while its bound still exceeds that start, or a new rise whose `raisedFrom` is not
- * the base's bound.
+ * reason or starting bound is gone while its bound still exceeds that start, one rising further than the base's bound
+ * with the base's reason, or a new rise whose `raisedFrom` is not the base's bound. A further rise keeps the base's
+ * `raisedFrom`, because its debt still starts where the main line's bound was.
  */
 export function brokenDebtRecords(previous: ReadonlyArray<LeanFanoutBound>, current: ReadonlyArray<LeanFanoutBound>,
   previousDefault: number): string[] {
   const before = new Map(previous.map((entry) => [entry.module, entry]));
   return current.flatMap(({ module, bound, raised, raisedFrom }) => {
     const base = before.get(module);
-    if (base?.raised !== undefined && base.raisedFrom !== undefined && bound > base.raisedFrom
-      && (raisedFrom !== base.raisedFrom || !raised?.trim())) {
-      return [`${module}: drops the record of its rise from ${base.raisedFrom} while its bound stays at ${bound}`];
+    if (base?.raised !== undefined && base.raisedFrom !== undefined && bound > base.raisedFrom) {
+      if (raisedFrom !== base.raisedFrom || !raised?.trim()) {
+        return [`${module}: drops the record of its rise from ${base.raisedFrom} while its bound stays at ${bound}`];
+      }
+      return bound > base.bound && raised === base.raised
+        ? [`${module}: rises further from ${base.bound} to ${bound} with the reason of its earlier rise`] : [];
     }
     const recorded = base?.bound ?? previousDefault;
     return bound > recorded && raisedFrom !== undefined && raisedFrom !== recorded
